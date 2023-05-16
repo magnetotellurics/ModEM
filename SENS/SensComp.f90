@@ -12,6 +12,7 @@ module SensComp
 !  "pointers" to dictionary entries are attached to data vector d.
 
   use math_constants
+  use fields_orientation
   use utilities
   use SensMatrix
   use DataSens
@@ -42,16 +43,18 @@ module SensComp
 Contains
 
   !**********************************************************************
-  subroutine Jrows(iTx,iDt,iRx,sigma0,emsoln,Jreal,Jimag)
+   subroutine Jrows(iTx,iDt,iRx,orient,sigma0,emsoln,Jreal,Jimag)
    !  Given background model parameter sigma0 and background
    !  solution vector emsoln, calculate a row of sensitivity matrix
    !  for specified transmitter, data type and receiver,
-   !  for all data type components.
+   !  for all data type components at given azimuths and tilts.
    !  Generic form that will work for any problem.
    !   returns a model parameter for each real data type component.
    !
    !   indices into transmitter, receiver & data type dictionaries
    integer, intent(in)				              :: iTx, iRx, iDt
+   !   orientation info for the specific iTx,iDt,iRx data component
+   type(orient_t), intent(in)                     :: orient
    !   sigma0 is background conductivity parameter
    type(modelParam_t), intent(in)	          :: sigma0
    !   to use this routine, need to first supply background EM soln
@@ -106,7 +109,8 @@ Contains
 		  call create_sparseVector(e0%grid,iTx,L(iFunc))
 	  end do
    ! compute linearized data functional(s) : L
-   call Lrows(e0,sigma0,iDt,iRx,L)
+   ! 2022.10.06, Liu Zhongyin, Add Azimuth
+   call Lrows(e0,sigma0,iDt,iRx,orient,L)
 
    ! compute linearized data functional(s) : Q
    call Qrows(e0,sigma0,iDt,iRx,Qzero,Qreal,Qimag)
@@ -161,6 +165,7 @@ Contains
    !  local variables
    type(modelParam_t), pointer   :: Jreal(:),Jimag(:)
    type(dataBlock_t)             :: dTemplate
+   type(orient_t)                :: orient
    logical      :: isComplex
    integer 		  :: i,j,nTx,k,nSite,nTotal,ii,iTx, &
 				iDT,nfunc,ncomp,iRx,iFunc,iComp,istat
@@ -231,9 +236,11 @@ Contains
         do k = 1,nSite
 
            iRx = dTemplate%rx(k)
+           orient = dTemplate%orient(k)
 
            ! compute the sensitivities for these transmitter, data type & receiver
-           call Jrows(iTx,iDt,iRx,sigma0,e0,Jreal,Jimag)
+           ! [2022.10.06, Liu Zhongyin] and data orientation
+           call Jrows(iTx,iDt,iRx,orient,sigma0,e0,Jreal,Jimag)
 
            ! store in the full sensitivity matrix
            ii = 1
@@ -446,8 +453,8 @@ Contains
 	     ! e0 = e1
 	     call copy_solnVector(e0,emsoln)
 	  else
-         ! compute initial conditions and the RHS
-         call fwdSetup(iTx,e0,b0)
+	     ! compute initial conditions and the RHS
+	     call fwdSetup(iTx,e0,b0)
 
 	     ! solve forward problem; result is stored in e0
 	     call fwdSolve(iTx,e0,b0)
@@ -607,7 +614,8 @@ Contains
 		     do j = 1,d%data(i)%nSite
 
 		        ! output is a real vector: complex values come in pairs
-		        call dataResp(emsoln,sigma,iDt,d%data(i)%rx(j),d%data(i)%value(:,j))
+              call dataResp(emsoln,sigma,iDt,d%data(i)%rx(j),d%data(i)%value(:,j), &
+                           d%data(i)%orient(j))
 
 		     enddo
 
@@ -766,8 +774,7 @@ Contains
 
    if (.not. grid%allocated) then
     call errStop('grid is not allocated in setGrid; exiting')
-   else if ((grid%Nx <= 0) .or. (grid%Ny <= 0) .or. (grid%Nz <= 0)) then
-    write(0,*) 'Grid information: Nx=',grid%Nx,' Ny=',grid%Ny,' Nz=',grid%Nz
+   else if (.not. valid_grid(grid)) then
     call errStop('grid is not set up properly in setGrid; exiting')
    end if
 

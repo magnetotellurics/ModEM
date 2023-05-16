@@ -5,6 +5,10 @@ module sensMatrix
   use utilities
   use DataSpace
   use ModelSpace
+  !    need to use dictionaries, so that the dictionary can  be written out with the sensitiviy matrix;
+  !    without this metadata, sensitivity matrix is USELESS!
+  use transmitters
+  use receivers
 
   implicit none
 
@@ -47,6 +51,9 @@ module sensMatrix
       ! dt is index into data type dictionary
       integer		:: dataType = 0
 
+      ! txt is index into transmitter type dictionary
+      integer		:: txType = 0
+
       logical       :: isComplex = .false.
       logical		:: allocated = .false.
 
@@ -63,6 +70,8 @@ module sensMatrix
       ! the number of dataVecs (generally the number of data types) associated
       ! with this transmitter (note: not the total number of data types)
       integer       :: ndt = 0
+      !   NEED to know ISIGN to use sensitivity matrix
+      integer       :: ISIGN = ISIGN
 
       ! array of sensVector's, usually one for each data type (dimension ndt)
       type (sensVector_t), pointer, dimension(:)   :: v
@@ -121,6 +130,7 @@ Contains
        sens%v(i)%rx = d%data(i)%rx
 
        sens%v(i)%dataType = d%data(i)%dataType
+       sens%v(i)%txType = d%data(i)%txType
        sens%v(i)%isComplex = d%data(i)%isComplex
 
        sens%v(i)%allocated = .true.
@@ -150,6 +160,7 @@ Contains
           deallocate(sens%v(i)%rx, STAT=istat)
 
           sens%v(i)%dataType = 0
+          sens%v(i)%txType = 0
           sens%v(i)%isComplex = .false.
 
           do j = 1,nComp
@@ -262,7 +273,17 @@ Contains
 	nAll = count_sensMatrixMTX(sens)
 	write(ioSens) header
 	write(ioSens) nAll
+  !   assume that all sensitivity calculations use native ISIGN -- nothing is modified
+  !      before output.
+	write(ioSens) ISIGN
 
+!   write Tx and Rx dictionaries to sensitivity matrix file
+!     I am not writing out "type_dict" since this is hard-coded in ModEM,
+!      and could also be hard-coded in any program using the sensitivity matrix
+    call write_txDict_bin(ioSens)
+    call write_rxDict_bin(ioSens)
+  
+!   now write out actual sensitivities, grouped by Tx
     nTx = size(sens)
     write(ioSens) nTx
 
@@ -308,6 +329,7 @@ Contains
     ! local
     integer  nTx,nDt,nSite,iComp,nComp,i,j,k,istat
     logical  isComplex,errorBar
+    real(kind=prec) d_dot_m
 
     if(.not. associated(sens)) then
         call errStop('sensitivity matrix not allocated in multBy_sensMatrixMTX')
@@ -334,12 +356,13 @@ Contains
             do iComp = 1,nComp
                 ! computes the dot products of the model parameters
                 d%d(i)%data(j)%value(iComp,k) = dotProd_modelParam(sens(i)%v(j)%dm(iComp,k),m)
-
             end do ! components
 
         end do ! rx
 
         d%d(i)%data(j)%dataType = sens(i)%v(j)%dataType
+        !   at present sensitivity matrix does now carry txType info
+        d%d(i)%data(j)%txType = sens(i)%v(j)%txType
         d%d(i)%data(j)%rx = sens(i)%v(j)%rx
         d%d(i)%data(j)%tx = sens(i)%v(j)%tx
         d%d(i)%data(j)%allocated = .true.

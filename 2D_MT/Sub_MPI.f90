@@ -26,7 +26,7 @@ subroutine set_e_soln(pol_index,e)
 
 end subroutine set_e_soln
 !*****************************************************************************************
-subroutine count_number_of_meaasges_to_RECV(eAll1)
+subroutine count_number_of_messages_to_RECV(eAll1)
 
   type(solnVectorMTX_t), intent(in)  :: eAll1
   integer                            :: itx
@@ -36,7 +36,7 @@ subroutine count_number_of_meaasges_to_RECV(eAll1)
 			end do
 			
 
-end subroutine count_number_of_meaasges_to_RECV
+end subroutine count_number_of_messages_to_RECV
 !*****************************************************************************************
 subroutine reset_e_soln(emsoln)
     type(solnVector_t), intent(inout)  :: emsoln
@@ -73,10 +73,9 @@ end subroutine get_nPol_MPI
        CALL MPI_PACK_SIZE(1,     MPI_INTEGER,          MPI_COMM_WORLD, Nbytes3,  ierr)
         Nbytes=(Nbytes1+Nbytes2+Nbytes3)+1
 
-         if(associated(userdef_control_package)) then
-             deallocate(userdef_control_package)
-         end if
-             allocate(userdef_control_package(Nbytes))
+         if( associated( userdef_control_package ) ) deallocate( userdef_control_package )
+         allocate( userdef_control_package( Nbytes ) )
+		 !
 
  end subroutine create_userdef_control_place_holder
 
@@ -133,6 +132,8 @@ end subroutine pack_userdef_control
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%delta,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
 
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%output_level,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
+   
+   deallocate( userdef_control_package )
 
 end subroutine unpack_userdef_control
 
@@ -171,11 +172,9 @@ subroutine create_e_param_place_holder(e)
 
          Nbytes=((Nbytes1+Nbytes2))+1
 
-         if(associated(e_para_vec)) then
-             deallocate(e_para_vec)
-         end if
-             allocate(e_para_vec(Nbytes))
-
+         if( associated( e_para_vec ) ) deallocate( e_para_vec )
+         allocate( e_para_vec( Nbytes ) )
+		 !
 
  end subroutine create_e_param_place_holder
  !********************************************************************
@@ -210,6 +209,8 @@ subroutine Unpack_e_para_vec(e)
 
         call MPI_Unpack(e_para_vec, Nbytes, index, e%vec%v(1,1),v_size, MPI_DOUBLE_COMPLEX,MPI_COMM_WORLD, ierr)
 		call MPI_Unpack(e_para_vec, Nbytes, index, e%tx,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
+		
+		deallocate( e_para_vec )
 
 end subroutine Unpack_e_para_vec
 
@@ -227,13 +228,9 @@ subroutine create_eAll_param_place_holder(e)
 
          Nbytes=((Nbytes1+Nbytes2))+1
 
-
-
-         if(associated(eAll_para_vec)) then
-             deallocate(eAll_para_vec)
-         end if
-             allocate(eAll_para_vec(Nbytes))
-
+         if( associated( eAll_para_vec ) ) deallocate( eAll_para_vec )
+         allocate( eAll_para_vec( Nbytes ) )
+		 !
 
 
  end subroutine create_eAll_param_place_holder
@@ -274,7 +271,7 @@ subroutine Unpack_eAll_para_vec(e)
         call MPI_Unpack(eAll_para_vec, Nbytes, index, e%vec%v(1,1),v_size, MPI_DOUBLE_COMPLEX,MPI_COMM_WORLD, ierr)
 		call MPI_Unpack(eAll_para_vec, Nbytes, index, e%tx,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
 
-
+		deallocate( eAll_para_vec )
 
 end subroutine Unpack_eAll_para_vec
 

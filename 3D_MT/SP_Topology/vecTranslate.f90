@@ -188,6 +188,10 @@ Contains
     if(.not.associated(v)) then
        allocate(v(nVecT))
     endif
+    !if (nVec(1)>100 .or. nVec(2)>100) then
+    !    write(0,*) 'NOTE: Reshape of large arrays is a common cause of runtime failure at stacksize limit.'
+    !    write(0,*) 'NOTE: Raise the stacksize limit with -heap-arrays compiler flag or ulimit -s unlimited.'
+    !endif
    !   now that we know v is allocated, an of proper size
    !     just copy contents of E into v
     id(1) = nVec(1)
@@ -465,6 +469,7 @@ Contains
             E%z(:,1,:) = 1
             E%z(:,E%ny+1,:) = 1
             call getVector(E,temp) 
+            !write(0,*) 'getVector complete'
             call deall_rvector(E)
         case(FACE)
             call create_rvector(grid,E,FACE)

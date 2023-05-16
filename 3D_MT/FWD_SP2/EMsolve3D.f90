@@ -37,6 +37,8 @@ module EMsolve3D
     real(kind = 8)            ::      AirLayersMaxHeight, AirLayersAlpha, AirLayersMinTopDz
     real(kind = 8), pointer, dimension(:)   :: AirLayersDz
     logical                   ::      AirLayersPresent=.false.
+    character (len=10)        ::      solver_name="QMR"		
+    character (len=50) , public      ::   get_1D_from="Geometric_mean"	
   end type emsolve_control
 
   type :: emsolve_diag
@@ -55,7 +57,7 @@ module EMsolve3D
 
   ! Default solver control parameters
   ! number of iterations for each call to divergence correction:
-  integer, parameter    ::              IterPerDivCorDef = 150
+  integer, parameter    ::              IterPerDivCorDef = 120
   ! maximum number of divergence correction calls allowed
   integer, parameter    ::              MaxDivCorDef = 8
   ! maximum number of PCG iterations for divergence correction
@@ -64,6 +66,10 @@ module EMsolve3D
   real(kind=prec), parameter       ::      tolEMDef = 1E-10
   ! misfit tolerance for convergence of divergence correction solver
   real(kind=prec), parameter       ::      tolDivCorDef = 1E-7
+  !Solver name, by default we use QMR
+  character (len=10)  		   ::   solver_name="QMR"
+  character (len=50) , public      ::   get_1D_from="Geometric_mean"
+							 
 
   save
 
@@ -120,7 +126,7 @@ Contains
 ! For a physical source j, this is equivalent to Div(sigma E) + Div(j) = 0;
 ! but the divergence correction may be applied also for non-physical sources,
 ! such  as in Jmult ('FWD') and JmultT ('TRN').
-  subroutine FWDsolve3D(bRHS,omega,eSol,comm_local)
+  subroutine FWDsolve3D(bRHS,omega,eSol,device_id,comm_local)
 
     ! redefine some of the interfaces (locally) for our convenience
     use sg_vector !, only: copy => copy_cvector, &
@@ -136,6 +142,7 @@ Contains
     type (RHS_t), intent(in)      :: bRHS
     real(kind=prec), intent(in)   :: omega
     !dummy parameter for compatibiliy
+    integer, intent(in),optional  :: device_id
     integer, intent(in),optional  :: comm_local 
     !  OUTPUTS:
     !  eSol must be allocated before calling this routine
@@ -143,7 +150,7 @@ Contains
 
     ! LOCAL VARIABLES
     logical                     :: converged,trans
-    integer                     :: iter, fid
+    integer                     :: iter, fid, ierr
     integer                     :: Ne,Nei,Nni,Nn,i
     complex(kind=prec)          :: iOmegaMuInv
     ! e(lectric field) s(ource) b(rhs) phi0(div(s))
@@ -336,8 +343,10 @@ Contains
     end if
 
     KSSiter%niter = 0
+
     KSSiter%maxIt = IterPerDivCor
-    allocate(KSSiter%rerr(IterPerDivCor))
+
+    allocate(KSSiter%rerr(KSSiter%maxIt))
     KSSiter%rerr = 0.0
     converged = .false.
     failed = .false.
@@ -351,8 +360,61 @@ Contains
     !   Call SdivCorr(ei,phi0)
     ! endif
     loop: do while ((.not.converged).and.(.not.failed))
-       Call BICG(b, ei, KSSiter)
-       ! Call QMR(b, ei, KSSiter) 
+#ifdef CUDA
+       if (device_id.ge.0) then
+           ! before start, need to tell if the device is available
+           ierr = kernelc_hookCtx(device_id)
+           if (trim(solver_name) .eq. 'PCG') then
+             write(*,*) 'I am using PCG with initial relative error ',KSSiter%rerr(1)
+             Call PCG(b, ei, KSSiter, device_id)
+           elseif (trim(solver_name) .eq. 'QMR') then
+             write(*,*) 'I am using QMR with initial relative error ',KSSiter%rerr(1)
+             Call QMR(b, ei, KSSiter, device_id)
+           elseif (trim(solver_name) .eq. 'TFQMR') then
+             write(*,*) 'I am using TFQMR with initial relative error ',KSSiter%rerr(1)
+             Call TFQMR(b, ei, KSSiter, device_id)
+           elseif (trim(solver_name) .eq. 'BICG') then
+             write(*,*) 'I am using BICG with initial relative error ',KSSiter%rerr(1)
+             Call BICG(b, ei, KSSiter, device_id)
+           else
+             write(*,*) 'Unknown Forward Solver Method'
+           end if
+
+       else
+           if (trim(solver_name) .eq. 'PCG') then
+             write(*,*) 'I am using PCG with initial relative error ',KSSiter%rerr(1)
+             Call PCG(b, ei, KSSiter)
+           elseif (trim(solver_name) .eq. 'QMR') then
+             write(*,*) 'I am using QMR with initial relative error ',KSSiter%rerr(1)
+             Call QMR(b, ei, KSSiter)
+           elseif (trim(solver_name) .eq. 'TFQMR') then
+             write(*,*) 'I am using TFQMR with initial relative error ',KSSiter%rerr(1)
+             Call TFQMR(b, ei, KSSiter)
+           elseif (trim(solver_name) .eq. 'BICG') then
+             write(*,*) 'I am using BICG with initial relative error ',KSSiter%rerr(1)
+             Call BICG(b, ei, KSSiter)
+           else
+             write(*,*) 'Unknown Forward Solver Method'
+           end if
+
+       end if
+#else
+      if (trim(solver_name) .eq. 'PCG') then
+        write(*,*) 'I am using PCG with initial relative error ',KSSiter%rerr(1)
+        Call PCG(b, ei, KSSiter)
+      elseif (trim(solver_name) .eq. 'QMR') then
+        write(*,*) 'I am using QMR with initial relative error ',KSSiter%rerr(1)
+        Call QMR(b, ei, KSSiter)
+      elseif (trim(solver_name) .eq. 'TFQMR') then
+        write(*,*) 'I am using TFQMR with initial relative error ',KSSiter%rerr(1)
+        Call TFQMR(b, ei, KSSiter)
+      elseif (trim(solver_name) .eq. 'BICG') then
+        write(*,*) 'I am using BICG with initial relative error ',KSSiter%rerr(1)
+        Call BICG(b, ei, KSSiter)
+      else
+        write(*,*) 'Unknown Forward Solver Method'
+      end if
+#endif
        ! algorithm is converged when the relative error is less than tolerance
        ! (in which case KSSiter%niter will be less than KSSiter%maxIt)
        converged = KSSiter%niter .lt. KSSiter%maxIt
@@ -390,8 +452,8 @@ Contains
     if (output_level > 2) then
        write (*,'(a12,a20,i8,g15.7)') node_info, 'finished solving:',     &
    &            nIterTotal, EMrelErr(nIterTotal)
-       write (*,'(a12,a22,f12.6)')    node_info, ' time taken (mins) ',   &
-   &            elapsed_time(timer)/60.0
+       write (*,'(a12,a22,f12.6)')    node_info, 'solving time (sec): ',  &
+   &            elapsed_time(timer)
     end if
     e(EDGEi) = ei
     !  After solving symetrized system, need to do different things for
@@ -581,6 +643,8 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = tolEMDef
         tolEMadj = tolEMDef
         tolDivCor = tolDivCorDef
+        solver_name="QMR"
+        get_1D_from="Geometric_mean"
      else
         IterPerDivCor = solverControl%IterPerDivCor
         MaxDivCor = solverControl%MaxDivCor
@@ -589,6 +653,8 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = solverControl%tolEMfwd
         tolEMadj = solverControl%tolEMadj
         tolDivCor = solverControl%tolDivCor
+        solver_name=solverControl%solver_name
+        get_1D_from=solverControl%get_1D_from
      endif
 
      if (present(tolEM)) then
@@ -745,6 +811,24 @@ end subroutine SdivCorr ! SdivCorr
     if (solverControl%AirLayersNz <= 0) then
         write(*,*) node_info,'Problem reading the air layers. Resort to defaults '
         solverControl%AirLayersPresent = .false.
+    end if
+
+
+    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+    read(ioFwdCtrl,'(a10)',iostat=istat) solverControl%solver_name
+    if (istat .ne. 0) then
+       solverControl%solver_name = 'QMR' ! default
+    elseif (output_level > 2) then
+       write (*,'(a12,a48,a)') node_info,string,adjustl(solverControl%solver_name)
+    end if
+
+    ! For any secondary field calculation approach...
+    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+    read(ioFwdCtrl,'(a50)',iostat=istat) solverControl%get_1D_from
+    if (istat .ne. 0) then
+       solverControl%get_1D_from = 'Geometric_mean' ! default
+    elseif (output_level > 2) then
+       write (*,'(a12,a48,a)') node_info,string,adjustl(solverControl%get_1D_from)
     end if
 
     close(ioFwdCtrl)

@@ -1943,13 +1943,15 @@ Contains
          enddo
       enddo
       return
-   end subroutine
+   end subroutine Dilu_Real
 !*****************************************************************************
    subroutine Dilu_Cmplx(A,L,U)
    !    this mimics approach used in ModEM --- D-ILU(diagonal-ILU)
    !    NOT ILU-0
-   !    THIS ASSUMES THE MATRIX IS SYMMETRIC -- but not necessarily Hermitian
-   !    so it will not work if using modified system equation (as Randy did)
+   !    The original Dilu_Cmplx ASSUMES THE MATRIX IS SYMMETRIC 
+   !    -- but not necessarily Hermitian
+   !    so it will NOT work if dealing with modified system equation (CCGD)
+   !    as the CCGD system equation is no longer symmetric
       type(spMatCSR_Cmplx),intent(in)           :: A
       type(spMatCSR_Cmplx),intent(inout)        :: L,U
 
@@ -1989,40 +1991,53 @@ Contains
          enddo
       enddo
       return
-   end subroutine
+   end subroutine Dilu_Cmplx
 !*****************************************************************************
    subroutine Dilu_Cmplx_AS(A,L,U)
-   !    this mimics approach used in ModEM --- D-ILU(diagonal-ILU)
-   !    NOT ILU-0
-   !    slightly modified to be used with modified system equations 
+   !    D-ILU(diagonal-ILU) for asymmetric matrices 
+   !    (A still needs to be square...)
+   !    this is modified from the original Dilu_Cmplx above for CCGD, as
+   !    the CCGD system equation is no longer symmetric. 
+   ! 
+   !    this version does not even require the sparsity pattern of A to be 
+   !    symmetric (with the expense of efficiency)
+   !    Therefore, one will want to call the original Dilu for CC-DC, as 
+   !    that is more efficient, exploiting the symmetric pattern
       type(spMatCSR_Cmplx),intent(in)           :: A
       type(spMatCSR_Cmplx),intent(inout)        :: L,U
-      type(spMatCSR_Cmplx)                      :: UT
+      type(spMatCSR_Cmplx)                      :: AT
 
       complex(kind=prec),allocatable, dimension(:)    ::d
-      integer             ::n,m,nz,i,j
+      integer             ::n,m,nz,i,j,k
 
       call lowerTri(A,L)
       call upperTri(A,U)
-      call CMATtrans(U,UT)
-      m = L%nRow
+      call CMATtrans(A,AT)
+      m = A%nRow
       allocate(d(m))
+      d = C_ZERO
       do i = 1,m ! loop through rows
-         d(i) = C_ZERO
-         do j = L%row(i),L%row(i+1)-1 !loop through columns
-            if(L%col(j).eq.i) then ! diagonal
-               d(i) = d(i) + L%val(j) 
-            elseif(L%col(j).lt.i) then ! take the L and U side
-               d(i) = d(i) - L%val(j)*UT%val(j)*d(L%col(j))
+         do j = A%row(i),A%row(i+1)-1 
+            ! loop through all non-zero columns for the ith row
+            if(A%col(j).eq.i) then ! i.e. diagonal
+               d(i) = d(i) + A%val(j) 
+            elseif(A%col(j).lt.i) then ! take the left/lower side
+                do k = AT%row(i),AT%row(i+1)-1
+                    if(AT%col(k).eq.A%col(j)) then
+                        ! still need to check if the sparse pattern is 
+                        ! symmetric 
+                        d(i) = d(i) - A%val(j)*AT%val(k)*d(A%col(j))
+                    endif
+                enddo
             endif
          enddo
          d(i) = C_ONE/d(i)
       enddo
-      call deall_spMatCSR(UT)
+      call deall_spMatCSR(AT)
       do i = 1,m
          do j = L%row(i),L%row(i+1)-1
             if(L%col(j).eq.i) then
-               L%val(j) = 1
+               L%val(j) = C_ONE
             else
                L%val(j) = L%val(j)*d(L%col(j))
             endif
@@ -2031,13 +2046,13 @@ Contains
       do i = 1,m
          do j = U%row(i),U%row(i+1)-1
             if(U%col(j).eq.i) then
-               U%val(j) = 1.0_dp/d(i)
+               U%val(j) = C_ONE/d(i)
                exit
             endif
          enddo
       enddo
       return
-   end subroutine
+   end subroutine Dilu_Cmplx_AS
 !*****************************************************************************
    subroutine ilu0_Cmplx(A,L,U)
       type(spMatCSR_Cmplx),intent(in)           :: A

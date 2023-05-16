@@ -31,9 +31,10 @@ Contains
 
 
 ! *****************************************************************************
-! Solver contains subroutines for: a) PCG- a quasi-generic pre-conditioned
-! congugate gradient, and b) QMR - Quasi-Minimal Residual method
-! (pre-conditioned, no look-ahead)
+! Solver contains subroutines for:
+! a) PCG- a quasi-generic pre-conditioned congugate gradient, and 
+! b) QMR - Quasi-Minimal Residual method (pre-conditioned, no look-ahead)
+! c) BICG - bicgstab Stablilized Biconjugate Gradient method
 ! *****************************************************************************
 
 subroutine PCG(b,x, PCGiter)
@@ -487,24 +488,6 @@ subroutine BICG(b,x,BICGiter)
       end if
       ! xhalf = x + ALPHA*PH ! the first half of iteration      
       call linComb(C_One,x,ALPHA,PH,xhalf)
-      adjoint = .false.
-      call A(xhalf,adjoint,AX)
-      call linComb(C_One,b,C_MinusOne,AX,AX)
-      rnorm = SQRT(dotProd(AX,AX))
-      BICGiter%rerr(iter)=rnorm/bnorm
-      
-      if (rnorm.lt.btol) then
-          x = xhalf
-          BICGiter%failed = .false.
-          BICGiter%niter = iter
-          converged = .true.
-          exit
-      end if
-      if (rnorm .lt. rnormin) then
-          rnormin = rnorm
-          xmin = xhalf
-          imin = iter
-      end if
       ! S = R - ALPHA*V  !residual for the 0.5 x
       call linComb(C_One,R,-ALPHA,V,S)
       ! L
@@ -528,15 +511,15 @@ subroutine BICG(b,x,BICGiter)
       end if
       ! x = xhalf + OMEGA * SH  ! the second half (shadow) of iteration
       call linComb(C_One,xhalf,OMEGA,SH,x)
-      adjoint = .false.
-      call A(x,adjoint,AX)
-      call linComb(C_One,b,C_MinusOne,AX,AX)
-      rnorm = SQRT(dotProd(AX,AX))
+      ! R = S - OMEGA * T  !residual for the 1.0 x
+      call linComb(C_One,S,-OMEGA,T,R)
+      rnorm = SQRT(dotProd(R,R))
       BICGiter%rerr(iter) = rnorm / bnorm
       if (rnorm.lt.btol) then
           BICGiter%failed = .false.
           BICGiter%niter = iter
           converged = .true.
+          write(6,*) 'full iteration complete, final residual: ',BICGiter%rerr(iter)
           exit
       end if
       if (rnorm .lt. rnormin) then
@@ -544,8 +527,6 @@ subroutine BICG(b,x,BICGiter)
           xmin = x
           imin = iter
       end if
-      !R = S - OMEGA * T  !residual for the 1.0 x
-      call linComb(C_One,S,-OMEGA,T,R)
   end do
  
   if (.not. converged) then
@@ -554,6 +535,7 @@ subroutine BICG(b,x,BICGiter)
       x = xmin; !comment this line
       BICGiter%niter=BICGiter%maxit
       BICGiter%rerr(BICGiter%maxit) = BICGiter%rerr(imin) ! and this line
+      write(6,*) 'not converged, using smallest residual: ',BICGiter%rerr(imin)
       ! to use the last iteration result instead of the 'best' 
   end if
   Call deall(xhalf)

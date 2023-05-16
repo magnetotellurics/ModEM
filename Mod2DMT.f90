@@ -183,7 +183,8 @@ program Mod2DMT
             ! sigma1 contains mHat on input (zero = starting from the prior)
              write(*,*) 'Starting the LBFGS search...'
              sigma1 = dsigma
-             call LBFGSsolver(allData,cUserDef%lambda,sigma0,sigma1,cUserDef%rFile_invCtrl)
+             call LBFGSsolver(allData,cUserDef%lambda,sigma0,sigma1, &
+     &           cUserDef%rFile_invCtrl)
 #ifdef MPI
             call Master_job_STOP_MESSAGE
 #endif

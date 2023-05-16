@@ -35,6 +35,8 @@ module EMsolve3D
     real(kind = 8)            ::      AirLayersMaxHeight, AirLayersAlpha, AirLayersMinTopDz
     real(kind = 8), pointer, dimension(:)   :: AirLayersDz
     logical                   ::      AirLayersPresent=.false.
+    character (len=10)        ::      solver_name="QMR"		
+    character (len=50) , public      ::   get_1D_from="Geometric_mean"	
   end type emsolve_control
 
   type :: emsolve_diag
@@ -51,9 +53,8 @@ module EMsolve3D
     real(kind = 8), pointer, dimension(:,:)    ::      DivCorRelErr
   end type emsolve_diag
 
-
   ! Default solver control parameters
-  ! number of QMR iterations for each call to divergence correction:
+  ! number of iterations for each call to divergence correction:
   integer, parameter    ::              IterPerDivCorDef = 40
   ! maximum number of divergence correction calls allowed
   integer, parameter    ::              MaxDivCorDef = 20
@@ -63,6 +64,10 @@ module EMsolve3D
   real(kind=prec), parameter       ::      tolEMDef = 1E-7
   ! misfit tolerance for convergence of divergence correction solver
   real(kind=prec), parameter       ::      tolDivCorDef = 1E-5
+  !Solver name, by default we use QMR
+  character (len=10)  		   ::   solver_name="QMR"
+  character (len=50) , public      ::   get_1D_from="Geometric_mean"
+							 
 
   save
 
@@ -108,7 +113,7 @@ Contains
 ! the divergence correction may be applied also for non-physical sources, such as
 ! in Jmult ('FWD') and JmultT ('TRN').
     
-  subroutine FWDsolve3D(bRHS,omega,eSol,comm_local)
+  subroutine FWDsolve3D(bRHS,omega,eSol,device_id,comm_local)
 
     ! redefine some of the interfaces (locally) for our convenience
     use sg_vector !, only: copy => copy_cvector, &
@@ -122,6 +127,7 @@ Contains
     type (RHS_t), intent(in)		:: bRHS
     real(kind=prec), intent(in)	:: omega
     !dummy parameter for compatibility
+    integer, intent(in),optional    :: device_id
     integer, intent(in),optional    :: comm_local
     !  OUTPUTS:
     !     eSol must be allocated before calling this routine
@@ -135,7 +141,7 @@ Contains
     type (cvector)			:: b,temp
     type (cscalar)			:: phi0
     type (cboundary)             	:: tempBC
-    type (solverControl_t)			:: QMRiter
+    type (solverControl_t)			:: KSSiter
 
 
     !  Zero solver diagnostic variables
@@ -271,20 +277,20 @@ Contains
 
     ! Initialize iteration control/diagnostic structure for QMR, PCG
     if (trans) then
-       QMRiter%tol = tolEMadj
+       KSSiter%tol = tolEMadj
     else
       if (bRHS%nonzero_BC) then
-        QMRiter%tol = tolEMfwd
+        KSSiter%tol = tolEMfwd
       else
-        QMRiter%tol = tolEMadj
+        KSSiter%tol = tolEMadj
        end if
     end if
 
 
-    QMRiter%niter = 0
-    QMRiter%maxIt = IterPerDivCor
-    allocate(QMRiter%rerr(IterPerDivCor), STAT=status)
-    QMRiter%rerr = 0.0
+    KSSiter%niter = 0
+    KSSiter%maxIt = IterPerDivCor
+    allocate(KSSiter%rerr(IterPerDivCor), STAT=status)
+    KSSiter%rerr = 0.0
 
     converged = .false.
     failed = .false.
@@ -297,22 +303,31 @@ Contains
     endif
     loop: do while ((.not.converged).and.(.not.failed))
 
-       ! Call BiCG(b, eSol,QMRiter)
-       Call QMR(b, eSol,QMRiter)
-
+	   
+      if (trim(solver_name) .eq. 'QMR') then
+        write(*,*) 'I am using QMR with initial relative error ',KSSiter%rerr(1)
+        Call QMR(b, eSol, KSSiter)
+      elseif (trim(solver_name) .eq. 'BICG') then
+        write(*,*) 'I am using BICG with initial relative error ',KSSiter%rerr(1)
+        Call BICG(b, eSol, KSSiter)
+      else
+        write(*,*) 'Unknown Forward Solver Method'
+      end if
+	
+	   
        ! algorithm is converged when the relative error is less than tolerance
-       ! (in which case QMRiter%niter will be less than QMRiter%maxIt)
-       converged = QMRiter%niter .lt. QMRiter%maxIt
+       ! (in which case KSSiter%niter will be less than KSSiter%maxIt)
+       converged = KSSiter%niter .lt. KSSiter%maxIt
 
        ! there are two ways of failing: 1) QMR did not work or
        !        2) total number of divergence corrections exceeded
-       failed = failed .or. QMRiter%failed
+       failed = failed .or. KSSiter%failed
 
        !  update diagnostics output from QMR
-       do iter = 1,QMRiter%niter
-           EMrelErr(nIterTotal+iter) = QMRiter%rerr(iter)
+       do iter = 1,KSSiter%niter
+           EMrelErr(nIterTotal+iter) = KSSiter%rerr(iter)
        enddo
-       nIterTotal = nIterTotal + QMRiter%niter
+       nIterTotal = nIterTotal + KSSiter%niter
 
        nDivCor = nDivCor+1
        if( nDivCor < MaxDivCor) then
@@ -330,9 +345,10 @@ Contains
 
     end do loop
 
-    if (output_level > 1) then
+    if (output_level > 2) then
        write (*,'(a12,a20,i8,g15.7)') node_info, 'finished solving:', nIterTotal, EMrelErr(nIterTotal)
-	   write (*,'(a12,a22,f12.6)')    node_info, ' time taken (mins) ', elapsed_time(timer)/60.0
+       write (*,'(a12,a22,f12.6)')    node_info, 'solving time (sec): ',  &
+   &            elapsed_time(timer)
     end if
 
     !  After solving symetrized system, need to do different things for
@@ -370,7 +386,7 @@ Contains
     Call deall(b)
     Call deall(temp)
     Call deall(tempBC)
-    deallocate(QMRiter%rerr, STAT=status)
+    deallocate(KSSiter%rerr, STAT=status)
 
   end subroutine FWDsolve3D
 
@@ -522,6 +538,8 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = tolEMDef
         tolEMadj = tolEMDef
         tolDivCor = tolDivCorDef
+        solver_name="QMR"
+        get_1D_from="Geometric_mean"
      else
         IterPerDivCor = solverControl%IterPerDivCor
         MaxDivCor = solverControl%MaxDivCor
@@ -530,6 +548,8 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = solverControl%tolEMfwd
         tolEMadj = solverControl%tolEMadj
         tolDivCor = solverControl%tolDivCor
+        solver_name=solverControl%solver_name
+        get_1D_from=solverControl%get_1D_from
      endif
 
      if (present(tolEM)) then
@@ -553,20 +573,32 @@ end subroutine SdivCorr ! SdivCorr
      allocate(divJ(2,MaxDivCor))
      allocate(DivCorRelErr(MaxIterDivCor,MaxDivCor))
 
+     if (output_level > 3) then
+       write (*,*)
+       write (*,'(a60)') 'Forward solver configurations set to:'
+       write (*,'(a12,a48,i5)') node_info,'IterPerDivCor=',IterPerDivCor
+       write (*,'(a12,a48,i5)') node_info,'MaxDivCor=',MaxDivCor
+       write (*,'(a12,a48,i5)') node_info,'MaxIterTotal=',MaxIterTotal
+       write (*,'(a12,a48,i5)') node_info,'MaxIterDivCor=',MaxIterDivCor
+       write (*,'(a12,a48,g15.7)') node_info,'tolEMfwd=',tolEMfwd
+       write (*,'(a12,a48,g15.7)') node_info,'tolEMadj=',tolEMadj
+       write (*,'(a12,a48,g15.7)') node_info,'tolDivCor=',tolDivCor
+     end if
+     
   end subroutine setEMsolveControl
 
    ! ***************************************************************************
    ! * readEMsolveControl reads the EM solver configuration from file
    subroutine readEMsolveControl(solverControl,rFile,fileExists,tolEM)
 
-	type(emsolve_control), intent(inout)	:: solverControl
-    character(*), intent(in)		        :: rFile
-	logical, intent(out), optional          :: fileExists
-	real(8), intent(in), optional           :: tolEM
-    integer									:: ios
-	logical                             	:: exists
-	character(80)							:: string
-	integer									:: istat
+    type(emsolve_control), intent(inout)    :: solverControl
+    character(*), intent(in)                :: rFile
+    logical, intent(out), optional          :: fileExists
+    real(8), intent(in), optional           :: tolEM
+    integer                                 :: ios
+	logical                             :: exists
+    character(80)                           :: string
+    integer                                 :: istat
 
     ! Initialize inverse solver configuration
 
@@ -686,6 +718,24 @@ end subroutine SdivCorr ! SdivCorr
     if (solverControl%AirLayersNz <= 0) then
         write(*,*) node_info,'Problem reading the air layers. Resort to defaults '
         solverControl%AirLayersPresent = .false.
+    end if
+
+
+    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+    read(ioFwdCtrl,'(a10)',iostat=istat) solverControl%solver_name
+    if (istat .ne. 0) then
+       solverControl%solver_name = 'QMR' ! default
+    elseif (output_level > 2) then
+       write (*,'(a12,a48,a)') node_info,string,adjustl(solverControl%solver_name)
+    end if
+
+    ! For any secondary field calculation approach...
+    read(ioFwdCtrl,'(a48)',advance='no',iostat=istat) string
+    read(ioFwdCtrl,'(a50)',iostat=istat) solverControl%get_1D_from
+    if (istat .ne. 0) then
+       solverControl%get_1D_from = 'Geometric_mean' ! default
+    elseif (output_level > 2) then
+       write (*,'(a12,a48,a)') node_info,string,adjustl(solverControl%get_1D_from)
     end if
 
     close(ioFwdCtrl)

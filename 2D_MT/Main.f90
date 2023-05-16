@@ -99,7 +99,7 @@ Contains
 	  call warning('No input model parametrization')
 
 	  ! set up an empty grid to avoid segmentation faults in sensitivity tests
-      call create_grid(1,1,1,grid)
+          call create_grid(1,1,1,grid)
 	end if
 
 	!--------------------------------------------------------------------------

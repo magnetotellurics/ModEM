@@ -523,10 +523,10 @@ Contains
        type(spMatCSR_Cmplx),pointer       ::  Lblk(:),Ublk(:)
        character(80)                      ::  cfile
 
-    !   find indicies of x, y, z elements
+      !   find indicies of x, y, z elements
 
       !   this generates indicies (in list of interior edges)
-      !     for x, y, z edges
+      !   for x, y, z edges
       nEdgeT = 0
       call setLimits(XEDGE,mGrid,nx,ny,nz)
       nEdge = nx*(ny-2)*(nz-2)
@@ -553,7 +553,7 @@ Contains
       allocate(d(n))
       d = VomegaMuSig(ix)
       call CSR_R2Cdiag(CCxx,d,Axx)
-      call ilu0_Cmplx(Axx,Lblk(1),Ublk(1))
+      call Dilu_Cmplx_AS(Axx,Lblk(1),Ublk(1))
       deallocate(d)
 
       ! test
@@ -579,7 +579,7 @@ Contains
       allocate(d(n))
       d = VomegaMuSig(iy)
       call CSR_R2Cdiag(CCxx,d,Axx)
-      call ilu0_cmplx(Axx,Lblk(2),Ublk(2))
+      call Dilu_Cmplx_AS(Axx,Lblk(2),Ublk(2))
       deallocate(d)
 
       call SubMatrix_Real(AAii,iz,iz,CCxx)
@@ -587,7 +587,7 @@ Contains
       allocate(d(n))
       d = VomegaMuSig(iz)
       call CSR_R2Cdiag(CCxx,d,Axx)
-      call ilu0_Cmplx(Axx,Lblk(3),Ublk(3))
+      call Dilu_Cmplx_AS(Axx,Lblk(3),Ublk(3))
       deallocate(d)
 
    !  could merge into a single LT and UT matrix, or solve systems
@@ -720,7 +720,7 @@ Contains
       call subMatrix_Real(Gai,allNodes,NODEi,Temp)
       call RMATxRMAT(VDs,Temp,VDsG)
       ! Setup preconditioner
-      call Dilu_Real(VDsG,VDsG_L,VDsG_U)
+      call dilu_Real(VDsG,VDsG_L,VDsG_U)
       !call CholInc_real(VDsG,VDsG_L)
       !call RMATtrans(VDsG_L,VDsG_U)
       call deall_spMatCSR(Temp)

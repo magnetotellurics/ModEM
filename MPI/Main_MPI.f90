@@ -18,11 +18,11 @@ module Main_MPI
 
   ! temporary EM fields, that are saved for efficiency - to avoid
   !  memory allocation & deallocation for each transmitter
-  type(solnVector_t), save, private		    :: e,e0
-  type(rhsVector_t) , save, private		    :: b0,comb
-  type (grid_t), target, save, private     :: grid
-  
-  
+  type(solnVector_t), save, private    :: e,e0
+  type(rhsVector_t) , save, private    :: b0,comb
+  type (grid_t), target, save, private :: grid
+
+
 Contains
 
 
@@ -59,7 +59,7 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
     include 'mpif.h'
    type(modelParam_t), intent(in)	    :: sigma
    type(dataVectorMTX_t), intent(inout)	:: d1
-   type(solnVectorMTX_t), intent(inout), optional	:: eAll
+   type(solnVectorMTX_t), intent(inout)	:: eAll
    integer nTx
 
 
@@ -101,12 +101,6 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
     
         job_name= 'FORWARD'      
         call Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll)   
-
- ! Initialize only those grid elements on the master that are used in EMfieldInterp
- ! (obviously a quick patch, needs to be fixed in a major way)
- ! A.Kelbert 2018-01-28
-    Call EdgeLength(grid, l_E)
-    Call FaceArea(grid, S_F)
           
  ! Compute the model Responces           
    do iTx=1,nTx
@@ -114,14 +108,11 @@ Subroutine Master_Job_fwdPred(sigma,d1,eAll)
          d1%d(iTx)%data(i)%errorBar = .false.
          iDt = d1%d(iTx)%data(i)%dataType
 		     do j = 1,d1%d(iTx)%data(i)%nSite
-		        call dataResp(eAll%solns(iTx),sigma,iDt,d1%d(iTx)%data(i)%rx(j),d1%d(iTx)%data(i)%value(:,j))
+              call dataResp(eAll%solns(iTx),sigma,iDt,d1%d(iTx)%data(i)%rx(j),d1%d(iTx)%data(i)%value(:,j), &
+                           d1%d(iTx)%data(i)%orient(j))
 		     end do
       end do
    end do   
-
- ! clean up the grid elements stored in GridCalc on the master node
-    call deall_rvector(l_E)
-    call deall_rvector(S_F)
 
 
         write(ioMPI,*)'FWD: Finished calculating for (', nTx , ') Transmitters '
@@ -192,6 +183,10 @@ do iper=1,nTx
            do istn=1,nStn
               stn_index=stn_index+1
               worker_job_task%Stn_index= stn_index  
+
+              ! 2022.10.06, Liu Zhongyin, add iSite for rx in dataBlock_t
+              worker_job_task%iSite= istn
+
  	            dest=dest+1
 	            call create_worker_job_task_place_holder
 	            call Pack_worker_job_task
@@ -891,7 +886,10 @@ Subroutine Worker_job (sigma,d)
    type(sparseVector_t), pointer	:: L(:)
    type(modelParam_t), pointer    :: Qreal(:),Qimag(:)
    logical      :: Qzero
+   type(orient_t)               :: orient
  
+   ! 2019.05.08, Liu Zhongyin, add isite for rx in dataBlock_t
+   integer                       :: isite
 
       
        
@@ -925,12 +923,11 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
           pol_index=worker_job_task%pol_index
           worker_job_task%taskid=taskid
 
-		       call initSolver(per_index,sigma,grid,e0)
-		       call set_e_soln(pol_index,e0)
-		       
+                 call initSolver(per_index,sigma,grid,e0)
+                 call set_e_soln(pol_index,e0)
+                 call fwdSetup(per_index,e0,b0)
 
-		       call fwdSetup(per_index,e0,b0)
-		       call fwdSolve(per_index,e0,b0)
+                     call fwdSolve(per_index,e0,b0) 
                call reset_e_soln(e0)
 
      
@@ -946,7 +943,7 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 		      call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,FROM_WORKER, MPI_COMM_WORLD, ierr) 
 
               !deallocate(e_para_vec,worker_job_package)
-              call exitSolver(e0)
+              
 
 
 elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
@@ -957,8 +954,12 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
           dt=worker_job_task%data_type
           worker_job_task%taskid=taskid
           
+          ! 2022.10.06, Liu Zhongyin, assign isite (AK: possibly same as stn_index - check)
+          isite=worker_job_task%iSite
+          
 nComp = d%d(per_index)%data(dt_index)%nComp           
 isComplex = d%d(per_index)%data(dt_index)%isComplex
+orient = d%d(per_index)%data(dt_index)%orient(isite)
 
 		    if(isComplex) then
 		       !  data are complex; one sensitivity calculation can be
@@ -1003,21 +1004,12 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
 		  call create_sparseVector(e0%grid,per_index,L(iFunc))
 	  end do
 	  
- ! Initialize only those grid elements on the master that are used in EMfieldInterp
- ! (obviously a quick patch, needs to be fixed in a major way)
- ! A.Kelbert 2018-01-28
-    Call EdgeLength(e0%grid, l_E)
-    Call FaceArea(e0%grid, S_F)
-
    ! compute linearized data functional(s) : L
-   call Lrows(e0,sigma,dt,stn_index,L)
+   ! call Lrows(e0,sigma,dt,stn_index,L)
+   ! 2022.10.06, Liu Zhongyin, Add Azimuth
+   call Lrows(e0,sigma,dt,stn_index,orient,L)
    ! compute linearized data functional(s) : Q
-   call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)
-
- ! clean up the grid elements stored in GridCalc on the master node
-    call deall_rvector(l_E)
-    call deall_rvector(S_F)
-
+   call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)	  		              
    ! loop over functionals  (e.g., for 2D TE/TM impedances nFunc = 1)
    do iFunc = 1,nFunc
 
@@ -1288,7 +1280,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,eAll_in)
 10         continue
 
 
-       call count_number_of_meaasges_to_RECV(eAll_out)
+       call count_number_of_messages_to_RECV(eAll_out)
       !answers_to_receive = nTx*nPol_MPI
         received_answers = 0
         do while (received_answers .lt. answers_to_receive)

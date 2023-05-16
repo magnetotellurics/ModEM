@@ -8,6 +8,7 @@ if [ -e $1 ]; then
 fi
 
 MT_path_dir="3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod"
+SP_path_dir="3D_MT/FWD_SP2:3D_MT/SP_Topology"
 INV_dir="INV"
 
 if [ $2 = "debug" ]; then
@@ -15,10 +16,10 @@ if [ $2 = "debug" ]; then
 perl fmkmf.pl -f90 mpiifort \
 -opt '-O0 -w -std03 -fp-stack-check -g -traceback -ffree-line-length-none' \
 -mpi '-fpp -DMPI' \
--o './objs/3D_MT/IFortDebugMPI' \
+-o './objs/3D_MT/IFortDebugMPI_SP2' \
 -l '-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
 -lp '-L${MKLROOT}/lib/intel64' \
--p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$MT_path_dir \
+-p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
 elif [ $2 = "gfortran" ]; then
@@ -26,10 +27,10 @@ elif [ $2 = "gfortran" ]; then
 perl fmkmf.pl -f90 mpifort \
 -opt '-O0 -g -ffree-line-length-none' \
 -mpi '-cpp -DMPI' \
--o './objs/3D_MT/GFortranDebugMPI' \
+-o './objs/3D_MT/GFortranDebugMPI_SP2' \
 -l '-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
 -lp '-L${MKLROOT}/lib/intel64' \
--p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$MT_path_dir \
+-p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 sed -i.bak 's/-module $(OBJDIR)\./--sysroot=$(OBJDIR)\./g' $1 # override the default
 rm $1.bak
@@ -39,10 +40,10 @@ elif [ $2 = "release" ]; then
 perl fmkmf.pl -f90 mpiifort \
 -opt '-O2 -w -std03 -fp-stack-check -g -traceback -mavx -ffree-line-length-none' \
 -mpi '-fpp' \
--o './objs/3D_MT/IFortRelease' \
+-o './objs/3D_MT/IFortRelease_SP2' \
 -l '-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
 -lp '${MKLROOT}/lib/intel64' \
--p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$MT_path_dir \
+-p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
 else
@@ -50,38 +51,42 @@ else
 perl fmkmf.pl -f90 mpiifort \
 -opt '-O2 -w -std03 -fp-stack-check -g -traceback -mavx -ffree-line-length-none' \
 -mpi '-cpp -DMPI' \
--o './objs/3D_MT/IFortReleaseMPI' \
+-o './objs/3D_MT/IFortReleaseMPI_SP2' \
 -l '-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
 -lp '${MKLROOT}/lib/intel64' \
--p .:MPI:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$MT_path_dir \
+-p .:MPI:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 fi
 
 if [ $# -le 2 ]; then
+    sed -i .bak 's/\/Mod3DMT/\/Mod3DMT_SP2/g' $1
     echo 1>&2 Cartesian version of the makefile ready to use.
     exit
 fi
 
 if [ $3 = "spherical" ]; then
-	sed -i.bak 's/GridCalc\./GridCalcS\./g' $1
-	sed -i.bak 's/boundary_ws\./boundary_wsS\./g' $1
-  	sed -i.bak 's/MetricElements_CSG\./MetricElements_SSG\./g' $1
+	sed -i .bak 's/IFort/IFortS/g' $1
+	sed -i .bak 's/GridCalc\./GridCalcS\./g' $1
+	sed -i .bak 's/boundary_ws\./boundary_wsS\./g' $1
+  	sed -i .bak 's/MetricElements_CSG\./MetricElements_SSG\./g' $1
+	sed -i .bak 's/3DMT /3DMT_SP2_sph /g' $1
+	sed -i .bak 's/3DMT:/3DMT_SP2_sph:/g' $1
 	if [ $2 == "debug" ]; then
-		sed -i.bak 's/\/Mod3DMT/\/Mod3DMTs_dbg/g' $1
+		sed -i .bak 's/Mod3DMT /Mod3DMTs_SP2_dbg /g' $1
 	elif [ $2 == "release" ]; then
-		sed -i.bak 's/\/Mod3DMT/\/Mod3DMTs/g' $1
+		sed -i .bak 's/Mod3DMT /Mod3DMTs_SP2 /g' $1
 	else
-		sed -i.bak 's/\/Mod3DMT/\/Mod3DMTs_MPI/g' $1
+		sed -i .bak 's/Mod3DMT /Mod3DMTs_SP2_MPI /g' $1
 	fi
 	rm $1.bak
     echo 1>&2 Spherical version of the makefile ready to use.
 else
 	if [ $2 == "debug" ]; then
-		sed -i.bak 's/\/Mod3DMT/\/Mod3DMT_dbg/g' $1
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DMT_SP2_dbg/g' $1
 	elif [ $2 == "release" ]; then
-		sed -i.bak 's/\/Mod3DMT/\/Mod3DMT/g' $1
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DMT_SP2/g' $1
 	else
-		sed -i.bak 's/\/Mod3DMT/\/Mod3DMT_MPI/g' $1
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DMT_SP2_MPI/g' $1
 	fi
     rm $1.bak
     echo 1>&2 Cartesian version of the makefile ready to use.

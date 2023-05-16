@@ -14,48 +14,50 @@ INV_dir="INV"
 
 if [ $2 = "debug" ]; then
 # Debug configuration
-perl fmkmf.pl -f90 ifort \
--opt '-debug all -debug extended -traceback -check bounds -heap-arrays -i8 -I/opt/intel/lib' \
--mpi '-cpp' \
--o './objs/3D_MT/IFortDebug_SP' \
--l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
--lp '/opt/intel/mkl/lib' \
+perl fmkmf.pl -f90 gfortran \
+-opt '-g -fbacktrace -fbounds-check -ffree-line-length-none -fallow-argument-mismatch' \
+-mpi '-x f95-cpp-input' \
+-o './objs/3D_MT/GFortDebug' \
+-l '-llapack -lblas' \
+-lp '/usr/lib64' \
 -p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
 elif [ $2 = "release" ]; then
 # Release configuration
-perl fmkmf.pl -f90 ifort \
--opt '-O3 -w  -xSSE4.2 -std03 -heap-arrays -i8 -I/opt/intel/lib' \
--mpi '-cpp' \
--o './objs/3D_MT/IFortRelease_SP' \
--l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
--lp '/opt/intel/mkl/lib' \
+perl fmkmf.pl -f90 gfortran \
+-opt '-O3 -ffree-line-length-none -fallow-argument-mismatch' \
+-mpi '-x f95-cpp-input' \
+-o './objs/3D_MT/GFortRelease' \
+-l '-llapack -lblas' \
+-lp '/usr/lib64' \
 -p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
 else
 # MPI configuration
-perl fmkmf.pl -f90 ifort \
--opt '-O3 -w  -xSSE4.2 -std03 -heap-arrays -i8 -I/opt/intel/lib' \
--mpi '-cpp -DMPI' \
--o './objs/3D_MT/IFortReleaseMPI_SP' \
--l '-lmkl_lapack95_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core  -lpthread -qopenmp -parallel' \
--lp '/opt/intel/mkl/lib' \
+perl fmkmf.pl -f90 mpifort \
+-opt '-O3 -ffree-line-length-none -fallow-argument-mismatch' \
+-mpi '-x f95-cpp-input -DMPI' \
+-o './objs/3D_MT/GFortReleaseMPI' \
+-l '-llapack -lblas' \
+-lp '/usr/lib64' \
 -p .:MPI:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 fi
 
+# Fix the MODULE directory for temporary object files - done in fmkmf.pl already
+# sed -i 's/-module/-fintrinsic-modules-path/' $1
+
 if [ $# -le 2 ]; then
-    sed -i .bak 's/\/Mod3DMT/\/Mod3DMT_SP/g' $1
     echo 1>&2 Cartesian version of the makefile ready to use.
     exit
 fi
 
 if [ $3 = "spherical" ]; then
-	sed -i .bak 's/IFort/IFortS/g' $1
+	sed -i.bak 's/GFort/GFortS/g' $1
 	sed -i .bak 's/GridCalc\./GridCalcS\./g' $1
-	sed -i .bak 's/boundary_ws\./boundary_wsS\./g' $1
+	sed -i .bak 's/boundary_ws\./boundary_wsS\./g' $1	
   	sed -i .bak 's/MetricElements_CSG\./MetricElements_SSG\./g' $1
 	sed -i .bak 's/3DMT /3DMT_SP_sph /g' $1
 	sed -i .bak 's/3DMT:/3DMT_SP_sph:/g' $1

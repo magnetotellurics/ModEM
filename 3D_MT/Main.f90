@@ -165,11 +165,17 @@ Contains
     if (exists) then
        BC_FROM_RHS_FILE = .true.
     end if
+    ! ... or whether we're setting up BCs from a nested grid
     if (solverParams%read_E0_from_File) then
       inquire(FILE=solverParams%E0fileName,EXIST=exists)
       if (exists) then
         NESTED_BC = .true.
       end if
+    end if
+    ! Determine whether or not there is a primary solution file to read
+    inquire(FILE=cUserDef%rFile_EMsoln,EXIST=exists)
+    if (exists .and. (cUserDef%job==SECONDARY_FIELD)) then
+       PRIMARY_E_FROM_FILE = .true.
     end if
 
 	!--------------------------------------------------------------------------
@@ -177,17 +183,9 @@ Contains
 	inquire(FILE=cUserDef%rFile_Model,EXIST=exists)
 
 	if (exists) then
-	   ! Read background conductivity parameter and grid
-       call read_modelParam(grid,sigma0,cUserDef%rFile_Model)
+	   ! Read background conductivity parameter and grid; complete airLayers setup
+       	   call read_modelParam(grid,airLayers,sigma0,cUserDef%rFile_Model)
 
-       ! Finish setting up the grid (if that is not done in the read subroutine)
-       !call setup_grid(grid)
-
-       !  Initialize the air layers structure and update the air layers in the grid
-       call setup_airlayers(airLayers,grid)
-
-       !  Update air layers in the grid and run setup_grid
-       call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
 
 	else
 	  call warning('No input model parametrization')
@@ -216,9 +214,7 @@ Contains
 	   inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
 	   if (exists) then
 	      call deall_grid(grid)
-	   	  call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
-          call setup_airlayers(airLayers,grid)
-          call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
+	      call read_modelParam(grid,airLayers,dsigma,cUserDef%rFile_dModel)
 	   else
 	      call warning('The input model perturbation file does not exist')
 	   end if
@@ -233,9 +229,7 @@ Contains
 	   inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
 	   if (exists) then
 	      call deall_grid(grid)
-	   	  call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
-          call setup_airlayers(airLayers,grid)
-		  call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
+	      call read_modelParam(grid,airLayers,dsigma,cUserDef%rFile_dModel)
 	      if (output_level > 0) then
 	        write(*,*) 'Using the initial model perturbations from file ',trim(cUserDef%rFile_dModel)
 	      endif
@@ -266,9 +260,7 @@ Contains
        inquire(FILE=cUserDef%rFile_Prior,EXIST=exists)
        if (exists) then
            call deall_grid(grid)
-           call read_modelParam(grid,sigma0,cUserDef%rFile_Prior)
-           call setup_airlayers(airLayers,grid)
-           call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
+           call read_modelParam(grid,airLayers,sigma0,cUserDef%rFile_Prior)
        else
            call zero(sigma0)
        end if
@@ -279,9 +271,7 @@ Contains
          inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
          if (exists) then
              call deall_grid(grid)
-             call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
-             call setup_airlayers(airLayers,grid)
-             call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
+             call read_modelParam(grid,airLayers,dsigma,cUserDef%rFile_dModel)
          else
              call warning('The input model perturbation file does not exist')
          end if
@@ -292,9 +282,7 @@ Contains
                inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)
                if (exists) then
                   call deall_grid(grid)
-                  call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
-                  call setup_airlayers(airLayers,grid)
-                  call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
+                  call read_modelParam(grid,airLayers,dsigma,cUserDef%rFile_dModel)
                else
                   call warning('The input model perturbation file does not exist')
                end if

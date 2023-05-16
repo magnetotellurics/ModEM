@@ -10,6 +10,7 @@ program Mod3DMT
      use Main
      use NLCG
      use DCG
+     use LBFGS
      !use mtinvsetup
 
 #ifdef MPI
@@ -74,9 +75,21 @@ program Mod3DMT
             ! need to logic to fetch the BCs from the master node
         end if
     end if
+    if (PRIMARY_E_FROM_FILE) then
+        if (taskid==0) then
+            call read_solnVectorMTX(grid,eAllPrimary,cUserDef%rFile_EMsoln)
+            call read_modelParam(grid,airLayers,sigmaPrimary,cUserDef%rFile_Model1D)
+       else
+            ! need to logic to fetch the interior source from the master node
+        end if
+    end if
 #else
     if (BC_FROM_RHS_FILE) then
         call read_rhsVectorMTX(grid,bAll,cUserDef%rFile_EMrhs)
+    end if
+    if (PRIMARY_E_FROM_FILE) then
+        call read_solnVectorMTX(grid,eAllPrimary,cUserDef%rFile_EMsoln)
+        call read_modelParam(grid,airLayers,sigmaPrimary,cUserDef%rFile_Model1D)
     end if
 #endif
 
@@ -110,7 +123,7 @@ program Mod3DMT
             write(*,*) 'Writing model and exiting...'
             call write_modelParam(sigma0,cUserDef%wFile_Model)
         end if
-      case (FORWARD)
+      case (FORWARD,SECONDARY_FIELD)
         write(6,*) 'Calculating predicted data...'
 #ifdef MPI
         call Master_job_fwdPred(sigma0,allData,eAll)
@@ -185,6 +198,12 @@ program Mod3DMT
              call DCGsolver(allData,sigma0,sigma1,cUserDef%lambda,        &
      &            cUserDef%rFile_invCtrl)
             !call Marquardt_M_space(allData,sigma0,sigma1,cUserDef%lambda)
+         elseif (trim(cUserDef%search) == 'LBFGS') then
+            ! sigma1 contains mHat on input (zero = starting from the prior)
+             write(*,*) 'Starting the LBFGS search...'
+             sigma1 = dsigma
+             call LBFGSsolver(allData,cUserDef%lambda,sigma0,sigma1,       &
+     &            cUserDef%rFile_invCtrl)
 
          else
            write(*,*) 'Inverse search ',trim(cUserDef%search),            &

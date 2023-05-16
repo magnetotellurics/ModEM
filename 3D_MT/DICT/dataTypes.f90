@@ -38,6 +38,9 @@ module dataTypes
      ! a user-friendly description of this data type
      character(80)     :: name = ''
 
+     ! a user-friendly abbreviation for this data type
+     character(10)     :: abbrev = ''
+
      ! for 3D MT data types will initially be used only to distinguish
      ! between local transfer function types (later maybe add interstation TFs)
      ! this is excessive in the current implementation since iDt always maps to
@@ -54,6 +57,9 @@ module dataTypes
      ! the file can have a different component order on input.
      character(20), pointer, dimension(:) :: id
 
+     ! logical indicator that this type is invoked in the data file
+     logical           :: exists = .false.
+
   end type dataType
 
   ! data type dictionary must be public; some attributes are referenced
@@ -68,7 +74,16 @@ module dataTypes
   integer, parameter   :: Full_Interstation_TF = 4
   integer, parameter   :: Off_Diagonal_Rho_Phase = 5
   integer, parameter   :: Phase_Tensor = 6
- 
+  
+  !Adding the CSEM data types: Ex, Ey,Ez,Bz,By and Bz
+  integer, parameter   :: Ex_Field = 7
+  integer, parameter   :: Ey_Field = 8
+  integer, parameter   :: Bx_Field = 9
+  integer, parameter   :: By_Field = 10
+  integer, parameter   :: Bz_Field = 11
+  integer, parameter   :: Ez_Field = 12
+  integer, parameter   :: Exy_Field = 13
+  integer, parameter   :: Exy_Ampli_Phase = 14
 
 Contains
 
@@ -79,9 +94,10 @@ Contains
 
   	 integer     :: istat
 
-     allocate(typeDict(6),STAT=istat)
+     allocate(typeDict(14),STAT=istat)
 
      typeDict(Full_Impedance)%name = 'Full_Impedance'
+     typeDict(Full_Impedance)%abbrev = 'Z'
      typeDict(Full_Impedance)%isComplex = .true.
      typeDict(Full_Impedance)%tfType    = Full_Impedance
      typeDict(Full_Impedance)%units     = '[V/m]/[T]'
@@ -93,6 +109,7 @@ Contains
      typeDict(Full_Impedance)%id(4)    = 'ZYY'
 
      typeDict(Off_Diagonal_Impedance)%name = 'Off_Diagonal_Impedance'
+     typeDict(Off_Diagonal_Impedance)%abbrev = 'ZOFFDIAG'
      typeDict(Off_Diagonal_Impedance)%isComplex = .true.
      typeDict(Off_Diagonal_Impedance)%tfType    = Off_Diagonal_Impedance
      typeDict(Off_Diagonal_Impedance)%units     = '[V/m]/[T]'
@@ -102,6 +119,7 @@ Contains
      typeDict(Off_Diagonal_Impedance)%id(2)    = 'ZYX'
 
      typeDict(Full_Vertical_Components)%name = 'Full_Vertical_Components'
+     typeDict(Full_Vertical_Components)%abbrev = 'T'
      typeDict(Full_Vertical_Components)%isComplex = .true.
      typeDict(Full_Vertical_Components)%tfType    = Full_Vertical_Components
      typeDict(Full_Vertical_Components)%units     = '[]'
@@ -111,6 +129,7 @@ Contains
      typeDict(Full_Vertical_Components)%id(2)    = 'TY '
 
      typeDict(Full_Interstation_TF)%name = 'Full_Interstation_TF'
+     typeDict(Full_Interstation_TF)%abbrev = 'M'
      typeDict(Full_Interstation_TF)%isComplex = .true.
      typeDict(Full_Interstation_TF)%tfType    = Full_Interstation_TF
      typeDict(Full_Interstation_TF)%units     = '[]'
@@ -122,6 +141,7 @@ Contains
      typeDict(Full_Interstation_TF)%id(4)    = 'MYY'
 
  	 typeDict(Off_Diagonal_Rho_Phase)%name = 'Off_Diagonal_Rho_Phase'
+     typeDict(Off_Diagonal_Rho_Phase)%abbrev = 'RP'
      typeDict(Off_Diagonal_Rho_Phase)%isComplex = .false.
      typeDict(Off_Diagonal_Rho_Phase)%tfType    = Off_Diagonal_Rho_Phase
      typeDict(Off_Diagonal_Rho_Phase)%units     = '[]'
@@ -133,6 +153,7 @@ Contains
      typeDict(Off_Diagonal_Rho_Phase)%id(4) = 'PHSYX'
 	 	 
 	 typeDict(Phase_Tensor)%name = 'Phase_Tensor'
+     typeDict(Phase_Tensor)%abbrev = 'PT'
      typeDict(Phase_Tensor)%isComplex = .false.
      typeDict(Phase_Tensor)%tfType    = Phase_Tensor
      typeDict(Phase_Tensor)%units     = '[]'
@@ -142,9 +163,105 @@ Contains
      typeDict(Phase_Tensor)%id(2) = 'PTXY'
      typeDict(Phase_Tensor)%id(3) = 'PTYX'
      typeDict(Phase_Tensor)%id(4) = 'PTYY'
-	 
 
+     ! Adding the CSEM datatypes
+     typeDict(Ex_Field)%name = 'Ex_Field'
+     typeDict(Ex_Field)%abbrev = 'EX'
+     typeDict(Ex_Field)%isComplex = .true.
+     typeDict(Ex_Field)%tfType    = Ex_Field	
+     typeDict(Ex_Field)%units     = '[V/m]'
+     typeDict(Ex_Field)%nComp     = 2
+     allocate(typeDict(Ex_Field)%id(1),STAT=istat)
+     typeDict(Ex_Field)%id(1)    = 'Ex_Field'
+
+     typeDict(Ey_Field)%name = 'Ey_Field'
+     typeDict(Ey_Field)%abbrev = 'EY'
+     typeDict(Ey_Field)%isComplex = .true.
+     typeDict(Ey_Field)%tfType    = Ey_Field	
+     typeDict(Ey_Field)%units     = '[V/m]'
+     typeDict(Ey_Field)%nComp     = 2
+     allocate(typeDict(Ey_Field)%id(1),STAT=istat)
+     typeDict(Ey_Field)%id(1)    = 'Ey_Field'
+
+     typeDict(Ez_Field)%name = 'Ez_Field'
+     typeDict(Ez_Field)%abbrev = 'EZ'
+     typeDict(Ez_Field)%isComplex = .true.
+     typeDict(Ez_Field)%tfType    = Ez_Field	
+     typeDict(Ez_Field)%units     = '[V/m]'
+     typeDict(Ez_Field)%nComp     = 2
+     allocate(typeDict(Ez_Field)%id(1),STAT=istat)
+     typeDict(Ez_Field)%id(1)    = 'Ez_Field'
+	 
+     typeDict(Bx_Field)%name = 'Bx_Field'
+     typeDict(Bx_Field)%abbrev = 'BX'
+     typeDict(Bx_Field)%isComplex = .true.
+     typeDict(Bx_Field)%tfType    = Bx_Field	
+     typeDict(Bx_Field)%units     = '[T]'
+     typeDict(Bx_Field)%nComp     = 2
+     allocate(typeDict(Bx_Field)%id(1),STAT=istat)
+     typeDict(Bx_Field)%id(1)    = 'Bx_Field'
+
+     typeDict(By_Field)%name = 'By_Field'
+     typeDict(By_Field)%abbrev = 'BY'
+     typeDict(By_Field)%isComplex = .true.
+     typeDict(By_Field)%tfType    = By_Field	
+     typeDict(By_Field)%units     = '[T]'
+     typeDict(By_Field)%nComp     = 2
+     allocate(typeDict(By_Field)%id(1),STAT=istat)
+     typeDict(By_Field)%id(1)    = 'By_Field'
+
+     typeDict(Bz_Field)%name = 'Bz_Field'
+     typeDict(Bz_Field)%abbrev = 'BZ'
+     typeDict(Bz_Field)%isComplex = .true.
+     typeDict(Bz_Field)%tfType    = Bz_Field	
+     typeDict(Bz_Field)%units     = '[T]'
+     typeDict(Bz_Field)%nComp     = 2
+     allocate(typeDict(Bz_Field)%id(1),STAT=istat)
+     typeDict(Bz_Field)%id(1)    = 'Bz_Field'
+
+     typeDict(Exy_Field)%name = 'Exy_Field'
+     typeDict(Exy_Field)%abbrev = 'EXY'
+     typeDict(Exy_Field)%isComplex = .true.
+     typeDict(Exy_Field)%tfType    = Exy_Field	
+     typeDict(Exy_Field)%units     = '[V/m]'
+     typeDict(Exy_Field)%nComp     = 2
+     allocate(typeDict(Exy_Field)%id(1),STAT=istat)
+     typeDict(Exy_Field)%id(1)    = 'Exy_Field'	 
+
+     typeDict(Exy_Ampli_Phase)%name = 'Exy_Ampli_Phase'
+     typeDict(Exy_Ampli_Phase)%abbrev = 'EXYAP'
+     typeDict(Exy_Ampli_Phase)%isComplex = .false.
+     typeDict(Exy_Ampli_Phase)%tfType    = Exy_Ampli_Phase
+     typeDict(Exy_Ampli_Phase)%units     = '[]'
+     typeDict(Exy_Ampli_Phase)%nComp     = 2
+     allocate(typeDict(Exy_Ampli_Phase)%id(2),STAT=istat)
+     typeDict(Exy_Ampli_Phase)%id(1) = 'Exy_Ampli'
+     typeDict(Exy_Ampli_Phase)%id(2) = 'Exy_Phase'
+	 
+	 
   end subroutine setup_typeDict
+
+! **************************************************************************
+! Counts the dataTypes that are activated in the dictionary
+  function count_dataTypes() result (nDt)
+
+    integer                     :: nDt
+    ! local
+    integer                     :: j
+
+    nDt = 0
+
+    if (associated(typeDict)) then
+
+        do j = 1,size(typeDict)
+            if (typeDict(j)%exists) then
+                nDt = nDt + 1
+            end if
+        end do
+
+    end if
+
+  end function count_dataTypes
 
 ! **************************************************************************
 ! Cleans up and deletes type dictionary at end of program execution
@@ -196,6 +313,16 @@ Contains
 		else if ((index(oldUnits,'[V/m]/[A/m]')>0) .or. (index(oldUnits,'Ohm')>0)) then
 		   ! SI units for E/H
 		   factor1 = ONE * 1000.0 * 10000.0/(4*PI) ! approx. 796000.0
+		elseif (index(oldUnits,'[V/m]')>0) then
+		   ! SI units for E
+		   factor1 = ONE
+		elseif (index(oldUnits,'[T]')>0) then
+		   ! SI units for B
+		   factor1 = ONE
+        	elseif (index(oldUnits,'[nT]')>0) then
+        	   factor1 = ONE * 1.0e-9
+        	elseif (index(oldUnits,'[A/m]')>0) then
+           	   factor1 = ONE * (4*PI*1.0e-7)
 		else
 		   call errStop('Unknown input units in ImpUnits: '//trim(oldUnits))
 		end if
@@ -210,7 +337,17 @@ Contains
 		else if ((index(newUnits,'[V/m]/[A/m]')>0) .or. (index(newUnits,'Ohm')>0)) then
 		   ! SI units for E/H
 		   factor2 = ONE / (1000.0 * 10000.0/(4*PI))
-		else
+		elseif (index(newUnits,'[V/m]')>0) then
+		   ! SI units for E
+		   factor2 = ONE
+		elseif (index(newUnits,'[T]')>0) then
+		   ! SI units for B
+		   factor2 = ONE
+        	elseif (index(newUnits,'[nT]')>0) then
+           	   factor2 = ONE * 1.0e9
+        	elseif (index(newUnits,'[A/m]')>0) then
+           	   factor2 = ONE / (4*PI*1.0e-7)
+		else	
 		   call errStop('Unknown output units in ImpUnits: '//trim(newUnits))
 		end if
 
@@ -220,7 +357,7 @@ Contains
   end function ImpUnits
 
 !**********************************************************************
-! Figures out the data type from its name
+! Figures out the data type from its name or abbreviation, if supported
 
   function ImpType(typeName) result (dataType)
 
@@ -229,24 +366,49 @@ Contains
 
     select case (trim(typeName))
 
-       case('Full_Impedance')
+       case('Full_Impedance','Z')
           dataType = Full_Impedance
 
-       case('Off_Diagonal_Impedance')
+       case('Off_Diagonal_Impedance','ZOFFDIAG')
           dataType = Off_Diagonal_Impedance
 
-       case('Full_Vertical_Components')
+       case('Full_Vertical_Components','T')
           dataType = Full_Vertical_Components
 
-       case('Full_Interstation_TF')
+       case('Full_Interstation_TF','M')
           dataType = Full_Interstation_TF
 
-       case('Off_Diagonal_Rho_Phase')
+       case('Off_Diagonal_Rho_Phase','RP')
           dataType = Off_Diagonal_Rho_Phase
 		  		  
-      case('Phase_Tensor')
+       case('Phase_Tensor','PT')
           dataType = Phase_Tensor
+
+       ! Adding the CSEM case
+       case('Ex_Field','EX')
+          dataType = Ex_Field
+       
+       case('Ey_Field','EY')
+          dataType = Ey_Field	
+       
+       case('Ez_Field','EZ')
+          dataType = Ez_Field	
 		  
+       case('Bx_Field','BX')
+	  dataType = Bx_Field
+		     
+       case('By_Field','BY')
+          dataType = By_Field
+       
+       case('Bz_Field','BZ')
+          dataType = Bz_Field
+	  
+       case('Exy_Field','EXY')
+          dataType = Exy_Field
+	  
+       case('Exy_Ampli_Phase','EXYAP')
+          dataType = Exy_Ampli_Phase
+	  		  
        case default
           call errStop('Unknown data type:'//trim(typeName))
 

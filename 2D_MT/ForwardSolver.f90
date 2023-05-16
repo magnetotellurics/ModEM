@@ -276,7 +276,7 @@ Contains
   end subroutine fwdSetup
   
    !**********************************************************************
-   subroutine fwdSolve(iTx,e0,b0,comm_local)
+   subroutine fwdSolve(iTx,e0,b0,device_id,comm_local)
 
    !  driver for 2d forward solver; sets up for transmitter iTx, returns
    !   solution in e0 ; rhs vector (b) is private to this module
@@ -288,6 +288,7 @@ Contains
    type(solnVector_t), intent(inout)	:: e0
    type(rhsVector_t), intent(in)        :: b0
    ! NOTE: this is but a dummy parameter needed for two layer parallelization
+   integer, intent(in), optional        :: device_id
    integer, intent(in), optional        :: comm_local
 
    ! local variables
@@ -333,7 +334,7 @@ Contains
    end subroutine fwdSolve
 
    !**********************************************************************
-   subroutine sensSolve(iTx,FWDorADJ,e,comb,comm_local)
+   subroutine sensSolve(iTx,FWDorADJ,e,comb,device_id,comm_local)
    !   Uses forcing input from comb, which must be set before calling
    !    solves forward or adjoint problem, depending on comb%ADJ
    !  NOTE that this routine now does no initialization: this must be
@@ -345,6 +346,7 @@ Contains
    type(solnVector_t), intent(inout)		:: e
    type(rhsVector_t), intent(inout)		:: comb
    ! NOTE: this is but a dummy parameter needed for two layer parallelization
+   integer, intent(in), optional        :: device_id
    integer, intent(in), optional        :: comm_local
 
    ! local variables
