@@ -1,9 +1,0 @@
-Files:
-
-    m.ws     - synthetic model used to generate data ("True Model")
-    d0.dat   - data template (sampling pattern in frequency and space)
-    d_05.dat - synthetic data with 5% noise added
-    m0.ws    - grid (same as for m,ws) with half space
-	           use for starting model for inversion tests.
-			   
-NOTE:  since there is no topography a covariance file is not needed!
