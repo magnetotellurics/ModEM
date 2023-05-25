@@ -156,7 +156,8 @@ contains
                         !
                     case default
                         !
-                        stop "Error: handleModelFile > Undefined model_operator"
+                        write( *, * ) "Wrong Model Operator type: [", model_operator_type, "]"
+                        stop
                         !
                 end select
                 !
@@ -483,6 +484,7 @@ contains
         tolerance_qmr = 1E-7
         !
         forward_solver_type = FWD_IT_DC
+        model_operator_type = MODELOP_MF
         !
         ! Source parameters
         source_type_mt = SRC_MT_1D
