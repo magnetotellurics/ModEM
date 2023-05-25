@@ -96,7 +96,7 @@ end subroutine count_number_of_messages_to_RECV
 	implicit none
 	integer Nbytes1,Nbytes2,Nbytes3,Nbytes4
 	!
-	CALL MPI_PACK_SIZE(80*23, MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
+	CALL MPI_PACK_SIZE(80*24, MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
 	CALL MPI_PACK_SIZE(3,     MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes2,  ierr)
 	CALL MPI_PACK_SIZE(2,     MPI_INTEGER,          MPI_COMM_WORLD, Nbytes3,  ierr)
 	CALL MPI_PACK_SIZE(1,     MPI_LOGICAL,          MPI_COMM_WORLD, Nbytes4,  ierr)
@@ -116,7 +116,7 @@ end subroutine count_number_of_messages_to_RECV
      	type(userdef_control), intent(in)   :: ctrl
         integer index
         index=1
-        call MPI_Pack(ctrl%job,80*23, MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(ctrl%job,80*24, MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%lambda,3, MPI_DOUBLE_PRECISION, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%CovType,1, MPI_INTEGER, userdef_control_package,  Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%output_level,1, MPI_INTEGER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
@@ -143,6 +143,7 @@ end subroutine pack_userdef_control
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Model,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Data,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_dModel,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Model1D,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_EMsoln,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_EMrhs,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Prior,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
@@ -182,6 +183,9 @@ subroutine check_userdef_control_MPI (which_proc,ctrl)
        write(6,*)trim(which_proc),' : ctrl%search ',trim(ctrl%search)
        write(6,*)trim(which_proc),' : ctrl%CovType ',ctrl%CovType
        write(6,*)trim(which_proc),' : ctrl%output_level ',ctrl%output_level
+       write(6,*)trim(which_proc),' : ctrl%rFile_Model ',trim(ctrl%rFile_Model)
+       write(6,*)trim(which_proc),' : ctrl%rFile_Data ',trim(ctrl%rFile_Data)
+       write(6,*)trim(which_proc),' : ctrl%rFile_EMsoln ',trim(ctrl%rFile_EMsoln)
        write(6,*)trim(which_proc),' : ctrl%rFile_fwdCtrl ',trim(ctrl%rFile_fwdCtrl)
        write(6,*)trim(which_proc),' : ctrl%rFile_invCtrl ',trim(ctrl%rFile_invCtrl)
        write(6,*)trim(which_proc),' : ctrl%rFile_Config ',trim(ctrl%rFile_Config)
