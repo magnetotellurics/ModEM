@@ -44,7 +44,7 @@ contains
             class is( ModelOperator_MF_t )
                 !
                 allocate( self%preconditioner, source = PreConditioner_CC_MF_t( model_operator ) )
-            !
+                !
             class is( ModelOperator_SP_t )
                 !
                 allocate( self%preconditioner, source = PreConditioner_CC_SP_t( model_operator ) )
@@ -61,16 +61,24 @@ contains
     end function Solver_QMR_ctor
     !
     !> No subroutine briefing
+    !
     subroutine setDefaults_QMR( self )
         implicit none
         !
         class( Solver_QMR_t ), intent( inout ) :: self
         !
-        call self%setParameters( QMR_iters, tolerance_qmr )
+        call self%setParameters( max_solver_iters, tolerance_qmr )
         !
     end subroutine setDefaults_QMR
     !
-    !> No subroutine briefing
+    !> NOTE: this iterative solver is QMR without look-ahead
+    !> patterned after the scheme given on page 24 of Barrett et al.
+    !> "Templates for the solution of linear systems of equations:
+    !> Building blocks for iterative methods"
+    !> Note that there are a couple of small differences, due to
+    !> the fact that our system is complex (agrees with
+    !> matlab6 version of qmr)
+    !
     subroutine solveQMR( self, b, x )
         implicit none
         !
@@ -89,8 +97,9 @@ contains
         !> Allocate work Vector objects -- questions as in PCG
         allocate( R, source = x )
         !
-        call R%zeros !>  can"t zero x -- if this is to be used as starting guess
-                       !>  also, never use AX -- which somehow is declared in ModEM!
+        !> can"t zero x -- if this is to be used as starting guess
+        !> also, never use AX -- which somehow is declared in ModEM!
+        call R%zeros
         !
         allocate( Y, source = R )
         allocate( Z, source = R )
@@ -105,14 +114,6 @@ contains
         allocate( PT, source = R )
         allocate( D, source = R )
         allocate( S, source = R )
-        !
-        !> NOTE: this iterative solver is QMR without look-ahead
-        !> patterned after the scheme given on page 24 of Barrett et al.
-        !> "Templates for the solution of linear systems of equations:
-        !> Building blocks for iterative methods"
-        !> Note that there are a couple of small differences, due to
-        !> the fact that our system is complex (agrees with
-        !> matlab6 version of qmr)
         !
         self%failed = .FALSE.
         adjoint = .FALSE.
@@ -151,7 +152,7 @@ contains
         !
         !> the do loop goes on while the relative error is greater than the tolerance
         !> and the iterations are less than maxIt
-        do while( ( self%relErr( iter ) .GT. self%tolerance ) .AND. ( iter .LT. self%max_inv_iters ) )
+        do while( ( self%relErr( iter ) .GT. self%tolerance ) .AND. ( iter .LT. self%max_iters ) )
             !
             !> Verbose
             !write( *, * ) "QMR iter, self%relErr( iter )", iter, self%relErr( iter )
@@ -166,14 +167,14 @@ contains
             rhoInv = ( 1 / RHO )
             psiInv = ( 1 / PSI )
             !
-            !>    use functions here -- could make subroutines that don"t overwrite
+            !> use functions here -- could make subroutines that don"t overwrite
             V = VT
             call V%mult( rhoInv )
             !
             W = WT
             call W%mult( psiInv )
             !
-            !>  use subroutines here to overwrite with rescalled vectors
+            !> use subroutines here to overwrite with rescalled vectors
             call Y%mult( rhoInv )
             call Z%mult( psiInv )
             !
@@ -262,14 +263,14 @@ contains
             !
             if( iter .EQ. 1 ) then
                 D = P
-                call D%mult( ETA )  !>  D = ETA*P
+                call D%mult( ETA ) !> D = ETA*P
                 !
                 S = PT
-                call S%mult( ETA ) !>  S = ETA * PT
+                call S%mult( ETA ) !> S = ETA * PT
             else
                 TM2 = THET1 * THET1 * GAMM * GAMM
-                call D%linComb( P, TM2, ETA )  !>  D = TM2 * D + ETA * P 
-                call S%linComb( PT, TM2, ETA ) !>  S = TM2 * S + ETA * PT 
+                call D%linComb( P, TM2, ETA )  !> D = TM2 * D + ETA * P 
+                call S%linComb( PT, TM2, ETA ) !> S = TM2 * S + ETA * PT 
             endif
             !
             call x%multAdd( C_ONE, D )      !>  x = x + C_ONE * D
@@ -283,7 +284,7 @@ contains
             !
         enddo
         ! !
-        ! if( iter .LT. self%max_inv_iters ) then
+        ! if( iter .LT. self%max_iters ) then
             ! write( *, * ) "                    Solver QMR converged within ", iter, " : ", self%relErr( iter )
         ! else
             ! write( *, * ) "                    Solver QMR not converged in ", iter, " : ", self%relErr( iter )
@@ -304,7 +305,7 @@ contains
         deallocate( D )
         deallocate( S )
         !
-        self%n_inv_iter = iter
+        self%n_iter = iter
         !
     end subroutine solveQMR
     !

@@ -6,7 +6,7 @@ module Solver
     use PreConditioner
     !
     !> Solver parameters
-    integer :: QMR_iters, BCG_iters, max_divcor_calls, max_divcor_iters
+    integer :: max_solver_iters, max_divcor_calls, max_divcor_iters
     !
     real( kind=prec ) :: tolerance_divcor, tolerance_qmr
     !
@@ -18,7 +18,7 @@ module Solver
     !> Solver Base Type
     type, abstract :: Solver_t
         !
-        integer :: max_inv_iters, n_inv_iter
+        integer :: max_iters, n_iter
         real( kind=prec ) :: omega, tolerance
         real( kind=prec ), allocatable :: relErr(:) !> relative error at each iteration
         !
@@ -51,16 +51,16 @@ module Solver
 contains
     !
     !> No subroutine briefing
-    subroutine setParametersSolver( self, max_inv_iters, tolerance )
+    subroutine setParametersSolver( self, max_iters, tolerance )
         implicit none
         !
         class( Solver_t ), intent( inout ) :: self
-        integer, intent( in ) :: max_inv_iters
+        integer, intent( in ) :: max_iters
         real( kind=prec ), intent( in ) :: tolerance
         !
-        self%max_inv_iters = max_inv_iters
+        self%max_iters = max_iters
         !
-        allocate( self%relErr( max_inv_iters ) )
+        allocate( self%relErr( max_iters ) )
         !
         self%relErr = R_ZERO
         !
@@ -74,7 +74,7 @@ contains
         !
         class( Solver_t ), intent( inout ) :: self
         !
-        self%n_inv_iter = 0
+        self%n_iter = 0
         self%relErr = R_ZERO
         !
     end subroutine zeroDiagnosticsSolver 
@@ -85,8 +85,8 @@ contains
         !
         class( Solver_t ), intent( inout ) :: self
         !
-        self%max_inv_iters = 0
-        self%n_inv_iter = 0
+        self%max_iters = 0
+        self%n_iter = 0
         self%omega = R_ZERO
         self%tolerance = R_ZERO
         !
