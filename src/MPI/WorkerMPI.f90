@@ -10,6 +10,7 @@ module WorkerMPI
     use InversionNLCG
     !
     public :: workerMainLoop
+    public :: workerSolve
     public :: workerForwardModelling
     public :: workerJMult
     public :: workerJMult_T
@@ -179,7 +180,7 @@ contains
         call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
         !
         !> Solve e_sens with the new Source
-        call Tx%solve()
+        call Tx%solve
         !
         !> serialJMult for the same Tx
         call JMult_Tx( tx_data )

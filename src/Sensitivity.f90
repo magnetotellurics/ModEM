@@ -45,7 +45,7 @@ contains
         !
         if( has_data_file ) then
             !
-            call handleDataFile()
+            call handleDataFile
             !
         else
             stop "Error: jobJMult > Missing Data file!"
@@ -53,7 +53,7 @@ contains
         !
 #ifdef MPI
         !
-        call broadcastBasicComponents()
+        call broadcastBasicComponents
         !
         call masterSolveAll( sigma )
         !
@@ -63,7 +63,9 @@ contains
         !
 #else
         !
-        call createDistributeForwardSolver()
+        call createDistributeForwardSolver
+        !
+        call solveAll( sigma )
         !
         call serialJMult( sigma, dsigma, JmHat )
         !
@@ -92,6 +94,8 @@ contains
         integer :: i_data_tx
         class( Transmitter_t ), pointer :: Tx
         !
+        if( allocated( JmHat ) ) deallocate( JmHat )
+        !
         JmHat = all_measured_data
         !
         !> Loop over All DataGroupTxs
@@ -100,17 +104,16 @@ contains
             !> Pointer to the transmitter leading the current data
             Tx => getTransmitter( i_data_tx )
             !
+            call Tx%forward_solver%setFrequency( sigma, Tx%period )
+            !
             !> Switch Transmitter's source to SourceInteriorForce
             call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
             !
-            call Tx%solve()
+            call Tx%solve
             !
             call JMult_Tx( JmHat( i_data_tx ) )
             !
         enddo
-        !
-        ! Verbose
-        !write( *, * ) "          - Finish serialJMult"
         !
     end subroutine serialJMult
     !
@@ -150,7 +153,7 @@ contains
                     allocate( lrows, source = Rx%lrows( i_pol, i_comp ) )
                     !
                     !> NECESSARY FOR FULL VECTOR LROWS ????
-                    call lrows%conjugate()
+                    call lrows%conjugate
                     !
                     lrows_x_esens = lrows_x_esens + Tx%e_sens( i_pol )%dotProd( lrows )
                     !
@@ -191,7 +194,7 @@ contains
         !
         if( has_data_file ) then 
             !
-            call handleDataFile()
+            call handleDataFile
             !
         else
             stop "Error: jobJMult_T > Missing Data file!"
@@ -199,7 +202,7 @@ contains
         !
 #ifdef MPI
         !
-        call broadcastBasicComponents()
+        call broadcastBasicComponents
         !
         call masterSolveAll( sigma )
         !
@@ -209,10 +212,10 @@ contains
         !
 #else
         !
-        call createDistributeForwardSolver()
-		!
+        call createDistributeForwardSolver
+        !
         call solveAll( sigma )
-		!
+        !
         call serialJMult_T( sigma, all_measured_data, dsigma )
         !
 #endif
@@ -393,7 +396,7 @@ contains
         deallocate( bSrc )
         !
         !> Solve Transmitter's e_sens with the new SourceInteriorForce
-        call Tx%solve()
+        call Tx%solve
         !
         call Tx%PMult_t( sigma, dsigma )
         !
