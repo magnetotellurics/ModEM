@@ -29,6 +29,7 @@ contains
         !
         !> Time counters
         real( kind=prec ) :: t_start, t_finish
+        integer :: int_time
         !
         call cpu_time( t_start )
         !
@@ -81,7 +82,9 @@ contains
         !
         call cpu_time( t_finish )
         !
-        write( *, "( a25, i5, a10, f16.3, a1 )" )  "Worker", mpi_rank, " finished:", t_finish - t_start, "s"
+        int_time = int( t_finish - t_start )
+        !
+        write( *, "( a25, i5, a20 )" )  "Worker", mpi_rank, " finished: "//getLiteralTime( int_time )
         !
         call MPI_Finalize( ierr )
         !

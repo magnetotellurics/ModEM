@@ -135,7 +135,7 @@ contains
         !
         basic_comp_size = 1
         !
-        write( *, "(A45)" ) "Components memory in bytes:"
+        write( *, "(A45)" ) "Component's memory in bytes:"
         !
         call MPI_PACK_SIZE( 15, MPI_INTEGER, main_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, main_comm, nbytes(2), ierr )
