@@ -444,8 +444,6 @@ contains
         !call linCombData( ONE, all_data, MinusONE, dHat, res )
         call subData( res, dHat )
         !
-        Ndata = countData( dHat )
-        !
         call cdInvMult( res )
         !
         !> ????
@@ -458,7 +456,7 @@ contains
 #endif
         !
         !> ????
-        call weightGradrients( s_hat, all_data, dHat, JTd )
+        !call weightGradrients( s_hat, all_data, dHat, JTd )
         !
         call model_cov%multBy_CmSqrt( JTd, CmJTd )
         !
@@ -467,10 +465,16 @@ contains
         !
         ! compute the number of data and model parameters for scaling
         Nmodel = mHat%countModel()
-        !
+	   
+	    write( *, "( A12, F8.3 )" ) "Grad Nmodel: ", Nmodel
+
         ! multiply by 2 (to be consistent with the formula)
         ! and add the gradient of the model norm
         !
+        Ndata = countValues( dHat )
+	   
+	    write( *, "( A12, F8.3 )" ) "Grad Ndata: ", Ndata
+
         !call linComb(MinusTWO/Ndata,CmJTd,TWO*lambda/Nmodel,mHat,grad)
         call grad%linComb( MinusTWO / Ndata, TWO * self%lambda / Nmodel, mHat )
         !
@@ -629,7 +633,7 @@ contains
             !
             SS = dotProdData( res, Nres )
             !
-            Ndata = countData( res )
+            Ndata = countValues( res )
             !
             rms = sqrt( SS / Ndata )
             !
@@ -744,11 +748,10 @@ contains
         !
         SS = dotProdData( res, Nres )
         !
-        Ndata = countData( res )
-		!
-		!write( *, * ) "COUNT DATA: ", Ndata
-		!stop
-		!
+        Ndata = countValues( res )
+	   
+	    write( *, "( A12, I8 )" ) "Func Ndata: ", Ndata
+
         mNorm = mHat%dotProd( mHat )
         !
         Nmodel = mHat%countModel()

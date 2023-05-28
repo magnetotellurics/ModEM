@@ -63,6 +63,10 @@ module DataGroupTxArray
         module procedure :: countDataGroupTxArray
     end interface countData
     !
+    interface countValues
+        module procedure :: countValuesGroupTxArray
+    end interface countValues
+    !
     interface getData
         module procedure :: getDataGroupByIndex
     end interface getData
@@ -289,10 +293,33 @@ contains
         !
     end subroutine setErrorBarDataGroupTxArray
     !
+    function countValuesGroupTxArray( data_tx_array ) result( counter )
+        implicit none
+        !
+        type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
+        !
+        integer :: counter
+        !
+        integer :: i, j, k
+        class( Transmitter_t ), pointer :: Tx
+        !
+        counter = 0
+        !
+        do i = 1, size( data_tx_array )
+            !
+            Tx => getTransmitter( data_tx_array(i)%i_tx )
+            !
+            counter = counter + ( size( data_tx_array(i)%data ) * 4 * Tx%n_pol )
+            !
+        enddo
+        !
+    end function countValuesGroupTxArray
+    !
     function countDataGroupTxArray( data_tx_array ) result( counter )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
+        !
         integer :: counter
         !
         integer :: i, j, k
@@ -301,7 +328,7 @@ contains
         !
         do i = 1, size( data_tx_array )
             !
-            counter = counter + size( data_tx_array(i)%data ) * 2
+            counter = counter + size( data_tx_array(i)%data )
             !
         enddo
         !
@@ -419,8 +446,8 @@ contains
         ! Verbose
         !write( *, * ) "     > Write Data to file: [", file_name, "]"
         !
-		! ????
-        n_data = countData( data_tx_array ) / 2
+        ! ????
+        n_data = countData( data_tx_array )
         !
         receiver_type = 0
         !

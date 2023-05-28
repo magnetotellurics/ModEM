@@ -84,7 +84,7 @@ contains
         !
         int_time = int( t_finish - t_start )
         !
-        write( *, "( a25, i5, a20 )" )  "Worker", mpi_rank, " finished: "//getLiteralTime( int_time )
+        write( *, "( a25, i5, a50 )" )  "Worker", mpi_rank, " finished: "//getLiteralTime( int_time )
         !
         call MPI_Finalize( ierr )
         !
