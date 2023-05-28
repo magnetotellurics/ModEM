@@ -27,7 +27,6 @@ contains
     subroutine workerMainLoop()
         implicit none
         !
-        !> Time counters
         real( kind=prec ) :: t_start, t_finish
         integer :: int_time
         !
@@ -44,31 +43,31 @@ contains
                 !
                 case( "HANDLE_FWD_COMP" )
                     !
-                    call handleBasicComponents()
+                    call handleBasicComponents
                 !
                 case( "HANDLE_SIGMA" )
                     !
-                    call handleSigmaModel()
+                    call handleSigmaModel
                 !
                 case( "HANDLE_DSIGMA" )
                     !
-                    call handleDSigmaModel()
+                    call handleDSigmaModel
                     !
                 case( "JOB_EM_SOLVE" )
                     !
-                    call workerSolve()
+                    call workerSolve
                     !
                 case( "JOB_FORWARD" )
                     !
-                    call workerForwardModelling()
+                    call workerForwardModelling
                     !
                 case( "JOB_JMULT" )
                     !
-                    call workerJMult()
+                    call workerJMult
                     !
                 case( "JOB_JMULT_T" )
                     !
-                    call workerJMult_T()
+                    call workerJMult_T
                     !
             end select
             !
@@ -78,7 +77,7 @@ contains
         !
         if( allocated( dsigma ) ) deallocate( dsigma )
         !
-        call garbageCollector()
+        call garbageCollector
         !
         call cpu_time( t_finish )
         !
@@ -170,9 +169,7 @@ contains
         implicit none
         !
         class( Transmitter_t ), pointer :: Tx
-        class( Receiver_t ), pointer :: Rx
         type( DataGroupTx_t ) :: tx_data
-        integer :: i
         !
         call receiveData( tx_data, master_id )
         !
@@ -215,7 +212,6 @@ contains
         class( Scalar_t ), allocatable :: tx_dsigma_cond
         type( DataGroupTx_t ) :: tx_data
         class( Transmitter_t ), pointer :: Tx
-        integer :: i
         !
         call receiveData( tx_data, master_id )
         !
@@ -324,7 +320,7 @@ contains
                 !
             case default
                 !
-                write( *, * ) "Wrong Forward Solver type: [", forward_solver_type, "]"
+                write( *, * ) "Error: Wrong Forward Solver type: [", forward_solver_type, "]"
                 stop
                 !
         end select

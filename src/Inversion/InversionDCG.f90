@@ -281,7 +281,7 @@ contains
         !
         iter = 1
         !
-        self%r_err(iter) = r_norm / b_norm
+        self%r_err( iter ) = r_norm / b_norm
         !
         !> Write / Print DCG.log
         write( ioInvLog, "(a18)" ) "Relative CG-error:"
@@ -316,7 +316,7 @@ contains
             !
             iter = iter + 1
             !
-            self%r_err(iter) = r_norm / b_norm 
+            self%r_err( iter ) = r_norm / b_norm 
             !
             !> Write / Print DCG.log
             write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", iter, ", error = ", self%r_err(iter), " Lambda= ", self%lambda

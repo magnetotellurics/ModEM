@@ -328,7 +328,7 @@ contains
         integer :: ios
         character(len=20) :: version
         !
-        version = "Modem-OO"
+        version = "Modem-OO "//VERSION
         !
         open( ioESolution, file = file_name, action = "write", form = "unformatted", iostat = ios)
         !

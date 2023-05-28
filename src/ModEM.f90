@@ -7,19 +7,19 @@ program ModEM
     !
     use WorkerMPI
     !
-    call constructorMPI()
+    call constructorMPI
     !
-    !> MPI Master process
+    ! MPI Master process
     if( mpi_rank == 0 ) then
         !
-        call runProgram()
+        call runProgram
         !
         call MPI_Finalize( ierr )
         !
-    !> MPI Worker process
+    ! MPI Worker process
     else
         !
-        call workerMainLoop()
+        call workerMainLoop
         !
     endif
     !
@@ -28,7 +28,7 @@ program ModEM
     use InversionDCG
     use InversionNLCG
     !
-    call runProgram()
+    call runProgram
     !
 #endif
     !
@@ -44,15 +44,16 @@ contains
         !
         call date_and_time( str_date, str_time )
         !
-        !> Start the program and runtime count
+        !> Start runtime countdown
         call cpu_time( t_start )
         !
         modem_job = "unknown"
         !
-        call setupDefaultParameters()
+        !> Set default value of program variables
+        call setupDefaultParameters
         !
-        !> Validate arguments, set model_file_name, data_file_name, control_files, etc...
-        call handleArguments()
+        !> Handle arguments passed by the user on the command line
+        call handleArguments
         !
         write( *, * )
         write( *, "(a18, a8, a1, a6, a1)" ) "Start ModEM-OO at ", str_date, "_", str_time, "."
@@ -60,17 +61,17 @@ contains
         !
         !> If it was passed by argument,
         !> Check parameters at the forward control file
-        if( has_fwd_control_file ) call handleForwardControlFile()
+        if( has_fwd_control_file ) call handleForwardControlFile
         !
         !> If it was passed by argument,
         !> Check parameters at the inversion control file
-        if( has_inv_control_file ) call handleInversionControlFile()
+        if( has_inv_control_file ) call handleInversionControlFile
         !
         !> Execute the job specified in the arguments
-        call handleJob()
+        call handleJob
         !
         !> Deallocate remaining main program memory
-        call garbageCollector()
+        call garbageCollector
         !
         !> End runtime countdown
         call cpu_time( t_finish )
@@ -83,11 +84,11 @@ contains
         !
     end subroutine runProgram
     !
-    !> Routine to run a full Inversion Job - Minimize Residual
+    !> Routine to run a full Inversion Job - Minimize Residual data error
     !> Where:
     !>     sigma  = Input|Start model (for predicted data and final inversion model)
-    !>     pmodel = Perturbation model  (if exist -dm read input model)
-    !>     sigma0 = Read input model    (-m)
+    !>     pmodel = Perturbation model (if exist -dm read input model)
+    !>     sigma0 = Read input model (-m)
     !>     dsigma = Production model (data gradient From serialJMult_T)
     !
     subroutine jobInversion()
@@ -145,7 +146,7 @@ contains
         !> Read Data File: instantiate and build the Data relation between Txs and Rxs
         if( has_data_file ) then 
             !
-            call handleDataFile()
+            call handleDataFile
             !
         else
             stop "Error: jobInversion > Missing Data file!"
@@ -153,17 +154,17 @@ contains
         !
 #ifdef MPI
         !
-        call broadcastBasicComponents()
+        call broadcastBasicComponents
         !
 #else
         !
-        call createDistributeForwardSolver()
+        call createDistributeForwardSolver
         !
 #endif
         !
-        if( .NOT. has_inv_control_file ) then
-            inversion_type = NLCG
-        endif
+        !if( .NOT. has_inv_control_file ) then
+            !inversion_type = NLCG
+        !endif
         !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case( inversion_type )
@@ -208,19 +209,19 @@ contains
         !
         select case( modem_job )
             !
-            case( "Forward" )
+            case( "JobForwardModeling" )
                 !
                 call jobForwardModeling
                 !
-            case( "serialJMult" )
+            case( "JobJMult" )
                 !
                 call jobJMult
                 !
-            case( "serialJMult_T" )
+            case( "JobJMult_T" )
                 !
                 call jobJMult_T
                 !
-            case( "Inversion" )
+            case( "JobInversion" )
                 !
                 call jobInversion
                 !

@@ -333,25 +333,25 @@ contains
                          !
                       case( "-f", "--forward" )
                          !
-                         modem_job = "Forward"
-                         !
-                         argument_index = argument_index + 1
-                         !
-                      case( "-i", "--inversion" )
-                         !
-                         modem_job = "Inversion"
+                         modem_job = "JobForwardModeling"
                          !
                          argument_index = argument_index + 1
                          !
                       case( "-j", "--jmult" )
                          !
-                         modem_job = "serialJMult"
+                         modem_job = "JobJMult"
                          !
                          argument_index = argument_index + 1
                          !
                       case( "-jt", "--jmult_t" )
                          !
-                         modem_job = "serialJMult_T"
+                         modem_job = "JobJMult_T"
+                         !
+                         argument_index = argument_index + 1
+                         !
+                      case( "-i", "--inversion" )
+                         !
+                         modem_job = "JobInversion"
                          !
                          argument_index = argument_index + 1
                          !
@@ -423,7 +423,7 @@ contains
                          !
                       case( "-v", "--version" )
                          !
-                         write( *, * ) "    + ModEM-OO version 1.0.0"
+                         write( *, * ) "    + ModEM-OO version "//VERSION
                         stop
                          !
                       case( "-h", "--help" )
@@ -487,6 +487,10 @@ contains
         tolerance_divcor = 1E-5
         tolerance_solver = 1E-7
         !
+        ! Inversion Parameters
+        inversion_type = NLCG
+        !
+        ! Forward Modeling Parameters
         forward_solver_type = FWD_IT_DC
         model_operator_type = MODELOP_MF
         !
@@ -602,6 +606,7 @@ contains
         !
         !> Flush memory used by main program control variables and flags
         if( allocated( inversion_type ) ) deallocate( inversion_type )
+		if( allocated( joint_type ) ) deallocate( joint_type )
         !
         if( allocated( model_operator_type ) ) deallocate( model_operator_type )
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
@@ -635,7 +640,7 @@ contains
     subroutine printUsage()
         implicit none
         !
-        write( *, * ) "ModEM Minimal Usage:"
+        write( *, * ) "ModEM_"//VERSION//" Minimal Usage:"
         write( *, * ) ""
         write( *, * ) "    Forward Modeling (FWD):"
         write( *, * ) "        <ModEM> -f -m <rFile_Model> -d <rFile_Data>"
@@ -668,7 +673,7 @@ contains
     subroutine printHelp()
         implicit none
         !
-        write( *, * ) "ModEM Options:"
+        write( *, * ) "ModEM_"//VERSION//" Options:"
         write( *, * ) ""
         write( *, * ) "    Flags to define a job:"
         write( *, * ) "        [-f],  [--forward]   :  Forward Modeling."
@@ -691,9 +696,6 @@ contains
         write( *, * ) "        [-v],  [--version]   :  Print version."
         write( *, * ) "        [-h],  [--help]      :  Print this information."
         write( *, * ) "        [-tmp],[--template]  :  Create control file templates."
-        !
-        write( *, * ) ""
-        write( *, * ) "Version 1.0.0"
         !
     end subroutine printHelp
     !
@@ -728,7 +730,7 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A49)" ) "model_method [mirror|fixed height] : fixed height"
             write( ioFwdTmp, "(A39)" ) "model_n_air_layer [10]             : 10"
-            write( ioFwdTmp, "(A42)" ) "model_max_height [200.0]           : 200.0"
+            write( ioFwdTmp, "(A41)" ) "model_max_height [200.]            : 200."
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Source parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
@@ -744,7 +746,7 @@ contains
             write( ioFwdTmp, "(A37)" ) "tolerance_solver [1E-7]        : 1E-7"
             write( ioFwdTmp, "(A37)" ) "tolerance_divcor [1E-5]        : 1E-5"
             write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
-            write( ioFwdTmp, "(A1)", advance = "no" ) "#"
+            write( ioFwdTmp, "(A1)" ) "#"
             !
             close( ioFwdTmp )
             !
@@ -776,15 +778,15 @@ contains
             write( ioInvTmp, "(A1)" )  "#"
             write( ioInvTmp, "(A38)" ) "inversion_type [DCG|NLCG]       : NLCG"
             write( ioInvTmp, "(A44)" ) "joint_type [Unweighted|TxBased] : Unweighted"
-            write( ioInvTmp, "(A36)" ) "max_inv_iters [50]              : 50"
+            write( ioInvTmp, "(A37)" ) "max_inv_iters [100]             : 100"
             write( ioInvTmp, "(A36)" ) "max_grad_iters [20]             : 20"
             write( ioInvTmp, "(A38)" ) "error_tol [1E-3]                : 1E-3"
             write( ioInvTmp, "(A38)" ) "rms_tol [1.05]                  : 1.05"
-            write( ioInvTmp, "(A36)" ) "lambda [1.]                     : 1."
+            write( ioInvTmp, "(A37)" ) "lambda [10.]                    : 10."
             write( ioInvTmp, "(A40)" ) "lambda_tol [1.0e-4]             : 1.0e-4"
             write( ioInvTmp, "(A37)" ) "lambda_div [10.]                : 10."
             write( ioInvTmp, "(A37)" ) "startdm [10.]                   : 10."
-            write( ioInvTmp, "(A1)", advance = "no" ) "#"
+            write( ioInvTmp, "(A1)" ) "#"
             !
             close( ioInvTmp )
             !

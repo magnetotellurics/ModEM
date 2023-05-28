@@ -141,8 +141,7 @@ contains
         real( kind=prec ) :: gPrev_dot_gPrev, h_dot_g, h_dot_gPrev
         integer :: iter, nCG, nLS, nfunc, ios, i_sol
         !
-        !>
-        call createOutputDirectory()
+        call createOutputDirectory
         !
         call writeHeaders
         !
@@ -154,7 +153,6 @@ contains
         !
         startdm = self%startdm
         !
-        !>
         open( unit = ioInvLog, file = trim( outdir_name )//"/NLCG.log", status="unknown", position="append", iostat=ios )
         !
         if( ios == 0 ) then
@@ -276,9 +274,7 @@ contains
                 write( ioInvLog, "( a25, i5 )" ) "Completed NLCG iteration ", iter
                 ! 
                 Nmodel = mHat%countModel()
-       
-                write( 1982, "( A20, F12.3 )" ) "Solve Nmodel: ", Nmodel
-
+                !
                 mNorm = mHat%dotProd( mHat ) / Nmodel
                 !
                 write( *, * ) "     lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
@@ -389,7 +385,7 @@ contains
             !
             all_data = dHat
             !
-            ! cleaning up
+            ! cleaning up ????
             !call deallocateDataGroupTxArray( dHat )
             !call deallocateDataGroupTxArray( res )
             !
@@ -472,16 +468,12 @@ contains
         !
         ! compute the number of data and model parameters for scaling
         Nmodel = mHat%countModel()
-       
-        write( 1982, "( A20, F12.3 )" ) "Grad Nmodel: ", Nmodel
-
+        !
         ! multiply by 2 (to be consistent with the formula)
         ! and add the gradient of the model norm
         !
         Ndata = countValues( dHat )
-       
-        write( *, "( A12, F8.3 )" ) "Grad Ndata: ", Ndata
-
+        !
         !call linComb(MinusTWO/Ndata,CmJTd,TWO*lambda/Nmodel,mHat,grad)
         call grad%linComb( MinusTWO / Ndata, TWO * self%lambda / Nmodel, mHat )
         !
@@ -532,6 +524,7 @@ contains
                 end select
                 !
             endif
+            !
         enddo
         !
         close( ioGradNorm )
@@ -667,7 +660,8 @@ contains
             if( joint_type /= INV_UNWEIGHTED ) then
                 !
                 !> Set back the weighted gradient conductivity
-                call JTd%zeros()
+                call JTd%zeros
+                !
                 do i_tx = 1, n_tx
                     !
                     temp_scalar = s_hat( i_tx )
@@ -756,15 +750,11 @@ contains
         SS = dotProdData( res, Nres )
         !
         Ndata = countValues( res )
-       
-        write( *, "( A12, I8 )" ) "Func Ndata: ", Ndata
-
+        !
         mNorm = mHat%dotProd( mHat )
         !
         Nmodel = mHat%countModel()
-       
-        write( 1982, "( A20, I8 )" ) "Func Nmodel: ", Nmodel
-
+        !
         !> penalty functional = sum of squares + scaled model norm
         F = SS / Ndata + ( self%lambda * mNorm / Nmodel )
         !
@@ -777,7 +767,6 @@ contains
         endif
         !
         !call deallocateDataGroupTxArray( res )
-        !
         !call deallocateDataGroupTxArray( Nres )
         !
         deallocate( dsigma )
@@ -810,7 +799,8 @@ contains
         !
     end subroutine cdInvMult
     !
-    !>
+    !> No subroutine briefing
+    !
     subroutine updateDampingParameter( self, mHat, F, grad )
         implicit none
         !
@@ -826,9 +816,7 @@ contains
         mNorm = mHat%dotProd( mHat )
         !
         Nmodel = mHat%countModel()
-       
-        write( 1982, "( A20, F12.3 )" ) "Update Nmodel: ", Nmodel
-
+        !
         ! (scaled) sum of squares = penalty functional - scaled model norm
         SS = F - ( self%lambda * mNorm / Nmodel )
         !
@@ -960,8 +948,7 @@ contains
         niter = niter + 1
         !
         if( f_1 - f_0 >= R_LARGE ) then
-            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Try a smaller starting r_value of alpha."
-            write( *, * ) "Exiting..."
+            write( *, * ) "Error: lineSearchCubic > Try a smaller starting r_value of alpha."
             stop
         endif
         !
@@ -1147,7 +1134,7 @@ contains
                 ! check that the function still decreases to avoid infinite loops in case of a bug
                 if( abs( f_j - f_i ) < TOL8 ) then
                     !
-                    write( *, * ) "Warning: exiting cubic search since the function no longer decreases!"
+                    write( *, * ) achar(27)//"[91m# Warning:"//achar(27)//"[0m exiting cubic search since the function no longer decreases!"
                     write( ioInvLog, * ) "Warning: exiting cubic search since the function no longer decreases!"
                     !
                     exit

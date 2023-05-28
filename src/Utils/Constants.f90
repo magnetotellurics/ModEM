@@ -7,6 +7,9 @@
 module Constants
     implicit none
     !
+    !> Program Version
+    character( len=5 ), parameter :: VERSION = "1.0.1"
+    !
     !> VECTOR
     character( len=4 ), parameter :: EDGE = "EDGE"
     character( len=4 ), parameter :: FACE = "FACE"
