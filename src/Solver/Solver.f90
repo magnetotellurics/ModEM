@@ -8,7 +8,7 @@ module Solver
     !> Solver parameters
     integer :: max_solver_iters, max_divcor_calls, max_divcor_iters
     !
-    real( kind=prec ) :: tolerance_divcor, tolerance_qmr
+    real( kind=prec ) :: tolerance_divcor, tolerance_solver
     !
     character(:), allocatable :: solver_type
     character( len=3 ), parameter :: QMR = "QMR"

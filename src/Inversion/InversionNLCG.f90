@@ -173,6 +173,9 @@ contains
             !
             call func( self, all_data, sigma, mHat, r_value, mNorm, dHat, i_sol, rms )
             !
+            write( *, * ) "START: lambda, alpha, mNorm, rms:", self%lambda, alpha, mNorm, rms
+            write( ioInvLog, * ) "START: lambda, alpha, mNorm, rms:", self%lambda, alpha, mNorm, rms
+            !
             nfunc = 1
             !
             ! output (smoothed) initial model and responses for later reference
@@ -208,6 +211,8 @@ contains
             call g%linComb( MinusONE, R_ZERO, grad )
             !
             allocate( h, source = g )
+            !
+            call outputFilesInversionNLCG( iter, dHat, all_data, dsigma, mHat )
             !
             do! while( rms .GE. self%rms_tol .AND. iter .LT. self%max_inv_iters )
                 !
@@ -271,7 +276,9 @@ contains
                 write( ioInvLog, "( a25, i5 )" ) "Completed NLCG iteration ", iter
                 ! 
                 Nmodel = mHat%countModel()
-                !
+       
+                write( 1982, "( A20, F12.3 )" ) "Solve Nmodel: ", Nmodel
+
                 mNorm = mHat%dotProd( mHat ) / Nmodel
                 !
                 write( *, * ) "     lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
@@ -465,15 +472,15 @@ contains
         !
         ! compute the number of data and model parameters for scaling
         Nmodel = mHat%countModel()
-	   
-	    write( *, "( A12, F8.3 )" ) "Grad Nmodel: ", Nmodel
+       
+        write( 1982, "( A20, F12.3 )" ) "Grad Nmodel: ", Nmodel
 
         ! multiply by 2 (to be consistent with the formula)
         ! and add the gradient of the model norm
         !
         Ndata = countValues( dHat )
-	   
-	    write( *, "( A12, F8.3 )" ) "Grad Ndata: ", Ndata
+       
+        write( *, "( A12, F8.3 )" ) "Grad Ndata: ", Ndata
 
         !call linComb(MinusTWO/Ndata,CmJTd,TWO*lambda/Nmodel,mHat,grad)
         call grad%linComb( MinusTWO / Ndata, TWO * self%lambda / Nmodel, mHat )
@@ -749,13 +756,15 @@ contains
         SS = dotProdData( res, Nres )
         !
         Ndata = countValues( res )
-	   
-	    write( *, "( A12, I8 )" ) "Func Ndata: ", Ndata
+       
+        write( *, "( A12, I8 )" ) "Func Ndata: ", Ndata
 
         mNorm = mHat%dotProd( mHat )
         !
         Nmodel = mHat%countModel()
-        !
+       
+        write( 1982, "( A20, I8 )" ) "Func Nmodel: ", Nmodel
+
         !> penalty functional = sum of squares + scaled model norm
         F = SS / Ndata + ( self%lambda * mNorm / Nmodel )
         !
@@ -817,7 +826,9 @@ contains
         mNorm = mHat%dotProd( mHat )
         !
         Nmodel = mHat%countModel()
-        !
+       
+        write( 1982, "( A20, F12.3 )" ) "Update Nmodel: ", Nmodel
+
         ! (scaled) sum of squares = penalty functional - scaled model norm
         SS = F - ( self%lambda * mNorm / Nmodel )
         !

@@ -108,7 +108,7 @@ module TransmitterMT
             !> Verbose
             if( self%source%calc_sens ) then
                 !
-                write( *, "( a44, es12.2, a6, i2 )" ) "- Solving MT e_sens Tx for period=", self%period, ", pol=", i_pol
+                write( *, "( a44, es10.2, a6, i2 )" ) "- Solving MT e_sens Tx for period=", self%period, ", pol=", i_pol
                 !
                 call self%forward_solver%createESolution( i_pol, self%source, self%e_sens( i_pol ) )
                 !
@@ -116,13 +116,13 @@ module TransmitterMT
                 !
                 if( self%i_sol == 0 ) then
                     !
-                    write( *, "( a42, es12.2, a6, i2 )" ) "- Solving MT e_sol_0 for period=", self%period, ", pol=", i_pol
+                    write( *, "( a42, es10.2, a6, i2 )" ) "- Solving MT e_sol_0 for period=", self%period, ", pol=", i_pol
                     !
                     call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_0( i_pol ) )
                     !
                 else
                     !
-                    write( *, "( a42, es12.2, a6, i2 )" ) "- Solving MT e_sol_1 for period=", self%period, ", pol=", i_pol
+                    write( *, "( a42, es10.2, a6, i2 )" ) "- Solving MT e_sol_1 for period=", self%period, ", pol=", i_pol
                     !
                     call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_1( i_pol ) )
                     !

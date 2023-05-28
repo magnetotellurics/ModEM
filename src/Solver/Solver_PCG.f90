@@ -50,7 +50,7 @@ contains
                 allocate( self%preconditioner, source = PreConditioner_DC_SP_t( model_operator ) )
                 !
             class default
-                stop "Solver_QMR_ctor: Unclassified ModelOperator"
+                stop "Solver_PCG_ctor: Unclassified ModelOperator"
             !
         end select
         !

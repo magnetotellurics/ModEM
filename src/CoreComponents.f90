@@ -485,7 +485,7 @@ contains
         max_divcor_calls = 20
         max_divcor_iters = 100
         tolerance_divcor = 1E-5
-        tolerance_qmr = 1E-7
+        tolerance_solver = 1E-7
         !
         forward_solver_type = FWD_IT_DC
         model_operator_type = MODELOP_MF
@@ -741,7 +741,7 @@ contains
             write( ioFwdTmp, "(A35)" ) "max_solver_iters [80]          : 80"
             write( ioFwdTmp, "(A35)" ) "max_divcor_calls [20]          : 20"
             write( ioFwdTmp, "(A36)" ) "max_divcor_iters [100]         : 100"
-            write( ioFwdTmp, "(A37)" ) "tolerance_qmr [1E-7]           : 1E-7"
+            write( ioFwdTmp, "(A37)" ) "tolerance_solver [1E-7]        : 1E-7"
             write( ioFwdTmp, "(A37)" ) "tolerance_divcor [1E-5]        : 1E-5"
             write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A1)", advance = "no" ) "#"

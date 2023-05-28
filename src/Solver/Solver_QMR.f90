@@ -67,7 +67,7 @@ contains
         !
         class( Solver_QMR_t ), intent( inout ) :: self
         !
-        call self%setParameters( max_solver_iters, tolerance_qmr )
+        call self%setParameters( max_solver_iters, tolerance_solver )
         !
     end subroutine setDefaults_QMR
     !

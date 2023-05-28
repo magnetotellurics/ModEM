@@ -22,7 +22,7 @@ module ForwardControlFile
         !
         !> Solver parameters
         character(:), allocatable :: max_solver_iters, max_divcor_calls, max_divcor_iters
-        character(:), allocatable :: tolerance_divcor, tolerance_qmr
+        character(:), allocatable :: tolerance_divcor, tolerance_solver
         !
         contains
             !
@@ -96,8 +96,8 @@ contains
                         self%max_divcor_iters = trim( args(2) )
                     elseif( index( line_text, "tolerance_divcor" ) > 0 ) then
                         self%tolerance_divcor = trim( args(2) )
-                    elseif( index( line_text, "tolerance_qmr" ) > 0 ) then
-                        self%tolerance_qmr = trim( args(2) )
+                    elseif( index( line_text, "tolerance_solver" ) > 0 ) then
+                        self%tolerance_solver = trim( args(2) )
                     else
                         write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unsupported Forward Modeling parameter: ["//trim(line_text)//"]"
                         stop 
@@ -276,7 +276,7 @@ contains
                 !
                 read( self%max_solver_iters, "(I8)" ) max_solver_iters
                 !
-                write( *, "( A30, I20)" ) "          BCG Iters = ", max_solver_iters
+                write( *, "( A30, I20)" ) "          PCG Iters = ", max_solver_iters
                 !
             endif
             !
@@ -307,12 +307,12 @@ contains
                 !
             endif
             !
-            ! Solver tolerance_qmr
-            if( allocated( self%tolerance_qmr ) ) then
+            ! Solver tolerance_solver
+            if( allocated( self%tolerance_solver ) ) then
                 !
-                read( self%tolerance_qmr, * ) tolerance_qmr
+                read( self%tolerance_solver, * ) tolerance_solver
                 !
-                write( *, "( A30, es20.2)" ) "          QMR Tolerance = ", tolerance_qmr
+                write( *, "( A30, es20.2)" ) "          Solver Tolerance = ", tolerance_solver
                 !
             endif
             !
@@ -351,7 +351,7 @@ contains
         if( allocated( self%max_divcor_calls ) ) deallocate( self%max_divcor_calls )
         if( allocated( self%max_divcor_iters ) ) deallocate( self%max_divcor_iters )
         if( allocated( self%tolerance_divcor ) ) deallocate( self%tolerance_divcor )
-        if( allocated( self%tolerance_qmr ) ) deallocate( self%tolerance_qmr )
+        if( allocated( self%tolerance_solver ) ) deallocate( self%tolerance_solver )
         !
     end subroutine ForwardControlFile_dtor
     !

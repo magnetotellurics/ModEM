@@ -216,7 +216,7 @@ contains
         !
         ! 3 Reals
         call MPI_PACK( model_max_height, 1, MPI_DOUBLE_PRECISION, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( tolerance_qmr, 1, MPI_DOUBLE_PRECISION, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( tolerance_solver, 1, MPI_DOUBLE_PRECISION, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( tolerance_divcor, 1, MPI_DOUBLE_PRECISION, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         !
         ! 9 Strings
@@ -278,7 +278,7 @@ contains
         !
         ! 3 Reals
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, model_max_height, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, tolerance_qmr, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
+        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, tolerance_solver, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, tolerance_divcor, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
         !
         ! 9 Strings
