@@ -474,7 +474,7 @@ contains
         !
         Ndata = countValues( dHat )
 
-   write( 1983, * ) "Ndata, Nmodel, lambda: ", Ndata, Nmodel, self%lambda
+   write( 1983, * ) "Iter, Ndata, Nmodel, lambda: ", self%iter, Ndata, Nmodel, self%lambda
    !stop
 
         !call linComb(MinusTWO/Ndata,CmJTd,TWO*lambda/Nmodel,mHat,grad)
@@ -765,7 +765,7 @@ contains
         mNorm = mNorm / Nmodel
 
       
-   write( 1982, * ) "SS, Ndata, mNorm, Nmodel, F, mNorm: ", SS, Ndata, mNorm, Nmodel, F, mNorm
+   write( 1982, * ) "Iter, SS, Ndata, mNorm, Nmodel, F, mNorm: ", self%iter, SS, Ndata, mNorm, Nmodel, F, mNorm
    !stop
 
         ! if required, compute the Root Mean Squared misfit
