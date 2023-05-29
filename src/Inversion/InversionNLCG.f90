@@ -15,8 +15,6 @@ module InversionNLCG
         real( kind=prec ) :: k
         ! the factor that ensures sufficient decrease in the line search
         real( kind=prec ) :: c
-        ! the factor that ensures curvature condition in the line search
-        real( kind=prec ) :: c2
         ! restart CG every nCGmax iterations to ensure conjugacy
         integer :: nCGmax
         ! the starting step for the line search
@@ -32,11 +30,13 @@ module InversionNLCG
             !
             procedure, public :: solve => solveInversionNLCG
             !
+            procedure, public :: outputFiles => outputFilesInversionNLCG
+            !
             procedure, private :: gradient, func, updateDampingParameter, lineSearchCubic
             !
     end type InversionNLCG_t
     !
-    private :: weightGradrients, writeHeaders, cdInvMult, outputFilesInversionNLCG
+    private :: weightGradrients, writeHeaders, cdInvMult
     !
     interface InversionNLCG_t
         module procedure InversionNLCG_ctor
@@ -139,7 +139,7 @@ contains
         real( kind=prec ) :: grad_dot_h, g_dot_g
         real( kind=prec ) :: g_dot_gPrev, g_dot_h
         real( kind=prec ) :: gPrev_dot_gPrev, h_dot_g, h_dot_gPrev
-        integer :: iter, nCG, nLS, nfunc, ios, i_sol
+        integer :: nCG, nLS, nfunc, ios, i_sol
         !
         call createOutputDirectory
         !
@@ -202,7 +202,7 @@ contains
             !
             !> initialize CG: g = - grad; h = g
             nCG = 0
-            iter = 0
+            self%iter = 0
             !
             allocate( g, source = grad )
             !
@@ -210,16 +210,16 @@ contains
             !
             allocate( h, source = g )
             !
-            call outputFilesInversionNLCG( iter, dHat, all_data, dsigma, mHat )
+            call self%outputFiles( dHat, all_data, dsigma, mHat )
             !
-            do! while( rms .GE. self%rms_tol .AND. iter .LT. self%max_inv_iters )
+            do! while( rms .GE. self%rms_tol .AND. self%iter .LT. self%max_inv_iters )
                 !
                 !  test for convergence ...
-                if( rms .LT. self%rms_tol .OR. iter .GE. self%max_inv_iters ) then
+                if( rms .LT. self%rms_tol .OR. self%iter .GE. self%max_inv_iters ) then
                     exit
                 endif
                 !
-                iter = iter + 1
+                self%iter = self%iter + 1
                 !
                 ! save the values of the functional and the directional derivative
                 rmsPrev = rms
@@ -270,8 +270,8 @@ contains
                 ! adjust the starting step to ensure super linear convergence properties
                 alpha = ( ONE + 0.01 ) * alpha
                 !
-                write( *, "( a25, i5 )" ) "Completed NLCG iteration ", iter
-                write( ioInvLog, "( a25, i5 )" ) "Completed NLCG iteration ", iter
+                write( *, "( a25, i5 )" ) "Completed NLCG iteration ", self%iter
+                write( ioInvLog, "( a25, i5 )" ) "Completed NLCG iteration ", self%iter
                 ! 
                 Nmodel = mHat%countModel()
                 !
@@ -289,7 +289,7 @@ contains
                 !
                 call linCombData( ONE, all_data, MinusONE, dHat, res )
                 !
-                call outputFilesInversionNLCG( iter, dHat, res, dsigma, mHat )
+                call self%outputFiles( dHat, res, dsigma, mHat )
                 !
                 !> if alpha is too small, we are not making progress: update lambda
                 if( abs( rmsPrev - rms ) < self%fdiffTol ) then
@@ -389,8 +389,8 @@ contains
             !call deallocateDataGroupTxArray( dHat )
             !call deallocateDataGroupTxArray( res )
             !
-            write( *, "( a25, i5, a25, i5 )" ) "NLCG iterations:", iter," function evaluations:", nfunc
-            write( ioInvLog, "( a25, i5, a25, i5 )" ) "NLCG iterations:", iter," function evaluations:", nfunc
+            write( *, "( a25, i5, a25, i5 )" ) "NLCG iterations:", self%iter," function evaluations:", nfunc
+            write( ioInvLog, "( a25, i5, a25, i5 )" ) "NLCG iterations:", self%iter," function evaluations:", nfunc
             !
             close( ioInvLog )
             !
@@ -473,7 +473,10 @@ contains
         ! and add the gradient of the model norm
         !
         Ndata = countValues( dHat )
-        !
+
+   write( 1983, * ) "Ndata, Nmodel, lambda: ", Ndata, Nmodel, self%lambda
+   !stop
+
         !call linComb(MinusTWO/Ndata,CmJTd,TWO*lambda/Nmodel,mHat,grad)
         call grad%linComb( MinusTWO / Ndata, TWO * self%lambda / Nmodel, mHat )
         !
@@ -760,7 +763,11 @@ contains
         !
         !> scale mNorm for output
         mNorm = mNorm / Nmodel
-        !
+
+      
+   write( 1982, * ) "SS, Ndata, mNorm, Nmodel, F, mNorm: ", SS, Ndata, mNorm, Nmodel, F, mNorm
+   !stop
+
         ! if required, compute the Root Mean Squared misfit
         if( present( rms ) ) then
             rms = sqrt( SS / Ndata )
@@ -901,7 +908,7 @@ contains
         !
         real( kind=prec ) :: alpha_1, alpha_i, alpha_j, mNorm
         logical :: starting_guess, relaxation
-        real( kind=prec ) :: eps, k, c, a, b, q1, q2, q3
+        real( kind=prec ) :: eps, c, a, b, q1, q2, q3
         real( kind=prec ) :: g_0, f_0, f_1, f_i, f_j, rms_1, mNorm_1
         class( ModelParameter_t ), allocatable :: mHat_0, mHat_1
         type( DataGroupTx_t ), allocatable, dimension(:) :: dHat_1
@@ -1196,22 +1203,22 @@ contains
     !
     !> ????
     !
-    subroutine outputFilesInversionNLCG( iter, dHat, res, dsigma, mHat )
+    subroutine outputFilesInversionNLCG( self, all_predicted_data, res, dsigma, mHat )
         implicit none
         !
-        integer, intent( in ) :: iter
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: dHat, res
+        class( InversionNLCG_t ), intent( in ) :: self
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
         class( ModelParameter_t ), intent( in ) :: dsigma, mHat
         !
         character(100) :: out_file_name
         character(3) :: char3
         !
-        write( char3, "(i3.3)" ) iter
+        write( char3, "(i3.3)" ) self%iter
         !
         !> Write predicted data for this NLCG iteration
         out_file_name = trim( outdir_name )//"/PredictedData_NLCG_"//char3//".dat"
         !
-        call writeData( dHat, trim( out_file_name ) )
+        call writeData( all_predicted_data, trim( out_file_name ) )
         !
         !> Write residual data for this NLCG iteration
         out_file_name = trim( outdir_name )//"/ResidualData_NLCG_"//char3//".dat"

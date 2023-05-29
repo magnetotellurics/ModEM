@@ -119,22 +119,24 @@ contains
                 !
                 call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
                 !
-                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+                call main_grid%updateAirLayers( air_layer%nz, air_layer%dz )
                 !
                 ! Verbose
-                write( *, * ) "          Air Layers [i, dz(i)]:"
+                write( *, * ) "    Model Air Layers [i, dz(i)]:"
                 !
                 do i = air_layer%nz, 1, -(1)
-                    write( *, "( i20, f20.5 )" ) i, air_layer%dz(i)
+                    write( *, "( i20, f20.3 )" ) i, air_layer%dz(i)
                 enddo
                 !
                 write( *, * ) "          Air layers from the method [", trim( air_layer%method ), "]"
                 !
-                write( *, "( a39, f12.5, a4 )" ) "Top of the air layers is at ", sum( air_layer%Dz ) / 1000, " km."
+                write( *, "( a39, f12.3, a4 )" ) "Top of the air layers is at ", ( sum( air_layer%Dz ) / 1000. ), " km."
+                !
+                write( *, "( a33, f12.3 )" ) "Air layers Max Height ", air_layer%maxHeight
                 !
                 write( *, "( a23, i6, a2, i6, a2, i6, a1 )" ) "dim(x,y,z):(", main_grid%nx, ", ", main_grid%ny, ", ", main_grid%nz, ")"
                 !
-                write( *, "( a30, f16.5, a2, f16.5, a2, f16.5, a4, f16.5 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+                write( *, "( a30, f16.3, a2, f16.3, a2, f16.3, a4, f16.3 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
                 !
                 !> Instantiate model_operator
                 !> Specific type can be chosen via fwd control file
@@ -606,7 +608,7 @@ contains
         !
         !> Flush memory used by main program control variables and flags
         if( allocated( inversion_type ) ) deallocate( inversion_type )
-		if( allocated( joint_type ) ) deallocate( joint_type )
+        if( allocated( joint_type ) ) deallocate( joint_type )
         !
         if( allocated( model_operator_type ) ) deallocate( model_operator_type )
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )

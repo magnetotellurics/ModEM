@@ -117,9 +117,9 @@ contains
             !
         end select
         !
-        call Tx%source%createE()
+        call Tx%source%createE
         !
-        call Tx%solve()
+        call Tx%solve
         !
     end subroutine solveTx
     !

@@ -11,7 +11,7 @@ module Inversion
     !
     type, abstract :: Inversion_t
         !
-        integer :: max_inv_iters, n_inv_iter
+        integer :: iter, max_inv_iters, n_inv_iter
         !
         real( kind=prec ) :: rms_tol, lambda
         !
@@ -20,6 +20,8 @@ module Inversion
             procedure, public :: init => initializeInversion
             !
             procedure( interface_solve_inversion ), deferred, public :: solve
+            !
+            procedure( interface_output_files_inversion ), deferred, public :: outputFiles
             !
     end type Inversion_t
     !
@@ -37,11 +39,10 @@ module Inversion
         end subroutine interface_solve_inversion
         !
         !> No interface subroutine briefing
-        subroutine interface_output_files_inversion( self, iter, all_predicted_data, res, dsigma, mHat )
+        subroutine interface_output_files_inversion( self, all_predicted_data, res, dsigma, mHat )
             import :: Inversion_t, DataGroupTx_t, ModelParameter_t
             !
             class( Inversion_t ), intent( in ) :: self
-            integer, intent( in ) :: iter
             type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
             class( ModelParameter_t ), intent( in ) :: dsigma, mHat
             !

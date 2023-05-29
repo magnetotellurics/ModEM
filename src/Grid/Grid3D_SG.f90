@@ -27,7 +27,7 @@ module Grid3D_SG
             procedure, public :: allocateDim => allocateDimGrid3D_SG
             procedure, public :: Setup => SetupGrid3D_SG
             procedure, public :: SetupAirLayers => SetupAirLayersGrid3D_SG
-            procedure, public :: UpdateAirLayers => UpdateAirLayersGrid3D_SG
+            procedure, public :: updateAirLayers => UpdateAirLayersGrid3D_SG
             !
             procedure, public :: SetCellSizes => SetCellSizesGrid3D_SG
             procedure, public :: GetCellSizes => GetCellSizesGrid3D_SG

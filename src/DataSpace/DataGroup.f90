@@ -7,7 +7,6 @@ module DataGroup
     use Constants
     !
     !> Global file path name for data files
-    !
     character(:), allocatable :: predicted_data_file_name, jmhat_data_file_name
     !
     type :: DataGroup_t
@@ -120,6 +119,7 @@ contains
     end subroutine DataGroup_dtor
     !
     !> Add values to arrays in position and increments the internal counter.
+    !
     subroutine putValuesDataGroup( self, rvalue, imaginary, error )
         implicit none
         !
@@ -137,6 +137,7 @@ contains
     end subroutine putValuesDataGroup
     !
     !> Set the values at a given index of these arrays.
+    !
     subroutine setValuesDataGroup( self, comp_id, rvalue, imaginary )
         implicit none
         !
@@ -151,6 +152,7 @@ contains
     end subroutine setValuesDataGroup
     !
     !> ????
+    !
     subroutine zerosDataGroup( self )
         implicit none
         !
@@ -167,6 +169,7 @@ contains
     end subroutine zerosDataGroup
     !
     !>
+    !
     subroutine normalizeDataGroup( self, norm )
         implicit none
         !
@@ -176,7 +179,7 @@ contains
         integer :: nn
         !
         if( .NOT. self%error_bar ) then
-            stop "Error: normalizeDataGroup: no error bars to normalize"
+            stop "Error: normalizeDataGroup > no error bars to normalize"
         endif
         !
         if( present( norm ) ) then
@@ -188,8 +191,6 @@ contains
         self%reals = self%reals / ( self%errors ** nn )
         !
         self%imaginaries = self%imaginaries / ( self%errors ** nn )
-        !
-        !self%normalized = self%normalized + nn
         !
     end subroutine normalizeDataGroup
     !
@@ -207,6 +208,7 @@ contains
     end subroutine subDataGroup
     !
     !> ????
+    !
     subroutine linCombDataGroup( self, a, b, d_in, d_out )
         implicit none
         !
@@ -251,7 +253,6 @@ contains
         endif
         !
         d_out%error_bar = self%error_bar .OR. d_in%error_bar
-        !d_out%normalized = 0
         !
         d_out%i_dg = self%i_dg
         d_out%i_rx = self%i_rx
@@ -264,24 +265,24 @@ contains
         if( self%error_bar .AND. d_in%error_bar ) then
             !
             if( abs(a) > R_ZERO .AND. abs(b) > R_ZERO ) then
-                stop "Error: linCombDataGroup: unable to add two data vectors with error bars"
+                stop "Error: linCombDataGroup > unable to add two data vectors with error bars"
             elseif( abs(a) > R_ZERO ) then
+                !
                 d_out%errors = a * self%errors
-                !d_out%normalized = self%normalized
+                !
             elseif( abs(b) > R_ZERO ) then
+                !
                 d_out%errors = b * d_in%errors
-                !d_out%normalized = d_in%normalized
+                !
             endif
             !
         elseif( self%error_bar ) then
             !
             d_out%errors = a * self%errors
-            !d_out%normalized = self%normalized
             !
         elseif( d_in%error_bar ) then
             !
             d_out%errors = b * d_in%errors
-            !d_out%normalized = d_in%normalized
             !
         endif
         !
@@ -295,7 +296,8 @@ contains
         !
         real( kind=prec ) :: rvalue
         !
-        rvalue = sum( self%reals * d_in%reals ) + sum( self%imaginaries * d_in%imaginaries )
+        rvalue = sum( self%reals * d_in%reals ) + &
+        sum( self%imaginaries * d_in%imaginaries )
         !
     end function dotProdDataGroup
     !
@@ -362,8 +364,6 @@ contains
         allocate( self%errors, source = d_in%errors )
         !
         self%is_allocated = d_in%is_allocated
-        !
-        !self%normalized = d_in%normalized
         !
     end subroutine copyFromDataGroup
     !

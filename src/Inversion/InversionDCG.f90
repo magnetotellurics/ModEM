@@ -19,6 +19,8 @@ module InversionDCG
             !
             procedure, public :: solve => solveInversionDCG
             !
+            procedure, public :: outputFiles => outputFilesInversionDCG
+            !
             procedure, private :: Calc_FWD, CG_DS_standard, MultA_DS
             !
     end type InversionDCG_t
@@ -26,8 +28,6 @@ module InversionDCG
     interface InversionDCG_t
         module procedure InversionDCG_ctor
     end interface InversionDCG_t
-    !
-    private :: outputFilesInversionDCG
     !
 contains
     !
@@ -164,7 +164,7 @@ contains
                 !
                 call self%Calc_FWD( all_data, dsigma, mHat, all_predicted_data, res, F, mNorm, rms )
                 !
-                call outputFilesInversionDCG( DCG_iter, all_predicted_data, res, dsigma, mHat )
+                call self%outputFiles( all_predicted_data, res, dsigma, mHat )
                 !
                 !> Write / Print DCG.log
                 write( *, "( a20, i5, a16, f18.5)" ) "            DCG_iter", DCG_iter, ": Residual rms=", rms
@@ -265,7 +265,6 @@ contains
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: r, p, Ap
         real( kind=prec ) :: alpha, beta, r_norm_pre, r_norm, b_norm
-        integer :: iter
         !
         r = b
         !
@@ -279,15 +278,15 @@ contains
         !
         r_norm = dotProdData( r, r )
         !
-        iter = 1
+        self%iter = 1
         !
-        self%r_err( iter ) = r_norm / b_norm
+        self%r_err( self%iter ) = r_norm / b_norm
         !
         !> Write / Print DCG.log
         write( ioInvLog, "(a18)" ) "Relative CG-error:"
-        write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", iter, ", error = ", self%r_err(iter), " Lambda= ", self%lambda
+        write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", self%iter, ", error = ", self%r_err( self%iter ), " Lambda= ", self%lambda
         !
-        cg_loop : do while( self%r_err(iter) .GT. self%error_tol .AND. iter .LT. self%max_grad_iters )
+        cg_loop : do while( self%r_err( self%iter ) .GT. self%error_tol .AND. self%iter .LT. self%max_grad_iters )
             ! 
             call self%MultA_DS( p, dsigma, all_data, Ap )
             !
@@ -314,16 +313,16 @@ contains
             ! Compute new p: p = r + beta*p    
             call linCombData( ONE, r, beta, p, p )
             !
-            iter = iter + 1
+            self%iter = self%iter + 1
             !
-            self%r_err( iter ) = r_norm / b_norm 
+            self%r_err( self%iter ) = r_norm / b_norm 
             !
             !> Write / Print DCG.log
-            write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", iter, ", error = ", self%r_err(iter), " Lambda= ", self%lambda
+            write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", self%iter, ", error = ", self%r_err( self%iter ), " Lambda= ", self%lambda
             !
         enddo cg_loop
         !
-        self%n_inv_iter = iter
+        self%n_inv_iter = self%iter
         !
     end subroutine CG_DS_standard
     !
@@ -377,17 +376,17 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine outputFilesInversionDCG( iter, all_predicted_data, res, dsigma, mHat )
+    subroutine outputFilesInversionDCG( self, all_predicted_data, res, dsigma, mHat )
         implicit none
         !
-        integer, intent( in ) :: iter
+        class( InversionDCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
         class( ModelParameter_t ), intent( in ) :: dsigma, mHat
         !
         character(100) :: out_file_name
         character(3) :: char3
         !
-        write( char3, "(i3.3)" ) iter
+        write( char3, "(i3.3)" ) self%iter
         !
         !> Write predicted data for this DCG iteration
         out_file_name = trim( outdir_name )//"/PredictedData_DCG_"//char3//".dat"

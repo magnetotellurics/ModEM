@@ -6,8 +6,7 @@ module WorkerMPI
     !
     use DeclarationMPI
     !
-    use InversionDCG
-    use InversionNLCG
+    use InversionJob
     !
     public :: workerMainLoop
     public :: workerSolve

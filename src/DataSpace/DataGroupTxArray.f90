@@ -309,7 +309,7 @@ contains
             !
             Tx => getTransmitter( data_tx_array(i)%i_tx )
             !
-            counter = counter + ( size( data_tx_array(i)%data ) * 2 * ( Tx%n_pol ** 2 ) )
+            counter = counter + size( data_tx_array(i)%data ) * 2 * ( 2 ** Tx%n_pol )
             !
         enddo
         !
