@@ -1,8 +1,8 @@
-Model and data output file name    : JOINT_1
-Initial damping factor lambda      : 1.
+Model and data output file name    : BENCH
+Initial damping factor lambda      : 10.
 To update lambda divide by         : 10.
 Initial search step in model units : 10.
 Restart when rms diff is less than : 2.0e-3
 Exit search when rms is less than  : 1.05
-Exit when lambda is less than      : 1.0e-8
-Maximum number of iterations       : 400
+Exit when lambda is less than      : 1.0e-4
+Maximum number of iterations       : 100
