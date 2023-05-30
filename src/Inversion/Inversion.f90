@@ -14,6 +14,7 @@ module Inversion
         integer :: iter, max_inv_iters, n_inv_iter
         !
         real( kind=prec ) :: rms_tol, lambda
+        real( kind=prec ) :: alpha, beta, rms
         !
         contains
             !

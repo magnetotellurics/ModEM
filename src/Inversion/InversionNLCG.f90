@@ -126,15 +126,13 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
-        !> initial step size in the line search direction in model units
-        real( kind=prec ) :: startdm
         !> flavor is a string that specifies the algorithm to use
         character(80) :: flavor = "Cubic"
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: dHat, res
         class( ModelParameter_t ), allocatable :: mHat, grad, g, h, gPrev
-        real( kind=prec ) :: r_value, valuePrev, rms
-        real( kind=prec ) :: rmsPrev, alpha, beta
+        real( kind=prec ) :: r_value, valuePrev
+        real( kind=prec ) :: rmsPrev
         real( kind=prec ) :: gnorm, mNorm, Nmodel
         real( kind=prec ) :: grad_dot_h, g_dot_g
         real( kind=prec ) :: g_dot_gPrev, g_dot_h
@@ -149,19 +147,19 @@ contains
         write( *, * ) "     - Start Inversion NLCG, output files in [", trim( outdir_name ), "]"
         !
         ! initialize the line search
-        alpha = self%alpha_1
-        !
-        startdm = self%startdm
+        self%alpha = self%alpha_1
         !
         open( unit = ioInvLog, file = trim( outdir_name )//"/NLCG.log", status="unknown", position="append", iostat=ios )
         !
         if( ios == 0 ) then
             !
+            write( 1983, * ) "SS, Ndata, mNorm, Nmodel, F, RMS"
+            !
             write( *, "( a50, es12.5 )" ) "The initial damping parameter lambda is ", self%lambda
-            write( *, "( a64, f12.6 )" ) "The initial line search step size (in model units) is ", startdm
+            write( *, "( a64, f12.6 )" ) "The initial line search step size (in model units) is ", self%startdm
             !
             write( ioInvLog, "( a41, es8.1 )" ) "The initial damping parameter lambda is ", self%lambda
-            write( ioInvLog, "( a55, f12.6 )" ) "The initial line search step size (in model units) is ", startdm
+            write( ioInvLog, "( a55, f12.6 )" ) "The initial line search step size (in model units) is ", self%startdm
             !
             ! starting model contains the rough deviations from the prior
             allocate( mHat, source = dsigma )
@@ -169,10 +167,10 @@ contains
             !  compute the penalty functional and predicted data
             i_sol = 0
             !
-            call func( self, all_data, sigma, mHat, r_value, mNorm, dHat, i_sol, rms )
+            call func( self, all_data, sigma, mHat, r_value, mNorm, dHat, i_sol, self%rms )
             !
-            write( *, * ) "START: lambda, alpha, mNorm, rms:", self%lambda, alpha, mNorm, rms
-            write( ioInvLog, * ) "START: lambda, alpha, mNorm, rms:", self%lambda, alpha, mNorm, rms
+            write( *, * ) "START: lambda, alpha, mNorm, rms:", self%lambda, self%alpha, mNorm, self%rms
+            write( ioInvLog, * ) "START: lambda, alpha, mNorm, rms:", self%lambda, self%alpha, mNorm, self%rms
             !
             nfunc = 1
             !
@@ -193,10 +191,10 @@ contains
                 stop "Error: NLCGsolver: Problem with your gradient computations: first gradient is zero"
             else
                 !
-                alpha = startdm / gnorm
+                self%alpha = self%startdm / gnorm
                 !
-                write( *, "( a39, es12.5 )" ) "The initial value of alpha updated to ", alpha
-                write( ioInvLog, "( a39, es12.5 )" ) "The initial value of alpha updated to ", alpha
+                write( *, "( a39, es12.5 )" ) "The initial value of alpha updated to ", self%alpha
+                write( ioInvLog, "( a39, es12.5 )" ) "The initial value of alpha updated to ", self%alpha
                 !
             endif
             !
@@ -212,17 +210,25 @@ contains
             !
             call self%outputFiles( dHat, all_data, dsigma, mHat )
             !
+            write( 1982, * ) "Iter, Alpha, Beta, gNorm, RMS"
+            !
             do! while( rms .GE. self%rms_tol .AND. self%iter .LT. self%max_inv_iters )
                 !
                 !  test for convergence ...
-                if( rms .LT. self%rms_tol .OR. self%iter .GE. self%max_inv_iters ) then
+                if( self%rms .LT. self%rms_tol .OR. self%iter .GE. self%max_inv_iters ) then
                     exit
                 endif
+                !
+                write( 1982, * ) self%iter, ", ", &
+                                    self%alpha, ", ", &
+                                    self%beta, ", ", &
+                                    gnorm, ", ", &
+                                    self%rms
                 !
                 self%iter = self%iter + 1
                 !
                 ! save the values of the functional and the directional derivative
-                rmsPrev = rms
+                rmsPrev = self%rms
                 !
                 valuePrev = r_value
                 !
@@ -239,15 +245,15 @@ contains
                     !
                     case( "Cubic" )
                         !
-                        call self%lineSearchCubic( all_data, sigma, h, alpha, mHat, r_value, grad, rms, nLS, dHat )
+                        call self%lineSearchCubic( all_data, sigma, h, mHat, r_value, grad, nLS, dHat )
                         !
                     case( "Quadratic" )
                         !
-                        !call self%lineSearchQuadratic( all_data,sigma,h,alpha,mHat,r_value,grad,rms,nLS,dHat )
+                        stop "Error: NLCGsolver: Quadratic Line Search not Implemented"
                         !
                     case( "Wolfe" )
                         !
-                        !call self%lineSearchWolfe( all_data,sigma,h,alpha,mHat,r_value,grad,rms,nLS,dHat )
+                        stop "Error: NLCGsolver: Wolfe Line Search not Implemented"
                         !
                     case default
                         stop "Error: NLCGsolver: Unknown line search requested in NLCG"
@@ -265,10 +271,10 @@ contains
                 call g%linComb( MinusONE, R_ZERO, grad )
                 !
                 ! compute the starting step for the next line search
-                alpha = 2 * ( r_value - valuePrev ) / grad_dot_h
+                self%alpha = 2 * ( r_value - valuePrev ) / grad_dot_h
                 !
                 ! adjust the starting step to ensure super linear convergence properties
-                alpha = ( ONE + 0.01 ) * alpha
+                self%alpha = ( ONE + 0.01 ) * self%alpha
                 !
                 write( *, "( a25, i5 )" ) "Completed NLCG iteration ", self%iter
                 write( ioInvLog, "( a25, i5 )" ) "Completed NLCG iteration ", self%iter
@@ -277,8 +283,8 @@ contains
                 !
                 mNorm = mHat%dotProd( mHat ) / Nmodel
                 !
-                write( *, * ) "     lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
-                write( ioInvLog, * ) "     lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
+                write( *, * ) "     lambda, alpha, r_value, mNorm, rms: ", self%lambda, self%alpha, r_value, mNorm, self%rms
+                write( ioInvLog, * ) "     lambda, alpha, r_value, mNorm, rms: ", self%lambda, self%alpha, r_value, mNorm, self%rms
                 !
                 ! write out the intermediate model solution and responses
                 call model_cov%multBy_CmSqrt( mHat, dsigma )
@@ -292,7 +298,7 @@ contains
                 call self%outputFiles( dHat, res, dsigma, mHat )
                 !
                 !> if alpha is too small, we are not making progress: update lambda
-                if( abs( rmsPrev - rms ) < self%fdiffTol ) then
+                if( abs( rmsPrev - self%rms ) < self%fdiffTol ) then
                     !
                     ! update lambda, penalty functional and gradient
                     call self%updateDampingParameter( mHat, r_value, grad )
@@ -311,10 +317,10 @@ contains
                     write( ioInvLog, "(a34,es12.5)" ) "The norm of the last gradient is ", gnorm
                     !
                     !> alpha = min(self%alpha_1,startdm/gnorm)
-                    alpha = min( ONE, startdm ) / gnorm
+                    self%alpha = min( ONE, self%startdm ) / gnorm
                     !
-                    write( *, "( a48, es12.5 )" ) "The value of line search step alpha updated to ", alpha
-                    write( ioInvLog, "( a48, es12.5 )" ) "The value of line search step alpha updated to ", alpha
+                    write( *, "( a48, es12.5 )" ) "The value of line search step alpha updated to ", self%alpha
+                    write( ioInvLog, "( a48, es12.5 )" ) "The value of line search step alpha updated to ", self%alpha
                     !
                     !> g = - grad
                     g = grad
@@ -323,10 +329,10 @@ contains
                     !
                     !> restart
                     write( *, * ) "Restarting NLCG with the damping parameter updated"
-                    write( *, * ) "lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
+                    write( *, * ) "lambda, alpha, r_value, mNorm, rms: ", self%lambda, self%alpha, r_value, mNorm, self%rms
                     !
                     write( ioInvLog, * ) "Restarting NLCG with the damping parameter updated"
-                    write( ioInvLog, * ) "lambda, alpha, r_value, mNorm, rms: ", self%lambda, alpha, r_value, mNorm, rms
+                    write( ioInvLog, * ) "lambda, alpha, r_value, mNorm, rms: ", self%lambda, self%alpha, r_value, mNorm, self%rms
                     !
                     if( allocated( h ) ) deallocate( h )
                     allocate( h, source = g )
@@ -346,7 +352,7 @@ contains
                 g_dot_h = g%dotProd( h )
                 !
                 !> Polak-Ribiere variant
-                beta = ( g_dot_g - g_dot_gPrev ) / gPrev_dot_gPrev
+                self%beta = ( g_dot_g - g_dot_gPrev ) / gPrev_dot_gPrev
                 !
                 !> restart CG if the orthogonality conditions fail. Using the fact that
                 !> h_{i+1} = g_{i+1} + beta * h_i. In order for the next directional
@@ -355,7 +361,7 @@ contains
                 !> say we can take beta > 0 (didn"t work as well)
                 !> if((beta.lt.R_ZERO).or.(g_dot_g + beta*g_dot_h .le. R_ZERO)&
                 !>    .AND.(nCG .ge. self%nCGmax)) then  !PR+
-                if( g_dot_g + beta * g_dot_h .LE. R_ZERO .AND. nCG .GE. self%nCGmax ) then  !PR
+                if( g_dot_g + self%beta * g_dot_h .LE. R_ZERO .AND. nCG .GE. self%nCGmax ) then  !PR
                     !
                     ! restart
                     write( *, "(a45)" ) "Restarting NLCG to restore orthogonality"
@@ -363,7 +369,7 @@ contains
                     !
                     nCG = 0
                     !
-                    beta = R_ZERO
+                    self%beta = R_ZERO
                     !
                 else
                     !
@@ -374,7 +380,7 @@ contains
                 if( allocated( h ) ) deallocate( h )
                 allocate( h, source = g )
                 !
-                call h%linComb( ONE, beta, h )
+                call h%linComb( ONE, self%beta, h )
                 !
             enddo
             !
@@ -419,10 +425,10 @@ contains
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma, mHat
-        real( kind=prec ), intent( out ) :: F, mNorm
+        real( kind=prec ), intent( inout ) :: F, mNorm
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
         integer, intent( inout ) :: i_sol
-        real( kind=prec ), optional, intent( out ) :: rms
+        real( kind=prec ), intent( inout ), optional :: rms
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
         class( ModelParameter_t ), allocatable :: dsigma, JTd
@@ -467,14 +473,14 @@ contains
         !> scale mNorm for output
         mNorm = mNorm / Nmodel
 
-      
-   write( 1982, * ) "Iter, SS, Ndata, mNorm, Nmodel, F, mNorm: ", self%iter, SS, Ndata, mNorm, Nmodel, F, mNorm
-   !stop
-
         ! if required, compute the Root Mean Squared misfit
         if( present( rms ) ) then
+            !
             rms = sqrt( SS / Ndata )
+            !
         endif
+        !
+        write( 1983, * ) SS, ", ", Ndata, ", ", mNorm, ", ", Nmodel, ", ", F, ", ", rms
         !
         !call deallocateDataGroupTxArray( res )
         !call deallocateDataGroupTxArray( Nres )
@@ -547,10 +553,7 @@ contains
         ! and add the gradient of the model norm
         !
         Ndata = countValues( dHat )
-
-   write( 1983, * ) "Iter, Ndata, Nmodel, lambda: ", self%iter, Ndata, Nmodel, self%lambda
-   !stop
-
+        !
         !call linComb(MinusTWO/Ndata,CmJTd,TWO*lambda/Nmodel,mHat,grad)
         call grad%linComb( MinusTWO / Ndata, TWO * self%lambda / Nmodel, mHat )
         !
@@ -779,7 +782,7 @@ contains
         endif
         !
     end subroutine weightGradrients
-	!
+    !
     !> Divides by the data covariance C_d, which is a diagonal
     !> operator. Divides by the variances (squared error bars)
     !> and scales by the number of data (degrees of freedom).
@@ -889,17 +892,16 @@ contains
     !> systems in optimisation research (Pronzato et al [2000, 2001]).
     !> To the best of my knowledge, it is not useful for NLCG.
     !
-    subroutine lineSearchCubic( self, all_data, sigma, h, alpha, mHat, f, grad, rms, niter, dHat, gamma )
+    subroutine lineSearchCubic( self, all_data, sigma, h, mHat, f, grad, niter, dHat, gamma )
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma, h    ! search direction
-        real( kind=prec ), intent( inout ) :: alpha ! step size
         class( ModelParameter_t ), allocatable, intent( inout ) :: mHat
         real( kind=prec ), intent( inout ) :: f
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
-        real( kind=prec ), intent( out ) :: rms
+
         integer, intent( out ) :: niter
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: dHat
         !
@@ -930,7 +932,7 @@ contains
         g_0 = grad%dotProd( h )
         !
         ! alpha_1 is the initial step size, which is set in NLCG
-        alpha_1 = alpha
+        alpha_1 = self%alpha
         !
         ! with relaxation, we specify gamma = 1 - eps, eps > 0 small; then the final
         ! solution is f(gamma*alpha) = func(mHat + gamma*alpha*h)
@@ -949,8 +951,8 @@ contains
         !
         call self%func( all_data, sigma, mHat_1, f_1, mNorm_1, dHat_1, i_sol, rms_1 )
         !
-        write( *, * ) "STARTLS > lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, alpha, f_1, mNorm_1, rms_1
-        write( ioInvLog, * ) "STARTLS > lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, alpha, f_1, mNorm_1, rms_1
+        write( *, * ) "STARTLS > lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, self%alpha, f_1, mNorm_1, rms_1
+        write( ioInvLog, * ) "STARTLS > lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, self%alpha, f_1, mNorm_1, rms_1
         !
         niter = niter + 1
         !
@@ -968,14 +970,14 @@ contains
         if( a < 0 ) then
             !
             starting_guess = .TRUE.
-            alpha = alpha_1
+            self%alpha = alpha_1
             dHat = dHat_1
             i_sol = 1
             !
             if( allocated( mHat ) ) deallocate( mHat )
             allocate( mHat, source = mHat_1 )
             !
-            rms = rms_1
+            self%rms = rms_1
             f = f_1
             !
             ! compute the gradient and exit
@@ -984,14 +986,14 @@ contains
                 if( allocated( mHat ) ) deallocate( mHat )
                 allocate( mHat, source = mHat_0 )
                 !
-                call mHat%linComb( ONE, gamma * alpha, h )
+                call mHat%linComb( ONE, gamma * self%alpha, h )
                 !
                 i_sol = 0
                 !
-                call self%func( all_data, sigma, mHat, f, mNorm, dHat, i_sol, rms )
+                call self%func( all_data, sigma, mHat, f, mNorm, dHat, i_sol, self%rms )
                 !
-                write( *, * ) "lambda, gamma * alpha, f, mNorm, rms:", self%lambda, gamma * alpha, f, mNorm, rms
-                write( ioInvLog, * ) "lambda, gamma * alpha, f, mNorm, rms:", self%lambda, gamma * alpha, f, mNorm, rms
+                write( *, * ) "lambda, gamma * alpha, f, mNorm, rms:", self%lambda, gamma * self%alpha, f, mNorm, self%rms
+                write( ioInvLog, * ) "lambda, gamma * alpha, f, mNorm, rms:", self%lambda, gamma * self%alpha, f, mNorm, self%rms
                 !
             endif
             !
@@ -1009,37 +1011,37 @@ contains
         endif
         !
         ! otherwise compute the functional at the minimizer of the quadratic
-        alpha = - b / ( TWO * a )
+        self%alpha = - b / ( TWO * a )
         !
         if( allocated( mHat ) ) deallocate( mHat )
         allocate( mHat, source = mHat_0 )
         !
-        call mHat%linComb( ONE, alpha, h )
+        call mHat%linComb( ONE, self%alpha, h )
         !
         i_sol = 0
         !
-        call func( self, all_data, sigma, mHat, f, mNorm, dHat, i_sol, rms )
+        call func( self, all_data, sigma, mHat, f, mNorm, dHat, i_sol, self%rms )
         !
-        write( *, * ) "QUADLS: lambda, alpha, f, mNorm, rms:", self%lambda, alpha, f, mNorm, rms
-        write( ioInvLog, * ) "QUADLS: lambda, alpha, f, mNorm, rms:", self%lambda, alpha, f, mNorm, rms
+        write( *, * ) "QUADLS: lambda, alpha, f, mNorm, rms:", self%lambda, self%alpha, f, mNorm, self%rms
+        write( ioInvLog, * ) "QUADLS: lambda, alpha, f, mNorm, rms:", self%lambda, self%alpha, f, mNorm, self%rms
         !
         niter = niter + 1
         !
         ! check whether the solution satisfies the sufficient decrease condition
-        if( f < f_0 + c * alpha * g_0 ) then
+        if( f < f_0 + c * self%alpha * g_0 ) then
             !
             ! if the initial guess was better than what we found, take it
             if( f_1 < f ) then
                 !
                 starting_guess = .TRUE.
-                alpha = alpha_1
+                self%alpha = alpha_1
                 dHat = dHat_1
                 i_sol = 1
                 !
                 if( allocated( mHat ) ) deallocate( mHat )
                 allocate( mHat, source = mHat_1 )
                 !
-                rms = rms_1
+                self%rms = rms_1
                 f = f_1
                 !
             endif
@@ -1050,14 +1052,14 @@ contains
                 if( allocated( mHat ) ) deallocate( mHat )
                 allocate( mHat, source = mHat_0 )
                 !
-                call mHat%linComb( ONE, gamma * alpha, h )
+                call mHat%linComb( ONE, gamma * self%alpha, h )
                 !
                 i_sol = 0
                 !
-                call self%func( all_data, sigma, mHat, f, mNorm, dHat, i_sol, rms )
+                call self%func( all_data, sigma, mHat, f, mNorm, dHat, i_sol, self%rms )
                 !
-                write( *, * ) "QUADLS: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma*alpha, f, mNorm, rms
-                write( ioInvLog, * ) "QUADLS: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma*alpha, f, mNorm, rms
+                write( *, * ) "QUADLS: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma * self%alpha, f, mNorm, self%rms
+                write( ioInvLog, * ) "QUADLS: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma * self%alpha, f, mNorm, self%rms
                 !
             endif
             !
@@ -1092,7 +1094,7 @@ contains
             alpha_i = alpha_1
             f_i = f_1
             !
-            alpha_j = alpha
+            alpha_j = self%alpha
             f_j = f
             !
             fit_cubic: do
@@ -1102,32 +1104,32 @@ contains
                 !
                 q2 = f_j - f_0 - g_0 * alpha_j
                 !
-                q3 = alpha_i**2 * alpha_j**2 * (alpha_j - alpha_i)
+                q3 = alpha_i**2 * alpha_j**2 * ( alpha_j - alpha_i )
                 !
                 a = (alpha_i**2 * q2 - alpha_j**2 * q1)/q3
                 !
                 b = (alpha_j**3 * q1 - alpha_i**3 * q2)/q3
                 !
-                alpha = (- b + sqrt(b*b - 3*a*g_0))/(3*a)
+                self%alpha = (- b + sqrt(b*b - 3*a*g_0))/(3*a)
                 !
                 ! compute the penalty functional
                 !
                 if( allocated( mHat ) ) deallocate( mHat )
                 allocate( mHat, source = mHat_0 )
                 !
-                call mHat%linComb( ONE, alpha, h )
+                call mHat%linComb( ONE, self%alpha, h )
                 !
                 i_sol = 0
                 !
-                call self%func( all_data, sigma, mHat, f, mNorm, dHat, i_sol, rms )
+                call self%func( all_data, sigma, mHat, f, mNorm, dHat, i_sol, self%rms )
                 !
-                write( *, * ) "CUBICLS: lambda, alpha, f, mNorm, rms:", self%lambda, alpha, f, mNorm, rms
-                write( ioInvLog, * ) "CUBICLS: lambda, alpha, f, mNorm, rms:", self%lambda, alpha, f, mNorm, rms
+                write( *, * ) "CUBICLS: lambda, alpha, f, mNorm, rms:", self%lambda, self%alpha, f, mNorm, self%rms
+                write( ioInvLog, * ) "CUBICLS: lambda, alpha, f, mNorm, rms:", self%lambda, self%alpha, f, mNorm, self%rms
                 !
                 niter = niter + 1
                 !
                 ! check whether the solution satisfies the sufficient decrease condition
-                if( f < f_0 + c * alpha * g_0 ) then
+                if( f < f_0 + c * self%alpha * g_0 ) then
                     exit
                 endif
                 !
@@ -1135,7 +1137,7 @@ contains
                 alpha_i = alpha_j
                 f_i = f_j
                 !
-                alpha_j = alpha
+                alpha_j = self%alpha
                 f_j = f
                 !
                 ! check that the function still decreases to avoid infinite loops in case of a bug
@@ -1161,14 +1163,14 @@ contains
         ! if the initial guess was better than what we found, take it
         if( starting_guess ) then
             !
-            alpha = alpha_1
+            self%alpha = alpha_1
             dHat = dHat_1
             i_sol = 1
             !
             if( allocated( mHat ) ) deallocate( mHat )
             allocate( mHat, source = mHat_1 )
             !
-            rms = rms_1
+            self%rms = rms_1
             f = f_1
             !
         endif
@@ -1179,14 +1181,14 @@ contains
             if( allocated( mHat ) ) deallocate( mHat )
             allocate( mHat, source = mHat_0 )
             !
-            call mHat%linComb( ONE, gamma*alpha, h )
+            call mHat%linComb( ONE, gamma * self%alpha, h )
             !
             i_sol = 0
             !
-            call self%func( all_data, sigma, mHat, f,mNorm, dHat, i_sol, rms )
+            call self%func( all_data, sigma, mHat, f,mNorm, dHat, i_sol, self%rms )
             !
-            write( *, * ) "RELAX: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma*alpha, f, mNorm, rms
-            write( ioInvLog, * ) "RELAX: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma*alpha, f, mNorm, rms
+            write( *, * ) "RELAX: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma * self%alpha, f, mNorm, self%rms
+            write( ioInvLog, * ) "RELAX: lambda, gamma*alpha, f, mNorm, rms:", self%lambda, gamma * self%alpha, f, mNorm, self%rms
             !
         endif
         !
