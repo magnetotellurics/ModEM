@@ -263,7 +263,9 @@ Contains
    ! initialize the output to log file
    logFile = trim(iterControl%fname)//'_NLCG.log'
    open (unit=ioLog,file=logFile,status='unknown',position='append',iostat=ios)
-
+	!
+	write( 1983, * ) "SS, Ndata, mNorm, Nmodel, F, RMS"
+	!
    ! initialize the line search
    alpha = iterControl%alpha_1
    startdm = iterControl%startdm
@@ -328,12 +330,22 @@ Contains
    g = grad
    call linComb(MinusONE,grad,R_ZERO,grad,g)
    h = g
+   
+	!
+	write( 1982, * ) "Iter, Alpha, Beta, gNorm, RMS"
+	!
    do
       !  test for convergence ...
       if((rms.lt.iterControl%rmsTol).or.(iter.ge.iterControl%maxIter)) then
          exit
       end if
-
+                !
+                write( 1982, * ) iter, ", ", &
+                                    alpha, ", ", &
+                                    beta, ", ", &
+                                    gnorm, ", ", &
+                                    rms
+                !
       iter = iter + 1
 
 	  ! save the values of the functional and the directional derivative
