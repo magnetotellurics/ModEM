@@ -394,7 +394,7 @@ contains
         call writeData( all_predicted_data, trim( out_file_name ) )
         !
         !> Write residual data for this DCG iteration
-        out_file_name = trim( outdir_name )//"/ResidualData_DCG_"//char3//".dat"
+        out_file_name = trim( outdir_name )//"/ResidualData_DCG_"//char3//".res"
         !
         call writeData( res, trim( out_file_name ) )
         !
@@ -404,7 +404,7 @@ contains
         call dsigma%write( trim( out_file_name ) )
         !
         !> Write perturbation model for this DCG iteration
-        out_file_name = trim( outdir_name )//"/PerturbationModel_DCG_"//char3//".rho"
+        out_file_name = trim( outdir_name )//"/PerturbationModel_DCG_"//char3//".prm"
         !
         call mHat%write( trim( out_file_name ) )
         !

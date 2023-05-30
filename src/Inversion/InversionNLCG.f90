@@ -409,6 +409,80 @@ contains
         !
     end subroutine solveInversionNLCG
     !
+    !> Compute the full penalty functional F
+    !> Also output the predicted data and the EM solution
+    !> that can be used for evaluating the gradient
+    !
+    subroutine func( self, all_data, sigma, mHat, F, mNorm, dHat, i_sol, rms )
+        implicit none
+        !
+        class( InversionNLCG_t ), intent( inout ) :: self
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
+        class( ModelParameter_t ), allocatable, intent( in ) :: sigma, mHat
+        real( kind=prec ), intent( out ) :: F, mNorm
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
+        integer, intent( inout ) :: i_sol
+        real( kind=prec ), optional, intent( out ) :: rms
+        !
+        type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
+        class( ModelParameter_t ), allocatable :: dsigma, JTd
+        real( kind=prec ) :: SS, angle2, angle1, diff, diff1
+        integer :: Ndata, Nmodel, j, i, isite
+        !
+        ! compute the smoothed model parameter vector
+        call model_cov%multBy_CmSqrt( mHat, dsigma )
+        !
+        ! overwriting input with output
+        call dsigma%linComb( ONE, ONE, sigma )
+        !
+        ! initialize dHat
+        dHat = all_data
+        !
+#ifdef MPI
+        call masterForwardModelling( dsigma, dHat, i_sol )
+#else
+        call serialForwardModeling( dsigma, dHat, i_sol )
+#endif
+        !
+        !> initialize res
+        res = all_data
+        !
+        !call linCombData( ONE, all_data, MinusONE, dHat, res )
+        call subData( res, dHat )
+        !
+        !> normalize residuals, compute sum of squares
+        call cdInvMult( res, Nres )
+        !
+        SS = dotProdData( res, Nres )
+        !
+        Ndata = countValues( res )
+        !
+        mNorm = mHat%dotProd( mHat )
+        !
+        Nmodel = mHat%countModel()
+        !
+        !> penalty functional = sum of squares + scaled model norm
+        F = SS / Ndata + ( self%lambda * mNorm / Nmodel )
+        !
+        !> scale mNorm for output
+        mNorm = mNorm / Nmodel
+
+      
+   write( 1982, * ) "Iter, SS, Ndata, mNorm, Nmodel, F, mNorm: ", self%iter, SS, Ndata, mNorm, Nmodel, F, mNorm
+   !stop
+
+        ! if required, compute the Root Mean Squared misfit
+        if( present( rms ) ) then
+            rms = sqrt( SS / Ndata )
+        endif
+        !
+        !call deallocateDataGroupTxArray( res )
+        !call deallocateDataGroupTxArray( Nres )
+        !
+        deallocate( dsigma )
+        !
+    end subroutine func
+    !
     !> Computes the gradient of the penalty functional,
     !> using EM solution (e_all) and the predicted data (dHat)
     !> Here, mHat denotes the non-regularized model parameter that
@@ -705,81 +779,7 @@ contains
         endif
         !
     end subroutine weightGradrients
-    !
-    !> Compute the full penalty functional F
-    !> Also output the predicted data and the EM solution
-    !> that can be used for evaluating the gradient
-    !
-    subroutine func( self, all_data, sigma, mHat, F, mNorm, dHat, i_sol, rms )
-        implicit none
-        !
-        class( InversionNLCG_t ), intent( inout ) :: self
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( in ) :: sigma, mHat
-        real( kind=prec ), intent( out ) :: F, mNorm
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
-        integer, intent( inout ) :: i_sol
-        real( kind=prec ), optional, intent( out ) :: rms
-        !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
-        class( ModelParameter_t ), allocatable :: dsigma, JTd
-        real( kind=prec ) :: SS, angle2, angle1, diff, diff1
-        integer :: Ndata, Nmodel, j, i, isite
-        !
-        ! compute the smoothed model parameter vector
-        call model_cov%multBy_CmSqrt( mHat, dsigma )
-        !
-        ! overwriting input with output
-        call dsigma%linComb( ONE, ONE, sigma )
-        !
-        ! initialize dHat
-        dHat = all_data
-        !
-#ifdef MPI
-        call masterForwardModelling( dsigma, dHat, i_sol )
-#else
-        call serialForwardModeling( dsigma, dHat, i_sol )
-#endif
-        !
-        !> initialize res
-        res = all_data
-        !
-        !call linCombData( ONE, all_data, MinusONE, dHat, res )
-        call subData( res, dHat )
-        !
-        !> normalize residuals, compute sum of squares
-        call cdInvMult( res, Nres )
-        !
-        SS = dotProdData( res, Nres )
-        !
-        Ndata = countValues( res )
-        !
-        mNorm = mHat%dotProd( mHat )
-        !
-        Nmodel = mHat%countModel()
-        !
-        !> penalty functional = sum of squares + scaled model norm
-        F = SS / Ndata + ( self%lambda * mNorm / Nmodel )
-        !
-        !> scale mNorm for output
-        mNorm = mNorm / Nmodel
-
-      
-   write( 1982, * ) "Iter, SS, Ndata, mNorm, Nmodel, F, mNorm: ", self%iter, SS, Ndata, mNorm, Nmodel, F, mNorm
-   !stop
-
-        ! if required, compute the Root Mean Squared misfit
-        if( present( rms ) ) then
-            rms = sqrt( SS / Ndata )
-        endif
-        !
-        !call deallocateDataGroupTxArray( res )
-        !call deallocateDataGroupTxArray( Nres )
-        !
-        deallocate( dsigma )
-        !
-    end subroutine func
-    !
+	!
     !> Divides by the data covariance C_d, which is a diagonal
     !> operator. Divides by the variances (squared error bars)
     !> and scales by the number of data (degrees of freedom).
@@ -1221,7 +1221,7 @@ contains
         call writeData( all_predicted_data, trim( out_file_name ) )
         !
         !> Write residual data for this NLCG iteration
-        out_file_name = trim( outdir_name )//"/ResidualData_NLCG_"//char3//".dat"
+        out_file_name = trim( outdir_name )//"/ResidualData_NLCG_"//char3//".res"
         !
         call writeData( res, trim( out_file_name ) )
         !
@@ -1231,7 +1231,7 @@ contains
         call dsigma%write( trim( out_file_name ) )
         !
         !> Write perturbation model for this NLCG iteration
-        out_file_name = trim( outdir_name )//"/PerturbationModel_NLCG_"//char3//".rho"
+        out_file_name = trim( outdir_name )//"/PerturbationModel_NLCG_"//char3//".prm"
         !
         call mHat%write( trim( out_file_name ) )
         !

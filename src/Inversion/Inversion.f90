@@ -87,6 +87,48 @@ contains
         self%n_inv_iter = 0
         !
     end subroutine initializeInversion
-    !
+    ! !
+    ! !> Compute the full penalty functional F
+    ! !> Also output the predicted data and the EM solution
+    ! !> that can be used for evaluating the gradient
+    ! !> Assuming that the model norm is already scaled by Nmodel
+    ! !
+    ! subroutine printf( comment, lambda, alpha, f, mNorm, rms, logfile )
+        ! implicit none
+        ! !
+        ! character(*), intent( in ) :: comment
+        ! real( kind=prec ), intent( in ) :: lambda, alpha, f, mNorm, rms
+        ! character(*), intent( in ), optional :: logfile
+        ! integer :: io_unit, ios
+        ! logical :: is_opened
+        ! !
+        ! if( present( logfile ) ) then
+            ! !
+            ! io_unit = ioLog
+            ! !
+            ! inquire( file = logfile, opened=is_opened )
+            ! !
+            ! if(.not. opened) then
+                ! open (unit=ioLog,file=logfile,status='unknown',position='append',iostat=ios)
+            ! endif
+        ! else
+            ! io_unit = 6
+        ! endif
+        ! !
+        ! write(io_unit,'(a10)',advance='no') trim(comment)//':'
+        ! write(io_unit,'(a3,es12.6)',advance='no') ' f=',f
+        ! write(io_unit,'(a4,es12.6)',advance='no') ' m2=',mNorm
+        ! write(io_unit,'(a5,f11.6)',advance='no') ' rms=',rms
+        ! write(io_unit,'(a8,es12.6)',advance='no') ' lambda=',lambda
+        ! write(io_unit,'(a7,es12.6)') ' alpha=',alpha
+        ! !
+        ! ! flush(io_unit): this has the effect of flushing the buffer
+        ! if (present(logfile)) then
+            ! close(io_unit)
+            ! open( unit=ioLog,file=logfile,status='old',position='append',iostat=ios )
+        ! end if
+        ! !
+    ! end subroutine printf
+    ! !
 end module Inversion
 !
