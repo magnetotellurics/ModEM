@@ -21,8 +21,8 @@ module ForwardControlFile
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
         !> Solver parameters
-        character(:), allocatable :: QMR_iters, BCG_iters, max_divcor_calls, max_divcor_iters
-        character(:), allocatable :: tolerance_divcor, tolerance_qmr
+        character(:), allocatable :: max_solver_iters, max_divcor_calls, max_divcor_iters
+        character(:), allocatable :: tolerance_divcor, tolerance_solver
         !
         contains
             !
@@ -88,18 +88,16 @@ contains
                         self%model_n_air_layer = trim( args(2) )
                     elseif( index( line_text, "model_max_height" ) > 0 ) then
                         self%model_max_height = trim( args(2) )
-                    elseif( index( line_text, "QMR_iters" ) > 0 ) then
-                        self%QMR_iters = trim( args(2) )
-                    elseif( index( line_text, "BCG_iters" ) > 0 ) then
-                        self%BCG_iters = trim( args(2) )
+                    elseif( index( line_text, "max_solver_iters" ) > 0 ) then
+                        self%max_solver_iters = trim( args(2) )
                     elseif( index( line_text, "max_divcor_calls" ) > 0 ) then
                         self%max_divcor_calls = trim( args(2) )
                     elseif( index( line_text, "max_divcor_iters" ) > 0 ) then
                         self%max_divcor_iters = trim( args(2) )
                     elseif( index( line_text, "tolerance_divcor" ) > 0 ) then
                         self%tolerance_divcor = trim( args(2) )
-                    elseif( index( line_text, "tolerance_qmr" ) > 0 ) then
-                        self%tolerance_qmr = trim( args(2) )
+                    elseif( index( line_text, "tolerance_solver" ) > 0 ) then
+                        self%tolerance_solver = trim( args(2) )
                     else
                         write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unsupported Forward Modeling parameter: ["//trim(line_text)//"]"
                         stop 
@@ -273,21 +271,12 @@ contains
                 !
             endif
             !
-            ! Solver QMR_iters
-            if( allocated( self%QMR_iters ) ) then
+            ! Solver max_solver_iters
+            if( allocated( self%max_solver_iters ) ) then
                 !
-                read( self%QMR_iters, "(I8)" ) QMR_iters
+                read( self%max_solver_iters, "(I8)" ) max_solver_iters
                 !
-                write( *, "( A30, I20)" ) "          QMR Iters = ", QMR_iters
-                !
-            endif
-            !
-            ! Solver BCG_iters
-            if( allocated( self%BCG_iters ) ) then
-                !
-                read( self%BCG_iters, "(I8)" ) BCG_iters
-                !
-                write( *, "( A30, I20)" ) "          BCG Iters = ", BCG_iters
+                write( *, "( A30, I20)" ) "          PCG Iters = ", max_solver_iters
                 !
             endif
             !
@@ -318,12 +307,12 @@ contains
                 !
             endif
             !
-            ! Solver tolerance_qmr
-            if( allocated( self%tolerance_qmr ) ) then
+            ! Solver tolerance_solver
+            if( allocated( self%tolerance_solver ) ) then
                 !
-                read( self%tolerance_qmr, * ) tolerance_qmr
+                read( self%tolerance_solver, * ) tolerance_solver
                 !
-                write( *, "( A30, es20.2)" ) "          QMR Tolerance = ", tolerance_qmr
+                write( *, "( A30, es20.2)" ) "          Solver Tolerance = ", tolerance_solver
                 !
             endif
             !
@@ -357,13 +346,12 @@ contains
         if( allocated( self%model_n_air_layer ) ) deallocate( self%model_n_air_layer )
         if( allocated( self%model_max_height ) ) deallocate( self%model_max_height )
         !
-        if( allocated( self%QMR_iters ) ) deallocate( self%QMR_iters )
-        if( allocated( self%BCG_iters ) ) deallocate( self%BCG_iters )
+        if( allocated( self%max_solver_iters ) ) deallocate( self%max_solver_iters )
         !
         if( allocated( self%max_divcor_calls ) ) deallocate( self%max_divcor_calls )
         if( allocated( self%max_divcor_iters ) ) deallocate( self%max_divcor_iters )
         if( allocated( self%tolerance_divcor ) ) deallocate( self%tolerance_divcor )
-        if( allocated( self%tolerance_qmr ) ) deallocate( self%tolerance_qmr )
+        if( allocated( self%tolerance_solver ) ) deallocate( self%tolerance_solver )
         !
     end subroutine ForwardControlFile_dtor
     !

@@ -7,7 +7,6 @@ module DataGroup
     use Constants
     !
     !> Global file path name for data files
-    !
     character(:), allocatable :: predicted_data_file_name, jmhat_data_file_name
     !
     type :: DataGroup_t
@@ -16,7 +15,7 @@ module DataGroup
         !
         real( kind=prec ), allocatable, dimension(:) :: reals, imaginaries, errors
         !
-        logical :: is_allocated, error_bar
+        logical :: is_allocated, is_complex, error_bar
         !
         integer, private :: counter
         !
@@ -93,6 +92,8 @@ contains
         !
         self%is_allocated = .TRUE.
         !
+        self%is_complex = .FALSE.
+        !
         if( present( error_bar ) ) then
             !
             self%error_bar = error_bar
@@ -120,6 +121,7 @@ contains
     end subroutine DataGroup_dtor
     !
     !> Add values to arrays in position and increments the internal counter.
+    !
     subroutine putValuesDataGroup( self, rvalue, imaginary, error )
         implicit none
         !
@@ -137,6 +139,7 @@ contains
     end subroutine putValuesDataGroup
     !
     !> Set the values at a given index of these arrays.
+    !
     subroutine setValuesDataGroup( self, comp_id, rvalue, imaginary )
         implicit none
         !
@@ -151,6 +154,7 @@ contains
     end subroutine setValuesDataGroup
     !
     !> ????
+    !
     subroutine zerosDataGroup( self )
         implicit none
         !
@@ -167,6 +171,7 @@ contains
     end subroutine zerosDataGroup
     !
     !>
+    !
     subroutine normalizeDataGroup( self, norm )
         implicit none
         !
@@ -176,7 +181,7 @@ contains
         integer :: nn
         !
         if( .NOT. self%error_bar ) then
-            stop "Error: normalizeDataGroup: no error bars to normalize"
+            stop "Error: normalizeDataGroup > no error bars to normalize"
         endif
         !
         if( present( norm ) ) then
@@ -187,9 +192,7 @@ contains
         !
         self%reals = self%reals / ( self%errors ** nn )
         !
-        self%imaginaries = self%imaginaries / ( self%errors ** nn )
-        !
-        !self%normalized = self%normalized + nn
+        if( self%is_complex ) self%imaginaries = self%imaginaries / ( self%errors ** nn )
         !
     end subroutine normalizeDataGroup
     !
@@ -207,6 +210,7 @@ contains
     end subroutine subDataGroup
     !
     !> ????
+    !
     subroutine linCombDataGroup( self, a, b, d_in, d_out )
         implicit none
         !
@@ -251,7 +255,8 @@ contains
         endif
         !
         d_out%error_bar = self%error_bar .OR. d_in%error_bar
-        !d_out%normalized = 0
+        !
+        d_out%is_complex = self%is_complex .OR. d_in%is_complex
         !
         d_out%i_dg = self%i_dg
         d_out%i_rx = self%i_rx
@@ -259,29 +264,32 @@ contains
         d_out%n_comp = self%n_comp
         !
         d_out%reals = a * self%reals + b * d_in%reals
-        d_out%imaginaries = a * self%imaginaries + b * d_in%imaginaries
+        !
+        if( d_out%is_complex ) then
+            d_out%imaginaries = a * self%imaginaries + b * d_in%imaginaries
+        endif
         !
         if( self%error_bar .AND. d_in%error_bar ) then
             !
             if( abs(a) > R_ZERO .AND. abs(b) > R_ZERO ) then
-                stop "Error: linCombDataGroup: unable to add two data vectors with error bars"
+                stop "Error: linCombDataGroup > unable to add two data vectors with error bars"
             elseif( abs(a) > R_ZERO ) then
+                !
                 d_out%errors = a * self%errors
-                !d_out%normalized = self%normalized
+                !
             elseif( abs(b) > R_ZERO ) then
+                !
                 d_out%errors = b * d_in%errors
-                !d_out%normalized = d_in%normalized
+                !
             endif
             !
         elseif( self%error_bar ) then
             !
             d_out%errors = a * self%errors
-            !d_out%normalized = self%normalized
             !
         elseif( d_in%error_bar ) then
             !
             d_out%errors = b * d_in%errors
-            !d_out%normalized = d_in%normalized
             !
         endif
         !
@@ -295,7 +303,11 @@ contains
         !
         real( kind=prec ) :: rvalue
         !
-        rvalue = sum( self%reals * d_in%reals ) + sum( self%imaginaries * d_in%imaginaries )
+        rvalue = sum( self%reals * d_in%reals ) + sum( self%reals * d_in%reals )
+        !
+        !if( self%is_complex .AND. d_in%is_complex ) then
+            !rvalue = rvalue + sum( self%imaginaries * d_in%imaginaries )
+        !endif
         !
     end function dotProdDataGroup
     !
@@ -363,7 +375,7 @@ contains
         !
         self%is_allocated = d_in%is_allocated
         !
-        !self%normalized = d_in%normalized
+        self%is_complex = d_in%is_complex
         !
     end subroutine copyFromDataGroup
     !
@@ -378,6 +390,7 @@ contains
         write( *, * ) "    Write DataGroup_t Id: ", self%i_dg
         write( *, * ) "             Receiver Id: ", self%i_rx
         write( *, * ) "          Transmitter Id: ", self%i_tx
+        write( *, * ) "     Error bar & Complex: ", self%error_bar, self%is_complex
         write( *, * ) self%n_comp, " data_rows:"
         !
         do i_comp = 1, self%n_comp

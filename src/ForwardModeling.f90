@@ -29,7 +29,7 @@ contains
         integer :: i_tx
         !
         ! Verbose
-        write( *, * ) "          - Start EM Solve"
+        !write( *, * ) "          - Start EM Solve All"
         !
         !> Loop over all Transmitters
         do i_tx = 1, size( transmitters )
@@ -42,7 +42,7 @@ contains
         enddo
         !
         ! Verbose
-        write( *, * ) "          - Finish EM Solve"
+        !write( *, * ) "          - Finish EM Solve All"
         !
     end subroutine solveAll
     !
@@ -117,9 +117,9 @@ contains
             !
         end select
         !
-        call Tx%source%createE()
+        call Tx%source%createE
         !
-        call Tx%solve()
+        call Tx%solve
         !
     end subroutine solveTx
     !
@@ -249,6 +249,7 @@ contains
     subroutine createDistributeForwardSolver()
         implicit none
         !
+        class( Transmitter_t ), pointer :: Tx
         integer :: i_tx
         !
         if( allocated( forward_solver ) ) deallocate( forward_solver )
@@ -275,7 +276,9 @@ contains
         !
         do i_tx = 1, size( transmitters )
             !
-            transmitters( i_tx )%Tx%forward_solver => forward_solver
+            Tx => getTransmitter( i_tx )
+            !
+            Tx%forward_solver => forward_solver
             !
         enddo
         !
@@ -325,7 +328,7 @@ contains
         integer :: ios
         character(len=20) :: version
         !
-        version = "Modem-OO"
+        version = "Modem-OO "//VERSION
         !
         open( ioESolution, file = file_name, action = "write", form = "unformatted", iostat = ios)
         !

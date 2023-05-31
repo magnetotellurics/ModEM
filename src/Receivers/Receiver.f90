@@ -277,6 +277,8 @@ contains
         !
         data_group = DataGroup_t( self%i_rx, transmitter%i_tx, self%n_comp, .FALSE. )
         !
+        data_group%is_complex = self%is_complex
+        !
         do i = 1, self%n_comp
             !
             real_part = real( self%response(i), kind=prec )

@@ -40,15 +40,14 @@ module ForwardSolverIT_DC
 contains
     !
     !> No subroutine briefing
-	!
+    !
     function ForwardSolverIT_DC_ctor( model_operator, solver_type ) result( self )
         implicit none
         !
         class( ModelOperator_t ), intent( in ) :: model_operator
         character(*), intent( in ) :: solver_type
-        type( ForwardSolverIT_DC_t ) :: self
         !
-        integer :: max_inv_iters
+        type( ForwardSolverIT_DC_t ) :: self
         !
         !write( *, * ) "Constructor ForwardSolverIT_DC_t"
         !
@@ -80,7 +79,7 @@ contains
         call self%setIterDefaults()
         !
         !> Set max number of all forward solver iterations
-        self%max_iter_total = self%max_div_cor * self%solver%max_inv_iters
+        self%max_iter_total = self%max_div_cor * self%solver%max_iters
         !
         call self%setIterControl
         !
@@ -126,9 +125,9 @@ contains
         !
         self%tolerance = self%solver%tolerance
         !
-        self%max_div_cor = self%max_iter_total / self%solver%max_inv_iters
+        self%max_div_cor = self%max_iter_total / self%solver%max_iters
         !
-        self%max_iter_total = self%solver%max_inv_iters * self%max_div_cor
+        self%max_iter_total = self%solver%max_iters * self%max_div_cor
         !
     end subroutine setIterControlForwardSolverIT_DC
     !
@@ -173,7 +172,7 @@ contains
     end subroutine zeroDiagnosticsForwardSolverIT_DC
     !
     !> No subroutine briefing
-	!
+    !
     subroutine createESolutionForwardSolverIT_DC( self, pol, source, e_solution )
         implicit none
         !
@@ -216,13 +215,13 @@ contains
                 !
             end select
             !
-            self%solver%converged = self%solver%n_inv_iter .LT. self%solver%max_inv_iters
+            self%solver%converged = self%solver%n_iter .LT. self%solver%max_iters
             !
             self%solver%failed = self%solver%failed .OR. self%failed
             !
             !write( *, * ) "n_iter_actual+iter,     iter,     solver%relErr(iter)"
             !
-            do iter = 1, self%solver%n_inv_iter
+            do iter = 1, self%solver%n_iter
                 !
                 self%relResVec( self%n_iter_actual + iter ) = self%solver%relErr( iter )
                 !
@@ -230,7 +229,7 @@ contains
                 !
             enddo
             !
-            self%n_iter_actual = self%n_iter_actual + self%solver%n_inv_iter
+            self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
             !
             self%n_divcor = self%n_divcor + 1
             !

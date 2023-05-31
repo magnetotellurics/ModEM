@@ -11,15 +11,18 @@ module Inversion
     !
     type, abstract :: Inversion_t
         !
-        integer :: max_inv_iters, n_inv_iter
+        integer :: iter, max_inv_iters, n_inv_iter
         !
         real( kind=prec ) :: rms_tol, lambda
+        real( kind=prec ) :: alpha, beta, rms
         !
         contains
             !
             procedure, public :: init => initializeInversion
             !
             procedure( interface_solve_inversion ), deferred, public :: solve
+            !
+            procedure( interface_output_files_inversion ), deferred, public :: outputFiles
             !
     end type Inversion_t
     !
@@ -37,11 +40,10 @@ module Inversion
         end subroutine interface_solve_inversion
         !
         !> No interface subroutine briefing
-        subroutine interface_output_files_inversion( self, iter, all_predicted_data, res, dsigma, mHat )
+        subroutine interface_output_files_inversion( self, all_predicted_data, res, dsigma, mHat )
             import :: Inversion_t, DataGroupTx_t, ModelParameter_t
             !
             class( Inversion_t ), intent( in ) :: self
-            integer, intent( in ) :: iter
             type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
             class( ModelParameter_t ), intent( in ) :: dsigma, mHat
             !
@@ -86,6 +88,48 @@ contains
         self%n_inv_iter = 0
         !
     end subroutine initializeInversion
-    !
+    ! !
+    ! !> Compute the full penalty functional F
+    ! !> Also output the predicted data and the EM solution
+    ! !> that can be used for evaluating the gradient
+    ! !> Assuming that the model norm is already scaled by Nmodel
+    ! !
+    ! subroutine printf( comment, lambda, alpha, f, mNorm, rms, logfile )
+        ! implicit none
+        ! !
+        ! character(*), intent( in ) :: comment
+        ! real( kind=prec ), intent( in ) :: lambda, alpha, f, mNorm, rms
+        ! character(*), intent( in ), optional :: logfile
+        ! integer :: io_unit, ios
+        ! logical :: is_opened
+        ! !
+        ! if( present( logfile ) ) then
+            ! !
+            ! io_unit = ioLog
+            ! !
+            ! inquire( file = logfile, opened=is_opened )
+            ! !
+            ! if(.not. opened) then
+                ! open (unit=ioLog,file=logfile,status='unknown',position='append',iostat=ios)
+            ! endif
+        ! else
+            ! io_unit = 6
+        ! endif
+        ! !
+        ! write(io_unit,'(a10)',advance='no') trim(comment)//':'
+        ! write(io_unit,'(a3,es12.6)',advance='no') ' f=',f
+        ! write(io_unit,'(a4,es12.6)',advance='no') ' m2=',mNorm
+        ! write(io_unit,'(a5,f11.6)',advance='no') ' rms=',rms
+        ! write(io_unit,'(a8,es12.6)',advance='no') ' lambda=',lambda
+        ! write(io_unit,'(a7,es12.6)') ' alpha=',alpha
+        ! !
+        ! ! flush(io_unit): this has the effect of flushing the buffer
+        ! if (present(logfile)) then
+            ! close(io_unit)
+            ! open( unit=ioLog,file=logfile,status='old',position='append',iostat=ios )
+        ! end if
+        ! !
+    ! end subroutine printf
+    ! !
 end module Inversion
 !

@@ -210,7 +210,7 @@ contains
         elseif( axis == 3 ) then
             cond_slice = self%SigMap( self%cell_cond_h%v(:,:,j) )
         else
-            stop "ModelParameter:Slice2D: wrong axis"
+            stop "Error: slice2DModelParameterCell_SG > wrong axis"
         endif
         !
         call m2D%setConductivity( cond_slice, self%air_cond, param_type, self%mKey )
@@ -220,6 +220,7 @@ contains
     end function slice2DModelParameterCell_SG
     !
     !> No interface subroutine briefing
+    !
     subroutine getCondModelParameterCell_SG( self, ccond )
         implicit none
         !
@@ -262,10 +263,10 @@ contains
         class( ModelParameterCell_SG_t ), allocatable :: mTemp
         !
         if( .NOT. self%is_allocated ) then
-            write( *, * ) "ERROR: setValueModelParameter > Input modelParam must be allocated before calling."
+            write( *, * ) "ERROR: getValueModelParameterCell_SG > Input modelParam must be allocated before calling."
         endif
         !
-        if( trim(paramType) .EQ. '' ) then
+        if( trim( paramType ) .EQ. '' ) then
             paramType = self%param_type
         endif
         !
@@ -312,16 +313,16 @@ contains
         real(kind=prec) , intent( in ), optional :: vAir
         class( Scalar_t ), intent( in ), optional :: v_v
         !
-        if( .NOT. ( self%is_allocated )) then
-            write( *, * ) "ERROR: setValueModelParameter > Output modelParam must be allocated before calling setValue_modelParam."
+        if( .NOT. ( self%is_allocated ) ) then
+            write( *, * ) "ERROR: setValueModelParameterCell_SG > Output modelParam must be allocated before calling this."
         endif
         !
         ! Error checking
         if( ( self%metric%grid%Ny .NE. v_h%Ny ) .OR. ( self%metric%grid%Nx .NE. v_h%Nx ) .OR. &
             ( self%metric%grid%NzEarth .NE. v_h%Nz ) ) then
-            write( *, * ) "ERROR: setValueModelParameter > modelParam/rscalar dimensions disagree in setValue_modelParam."
+            write( *, * ) "ERROR: setValueModelParameterCell_SG > modelParam/rscalar dimensions disagree."
         else if( paramType .NE. self%param_type ) then
-            write( *, * ) "ERROR: setValueModelParameter > paramTypes not consistent in setValue_modelParam."
+            write( *, * ) "ERROR: setValueModelParameterCell_SG > paramTypes not consistent."
         endif
         !
         self%cell_cond_h = v_h
@@ -470,11 +471,11 @@ contains
         end select
         !
     end function dotProdModelParameterCell_SG
-    !**
     !
-    ! cCond_v     Vertical conductivity
-    ! cCond_h     Horizontal conductivity
-    !*
+    !> ????
+    !> cCond_v     Vertical conductivity
+    !> cCond_h     Horizontal conductivity
+    !
     subroutine ModelParamToCellParameterCell_SG( self, cCond_h, paramType, grid, AirCond, cCond_v )
         implicit none
         !
@@ -508,10 +509,11 @@ contains
             !
         else
             !
-            if(present(cCond_v)) then
+            if( present( cCond_v ) ) then
                 !
                 cCond_v%v( :, :, 1:self%metric%grid%NzAir ) = self%air_cond
-                if(self%is_vti) then
+                !
+                if( self%is_vti ) then
                     cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = self%cell_cond_v%v
                 else
                     cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = self%cell_cond_h%v
@@ -681,6 +683,7 @@ contains
     end subroutine dPDEmappingTModelParameterCell_SG
     !
     !> No subroutine briefing
+    !
     subroutine setTypeModelParameterCell_SG( self, param_type )
         implicit none
         !
@@ -693,23 +696,27 @@ contains
         !
         if( trim( param_type ) .EQ. trim( self%param_type ) ) then
             ! Nothing to be done
-        elseif(self%param_type == "" ) then
-            self%param_type = trim(param_type)
-        elseif(self%param_type == LINEAR) then
-            if(param_type == LOGE) then
-                self%cell_cond_h%v = log(self%cell_cond_h%v)
-            elseif(param_type == LOG_10) then
-                self%cell_cond_h%v = log10(self%cell_cond_h%v)
+        elseif( self%param_type == "" ) then
+            self%param_type = trim( param_type )
+        elseif( self%param_type == LINEAR ) then
+            !
+            if( param_type == LOGE ) then
+                self%cell_cond_h%v = log( self%cell_cond_h%v )
+            elseif( param_type == LOG_10) then
+                self%cell_cond_h%v = log10( self%cell_cond_h%v )
             endif
-        elseif(param_type == LINEAR) then
-            if(self%param_type == LOGE) then
-                self%cell_cond_h%v = exp(self%cell_cond_h%v)
-            elseif(self%param_type == LOG_10) then
-                self%cell_cond_h%v = exp(self%cell_cond_h%v * log(10.))
+            !
+        elseif( param_type == LINEAR ) then
+            !
+            if( self%param_type == LOGE ) then
+                self%cell_cond_h%v = exp( self%cell_cond_h%v )
+            elseif( self%param_type == LOG_10 ) then
+                self%cell_cond_h%v = exp( self%cell_cond_h%v * log(10.) )
             endif
-        elseif((self%param_type == LOGE) .AND. (param_type == LOG_10)) then
+            !
+        elseif( ( self%param_type == LOGE ) .AND. ( param_type == LOG_10 ) ) then
             self%cell_cond_h%v = self%cell_cond_h%v / log(10.)
-        elseif((self%param_type == LOG_10) .AND. (param_type == LOGE)) then
+        elseif( ( self%param_type == LOG_10 ) .AND. ( param_type == LOGE ) ) then
             self%cell_cond_h%v = self%cell_cond_h%v * log(10.)
         else
             stop "Error: setTypeModelParameterCell_SG > Unknown param_type."
@@ -720,6 +727,7 @@ contains
     end subroutine setTypeModelParameterCell_SG
     !
     !> No subroutine briefing
+    !
     subroutine printParameterCell_SG( self )
         implicit none
         !
@@ -827,7 +835,7 @@ contains
                 !
             enddo
             !
-            if(self%is_vti) then
+            if( self%is_vti ) then
                 !> Convert (vertical) conductivity to resistivity
                 rho_v = ccond_v
                 !

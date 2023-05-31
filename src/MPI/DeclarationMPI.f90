@@ -135,9 +135,9 @@ contains
         !
         basic_comp_size = 1
         !
-        write( *, "(A45)" ) "Components memory in bytes:"
+        write( *, "(A45)" ) "Component's memory in bytes:"
         !
-        call MPI_PACK_SIZE( 16, MPI_INTEGER, main_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 15, MPI_INTEGER, main_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, main_comm, nbytes(2), ierr )
         call MPI_PACK_SIZE( len( model_operator_type ), MPI_CHARACTER, main_comm, nbytes(3), ierr )
         call MPI_PACK_SIZE( len( model_method ), MPI_CHARACTER, main_comm, nbytes(4), ierr )
@@ -196,10 +196,9 @@ contains
         !
         index = 1
         !
-        ! 16 Integers
+        ! 15 Integers
         call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( QMR_iters, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( BCG_iters, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( max_solver_iters, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( max_divcor_calls, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( max_divcor_iters, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( model_operator_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
@@ -217,7 +216,7 @@ contains
         !
         ! 3 Reals
         call MPI_PACK( model_max_height, 1, MPI_DOUBLE_PRECISION, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( tolerance_qmr, 1, MPI_DOUBLE_PRECISION, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( tolerance_solver, 1, MPI_DOUBLE_PRECISION, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( tolerance_divcor, 1, MPI_DOUBLE_PRECISION, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         !
         ! 9 Strings
@@ -259,10 +258,9 @@ contains
         !
         index = 1
         !
-        ! 16 Integers
+        ! 15 Integers
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, model_n_air_layer, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, QMR_iters, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, BCG_iters, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_solver_iters, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_divcor_calls, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_divcor_iters, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_model_operator_type, 1, MPI_INTEGER, main_comm, ierr )
@@ -280,7 +278,7 @@ contains
         !
         ! 3 Reals
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, model_max_height, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, tolerance_qmr, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
+        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, tolerance_solver, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, tolerance_divcor, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
         !
         ! 9 Strings

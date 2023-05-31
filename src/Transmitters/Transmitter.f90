@@ -12,13 +12,13 @@ module Transmitter
     !
     type, abstract :: Transmitter_t
         !
+        integer :: i_tx, n_pol, i_sol, fwd_key(8)
+        !
         real( kind=prec ) :: period
         !
         class( Source_t ), allocatable :: source
         !
         class( ForwardSolver_t ), pointer :: forward_solver
-        !
-        integer :: i_tx, n_pol, i_sol, fwd_key(8)
         !
         class( Vector_t ), allocatable, dimension(:) :: e_sol_0, e_sol_1, e_sens
         !

@@ -11,11 +11,11 @@ module InversionJob
     !
 contains
     !
-    !> Routine to run a full Inversion Job - Minimize Residual
+    !> Routine to run a full Inversion Job - Minimize Residual data error
     !> Where:
     !>     sigma  = Input|Start model (for predicted data and final inversion model)
-    !>     pmodel = Perturbation model  (if exist -dm read input model)
-    !>     sigma0 = Read input model    (-m)
+    !>     pmodel = Perturbation model (if exist -dm read input model)
+    !>     sigma0 = Read input model (-m)
     !>     dsigma = Production model (data gradient From serialJMult_T)
     !
     subroutine jobInversion()
@@ -35,6 +35,16 @@ contains
             !
             !> Instantiate ModelCovariance
             allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
+            !
+            if( has_cov_file ) then 
+                !
+                call model_cov%read_CmSqrt( cov_file_name )
+                !
+                write( *, * ) "     < Cov File: [", cov_file_name, "]"
+                !
+            else
+                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m jobInversion > Missing Covariance file!"
+            endif
             !
             !> Initialize pmodel with Zeros
             allocate( dsigma, source = sigma )
@@ -63,7 +73,7 @@ contains
         !> Read Data File: instantiate and build the Data relation between Txs and Rxs
         if( has_data_file ) then 
             !
-            call handleDataFile()
+            call handleDataFile
             !
         else
             stop "Error: jobInversion > Missing Data file!"
@@ -71,17 +81,13 @@ contains
         !
 #ifdef MPI
         !
-        call broadcastBasicComponents()
+        call broadcastBasicComponents
         !
 #else
         !
-        call createDistributeForwardSolver()
+        call createDistributeForwardSolver
         !
 #endif
-        !
-        if( .NOT. has_inv_control_file ) then
-            inversion_type = DCG
-        endif
         !
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case( inversion_type )

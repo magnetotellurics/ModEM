@@ -1,5 +1,5 @@
 !
-!> Module with the sensitivity routines serialJMult, JMult_Tx, serialJMult_T, JMult_T_Tx 
+!> Module to group the main Global components (variables and routines) of the program.
 !
 module CoreComponents
     !
@@ -36,7 +36,7 @@ module CoreComponents
     !
     use DataFileStandard
     !
-    !> Global Variables
+    !> Classes
     type( ForwardControlFile_t ), allocatable :: fwd_control_file
     type( InversionControlFile_t ), allocatable :: inv_control_file
     !
@@ -53,6 +53,8 @@ module CoreComponents
     character(6) :: str_time
     character(50) :: outdir_name
     !
+    character(:), allocatable :: modem_job
+    !
     character(:), allocatable :: fwd_control_file_name
     character(:), allocatable :: inv_control_file_name
     character(:), allocatable :: model_file_name
@@ -61,7 +63,6 @@ module CoreComponents
     character(:), allocatable :: dsigma_file_name
     character(:), allocatable :: cov_file_name
     character(:), allocatable :: e_solution_file_name
-    character(:), allocatable :: modem_job
     !
     !> Program Control Flags
     logical :: has_outdir_name
@@ -91,8 +92,9 @@ module CoreComponents
     public :: printInversionControlFileTemplate
     !
 contains
-   !
+    !
     !> Read Model File and instantiate global variables: main_grid, model_operator and sigma0
+    !
     subroutine handleModelFile( sigma0 )
         implicit none
         !
@@ -106,7 +108,8 @@ contains
         ! Verbose
         write( *, * ) "     < Model File: [", model_file_name, "]"
         !
-        !> Initialize main_grid and sigma0 with ModelReader(Only ModelReader_Weerachai by now????)
+        !> Initialize main_grid and sigma0 with ModelReader
+        !> Only ModelReader_Weerachai by now ????
         call model_reader%Read( model_file_name, main_grid, sigma0 ) 
         !
         !> Instantiate the ModelOperator object according to the main_grid type
@@ -116,24 +119,27 @@ contains
                 !
                 call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
                 !
-                call main_grid%UpdateAirLayers( air_layer%nz, air_layer%dz )
+                call main_grid%updateAirLayers( air_layer%nz, air_layer%dz )
                 !
                 ! Verbose
-                write( *, * ) "          Air Layers [i, dz(i)]:"
+                write( *, * ) "    Model Air Layers [i, dz(i)]:"
                 !
                 do i = air_layer%nz, 1, -(1)
-                    write( *, "( i20, f20.5 )" ) i, air_layer%dz(i)
+                    write( *, "( i20, f20.3 )" ) i, air_layer%dz(i)
                 enddo
                 !
                 write( *, * ) "          Air layers from the method [", trim( air_layer%method ), "]"
                 !
-                write( *, "( a39, f12.5, a4 )" ) "Top of the air layers is at ", sum( air_layer%Dz ) / 1000, " km."
+                write( *, "( a39, f12.3, a4 )" ) "Top of the air layers is at ", ( sum( air_layer%Dz ) / 1000. ), " km."
+                !
+                write( *, "( a33, f12.3 )" ) "Air layers Max Height ", air_layer%maxHeight
                 !
                 write( *, "( a23, i6, a2, i6, a2, i6, a1 )" ) "dim(x,y,z):(", main_grid%nx, ", ", main_grid%ny, ", ", main_grid%nz, ")"
                 !
-                write( *, "( a30, f16.5, a2, f16.5, a2, f16.5, a4, f16.5 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+                write( *, "( a30, f16.3, a2, f16.3, a2, f16.3, a4, f16.3 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
                 !
-                !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+                !> Instantiate model_operator
+                !> Specific type can be chosen via fwd control file
                 select case( model_operator_type )
                     !
                     case( MODELOP_MF )
@@ -174,7 +180,8 @@ contains
         !
     end subroutine handleModelFile
     !
-    !> Read Perturbation Model File: instantiate pmodel
+    !> Read Perturbation Model File: instantiate pmodel with ModelReader
+    !> Only ModelReader_Weerachai by now ????
     !
     subroutine handlePModelFile( pmodel )
         implicit none
@@ -182,7 +189,6 @@ contains
         class( ModelParameter_t ), allocatable, intent( out ) :: pmodel
         !
         type( ModelReader_Weerachai_t ) :: model_reader
-        !
         class( Grid_t ), allocatable :: prior_grid
         !
         ! Verbose
@@ -200,10 +206,10 @@ contains
     subroutine handleDataFile()
         implicit none
         !
-        integer :: i_tx, i_rx, n_rx, n_tx
-        !
         !> Local object to dealt data, self-destructs at the end of the subroutine
         type( DataFileStandard_t ) :: data_file_standard
+        !
+        integer :: i_tx, i_rx, n_rx, n_tx
         !
         write( *, * ) "     < Data File: [", data_file_name, "]"
         !
@@ -253,7 +259,8 @@ contains
         !
     end subroutine handleDataFile
     !
-    !> Read Forward Modeling Control File: set the parameter values defined in this files
+    !> Read Forward Modeling Control File: 
+    !> set the parameters as described in the file
     !
     subroutine handleForwardControlFile()
         implicit none
@@ -264,7 +271,8 @@ contains
         !
     end subroutine handleForwardControlFile
     !
-    !> Read Inversion Control File: set the parameter values defined in this files
+    !> Read Inversion Control File:
+    !> set the parameters as described in the file
     !
     subroutine handleInversionControlFile()
         implicit none
@@ -275,7 +283,7 @@ contains
         !
     end subroutine handleInversionControlFile
     !
-    !> Treat all the arguments passed in the execution command line
+    !> Handle all the arguments passed in the execution command line
     !
     subroutine handleArguments()
         implicit none
@@ -327,25 +335,25 @@ contains
                          !
                       case( "-f", "--forward" )
                          !
-                         modem_job = "Forward"
-                         !
-                         argument_index = argument_index + 1
-                         !
-                      case( "-i", "--inversion" )
-                         !
-                         modem_job = "Inversion"
+                         modem_job = "JobForwardModeling"
                          !
                          argument_index = argument_index + 1
                          !
                       case( "-j", "--jmult" )
                          !
-                         modem_job = "serialJMult"
+                         modem_job = "JobJMult"
                          !
                          argument_index = argument_index + 1
                          !
                       case( "-jt", "--jmult_t" )
                          !
-                         modem_job = "serialJMult_T"
+                         modem_job = "JobJMult_T"
+                         !
+                         argument_index = argument_index + 1
+                         !
+                      case( "-i", "--inversion" )
+                         !
+                         modem_job = "JobInversion"
                          !
                          argument_index = argument_index + 1
                          !
@@ -417,7 +425,7 @@ contains
                          !
                       case( "-v", "--version" )
                          !
-                         write( *, * ) "    + ModEM-OO version 1.0.0"
+                         write( *, * ) "    + ModEM-OO version "//VERSION
                         stop
                          !
                       case( "-h", "--help" )
@@ -451,8 +459,7 @@ contains
         !
     end subroutine handleArguments
     !
-    !> Set default values for the control variables
-    !> and Forward Modeling parameters
+    !> Set default values for all the control variables
     !
     subroutine setupDefaultParameters()
         implicit none
@@ -476,13 +483,16 @@ contains
         verbosis = .FALSE.
         !
         ! Solver parameters
-        QMR_iters = 40
-        BCG_iters = 80
+        max_solver_iters = 80
         max_divcor_calls = 20
         max_divcor_iters = 100
         tolerance_divcor = 1E-5
-        tolerance_qmr = 1E-7
+        tolerance_solver = 1E-7
         !
+        ! Inversion Parameters
+        inversion_type = NLCG
+        !
+        ! Forward Modeling Parameters
         forward_solver_type = FWD_IT_DC
         model_operator_type = MODELOP_MF
         !
@@ -498,7 +508,7 @@ contains
     end subroutine setupDefaultParameters
     !
     !> Create a directory to store output files
-    !> With a name standardized by date and runtime or specified by the input argument [-o]
+    !> Named by date and runtime or as specified by the input argument [-o]
     !
     subroutine createOutputDirectory()
         implicit none
@@ -531,7 +541,7 @@ contains
         !
     end subroutine createOutputDirectory
     !
-    !
+    !> Translate the input in seconds to a formated string 0d0h0m0s
     !
     function getLiteralTime( seconds ) result( str_time )
         implicit none
@@ -598,6 +608,7 @@ contains
         !
         !> Flush memory used by main program control variables and flags
         if( allocated( inversion_type ) ) deallocate( inversion_type )
+        if( allocated( joint_type ) ) deallocate( joint_type )
         !
         if( allocated( model_operator_type ) ) deallocate( model_operator_type )
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
@@ -605,45 +616,45 @@ contains
         if( allocated( source_type_csem ) ) deallocate( source_type_csem )
         if( allocated( model_method ) ) deallocate( model_method )
         if( allocated( get_1d_from ) ) deallocate( get_1d_from )
+        !
         if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
         if( allocated( jmhat_data_file_name ) ) deallocate( jmhat_data_file_name )
         if( allocated( e_solution_file_name ) ) deallocate( e_solution_file_name )
-        !model_operator_type
         if( allocated( model_file_name ) ) deallocate( model_file_name )
         if( allocated( pmodel_file_name ) ) deallocate( pmodel_file_name )
         if( allocated( data_file_name ) ) deallocate( data_file_name )
         if( allocated( dsigma_file_name ) ) deallocate( dsigma_file_name )
         if( allocated( cov_file_name ) ) deallocate( cov_file_name )
         !
-        if( allocated( units_in_file ) ) deallocate( units_in_file )
-        !
         if( allocated( fwd_control_file_name ) ) deallocate( fwd_control_file_name )
         if( allocated( fwd_control_file ) ) deallocate( fwd_control_file )
         if( allocated( inv_control_file_name ) ) deallocate( inv_control_file_name )
         if( allocated( inv_control_file ) ) deallocate( inv_control_file )
         !
+        if( allocated( units_in_file ) ) deallocate( units_in_file )
+        !
         if( allocated( modem_job ) ) deallocate( modem_job )
         !
     end subroutine garbageCollector
     !
-    !> Print basic information on how to use the program on the screen
+    !> Print on the screen basic information on how to use the program.
     !
     subroutine printUsage()
         implicit none
         !
-        write( *, * ) "ModEM Minimal Usage:"
+        write( *, * ) "ModEM_"//VERSION//" Minimal Usage:"
         write( *, * ) ""
-        write( *, * ) "    Forward Modeling:"
+        write( *, * ) "    Forward Modeling (FWD):"
         write( *, * ) "        <ModEM> -f -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "        Output:"
         write( *, * ) "        - 'all_predicted_data.dat' or the path specified by      [-pd]"
         write( *, * ) ""
-        write( *, * ) "    Jacobian Multiplication:"
+        write( *, * ) "    Jacobian Multiplication (JMult):"
         write( *, * ) "        <ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>"
         write( *, * ) "        Output:"
         write( *, * ) "        - 'jmhat.dat' or the path specified by                   [-jm]"
         write( *, * ) ""
-        write( *, * ) "    Transposed J Multiplication:"
+        write( *, * ) "    Transposed J Multiplication (JMult_T):"
         write( *, * ) "        <ModEM> -jt -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "        Output:"
         write( *, * ) "        - 'dsigma.rho' or the path specified by                  [-dm]"
@@ -656,14 +667,15 @@ contains
         write( *, * ) "    Other options:"
         write( *, * ) "        <ModEM> -h or <ModEM> --help"
         write( *, * ) ""
+        !
     end subroutine printUsage
     !
-    !> Print all the supported input parameters  on the screen
+    !> Print on the screen all the supported input parameters.
     !
     subroutine printHelp()
         implicit none
         !
-        write( *, * ) "ModEM Options:"
+        write( *, * ) "ModEM_"//VERSION//" Options:"
         write( *, * ) ""
         write( *, * ) "    Flags to define a job:"
         write( *, * ) "        [-f],  [--forward]   :  Forward Modeling."
@@ -687,13 +699,10 @@ contains
         write( *, * ) "        [-h],  [--help]      :  Print this information."
         write( *, * ) "        [-tmp],[--template]  :  Create control file templates."
         !
-        write( *, * ) ""
-        write( *, * ) "Version 1.0.0"
-        !
     end subroutine printHelp
     !
-    !> Create a text file called [fwd_ctrl_template.txt] 
-    !> with the supported content for set the Forward Modeling parameters
+    !> Create a template text file called [fwd_ctrl_template.txt] 
+    !> with all supported parameters for the Forward Modeling Control File
     !
     subroutine printForwardControlFileTemplate()
         implicit none
@@ -723,7 +732,7 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A49)" ) "model_method [mirror|fixed height] : fixed height"
             write( ioFwdTmp, "(A39)" ) "model_n_air_layer [10]             : 10"
-            write( ioFwdTmp, "(A42)" ) "model_max_height [200.0]           : 200.0"
+            write( ioFwdTmp, "(A41)" ) "model_max_height [200.]            : 200."
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Source parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
@@ -733,14 +742,13 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A35)" ) "QMR_iters [40]                 : 40"
-            write( ioFwdTmp, "(A35)" ) "BCG_iters [80]                 : 80"
+            write( ioFwdTmp, "(A35)" ) "max_solver_iters [80]          : 80"
             write( ioFwdTmp, "(A35)" ) "max_divcor_calls [20]          : 20"
             write( ioFwdTmp, "(A36)" ) "max_divcor_iters [100]         : 100"
-            write( ioFwdTmp, "(A37)" ) "tolerance_qmr [1E-7]           : 1E-7"
+            write( ioFwdTmp, "(A37)" ) "tolerance_solver [1E-7]        : 1E-7"
             write( ioFwdTmp, "(A37)" ) "tolerance_divcor [1E-5]        : 1E-5"
             write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
-            write( ioFwdTmp, "(A1)", advance = "no" ) "#"
+            write( ioFwdTmp, "(A1)" ) "#"
             !
             close( ioFwdTmp )
             !
@@ -752,8 +760,8 @@ contains
         !
     end subroutine printForwardControlFileTemplate
     !
-    !> Create a text file called [inv_ctrl_template.txt] 
-    !> with the supported content for set the Inversion parameters
+    !> Create a template text file called [inv_ctrl_template.txt] 
+    !> with all supported parameters for the Inversion Control File
     !
     subroutine printInversionControlFileTemplate()
         implicit none
@@ -772,15 +780,15 @@ contains
             write( ioInvTmp, "(A1)" )  "#"
             write( ioInvTmp, "(A38)" ) "inversion_type [DCG|NLCG]       : NLCG"
             write( ioInvTmp, "(A44)" ) "joint_type [Unweighted|TxBased] : Unweighted"
-            write( ioInvTmp, "(A36)" ) "max_inv_iters [50]              : 50"
+            write( ioInvTmp, "(A37)" ) "max_inv_iters [100]             : 100"
             write( ioInvTmp, "(A36)" ) "max_grad_iters [20]             : 20"
             write( ioInvTmp, "(A38)" ) "error_tol [1E-3]                : 1E-3"
             write( ioInvTmp, "(A38)" ) "rms_tol [1.05]                  : 1.05"
-            write( ioInvTmp, "(A36)" ) "lambda [1.]                     : 1."
-            write( ioInvTmp, "(A40)" ) "lambda_tol [1.0e-4]             : 1.0e-8"
-            write( ioInvTmp, "(A37)" ) "lambda_div [20.]                : 10."
-            write( ioInvTmp, "(A37)" ) "startdm [20.]                   : 10."
-            write( ioInvTmp, "(A1)", advance = "no" ) "#"
+            write( ioInvTmp, "(A37)" ) "lambda [10.]                    : 10."
+            write( ioInvTmp, "(A40)" ) "lambda_tol [1.0e-4]             : 1.0e-4"
+            write( ioInvTmp, "(A37)" ) "lambda_div [10.]                : 10."
+            write( ioInvTmp, "(A37)" ) "startdm [10.]                   : 10."
+            write( ioInvTmp, "(A1)" ) "#"
             !
             close( ioInvTmp )
             !

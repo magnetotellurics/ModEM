@@ -19,6 +19,8 @@ module InversionDCG
             !
             procedure, public :: solve => solveInversionDCG
             !
+            procedure, public :: outputFiles => outputFilesInversionDCG
+            !
             procedure, private :: Calc_FWD, CG_DS_standard, MultA_DS
             !
     end type InversionDCG_t
@@ -26,8 +28,6 @@ module InversionDCG
     interface InversionDCG_t
         module procedure InversionDCG_ctor
     end interface InversionDCG_t
-    !
-    private :: outputFilesInversionDCG
     !
 contains
     !
@@ -93,8 +93,7 @@ contains
         real( kind=prec ) :: F, mNorm
         type( DataGroupTx_t ), allocatable, dimension(:) :: b, dx, all_predicted_data, res, JmHat
         class( ModelParameter_t ), allocatable :: mHat
-        real( kind=prec ) :: rms
-        integer :: DCG_iter, ios
+        integer :: ios
         !
         !>
         call createOutputDirectory()
@@ -121,15 +120,15 @@ contains
             !> Write in DCG.log
             write( ioInvLog, "( a41, es12.5 )" ) "The initial damping parameter lambda is ", self%lambda
             !
-            call self%Calc_FWD( all_data, dsigma, mHat, all_predicted_data, res, F, mNorm, rms )
+            call self%Calc_FWD( all_data, dsigma, mHat, all_predicted_data, res, F, mNorm )
             !
             !> Write in DCG.log
-            write( ioInvLog, "( a10, a3, es12.5, a4, es12.5, a5, f18.5, a8, es12.5 )" ) "START:", " f=", f, " m2=", mNorm, " rms=", rms, " lambda=", self%lambda
+            write( ioInvLog, "( a10, a3, es12.5, a4, es12.5, a5, f18.5, a8, es12.5 )" ) "START:", " f=", f, " m2=", mNorm, " rms=", self%rms, " lambda=", self%lambda
             !
-            DCG_iter = 1
+            self%iter = 1
             !
             !> Print
-            write( *, "( a38, f18.5)" ) "            Start_DCG : Residual rms=", rms
+            write( *, "( a38, f18.5)" ) "            Start_DCG : Residual rms=", self%rms
             !
             !>
             dcg_loop : do
@@ -162,22 +161,22 @@ contains
                 !
                 call dsigma%linComb( ONE, ONE, mHat )
                 !
-                call self%Calc_FWD( all_data, dsigma, mHat, all_predicted_data, res, F, mNorm, rms )
+                call self%Calc_FWD( all_data, dsigma, mHat, all_predicted_data, res, F, mNorm )
                 !
-                call outputFilesInversionDCG( DCG_iter, all_predicted_data, res, dsigma, mHat )
+                call self%outputFiles( all_predicted_data, res, dsigma, mHat )
                 !
                 !> Write / Print DCG.log
-                write( *, "( a20, i5, a16, f18.5)" ) "            DCG_iter", DCG_iter, ": Residual rms=", rms
+                write( *, "( a20, i5, a16, f18.5)" ) "            self%iter", self%iter, ": Residual rms=", self%rms
                 !
-                write( ioInvLog, "( a25, i5 )" ) "Completed DCG iteration ", DCG_iter
-                write( ioInvLog, "( a10, a3, es12.5, a4, es12.5, a5, f18.5, a8, es12.5 )" ) "with:", " f=", f, " m2=", mNorm, " rms=", rms, " lambda=", self%lambda
+                write( ioInvLog, "( a25, i5 )" ) "Completed DCG iteration ", self%iter
+                write( ioInvLog, "( a10, a3, es12.5, a4, es12.5, a5, f18.5, a8, es12.5 )" ) "with:", " f=", f, " m2=", mNorm, " rms=", self%rms, " lambda=", self%lambda
                 !
                 !>
-                if( rms .LT. self%rms_tol .OR. DCG_iter .GE. self%max_inv_iters ) then
+                if( self%rms .LT. self%rms_tol .OR. self%iter .GE. self%max_inv_iters ) then
                     exit
                 endif
                 !
-                DCG_iter = DCG_iter + 1
+                self%iter = self%iter + 1
                 !
             enddo dcg_loop
             !
@@ -203,7 +202,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine Calc_FWD( self, all_data, dsigma, mHat, all_predicted_data, res, F, mNorm, rms )
+    subroutine Calc_FWD( self, all_data, dsigma, mHat, all_predicted_data, res, F, mNorm )
         implicit none
         !
         class( InversionDCG_t ), intent( inout ) :: self
@@ -212,7 +211,6 @@ contains
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: res
         real( kind=prec ), intent( out ) :: F, mNorm
-        real( kind=prec ), intent( inout ) :: rms
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: Nres
         real( kind=prec ) :: SS
@@ -240,7 +238,7 @@ contains
         !
         SS = dotProdData( res, Nres )
         !
-        Ndata = countData( res )
+        Ndata = countValues( res )
         !
         mNorm = mHat%dotProd( mHat )
         !
@@ -248,7 +246,7 @@ contains
         !
         F = SS / Ndata + ( self%lambda * mNorm / Nmodel )
         !
-        rms = sqrt( SS / Ndata )
+        self%rms = sqrt( SS / Ndata )
         !
     end subroutine Calc_FWD
     !
@@ -264,8 +262,7 @@ contains
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: r, p, Ap
-        real( kind=prec ) :: alpha, beta, r_norm_pre, r_norm, b_norm
-        integer :: iter
+        real( kind=prec ) :: r_norm_pre, r_norm, b_norm
         !
         r = b
         !
@@ -279,15 +276,15 @@ contains
         !
         r_norm = dotProdData( r, r )
         !
-        iter = 1
+        self%iter = 1
         !
-        self%r_err(iter) = r_norm / b_norm
+        self%r_err( self%iter ) = r_norm / b_norm
         !
         !> Write / Print DCG.log
         write( ioInvLog, "(a18)" ) "Relative CG-error:"
-        write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", iter, ", error = ", self%r_err(iter), " Lambda= ", self%lambda
+        write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", self%iter, ", error = ", self%r_err( self%iter ), " Lambda= ", self%lambda
         !
-        cg_loop : do while( self%r_err(iter) .GT. self%error_tol .AND. iter .LT. self%max_grad_iters )
+        cg_loop : do while( self%r_err( self%iter ) .GT. self%error_tol .AND. self%iter .LT. self%max_grad_iters )
             ! 
             call self%MultA_DS( p, dsigma, all_data, Ap )
             !
@@ -296,34 +293,34 @@ contains
             call setErrorBar( x, .FALSE. )
             call setErrorBar( Ap, .FALSE. )
             !
-            ! Compute alpha: alpha= (r^T r) / (p^T Ap)
-            alpha = r_norm / dotProdData( p, Ap )
+            ! Compute self%alpha: alpha= (r^T r) / (p^T Ap)
+            self%alpha = r_norm / dotProdData( p, Ap )
             !
             ! Compute new x: x = x + alpha*p
-            call scMultAddData( alpha, p, x )
+            call scMultAddData( self%alpha, p, x )
             !
             ! Compute new r: r = r - alpha*Ap
-            call scMultAddData( -alpha, Ap, r ) 
+            call scMultAddData( -self%alpha, Ap, r ) 
             !
             r_norm_pre = r_norm
             !
             r_norm = dotProdData( r, r )
             !
-            beta = r_norm / r_norm_pre
+            self%beta = r_norm / r_norm_pre
             !
             ! Compute new p: p = r + beta*p    
-            call linCombData( ONE, r, beta, p, p )
+            call linCombData( ONE, r, self%beta, p, p )
             !
-            iter = iter + 1
+            self%iter = self%iter + 1
             !
-            self%r_err(iter) = r_norm / b_norm 
+            self%r_err( self%iter ) = r_norm / b_norm 
             !
             !> Write / Print DCG.log
-            write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", iter, ", error = ", self%r_err(iter), " Lambda= ", self%lambda
+            write( ioInvLog, "( a9, i5, a10, es12.5, a10, es12.5 )" ) "CG-Iter= ", self%iter, ", error = ", self%r_err( self%iter ), " Lambda= ", self%lambda
             !
         enddo cg_loop
         !
-        self%n_inv_iter = iter
+        self%n_inv_iter = self%iter
         !
     end subroutine CG_DS_standard
     !
@@ -377,17 +374,17 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine outputFilesInversionDCG( iter, all_predicted_data, res, dsigma, mHat )
+    subroutine outputFilesInversionDCG( self, all_predicted_data, res, dsigma, mHat )
         implicit none
         !
-        integer, intent( in ) :: iter
+        class( InversionDCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
         class( ModelParameter_t ), intent( in ) :: dsigma, mHat
         !
         character(100) :: out_file_name
         character(3) :: char3
         !
-        write( char3, "(i3.3)" ) iter
+        write( char3, "(i3.3)" ) self%iter
         !
         !> Write predicted data for this DCG iteration
         out_file_name = trim( outdir_name )//"/PredictedData_DCG_"//char3//".dat"
@@ -395,7 +392,7 @@ contains
         call writeData( all_predicted_data, trim( out_file_name ) )
         !
         !> Write residual data for this DCG iteration
-        out_file_name = trim( outdir_name )//"/ResidualData_DCG_"//char3//".dat"
+        out_file_name = trim( outdir_name )//"/ResidualData_DCG_"//char3//".res"
         !
         call writeData( res, trim( out_file_name ) )
         !
@@ -405,7 +402,7 @@ contains
         call dsigma%write( trim( out_file_name ) )
         !
         !> Write perturbation model for this DCG iteration
-        out_file_name = trim( outdir_name )//"/PerturbationModel_DCG_"//char3//".rho"
+        out_file_name = trim( outdir_name )//"/PerturbationModel_DCG_"//char3//".prm"
         !
         call mHat%write( trim( out_file_name ) )
         !

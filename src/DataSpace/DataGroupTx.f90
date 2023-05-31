@@ -45,6 +45,7 @@ contains
     !
     !> Parametrized constructor:
     !> Set the transmitter index and deallocate the data array if it was previously allocated
+    !
     function DataGroupTx_ctor( i_tx ) result( self )
         implicit none
         !
@@ -61,6 +62,7 @@ contains
     end function DataGroupTx_ctor
     !
     !> No subroutine briefing
+    !
     subroutine DataGroupTx_dtor( self )
         implicit none
         !
@@ -73,6 +75,7 @@ contains
     end subroutine DataGroupTx_dtor
     !
     !> sub
+    !
     subroutine subDataGroupTx( self, rhs )
         implicit none
         !
@@ -98,6 +101,7 @@ contains
     end subroutine subDataGroupTx
     !
     !> ????
+    !
     subroutine normalizeDataGroupTx( self, norm )
         implicit none
         !
@@ -122,6 +126,7 @@ contains
     end subroutine normalizeDataGroupTx
     !
     !> Call reset for each DataGroup in data
+    !
     subroutine zerosDataGroupTx( self )
         implicit none
         !
@@ -138,6 +143,7 @@ contains
     end subroutine zerosDataGroupTx
     !
     !> Returns a pointer, allowing modifications directly to a DataGroup at a given transmitter-receiver pair indexes
+    !
     function getRxDataDataGroupTx( self, i_rx ) result( data_group )
         implicit none
         !
@@ -165,6 +171,7 @@ contains
     end function getRxDataDataGroupTx
     !
     !> Dynamically add a new DataGroup to the array, always via reallocation.
+    !
     subroutine putDataGroupTx( self, data_group )
         implicit none
         !
@@ -202,6 +209,7 @@ contains
     !
     !> Replace the values of a specific DataGroup of the array 
     !> by other DataGroup with the same transmitter-receiver pair
+    !
     subroutine setValuesDataGroupTx( self, data_group )
         implicit none
         !
@@ -232,6 +240,7 @@ contains
     !
     !> Replace a specific DataGroup of the array 
     !> by other DataGroup with the same transmitter-receiver pair
+    !
     subroutine setDataGroupTx( self, data_group )
         implicit none
         !
@@ -257,6 +266,7 @@ contains
     end subroutine setDataGroupTx
     !
     !> dotProd between two DataGroupTxs
+    !
     function dotProdDataGroupTx( self, data_tx ) result( rvalue )
         implicit none
         !
@@ -268,7 +278,7 @@ contains
         !
         if( size( self%data ) /= size( data_tx%data ) ) then
             !
-            stop "Error: DataGroupTx_t : dotProdDataGroupTx > different data sizes"
+            stop "Error: dotProdDataGroupTx > different data sizes"
             !
         else
             !
@@ -285,6 +295,7 @@ contains
     end function dotProdDataGroupTx
     !
     !> linComb between two DataGroupTxs
+    !
     subroutine linCombDataGroupTx( self, a, b, data_tx, data_tx_out )
         implicit none
         !
@@ -295,19 +306,19 @@ contains
         integer :: i
         !
         if( self%i_tx /= data_tx%i_tx ) then
-            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data txs: d1 and d2"
+            stop "Error: linCombDataGroupTx > different data txs: d1 and d2"
         endif
         !
         if( size( self%data ) /= size( data_tx%data ) ) then
-            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data sizes: d1 and d2"
+            stop "Error: linCombDataGroupTx > different data sizes: d1 and d2"
         endif
         !
         if( self%i_tx /= data_tx_out%i_tx ) then
-            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data txs: d1 and d_out"
+            stop "Error: linCombDataGroupTx > different data txs: d1 and d_out"
         endif
         !
         if( size( self%data ) /= size( data_tx_out%data ) ) then
-            stop "Error: DataGroupTx_t : linCombDataGroupTx > different data sizes: d1 and d_out"
+            stop "Error: linCombDataGroupTx > different data sizes: d1 and d_out"
         endif
         !
         do i = 1, size( self%data )
@@ -319,6 +330,7 @@ contains
     end subroutine linCombDataGroupTx
     !
     !> Call the print routine of each DataGroup in the data array
+    !
     subroutine printDataGroupTx( self )
         implicit none
         !

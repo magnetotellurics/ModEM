@@ -7,28 +7,27 @@ program ModEM
     !
     use WorkerMPI
     !
-    call constructorMPI()
+    call constructorMPI
     !
-    !> MPI Master process
+    ! MPI Master process
     if( mpi_rank == 0 ) then
         !
-        call runProgram()
+        call runProgram
         !
         call MPI_Finalize( ierr )
         !
-    !> MPI Worker process
+    ! MPI Worker process
     else
         !
-        call workerMainLoop()
+        call workerMainLoop
         !
     endif
     !
 #else
     !
-    use InversionDCG
-    use InversionNLCG
+    use InversionJob
     !
-    call runProgram()
+    call runProgram
     !
 #endif
     !
@@ -44,15 +43,16 @@ contains
         !
         call date_and_time( str_date, str_time )
         !
-        !> Start the program and runtime count
+        !> Start runtime countdown
         call cpu_time( t_start )
         !
         modem_job = "unknown"
         !
-        call setupDefaultParameters()
+        !> Set default value of program variables
+        call setupDefaultParameters
         !
-        !> Validate arguments, set model_file_name, data_file_name, control_files, etc...
-        call handleArguments()
+        !> Handle arguments passed by the user on the command line
+        call handleArguments
         !
         write( *, * )
         write( *, "(a18, a8, a1, a6, a1)" ) "Start ModEM-OO at ", str_date, "_", str_time, "."
@@ -60,17 +60,17 @@ contains
         !
         !> If it was passed by argument,
         !> Check parameters at the forward control file
-        if( has_fwd_control_file ) call handleForwardControlFile()
+        if( has_fwd_control_file ) call handleForwardControlFile
         !
         !> If it was passed by argument,
         !> Check parameters at the inversion control file
-        if( has_inv_control_file ) call handleInversionControlFile()
+        if( has_inv_control_file ) call handleInversionControlFile
         !
         !> Execute the job specified in the arguments
-        call handleJob()
+        call handleJob
         !
         !> Deallocate remaining main program memory
-        call garbageCollector()
+        call garbageCollector
         !
         !> End runtime countdown
         call cpu_time( t_finish )
@@ -82,119 +82,7 @@ contains
         write( *, * )
         !
     end subroutine runProgram
-    !
-    !> Routine to run a full Inversion Job - Minimize Residual
-    !> Where:
-    !>     sigma  = Input|Start model (for predicted data and final inversion model)
-    !>     pmodel = Perturbation model  (if exist -dm read input model)
-    !>     sigma0 = Read input model    (-m)
-    !>     dsigma = Production model (data gradient From serialJMult_T)
-    !
-    subroutine jobInversion()
-        implicit none
-        !
-        class( ModelParameter_t ), allocatable :: sigma, dsigma
-        !
-        class( Inversion_t ), allocatable :: inversion
-        !
-        ! Verbose
-        write( *, * ) "     - Start jobInversion"
-        !
-        !> Read Model File and instantiate global variables: main_grid, model_operator and Sigma0
-        if( has_model_file ) then 
-            !
-            call handleModelFile( sigma )
-            !
-            !> Instantiate ModelCovariance
-            allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
-            !
-            if( has_cov_file ) then 
-                !
-                call model_cov%read_CmSqrt( cov_file_name )
-                !
-                write( *, * ) "     < Cov File: [", cov_file_name, "]"
-                !
-            else
-                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m jobInversion > Missing Covariance file!"
-            endif
-            !
-            !> Initialize pmodel with Zeros
-            allocate( dsigma, source = sigma )
-            !
-            call dsigma%zeros
-            !
-        else
-            stop "Error: jobInversion > Missing Model file!"
-        endif
-        !
-        !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
-        if( has_pmodel_file ) then 
-            !
-            deallocate( dsigma )
-            !
-            call handlePModelFile( dsigma )
-            !
-            call dsigma%setMetric( model_operator%metric )
-            !
-            call model_cov%multBy_Cm( dsigma )
-            !
-            call sigma%linComb( ONE, ONE, dsigma )
-            !
-        endif
-        !
-        !> Read Data File: instantiate and build the Data relation between Txs and Rxs
-        if( has_data_file ) then 
-            !
-            call handleDataFile()
-            !
-        else
-            stop "Error: jobInversion > Missing Data file!"
-        endif
-        !
-#ifdef MPI
-        !
-        call broadcastBasicComponents()
-        !
-#else
-        !
-        call createDistributeForwardSolver()
-        !
-#endif
-        !
-        if( .NOT. has_inv_control_file ) then
-            inversion_type = NLCG
-        endif
-        !
-        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
-        select case( inversion_type )
-            !
-            case( DCG )
-                !
-                allocate( inversion, source = InversionDCG_t() )
-                !
-            case( NLCG )
-                !
-                allocate( inversion, source = InversionNLCG_t() )
-                !
-            case default
-                !
-                stop "Error: jobInversion > Undefined inversion_type"
-                !
-        end select
-        !
-        call inversion%solve( all_measured_data, sigma, dsigma )
-        !
-#ifdef MPI
-        call broadcastFinish
-#endif
-        !
-        deallocate( sigma, dsigma, inversion )
-        !
-        ! Verbose
-        write( *, * ) "     - Finish jobInversion"
-        !
-    end subroutine jobInversion
-    !
+	!
     !> No subroutine briefing
     !
     subroutine handleJob()
@@ -208,19 +96,19 @@ contains
         !
         select case( modem_job )
             !
-            case( "Forward" )
+            case( "JobForwardModeling" )
                 !
                 call jobForwardModeling
                 !
-            case( "serialJMult" )
+            case( "JobJMult" )
                 !
                 call jobJMult
                 !
-            case( "serialJMult_T" )
+            case( "JobJMult_T" )
                 !
                 call jobJMult_T
                 !
-            case( "Inversion" )
+            case( "JobInversion" )
                 !
                 call jobInversion
                 !
