@@ -148,6 +148,7 @@ contains
         !
         ! initialize the line search
         self%alpha = self%alpha_1
+        self%beta = R_ZERO
         !
         open( unit = ioInvLog, file = trim( outdir_name )//"/NLCG.log", status="unknown", position="append", iostat=ios )
         !
@@ -527,7 +528,7 @@ contains
         !call linCombData( ONE, all_data, MinusONE, dHat, res )
         call subData( res, dHat )
         !
-        call cdInvMult( res )
+        call normalizeData( res, 2 )
         !
         !> ????
         allocate( rScalar3D_SG_t :: s_hat( size( all_data ) ) )
@@ -790,22 +791,12 @@ contains
     subroutine cdInvMult( d_in, d_out )
         implicit none
         !
-        type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: d_in
-        type( DataGroupTx_t ), allocatable, dimension(:), optional, intent( out ) :: d_out
+        type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: d_in
+        type( DataGroupTx_t ), allocatable, dimension(:), optional, intent( inout ) :: d_out
         !
-        type( DataGroupTx_t ), allocatable, dimension(:) :: all_data
+        d_out = d_in
         !
-        all_data = d_in
-        !
-        call normalizeData( all_data, 2 )
-        !
-        if( present( d_out ) ) then
-            d_out = all_data
-        else
-            d_in = all_data
-        endif
-        !
-        !call deallocateDataGroupTxArray( all_data )
+        call normalizeData( d_out, 2 )
         !
     end subroutine cdInvMult
     !

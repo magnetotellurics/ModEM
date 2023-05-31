@@ -59,6 +59,10 @@ module DataGroupTxArray
         module procedure :: setErrorBarDataGroupTxArray
     end interface setErrorBar
     !
+    interface setComplex
+        module procedure :: setComplexDataGroupTxArray
+    end interface setComplex
+    !
     interface countData
         module procedure :: countDataGroupTxArray
     end interface countData
@@ -292,6 +296,28 @@ contains
         enddo
         !
     end subroutine setErrorBarDataGroupTxArray
+    !
+    !> No subroutine briefing
+    !
+    subroutine setComplexDataGroupTxArray( data_tx_array, is_complex )
+        implicit none
+        !
+        type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array
+        logical, intent( in ) :: is_complex
+        !
+        integer :: i, j
+        !
+        do i = 1, size( data_tx_array )
+            !
+            do j = 1, size( data_tx_array(i)%data )
+                !
+                data_tx_array(i)%data(j)%is_complex = is_complex
+                !
+            enddo
+            !
+        enddo
+        !
+    end subroutine setComplexDataGroupTxArray
     !
     function countValuesGroupTxArray( data_tx_array ) result( counter )
         implicit none

@@ -246,6 +246,8 @@ contains
             !
             allocate( data_group, source = DataGroup_t( i_rx, i_tx, receiver%n_comp, .TRUE. ) )
             !
+            data_group%is_complex = receiver%is_complex
+            !
             call data_group%put( real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), r_error )
             !
             call updateDataGroupArray( self%measured_data, data_group )

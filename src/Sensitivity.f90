@@ -167,6 +167,8 @@ contains
                 !
             enddo
             !
+            JmHat_tx%data( i_data )%is_complex = Rx%is_complex
+            !
             JmHat_tx%data( i_data )%error_bar = .FALSE.
             !
         enddo

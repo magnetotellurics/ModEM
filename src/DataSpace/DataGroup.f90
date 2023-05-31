@@ -15,7 +15,7 @@ module DataGroup
         !
         real( kind=prec ), allocatable, dimension(:) :: reals, imaginaries, errors
         !
-        logical :: is_allocated, error_bar
+        logical :: is_allocated, is_complex, error_bar
         !
         integer, private :: counter
         !
@@ -91,6 +91,8 @@ contains
         self%errors = R_ZERO
         !
         self%is_allocated = .TRUE.
+        !
+        self%is_complex = .FALSE.
         !
         if( present( error_bar ) ) then
             !
@@ -190,7 +192,7 @@ contains
         !
         self%reals = self%reals / ( self%errors ** nn )
         !
-        self%imaginaries = self%imaginaries / ( self%errors ** nn )
+        if( self%is_complex ) self%imaginaries = self%imaginaries / ( self%errors ** nn )
         !
     end subroutine normalizeDataGroup
     !
@@ -254,13 +256,18 @@ contains
         !
         d_out%error_bar = self%error_bar .OR. d_in%error_bar
         !
+        d_out%is_complex = self%is_complex .OR. d_in%is_complex
+        !
         d_out%i_dg = self%i_dg
         d_out%i_rx = self%i_rx
         d_out%i_tx = self%i_tx
         d_out%n_comp = self%n_comp
         !
         d_out%reals = a * self%reals + b * d_in%reals
-        d_out%imaginaries = a * self%imaginaries + b * d_in%imaginaries
+        !
+        if( d_out%is_complex ) then
+            d_out%imaginaries = a * self%imaginaries + b * d_in%imaginaries
+        endif
         !
         if( self%error_bar .AND. d_in%error_bar ) then
             !
@@ -296,8 +303,11 @@ contains
         !
         real( kind=prec ) :: rvalue
         !
-        rvalue = sum( self%reals * d_in%reals ) + &
-        sum( self%imaginaries * d_in%imaginaries )
+        rvalue = sum( self%reals * d_in%reals ) + sum( self%reals * d_in%reals )
+        !
+        !if( self%is_complex .AND. d_in%is_complex ) then
+            !rvalue = rvalue + sum( self%imaginaries * d_in%imaginaries )
+        !endif
         !
     end function dotProdDataGroup
     !
@@ -365,6 +375,8 @@ contains
         !
         self%is_allocated = d_in%is_allocated
         !
+        self%is_complex = d_in%is_complex
+        !
     end subroutine copyFromDataGroup
     !
     !> Print the entire contents of the DataGroup on the screen.
@@ -378,6 +390,7 @@ contains
         write( *, * ) "    Write DataGroup_t Id: ", self%i_dg
         write( *, * ) "             Receiver Id: ", self%i_rx
         write( *, * ) "          Transmitter Id: ", self%i_tx
+        write( *, * ) "     Error bar & Complex: ", self%error_bar, self%is_complex
         write( *, * ) self%n_comp, " data_rows:"
         !
         do i_comp = 1, self%n_comp
