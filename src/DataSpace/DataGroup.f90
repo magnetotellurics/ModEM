@@ -305,10 +305,6 @@ contains
         !
         rvalue = sum( self%reals * d_in%reals ) + sum( self%reals * d_in%reals )
         !
-        !if( self%is_complex .AND. d_in%is_complex ) then
-            !rvalue = rvalue + sum( self%imaginaries * d_in%imaginaries )
-        !endif
-        !
     end function dotProdDataGroup
     !
     !> Return if it is similar to another DataGroup.

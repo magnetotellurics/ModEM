@@ -11,7 +11,7 @@ module Inversion
     !
     type, abstract :: Inversion_t
         !
-        integer :: iter, max_inv_iters, n_inv_iter
+        integer :: iter, n_iter, max_iters
         !
         real( kind=prec ) :: rms_tol, lambda
         real( kind=prec ) :: alpha, beta, rms
@@ -60,14 +60,14 @@ contains
         !
         class( Inversion_t ), intent( inout ) :: self
         !
-        self%max_inv_iters = 5
+        self%max_iters = 5
         self%rms_tol = 1.05
         self%lambda = 10.
         !
         if( has_inv_control_file ) then
             !
             if( allocated( inv_control_file%max_inv_iters ) ) &
-                read( inv_control_file%max_inv_iters, * ) self%max_inv_iters
+                read( inv_control_file%max_inv_iters, * ) self%max_iters
             !
             if( allocated( inv_control_file%rms_tol ) ) &
                 read( inv_control_file%rms_tol, * ) self%rms_tol
@@ -77,15 +77,15 @@ contains
             !
         endif
         !
-        write( *, "( A45 )" ) "Using inversion parameters:"
+        write( *, "( A45 )" ) "Using Inversion parameters:"
         !
-        write( *, "( A45, I20 )" ) "max_inv_iters = ", self%max_inv_iters
+        write( *, "( A45, I20 )" ) "max_inv_iters = ", self%max_iters
         !
         write( *, "( A45, es20.2 )" ) "rms_tol = ", self%rms_tol
         !
         write( *, "( A45, es20.2 )" ) "lambda = ", self%lambda
         !
-        self%n_inv_iter = 0
+        self%n_iter = 0
         !
     end subroutine initializeInversion
     ! !

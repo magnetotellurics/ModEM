@@ -172,7 +172,7 @@ contains
                 write( ioInvLog, "( a10, a3, es12.5, a4, es12.5, a5, f18.5, a8, es12.5 )" ) "with:", " f=", f, " m2=", mNorm, " rms=", self%rms, " lambda=", self%lambda
                 !
                 !>
-                if( self%rms .LT. self%rms_tol .OR. self%iter .GE. self%max_inv_iters ) then
+                if( self%rms .LT. self%rms_tol .OR. self%iter .GE. self%max_iters ) then
                     exit
                 endif
                 !
@@ -320,7 +320,7 @@ contains
             !
         enddo cg_loop
         !
-        self%n_inv_iter = self%iter
+        self%n_iter = self%iter
         !
     end subroutine CG_DS_standard
     !
