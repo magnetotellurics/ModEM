@@ -32,11 +32,13 @@ module InversionNLCG
             !
             procedure, public :: outputFiles => outputFilesInversionNLCG
             !
-            procedure, private :: gradient, func, updateDampingParameter
+            procedure, private :: func, gradient, updateDampingParameter
             !
             procedure, private :: lineSearchCubic
             !
     end type InversionNLCG_t
+    !
+    logical :: is_complex = .TRUE.
     !
     private :: weightGradrients, writeHeaders
     !
@@ -170,8 +172,8 @@ contains
             !
             call func( self, all_data, sigma, mHat, r_value, m_norm, dHat, i_sol, self%rms )
             !
-            write( *, * ) "START: lambda, alpha, m_norm, rms:", self%lambda, self%alpha, m_norm, self%rms
-            write( ioInvLog, * ) "START: lambda, alpha, m_norm, rms:", self%lambda, self%alpha, m_norm, self%rms
+            call printf( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
+            call printf( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
             !
             n_func = 1
             !
@@ -185,8 +187,8 @@ contains
             !
             g_norm = sqrt( grad%dotProd( grad ) )
             !
-            write( *, "( a42, es12.5 )" ) "    GRAD: initial norm of the gradient is", g_norm
-            write( ioInvLog, "( a42, es12.5 )" ) "     GRAD: initial norm of the gradient is", g_norm
+            write( *, "( a42, es12.5 )" ) "GRAD: initial norm of the gradient is", g_norm
+            write( ioInvLog, "( a42, es12.5 )" ) "GRAD: initial norm of the gradient is", g_norm
             !
             if( g_norm < TOL6 ) then
                 stop "Error: NLCGsolver: Problem with your gradient computations: first gradient is zero"
@@ -284,8 +286,8 @@ contains
                 !
                 m_norm = mHat%dotProd( mHat ) / n_model
                 !
-                write( *, * ) "     lambda, alpha, r_value, m_norm, rms: ", self%lambda, self%alpha, r_value, m_norm, self%rms
-                write( ioInvLog, * ) "     lambda, alpha, r_value, m_norm, rms: ", self%lambda, self%alpha, r_value, m_norm, self%rms
+                call printf( "with", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
+                call printf( "with", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
                 !
                 ! write out the intermediate model solution and responses
                 call model_cov%multBy_CmSqrt( mHat, dsigma )
@@ -330,10 +332,10 @@ contains
                     !
                     !> restart
                     write( *, * ) "Restarting NLCG with the damping parameter updated"
-                    write( *, * ) "lambda, alpha, r_value, m_norm, rms: ", self%lambda, self%alpha, r_value, m_norm, self%rms
+                    call printf( "to", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
                     !
                     write( ioInvLog, * ) "Restarting NLCG with the damping parameter updated"
-                    write( ioInvLog, * ) "lambda, alpha, r_value, m_norm, rms: ", self%lambda, self%alpha, r_value, m_norm, self%rms
+                    call printf( "to", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
                     !
                     if( allocated( h ) ) deallocate( h )
                     allocate( h, source = g )
@@ -351,7 +353,11 @@ contains
                 gPrev_dot_gPrev = gPrev%dotProd( gPrev )
                 !
                 g_dot_h = g%dotProd( h )
-                !
+	  write( *, * ) "g_dot_g: ", g_dot_g
+	  write( *, * ) "g_dot_gPrev: ", g_dot_gPrev
+	  write( *, * ) "gPrev_dot_gPrev: ", gPrev_dot_gPrev
+	  write( *, * ) "g_dot_h: ", g_dot_h
+!0.0467 | 
                 !> Polak-Ribiere variant
                 self%beta = ( g_dot_g - g_dot_gPrev ) / gPrev_dot_gPrev
                 !
@@ -429,7 +435,7 @@ contains
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
         class( ModelParameter_t ), allocatable :: dsigma
-        real( kind=prec ) :: SS
+        complex( kind=prec ) :: SS
         integer :: Ndata, n_model
         !
         ! compute the smoothed model parameter vector
@@ -455,7 +461,10 @@ contains
         !
         !> normalize residuals, compute sum of squares
         Nres = res
+        !
         call normalizeData( Nres, 2 )
+        !
+        call setComplex( Nres, is_complex )
         !
         SS = dotProdData( res, Nres )
         !
@@ -694,8 +703,8 @@ contains
         !
         call self%func( all_data, sigma, mHat_1, f_1, mNorm_1, dHat_1, i_sol, rms_1 )
         !
-        write( *, * ) "STARTLS > lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, self%alpha, f_1, mNorm_1, rms_1
-        write( ioInvLog, * ) "STARTLS > lambda, alpha, f_1, mNorm_1, rms_1:", self%lambda, self%alpha, f_1, mNorm_1, rms_1
+        call printf( "STARTLS", self%lambda, self%alpha, f_1, mNorm_1, rms_1, .TRUE. )
+        call printf( "STARTLS", self%lambda, self%alpha, f_1, mNorm_1, rms_1, .FALSE. )
         !
         niter = niter + 1
         !
@@ -736,8 +745,8 @@ contains
                 !
                 call self%func( all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
                 !
-                write( *, * ) "lambda, gamma * alpha, f, m_norm, rms:", self%lambda, gamma * self%alpha, f, m_norm, self%rms
-                write( ioInvLog, * ) "lambda, gamma * alpha, f, m_norm, rms:", self%lambda, gamma * self%alpha, f, m_norm, self%rms
+                call printf( "RELAX", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+                call printf( "RELAX", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
                 !
             endif
             !
@@ -764,8 +773,8 @@ contains
         !
         call func( self, all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
         !
-        write( *, * ) "QUADLS: lambda, alpha, f, m_norm, rms:", self%lambda, self%alpha, f, m_norm, self%rms
-        write( ioInvLog, * ) "QUADLS: lambda, alpha, f, m_norm, rms:", self%lambda, self%alpha, f, m_norm, self%rms
+        call printf( "QUADLS", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+        call printf( "QUADLS", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
         !
         niter = niter + 1
         !
@@ -800,8 +809,8 @@ contains
                 !
                 call self%func( all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
                 !
-                write( *, * ) "QUADLS: lambda, gamma*alpha, f, m_norm, rms:", self%lambda, gamma * self%alpha, f, m_norm, self%rms
-                write( ioInvLog, * ) "QUADLS: lambda, gamma*alpha, f, m_norm, rms:", self%lambda, gamma * self%alpha, f, m_norm, self%rms
+                call printf( "QUADLS_RLX", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+                call printf( "QUADLS_RLX", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
                 !
             endif
             !
@@ -859,8 +868,8 @@ contains
                 !
                 call self%func( all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
                 !
-                write( *, * ) "CUBICLS: lambda, alpha, f, m_norm, rms:", self%lambda, self%alpha, f, m_norm, self%rms
-                write( ioInvLog, * ) "CUBICLS: lambda, alpha, f, m_norm, rms:", self%lambda, self%alpha, f, m_norm, self%rms
+                call printf( "CUBICLS", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+                call printf( "CUBICLS", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
                 !
                 niter = niter + 1
                 !
@@ -923,8 +932,8 @@ contains
             !
             call self%func( all_data, sigma, mHat, f,m_norm, dHat, i_sol, self%rms )
             !
-            write( *, * ) "RELAX: lambda, gamma*alpha, f, m_norm, rms:", self%lambda, gamma * self%alpha, f, m_norm, self%rms
-            write( ioInvLog, * ) "RELAX: lambda, gamma*alpha, f, m_norm, rms:", self%lambda, gamma * self%alpha, f, m_norm, self%rms
+            call printf( "RELAX2", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+            call printf( "RELAX2", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
             !
         endif
         !

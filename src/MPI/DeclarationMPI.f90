@@ -1234,11 +1234,11 @@ contains
         call MPI_PACK_SIZE( 2, MPI_INTEGER, main_comm, int_byte, ierr )
         !
         data_buffer_size = int_byte + 1
-        !
+		!
         do i = 1, size( tx_data%data )
              !
              call MPI_PACK_SIZE( 4, MPI_INTEGER, main_comm, nbytes(1), ierr )
-             call MPI_PACK_SIZE( 2, MPI_LOGICAL, main_comm, nbytes(2), ierr )
+             call MPI_PACK_SIZE( 3, MPI_LOGICAL, main_comm, nbytes(2), ierr )
              call MPI_PACK_SIZE( tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, main_comm, nbytes(3), ierr )
              call MPI_PACK_SIZE( tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, main_comm, nbytes(4), ierr )
              call MPI_PACK_SIZE( tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, main_comm, nbytes(5), ierr )
@@ -1274,8 +1274,9 @@ contains
             call MPI_PACK( tx_data%data(i)%i_dg, 1, MPI_INTEGER, data_buffer, job_info%data_size, index, main_comm, ierr )
             call MPI_PACK( tx_data%data(i)%i_rx, 1, MPI_INTEGER, data_buffer, job_info%data_size, index, main_comm, ierr )
             call MPI_PACK( tx_data%data(i)%i_tx, 1, MPI_INTEGER, data_buffer, job_info%data_size, index, main_comm, ierr )
-            call MPI_PACK( tx_data%data(i)%error_bar, 1, MPI_LOGICAL, data_buffer, job_info%data_size, index, main_comm, ierr )
             call MPI_PACK( tx_data%data(i)%is_allocated, 1, MPI_LOGICAL, data_buffer, job_info%data_size, index, main_comm, ierr )
+            call MPI_PACK( tx_data%data(i)%is_complex, 1, MPI_LOGICAL, data_buffer, job_info%data_size, index, main_comm, ierr )
+            call MPI_PACK( tx_data%data(i)%error_bar, 1, MPI_LOGICAL, data_buffer, job_info%data_size, index, main_comm, ierr )
             !
             call MPI_PACK( tx_data%data(i)%reals(1), tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, data_buffer, job_info%data_size, index, main_comm, ierr )
             call MPI_PACK( tx_data%data(i)%imaginaries(1), tx_data%data(i)%n_comp, MPI_DOUBLE_PRECISION, data_buffer, job_info%data_size, index, main_comm, ierr )
@@ -1311,8 +1312,9 @@ contains
             call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%i_rx, 1, MPI_INTEGER, main_comm, ierr )
             call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%i_tx, 1, MPI_INTEGER, main_comm, ierr )
             !
-            call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%error_bar, 1, MPI_LOGICAL, main_comm, ierr )
             call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
+            call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%is_complex, 1, MPI_LOGICAL, main_comm, ierr )
+            call MPI_UNPACK( data_buffer, job_info%data_size, index, data_group%error_bar, 1, MPI_LOGICAL, main_comm, ierr )
             !
             data_group%n_comp = n_comp
             !

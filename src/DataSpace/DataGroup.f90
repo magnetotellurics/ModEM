@@ -192,7 +192,7 @@ contains
         !
         self%reals = self%reals / ( self%errors ** nn )
         !
-        if( self%is_complex ) self%imaginaries = self%imaginaries / ( self%errors ** nn )
+        self%imaginaries = self%imaginaries / ( self%errors ** nn )
         !
     end subroutine normalizeDataGroup
     !
@@ -256,7 +256,7 @@ contains
         !
         d_out%error_bar = self%error_bar .OR. d_in%error_bar
         !
-        d_out%is_complex = self%is_complex .OR. d_in%is_complex
+        d_out%is_complex = self%is_complex .AND. d_in%is_complex
         !
         d_out%i_dg = self%i_dg
         d_out%i_rx = self%i_rx
@@ -265,9 +265,7 @@ contains
         !
         d_out%reals = a * self%reals + b * d_in%reals
         !
-        if( d_out%is_complex ) then
-            d_out%imaginaries = a * self%imaginaries + b * d_in%imaginaries
-        endif
+        d_out%imaginaries = a * self%imaginaries + b * d_in%imaginaries
         !
         if( self%error_bar .AND. d_in%error_bar ) then
             !
@@ -303,7 +301,15 @@ contains
         !
         real( kind=prec ) :: rvalue
         !
-        rvalue = sum( self%reals * d_in%reals ) + sum( self%reals * d_in%reals )
+        rvalue = R_ZERO
+        !
+        rvalue = rvalue + sum( self%reals * d_in%reals )
+        rvalue = rvalue + sum( self%imaginaries * d_in%imaginaries )
+        !
+        !write( *, * ) "COMPLEX DOT PRODUCT: ", self%is_complex .AND. d_in%is_complex
+        !if( self%is_complex .AND. d_in%is_complex ) then
+            !rvalue = rvalue + sum( self%imaginaries * d_in%imaginaries )
+        !endif
         !
     end function dotProdDataGroup
     !

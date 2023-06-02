@@ -12,8 +12,6 @@ module DataEntry
         real( kind=prec ) :: period, location(3)
         real( kind=prec ) :: rvalue, imaginary, error, azimuth
         !
-        logical :: is_complex
-        !
     contains
         !
         procedure( interface_write ), deferred, public :: write
@@ -52,8 +50,6 @@ contains
         self%imaginary = R_ZERO
         self%error = R_ZERO
         self%azimuth = R_ZERO
-        !
-        self%is_complex = .FALSE.
         !
     end subroutine initializeDataEntry
     !

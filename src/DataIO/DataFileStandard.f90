@@ -95,8 +95,6 @@ contains
                                 allocate( data_entry, source = DataEntryMT_t( iDe, actual_type, period, code, &
                                 latitude, longitude, xyz, component, rvalue, imaginary, error ) )
                                 !
-                                data_entry%is_complex = .TRUE.
-                                !
                                 call self%loadReceiversAndTransmitters( data_entry )
                                 !
                                 mt_counter = mt_counter + 1
@@ -128,8 +126,6 @@ contains
                                 period, code, latitude, longitude, xyz, code_ref,    &
                                 latitude_ref, longitude_ref, xyz_ref, component, rvalue, imaginary, error ) )
                                 !
-                                data_entry%is_complex = .TRUE.
-                                !
                                 call self%loadReceiversAndTransmitters( data_entry )
                                 !
                                 mt_counter = mt_counter + 1
@@ -160,8 +156,6 @@ contains
                                 dipole, period, moment, tx_azimuth, dip, tx_xyz,    &
                                 code, xyz, component, rvalue, imaginary, error ) )
                                 !
-                                data_entry%is_complex = .TRUE.
-                                !
                                 call self%loadReceiversAndTransmitters( data_entry )
                                 !
                                 csem_counter = csem_counter + 1
@@ -191,8 +185,6 @@ contains
                                 allocate( data_entry, source = DataEntryCSEM_t( iDe, actual_type,    &
                                 dipole, period, moment, tx_azimuth, dip, tx_xyz,    &
                                 code, xyz, component, rvalue, R_ZERO, error, azimuth ) )
-                                !
-                                data_entry%is_complex = .FALSE.
                                 !
                                 call self%loadReceiversAndTransmitters( data_entry )
                                 !
