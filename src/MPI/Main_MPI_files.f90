@@ -165,7 +165,8 @@ Subroutine Master_job_calcJ(d,sigma,sens,eAll)
     integer        :: nTx,nDt,nStn,dest,answers_to_receive,received_answers,nComp,nFunc,ii,iFunc,istat
     logical      :: isComplex  
     type(modelParam_t), pointer   :: Jreal(:),Jimag(:)           
-
+    type(solnVectorMTX_t) eAll_temp
+    type(dataVectorMTX_t)		:: d_Temp
    starttime = MPI_Wtime()
    
    
@@ -179,7 +180,10 @@ endif
 ! Check if an Esoln is passed    
 savedSolns = present(eAll)  
 if (.not. savedSolns )then
-    !call Master_Job_fwdPred(sigma,d,eAll)
+    d_temp=d
+    call Master_Job_fwdPred(sigma,d_temp,eAll_temp)
+else
+      eAll_temp=eAll 
 end if
 
 dest=0
@@ -190,7 +194,7 @@ per_index=0
 do iper=1,nTx
      per_index=per_index+1
      worker_job_task%per_index= per_index
-      call get_nPol_MPI(eAll%solns(per_index)) 
+      call get_nPol_MPI(eAll_temp%solns(per_index)) 
      
       ! now loop over data types
       dt_index=0
@@ -215,8 +219,8 @@ do iper=1,nTx
 
 								        do ipol1=1,nPol_MPI
                                            which_pol=ipol1
-			        				       call create_e_param_place_holder(eAll%solns(which_per))
-				    				       call Pack_e_para_vec(eAll%solns(which_per))
+			        				       call create_e_param_place_holder(eAll_temp%solns(which_per))
+				    				       call Pack_e_para_vec(eAll_temp%solns(which_per))
 				    				       call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, dest,FROM_MASTER, MPI_COMM_WORLD, ierr) 
 										end do
 	             write(ioMPI,8550) per_index ,dt_index,stn_index,dest  
@@ -365,8 +369,8 @@ end if
 
 								        do ipol1=1,nPol_MPI
                                            which_pol=ipol1
-			        				       call create_e_param_place_holder(eAll%solns(per_index))
-				    				       call Pack_e_para_vec(eAll%solns(per_index))
+			        				       call create_e_param_place_holder(eAll_temp%solns(per_index))
+				    				       call Pack_e_para_vec(eAll_temp%solns(per_index))
 				    				       call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, who,FROM_MASTER, MPI_COMM_WORLD, ierr) 
 										end do          
                    
