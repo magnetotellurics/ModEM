@@ -152,6 +152,8 @@ contains
         self%alpha = self%alpha_1
         self%beta = R_ZERO
         !
+        self%iter = 0
+        !
         open( unit = ioInvLog, file = trim( outdir_name )//"/NLCG.log", status="unknown", position="append", iostat=ios )
         !
         if( ios == 0 ) then
@@ -203,7 +205,6 @@ contains
             !
             !> initialize CG: g = - grad; h = g
             nCG = 0
-            self%iter = 0
             !
             allocate( g, source = grad )
             !
@@ -320,7 +321,8 @@ contains
                     write( ioInvLog, "(a34,es12.5)" ) "The norm of the last gradient is ", g_norm
                     !
                     !> alpha = min(self%alpha_1,startdm/g_norm)
-                    self%alpha = min( ONE, self%startdm ) / g_norm
+                    self%alpha = min( self%alpha_1, self%startdm ) / g_norm
+                    !self%alpha = min( ONE, self%startdm ) / g_norm
                     !
                     write( *, "( a48, es12.5 )" ) "The value of line search step alpha updated to ", self%alpha
                     write( ioInvLog, "( a48, es12.5 )" ) "The value of line search step alpha updated to ", self%alpha
@@ -346,20 +348,23 @@ contains
                     !
                 endif
                 !
-                g_dot_g = g%dotProd( g )
+                g_dot_g = g%dotProd( g )! * 0.9431279
                 !
-                g_dot_gPrev = g%dotProd( gPrev )
+                g_dot_gPrev = g%dotProd( gPrev )! * 0.9358327
                 !
-                gPrev_dot_gPrev = gPrev%dotProd( gPrev )
+                gPrev_dot_gPrev = gPrev%dotProd( gPrev )! * 1.0140134
                 !
-                g_dot_h = g%dotProd( h )
-	  write( *, * ) "g_dot_g: ", g_dot_g
-	  write( *, * ) "g_dot_gPrev: ", g_dot_gPrev
-	  write( *, * ) "gPrev_dot_gPrev: ", gPrev_dot_gPrev
-	  write( *, * ) "g_dot_h: ", g_dot_h
-!0.0467 | 
+                g_dot_h = g%dotProd( h )! * 0.9358327
+                !
                 !> Polak-Ribiere variant
                 self%beta = ( g_dot_g - g_dot_gPrev ) / gPrev_dot_gPrev
+                !
+                write( *, * ) "g_dot_g: ", g_dot_g
+                write( *, * ) "g_dot_gPrev: ", g_dot_gPrev
+                write( *, * ) "gPrev_dot_gPrev: ", gPrev_dot_gPrev
+                write( *, * ) "g_dot_h: ", g_dot_h
+                write( *, * ) "beta: ", self%beta
+                !stop
                 !
                 !> restart CG if the orthogonality conditions fail. Using the fact that
                 !> h_{i+1} = g_{i+1} + beta * h_i. In order for the next directional
@@ -435,7 +440,7 @@ contains
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
         class( ModelParameter_t ), allocatable :: dsigma
-        complex( kind=prec ) :: SS
+        real( kind=prec ) :: SS
         integer :: Ndata, n_model
         !
         ! compute the smoothed model parameter vector
@@ -464,7 +469,7 @@ contains
         !
         call normalizeData( Nres, 2 )
         !
-        call setComplex( Nres, is_complex )
+        !call setComplex( Nres, is_complex )
         !
         SS = dotProdData( res, Nres )
         !
@@ -479,7 +484,7 @@ contains
         !
         !> scale m_norm for output
         m_norm = m_norm / n_model
-
+        !
         ! if required, compute the Root Mean Squared misfit
         if( present( rms ) ) then
             !
@@ -541,6 +546,8 @@ contains
 #else
         call serialJMult_T( dsigma, res, JTd, i_sol, s_hat )
 #endif
+        !
+        write( 1984, * ) self%iter, JTd%dotProd( JTd )
         !
         !> FURTHER JOINT DEVELOPMENT ????
         !call weightGradrients( s_hat, all_data, dHat, JTd )
