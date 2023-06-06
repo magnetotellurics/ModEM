@@ -1,7 +1,7 @@
 Model and data output file name    : BENCH
-Initial damping factor lambda      : 10.
-To update lambda divide by         : 10.
-Initial search step in model units : 10.
+Initial damping factor lambda      : 1.
+To update lambda divide by         : 1.
+Initial search step in model units : 1.
 Restart when rms diff is less than : 2.0e-3
 Exit search when rms is less than  : 1.05
 Exit when lambda is less than      : 1.0e-4
