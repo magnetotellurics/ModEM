@@ -937,6 +937,8 @@ contains
             !
         end select
         !
+		transmitter%i_sol = 0
+		!
         select type( transmitter )
             !
             class is( TransmitterMT_t )
