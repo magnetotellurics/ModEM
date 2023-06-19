@@ -196,7 +196,7 @@ contains
             !
         end select
         !
-        receiver%is_complex = data_entry%is_complex
+        receiver%is_complex = .TRUE.
         !
         receiver%code = data_entry%code
         !

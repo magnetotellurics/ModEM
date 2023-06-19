@@ -16,7 +16,7 @@ module WorkerMPI
     public :: handleBasicComponents
     public :: handleSigmaModel
     public :: handleDSigmaModel
-    public :: txForwardSolver
+    public :: setTxForwardSolver
     !
 contains
     !
@@ -98,7 +98,7 @@ contains
         !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
         !
-        call txForwardSolver( Tx )
+        call setTxForwardSolver( Tx )
         !
         call solveTx( sigma, Tx )
         !
@@ -131,7 +131,7 @@ contains
         !
         Tx%i_sol = job_info%sol_index
         !
-        call txForwardSolver( Tx )
+        call setTxForwardSolver( Tx )
         !
         call solveTx( sigma, Tx )
         !
@@ -297,7 +297,7 @@ contains
     !
     !> Create the global ForwardSolver a single transmitter to it.
     !
-    subroutine txForwardSolver( Tx )
+    subroutine setTxForwardSolver( Tx )
         implicit none
         !
         class( Transmitter_t ), pointer, intent( inout ) :: Tx
@@ -313,7 +313,7 @@ contains
                 !
             case( "" )
                 !
-                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m txForwardSolver > Forward Solver type not provided, using IT_DC."
+                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m setTxForwardSolver > Forward Solver type not provided, using IT_DC."
                 !
                 allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
                 !
@@ -326,7 +326,7 @@ contains
         !
         Tx%forward_solver => forward_solver
         !
-    end subroutine txForwardSolver
+    end subroutine setTxForwardSolver
     !
 end module WorkerMPI
 !
