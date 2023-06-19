@@ -784,10 +784,10 @@ contains
             write( ioInvTmp, "(A36)" ) "max_grad_iters [20]             : 20"
             write( ioInvTmp, "(A38)" ) "error_tol [1E-3]                : 1E-3"
             write( ioInvTmp, "(A38)" ) "rms_tol [1.05]                  : 1.05"
-            write( ioInvTmp, "(A37)" ) "lambda [10.]                    : 10."
+            write( ioInvTmp, "(A36)" ) "lambda [1.]                     : 1."
             write( ioInvTmp, "(A40)" ) "lambda_tol [1.0e-4]             : 1.0e-4"
             write( ioInvTmp, "(A37)" ) "lambda_div [10.]                : 10."
-            write( ioInvTmp, "(A37)" ) "startdm [10.]                   : 10."
+            write( ioInvTmp, "(A37)" ) "startdm [20.]                   : 20."
             write( ioInvTmp, "(A1)" ) "#"
             !
             close( ioInvTmp )
