@@ -423,7 +423,8 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat)
    logical        :: savedSolns,returne_m_vectors
    Integer        :: iper,ipol,nTx,iTx
    Integer        :: per_index,pol_index,stn_index,ios
-   character(80)  :: job_name,file_name, filename 
+   character(80)  :: job_name 
+   Character(len=50) :: filename 
  
 
    
@@ -500,7 +501,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat)
 				 eAll_temp%solns(1)%tx=iper
 				 
 				  do ipol=1,nPol_MPI
-				 	WRITE (filename, '(a,I3.3,a,I1,a,I1,a)') 'FWD_E_solution_Per',iper, '_Pol',ipol,'_Index_',eAll%SolnIndex,'.soln'
+				 	WRITE (filename, '(a,I3.3,a,I1,a,I1,a)') 'FWD_E_solution_Per',iper, '_Pol',ipol,'_Index_',eAll_temp%SolnIndex,'.soln'
 					open (unit=ioE,file=filename,status='unknown', form ='unformatted',iostat=ios)
 					call read_cvector(ioE, eAll_temp%solns(1)%pol(ipol), 'binary')
 					close(ioE)

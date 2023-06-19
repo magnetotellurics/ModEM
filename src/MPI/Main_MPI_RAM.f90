@@ -138,7 +138,7 @@ end subroutine Master_Job_fwdPred
 
 Subroutine Master_job_calcJ(d,sigma,sens,eAll)
 
-   implicit none
+implicit none
    type(modelParam_t), intent(in)    :: sigma
    type(dataVectorMTX_t), intent(in)        :: d
    type(solnVectorMTX_t), intent(in), optional    :: eAll
@@ -147,26 +147,45 @@ Subroutine Master_job_calcJ(d,sigma,sens,eAll)
    !Local
     logical        :: savedSolns
     Integer        :: iper,idt,istn
-    Integer        :: per_index,dt_index,stn_index,ipol1
+    Integer        :: per_index,per_index_in_Dic,dt_index,stn_index,stn_index_in_Dic,ipol1
     integer        :: nTx,nDt,nStn,dest,answers_to_receive,received_answers,nComp,nFunc,ii,iFunc,istat
     logical      :: isComplex  
+	type(dataVectorMTX_t)    	  :: d_temp
+	type(solnVectorMTX_t)	:: eAll_temp
     type(modelParam_t), pointer   :: Jreal(:),Jimag(:)           
 
    starttime = MPI_Wtime()
    
-   
+  write(*,*) "allocate sens" 
 ! now, allocate for sensitivity values, if necessary
 if(.not. associated(sens)) then
      call create_sensMatrixMTX(d, sigma, sens)
 endif
+nTx=d%nTx
+do iper=1,nTx
+nDt=d%d(iper)%nDt
+    do idt = 1,nDt
+	   nStn= d%d(iper)%data(idt)%nSite
+	   do istn=1,nStn
+	      write(*,*)iper,idt,istn,sens(iper)%tx,sens(iper)%v(idt)%rx(istn)
+	   end do
+	end do
+end do	
+     
+	  
+  write(*,*) "finish allocate sens" 
  
 
-             
+write(*,*) "start FWD"	         
 ! Check if an Esoln is passed    
 savedSolns = present(eAll)  
 if (.not. savedSolns )then
-    !call Master_Job_fwdPred(sigma,d,eAll)
+    d_temp=d
+    call Master_Job_fwdPred(sigma,d_temp,eAll_temp)
+else
+      eAll_temp=eAll 
 end if
+write(*,*) "end FWD"	
 
 dest=0
 worker_job_task%what_to_do='COMPUTE_J' 
@@ -175,8 +194,11 @@ nTx = d%nTx
 per_index=0 
 do iper=1,nTx
      per_index=per_index+1
-     worker_job_task%per_index= per_index
-      call get_nPol_MPI(eAll%solns(per_index)) 
+	 
+     worker_job_task%per_index_in_Dic= sens(iper)%tx !per_index
+	 worker_job_task%per_index= per_index
+	 
+      call get_nPol_MPI(eAll_temp%solns(sens(iper)%tx)) 
      
       ! now loop over data types
       dt_index=0
@@ -191,7 +213,10 @@ do iper=1,nTx
            nStn= d%d(iper)%data(idt)%nSite
            do istn=1,nStn
               stn_index=stn_index+1
-              worker_job_task%Stn_index= stn_index  
+			  
+              worker_job_task%Stn_index_in_Dic= sens(iper)%v(idt)%rx(stn_index) !stn_index 
+              worker_job_task%Stn_index= stn_index
+ 			  
                  dest=dest+1
                 call create_worker_job_task_place_holder
                 call Pack_worker_job_task
@@ -201,8 +226,8 @@ do iper=1,nTx
 
                                         do ipol1=1,nPol_MPI
                                            which_pol=ipol1
-                                           call create_e_param_place_holder(eAll%solns(which_per))
-                                           call Pack_e_para_vec(eAll%solns(which_per))
+			        				       call create_e_param_place_holder(eAll_temp%solns(which_per))
+				    				       call Pack_e_para_vec(eAll_temp%solns(which_per))
                                            call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, dest,FROM_MASTER, MPI_COMM_WORLD, ierr)
                                            deallocate( e_para_vec )
                                         end do
@@ -243,9 +268,15 @@ do while (received_answers .lt. answers_to_receive)
             call Unpack_worker_job_task
 
                        who=worker_job_task%taskid
-                       which_per=worker_job_task%per_index
-                       which_dt=worker_job_task%data_type_index                      
-                       which_stn=worker_job_task%Stn_index
+                       
+					   which_per=worker_job_task%per_index
+					   which_per_in_Dic=worker_job_task%per_index_in_Dic
+                       
+					   which_dt=worker_job_task%data_type_index                      
+                       
+					   which_stn=worker_job_task%Stn_index
+					   which_stn_in_Dic=worker_job_task%Stn_index_in_Dic
+					   
                        write(ioMPI,8552) which_per ,which_dt,which_stn,who             
          
 !    Recieve results from a worker:
@@ -291,6 +322,7 @@ isComplex = d%d(which_per)%data(which_dt)%isComplex
         end do    
                         
            ! store in the full sensitivity matrix
+		   write(*,*)which_per,which_dt,which_stn
            ii = 1
            do iFunc = 1,nFunc
               if(isComplex) then
@@ -337,10 +369,12 @@ end if
 
  if (Per_index .gt. nTx ) goto 300
  
-            worker_job_task%Stn_index= stn_index  
+            worker_job_task%Stn_index_in_Dic= sens(Per_index)%v(dt_index)%rx(stn_index) !stn_index
+            worker_job_task%Stn_index= stn_index			
             worker_job_task%data_type_index=dt_index
             worker_job_task%data_type=d%d(per_index)%data(dt_index)%dataType
-            worker_job_task%per_index= per_index
+            worker_job_task%per_index_in_Dic= sens(Per_index)%tx !per_index
+			worker_job_task%per_index= per_index
  write(ioMPI,8551) per_index ,worker_job_task%data_type_index,stn_index,who    
              
 ! Send Indices to who (the worker who just send back an answer)
@@ -352,8 +386,8 @@ end if
 
                                         do ipol1=1,nPol_MPI
                                            which_pol=ipol1
-                                           call create_e_param_place_holder(eAll%solns(per_index))
-                                           call Pack_e_para_vec(eAll%solns(per_index))
+			        				       call create_e_param_place_holder(eAll_temp%solns(per_index))
+				    				       call Pack_e_para_vec(eAll_temp%solns(per_index))
                                            call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, who,FROM_MASTER, MPI_COMM_WORLD, ierr)
                                            deallocate( e_para_vec )
                                         end do          
@@ -377,7 +411,8 @@ end do
         time_used = endtime-starttime
         write(ioMPI,*)'COMPUTE_J: TIME REQUIERED: ',time_used ,'s'
 
-
+call deall_dataVectorMTX(d_temp)
+call deall (eAll_temp) 
 
 
 
@@ -895,7 +930,7 @@ Subroutine Worker_job (sigma,d)
 
 
    Integer        :: iper,ipol,i
-   Integer        :: per_index,pol_index,stn_index,eAll_vec_size
+   Integer        :: per_index,per_index_in_Dic,pol_index,stn_index,stn_index_in_Dic,eAll_vec_size
    character(20)                               :: which_proc
  
    type(modelParam_t), pointer   :: Jreal(:),Jimag(:)
@@ -968,6 +1003,10 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
 
           per_index=worker_job_task%per_index
           stn_index=worker_job_task%stn_index
+		  
+          per_index_in_Dic=worker_job_task%per_index_in_Dic
+          stn_index_in_Dic=worker_job_task%stn_index_in_Dic
+		  
           dt_index=worker_job_task%data_type_index
           dt=worker_job_task%data_type
           worker_job_task%taskid=taskid
@@ -999,7 +1038,7 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
    enddo
                                 
 ! Do some computation
-                    call initSolver(per_index,sigma,grid,e0,e,comb) 
+                    call initSolver(per_index_in_Dic,sigma,grid,e0,e,comb) 
                    call get_nPol_MPI(e0)
                     write(6,'(a12,a18,i5,a12)') node_info, ' Start Receiving ' , orginal_nPol, ' from Master'
                   do ipol=1,nPol_MPI 
@@ -1015,7 +1054,7 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
    allocate(Qimag(nFunc),STAT=istat)
    
       do iFunc=1,nFunc
-          call create_sparseVector(e0%grid,per_index,L(iFunc))
+          call create_sparseVector(e0%grid,per_index_in_Dic,L(iFunc))
       end do
       
  ! Initialize only those grid elements on the master that are used in EMfieldInterp
@@ -1025,9 +1064,9 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
     Call FaceArea(e0%grid, S_F)
 
    ! compute linearized data functional(s) : L
-   call Lrows(e0,sigma,dt,stn_index,L)
+   call Lrows(e0,sigma,dt,stn_index_in_Dic,L)
    ! compute linearized data functional(s) : Q
-   call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)
+   call Qrows(e0,sigma,dt,stn_index_in_Dic,Qzero,Qreal,Qimag)
 
  ! clean up the grid elements stored in GridCalc on the master node
     call deall_rvector(l_E)
@@ -1040,7 +1079,7 @@ isComplex = d%d(per_index)%data(dt_index)%isComplex
       call zero_rhsVector(comb)
       call add_sparseVrhsV(C_ONE,L(iFunc),comb)
 
-      call sensSolve(per_index,TRN,e,comb)
+      call sensSolve(per_index_in_Dic,TRN,e,comb)
 
       ! multiply by P^T and add the rows of Q
       call PmultT(e0,sigma,e,Jreal(iFunc),Jimag(iFunc))
