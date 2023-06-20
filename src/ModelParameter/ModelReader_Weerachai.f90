@@ -119,6 +119,8 @@ contains
                             v = ONE/rho
                             call ccond%setV( v )
                         endif
+						! 
+						write( 1977, * ) v
                         !
                         deallocate( rho )
                         !
