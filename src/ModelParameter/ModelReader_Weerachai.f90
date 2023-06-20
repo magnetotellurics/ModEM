@@ -37,7 +37,8 @@ contains
         integer :: nx, ny, nzEarth, nzAir, someIndex, i, ii, j, k, ioPrm, io_stat, n_conductivity
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         real( kind=prec ) :: ox, oy, oz, rotDeg
-        complex( kind=prec ), dimension(:, :, :), allocatable :: v, rho
+        real( kind=prec ), dimension(:, :, :), allocatable :: rho
+        complex( kind=prec ), dimension(:, :, :), allocatable :: v
         class( Scalar_t  ), allocatable :: ccond
         real( kind=prec ) :: ALPHA
         !
@@ -119,8 +120,8 @@ contains
                             v = ONE/rho
                             call ccond%setV( v )
                         endif
-						! 
-						write( 1977, * ) v
+                        ! 
+                        write( 1977, * ) v
                         !
                         deallocate( rho )
                         !
