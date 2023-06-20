@@ -28,7 +28,8 @@ module cVector3D_SG
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosCVector3D_SG
             procedure, public :: sumEdges => sumEdgesCVector3D_SG
-            procedure, public :: avgCells => avgCellsCVector3D_SG
+            procedure, public :: avgCell => avgCellCVector3D_SG
+            procedure, public :: avgCellVTI => avgCellVTIcVector3D_SG
             procedure, public :: conjugate => conjugateCVector3D_SG
             !
             !> Arithmetic/algebraic binary operations
@@ -595,11 +596,11 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine avgCellsCVector3D_SG( self, E_in, ptype )
+    subroutine avgCellCVector3D_SG( self, cell_in, ptype )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: E_in
+        class( Scalar_t ), intent( in ) :: cell_in
         character(*), intent( in ), optional :: ptype
         !
         character(10) :: type
@@ -608,7 +609,7 @@ contains
         integer :: ix, iy, iz
         !
         if( index( self%grid_type, CELL ) > 0 ) then
-            stop "Error: avgCellsCVector3D_SG > Only CELL type supported."
+            stop "Error: avgCellCVector3D_SG > Only CELL type supported."
         endif
         !
         if( .NOT. present( ptype ) ) then
@@ -621,13 +622,13 @@ contains
              call self%switchStoreState
         endif
         !
-        select type( E_in )
+        select type( cell_in )
             !
             class is( cScalar3D_SG_t )
                 !
-                v_xend = size( E_in%v, 1 )
-                v_yend = size( E_in%v, 2 )
-                v_zend = size( E_in%v, 3 )
+                v_xend = size( cell_in%v, 1 )
+                v_yend = size( cell_in%v, 2 )
+                v_zend = size( cell_in%v, 3 )
                 !
                 select case( type )
                     !
@@ -637,8 +638,8 @@ contains
                         do ix = 1, self%grid%nx
                             do iy = 2, self%grid%ny
                                 do iz = 2, self%grid%nz
-                                    self%x(ix, iy, iz) = (E_in%v(ix, iy-1, iz-1) + E_in%v(ix, iy, iz-1) + &
-                                    E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz))/4.0d0
+                                    self%x(ix, iy, iz) = (cell_in%v(ix, iy-1, iz-1) + cell_in%v(ix, iy, iz-1) + &
+                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz))/4.0d0
                                 enddo
                             enddo
                         enddo
@@ -647,8 +648,8 @@ contains
                         do ix = 2, self%grid%nx
                             do iy = 1, self%grid%ny
                                 do iz = 2, self%grid%nz
-                                    self%y(ix, iy, iz) = (E_in%v(ix-1, iy, iz-1) + E_in%v(ix, iy, iz-1) + &
-                                    E_in%v(ix-1, iy, iz) + E_in%v(ix, iy, iz))/4.0d0
+                                    self%y(ix, iy, iz) = (cell_in%v(ix-1, iy, iz-1) + cell_in%v(ix, iy, iz-1) + &
+                                    cell_in%v(ix-1, iy, iz) + cell_in%v(ix, iy, iz))/4.0d0
                                 enddo
                             enddo
                         enddo
@@ -657,8 +658,8 @@ contains
                         do ix = 2, self%grid%nx
                             do iy = 2, self%grid%ny
                                 do iz = 1, self%grid%nz
-                                    self%z(ix, iy, iz) = (E_in%v(ix-1, iy-1, iz) + E_in%v(ix-1, iy, iz) + &
-                                    E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz))/4.0d0
+                                    self%z(ix, iy, iz) = (cell_in%v(ix-1, iy-1, iz) + cell_in%v(ix-1, iy, iz) + &
+                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz))/4.0d0
                                 enddo
                             enddo
                         enddo
@@ -666,25 +667,118 @@ contains
                     case( FACE )
                         !
                         xend = size(self%x, 1)
-                        self%x(2:xend-1,:,:) = E_in%v(1:v_xend-1,:,:) + E_in%v(2:v_xend,:,:)
+                        self%x(2:xend-1,:,:) = cell_in%v(1:v_xend-1,:,:) + cell_in%v(2:v_xend,:,:)
                         !
                         yend = size(self%y, 1)
-                        self%y(:, 2:yend-1, :) = E_in%v(:, 1:v_yend-1, :) + E_in%v(:, 2:v_yend, :)
+                        self%y(:, 2:yend-1, :) = cell_in%v(:, 1:v_yend-1, :) + cell_in%v(:, 2:v_yend, :)
                         !
                         zend = size(self%z, 1) 
-                        self%z(:, :, 2:zend-1) = E_in%v(:, :, 1:v_zend-1) + E_in%v(:, :, 2:v_zend)
+                        self%z(:, :, 2:zend-1) = cell_in%v(:, :, 1:v_zend-1) + cell_in%v(:, :, 2:v_zend)
                         !
                     case default
-                        stop "Error: avgCellsCVector3D_SG: Unknown type"
+                        stop "Error: avgCellCVector3D_SG: Unknown type"
                     !
                 end select !type
             !
             class default
-                stop "Error: avgCellsCVector3D_SG >: Unclassified E_in"
+                stop "Error: avgCellCVector3D_SG >: Unclassified cell_in"
             !
-        end select !E_in
+        end select !cell_in
         !
-    end subroutine avgCellsCVector3D_SG
+    end subroutine avgCellCVector3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine avgCellVTIcVector3D_SG( self, cell_in, ptype )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_in
+        character(*), intent( in ), optional :: ptype
+        !
+        character(10) :: type
+        integer :: xend, yend, zend
+        integer :: v_xend, v_yend, v_zend
+        integer :: ix, iy, iz
+        !
+        if( index( self%grid_type, CELL ) > 0 ) then
+            stop "Error: avgCellVTIcVector3D_SG > Only CELL type supported."
+        endif
+        !
+        if( .NOT. present( ptype ) ) then
+            type = EDGE
+        else
+            type = ptype
+        endif
+        !
+        if( self%store_state /= compound ) then
+             call self%switchStoreState
+        endif
+        !
+        select type( cell_in )
+            !
+            class is( cScalar3D_SG_t )
+                !
+                v_xend = size( cell_in(1)%v, 1 )
+                v_yend = size( cell_in(1)%v, 2 )
+                v_zend = size( cell_in(2)%v, 3 )
+                !
+                select case( type )
+                    !
+                    case( EDGE )
+                        !
+                        !> for x-components inside the domain
+                        do ix = 1, self%grid%nx
+                            do iy = 2, self%grid%ny
+                                do iz = 2, self%grid%nz
+                                    self%x(ix, iy, iz) = (cell_in(1)%v(ix, iy-1, iz-1) + cell_in(1)%v(ix, iy, iz-1) + &
+                                    cell_in(1)%v(ix, iy-1, iz) + cell_in(1)%v(ix, iy, iz))/4.0d0
+                                enddo
+                            enddo
+                        enddo
+                        !
+                        !> for y-components inside the domain
+                        do ix = 2, self%grid%nx
+                            do iy = 1, self%grid%ny
+                                do iz = 2, self%grid%nz
+                                    self%y(ix, iy, iz) = (cell_in(1)%v(ix-1, iy, iz-1) + cell_in(1)%v(ix, iy, iz-1) + &
+                                    cell_in(1)%v(ix-1, iy, iz) + cell_in(1)%v(ix, iy, iz))/4.0d0
+                                enddo
+                            enddo
+                        enddo
+                        !
+                        !> for z-components inside the domain
+                        do ix = 2, self%grid%nx
+                            do iy = 2, self%grid%ny
+                                do iz = 1, self%grid%nz
+                                    self%z(ix, iy, iz) = (cell_in(2)%v(ix-1, iy-1, iz) + cell_in(2)%v(ix-1, iy, iz) + &
+                                    cell_in(2)%v(ix, iy-1, iz) + cell_in(2)%v(ix, iy, iz))/4.0d0
+                                enddo
+                            enddo
+                        enddo
+                        !
+                    case( FACE )
+                        !
+                        xend = size(self%x, 1)
+                        self%x(2:xend-1,:,:) = cell_in(1)%v(1:v_xend-1,:,:) + cell_in(1)%v(2:v_xend,:,:)
+                        !
+                        yend = size(self%y, 1)
+                        self%y(:, 2:yend-1, :) = cell_in(1)%v(:, 1:v_yend-1, :) + cell_in(1)%v(:, 2:v_yend, :)
+                        !
+                        zend = size(self%z, 1) 
+                        self%z(:, :, 2:zend-1) = cell_in(2)%v(:, :, 1:v_zend-1) + cell_in(2)%v(:, :, 2:v_zend)
+                        !
+                    case default
+                        stop "Error: avgCellVTIcVector3D_SG: Unknown type"
+                    !
+                end select !type
+            !
+            class default
+                stop "Error: avgCellVTIcVector3D_SG >: Unclassified cell_in"
+            !
+        end select !cell_in
+        !
+    end subroutine avgCellVTIcVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -1567,25 +1661,25 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine getRealCVector3D_SG( self, r_field )
+    subroutine getRealCVector3D_SG( self, r_vector )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
+        class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
-        allocate( r_field, source = rVector3D_SG_t( self%grid, self%grid_type ) )
+        allocate( r_vector, source = rVector3D_SG_t( self%grid, self%grid_type ) )
         !
-        select type ( r_field )
+        select type ( r_vector )
             !
             class is( rVector3D_SG_t )
                 !
-                r_field%x = real( self%x, kind=prec )
-                r_field%y = real( self%y, kind=prec )
-                r_field%z = real( self%z, kind=prec )
+                r_vector%x = real( self%x, kind=prec )
+                r_vector%y = real( self%y, kind=prec )
+                r_vector%z = real( self%z, kind=prec )
                 !
             class default
                 !
-                stop "Error: getRealCVector3D_SG > Undefined r_field"
+                stop "Error: getRealCVector3D_SG > Undefined r_vector"
                 !
         end select
         !

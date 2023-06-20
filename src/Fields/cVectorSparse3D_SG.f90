@@ -30,7 +30,8 @@ module cVectorSparse3D_SG
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosCVectorSparse3D_SG
             procedure, public :: sumEdges => sumEdgesCVectorSparse3D_SG
-            procedure, public :: avgCells => avgCellsCVectorSparse3D_SG
+            procedure, public :: avgCell => avgCellCVectorSparse3D_SG
+            procedure, public :: avgCellVTI => avgCellVTICVectorSparse3D_SG
             procedure, public :: conjugate => conjugateCVectorSparse3D_SG
             !
             !> Arithmetic/algebraic binary operations
@@ -629,17 +630,30 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine avgCellsCVectorSparse3D_SG( self, E_in, ptype )
+    subroutine avgCellCVectorSparse3D_SG( self, cell_in, ptype )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: E_in
+        class( Scalar_t ), intent( in ) :: cell_in
         character(*), intent( in ), optional :: ptype
         !
-        stop "Error: avgCellsCVectorSparse3D_SG not implemented yet!"
+        stop "Error: avgCellCVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine avgCellsCVectorSparse3D_SG
-    !
+    end subroutine avgCellCVectorSparse3D_SG
+	!
+	!> No interface subroutine briefing
+	!
+	subroutine avgCellVTICVectorSparse3D_SG( self, cell_in, ptype )
+        implicit none
+        !
+		class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+		class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_in
+		character(*), intent( in ), optional :: ptype
+        !
+        stop "Error: avgCellVTICVectorSparse3D_SG not implemented yet"
+        !
+	end subroutine avgCellVTICVectorSparse3D_SG
+	!
     !> No subroutine briefing
     !
     subroutine conjugateCVectorSparse3D_SG( self )
@@ -693,11 +707,11 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine getRealCVectorSparse3D_SG( self, r_field )
+    subroutine getRealCVectorSparse3D_SG( self, r_vector )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
+        class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
         stop "Error: getRealCVectorSparse3D_SG not implemented yet!"
         !

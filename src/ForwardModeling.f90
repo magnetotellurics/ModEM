@@ -139,7 +139,7 @@ contains
         if( has_model_file ) then
             !
             call handleModelFile( sigma )
-            !
+        !
         else
             stop "Error: jobForwardModeling > Missing Model file!"
         endif
@@ -147,7 +147,7 @@ contains
         if( has_data_file ) then
             !
             call handleDataFile()
-            !
+        !
         else
             stop "Error: jobForwardModeling > Missing Data file!"
         endif

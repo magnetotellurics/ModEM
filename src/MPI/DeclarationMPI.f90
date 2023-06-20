@@ -665,7 +665,7 @@ contains
                 !
                 model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
                 !
-                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond_h )
+                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond )
                 !
                 do i = 1, size( nbytes )
                     model_buffer_size = model_buffer_size + nbytes(i)
@@ -712,7 +712,7 @@ contains
                 !
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
-                call packScalarBuffer( model%cell_cond_h, parent_buffer, parent_buffer_size, index )
+                call packScalarBuffer( model%cell_cond, parent_buffer, parent_buffer_size, index )
                 !
             class default
                stop "allocateModelBuffer: Unclassified model"
@@ -761,7 +761,7 @@ contains
                         !
                         call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                         !
-                        call unpackScalarBuffer( model%cell_cond_h, main_grid, parent_buffer, parent_buffer_size, index )
+                        call unpackScalarBuffer( model%cell_cond, main_grid, parent_buffer, parent_buffer_size, index )
                         !
                         call model%setSigMap( model%param_type )
                         !
@@ -937,8 +937,8 @@ contains
             !
         end select
         !
-		transmitter%i_sol = 0
-		!
+        transmitter%i_sol = 0
+        !
         select type( transmitter )
             !
             class is( TransmitterMT_t )
@@ -1236,7 +1236,7 @@ contains
         call MPI_PACK_SIZE( 2, MPI_INTEGER, main_comm, int_byte, ierr )
         !
         data_buffer_size = int_byte + 1
-		!
+        !
         do i = 1, size( tx_data%data )
              !
              call MPI_PACK_SIZE( 4, MPI_INTEGER, main_comm, nbytes(1), ierr )
@@ -1587,7 +1587,9 @@ contains
     subroutine receiveFromAny()
         !
         call allocateJobInfoBuffer
+        !
         call MPI_RECV( job_info_buffer, job_info_buffer_size, MPI_PACKED, MPI_ANY_SOURCE, MPI_ANY_TAG, main_comm, MPI_STATUS_IGNORE, ierr )
+        !
         call unpackJobInfoBuffer
         !
         !write( *, * ) mpi_rank, " RECV ", job_info%job_name, " FROM ", job_info%worker_rank
@@ -1697,7 +1699,7 @@ contains
     subroutine unpackScalarBuffer( scalar, grid, parent_buffer, parent_buffer_size, index )
         implicit none
         !
-        class( Scalar_t ), intent( inout ) :: scalar
+        class( Scalar_t ), allocatable, intent( inout ) :: scalar
         class( Grid_t ), intent( in ) :: grid
         character, dimension(:), allocatable, intent( in ) :: parent_buffer
         integer, intent( in ) :: parent_buffer_size
@@ -1719,11 +1721,11 @@ contains
                     !
                     case( real_scalar )
                         !
-                        scalar = rScalar3D_SG_t( grid, grid_type )
+                        allocate( scalar, source = rScalar3D_SG_t( grid, grid_type ) )
                         !
                     case( complex_scalar )
                         !
-                        scalar = cScalar3D_SG_t( grid, grid_type )
+                        allocate( scalar, source = cScalar3D_SG_t( grid, grid_type ) )
                         !
                     case default
                         stop "unpackScalarBuffer: Unknown case"

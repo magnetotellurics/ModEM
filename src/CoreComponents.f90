@@ -226,7 +226,7 @@ contains
             !
         else
             !
-            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
+            write( *, * ) "Error: handleDataFile > Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
             stop
             !
         endif
@@ -241,7 +241,7 @@ contains
             !
         else
              !
-             write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Number of Tx mismatched from Header :[", n_tx, " and ", data_file_standard%n_tx, "]"
+             write( *, * ) "Error: handleDataFile > Number of Tx mismatched from Header :[", n_tx, " and ", data_file_standard%n_tx, "]"
              stop
              !
         endif

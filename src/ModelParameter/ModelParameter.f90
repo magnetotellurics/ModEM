@@ -19,7 +19,7 @@ module ModelParameter
         integer :: mKey(8)
         real( kind=prec ) :: air_cond
         character(:), allocatable :: param_type
-        logical :: zero_valued, is_allocated, is_vti, updated
+        logical :: zero_valued, is_allocated, updated
         !
         procedure( interface_sigmap_model_parameter ), pointer, nopass :: SigMap_ptr
         !
@@ -35,12 +35,10 @@ module ModelParameter
             procedure( interface_set_type_model_parameter ), deferred, public :: SetType
             !
             procedure( interface_get_cond_model_parameter ), deferred, public :: getCond
+            procedure( interface_set_cond_model_parameter ), deferred, public :: setCond
             !
             procedure( interface_get_value_model_parameter ), deferred, public :: getValue
-            !
             procedure( interface_set_value_model_parameter ), deferred, public :: setValue
-            !
-            procedure( interface_add_cond_model_parameter ), deferred, public :: addCond
             !
             procedure( interface_zeros_model_parameter ), deferred, public :: zeros
             !
@@ -49,12 +47,14 @@ module ModelParameter
             !
             procedure( interface_count_model_parameter ), deferred, public :: countModel
             !
-            procedure( interface_lin_comb_parameter ), deferred, public :: linComb
+            procedure( interface_lin_comb_model_model_parameter ), deferred, public :: linCombModel
+            procedure( interface_lin_comb_scalar_model_parameter ), deferred, public :: linCombScalar
+            generic :: linComb => linCombModel, linCombScalar
             !
             procedure( interface_dot_product_model_parameter ), deferred, public :: dotProd
             generic :: operator(.dot.) => dotProd
             !
-            procedure( interface_ModelParamToCell_model_parameter ), deferred, public :: ModelParamToCell
+            procedure( interface_modelparamtocell_model_parameter ), deferred, public :: ModelParamToCell
             !
             procedure( interface_pdemapping_model_parameter ), deferred, public :: PDEmapping
             procedure( interface_dpdemapping_model_parameter ), deferred, public :: dPDEmapping
@@ -108,7 +108,14 @@ module ModelParameter
             class( Scalar_t ), allocatable, intent( inout ) :: ccond
         end subroutine interface_get_cond_model_parameter
         !
+        subroutine interface_set_cond_model_parameter( self, ccond, i_cond )
+            import :: ModelParameter_t, Scalar_t
+            class( ModelParameter_t ), intent( inout ) :: self
+            class( Scalar_t ), allocatable, intent( in ) :: ccond
+            integer, intent( in ), optional :: i_cond
+        end subroutine interface_set_cond_model_parameter
         !
+        !> No interface subroutine briefing
         subroutine  interface_get_value_model_parameter( self, paramType, v_h, vAir, v_v )
             import :: ModelParameter_t, Scalar_t, prec
             class( ModelParameter_t ), intent( in ) :: self
@@ -119,6 +126,7 @@ module ModelParameter
             !
         end subroutine interface_get_value_model_parameter
         !
+        !> No interface subroutine briefing
         subroutine interface_set_value_model_parameter( self, paramType, v_h, vAir, v_v )
             import :: ModelParameter_t, Scalar_t, prec
             class( ModelParameter_t ), intent( inout ) :: self
@@ -128,13 +136,6 @@ module ModelParameter
             class( Scalar_t ), intent( in ), optional :: v_v
             !
         end subroutine interface_set_value_model_parameter
-        !
-        !> No interface subroutine briefing
-        subroutine interface_add_cond_model_parameter( self, ccond )
-            import :: ModelParameter_t, Scalar_t
-            class( ModelParameter_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( in ) :: ccond
-        end subroutine interface_add_cond_model_parameter
         !
         !> No interface subroutine briefing
         subroutine interface_zeros_model_parameter( self )
@@ -157,12 +158,20 @@ module ModelParameter
         end function interface_count_model_parameter
         !
         !> No interface subroutine briefing
-        subroutine interface_lin_comb_parameter( self, a1, a2, rhs )
+        subroutine interface_lin_comb_model_model_parameter( self, a1, a2, rhs )
             import :: ModelParameter_t, prec
             class( ModelParameter_t ), intent( inout ) :: self
-            real( kind=prec ), intent( in ) :: a1,a2
+            real( kind=prec ), intent( in ) :: a1, a2
             class( ModelParameter_t ), intent( in ) :: rhs
-        end subroutine interface_lin_comb_parameter
+        end subroutine interface_lin_comb_model_model_parameter
+        !
+        !> No interface subroutine briefing
+        subroutine interface_lin_comb_scalar_model_parameter( self, a1, a2, rhs )
+            import :: ModelParameter_t, prec, Scalar_t
+            class( ModelParameter_t ), intent( inout ) :: self
+            real( kind=prec ), intent( in ) :: a1, a2
+            class( Scalar_t ), intent( in ) :: rhs
+        end subroutine interface_lin_comb_scalar_model_parameter
         !
         !> No interface function briefing
         function interface_dot_product_model_parameter( self, rhs ) result( rvalue )
@@ -187,21 +196,21 @@ module ModelParameter
         !
         !> No interface subroutine briefing
         subroutine interface_dpdemapping_model_parameter( self, dsigma, eVec )
-            import :: ModelParameter_t, Field_t
+            import :: ModelParameter_t, Vector_t
             class( ModelParameter_t ), intent( in ) :: self, dsigma
-            class( Field_t ), intent( inout ) :: eVec
+            class( Vector_t ), intent( inout ) :: eVec
         end subroutine interface_dpdemapping_model_parameter
         !
         !> No interface function briefing
         subroutine interface_dpdemapping_t_model_parameter( self, eVec, dsigma )
-            import :: ModelParameter_t, Field_t
+            import :: ModelParameter_t, Vector_t
             class( ModelParameter_t ), intent( in ) :: self
-            class( Field_t ), intent( in ) :: eVec
+            class( Vector_t ), intent( in ) :: eVec
             class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         end subroutine interface_dpdemapping_t_model_parameter
         !
         !> No interface subroutine briefing
-        subroutine interface_ModelParamToCell_model_parameter( self, cCond_h, paramType, grid, AirCond, cCond_v )
+        subroutine interface_modelparamtocell_model_parameter( self, cCond_h, paramType, grid, AirCond, cCond_v )
             import :: ModelParameter_t, rScalar3D_SG_t, Grid_t, prec
             class( ModelParameter_t ), intent( in ) :: self
             type( rScalar3D_SG_t ), intent( inout ) :: cCond_h
@@ -210,7 +219,7 @@ module ModelParameter
             real( kind=prec ), intent( out ), optional :: AirCond
             type( rScalar3D_SG_t ), intent( out ), optional :: cCond_v
             !
-        end subroutine interface_ModelParamToCell_model_parameter
+        end subroutine interface_modelparamtocell_model_parameter
         !
         !> No interface subroutine briefing
         subroutine interface_write_model_parameter( self, file_name, comment )
@@ -326,7 +335,6 @@ contains
         !
         self%zero_valued = .FALSE.
         self%is_allocated = .FALSE.
-        self%is_vti = .FALSE.
         self%updated = .FALSE.
         !
         self%SigMap_ptr => null()

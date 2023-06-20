@@ -65,7 +65,8 @@ module rVector3D_MR
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosRVector3D_MR
             procedure, public :: sumEdges => sumEdgesRVector3D_MR
-            procedure, public :: avgCells => avgCellsRVector3D_MR
+            procedure, public :: avgCell => avgCellRVector3D_MR
+            procedure, public :: avgCellVTI => avgCellVTIRVector3D_MR
             procedure, public :: conjugate => conjugateRVector3D_MR
             !
             !> Arithmetic/algebraic binary operations
@@ -1181,11 +1182,11 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine avgCellsRVector3D_MR( self, E_in, ptype )
+    subroutine avgCellRVector3D_MR( self, cell_in, ptype )
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: E_in
+        class( Scalar_t ), intent( in ) :: cell_in
         character(*), intent( in ), optional :: ptype
         !
         character(10) :: type
@@ -1194,7 +1195,7 @@ contains
         integer :: ix, iy, iz
         !
         if( index( self%grid_type, CELL ) > 0 ) then
-            stop "Error: avgCellsRVector3D_MR > Only CELL type supported."
+            stop "Error: avgCellRVector3D_MR > Only CELL type supported."
         endif
         !
         if( .NOT. present(ptype)) then
@@ -1207,12 +1208,12 @@ contains
              call self%switchStoreState
         endif
         !
-        select type( E_in )
+        select type( cell_in )
             class is( rScalar3D_MR_t )
                 !
-                v_xend = size( E_in%v, 1 )
-                v_yend = size( E_in%v, 2 )
-                v_zend = size( E_in%v, 3 )
+                v_xend = size( cell_in%v, 1 )
+                v_yend = size( cell_in%v, 2 )
+                v_zend = size( cell_in%v, 3 )
                 !
                 select case(type)
                     case(EDGE)
@@ -1221,8 +1222,8 @@ contains
                         do ix = 1, self%grid%nx
                            do iy = 2, self%grid%ny
                               do iz = 2, self%grid%nz
-                                 self%x(ix, iy, iz) = (E_in%v(ix, iy-1, iz-1) + E_in%v(ix, iy, iz-1) + &
-                                      E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz)) / 4.0d0
+                                 self%x(ix, iy, iz) = (cell_in%v(ix, iy-1, iz-1) + cell_in%v(ix, iy, iz-1) + &
+                                      cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz)) / 4.0d0
                               enddo
                            enddo
                         enddo
@@ -1231,8 +1232,8 @@ contains
                         do ix = 2, self%grid%nx
                            do iy = 1, self%grid%ny
                               do iz = 2, self%grid%nz
-                                 self%y(ix, iy, iz) = (E_in%v(ix-1, iy, iz-1) + E_in%v(ix, iy, iz-1) + &
-                                      E_in%v(ix-1, iy, iz) + E_in%v(ix, iy, iz)) / 4.0d0
+                                 self%y(ix, iy, iz) = (cell_in%v(ix-1, iy, iz-1) + cell_in%v(ix, iy, iz-1) + &
+                                      cell_in%v(ix-1, iy, iz) + cell_in%v(ix, iy, iz)) / 4.0d0
                               enddo
                            enddo
                         enddo
@@ -1240,27 +1241,27 @@ contains
                         do ix = 2, self%grid%nx
                               do iy = 2, self%grid%ny
                                  do iz = 1, self%grid%nz
-                                    self%z(ix, iy, iz) = (E_in%v(ix-1, iy-1, iz) + E_in%v(ix-1, iy, iz) + &
-                                         E_in%v(ix, iy-1, iz) + E_in%v(ix, iy, iz)) / 4.0d0
+                                    self%z(ix, iy, iz) = (cell_in%v(ix-1, iy-1, iz) + cell_in%v(ix-1, iy, iz) + &
+                                         cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz)) / 4.0d0
                                  enddo
                               enddo
                            enddo
                         !
                     case(FACE)
                         xend = size(self%x, 1)
-                        self%x(2:xend-1,:,:) = E_in%v(1:v_xend-1,:,:) + E_in%v(2:v_xend,:,:)
+                        self%x(2:xend-1,:,:) = cell_in%v(1:v_xend-1,:,:) + cell_in%v(2:v_xend,:,:)
                         !
                         yend = size(self%y, 1)
-                        self%y(:, 2:yend-1, :) = E_in%v(:, 1:v_yend-1, :) + E_in%v(:, 2:v_yend, :)
+                        self%y(:, 2:yend-1, :) = cell_in%v(:, 1:v_yend-1, :) + cell_in%v(:, 2:v_yend, :)
                         !
                         zend = size(self%z, 1) 
-                        self%z(:, :, 2:zend-1) = E_in%v(:, :, 1:v_zend-1) + E_in%v(:, :, 2:v_zend)
+                        self%z(:, :, 2:zend-1) = cell_in%v(:, :, 1:v_zend-1) + cell_in%v(:, :, 2:v_zend)
                 end select
             class default
-                stop "Error: avgCellsRVector3D_MR > Incompatible input Scalar_t."
+                stop "Error: avgCellRVector3D_MR > Incompatible input Scalar_t."
         end select
         !
-    end subroutine avgCellsRVector3D_MR
+    end subroutine avgCellRVector3D_MR
     !
     !> No subroutine briefing
     !
@@ -1938,15 +1939,15 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine getRealRVector3D_MR( self, r_field )
+    subroutine getRealRVector3D_MR( self, r_vector )
         implicit none
         !
         class( rVector3D_MR_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
+        class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
-        allocate( r_field, source = rVector3D_MR_t( self%grid, self%grid_type ) )
+        allocate( r_vector, source = rVector3D_MR_t( self%grid, self%grid_type ) )
         !
-        call r_field%copyFrom( self )
+        call r_vector%copyFrom( self )
         !
     end subroutine getRealRVector3D_MR
     !

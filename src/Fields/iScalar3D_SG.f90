@@ -29,7 +29,6 @@ module iScalar3D_SG
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosiScalar3D_SG
             procedure, public :: sumEdges => sumEdgesiScalar3D_SG
-            procedure, public :: avgCells => avgCellsiScalar3D_SG
             procedure, public :: conjugate => conjugateiScalar3D_SG
             !
             !> Arithmetic/algebraic binary operations
@@ -52,7 +51,9 @@ module iScalar3D_SG
             procedure, public :: divByValue => divByValueiScalar3D_SG
             !
             !> Miscellaneous
-            procedure, public :: getReal => getRealiScalar3D_SG
+            procedure, public :: getV => getViScalar3D_SG
+            procedure, public :: setV => setViScalar3D_SG
+            !
             procedure, public :: getArray => getArrayiScalar3D_SG
             procedure, public :: setArray => setArrayiScalar3D_SG
             procedure, public :: switchStoreState => switchStoreStateiScalar3D_SG
@@ -428,19 +429,6 @@ contains
         stop "Error: sumEdgesiScalar3D_SG not implemented yet"
         !
     end subroutine sumEdgesiScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine avgCellsiScalar3D_SG( self, E_in, ptype )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: E_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: avgCellsiScalar3D_SG not implemented yet"
-        !
-    end subroutine avgCellsiScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -827,19 +815,30 @@ contains
         !
     end subroutine divByFieldiScalar3D_SG
     !
-    !> No subroutine briefing
+    !> No function briefing
     !
-    subroutine getRealiScalar3D_SG( self, r_field )
+    function getViScalar3D_SG( self ) result( v )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
         !
-        allocate( r_field, source = iScalar3D_SG_t( self%grid, self%grid_type ) )
+        complex( kind=prec ), allocatable :: v(:, :, :)
         !
-        call r_field%copyFrom( self )
+        v = cmplx( self%v, 0.0, kind=prec )
         !
-    end subroutine getRealiScalar3D_SG
+    end function getViScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine setViScalar3D_SG( self, v )
+        implicit none
+        !
+        class( iScalar3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
+        !
+        self%v = real( v, kind=prec )
+        !
+    end subroutine setViScalar3D_SG
     !
     !> No subroutine briefing
     !

@@ -44,7 +44,6 @@ module rScalar3D_MR
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosRScalar3D_MR
             procedure, public :: sumEdges => sumEdgesRScalar3D_MR
-            procedure, public :: avgCells => avgCellsRScalar3D_MR
             procedure, public :: conjugate => conjugateRScalar3D_MR
             !
             !> Arithmetic/algebraic binary operations
@@ -67,7 +66,9 @@ module rScalar3D_MR
             procedure, public :: divByValue => divByValueRScalar3D_MR
             !
             !> Miscellaneous
-            procedure, public :: getReal => getRealRScalar3D_MR
+            procedure, public :: getV => getVRScalar3D_MR
+            procedure, public :: setV => setVRScalar3D_MR
+            !
             procedure, public :: getArray => getArrayRScalar3D_MR
             procedure, public :: setArray => setArrayRScalar3D_MR
             procedure, public :: switchStoreState => switchStoreStateRScalar3D_MR
@@ -759,19 +760,6 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine avgCellsRScalar3D_MR( self, E_in, ptype )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: E_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: avgCellsRScalar3D_MR not implemented yet"
-        !
-    end subroutine avgCellsRScalar3D_MR
-    !
-    !> No subroutine briefing
-    !
     subroutine conjugateRScalar3D_MR( self )
         implicit none
         !
@@ -917,19 +905,30 @@ contains
         !
     end subroutine divByFieldRScalar3D_MR
     !
-    !> No subroutine briefing
+    !> No function briefing
     !
-    subroutine getRealRScalar3D_MR( self, r_field )
+    function getVRScalar3D_MR( self ) result( v )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
         !
-        allocate( r_field, source = rScalar3D_MR_t( self%grid, self%grid_type ) )
+        complex( kind=prec ), allocatable :: v(:, :, :)
         !
-        call r_field%copyFrom( self )
+        stop "Error: getVRScalar3D_SG not implemented!"
         !
-    end subroutine getRealRScalar3D_MR
+    end function getVRScalar3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine setVRScalar3D_MR( self, v )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
+        !
+        stop "Error: setVRScalar3D_MR not implemented!"
+        !
+    end subroutine setVRScalar3D_MR
     !
     !> No subroutine briefing
     !

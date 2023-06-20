@@ -12,7 +12,7 @@ module ModelOperator_SP
         !
         type( spOpTopology_SG_t ) :: topology_sg
         !
-        class( Field_t ), allocatable :: sigma_C
+        class( Vector_t ), allocatable :: sigma_C
         !
         integer, allocatable, dimension(:) :: EDGEi, EDGEb
         integer, allocatable, dimension(:) :: NODEi, NODEb

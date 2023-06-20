@@ -39,7 +39,7 @@ module Field
             !> Arithmetic/algebraic unary operations
             procedure( interface_zeros_field ), deferred, public :: zeros
             procedure( interface_sum_edges_field ), deferred, public :: sumEdges
-            procedure( interface_avg_cells_field ), deferred, public :: avgCells
+            !
             procedure( interface_conjugate_field ), deferred, public :: conjugate
             !
             !> Arithmetic/algebraic binary operations
@@ -65,7 +65,6 @@ module Field
             generic :: div => divByField, divByValue
             !
             !> Miscellaneous
-            procedure( interface_get_real_field ), deferred, public :: getReal
             procedure( interface_get_array_field ), deferred, public :: getArray
             procedure( interface_set_array_field ), deferred, public :: setArray
             procedure( interface_switch_store_state_field ), deferred, public :: switchStoreState
@@ -171,16 +170,7 @@ module Field
             class( Field_t ), allocatable, intent( inout ) :: cell_obj
             logical, optional, intent( in ) :: interior_only
         end subroutine interface_sum_edges_field
-        !
-        !> No interface subroutine briefing
-        !
-        subroutine interface_avg_cells_field( self, E_in, ptype )
-            import :: Field_t
-            class( Field_t ), intent( inout ) :: self
-            class( Field_t ), intent( in ) :: E_in
-            character(*), intent( in ), optional :: ptype
-        end subroutine interface_avg_cells_field
-        !
+		!
         !> No interface subroutine briefing
         subroutine interface_add_field( self, rhs )
             import :: Field_t
@@ -266,13 +256,6 @@ module Field
             class( Field_t ), intent( in ) :: rhs
             complex( kind=prec ) :: cvalue
         end function interface_dot_product_field
-        !
-        !> No interface subroutine briefing
-        subroutine interface_get_real_field( self, r_field )
-            import :: Field_t
-            class( Field_t ), intent( in ) :: self
-            class( Field_t ), allocatable, intent( out ) :: r_field
-        end subroutine interface_get_real_field
         !
         !> No interface subroutine briefing
         subroutine interface_switch_store_state_field( self )

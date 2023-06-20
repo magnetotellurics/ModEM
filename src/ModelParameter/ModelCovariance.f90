@@ -149,7 +149,8 @@ contains
         class( ModelParameter_t ), allocatable, intent( inout ) :: target_model
         !
         class( ModelParameter_t ), allocatable :: temp_model
-        !
+		complex( kind=prec ), allocatable :: v(:, :, :)
+		!
         allocate( temp_model, source = target_model )
         !
         select type( temp_model )
@@ -159,8 +160,12 @@ contains
                 select type( target_model )
                     !
                     class is( ModelParameterCell_SG_t )
-                        !
-                        call self%RecursiveAR( temp_model%cell_cond_h%v, target_model%cell_cond_h%v, 2 )
+						!
+						v = target_model%cell_cond%getV()
+						!
+                        call self%RecursiveAR( temp_model%cell_cond%getV(), v, 2 )
+						!
+						call target_model%cell_cond%setV( v )
                         !
                     class default
                         stop "Error: multBy_Cm > Unclassified target_model"
@@ -190,6 +195,8 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: mhat
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
+		complex( kind=prec ), allocatable :: v(:, :, :)
+		!
         if( allocated( dsigma ) ) deallocate( dsigma )
         allocate( dsigma, source = mhat )
         !
@@ -200,9 +207,13 @@ contains
                 select type( dsigma )
                     !
                     class is( ModelParameterCell_SG_t )
+						!
+						v = dsigma%cell_cond%getV()
+						!
+                        call self%RecursiveAR( mhat%cell_cond%getV(), v, self%N )
                         !
-                        call self%RecursiveAR( mhat%cell_cond_h%v, dsigma%cell_cond_h%v, self%N )
-                        !
+						call dsigma%cell_cond%setV( v )
+						!
                     class default
                         stop "Error: multBy_CmSqrt > Unclassified dsigma"
                     !
@@ -229,6 +240,8 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: dm
         class( ModelParameter_t ), allocatable :: mhat
         !
+		complex( kind=prec ), allocatable :: v(:, :, :)
+		!
         mhat = dm
         !
         select type( mhat )
@@ -239,8 +252,12 @@ contains
                     !
                     class is( ModelParameterCell_SG_t )
                         !
-                        call self%RecursiveARInv( dm%cell_cond_h%v, mhat%cell_cond_h%v, self%N )
+						v = mhat%cell_cond%getV()
+						!
+                        call self%RecursiveARInv( dm%cell_cond%getV(), v, self%N )
                         !
+						call mhat%cell_cond%setV( v )
+						!
                     class default
                         stop "Error: multBy_CmSqrtInv > Unclassified dm"
                     !
@@ -451,8 +468,8 @@ contains
         implicit none
         !
         class( ModelCovarianceRec_t ), intent( in ) :: self
-        real( kind=prec ), intent( in ) :: w(:,:,:)
-        real( kind=prec ), intent( out ) :: v(:,:,:)
+        complex( kind=prec ), intent( in ) :: w(:,:,:)
+        complex( kind=prec ), intent( out ) :: v(:,:,:)
         integer, intent( in ) :: n
         integer :: Nx, Ny, NzEarth, i, j, k, iSmooth
         !
@@ -557,8 +574,8 @@ contains
         implicit none
         !
         class( ModelCovarianceRec_t ), intent( in ) :: self
-        real( kind=prec ), intent( in ) :: w(:,:,:)
-        real( kind=prec ), intent( out ) :: v(:,:,:)
+        complex( kind=prec ), intent( in ) :: w(:,:,:)
+        complex( kind=prec ), intent( out ) :: v(:,:,:)
         integer, intent( in ) :: n
         !
         integer :: Nx, Ny, NzEarth, i, j, k, iSmooth, istat

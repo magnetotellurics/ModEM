@@ -1139,7 +1139,7 @@ contains
                     !
                     call temp_scalar%mult( tx_weights( i_tx ) )
                     !
-                    call JTd%addCond( temp_scalar )
+                    call JTd%linComb( ONE, ONE, temp_scalar )
                     !
                 enddo
                 !

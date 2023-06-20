@@ -297,7 +297,7 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                sigma_cell = sigma%cell_cond_h
+                sigma_cell = sigma%cell_cond
                 nlay1D = sigma_cell%nz + sigma_cell%grid%nzAir
                 nzEarth = sigma_cell%grid%nzEarth
                 nzAir = sigma_cell%grid%nzAir
@@ -430,7 +430,7 @@ contains
                 !
                 amodel = sigma
                 !
-                amodel%cell_cond_h = model
+                amodel%cell_cond = model
                 !
                 call sigma%PDEmapping( model_param_map )
                 !

@@ -271,7 +271,7 @@ module Transmitter
             !
             class( Vector_t ), allocatable, dimension(:) :: eSens
             class( Vector_t ), pointer :: solution
-            class( Field_t ), allocatable :: real_sens
+            class( Vector_t ), allocatable :: real_sens
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
             !

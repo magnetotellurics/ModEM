@@ -8,6 +8,7 @@ module ModelReader_Weerachai
     use Grid3D_SG
     use rScalar3D_SG
     use ModelParameterCell_SG
+    use ModelParameterCell_SG_VTI
     use ModelReader
     !
     type, extends( ModelReader_t ), public :: ModelReader_Weerachai_t
@@ -33,11 +34,11 @@ contains
         !
         character( len=80 ) :: someChar 
         character(:), allocatable :: paramType 
-        integer :: nx, ny, nzEarth, nzAir, someIndex, i, j, k, ioPrm, io_stat
+        integer :: nx, ny, nzEarth, nzAir, someIndex, i, ii, j, k, ioPrm, io_stat, n_conductivity
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         real( kind=prec ) :: ox, oy, oz, rotDeg
-        real( kind=prec ), dimension(:, :, :), allocatable :: rho
-        type( rScalar3D_SG_t  ) :: ccond
+        complex( kind=prec ), dimension(:, :, :), allocatable :: v, rho
+        class( Scalar_t  ), allocatable :: ccond
         real( kind=prec ) :: ALPHA
         !
         someChar = ""
@@ -87,35 +88,60 @@ contains
             allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
             !
             !> Read conductivity values in a model parameter object.
-            allocate( rho( nx, ny, nzEarth ) )
-            do k = 1, nzEarth
-                do j = 1, ny
-                    read(ioPrm, *, iostat = io_stat) (rho(i, j, k), i = nx, 1, -1)
+            if(index(someChar, "VTI") > 0) then
+              n_conductivity=2
+            else
+              n_conductivity=1
+            end if
+            
+            do ii=1,n_conductivity
+                !
+                allocate( rho( nx, ny, nzEarth ) )
+                do k = 1, nzEarth
+                    do j = 1, ny
+                        read(ioPrm, *, iostat = io_stat) (rho(i, j, k), i = nx, 1, -1)
+                    enddo
                 enddo
-            enddo
-            !
-            !> Convert from resistivity to conductivity
-            select type( grid )
                 !
-                class is( Grid3D_SG_t )
+                !> Convert from resistivity to conductivity
+                select type( grid )
                     !
-                    ccond = rScalar3D_SG_t( grid, CELL_EARTH ) 
+                    class is( Grid3D_SG_t )
+                        !
+                        if( allocated( ccond ) ) deallocate( ccond )
+                        allocate( ccond, source = rScalar3D_SG_t( grid, CELL_EARTH ) )
+                        !
+                        if((index(paramType, "LOGE") > 0) .OR. &
+                        (index(paramType, "LOG10") > 0)) then
+                            v = -rho
+                            call ccond%setV( v )
+                        elseif(index(paramType, "LINEAR") > 0) then
+                            v = ONE/rho
+                            call ccond%setV( v )
+                        endif
+                        !
+                        deallocate( rho )
+                        !
+                        if( n_conductivity==2 ) then
+                            !
+                            if( allocated( model ) ) then
+                                call model%setCond( ccond, ii )
+                            else
+                                allocate( model, source = ModelParameterCell_SG_VTI_t( grid, ccond, paramType ) )
+                            endif
+                            !
+                        else
+                            !
+                            allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
+                            !
+                        endif
+                        !
+                    class default
+                        stop "Error: readModelReaderWeerachai > Unclassified grid"
                     !
-                    if((index(paramType, "LOGE") > 0) .OR. &
-                    (index(paramType, "LOG10") > 0)) then
-                        ccond%v = -rho
-                    elseif(index(paramType, "LINEAR") > 0) then
-                        ccond%v = ONE/rho
-                    endif
-                    !
-                    deallocate( rho )
-                    !
-                    allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
-                    !
-                class default
-                    stop "Error: readModelReaderWeerachai > Unclassified grid"
+                end select
                 !
-            end select
+            end do    
             !
             !> ALWAYS convert modelParam to natural log for computations ????
             paramType = LOGE

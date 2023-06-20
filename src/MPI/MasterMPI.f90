@@ -283,6 +283,7 @@ contains
         class( Scalar_t ), allocatable, dimension(:), intent( inout ), optional :: s_hat
         !
         class( Scalar_t ), allocatable :: tx_model_cond
+        class( ModelParameter_t ), allocatable :: tx_model_param
         !
         integer :: worker_rank, i_tx, tx_received, sol_index
         !
@@ -346,7 +347,7 @@ contains
                 s_hat( job_info%i_tx ) = tx_model_cond
             endif
             !
-            call dsigma%addCond( tx_model_cond )
+            call dsigma%linComb( ONE, ONE, tx_model_cond )
             !
             deallocate( tx_model_cond )
             !
@@ -377,7 +378,7 @@ contains
                 s_hat( job_info%i_tx ) = tx_model_cond
             endif
             !
-            call dsigma%addCond( tx_model_cond )
+            call dsigma%linComb( ONE, ONE, tx_model_cond )
             !
             deallocate( tx_model_cond )
             !
@@ -435,7 +436,7 @@ contains
             call sendTo( worker_id )
             !
             call sendModel( sigma, worker_id )
-            !
+        !
         enddo
         !
         call MPI_BARRIER( MPI_COMM_WORLD, ierr )

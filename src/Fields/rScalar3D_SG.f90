@@ -29,7 +29,6 @@ module rScalar3D_SG
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosRScalar3D_SG
             procedure, public :: sumEdges => sumEdgesRScalar3D_SG
-            procedure, public :: avgCells => avgCellsRScalar3D_SG
             procedure, public :: conjugate => conjugateRScalar3D_SG
             !
             !> Arithmetic/algebraic binary operations
@@ -52,7 +51,9 @@ module rScalar3D_SG
             procedure, public :: divByValue => divByValueRScalar3D_SG
             !
             !> Miscellaneous
-            procedure, public :: getReal => getRealRScalar3D_SG
+            procedure, public :: getV => getVRScalar3D_SG
+            procedure, public :: setV => setVRScalar3D_SG
+            !
             procedure, public :: getArray => getArrayRScalar3D_SG
             procedure, public :: setArray => setArrayRScalar3D_SG
             procedure, public :: switchStoreState => switchStoreStateRScalar3D_SG
@@ -425,6 +426,19 @@ contains
         !
     end subroutine zerosRScalar3D_SG
     !
+    !> No interface subroutine briefing
+    !
+    subroutine avgCellVTIrScalar3D_SG( self, cell_in, ptype )
+        implicit none
+        !
+        class( rScalar3D_SG_t ), intent( inout ) :: self
+        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_in
+        character(*), intent( in ), optional :: ptype
+        !
+        stop "Error: avgCellVTIrScalar3D_SG not implemented yet"
+        !
+    end subroutine avgCellVTIrScalar3D_SG
+    !
     !> No subroutine briefing
     !
     subroutine sumEdgesRScalar3D_SG( self, cell_obj, interior_only )
@@ -437,19 +451,6 @@ contains
         stop "Error: sumEdgesRScalar3D_SG not implemented yet"
         !
     end subroutine sumEdgesRScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine avgCellsRScalar3D_SG( self, E_in, ptype )
-        implicit none
-        !
-        class( rScalar3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: E_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: avgCellsRScalar3D_SG not implemented yet"
-        !
-    end subroutine avgCellsRScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -836,19 +837,30 @@ contains
         !
     end subroutine divByFieldRScalar3D_SG
     !
-    !> No subroutine briefing
+    !> No function briefing
     !
-    subroutine getRealRScalar3D_SG( self, r_field )
+    function getVRScalar3D_SG( self ) result( v )
         implicit none
         !
         class( rScalar3D_SG_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
         !
-        allocate( r_field, source = rScalar3D_SG_t( self%grid, self%grid_type ) )
+        complex( kind=prec ), allocatable :: v(:, :, :)
         !
-        call r_field%copyFrom( self )
+        v = cmplx( self%v, 0.0, kind=prec )
         !
-    end subroutine getRealRScalar3D_SG
+    end function getVRScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine setVRScalar3D_SG( self, v )
+        implicit none
+        !
+        class( rScalar3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
+        !
+        self%v = real( v, kind=prec )
+        !
+    end subroutine setVRScalar3D_SG
     !
     !> No subroutine briefing
     !
