@@ -181,7 +181,7 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), intent( inout ) :: e_solution
         !
-        class( Field_t ), allocatable :: temp_vec
+        class( Vector_t ), allocatable :: temp_vec
         class( Scalar_t ), allocatable :: phi0
         integer :: iter
         !
@@ -275,11 +275,11 @@ contains
         !
         if( source%non_zero_bc ) then
             !
-            call source%rhs( pol )%Boundary( temp_vec )
+            call source%rhs( pol )%boundary( temp_vec )
             !
         else
             !
-            call source%E( pol )%Boundary( temp_vec )
+            call source%E( pol )%boundary( temp_vec )
             !
         endif
         !

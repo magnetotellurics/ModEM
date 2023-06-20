@@ -142,7 +142,7 @@ contains
         !
         class( SourceMT_1D_t ), intent( inout ) :: self
         !
-        class( Field_t ), allocatable :: e_boundary
+        class( Vector_t ), allocatable :: e_boundary
         !
         integer :: pol
         !
@@ -151,7 +151,7 @@ contains
         !
         do pol = 1, 2
             !
-            call self%E( pol )%Boundary( e_boundary )
+            call self%E( pol )%boundary( e_boundary )
             !
             self%rhs( pol ) = cVector3D_SG_t( self%model_operator%metric%grid, EDGE )
             !

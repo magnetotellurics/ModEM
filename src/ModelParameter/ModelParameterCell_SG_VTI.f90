@@ -703,7 +703,8 @@ contains
         class( Vector_t ), intent( in ) :: eVec
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
-        class( Field_t ), allocatable :: sigma_cell, temp_interior
+        class( Vector_t ), allocatable :: temp_interior
+        class( Scalar_t ), allocatable :: sigma_cell
         complex( kind=prec ), allocatable :: v(:, :, :)
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2

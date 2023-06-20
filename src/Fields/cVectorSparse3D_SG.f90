@@ -621,7 +621,7 @@ contains
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), allocatable, intent( inout ) :: cell_obj
+        class( Scalar_t ), allocatable, intent( inout ) :: cell_obj
         logical, optional, intent( in ) :: interior_only
         !
         stop "Error: sumEdgesCVectorSparse3D_SG not implemented yet!"

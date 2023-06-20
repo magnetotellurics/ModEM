@@ -15,12 +15,18 @@ module Vector
         procedure( interface_diag_mult_vector ), deferred, public :: diagMult
         procedure( interface_interp_func_vector ), deferred, public :: interpFunc
         !
+        procedure( interface_sum_edges_vector ), deferred, public :: sumEdges
+        !
         procedure( interface_avg_cells_vector ), deferred, public :: avgCell
         procedure( interface_avg_cells_VTI_vector ), deferred, public :: avgCellVTI
         generic :: avgCells => avgCell, avgCellVTI
         !
         procedure( interface_get_real_vector ), deferred, public :: getReal
-        !
+		!
+		!> Vector Procedures
+		procedure, public :: boundary => boundaryVector
+		procedure, public :: interior => boundaryField
+		!
     end type Vector_t
     !
     !>
@@ -44,6 +50,14 @@ module Vector
             character, intent( in ) :: xyz
             class( Vector_t ), allocatable, intent( inout ) :: interp
         end subroutine interface_interp_func_vector
+        !
+        !> No interface subroutine briefing
+        subroutine interface_sum_edges_vector( self, cell_obj, interior_only )
+            import :: Vector_t, Scalar_t
+            class( Vector_t ), intent( inout ) :: self
+            class( Scalar_t ), allocatable, intent( inout ) :: cell_obj
+            logical, optional, intent( in ) :: interior_only
+        end subroutine interface_sum_edges_vector
         !
         !> No interface subroutine briefing
         !
@@ -71,5 +85,45 @@ module Vector
         end subroutine interface_get_real_vector
         !
     end interface
+    !
+contains
+    !
+    !> No subroutine briefing
+    subroutine boundaryVector( self, boundary )
+        implicit none
+        !
+        class( Vector_t ), intent( in ) :: self
+        class( Vector_t ), allocatable, intent( inout ) :: boundary
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: c_array
+        !
+        allocate( boundary, source = self )
+        !
+        c_array = boundary%getArray()
+        !
+        c_array( self%ind_interior ) = C_ZERO
+        !
+        call boundary%setArray( c_array )
+        !
+    end subroutine boundaryVector
+    !
+    !> No subroutine briefing
+    subroutine boundaryField( self, interior )
+        implicit none
+        !
+        class( Vector_t ), intent( in ) :: self
+        class( Vector_t ), allocatable, intent( inout ) :: interior
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: c_array
+        !
+        allocate( interior, source = self )
+        !
+        c_array = interior%getArray()
+        !
+        c_array( self%ind_boundaries ) = C_ZERO
+        !
+        call interior%setArray( c_array )
+        !
+    end subroutine boundaryField
     !
 end module Vector

@@ -28,7 +28,6 @@ module iScalar3D_SG
             !
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosiScalar3D_SG
-            procedure, public :: sumEdges => sumEdgesiScalar3D_SG
             procedure, public :: conjugate => conjugateiScalar3D_SG
             !
             !> Arithmetic/algebraic binary operations
@@ -416,19 +415,6 @@ contains
         endif
         !
     end subroutine zerosiScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine sumEdgesiScalar3D_SG( self, cell_obj, interior_only )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), allocatable, intent( inout ) :: cell_obj
-        logical, optional, intent( in ) :: interior_only
-        !
-        stop "Error: sumEdgesiScalar3D_SG not implemented yet"
-        !
-    end subroutine sumEdgesiScalar3D_SG
     !
     !> No subroutine briefing
     !

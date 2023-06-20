@@ -43,7 +43,6 @@ module rScalar3D_MR
             !
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosRScalar3D_MR
-            procedure, public :: sumEdges => sumEdgesRScalar3D_MR
             procedure, public :: conjugate => conjugateRScalar3D_MR
             !
             !> Arithmetic/algebraic binary operations
@@ -744,19 +743,6 @@ contains
         end select
         !
     end subroutine zerosRScalar3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine sumEdgesRScalar3D_MR( self, cell_obj, interior_only )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        class( Field_t ), allocatable, intent( inout ) :: cell_obj
-        logical, optional, intent( in ) :: interior_only
-        !
-        stop "Error: sumEdgesRScalar3D_MR not implemented yet"
-        !
-    end subroutine sumEdgesRScalar3D_MR
     !
     !> No subroutine briefing
     !

@@ -28,7 +28,6 @@ module rScalar3D_SG
             !
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosRScalar3D_SG
-            procedure, public :: sumEdges => sumEdgesRScalar3D_SG
             procedure, public :: conjugate => conjugateRScalar3D_SG
             !
             !> Arithmetic/algebraic binary operations
@@ -438,19 +437,6 @@ contains
         stop "Error: avgCellVTIrScalar3D_SG not implemented yet"
         !
     end subroutine avgCellVTIrScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine sumEdgesRScalar3D_SG( self, cell_obj, interior_only )
-        implicit none
-        !
-        class( rScalar3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), allocatable, intent( inout ) :: cell_obj
-        logical, optional, intent( in ) :: interior_only
-        !
-        stop "Error: sumEdgesRScalar3D_SG not implemented yet"
-        !
-    end subroutine sumEdgesRScalar3D_SG
     !
     !> No subroutine briefing
     !

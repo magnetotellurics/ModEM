@@ -38,7 +38,6 @@ module Field
             !
             !> Arithmetic/algebraic unary operations
             procedure( interface_zeros_field ), deferred, public :: zeros
-            procedure( interface_sum_edges_field ), deferred, public :: sumEdges
             !
             procedure( interface_conjugate_field ), deferred, public :: conjugate
             !
@@ -79,8 +78,6 @@ module Field
             !> Field procedures
             procedure, public :: init => initializeField
             procedure, public :: dealloc => deallocateField
-            procedure, public :: boundary => boundaryField
-            procedure, public :: interior => interiorField
             procedure, public :: isCompatible => isCompatibleField
             !
             procedure, public :: setIndexArrays => setIndexArraysField
@@ -163,14 +160,6 @@ module Field
             class( Field_t ), intent( inout ) :: self
         end subroutine interface_zeros_field
         !
-        !> No interface subroutine briefing
-        subroutine interface_sum_edges_field( self, cell_obj, interior_only )
-            import :: Field_t
-            class( Field_t ), intent( inout ) :: self
-            class( Field_t ), allocatable, intent( inout ) :: cell_obj
-            logical, optional, intent( in ) :: interior_only
-        end subroutine interface_sum_edges_field
-		!
         !> No interface subroutine briefing
         subroutine interface_add_field( self, rhs )
             import :: Field_t
@@ -345,44 +334,6 @@ contains
         endif
         !
     end function isCompatibleField
-    !
-    !> No subroutine briefing
-    subroutine boundaryField( self, boundary )
-        implicit none
-        !
-        class( Field_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( inout ) :: boundary
-        !
-        complex( kind=prec ), allocatable, dimension(:) :: c_array
-        !
-        allocate( boundary, source = self )
-        !
-        c_array = boundary%getArray()
-        !
-        c_array( self%ind_interior ) = C_ZERO
-        !
-        call boundary%setArray( c_array )
-        !
-    end subroutine boundaryField
-    !
-    !> No subroutine briefing
-    subroutine interiorField( self, interior )
-        implicit none
-        !
-        class( Field_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( inout ) :: interior
-        !
-        complex( kind=prec ), allocatable, dimension(:) :: c_array
-        !
-        allocate( interior, source = self )
-        !
-        c_array = interior%getArray()
-        !
-        c_array( self%ind_boundaries ) = C_ZERO
-        !
-        call interior%setArray( c_array )
-        !
-    end subroutine interiorField
     !
     !> Defines the index arrays: ind_interior and ind_boundaries.
     !>     Create copy with zeros and value boundaries with C_ONE.

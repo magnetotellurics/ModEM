@@ -27,7 +27,6 @@ module cScalar3D_SG
             !
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosCScalar3D_SG
-            procedure, public :: sumEdges => sumEdgesCScalar3D_SG
             procedure, public :: conjugate => conjugateCScalar3D_SG
             !
             !> Arithmetic/algebraic binary operations
@@ -419,19 +418,6 @@ contains
         endif
         !
     end subroutine zerosCScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine sumEdgesCScalar3D_SG( self, cell_obj, interior_only )
-        implicit none
-        !
-        class( cScalar3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), allocatable, intent( inout ) :: cell_obj
-        logical, optional, intent( in ) :: interior_only
-        !
-        stop "Error: sumEdgesCScalar3D_SG not implemented yet"
-        !
-    end subroutine sumEdgesCScalar3D_SG
     !
     !> No subroutine briefing
     !

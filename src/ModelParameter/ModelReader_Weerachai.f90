@@ -90,9 +90,9 @@ contains
             !
             !> Read conductivity values in a model parameter object.
             if(index(someChar, "VTI") > 0) then
-              n_conductivity=2
+              n_conductivity = 2
             else
-              n_conductivity=1
+              n_conductivity = 1
             end if
             
             do ii=1,n_conductivity
@@ -120,8 +120,6 @@ contains
                             v = ONE/rho
                             call ccond%setV( v )
                         endif
-                        ! 
-                        write( 1977, * ) v
                         !
                         deallocate( rho )
                         !

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 nprocs=5
-name='BLOCK2'
+name='BLOCK2_4TX_1_10_1'
 model='../../modem_inputs/Benchmarking/rFile_Model'
 pmodel='../../modem_inputs/Benchmarking/rFile_Model'
 data='../../modem_inputs/Benchmarking/rFile_Data'

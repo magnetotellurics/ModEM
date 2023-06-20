@@ -84,12 +84,12 @@ contains
                         self%error_tol = trim( args(2) )
                     elseif( index( line_text, "rms_tol" ) > 0 ) then
                         self%rms_tol = trim( args(2) )
-                    elseif( index( line_text, "lambda" ) > 0 ) then
-                        self%lambda = trim( args(2) )
                     elseif( index( line_text, "lambda_tol" ) > 0 ) then
                         self%lambda_tol = trim( args(2) )
                     elseif( index( line_text, "lambda_div" ) > 0 ) then
                         self%lambda_div = trim( args(2) )
+                    elseif( index( line_text, "lambda" ) > 0 ) then
+                        self%lambda = trim( args(2) )
                     elseif( index( line_text, "startdm" ) > 0 ) then
                         self%startdm = trim( args(2) )
                     elseif( index( line_text, "fdiffTol" ) > 0 ) then

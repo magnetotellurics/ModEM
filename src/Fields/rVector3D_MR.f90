@@ -1098,7 +1098,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Field_t ), allocatable, intent( inout ) :: cell_obj
+        class( Scalar_t ), allocatable, intent( inout ) :: cell_obj
         logical, optional, intent( in ) :: interior_only
         !
         integer :: x_xend, x_yend, x_zend
