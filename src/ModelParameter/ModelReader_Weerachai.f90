@@ -4,6 +4,7 @@
 module ModelReader_Weerachai
     !
     use Constants
+    use String
     use Grid
     use Grid3D_SG
     use rScalar3D_SG
@@ -34,13 +35,14 @@ contains
         !
         character( len=80 ) :: someChar 
         character(:), allocatable :: paramType 
-        integer :: nx, ny, nzEarth, nzAir, someIndex, i, ii, j, k, ioPrm, io_stat, n_conductivity
+        integer :: nx, ny, nzEarth, nzAir, someIndex, i, ii, j, k, ioPrm, io_stat, p_nargs, anisotropic_level
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         real( kind=prec ) :: ox, oy, oz, rotDeg
         real( kind=prec ), dimension(:, :, :), allocatable :: rho
         complex( kind=prec ), dimension(:, :, :), allocatable :: v
         class( Scalar_t  ), allocatable :: ccond
         real( kind=prec ) :: ALPHA
+        character(len=200), dimension(20) :: args
         !
         someChar = ""
         paramType = ""
@@ -89,13 +91,28 @@ contains
             allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
             !
             !> Read conductivity values in a model parameter object.
-            if(index(someChar, "VTI") > 0) then
-              n_conductivity = 2
+            if( index( someChar, "ANI" ) > 0 ) then
+                !
+                someChar = trim( someChar )
+                !
+                call Parse( someChar, " ", args, p_nargs )
+                !
+                read( args(7), "(I8)" ) anisotropic_level
+                !
+                !> 
+                if( anisotropic_level == 2 ) then
+                    write( *, "( a28, i8 )" ) "Anisotropy level: ", anisotropic_level
+                else
+                    write( *, * ) "Error: readModelReaderWeerachai > Only level 2 is implemented yet!"
+                    stop
+                endif
+                !
             else
-              n_conductivity = 1
+                anisotropic_level = 1
             end if
-            
-            do ii=1,n_conductivity
+            !
+            !>
+            do ii = 1, anisotropic_level
                 !
                 allocate( rho( nx, ny, nzEarth ) )
                 do k = 1, nzEarth
@@ -123,17 +140,17 @@ contains
                         !
                         deallocate( rho )
                         !
-                        if( n_conductivity==2 ) then
+                        if( anisotropic_level == 1 ) then
+                            !
+                            allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
+                            !
+                        else
                             !
                             if( allocated( model ) ) then
                                 call model%setCond( ccond, ii )
                             else
-                                allocate( model, source = ModelParameterCell_SG_VTI_t( grid, ccond, paramType ) )
+                                allocate( model, source = ModelParameterCell_SG_VTI_t( grid, ccond, paramType, anisotropic_level ) )
                             endif
-                            !
-                        else
-                            !
-                            allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
                             !
                         endif
                         !

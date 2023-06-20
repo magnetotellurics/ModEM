@@ -33,7 +33,7 @@ module ForwardControlFile
     interface ForwardControlFile_t
         module procedure ForwardControlFile_ctor
     end interface ForwardControlFile_t
-	!
+    !
 contains
     !
     !> Procedure ForwardControlFile_ctor

@@ -69,16 +69,17 @@ contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_SG_VTI_ctor( grid, cell_cond, param_type ) result( self )
+    function ModelParameterCell_SG_VTI_ctor( grid, cell_cond, param_type, anisotropic_level ) result( self )
         implicit none
         !
         class( Grid_t ), intent( in ) :: grid
         class( Scalar_t ), intent( in ) :: cell_cond
         character(:), allocatable, optional, intent( in ) :: param_type
+        integer, optional, intent( in ) :: anisotropic_level
         !
         type( ModelParameterCell_SG_VTI_t ) :: self
         !
-        integer :: nzAir
+        integer :: n_cond, nzAir
         !
         !write( *, * ) "Constructor ModelParameterCell_SG_VTI_t"
         !
@@ -90,13 +91,19 @@ contains
             self%param_type = trim( param_type )
         endif
         !
+        if( present( anisotropic_level ) ) then
+            n_cond = anisotropic_level
+        else
+            n_cond = 1
+        endif
+        !
         nzAir = 0
         !
         allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
                     ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
                     grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
-        allocate( rScalar3D_SG_t :: self%cell_cond(2) )
+        allocate( rScalar3D_SG_t :: self%cell_cond( n_cond ) )
         !
         self%cell_cond(1) = cell_cond
         !

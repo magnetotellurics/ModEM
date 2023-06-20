@@ -307,7 +307,7 @@ $(OBJDIR)/ModelParameterCell_SG_VTI.o:ModelParameter/ModelParameterCell_SG_VTI.f
 $(OBJDIR)/ModelReader.o:ModelParameter/ModelReader.f90 $(OBJDIR)/Grid.o $(OBJDIR)/ModelParameter.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelParameter/ModelReader.f90 -o $(OBJDIR)/ModelReader.o
 
-$(OBJDIR)/ModelReader_Weerachai.o:ModelParameter/ModelReader_Weerachai.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelParameterCell_SG_VTI.o $(OBJDIR)/ModelReader.o 
+$(OBJDIR)/ModelReader_Weerachai.o:ModelParameter/ModelReader_Weerachai.f90 $(OBJDIR)/Constants.o $(OBJDIR)/String.o $(OBJDIR)/Grid.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelParameterCell_SG_VTI.o $(OBJDIR)/ModelReader.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelParameter/ModelReader_Weerachai.f90 -o $(OBJDIR)/ModelReader_Weerachai.o
 
 $(OBJDIR)/DataEntry.o:DataIO/DataEntry.f90 $(OBJDIR)/Constants.o 
