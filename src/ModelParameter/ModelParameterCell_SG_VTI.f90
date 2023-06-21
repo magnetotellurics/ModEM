@@ -28,9 +28,6 @@ module ModelParameterCell_SG_VTI
             procedure, public :: getCond => getCondModelParameterCell_SG_VTI
             procedure, public :: setCond => setCondModelParameterCell_SG_VTI
             !
-            procedure, public :: getValue => getValueModelParameterCell_SG_VTI
-            procedure, public :: setValue => setValueModelParameterCell_SG_VTI
-            !
             procedure, public :: zeros => zerosModelParameterCell_SG_VTI
             !
             procedure, public :: copyFrom => copyFromModelParameterCell_SG_VTI
@@ -269,101 +266,6 @@ contains
         !
     end subroutine setCondModelParameterCell_SG_VTI
     !
-    !> Gets cell conductivities from a model parameter object m
-    !
-    !> Extracts the values of v and vAir;
-    !> values that are extracted are converted to paramType.
-    !> Different from ModelParamToCell in that the value
-    !> that gets extracted is exactly what is stored in the modelParam:
-    !> it does not contain any air layers. This is needed for BC_x0_WS.
-    !
-    subroutine getValueModelParameterCell_SG_VTI( self, paramType, v_h, vAir, v_v )
-        implicit none
-        !
-        class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
-        character(:), allocatable, intent( inout ) :: paramType
-        class( Scalar_t ), intent( out ) :: v_h
-        real(kind=prec) , intent( out ), optional :: vAir
-        class( Scalar_t ), intent( out ), optional :: v_v
-        !
-        class( ModelParameterCell_SG_VTI_t ), allocatable :: mTemp
-        !
-        if( .NOT. self%is_allocated ) then
-            write( *, * ) "ERROR: getValueModelParameterCell_SG_VTI > Input modelParam must be allocated before calling."
-        endif
-        !
-        if( trim( paramType ) .EQ. '' ) then
-            paramType = self%param_type
-        endif
-        !
-        ! create a temporary copy
-        allocate( mTemp, source = self )
-        !
-        ! convert model to the required type
-        call mTemp%setType( paramType )
-        !
-        ! set values
-        v_h = mTemp%cell_cond(1)
-        !
-        if( present( v_v ) ) then
-            !
-            v_v = mTemp%cell_cond(2)
-            !
-        endif
-        !
-        if( present( vAir ) ) then
-            vAir = mTemp%air_cond
-        endif
-        !
-        ! deallocate temporary model parameter
-        deallocate( mTemp )
-        !
-    end subroutine getValueModelParameterCell_SG_VTI
-    !
-    !> Sets cell conductivities in a model parameter object m
-    !> the values of v and vAir are determined by paramType;
-    !> if different from that of the model parameter, returns
-    !> an error. To avoid this error, first convert m to the
-    !> required paramType using setType_modelParam.
-    !
-    subroutine setValueModelParameterCell_SG_VTI( self, paramType, v_h, vAir, v_v )
-        implicit none
-        !
-        class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
-        character(:), allocatable, intent( in ) :: paramType
-        class( Scalar_t ), intent( in ) :: v_h
-        real(kind=prec) , intent( in ), optional :: vAir
-        class( Scalar_t ), intent( in ), optional :: v_v
-        !
-        if( .NOT. ( self%is_allocated ) ) then
-            write( *, * ) "ERROR: setValueModelParameterCell_SG_VTI > Output modelParam must be allocated before calling this."
-        endif
-        !
-        ! Error checking
-        if( ( self%metric%grid%Ny .NE. v_h%Ny ) .OR. ( self%metric%grid%Nx .NE. v_h%Nx ) .OR. &
-            ( self%metric%grid%NzEarth .NE. v_h%Nz ) ) then
-            write( *, * ) "ERROR: setValueModelParameterCell_SG_VTI > modelParam/rscalar dimensions disagree."
-        else if( paramType .NE. self%param_type ) then
-            write( *, * ) "ERROR: setValueModelParameterCell_SG_VTI > paramTypes not consistent."
-        endif
-        !
-        call self%cell_cond(1)%setV( v_h%getV() )
-        !
-        if( present( v_v ) ) then
-            !
-            call self%cell_cond(2)%setV( v_v%getV() )
-            !
-        endif
-        !
-        if( present( vAir ) ) then
-            self%air_cond = vAir
-        endif
-        !
-        self%updated = .TRUE.
-        self%zero_valued = .FALSE.
-        !
-    end subroutine setValueModelParameterCell_SG_VTI
-    !
     !> No subroutine briefing
     subroutine zerosModelParameterCell_SG_VTI( self )
         implicit none
@@ -398,8 +300,6 @@ contains
                 self%air_cond = rhs%air_cond
                 !
                 self%param_type = rhs%param_type
-                !
-                self%zero_valued = rhs%zero_valued
                 !
                 self%is_allocated = rhs%is_allocated
                 !
@@ -826,7 +726,7 @@ contains
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
         !
         write( *, * ) "ModelParameterCell_SG_VTI_t:", self%mKey, self%air_cond, self%param_type, &
-        self%zero_valued, self%is_allocated, self%param_grid%nx, self%param_grid%ny, self%param_grid%nz, self%param_grid%nzAir
+        self%is_allocated, self%param_grid%nx, self%param_grid%ny, self%param_grid%nz, self%param_grid%nzAir
         !
         !call self%cell_cond%print
         !

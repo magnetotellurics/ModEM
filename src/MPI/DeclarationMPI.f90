@@ -661,7 +661,7 @@ contains
                 call MPI_PACK_SIZE( 10, MPI_INTEGER, main_comm, nbytes(1), ierr )
                 call MPI_PACK_SIZE( len( model%param_type ), MPI_CHARACTER, main_comm, nbytes(2), ierr )
                 call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, main_comm, nbytes(3), ierr )
-                call MPI_PACK_SIZE( 2, MPI_LOGICAL, main_comm, nbytes(4), ierr )
+                call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes(4), ierr )
                 !
                 model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
                 !
@@ -707,7 +707,6 @@ contains
                 call MPI_PACK( model%mKey(1), 8, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( model%param_type, len( model%param_type ), MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( model%air_cond, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( model%zero_valued, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( model%is_allocated, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 !
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
@@ -756,7 +755,6 @@ contains
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%param_type, param_type_size, MPI_CHARACTER, main_comm, ierr )
                         !
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%air_cond, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%zero_valued, 1, MPI_LOGICAL, main_comm, ierr )
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                         !
                         call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )

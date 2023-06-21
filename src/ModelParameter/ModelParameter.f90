@@ -16,10 +16,13 @@ module ModelParameter
         !
         class( MetricElements_t ), pointer :: metric
         !
-        integer :: mKey(8)
         real( kind=prec ) :: air_cond
+        !
         character(:), allocatable :: param_type
-        logical :: zero_valued, is_allocated, updated
+        !
+        integer :: mKey(8)
+        !
+        logical :: is_allocated
         !
         procedure( interface_sigmap_model_parameter ), pointer, nopass :: SigMap_ptr
         !
@@ -36,9 +39,6 @@ module ModelParameter
             !
             procedure( interface_get_cond_model_parameter ), deferred, public :: getCond
             procedure( interface_set_cond_model_parameter ), deferred, public :: setCond
-            !
-            procedure( interface_get_value_model_parameter ), deferred, public :: getValue
-            procedure( interface_set_value_model_parameter ), deferred, public :: setValue
             !
             procedure( interface_zeros_model_parameter ), deferred, public :: zeros
             !
@@ -114,28 +114,6 @@ module ModelParameter
             class( Scalar_t ), allocatable, intent( in ) :: ccond
             integer, intent( in ), optional :: i_cond
         end subroutine interface_set_cond_model_parameter
-        !
-        !> No interface subroutine briefing
-        subroutine  interface_get_value_model_parameter( self, paramType, v_h, vAir, v_v )
-            import :: ModelParameter_t, Scalar_t, prec
-            class( ModelParameter_t ), intent( in ) :: self
-            character(:), allocatable, intent( inout ) :: paramType
-            class( Scalar_t ), intent( out ) :: v_h
-            real( kind=prec ) , intent( out ), optional :: vAir
-            class( Scalar_t ), intent( out ), optional :: v_v
-            !
-        end subroutine interface_get_value_model_parameter
-        !
-        !> No interface subroutine briefing
-        subroutine interface_set_value_model_parameter( self, paramType, v_h, vAir, v_v )
-            import :: ModelParameter_t, Scalar_t, prec
-            class( ModelParameter_t ), intent( inout ) :: self
-            character(:), allocatable, intent( in ) :: paramType
-            class( Scalar_t ), intent( in ) :: v_h
-            real( kind=prec ) , intent( in ), optional :: vAir
-            class( Scalar_t ), intent( in ), optional :: v_v
-            !
-        end subroutine interface_set_value_model_parameter
         !
         !> No interface subroutine briefing
         subroutine interface_zeros_model_parameter( self )
@@ -333,9 +311,7 @@ contains
         !
         self%param_type = ""
         !
-        self%zero_valued = .FALSE.
         self%is_allocated = .FALSE.
-        self%updated = .FALSE.
         !
         self%SigMap_ptr => null()
         !

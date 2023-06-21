@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-nprocs=5
-name='BLOCK2_4TX_1_10_1'
-model='../../modem_inputs/Benchmarking/rFile_Model'
-pmodel='../../modem_inputs/Benchmarking/rFile_Model'
-data='../../modem_inputs/Benchmarking/rFile_Data'
+nprocs=2
+name='CSEM_1TX_1_10_1'
+model='../../modem_inputs/Naser_CSEM/rFile_Model'
+pmodel='../../modem_inputs/Naser_CSEM/rFile_Model'
+data='../../modem_inputs/Naser_CSEM/rFile_Data_1_fix'
 #
 mkdir ${name}_ON
 mkdir ${name}_ON/FWD

@@ -448,7 +448,7 @@ contains
             !
         endif
         !
-        call sigma%getValue( param_type, model, vAir )  !It is just to get model structure (place holder)
+        !call sigma%getValue( param_type, model, vAir )  !It is just to get model structure (place holder)
         !
         ! Put the background (Primary) h "condNomaly" conductivities in ModEM model format
         model%v=R_ZERO
@@ -466,7 +466,7 @@ contains
         !
         call amodel%setType( param_type )
         !
-        call amodel%setValue( param_type, model, vAir )
+        !call amodel%setValue( param_type, model, vAir )
         !
         call amodel%PDEmapping( self%cond_nomaly_h )
         !
@@ -486,7 +486,7 @@ contains
         amodel = sigma
         call amodel%setType( param_type )
         !
-        call amodel%setValue( param_type, model, vAir )
+        !call amodel%setValue( param_type, model, vAir )
         !
         call amodel%PDEmapping( self%cond_nomaly_v )
         !

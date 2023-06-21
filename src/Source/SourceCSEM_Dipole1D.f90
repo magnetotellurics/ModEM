@@ -17,7 +17,7 @@ module SourceCSEM_Dipole1D
         !
         real( kind=prec ) :: azimuth, dip, moment, location(3)
         !
-        type( rVector3D_SG_t ) :: cond_anomaly_h
+        class( Vector_t ), allocatable :: cond_anomaly_h
         !
         contains
             !
@@ -100,15 +100,15 @@ contains
         yTx1D = self%location(2)
         zTx1D = self%location(3)
         ftx1D = 1.0d0/self%period
-        sdm1D = self%moment           !> (Am), dipole moment. Normalize to unit source moment
-        azimuthTx1D = self%azimuth    !> (degrees) 
+        sdm1D = self%moment        !> (Am), dipole moment. Normalize to unit source moment
+        azimuthTx1D = self%azimuth !> (degrees) 
         dipTx1D = self%dip
         !
-        HTmethod1D = "kk_ht_201"      !> Use 201 point HT digital filters.
-        outputdomain1D = "spatial"    !> Assume spatial domain comps
-        lbcomp = .FALSE.              !> This is changed to true if magnetics in data file
-        lUseSpline1D = .TRUE.         !> Use spline interpolation for faster 1D computations
-        linversion = .FALSE.          !> Compute derivatives with respect to self%sigma(layers)
+        HTmethod1D = "kk_ht_201"   !> Use 201 point HT digital filters.
+        outputdomain1D = "spatial" !> Assume spatial domain comps
+        lbcomp = .FALSE.           !> This is changed to true if magnetics in data file
+        lUseSpline1D = .TRUE.      !> Use spline interpolation for faster 1D computations
+        linversion = .FALSE.       !> Compute derivatives with respect to self%sigma(layers)
         !
         phaseConvention = "lag"    !> The usual default is lag, where phase becomes larger 
                                    !> positive values with increasing range.
@@ -120,9 +120,9 @@ contains
         !
         call self%set1DModel( xTx1D, yTx1D )
         !
-        call initilize_1d_vectors( self%sigma%metric%grid )    !> Initilize the 1D vectors where to compupte the e_field field
+        call initilize_1d_vectors( self%sigma%metric%grid ) !> Initilize the 1D vectors where to compupte the e_field field
         !
-        call comp_dipole1D    !> Calculate e_field-Field by Key"s code
+        call comp_dipole1D !> Calculate e_field-Field by Key's code
         !
         call self%create_Ep_from_Dipole1D( self%sigma%metric%grid )
         !
@@ -280,14 +280,14 @@ contains
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: xTx1D, yTx1D 
         !
-        type( rScalar3D_SG_t ) :: sigma_cell, model
-        character( len=80 ) :: param_type
-        type( ModelParameterCell_SG_t ) :: aModel
+        character(:), allocatable :: param_type
+        class( Scalar_t ), allocatable :: sigma_cell, cell_cond
+        class( ModelParameter_t ), allocatable :: aModel
         !
+        complex( kind=prec ), allocatable :: v(:, :, :)
+        real( kind=prec ) :: wt, asigma, temp_sigma_value, vAir
         integer :: nzEarth, nzAir, i, j, k, ixTx, iyTx, counter
-        real( kind=prec ) :: wt, asigma, temp_sigma_value
-        !
-        class( Vector_t ), allocatable :: model_param_map, amodel_map
+        class( Vector_t ), allocatable :: edge_cond
         !
         !> first define conductivity on cells  
         !> (extract into variable which is public)
@@ -297,7 +297,8 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                sigma_cell = sigma%cell_cond
+                allocate( sigma_cell, source = sigma%cell_cond )
+                !
                 nlay1D = sigma_cell%nz + sigma_cell%grid%nzAir
                 nzEarth = sigma_cell%grid%nzEarth
                 nzAir = sigma_cell%grid%nzAir
@@ -325,7 +326,9 @@ contains
                 !> Verbose
                 write( *, * ) "          - Get 1D according to: ", trim( get_1d_from )
                 !
-                if( trim(get_1d_from) =="Geometric_mean" ) then
+                if( trim( get_1D_from ) == "Geometric_mean" ) then
+                    !
+                    v = sigma_cell%getV()
                     !
                     do k = nzAir+1,nlay1D
                         wt = R_ZERO
@@ -335,7 +338,7 @@ contains
                             do j = 1,sigma_cell%grid%Ny
                                 wt = wt + sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
                                 !
-                                temp_sigma_value = temp_sigma_value + (sigma_cell%v(i,j,k-nzAir))* &
+                                temp_sigma_value = temp_sigma_value + v(i,j,k-nzAir) * &
                                 sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
                             enddo
                         enddo
@@ -344,67 +347,22 @@ contains
                         !
                    enddo
                    !
-                elseif( trim( get_1d_from ) == "Tx_Position" ) then
+
+                elseif( trim(get_1D_from) =="At_Tx_Position") then
                     !
-                    do k = nzAir+1,nlay1D
-                        sig1D(k)=sigma_cell%v(ixTx,iyTx,k-nzAir)
-                    enddo
+                    stop "Error: set1DModel > At_Tx_Position not implemented yet"
                     !
-                elseif( trim( get_1d_from ) == "Mean_around_Tx" ) then
-                    do k = nzAir+1,nlay1D
-                        !
-                        wt = R_ZERO
-                        !
-                        do i = ixTx-5,ixTx+5
-                            do j = iyTx-5,iyTx+5
-                                !
-                                wt = wt + sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)
-                                !
-                                sig1D(k) = sig1D(k) + sigma_cell%v(i,j,k-nzAir) * &
-                                sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)
-                                !
-                            enddo
-                        enddo
-                        !
-                        sig1D(k) = exp(sig1D(k)/wt)
-                        !
-                    enddo
+                elseif( trim(get_1d_from)=="Geometric_mean_around_Tx") then
                     !
-                elseif( trim( get_1d_from ) == "Geometric_mean" ) then
+                    stop "Error: set1DModel > Geometric_mean_around_Tx not implemented yet"
                     !
-                    wt = R_ZERO
-                    temp_sigma_value=R_ZERO
-                    counter=0
+                elseif( trim(get_1d_from) == "Full_Geometric_mean" ) then
                     !
-                    do k = nzAir+1,nlay1D
-                        do i = 1,sigma_cell%grid%Nx
-                            do j = 1,sigma_cell%grid%Ny
-                                !
-                                counter=counter+1
-                                !
-                                wt = wt + sigma_cell%grid%dx(i)*sigma_cell%grid%dy(j)*sigma_cell%grid%dz(k)
-                                !
-                                temp_sigma_value = temp_sigma_value + sigma_cell%v(i,j,k-nzAir)
-                                !
-                            enddo
-                        enddo
-                    enddo
+                    stop "Error: set1DModel > Full_Geometric_mean not implemented yet"
                     !
-                    do k = nzAir+1,nlay1D
-                        !
-                        sig1D(k) = exp(temp_sigma_value/counter)
-                        !
-                    enddo
+                elseif( trim( get_1d_from ) == "Fixed_Value" ) then
                     !
-                elseif( trim( get_1d_from ) == "Fixed" ) then
-                    !
-                    temp_sigma_value = sigma_cell%v( ixTx, iyTx, k-nzAir ) !the value exactly below the Tx
-                    !
-                    do k = nzAir+1,nlay1D
-                        !
-                        sig1D(k) = temp_sigma_value
-                        !
-                    enddo
+                    stop "Error: set1DModel > Fixed_Value not implemented yet"
                     !
                 else
                     !
@@ -412,33 +370,43 @@ contains
                     !
                 endif
                 !
-                model = sigma_cell
+                allocate( cell_cond, source = sigma_cell )
                 !
                 !> Put the background (Primary) "condNomaly" conductivities in ModEM model format
-                model%v = R_ZERO
+                !
+                v = cell_cond%getV()
+                !
+                v = R_ZERO
+                !
                 do k = nzAir+1, nlay1D
+                    !
                     asigma = sig1D(k)
                     !
                     if( trim( sigma%param_type ) == LOGE ) asigma = log( asigma )
                     !
                     do i = 1,sigma_cell%grid%Nx
                         do j = 1,sigma_cell%grid%Ny
-                            model%v( i, j, k-nzAir ) = ( asigma )
+                            v( i, j, k-nzAir ) = asigma
                         enddo
                     enddo
-                enddo   
+                    !
+                enddo
                 !
-                amodel = sigma
+                !> Create amodel with these conductivities
+                call cell_cond%setV( v )
                 !
-                amodel%cell_cond = model
+                allocate( amodel, source = sigma )
                 !
-                call sigma%PDEmapping( model_param_map )
+                call amodel%setCond( cell_cond )
                 !
-                call amodel%PDEmapping( amodel_map )
+                call amodel%setType( sigma%param_type )
                 !
-                self%cond_anomaly_h = model_param_map
+                !> Initialize cond_anomaly_h and map to it
+                call sigma%PDEmapping( edge_cond )
                 !
-                call self%cond_anomaly_h%sub( amodel_map )
+                allocate( self%cond_anomaly_h, source = edge_cond )
+                !
+                call amodel%PDEmapping( self%cond_anomaly_h )
                 !
         end select
         !
