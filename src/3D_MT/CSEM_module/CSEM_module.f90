@@ -902,6 +902,7 @@ logical, intent(in), optional       :: FromFile
    call setValue_modelParam(amodel,paramType,model,vAir)   
    call ModelParamToEdge(amodel,condNomaly_h)
 
+   call getValue_modelParam(sigma,paramType,model,vAir)  !It is just to get model structure (place holder)
    ! Put the background (Primary) v "condNomaly" conductivities in ModEM model format
    model%v=R_ZERO
    do k = 1,nzEarth
