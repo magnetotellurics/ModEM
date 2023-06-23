@@ -140,42 +140,24 @@ contains
                         !
                         deallocate( rho )
                         !
-						write(*,*) "MR 1"
-						!
                         if( anisotropic_level == 1 ) then
                         !
-						write(*,*) "MR 1a"
-						!
-                            allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
+                        allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
                         !
-						write(*,*) "MR 1b"
-						!
                         else
-                         !
-						write(*,*) "MR 2"
-						!
+                            !
                             if( allocated( model ) ) then
-                        !
-						write(*,*) "MR 2a"
-						!
+                                !
                                 call model%setCond( ccond, ii )
-                        !
-						write(*,*) "MR 2b"
-						!
+                                !
                             else
-                        !
-						write(*,*) "MR 2c"
-						!
+                                !
                                 allocate( model, source = ModelParameterCell_SG_VTI_t( grid, ccond, paramType, anisotropic_level ) )
-                        !
-						write(*,*) "MR 2d"
-						!
+                                !
                             endif
                             !
                         endif
                         !
-						write(*,*) "MR 2z"
-						!
                     class default
                         stop "Error: readModelReaderWeerachai > Unclassified grid"
                     !

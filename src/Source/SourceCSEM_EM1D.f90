@@ -276,10 +276,10 @@ contains
         nlay1D = sigma_cell_h%nz + nzAir
         !
         v = sigma_cell_h%getV()
-        sig1D_temp_h(1:nzAir) = v(1,1,1:nzAir)
+        sig1D_temp_h(1:nzAir) = SIGMA_AIR !v(1,1,1:nzAir)
         !
         v = sigma_cell_v%getV()
-        sig1D_temp_v(1:nzAir) = v(1,1,1:nzAir)
+        sig1D_temp_v(1:nzAir) = SIGMA_AIR !v(1,1,1:nzAir)
         !
         if( trim( get_1D_from ) == "Geometric_mean" ) then
             !
@@ -368,32 +368,32 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                call sigma%modelParamToCell( sigma_cell_h, cCond_v=sigma_cell_v )
+                allocate( sigma_cell_h, source = sigma%cell_cond )
                 !
-                call self%setTempSourceCSEM_EM1D( sigma_cell_h, sigma_cell_v )
+                call self%setTempSourceCSEM_EM1D( sigma_cell_h, sigma_cell_h )
                 !
                 sig1D = sig1D_temp_h
                 !
-                !> Horizontal
                 call self%setCondAnomally( sigma_cell_h, self%cond_anomaly_h )
                 !
-                call self%cond_anomaly_h%print( 6666, "SOURCE EM1D ANOMALY H" )
+                sig1D = sig1D_temp_v
                 !
-                !> Vertical
-                call self%setCondAnomally( sigma_cell_v, self%cond_anomaly_v )
+                call self%setCondAnomally( sigma_cell_h, self%cond_anomaly_v )
                 !
-                call self%cond_anomaly_h%print( 6667, "SOURCE EM1D ANOMALY V" )
+                deallocate( sigma_cell_h )
                 !
             class is( ModelParameterCell_SG_VTI_t )
                 !
-                !> Horizontal and Vertical
-                call sigma%modelParamToCell( sigma_cell_h, cCond_v=sigma_cell_v )
+                allocate( sigma_cell_h, source = sigma%cell_cond_h )
+                allocate( sigma_cell_v, source = sigma%cell_cond_v )
                 !
                 call self%setTempSourceCSEM_EM1D( sigma_cell_h, sigma_cell_v )
                 !
                 sig1D = sig1D_temp_h
                 !
                 call self%setCondAnomally( sigma_cell_h, self%cond_anomaly_h )
+                !
+                deallocate( sigma_cell_h )
                 !
                 sig1D = sig1D_temp_v
                 !
@@ -402,11 +402,9 @@ contains
                 deallocate( sigma_cell_v )
                 !
             class default
-                stop "Error: set1DModel > Unclassified sigma"
+                stop "Error: set1DModelSourceCSEM_EM1D > Unclassified sigma"
             !
         end select
-        !
-        deallocate( sigma_cell_h )
         !
     end subroutine set1DModelSourceCSEM_EM1D
     !

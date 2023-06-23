@@ -39,8 +39,6 @@ module ModelParameterCell_SG_VTI
             procedure, public :: linCombModel => linCombModelModelParameterCell_SG_VTI
             procedure, public :: linCombScalar => linCombScalarModelParameterCell_SG_VTI
             !
-            procedure, public :: ModelParamToCell => ModelParamToCellModelParameterCell_SG_VTI
-            !
             procedure, public :: PDEmapping => PDEmappingModelParameterCell_SG_VTI
             procedure, public :: dPDEmapping => dPDEmappingModelParameterCell_SG_VTI
             procedure, public :: dPDEmappingT => dPDEmappingTModelParameterCell_SG_VTI
@@ -482,88 +480,6 @@ contains
         !
     end function dotProdModelParameterCell_SG_VTI
     !
-    !
-    !
-    subroutine ModelParamToCellModelParameterCell_SG_VTI( self, cCond_h, param_type, grid, air_cond, cCond_v )
-        implicit none
-        !
-        class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
-        class( Scalar_t ), allocatable, intent( inout ) :: cCond_h
-        character(:), allocatable, intent( out ), optional :: param_type
-        class( Grid_t ), allocatable, intent( out ), optional :: grid
-        real( kind=prec ), intent( out ), optional :: air_cond
-        class( Scalar_t ), allocatable, intent( inout ), optional :: cCond_v
-        !
-        complex( kind=prec ), allocatable :: c_h(:, :, :), c_v(:, :, :)
-        complex( kind=prec ), allocatable :: v_h(:, :, :), v_v(:, :, :)
-        !
-        if( allocated( cCond_h ) ) then
-            !
-            if( cCond_h%Ny .NE. self%metric%grid%Ny .OR. cCond_h%Nx .NE. self%metric%grid%Nx .OR. cCond_h%Nz .NE. self%metric%grid%Nz ) then
-                !
-                if( allocated( cCond_h ) ) deallocate( cCond_h )
-                allocate( cCond_h, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
-                !
-                if( present(cCond_v) ) then
-                    if( allocated( cCond_v ) ) deallocate( cCond_h )
-                    allocate( cCond_v, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
-                endif
-            endif
-            !
-        else
-            if( present( cCond_v ) ) then
-                allocate( cCond_v, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
-            endif
-                allocate( cCond_h, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
-        endif
-        !
-        c_h = self%cell_cond_h%getV()
-        c_v = self%cell_cond_v%getV()
-        !
-        v_h = cCond_h%getV()
-        v_v = cCond_v%getV()
-        !
-        if( self%param_type .EQ. LOGE ) then
-            !
-            if( present( cCond_v ) ) then
-                v_v(:, :, 1:self%metric%grid%NzAir ) = exp( self%air_cond )
-                v_v(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = exp( c_v )
-                !
-            endif
-            !
-            v_h(:, :, 1:self%metric%grid%NzAir) = exp( self%air_cond )
-            v_h(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz) = exp( c_h )
-            !
-        else
-            !
-            if( present( cCond_v ) ) then
-                v_v(:, :, 1:self%metric%grid%NzAir) = self%air_cond
-                v_v(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz) = c_v
-            endif
-            !
-            v_h(:, :, 1:self%metric%grid%NzAir) = self%air_cond
-            v_h(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz) = c_h
-            !
-        endif
-        !
-        call cCond_h%setV( v_h )
-        call cCond_v%setV( v_v )
-        !
-        if( present( param_type ) ) then
-            param_type = self%param_type
-        endif
-        !
-        if( present( grid ) ) then
-            if( allocated( grid ) ) deallocate( grid )
-            allocate( grid, source = self%metric%grid )
-        endif
-        !
-        if( present( air_cond ) ) then
-            air_cond = self%air_cond
-        endif
-        !
-    end subroutine ModelParamToCellModelParameterCell_SG_VTI
-    !
     !> Map the entire model cells into a single edge Vector_t (eVec).
     !
     subroutine PDEmappingModelParameterCell_SG_VTI( self, eVec )
@@ -590,11 +506,11 @@ contains
         !
         sigma_cell_h = rScalar3D_SG_t( self%metric%grid, CELL )
         !
-        !sigma_cell_h%v( :, :, 1:k0 ) = self%air_cond
+        sigma_cell_h%v( :, :, 1:k0 ) = self%air_cond
         !
-        !sigma_cell_h%v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ) )
+        sigma_cell_h%v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ) )
         !
-        sigma_cell_h%v( :, :, : ) = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ) )
+        !sigma_cell_h%v( :, :, : ) = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ) )
         !
         call sigma_cell_h%mult( self%metric%VCell )
         !
@@ -602,11 +518,11 @@ contains
         !
         sigma_cell_v = rScalar3D_SG_t( self%metric%grid, CELL )
         !
-        !sigma_cell_v%v( :, :, 1:k0 ) = self%air_cond
+        sigma_cell_v%v( :, :, 1:k0 ) = self%air_cond
         !
-        !sigma_cell_v%v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond_v%getV(), kind=prec ) )
+        sigma_cell_v%v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond_v%getV(), kind=prec ) )
         !
-        sigma_cell_v%v( :, :, : ) = self%SigMap( real( self%cell_cond_v%getV(), kind=prec ) )
+        !sigma_cell_v%v( :, :, : ) = self%SigMap( real( self%cell_cond_v%getV(), kind=prec ) )
         !
         call sigma_cell_v%mult( self%metric%VCell )
         !

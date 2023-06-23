@@ -54,8 +54,6 @@ module ModelParameter
             procedure( interface_dot_product_model_parameter ), deferred, public :: dotProd
             generic :: operator(.dot.) => dotProd
             !
-            procedure( interface_modelparam_to_cell_modelparameter ), deferred, public :: ModelParamToCell
-            !
             procedure( interface_pdemapping_model_parameter ), deferred, public :: PDEmapping
             procedure( interface_dpdemapping_model_parameter ), deferred, public :: dPDEmapping
             procedure( interface_dpdemapping_t_model_parameter ), deferred, public :: dPDEmappingT
@@ -164,17 +162,6 @@ module ModelParameter
             class( ModelParameter_t ), intent( inout ) :: self
             character(:), allocatable, intent( in ) :: param_type
         end subroutine interface_set_type_model_parameter
-        !
-        !> No interface subroutine briefing
-        subroutine interface_modelparam_to_cell_modelparameter( self, cCond_h, param_type, grid, air_cond, cCond_v)
-            import :: ModelParameter_t, Scalar_t, Grid_t, prec
-            class( ModelParameter_t ), intent( in ) :: self
-            class( Scalar_t ), allocatable, intent( inout ) :: cCond_h
-            character(:), allocatable, intent( out ), optional :: param_type
-            class( Grid_t ), allocatable, intent( out ), optional :: grid
-            real( kind=prec ), intent( out ), optional :: air_cond
-            class( Scalar_t ), allocatable, intent( inout ), optional :: cCond_v
-        end subroutine interface_modelparam_to_cell_modelparameter
         !
         !> No interface subroutine briefing
         subroutine interface_pdemapping_model_parameter( self, eVec )

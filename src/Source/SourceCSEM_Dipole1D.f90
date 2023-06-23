@@ -299,7 +299,7 @@ contains
         !> For air layer, sig1D equal to air layer conductivity
         !> For earth layer, The Geometric mean is be used to create sig1D
         !
-        sig1D(1:nzAir) = SIGMA_AIR !sigma_cell%v(1,1,1:nzAir)
+        sig1D(1:nzAir) = SIGMA_AIR
         !
         !> Verbose
         write( *, * ) "          - Get 1D according to: ", trim( get_1d_from )
@@ -371,6 +371,8 @@ contains
                 !
                 call self%setCondAnomally( sigma_cell, self%cond_anomaly )
                 !
+                deallocate( sigma_cell )
+                !
             class is( ModelParameterCell_SG_VTI_t )
                 !
                 stop "Error: set1DModelSourceCSEM_Dipole1D > One shouldn't use Dipole1D with VTI"
@@ -379,8 +381,6 @@ contains
                 stop "Error: set1DModelSourceCSEM_Dipole1D > Unclassified sigma"
             !
         end select
-        !
-        deallocate( sigma_cell )
         !
     end subroutine set1DModelSourceCSEM_Dipole1D
     !

@@ -63,11 +63,11 @@ module SourceCSEM
         integer :: nzAir, i, j, k
         class( Vector_t ), allocatable :: cond_edges, cond_nomaly
         !
-        !> Put the background (Primary) "condNomaly" conductivities in ModEM cond_cell format
-        !
-        allocate( cond_cell, source = sigma_cell )
-        !
+        !>
         nzAir = sigma_cell%grid%nzAir
+        !
+        !> Set 1D conductivities to an auxiliary cond_cell
+        allocate( cond_cell, source = sigma_cell )
         !
         v = cond_cell%getV()
         !
@@ -89,7 +89,7 @@ module SourceCSEM
         !
         call cond_cell%setV( v )
         !
-        !> Create aModel with these conductivities
+        !> Create ModelParam - aModel with these conductivities
         allocate( aModel, source = self%sigma )
         call aModel%setCond( cond_cell )
         call aModel%setType( self%sigma%param_type )
