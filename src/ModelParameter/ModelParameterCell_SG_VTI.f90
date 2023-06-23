@@ -37,8 +37,7 @@ module ModelParameterCell_SG_VTI
             !
             procedure, public :: dotProd => dotProd_ModelParameterCell_SG_VTI
             !
-            procedure, public :: linCombModel => linCombModel_ModelParameterCell_SG_VTI
-            procedure, public :: linCombScalar => linCombScalar_ModelParameterCell_SG_VTI
+            procedure, public :: linComb => linComb_ModelParameterCell_SG_VTI
             !
             procedure, public :: PDEmapping => PDEmapping_ModelParameterCell_SG_VTI
             procedure, public :: dPDEmapping => dPDEmapping_ModelParameterCell_SG_VTI
@@ -359,7 +358,7 @@ contains
     end function countModel_ModelParameterCell_SG_VTI
     !
     !>
-    subroutine linCombModel_ModelParameterCell_SG_VTI( self, a1, a2, rhs )
+    subroutine linComb_ModelParameterCell_SG_VTI( self, a1, a2, rhs )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
@@ -380,7 +379,7 @@ contains
                     call self%cell_cond_h%setV( v )
                     !
                 else
-                    stop "Error: linCombModel_ModelParameterCell_SG_VTI > Incompatible rhs cell_cond_h"
+                    stop "Error: linComb_ModelParameterCell_SG_VTI > Incompatible rhs cell_cond_h"
                 endif
                 !
                 !> Vertical
@@ -391,54 +390,17 @@ contains
                     call self%cell_cond_v%setV( v )
                     !
                 else
-                    stop "Error: linCombModel_ModelParameterCell_SG_VTI > Incompatible rhs cell_cond_v"
+                    stop "Error: linComb_ModelParameterCell_SG_VTI > Incompatible rhs cell_cond_v"
                 endif
                 !
             class default
-                stop "Error: linCombModel_ModelParameterCell_SG_VTI > undefined rhs"
+                stop "Error: linComb_ModelParameterCell_SG_VTI > undefined rhs"
             !
         end select
         !
         !self%air_cond = rhs%air_cond
         !
-    end subroutine linCombModel_ModelParameterCell_SG_VTI
-    !
-    !>
-    subroutine linCombScalar_ModelParameterCell_SG_VTI( self, a1, a2, rhs )
-        implicit none
-        !
-        class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
-        real( kind=prec ), intent( in ) :: a1, a2
-        class( Scalar_t ), intent( in ) :: rhs
-        !
-        integer :: i
-        complex( kind=prec ), allocatable :: v(:, :, :)
-        !
-        !> Horizontal
-        if( self%cell_cond_h%isCompatible( rhs ) ) then
-            !
-            v = a1 * self%cell_cond_h%getV() + a2 * rhs%getV()
-            !
-            call self%cell_cond_h%setV( v )
-            !
-        else
-            stop "Error: linCombScalar_ModelParameterCell_SG_VTI > Incompatible cell_cond_h"
-        endif
-        !
-        !> Vertical
-        if( self%cell_cond_v%isCompatible( rhs ) ) then
-            !
-            v = a1 * self%cell_cond_v%getV() + a2 * rhs%getV()
-            !
-            call self%cell_cond_v%setV( v )
-            !
-        else
-            stop "Error: linCombScalar_ModelParameterCell_SG_VTI > Incompatible cell_cond_v"
-        endif
-        !
-        !self%air_cond = rhs%air_cond
-        !
-    end subroutine linCombScalar_ModelParameterCell_SG_VTI
+    end subroutine linComb_ModelParameterCell_SG_VTI
     !
     !> No subroutine briefing
     !
@@ -563,10 +525,6 @@ contains
         !
         select type( dsigma )
             !
-            class is( ModelParameterCell_SG_t )
-                !
-                sigma_cell_h%v(:,:,k1:k2) = sigma_cell_h%v(:,:,k1:k2) * dsigma%cell_cond%getV()
-                !
             class is( ModelParameterCell_SG_VTI_t )
                 !
                 sigma_cell_h%v(:,:,k1:k2) = sigma_cell_h%v(:,:,k1:k2) * dsigma%cell_cond_h%getV()
@@ -591,10 +549,6 @@ contains
         !
         select type( dsigma )
             !
-            class is( ModelParameterCell_SG_t )
-                !
-                sigma_cell_v%v(:,:,k1:k2) = sigma_cell_v%v(:,:,k1:k2) * dsigma%cell_cond%getV()
-                !
             class is( ModelParameterCell_SG_VTI_t )
                 !
                 sigma_cell_v%v(:,:,k1:k2) = sigma_cell_v%v(:,:,k1:k2) * dsigma%cell_cond_v%getV()
@@ -628,8 +582,9 @@ contains
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
+        allocate( dsigma, source = ModelParameterCell_SG_VTI_t( self%param_grid, self%cell_cond_h, self%param_type ) )
         !
-        allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, self%cell_cond_h, self%param_type ) )
+        call dsigma%setCond( self%cell_cond_v, 2 )
         !
         select type( dsigma )
             !

@@ -36,8 +36,7 @@ module ModelParameterCell_SG
             !
             procedure, public :: dotProd => dotProd_ModelParameterCell_SG
             !
-            procedure, public :: linCombModel => linCombModel_ModelParameterCell_SG
-            procedure, public :: linCombScalar => linCombScalar_ModelParameterCell_SG
+            procedure, public :: linComb => linComb_ModelParameterCell_SG
             !
             procedure, public :: PDEmapping => PDEmapping_ModelParameterCell_SG
             procedure, public :: dPDEmapping => dPDEmapping_ModelParameterCell_SG
@@ -324,7 +323,7 @@ contains
     end function countModel_ModelParameterCell_SG
     !
     !>
-    subroutine linCombModel_ModelParameterCell_SG( self, a1, a2, rhs )
+    subroutine linComb_ModelParameterCell_SG( self, a1, a2, rhs )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
@@ -343,38 +342,17 @@ contains
                     call self%cell_cond%setV( v )
                     !
                 else
-                    stop "Error: linCombModel_ModelParameterCell_SG > Incompatible rhs"
+                    stop "Error: linComb_ModelParameterCell_SG > Incompatible rhs"
                 endif
                 !
             class default
-                stop "Error: linCombModel_ModelParameterCell_SG > undefined rhs"
+                stop "Error: linComb_ModelParameterCell_SG > undefined rhs"
             !
         end select
         !
         !self%air_cond = rhs%air_cond
         !
-    end subroutine linCombModel_ModelParameterCell_SG
-    !
-    !>
-    subroutine linCombScalar_ModelParameterCell_SG( self, a1, a2, rhs )
-        implicit none
-        !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
-        real( kind=prec ), intent( in ) :: a1, a2
-        class( Scalar_t ), intent( in ) :: rhs
-        !
-        complex( kind=prec ), allocatable :: v(:, :, :)
-        !
-        if( self%cell_cond%isCompatible( rhs ) ) then
-            !
-            v = a1 * self%cell_cond%getV() + a2 * rhs%getV()
-            call self%cell_cond%setV( v )
-            !
-        else
-            stop "Error: linCombScalar_ModelParameterCell_SG > Incompatible rhs"
-        endif
-        !
-    end subroutine linCombScalar_ModelParameterCell_SG
+    end subroutine linComb_ModelParameterCell_SG
     !
     !> No subroutine briefing
     !

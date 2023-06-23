@@ -1139,7 +1139,8 @@ contains
                     !
                     call temp_scalar%mult( tx_weights( i_tx ) )
                     !
-                    call JTd%linComb( ONE, ONE, temp_scalar )
+                    !> ADAPT TO THE WHOLE MODEL
+                    !call JTd%linComb( ONE, ONE, temp_scalar )
                     !
                 enddo
                 !

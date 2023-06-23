@@ -47,9 +47,7 @@ module ModelParameter
             !
             procedure( interface_count_model_parameter ), deferred, public :: countModel
             !
-            procedure( interface_lin_comb_model_model_parameter ), deferred, public :: linCombModel
-            procedure( interface_lin_comb_scalar_model_parameter ), deferred, public :: linCombScalar
-            generic :: linComb => linCombModel, linCombScalar
+            procedure( interface_lin_comb_model_model_parameter ), deferred, public :: linComb
             !
             procedure( interface_dot_product_model_parameter ), deferred, public :: dotProd
             generic :: operator(.dot.) => dotProd

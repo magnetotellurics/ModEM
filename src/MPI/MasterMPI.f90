@@ -282,8 +282,8 @@ contains
         integer, intent( in ), optional :: i_sol
         class( Scalar_t ), allocatable, dimension(:), intent( inout ), optional :: s_hat
         !
-        class( Scalar_t ), allocatable :: tx_model_cond
-        class( ModelParameter_t ), allocatable :: tx_model_param
+        class( Scalar_t ), allocatable :: tx_dsigma_cond
+        class( ModelParameter_t ), allocatable :: tx_dsigma
         !
         integer :: worker_rank, i_tx, tx_received, sol_index
         !
@@ -339,17 +339,19 @@ contains
             !
             call receiveFromAny()
             !
-            call dsigma%getCond( tx_model_cond )
+            call dsigma%getCond( tx_dsigma_cond )
             !
-            call receiveConductivity( tx_model_cond, job_info%worker_rank )
+            call receiveModel( tx_dsigma, job_info%worker_rank )
+            !
+            call tx_dsigma%getCond( tx_dsigma_cond )
             !
             if( present( s_hat ) ) then
-                s_hat( job_info%i_tx ) = tx_model_cond
+                s_hat( job_info%i_tx ) = tx_dsigma_cond
             endif
             !
-            call dsigma%linComb( ONE, ONE, tx_model_cond )
+            call dsigma%linComb( ONE, ONE, tx_dsigma )
             !
-            deallocate( tx_model_cond )
+            deallocate( tx_dsigma_cond )
             !
             tx_received = tx_received + 1
             i_tx = i_tx + 1
@@ -370,17 +372,17 @@ contains
             !
             call receiveFromAny()
             !
-            call dsigma%getCond( tx_model_cond )
+            call receiveModel( tx_dsigma, job_info%worker_rank )
             !
-            call receiveConductivity( tx_model_cond, job_info%worker_rank )
+            call tx_dsigma%getCond( tx_dsigma_cond )
             !
             if( present( s_hat ) ) then
-                s_hat( job_info%i_tx ) = tx_model_cond
+                s_hat( job_info%i_tx ) = tx_dsigma_cond
             endif
             !
-            call dsigma%linComb( ONE, ONE, tx_model_cond )
+            call dsigma%linComb( ONE, ONE, tx_dsigma )
             !
-            deallocate( tx_model_cond )
+            deallocate( tx_dsigma_cond )
             !
             tx_received = tx_received + 1
             !
@@ -436,7 +438,7 @@ contains
             call sendTo( worker_id )
             !
             call sendModel( sigma, worker_id )
-        !
+            !
         enddo
         !
         call MPI_BARRIER( MPI_COMM_WORLD, ierr )

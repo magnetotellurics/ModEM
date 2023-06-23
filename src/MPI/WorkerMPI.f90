@@ -208,7 +208,6 @@ contains
         implicit none
         !
         class( ModelParameter_t ), allocatable :: tx_dsigma
-        class( Scalar_t ), allocatable :: tx_dsigma_cond
         type( DataGroupTx_t ) :: tx_data
         class( Transmitter_t ), pointer :: Tx
         !
@@ -227,9 +226,9 @@ contains
         !
         call sendTo( master_id )
         !
-        call tx_dsigma%getCond( tx_dsigma_cond )
+        job_info%model_size = allocateModelBuffer( tx_dsigma, .FALSE. )
         !
-        call sendConductivity( tx_dsigma_cond, master_id )
+        call sendModel( tx_dsigma, master_id )
         !
     end subroutine workerJMult_T
     !

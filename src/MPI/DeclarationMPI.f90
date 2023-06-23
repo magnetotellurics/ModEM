@@ -711,13 +711,13 @@ contains
             class is( ModelParameterCell_SG_t )
                 !
                 call MPI_PACK( model_cell_sg, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				!
-				call MPI_PACK( len( model%param_type ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				call MPI_PACK( model%mKey(1), 8, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				call MPI_PACK( model%param_type, len( model%param_type ), MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				call MPI_PACK( model%air_cond, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				call MPI_PACK( model%is_allocated, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				!
+                !
+                call MPI_PACK( len( model%param_type ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( model%mKey(1), 8, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( model%param_type, len( model%param_type ), MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( model%air_cond, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( model%is_allocated, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                !
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
                 call packScalarBuffer( model%cell_cond, parent_buffer, parent_buffer_size, index )
@@ -725,13 +725,13 @@ contains
             class is( ModelParameterCell_SG_VTI_t )
                 !
                 call MPI_PACK( model_cell_sg_vti, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				!
-				call MPI_PACK( len( model%param_type ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				call MPI_PACK( model%mKey(1), 8, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				call MPI_PACK( model%param_type, len( model%param_type ), MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				call MPI_PACK( model%air_cond, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				call MPI_PACK( model%is_allocated, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-				!
+                !
+                call MPI_PACK( len( model%param_type ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( model%mKey(1), 8, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( model%param_type, len( model%param_type ), MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( model%air_cond, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                call MPI_PACK( model%is_allocated, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+                !
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
                 call packScalarBuffer( model%cell_cond_h, parent_buffer, parent_buffer_size, index )
@@ -772,16 +772,16 @@ contains
                 select type( model )
                     !
                     class is( ModelParameterCell_SG_t )
-						!
-						call MPI_UNPACK( parent_buffer, parent_buffer_size, index, param_type_size, 1, MPI_INTEGER, main_comm, ierr )
-						call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%mKey(1), 8, MPI_INTEGER, main_comm, ierr )
-						!
-						allocate( character( param_type_size ) :: model%param_type )
-						call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%param_type, param_type_size, MPI_CHARACTER, main_comm, ierr )
-						!
-						call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%air_cond, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-						call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
-						!
+                        !
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, param_type_size, 1, MPI_INTEGER, main_comm, ierr )
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%mKey(1), 8, MPI_INTEGER, main_comm, ierr )
+                        !
+                        allocate( character( param_type_size ) :: model%param_type )
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%param_type, param_type_size, MPI_CHARACTER, main_comm, ierr )
+                        !
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%air_cond, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
+                        !
                         call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                         !
                         call unpackScalarBuffer( model%cell_cond, main_grid, parent_buffer, parent_buffer_size, index )
@@ -798,16 +798,16 @@ contains
                 select type( model )
                     !
                     class is( ModelParameterCell_SG_VTI_t )
-						!
-						call MPI_UNPACK( parent_buffer, parent_buffer_size, index, param_type_size, 1, MPI_INTEGER, main_comm, ierr )
-						call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%mKey(1), 8, MPI_INTEGER, main_comm, ierr )
-						!
-						allocate( character( param_type_size ) :: model%param_type )
-						call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%param_type, param_type_size, MPI_CHARACTER, main_comm, ierr )
-						!
-						call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%air_cond, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-						call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
-						!
+                        !
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, param_type_size, 1, MPI_INTEGER, main_comm, ierr )
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%mKey(1), 8, MPI_INTEGER, main_comm, ierr )
+                        !
+                        allocate( character( param_type_size ) :: model%param_type )
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%param_type, param_type_size, MPI_CHARACTER, main_comm, ierr )
+                        !
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%air_cond, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
+                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
+                        !
                         call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                         !
                         call unpackScalarBuffer( model%cell_cond_h, main_grid, parent_buffer, parent_buffer_size, index )
@@ -1536,42 +1536,6 @@ contains
         end select
         !
     end subroutine unpackConductivityBuffer
-    !
-    !> Receive conductivity from any target
-    subroutine receiveConductivity( ccond, target_id )
-        implicit none
-        !
-        class( Scalar_t ), allocatable, intent( inout ) :: ccond
-        !
-        integer, intent( in ) :: target_id
-        !
-        call allocateConductivityBuffer( ccond )
-        !
-        call MPI_RECV( conductivity_buffer, conductivity_buffer_size, MPI_PACKED, target_id, MPI_ANY_TAG, main_comm, MPI_STATUS_IGNORE, ierr )
-        !
-        call unpackConductivityBuffer( ccond )
-        !
-        deallocate( conductivity_buffer )
-        !
-    end subroutine receiveConductivity
-    !
-    !> SEND job_info FROM target_id
-    subroutine sendConductivity( ccond, target_id )
-        implicit none
-        !
-        class( Scalar_t ), intent( in ) :: ccond
-        !
-        integer, intent( in ) :: target_id
-        !
-        call allocateConductivityBuffer( ccond )
-        !
-        call packConductivityBuffer( ccond )
-        !
-        call MPI_SEND( conductivity_buffer, conductivity_buffer_size, MPI_PACKED, target_id, tag, main_comm, ierr )
-        !
-        deallocate( conductivity_buffer )
-        !
-    end subroutine sendConductivity
     !
     !> ALLOCATE job_info_buffer
     subroutine allocateJobInfoBuffer
