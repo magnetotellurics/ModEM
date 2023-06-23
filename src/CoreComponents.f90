@@ -14,6 +14,7 @@ module CoreComponents
     use ModelOperator_SP
     !
     use ModelParameterCell_SG
+    use ModelParameterCell_SG_VTI
     !
     use ModelCovarianceRec
     !

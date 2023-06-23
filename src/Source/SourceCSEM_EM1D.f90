@@ -6,6 +6,8 @@ module SourceCSEM_EM1D
     use SourceCSEM
     use TransmitterCSEM
     use TransmitterArray
+    use ModelParameterCell_SG
+    use ModelParameterCell_SG_VTI
     !
     type, extends( SourceCSEM_t ) :: SourceCSEM_EM1D_t
         !

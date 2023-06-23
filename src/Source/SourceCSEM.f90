@@ -9,8 +9,6 @@ module SourceCSEM
     use rVector3D_SG
     use Grid3D_SG
     use EM1D
-    use ModelParameterCell_SG
-    use ModelParameterCell_SG_VTI
     !
     character(:), allocatable :: source_type_csem
     character( len=15 ), parameter :: SRC_CSEM_EM1D = "SourceCSEM_EM1D"
