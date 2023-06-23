@@ -91,6 +91,7 @@ contains
             !> Create the grid object with nzAir = 0 -- no air layers so far
             allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
             !
+            !> Consider isotope at first
             anisotropic_level = 1
             !
             !> Read conductivity values in a model parameter object.
@@ -102,13 +103,12 @@ contains
                 !
                 read( args(7), "(I8)" ) anisotropic_level
                 !
-                !> 
+                !> Check if Isotropic and Dipole1D
                 if( anisotropic_level /= 1 .AND. source_type_csem == SRC_CSEM_DIPOLE1D ) then
-                    !
                     stop "Error: readModelReaderWeerachai > One shouldn't use Dipole1D with Anisotropy!"
-                    !
                 endif
                 !
+                !> Check anisotropic_level, if not exist define as 
                 if( anisotropic_level == 0 ) then
                     !
                     write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m Unspecified level of anisotropy, using VTI."
@@ -146,7 +146,7 @@ contains
                             index( paramType, "LOG10" ) > 0 ) then
                             v = -rho
                             call ccond%setV( v )
-                        elseif(index(paramType, "LINEAR") > 0) then
+                        elseif( index(paramType, "LINEAR") > 0 ) then
                             v = ONE/rho
                             call ccond%setV( v )
                         endif

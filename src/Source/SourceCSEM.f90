@@ -59,7 +59,7 @@ module SourceCSEM
         complex( kind=prec ), allocatable :: v(:, :, :)
         real( kind=prec ) :: wt, sigma_1d
         integer :: nzAir, i, j, k
-        class( Vector_t ), allocatable :: cond_edges, cond_nomaly
+        class( Vector_t ), allocatable :: cond_nomaly
         !
         !>
         nzAir = sigma_cell%grid%nzAir
@@ -70,6 +70,8 @@ module SourceCSEM
         v = cond_cell%getV()
         !
         v = R_ZERO
+        !
+        write( 1970, * ) sig1D
         !
         do k = nzAir+1, nlay1D
             !
@@ -92,24 +94,19 @@ module SourceCSEM
         call aModel%setCond( cond_cell )
         call aModel%setType( self%sigma%param_type )
         !
-        !> Map sigma to cond_edges vector
-        allocate( cond_edges, source = rVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
-        call self%sigma%PDEmapping( cond_edges )
-        !
-        !> Map aModel to cond_nomaly vector
-        allocate( cond_nomaly, source = cond_edges )
+        allocate( cond_nomaly, source = rVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
         call aModel%PDEmapping( cond_nomaly )
+        !
+        !> Map sigma to cond_edges vector
+        allocate( cond_anomaly, source = rVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
+        call self%sigma%PDEmapping( cond_anomaly )
         !
         deallocate( aModel )
         !
-        !> Subtract cond_edges from cond_nomaly
-        allocate( cond_anomaly, source = cond_nomaly )
+        !cond_anomaly = cond_anomaly - cond_nomaly
+        call cond_anomaly%sub( cond_nomaly )
         !
         deallocate( cond_nomaly )
-        !
-        call cond_anomaly%sub( cond_edges )
-        !
-        deallocate( cond_edges )
         !
     end subroutine setCondAnomally
     !

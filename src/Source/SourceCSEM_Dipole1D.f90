@@ -139,6 +139,124 @@ contains
     !
     !> No subroutine briefing
     !
+    subroutine set1DModel_SourceCSEM_Dipole1D( self )
+        implicit none
+        !
+        class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
+        !
+        class( Scalar_t ), allocatable :: sigma_cell
+        !
+        select type( sigma => self%sigma )
+            !
+            class is( ModelParameterCell_SG_t )
+                !
+                allocate( sigma_cell, source = sigma%cell_cond )
+                !
+                call self%setTemp_SourceCSEM_Dipole1D( sigma_cell )
+                !
+                call self%setCondAnomally( sigma_cell, self%cond_anomaly )
+                !
+                deallocate( sigma_cell )
+                !
+            class is( ModelParameterCell_SG_VTI_t )
+                !
+                stop "Error: set1DModel_SourceCSEM_Dipole1D > One shouldn't use Dipole1D with VTI"
+                !
+            class default
+                stop "Error: set1DModel_SourceCSEM_Dipole1D > Unclassified sigma"
+            !
+        end select
+        !
+    end subroutine set1DModel_SourceCSEM_Dipole1D
+    !
+    !> No subroutine briefing
+    !
+    subroutine setTemp_SourceCSEM_Dipole1D( self, sigma_cell )
+        implicit none
+        !
+        class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
+        class( Scalar_t ), intent( in ) :: sigma_cell
+        !
+        integer :: i, j, k, nzAir
+        real( kind=prec ) :: wt, temp_sigma_value
+        complex( kind=prec ), allocatable :: v(:, :, :)
+        !
+        if( allocated( zlay1D ) ) deallocate( zlay1D )
+        if( allocated( sig1D ) ) deallocate( sig1D )
+        !
+        nzAir = sigma_cell%grid%nzAir
+        !
+        nlay1D = sigma_cell%nz + nzAir
+        !
+        allocate( zlay1D( nlay1D ) )
+        allocate( sig1D( nlay1D ) )
+        !
+        do i=1,nlay1D
+            zlay1D(i) = sigma_cell%grid%zEdge(i)
+        enddo
+        !
+        !> For create sig1D, we divide this process into two parts (1) for air layers and 
+        !>    (2) for earth layers
+        !> For air layer, sig1D equal to air layer conductivity
+        !> For earth layer, The Geometric mean is be used to create sig1D
+        !
+        sig1D(1:nzAir) = SIGMA_AIR
+        !
+        !> Verbose
+        write( *, * ) "          - Get 1D according to: ", trim( get_1d_from )
+        !
+        v = sigma_cell%getV()
+        !
+        if( trim( get_1D_from ) == "Geometric_mean" ) then
+            !
+            do k = nzAir+1, nlay1D
+                !
+                wt = R_ZERO
+                temp_sigma_value = R_ZERO
+                !
+                do i = 1, sigma_cell%grid%Nx
+                    do j = 1, sigma_cell%grid%Ny
+                        !
+                        wt = wt + sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
+                        !
+                        temp_sigma_value = temp_sigma_value + v(i,j,k-nzAir) * &
+                        sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
+                        !
+                    enddo
+                enddo
+                !
+                sig1D(k) = exp( temp_sigma_value / wt )
+                !
+           enddo
+           !
+           write( 1969, * ) sig1D
+           !
+        elseif( trim( get_1D_from ) == "At_Tx_Position" ) then
+            !
+            stop "Error: setTemp_SourceCSEM_Dipole1D > At_Tx_Position not implemented yet"
+            !
+        elseif( trim(get_1d_from) == "Geometric_mean_around_Tx" ) then
+            !
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet"
+            !
+        elseif( trim(get_1d_from) == "Full_Geometric_mean" ) then
+            !
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet"
+            !
+        elseif( trim( get_1d_from ) == "Fixed_Value" ) then
+            !
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Fixed_Value not implemented yet"
+            !
+        else
+            !
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Unknown get_1d_from"
+            !
+        endif
+        !
+    end subroutine setTemp_SourceCSEM_Dipole1D
+    !
+    !> No subroutine briefing
+    !
     subroutine initilize_1d_vectors( grid )
         implicit none
         !
@@ -269,123 +387,7 @@ contains
         deallocate( bx1D, by1D, bz1D )
         !
     end subroutine create_Ep_from_Dipole1D
-    !
-    !> No subroutine briefing
-    !
-    subroutine setTemp_SourceCSEM_Dipole1D( self, sigma_cell )
-        implicit none
-        !
-        class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: sigma_cell
-        !
-        integer :: i, j, k, nzAir
-        real( kind=prec ) :: wt, temp_sigma_value
-        complex( kind=prec ), allocatable :: v(:, :, :)
-        !
-        if( allocated( zlay1D ) ) deallocate( zlay1D )
-        if( allocated( sig1D ) ) deallocate( sig1D )
-        !
-        nzAir = sigma_cell%grid%nzAir
-        !
-        nlay1D = sigma_cell%nz + nzAir
-        !
-        allocate( zlay1D( nlay1D ) )
-        allocate( sig1D( nlay1D ) )
-        !
-        do i=1,nlay1D
-            zlay1D(i) = sigma_cell%grid%zEdge(i)
-        enddo
-        !
-        !> For create sig1D, we divide this process into two parts (1) for air layers and 
-        !>    (2) for earth layers
-        !> For air layer, sig1D equal to air layer conductivity
-        !> For earth layer, The Geometric mean is be used to create sig1D
-        !
-        sig1D(1:nzAir) = SIGMA_AIR
-        !
-        !> Verbose
-        write( *, * ) "          - Get 1D according to: ", trim( get_1d_from )
-        !
-        v = sigma_cell%getV()
-        !
-        if( trim( get_1D_from ) == "Geometric_mean" ) then
-            !
-            do k = nzAir+1, nlay1D
-                !
-                wt = R_ZERO
-                temp_sigma_value = R_ZERO
-                !
-                do i = 1, sigma_cell%grid%Nx
-                    do j = 1, sigma_cell%grid%Ny
-                        !
-                        wt = wt + sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
-                        !
-                        temp_sigma_value = temp_sigma_value + v(i,j,k-nzAir) * &
-                        sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
-                        !
-                    enddo
-                enddo
-                !
-                sig1D(k) = exp( temp_sigma_value / wt )
-                !
-           enddo
-           !
-        elseif( trim( get_1D_from ) == "At_Tx_Position" ) then
-            !
-            stop "Error: setTemp_SourceCSEM_Dipole1D > At_Tx_Position not implemented yet"
-            !
-        elseif( trim(get_1d_from) == "Geometric_mean_around_Tx" ) then
-            !
-            stop "Error: setTemp_SourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet"
-            !
-        elseif( trim(get_1d_from) == "Full_Geometric_mean" ) then
-            !
-            stop "Error: setTemp_SourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet"
-            !
-        elseif( trim( get_1d_from ) == "Fixed_Value" ) then
-            !
-            stop "Error: setTemp_SourceCSEM_Dipole1D > Fixed_Value not implemented yet"
-            !
-        else
-            !
-            stop "Error: setTemp_SourceCSEM_Dipole1D > Unknown get_1d_from"
-            !
-        endif
-        !
-    end subroutine setTemp_SourceCSEM_Dipole1D
-    !
-    !> No subroutine briefing
-    !
-    subroutine set1DModel_SourceCSEM_Dipole1D( self )
-        implicit none
-        !
-        class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
-        !
-        class( Scalar_t ), allocatable :: sigma_cell
-        !
-        select type( sigma => self%sigma )
-            !
-            class is( ModelParameterCell_SG_t )
-                !
-                allocate( sigma_cell, source = sigma%cell_cond )
-                !
-                call self%setTemp_SourceCSEM_Dipole1D( sigma_cell )
-                !
-                call self%setCondAnomally( sigma_cell, self%cond_anomaly )
-                !
-                deallocate( sigma_cell )
-                !
-            class is( ModelParameterCell_SG_VTI_t )
-                !
-                stop "Error: set1DModel_SourceCSEM_Dipole1D > One shouldn't use Dipole1D with VTI"
-                !
-            class default
-                stop "Error: set1DModel_SourceCSEM_Dipole1D > Unclassified sigma"
-            !
-        end select
-        !
-    end subroutine set1DModel_SourceCSEM_Dipole1D
-    !
+	!
     !> Set RHS from self%E
     !
     subroutine createRHS_SourceCSEM_Dipole1D( self )
