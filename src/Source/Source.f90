@@ -3,24 +3,13 @@
 !
 module Source
     !
+    use Constants
     use ModelOperator
     use ModelParameter
     !
     character(:), allocatable :: source_type_mt
     character( len=11 ), parameter :: SRC_MT_1D = "SourceMT_1D"
     character( len=11 ), parameter :: SRC_MT_2D = "SourceMT_2D"
-    !
-    character(:), allocatable :: source_type_csem
-    character( len=15 ), parameter :: SRC_CSEM_EM1D = "SourceCSEM_EM1D"
-    character( len=19 ), parameter :: SRC_CSEM_DIPOLE1D = "SourceCSEM_Dipole1D"
-    !
-    character(:), allocatable :: get_1d_from
-    character( len=5 ), parameter :: FROM_FIXED_VALUE = "Fixed"
-    character( len=14 ), parameter :: FROM_GEO_MEAN = "Geometric_mean"
-    character( len=14 ), parameter :: FROM_TX_GEO_MEAN = "Mean_around_Tx"
-    character( len=11 ), parameter :: FROM_TX_LOCATION = "Tx_Position"
-    !
-    class( Vector_t ), allocatable :: E_p
     !
     type, abstract :: Source_t
         !
@@ -37,6 +26,7 @@ module Source
         contains
             !
             procedure, public :: init => initializeSource
+            !
             procedure, public :: dealloc => deallocateSource
             !
             procedure, public :: setE => setESource
@@ -48,6 +38,8 @@ module Source
             procedure( interface_create_rhs_source ), deferred, public :: createRHS
             !
     end type Source_t
+    !
+    public :: minNode, maxNode, clean
     !
     abstract interface
         !
@@ -135,5 +127,70 @@ module Source
         deallocate( self%E )
         !
     end subroutine deallocateSource
+!
+    function minNode( x, xNode ) result( ix )
+        implicit none
+        !
+        real( kind=prec ), intent( in ) :: x
+        real( kind=prec ), dimension(:), intent( in ) :: xNode
+        !
+        integer :: ix, i
+        !
+        do i = 1, size( xNode )
+            if( clean( xNode(i) ) .GT. clean(x) ) then
+                ix = i-1
+                exit
+            endif
+        enddo
+        !
+    end function minNode
+    !
+    !>    This is a utility routine, used by several data functional
+    !>    set up routines, and for other interpolation functions
+    !>    Returns index ix such that    xNode(ix) <= x < xNode(ix+1)
+    !>    If x is out of range:
+    !>    x > xNode(1) returns 0; if x< xNode(nx) returns nx
+    !>    Assumes xNode is strictly decreasing; does not check this
+    !>    NOTE: as presently coded, when xNode is called with center
+    !>    (face) node positions, this routine will return zero for
+    !>    the coordinates in the outer half cell nearest the boundary
+    !>    If evaluation over the complete model domain is to be allowed
+    !>    a more general interpolation rule will be required.
+    !>    A.K.: modified to allow input of any size, nx = size(xNode).
+    !
+    function maxNode(x, xNode) result(ix)
+        implicit none
+        !
+        real( kind=prec ), intent( in ) :: x
+        real( kind=prec ), dimension(:), intent( in ) :: xNode
+        !
+        integer :: ix, i
+        !
+        do i = 1, size(xNode)
+           if( clean( xNode(i)) .LT. clean(x) ) then
+                ix = i-1
+                exit
+           endif
+        enddo
+        !
+    end function maxNode
+    !
+    !> This is a utility routine that provides an expression used to battle
+    !> against machine error problems. It returns the same real or real(8)
+    !> as the input, but without the extra digits at the end that are often
+    !> a cause of wrong comparisons in the if statements. ALWAYS use clean(x)
+    !> instead of x in an inequality!!!
+    !> R_LARGE is defined in the module math_constants
+    !> A.K.
+    !
+    function clean(x)
+        implicit none
+        !
+        real( kind=prec ), intent( in ) :: x
+        real( kind=prec ) :: clean
+        !
+        clean = dnint(x*R_LARGE)/R_LARGE
+        !
+    end function clean
     !
 end module Source

@@ -12,6 +12,8 @@ module Vector
     contains
         !
         !> Vector Interfaces
+        procedure( interface_get_axis_vector ), deferred, public :: getAxis
+        !
         procedure( interface_diag_mult_vector ), deferred, public :: diagMult
         procedure( interface_interp_func_vector ), deferred, public :: interpFunc
         !
@@ -22,17 +24,24 @@ module Vector
         generic :: avgCells => avgCell, avgCellVTI
         !
         procedure( interface_get_real_vector ), deferred, public :: getReal
-		!
-		!> Vector Procedures
-		procedure, public :: boundary => boundaryVector
-		procedure, public :: interior => boundaryField
-		!
+        !
+        !> Vector Procedures
+        procedure, public :: boundary => boundaryVector
+        procedure, public :: interior => boundaryField
+        !
     end type Vector_t
     !
     !>
     abstract interface
         !
         !> No interface function briefing
+        !
+        function interface_get_axis_vector( self, comp_lbl ) result( comp )
+            import :: Vector_t, prec
+            character, intent( in ) :: comp_lbl
+            class( Vector_t ), intent( in ) :: self
+            complex( kind=prec ), allocatable :: comp(:, :, :)
+        end function interface_get_axis_vector
         !
         function interface_diag_mult_vector( self, rhs ) result( diag_mult )
             import :: Vector_t
@@ -70,10 +79,10 @@ module Vector
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_avg_cells_vti_vector( self, cell_in, ptype )
+        subroutine interface_avg_cells_vti_vector( self, cell_h_in, cell_v_in, ptype )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_in
+            class( Scalar_t ), intent( in ) :: cell_h_in, cell_v_in
             character(*), intent( in ), optional :: ptype
         end subroutine interface_avg_cells_vti_vector
         !

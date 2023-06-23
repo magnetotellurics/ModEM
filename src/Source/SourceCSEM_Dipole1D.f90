@@ -3,31 +3,25 @@
 !
 module SourceCSEM_Dipole1D
     !
-    use dipole1d
+    use SourceCSEM
     !
-    use Constants
-    use cVector3D_SG
-    use rVector3D_SG
-    use Grid3D_SG
-    use Source
-    use ModelOperator
-    use ModelParameterCell_SG
-    !
-    type, extends( Source_t ) :: SourceCSEM_Dipole1D_t
+    type, extends( SourceCSEM_t ) :: SourceCSEM_Dipole1D_t
         !
         real( kind=prec ) :: azimuth, dip, moment, location(3)
         !
-        class( Vector_t ), allocatable :: cond_anomaly_h
+        class( Vector_t ), allocatable :: cond_anomaly
         !
         contains
             !
             final :: SourceCSEM_Dipole1D_dtor
             !
-            procedure, public :: createE => createE_SourceCSEM_Dipole1D
+            procedure, public :: createE => createESourceCSEM_Dipole1D
             !
-            procedure, public :: createRHS => createRHS_SourceCSEM_Dipole1D
+            procedure, public :: createRHS => createRHSSourceCSEM_Dipole1D
             !
-            procedure, private :: set1DModel, create_Ep_from_Dipole1D
+            procedure, public :: set1DModel => set1DModelSourceCSEM_Dipole1D
+            !
+            procedure, private :: setTempSourceCSEM_Dipole1D, create_Ep_from_Dipole1D
             !
     end type SourceCSEM_Dipole1D_T
     !
@@ -88,7 +82,7 @@ contains
     !
     !> Set self%E from forward modeling 1D
     !
-    subroutine createE_SourceCSEM_Dipole1D( self )
+    subroutine createESourceCSEM_Dipole1D( self )
         implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
@@ -118,7 +112,8 @@ contains
         !> Verbose...
         write( *, * ) "          - Extract CSEM Source from Dipole 1D"
         !
-        call self%set1DModel( xTx1D, yTx1D )
+        call self%set1DModel
+        !call self%set1DModel( xTx1D, yTx1D )
         !
         call initilize_1d_vectors( self%sigma%metric%grid ) !> Initilize the 1D vectors where to compupte the e_field field
         !
@@ -130,7 +125,7 @@ contains
         !
         allocate( self%E(1), source = E_p )
         !
-        call self%E(1)%mult( self%cond_anomaly_h )
+        call self%E(1)%mult( self%cond_anomaly )
         !
         i_omega_mu = cmplx( 0., real( -1.0d0 * isign * mu_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
         !
@@ -138,7 +133,7 @@ contains
         !
         call self%createRHS
         !
-    end subroutine createE_SourceCSEM_Dipole1D
+    end subroutine createESourceCSEM_Dipole1D
     !
     !> No subroutine briefing
     !
@@ -275,23 +270,96 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine set1DModel( self, xTx1D, yTx1D )
+    subroutine setTempSourceCSEM_Dipole1D( self, sigma_cell )
+        implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
-        real( kind=prec ), intent( in ) :: xTx1D, yTx1D 
+        class( Scalar_t ), intent( in ) :: sigma_cell
         !
-        character(:), allocatable :: param_type
-        class( Scalar_t ), allocatable :: sigma_cell, cell_cond
-        class( ModelParameter_t ), allocatable :: aModel
-        !
+        integer :: i, j, k, nzAir
+        real( kind=prec ) :: wt, temp_sigma_value
         complex( kind=prec ), allocatable :: v(:, :, :)
-        real( kind=prec ) :: wt, asigma, temp_sigma_value, vAir
-        integer :: nzEarth, nzAir, i, j, k, ixTx, iyTx, counter
-        class( Vector_t ), allocatable :: edge_cond
         !
-        !> first define conductivity on cells  
-        !> (extract into variable which is public)
-        !> call modelParamToCell(sigma, sigma_cell, param_type)
+        if( allocated( zlay1D ) ) deallocate( zlay1D )
+        if( allocated( sig1D ) ) deallocate( sig1D )
+        !
+        nzAir = sigma_cell%grid%nzAir
+        !
+        nlay1D = sigma_cell%nz + nzAir
+        !
+        allocate( zlay1D( nlay1D ) )
+        allocate( sig1D( nlay1D ) )
+        !
+        do i=1,nlay1D
+            zlay1D(i) = sigma_cell%grid%zEdge(i)
+        enddo
+        !
+        !> For create sig1D, we divide this process into two parts (1) for air layers and 
+        !>    (2) for earth layers
+        !> For air layer, sig1D equal to air layer conductivity
+        !> For earth layer, The Geometric mean is be used to create sig1D
+        !
+        sig1D(1:nzAir) = SIGMA_AIR !sigma_cell%v(1,1,1:nzAir)
+        !
+        !> Verbose
+        write( *, * ) "          - Get 1D according to: ", trim( get_1d_from )
+        !
+        v = sigma_cell%getV()
+        !
+        if( trim( get_1D_from ) == "Geometric_mean" ) then
+            !
+            do k = nzAir+1, nlay1D
+                !
+                wt = R_ZERO
+                temp_sigma_value = R_ZERO
+                !
+                do i = 1, sigma_cell%grid%Nx
+                    do j = 1, sigma_cell%grid%Ny
+                        !
+                        wt = wt + sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
+                        !
+                        temp_sigma_value = temp_sigma_value + v(i,j,k-nzAir) * &
+                        sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
+                        !
+                    enddo
+                enddo
+                !
+                sig1D(k) = exp( temp_sigma_value / wt )
+                !
+           enddo
+           !
+        elseif( trim( get_1D_from ) == "At_Tx_Position" ) then
+            !
+            stop "Error: setTempSourceCSEM_Dipole1D > At_Tx_Position not implemented yet"
+            !
+        elseif( trim(get_1d_from) == "Geometric_mean_around_Tx" ) then
+            !
+            stop "Error: setTempSourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet"
+            !
+        elseif( trim(get_1d_from) == "Full_Geometric_mean" ) then
+            !
+            stop "Error: setTempSourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet"
+            !
+        elseif( trim( get_1d_from ) == "Fixed_Value" ) then
+            !
+            stop "Error: setTempSourceCSEM_Dipole1D > Fixed_Value not implemented yet"
+            !
+        else
+            !
+            stop "Error: setTempSourceCSEM_Dipole1D > Unknown get_1d_from"
+            !
+        endif
+        !
+    end subroutine setTempSourceCSEM_Dipole1D
+    !
+    !> No subroutine briefing
+    !
+    subroutine set1DModelSourceCSEM_Dipole1D( self )
+        implicit none
+        !
+        class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
+        !
+        class( Scalar_t ), allocatable :: sigma_cell
         !
         select type( sigma => self%sigma )
             !
@@ -299,122 +367,26 @@ contains
                 !
                 allocate( sigma_cell, source = sigma%cell_cond )
                 !
-                nlay1D = sigma_cell%nz + sigma_cell%grid%nzAir
-                nzEarth = sigma_cell%grid%nzEarth
-                nzAir = sigma_cell%grid%nzAir
+                call self%setTempSourceCSEM_Dipole1D( sigma_cell )
                 !
-                ixTx = minNode( xTx1D, sigma_cell%grid%xEdge )
-                iyTx = minNode( yTx1D, sigma_cell%grid%yEdge )
+                call self%setCondAnomally( sigma_cell, self%cond_anomaly )
                 !
-                if( allocated( zlay1D ) ) deallocate( zlay1D )
-                if( allocated( sig1D ) ) deallocate( sig1D )
+            class is( ModelParameterCell_SG_VTI_t )
                 !
-                allocate( zlay1D( nlay1D ) )
-                allocate( sig1D( nlay1D ) )
+                stop "Error: set1DModelSourceCSEM_Dipole1D > One shouldn't use Dipole1D with VTI"
                 !
-                do k=1,nlay1D
-                    zlay1D(k) = sigma_cell%grid%zEdge(k)
-                enddo
-                !
-                !> For create sig1D, we divide this process into two parts (1) for air layers and 
-                !>    (2) for earth layers
-                !> For air layer, sig1D equal to air layer conductivity
-                !> For earth layer, The Geometric mean is be used to create sig1D
-                !
-                sig1D(1:nzAir) = SIGMA_AIR !sigma_cell%v(1,1,1:nzAir)
-                !
-                !> Verbose
-                write( *, * ) "          - Get 1D according to: ", trim( get_1d_from )
-                !
-                if( trim( get_1D_from ) == "Geometric_mean" ) then
-                    !
-                    v = sigma_cell%getV()
-                    !
-                    do k = nzAir+1,nlay1D
-                        wt = R_ZERO
-                        temp_sigma_value=R_ZERO
-                        !
-                        do i = 1,sigma_cell%grid%Nx
-                            do j = 1,sigma_cell%grid%Ny
-                                wt = wt + sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
-                                !
-                                temp_sigma_value = temp_sigma_value + v(i,j,k-nzAir) * &
-                                sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
-                            enddo
-                        enddo
-                        !
-                        sig1D(k) = exp( temp_sigma_value / wt )
-                        !
-                   enddo
-                   !
-
-                elseif( trim(get_1D_from) =="At_Tx_Position") then
-                    !
-                    stop "Error: set1DModel > At_Tx_Position not implemented yet"
-                    !
-                elseif( trim(get_1d_from)=="Geometric_mean_around_Tx") then
-                    !
-                    stop "Error: set1DModel > Geometric_mean_around_Tx not implemented yet"
-                    !
-                elseif( trim(get_1d_from) == "Full_Geometric_mean" ) then
-                    !
-                    stop "Error: set1DModel > Full_Geometric_mean not implemented yet"
-                    !
-                elseif( trim( get_1d_from ) == "Fixed_Value" ) then
-                    !
-                    stop "Error: set1DModel > Fixed_Value not implemented yet"
-                    !
-                else
-                    !
-                    stop "Error: set1DModel > Unknown get_1d_from"
-                    !
-                endif
-                !
-                allocate( cell_cond, source = sigma_cell )
-                !
-                !> Put the background (Primary) "condNomaly" conductivities in ModEM model format
-                !
-                v = cell_cond%getV()
-                !
-                v = R_ZERO
-                !
-                do k = nzAir+1, nlay1D
-                    !
-                    asigma = sig1D(k)
-                    !
-                    if( trim( sigma%param_type ) == LOGE ) asigma = log( asigma )
-                    !
-                    do i = 1,sigma_cell%grid%Nx
-                        do j = 1,sigma_cell%grid%Ny
-                            v( i, j, k-nzAir ) = asigma
-                        enddo
-                    enddo
-                    !
-                enddo
-                !
-                !> Create amodel with these conductivities
-                call cell_cond%setV( v )
-                !
-                allocate( amodel, source = sigma )
-                !
-                call amodel%setCond( cell_cond )
-                !
-                call amodel%setType( sigma%param_type )
-                !
-                !> Initialize cond_anomaly_h and map to it
-                call sigma%PDEmapping( edge_cond )
-                !
-                allocate( self%cond_anomaly_h, source = edge_cond )
-                !
-                call amodel%PDEmapping( self%cond_anomaly_h )
-                !
+            class default
+                stop "Error: set1DModelSourceCSEM_Dipole1D > Unclassified sigma"
+            !
         end select
         !
-    end subroutine set1DModel
+        deallocate( sigma_cell )
+        !
+    end subroutine set1DModelSourceCSEM_Dipole1D
     !
     !> Set RHS from self%E
     !
-    subroutine createRHS_SourceCSEM_Dipole1D( self )
+    subroutine createRHSSourceCSEM_Dipole1D( self )
         implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
@@ -426,84 +398,6 @@ contains
         !
         call self%rhs(1)%mult( self%model_operator%metric%Vedge )
         !
-    end subroutine createRHS_SourceCSEM_Dipole1D
-    !
-    !>    This is a utility routine, used by several data functional
-    !>    set up routines, and for other interpolation functions
-    !>    Returns index ix such that    xNode(ix) <= x < xNode(ix+1)
-    !>    If x is out of range:
-    !>    x < xNode(1) returns 0; if x> xNode(nx) returns nx
-    !>    Assumes xNode is strictly increasing; does not check this
-    !>    NOTE: as presently coded, when xNode is called with center
-    !>    (face) node positions, this routine will return zero for
-    !>    the coordinates in the outer half cell nearest the boundary
-    !>    If evaluation over the complete model domain is to be allowed
-    !>    a more general interpolation rule will be required.
-    !>    A.K.: modified to allow input of any size, nx = size(xNode).
-    !
-    function minNode( x, xNode ) result( ix )
-        implicit none
-        !
-        real( kind=prec ), intent( in ) :: x
-        real( kind=prec ), dimension(:), intent( in ) :: xNode
-        !
-        integer :: ix, i
-        !
-        do i = 1, size( xNode )
-            if( clean( xNode(i) ) .GT. clean(x) ) then
-                ix = i-1
-                exit
-            endif
-        enddo
-        !
-    end function minNode
-    !
-    !>    This is a utility routine, used by several data functional
-    !>    set up routines, and for other interpolation functions
-    !>    Returns index ix such that    xNode(ix) <= x < xNode(ix+1)
-    !>    If x is out of range:
-    !>    x > xNode(1) returns 0; if x< xNode(nx) returns nx
-    !>    Assumes xNode is strictly decreasing; does not check this
-    !>    NOTE: as presently coded, when xNode is called with center
-    !>    (face) node positions, this routine will return zero for
-    !>    the coordinates in the outer half cell nearest the boundary
-    !>    If evaluation over the complete model domain is to be allowed
-    !>    a more general interpolation rule will be required.
-    !>    A.K.: modified to allow input of any size, nx = size(xNode).
-    !
-    function maxNode(x, xNode) result(ix)
-        implicit none
-        !
-        real( kind=prec ), intent( in ) :: x
-        real( kind=prec ), dimension(:), intent( in ) :: xNode
-        !
-        integer :: ix, i
-        !
-        do i = 1, size(xNode)
-           if( clean( xNode(i)) .LT. clean(x) ) then
-                ix = i-1
-                exit
-           endif
-        enddo
-        !
-    end function maxNode
-    !
-    !> This is a utility routine that provides an expression used to battle
-    !> against machine error problems. It returns the same real or real(8)
-    !> as the input, but without the extra digits at the end that are often
-    !> a cause of wrong comparisons in the if statements. ALWAYS use clean(x)
-    !> instead of x in an inequality!!!
-    !> R_LARGE is defined in the module math_constants
-    !> A.K.
-    !
-    function clean(x)
-        implicit none
-        !
-        real( kind=prec ), intent( in ) :: x
-        real( kind=prec ) :: clean
-        !
-        clean = dnint(x*R_LARGE)/R_LARGE
-        !
-    end function clean
+    end subroutine createRHSSourceCSEM_Dipole1D
     !
 end module SourceCSEM_Dipole1D

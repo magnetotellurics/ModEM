@@ -117,6 +117,8 @@ contains
         !
         if( allocated( self%param_grid ) ) deallocate( self%param_grid )
         !
+        deallocate( self%cell_cond )
+        !
     end subroutine ModelParameterCell_SG_dtor
     !
     !> No subroutine briefing
@@ -247,7 +249,14 @@ contains
         class( Scalar_t ), allocatable, intent( in ) :: ccond
         integer, intent( in ), optional :: i_cond
         !
-        self%cell_cond = ccond
+        if( present( i_cond ) ) then
+            !
+            stop "Error: setCondModelParameterCell_SG > One shouldn't use vertical cond here"
+            !
+        endif
+        !
+        if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
+        allocate( self%cell_cond, source = ccond )
         !
     end subroutine setCondModelParameterCell_SG
 !
@@ -289,7 +298,7 @@ contains
                 self%SigMap_ptr => rhs%SigMap_ptr
                 !
             class default
-               stop "Error: copyFromModelParameterCell_SG > Incompatible input."
+               stop "Error: copyFromModelParameterCell_SG > Unclassified rhs."
             !
         end select
         !
@@ -327,6 +336,7 @@ contains
         complex( kind=prec ), allocatable :: v(:, :, :)
         !
         select type( rhs )
+            !
             class is( ModelParameterCell_SG_t )
                 !
                 if( self%cell_cond%isCompatible( rhs%cell_cond ) ) then
@@ -340,6 +350,7 @@ contains
                 !
             class default
                 stop "Error: linCombModelModelParameterCell_SG > undefined rhs"
+            !
         end select
         !
         !self%air_cond = rhs%air_cond
@@ -395,56 +406,78 @@ contains
         !
     end function dotProdModelParameterCell_SG
     !
-    !> ????
-    !> cCond_v     Vertical conductivity
-    !> cCond_h     Horizontal conductivity
     !
-    subroutine ModelParamToCellModelParameterCell_SG( self, cCond_h, paramType, grid, AirCond, cCond_v )
+    !
+    subroutine ModelParamToCellModelParameterCell_SG( self, cCond_h, param_type, grid, air_cond, cCond_v)
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        type( rScalar3D_SG_t ), intent( inout ) :: cCond_h
-        character(:), allocatable, intent( out ), optional :: paramType
+        class( Scalar_t ), allocatable, intent( inout ) :: cCond_h
+        character(:), allocatable, intent( out ), optional :: param_type
         class( Grid_t ), allocatable, intent( out ), optional :: grid
-        real( kind=prec ), intent( out ), optional :: AirCond
-        type( rScalar3D_SG_t ), intent( out ), optional :: cCond_v
+        real( kind=prec ), intent( out ), optional :: air_cond
+        class( Scalar_t ), allocatable, intent( inout ), optional :: cCond_v
         !
-        cCond_h = rScalar3D_SG_t( self%metric%grid, CELL )
+        complex( kind=prec ), allocatable :: v_h(:, :, :), v_v(:, :, :)
         !
-        if( self%param_type .EQ. LOGE ) then
+        if( allocated( cCond_h ) ) then
             !
-            if( present( cCond_v ) ) then
+            if( cCond_h%Ny .NE. self%metric%grid%Ny .OR. cCond_h%Nx .NE. self%metric%grid%Nx .OR. cCond_h%Nz .NE. self%metric%grid%Nz ) then
                 !
-                write( *, * ) "ERROR: ModelParamToCellModelParameterCell_SG, LOGE > cCond_v should not exist here."
+                deallocate( cCond_h )
+                allocate( cCond_h, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
                 !
+                if( present(cCond_v) ) then
+                    if( allocated( cCond_v ) ) deallocate( cCond_h )
+                    allocate( cCond_v, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
+                endif
             endif
-            !
-            cCond_h%v( :, :, 1:self%metric%grid%NzAir ) = exp( self%air_cond )
-            cCond_h%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = exp( self%cell_cond%getV() )
             !
         else
-            !
             if( present( cCond_v ) ) then
-                !
-                write( *, * ) "ERROR: ModelParamToCellModelParameterCell_SG > cCond_v should not exist here."
-                !
+                allocate( cCond_v, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
             endif
             !
-            cCond_h%v( :, :, 1:self%metric%grid%NzAir ) = self%air_cond
-            cCond_h%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = self%cell_cond%getV()
+            allocate( cCond_h, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
+        endif
+        !
+        v_h = cCond_h%getV()
+        v_v = cCond_v%getV()
+        !
+        if( self%param_type .EQ. LOGE ) then
+            if( present( cCond_v ) ) then
+                v_v(:, :, 1:self%metric%grid%NzAir) = exp(self%air_cond)
+                v_v(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz) = exp( real( self%cell_cond%getV(), kind=prec ) )
+            endif
+        !
+        v_h(:, :, 1:self%metric%grid%NzAir) = exp( self%air_cond )
+        v_h(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz) = exp( real( self%cell_cond%getV(), kind=prec ) )
+        !
+        else
+            if( present(cCond_v)) then
+                v_v(:, :, 1:self%metric%grid%NzAir) = self%air_cond
+                v_v(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz) = real( self%cell_cond%getV(), kind=prec )
+            endif
+            !
+            v_h(:, :, 1:self%metric%grid%NzAir) = self%air_cond
+            v_h(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz) = real( self%cell_cond%getV(), kind=prec )
             !
         endif
         !
-        if( present( paramType ) ) then
-            paramType = self%param_type
+        call cCond_h%setV( v_h )
+        call cCond_v%setV( v_v )
+        !
+        if( present( param_type ) ) then
+            param_type = self%param_type
         endif
         !
         if( present( grid ) ) then
+            if( allocated( grid ) ) deallocate( grid )
             allocate( grid, source = self%metric%grid )
         endif
         !
-        if( present( AirCond ) ) then
-            AirCond = self%air_cond
+        if( present( air_cond ) ) then
+            air_cond = self%air_cond
         endif
         !
     end subroutine ModelParamToCellModelParameterCell_SG
@@ -466,11 +499,11 @@ contains
             eVec = rVector3D_SG_t( self%metric%grid, EDGE )
         endif
         !
-        sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
-        !
         k0 = self%metric%grid%nzAir
         k1 = k0 + 1
         k2 = self%metric%grid%Nz
+        !
+        sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
         !
         sigma_cell%v( :, :, 1:k0 ) = self%air_cond
         !

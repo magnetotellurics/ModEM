@@ -29,9 +29,6 @@ module cVectorSparse3D_SG
             !
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zerosCVectorSparse3D_SG
-            procedure, public :: sumEdges => sumEdgesCVectorSparse3D_SG
-            procedure, public :: avgCell => avgCellCVectorSparse3D_SG
-            procedure, public :: avgCellVTI => avgCellVTICVectorSparse3D_SG
             procedure, public :: conjugate => conjugateCVectorSparse3D_SG
             !
             !> Arithmetic/algebraic binary operations
@@ -615,45 +612,6 @@ contains
         !
     end function diagMultCVectorSparse3D_SG
     !
-    !> No subroutine briefing
-    !
-    subroutine sumEdgesCVectorSparse3D_SG( self, cell_obj, interior_only )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), allocatable, intent( inout ) :: cell_obj
-        logical, optional, intent( in ) :: interior_only
-        !
-        stop "Error: sumEdgesCVectorSparse3D_SG not implemented yet!"
-        !
-    end subroutine sumEdgesCVectorSparse3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine avgCellCVectorSparse3D_SG( self, cell_in, ptype )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: cell_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: avgCellCVectorSparse3D_SG not implemented yet!"
-        !
-    end subroutine avgCellCVectorSparse3D_SG
-	!
-	!> No interface subroutine briefing
-	!
-	subroutine avgCellVTICVectorSparse3D_SG( self, cell_in, ptype )
-        implicit none
-        !
-		class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-		class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_in
-		character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: avgCellVTICVectorSparse3D_SG not implemented yet"
-        !
-	end subroutine avgCellVTICVectorSparse3D_SG
-	!
     !> No subroutine briefing
     !
     subroutine conjugateCVectorSparse3D_SG( self )

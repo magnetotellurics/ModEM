@@ -7,6 +7,7 @@ module Transmitter
     use ForwardSolver
     use ModelParameter
     use ModelOperator
+    use SourceCSEM
     use SourceInteriorForce
     use rVector3D_SG
     !

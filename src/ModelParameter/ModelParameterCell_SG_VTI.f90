@@ -19,7 +19,7 @@ module ModelParameterCell_SG_VTI
         !
         class( Grid_t ), allocatable :: param_grid
         !
-        class( Scalar_t ), allocatable, dimension(:) :: cell_cond
+        class( Scalar_t ), allocatable :: cell_cond_h, cell_cond_v
         !
         contains
             !
@@ -100,9 +100,7 @@ contains
                     ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
                     grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
-        allocate( rScalar3D_SG_t :: self%cell_cond( n_cond ) )
-        !
-        self%cell_cond(1) = cell_cond
+        allocate( self%cell_cond_h, source = cell_cond )
         !
         if( present( param_type ) ) then
             !
@@ -124,6 +122,9 @@ contains
         !
         deallocate( self%param_grid )
         !
+        deallocate( self%cell_cond_h )
+        deallocate( self%cell_cond_v )
+        !
     end subroutine ModelParameterCell_SG_VTI_dtor
     !
     !> No subroutine briefing
@@ -143,7 +144,7 @@ contains
         !
         allocate( cond_slice( model_param_1D%grid%nz ) )
         !
-        v = self%cell_cond(1)%getV()
+        v = self%cell_cond_h%getV()
         cond_slice = self%SigMap( real( v( ix, iy, : ), kind=prec ) )
         !
         call model_param_1D%setConductivity( cond_slice, self%air_cond, self%param_type, self%mKey )
@@ -166,7 +167,7 @@ contains
         complex( kind=prec ) :: wt, temp_sigma_value
         integer :: i, j, k
         !
-        v = self%cell_cond(1)%getV()
+        v = self%cell_cond_h%getV()
         !
         model_param_1D = ModelParameter1D_t( self%metric%grid%Slice1D() )
         !
@@ -214,8 +215,8 @@ contains
         !
         allocate( cond_slice( self%metric%grid%ny, self%metric%grid%nzEarth ) )
         !
-        v = self%cell_cond(1)%getV()
-        !real( self%cell_cond(1)%getV(), kind=prec )
+        v = self%cell_cond_h%getV()
+        !real( self%cell_cond_h%getV(), kind=prec )
         if( axis == 1 ) then
             cond_slice = self%SigMap( real( v(j,:,:), kind=prec ) )
         elseif( axis == 2 ) then
@@ -241,7 +242,7 @@ contains
             class( Scalar_t ), allocatable, intent( inout ) :: ccond
         !
         if( allocated( ccond ) ) deallocate( ccond )
-        allocate( ccond, source = self%cell_cond(1) )
+        allocate( ccond, source = self%cell_cond_h )
         !
     end subroutine getCondModelParameterCell_SG_VTI
     !
@@ -257,12 +258,29 @@ contains
         integer :: i
         !
         if( present( i_cond ) ) then
-            i = i_cond
+            !
+            if( i_cond == 1 ) then
+                !
+                if( allocated( self%cell_cond_h ) ) deallocate( self%cell_cond_h )
+                allocate( self%cell_cond_h, source = ccond )
+                !
+            elseif( i_cond == 2 ) then
+                !
+                if( allocated( self%cell_cond_v ) ) deallocate( self%cell_cond_v )
+                allocate( self%cell_cond_v, source = ccond )
+                !
+            else
+                !
+                stop "Error: setCondModelParameterCell_SG_VTI > VTI not support anisotropy level greater than 2"
+                !
+            endif
+            !
         else
-            i = 1
+            !
+            if( allocated( self%cell_cond_h ) ) deallocate( self%cell_cond_h )
+            allocate( self%cell_cond_h, source = ccond )
+            !
         endif
-        !
-        self%cell_cond(i) = ccond
         !
     end subroutine setCondModelParameterCell_SG_VTI
     !
@@ -272,13 +290,8 @@ contains
         !
         class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
         !
-        integer :: i
-        !
-        do i = 1, size( self%cell_cond )
-            !
-            call self%cell_cond(i)%zeros
-            !
-        enddo
+        call self%cell_cond_h%zeros
+        call self%cell_cond_v%zeros
         !
     end subroutine zerosModelParameterCell_SG_VTI
     !
@@ -305,7 +318,9 @@ contains
                 !
                 self%param_grid = rhs%param_grid
                 !
-                self%cell_cond = rhs%cell_cond
+                self%cell_cond_h = rhs%cell_cond_h
+                !
+                self%cell_cond_v = rhs%cell_cond_v
                 !
                 self%SigMap_ptr => rhs%SigMap_ptr
                 !
@@ -322,24 +337,25 @@ contains
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
         !
-        integer :: i, counter, nx, ny, nz, nzAir, nz_earth
+        integer :: counter, nx, ny, nz, nzAir, nz_earth
         !
         counter = 0
         !
-        do i = 1, size( self%cell_cond )
-            !
-            if( .NOT. self%cell_cond(i)%is_allocated ) then
-                stop "Error: countModelParameterCell_SG_VTI > cell_cond not allocated!"
-            endif
-            !
-            !
-            !> Grid dimensions
-            call self%cell_cond(i)%grid%getDimensions( nx, ny, nz, nzAir )
-            nz_earth = nz - nzAir
-            !
-            counter = counter + self%cell_cond(i)%Nx * self%cell_cond(i)%Ny * nz_earth
-            !
-        enddo
+        if( .NOT. self%cell_cond_h%is_allocated ) then
+            stop "Error: countModelParameterCell_SG_VTI > cell_cond_h not allocated!"
+        endif
+        !
+        !> Horizontal
+        call self%cell_cond_h%grid%getDimensions( nx, ny, nz, nzAir )
+        nz_earth = nz - nzAir
+        !
+        counter = counter + self%cell_cond_h%Nx * self%cell_cond_h%Ny * nz_earth
+        !
+        !> Vertical
+        call self%cell_cond_v%grid%getDimensions( nx, ny, nz, nzAir )
+        nz_earth = nz - nzAir
+        !
+        counter = counter + self%cell_cond_v%Nx * self%cell_cond_v%Ny * nz_earth
         !
     end function countModelParameterCell_SG_VTI
     !
@@ -351,31 +367,38 @@ contains
         real( kind=prec ), intent( in ) :: a1, a2
         class( ModelParameter_t ), intent( in ) :: rhs
         !
-        integer :: i
         complex( kind=prec ), allocatable :: v(:, :, :)
         !
-        do i = 1, size( self%cell_cond )
+        select type( rhs )
             !
-            select type( rhs )
+            class is( ModelParameterCell_SG_VTI_t )
                 !
-                class is( ModelParameterCell_SG_VTI_t )
+                !> Horizontal
+                if( self%cell_cond_h%isCompatible( rhs%cell_cond_h ) ) then
                     !
-                    if( self%cell_cond(i)%isCompatible( rhs%cell_cond(i) ) ) then
-                        !
-                        v = a1 * self%cell_cond(i)%getV() + a2 * rhs%cell_cond(i)%getV()
-                        !
-                        call self%cell_cond(i)%setV( v )
-                        !
-                    else
-                        stop "Error: linCombModelModelParameterCell_SG_VTI > Incompatible rhs"
-                    endif
+                    v = a1 * self%cell_cond_h%getV() + a2 * rhs%cell_cond_h%getV()
                     !
-                class default
-                    stop "Error: linCombModelModelParameterCell_SG_VTI > undefined rhs"
+                    call self%cell_cond_h%setV( v )
+                    !
+                else
+                    stop "Error: linCombModelModelParameterCell_SG_VTI > Incompatible rhs cell_cond_h"
+                endif
                 !
-            end select
+                !> Vertical
+                if( self%cell_cond_h%isCompatible( rhs%cell_cond_h ) ) then
+                    !
+                    v = a1 * self%cell_cond_v%getV() + a2 * rhs%cell_cond_v%getV()
+                    !
+                    call self%cell_cond_v%setV( v )
+                    !
+                else
+                    stop "Error: linCombModelModelParameterCell_SG_VTI > Incompatible rhs cell_cond_v"
+                endif
+                !
+            class default
+                stop "Error: linCombModelModelParameterCell_SG_VTI > undefined rhs"
             !
-        enddo
+        end select
         !
         !self%air_cond = rhs%air_cond
         !
@@ -392,19 +415,27 @@ contains
         integer :: i
         complex( kind=prec ), allocatable :: v(:, :, :)
         !
-        do i = 1, size( self%cell_cond )
+        !> Horizontal
+        if( self%cell_cond_h%isCompatible( rhs ) ) then
             !
-            if( self%cell_cond(i)%isCompatible( rhs ) ) then
-                !
-                v = a1 * self%cell_cond(i)%getV() + a2 * rhs%getV()
-                !
-                call self%cell_cond(i)%setV( v )
-                !
-            else
-                stop "Error: linCombScalarModelParameterCell_SG_VTI > Incompatible rhs"
-            endif
+            v = a1 * self%cell_cond_h%getV() + a2 * rhs%getV()
             !
-        enddo
+            call self%cell_cond_h%setV( v )
+            !
+        else
+            stop "Error: linCombScalarModelParameterCell_SG_VTI > Incompatible cell_cond_h"
+        endif
+        !
+        !> Vertical
+        if( self%cell_cond_v%isCompatible( rhs ) ) then
+            !
+            v = a1 * self%cell_cond_v%getV() + a2 * rhs%getV()
+            !
+            call self%cell_cond_v%setV( v )
+            !
+        else
+            stop "Error: linCombScalarModelParameterCell_SG_VTI > Incompatible cell_cond_v"
+        endif
         !
         !self%air_cond = rhs%air_cond
         !
@@ -422,83 +453,113 @@ contains
         !
         rvalue = R_ZERO
         !
-        do i = 1, size( self%cell_cond )
+        select type( rhs )
             !
-            select type( rhs )
+            class is( ModelParameterCell_SG_VTI_t )
                 !
-                class is( ModelParameterCell_SG_VTI_t )
+                !> Horizontal
+                if( self%cell_cond_h%isCompatible( rhs%cell_cond_h) ) then
                     !
-                    if( self%cell_cond(i)%isCompatible( rhs%cell_cond(i) ) ) then
-                        !
-                        rvalue = rvalue + sum( self%cell_cond(i)%getV() * rhs%cell_cond(i)%getV() )
-                        !
-                    else
-                        stop "Error: dotProdModelParameterCell_SG_VTI > Incompatible rhs"
-                    endif
+                    rvalue = rvalue + sum( self%cell_cond_h%getV() * rhs%cell_cond_h%getV() )
                     !
-                class default
-                    stop "Error: dotProdModelParameterCell_SG_VTI > undefined rhs"
+                else
+                    stop "Error: dotProdModelParameterCell_SG_VTI > Incompatible rhs"
+                endif
                 !
-            end select
+                !> Vertical
+                if( self%cell_cond_v%isCompatible( rhs%cell_cond_v ) ) then
+                    !
+                    rvalue = rvalue + sum( self%cell_cond_v%getV() * rhs%cell_cond_v%getV() )
+                    !
+                else
+                    stop "Error: dotProdModelParameterCell_SG_VTI > Incompatible rhs"
+                endif
+                !
+            class default
+                stop "Error: dotProdModelParameterCell_SG_VTI > Unclassified rhs"
             !
-        enddo
+        end select
         !
     end function dotProdModelParameterCell_SG_VTI
     !
-    !> ????
-    !> cCond_v     Vertical conductivity
-    !> cCond_h     Horizontal conductivity
     !
-    subroutine ModelParamToCellModelParameterCell_SG_VTI( self, cCond_h, paramType, grid, AirCond, cCond_v )
+    !
+    subroutine ModelParamToCellModelParameterCell_SG_VTI( self, cCond_h, param_type, grid, air_cond, cCond_v )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
-        type( rScalar3D_SG_t ), intent( inout ) :: cCond_h
-        character(:), allocatable, intent( out ), optional :: paramType
+        class( Scalar_t ), allocatable, intent( inout ) :: cCond_h
+        character(:), allocatable, intent( out ), optional :: param_type
         class( Grid_t ), allocatable, intent( out ), optional :: grid
-        real( kind=prec ), intent( out ), optional :: AirCond
-        type( rScalar3D_SG_t ), intent( out ), optional :: cCond_v
+        real( kind=prec ), intent( out ), optional :: air_cond
+        class( Scalar_t ), allocatable, intent( inout ), optional :: cCond_v
         !
-        cCond_h = rScalar3D_SG_t( self%metric%grid, CELL )
+        complex( kind=prec ), allocatable :: c_h(:, :, :), c_v(:, :, :)
+        complex( kind=prec ), allocatable :: v_h(:, :, :), v_v(:, :, :)
         !
-        if( present( cCond_v ) ) then
-            cCond_v = rScalar3D_SG_t( self%metric%grid, CELL )
+        if( allocated( cCond_h ) ) then
+            !
+            if( cCond_h%Ny .NE. self%metric%grid%Ny .OR. cCond_h%Nx .NE. self%metric%grid%Nx .OR. cCond_h%Nz .NE. self%metric%grid%Nz ) then
+                !
+                if( allocated( cCond_h ) ) deallocate( cCond_h )
+                allocate( cCond_h, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
+                !
+                if( present(cCond_v) ) then
+                    if( allocated( cCond_v ) ) deallocate( cCond_h )
+                    allocate( cCond_v, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
+                endif
+            endif
+            !
+        else
+            if( present( cCond_v ) ) then
+                allocate( cCond_v, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
+            endif
+                allocate( cCond_h, source = rScalar3D_SG_t( self%metric%grid, CELL ) )
         endif
+        !
+        c_h = self%cell_cond_h%getV()
+        c_v = self%cell_cond_v%getV()
+        !
+        v_h = cCond_h%getV()
+        v_v = cCond_v%getV()
         !
         if( self%param_type .EQ. LOGE ) then
             !
             if( present( cCond_v ) ) then
-                cCond_v%v( :, :, 1:self%metric%grid%NzAir ) = exp( self%air_cond )
-                cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = exp( self%cell_cond(2)%getV() )
+                v_v(:, :, 1:self%metric%grid%NzAir ) = exp( self%air_cond )
+                v_v(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = exp( c_v )
+                !
             endif
             !
-            cCond_h%v( :, :, 1:self%metric%grid%NzAir ) = exp( self%air_cond )
-            cCond_h%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = exp( self%cell_cond(1)%getV() )
+            v_h(:, :, 1:self%metric%grid%NzAir) = exp( self%air_cond )
+            v_h(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz) = exp( c_h )
             !
         else
             !
             if( present( cCond_v ) ) then
-                !
-                cCond_v%v( :, :, 1:self%metric%grid%NzAir ) = self%air_cond
-                cCond_v%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = self%cell_cond(2)%getV()
-                !
+                v_v(:, :, 1:self%metric%grid%NzAir) = self%air_cond
+                v_v(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz) = c_v
             endif
             !
-            cCond_h%v( :, :, 1:self%metric%grid%NzAir ) = self%air_cond
-            cCond_h%v( :, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz ) = self%cell_cond(1)%getV()
+            v_h(:, :, 1:self%metric%grid%NzAir) = self%air_cond
+            v_h(:, :, self%metric%grid%NzAir + 1 : self%metric%grid%Nz) = c_h
             !
         endif
         !
-        if( present( paramType ) ) then
-            paramType = self%param_type
+        call cCond_h%setV( v_h )
+        call cCond_v%setV( v_v )
+        !
+        if( present( param_type ) ) then
+            param_type = self%param_type
         endif
         !
         if( present( grid ) ) then
+            if( allocated( grid ) ) deallocate( grid )
             allocate( grid, source = self%metric%grid )
         endif
         !
-        if( present( AirCond ) ) then
-            AirCond = self%air_cond
+        if( present( air_cond ) ) then
+            air_cond = self%air_cond
         endif
         !
     end subroutine ModelParamToCellModelParameterCell_SG_VTI
@@ -511,9 +572,9 @@ contains
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( inout ) :: eVec
         !
-        class( Scalar_t ), allocatable, dimension(:) :: sigma_cell
-        complex( kind=prec ), allocatable :: sigma_v(:, :, :)
-        integer :: i, k0, k1, k2
+        type( rScalar3D_SG_t ) :: sigma_cell_h, sigma_cell_v
+        complex( kind=prec ), allocatable :: v(:, :, :)
+        integer :: k0, k1, k2
         !
         if( .NOT. allocated( eVec ) ) then
             allocate( eVec, source = rVector3D_SG_t( self%metric%grid, EDGE ) )
@@ -521,29 +582,36 @@ contains
             eVec = rVector3D_SG_t( self%metric%grid, EDGE )
         endif
         !
-        allocate( rScalar3D_SG_t :: sigma_cell( size( self%cell_cond ) ) )
+        k0 = self%metric%grid%nzAir
+        k1 = k0 + 1
+        k2 = self%metric%grid%Nz
         !
-        do i = 1, size( self%cell_cond )
-            !
-            sigma_cell(i) = rScalar3D_SG_t( self%metric%grid, CELL )
-            !
-            k0 = self%metric%grid%nzAir
-            k1 = k0 + 1
-            k2 = self%metric%grid%Nz
-            !
-            sigma_v = sigma_cell(i)%getV()
-            !
-            sigma_v( :, :, 1:k0 ) = self%air_cond
-            !
-            sigma_v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond(i)%getV(), kind=prec ) )
-            !
-            call sigma_cell(i)%setV( sigma_v )
-            !
-            call sigma_cell(i)%mult( self%metric%VCell )
-            !
-        enddo
+        !> Horizontal
         !
-        call eVec%avgCells( sigma_cell )
+        sigma_cell_h = rScalar3D_SG_t( self%metric%grid, CELL )
+        !
+        !sigma_cell_h%v( :, :, 1:k0 ) = self%air_cond
+        !
+        !sigma_cell_h%v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ) )
+        !
+        sigma_cell_h%v( :, :, : ) = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ) )
+        !
+        call sigma_cell_h%mult( self%metric%VCell )
+        !
+        !> Vertical
+        !
+        sigma_cell_v = rScalar3D_SG_t( self%metric%grid, CELL )
+        !
+        !sigma_cell_v%v( :, :, 1:k0 ) = self%air_cond
+        !
+        !sigma_cell_v%v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond_v%getV(), kind=prec ) )
+        !
+        sigma_cell_v%v( :, :, : ) = self%SigMap( real( self%cell_cond_v%getV(), kind=prec ) )
+        !
+        call sigma_cell_v%mult( self%metric%VCell )
+        !
+        !> Call interface avgCells
+        call eVec%avgCells( sigma_cell_h, sigma_cell_v )
         !
         call eVec%div( self%metric%VEdge )
         !
@@ -579,14 +647,14 @@ contains
         !> Ensure values in air are zero.
         call sigma_cell%zeros
         !
-        sigma_cell%v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond(1)%getV(), kind=prec ), JOB )
+        sigma_cell%v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ), JOB )
         !
         !> Required to access the cell_cond attribute of ModelParameterCell_SG_VTI
         select type( dsigma )
             !
             class is( ModelParameterCell_SG_VTI_t )
                 !
-                sigma_cell%v(:,:,k1:k2) = sigma_cell%v(:,:,k1:k2) * dsigma%cell_cond(1)%getV()
+                sigma_cell%v(:,:,k1:k2) = sigma_cell%v(:,:,k1:k2) * dsigma%cell_cond_h%getV()
                 !
             class default
                 stop "Error: dPDEmappingModelParameterCell_SG_VTI > Unclassified dsigma"
@@ -638,15 +706,15 @@ contains
                         !
                         call sigma_cell%mult( self%metric%Vcell )
                         !
-                        v = self%SigMap( real( self%cell_cond(1)%getV(), kind=prec ), JOB )
-                        call dsigma%cell_cond(1)%setV( v )
+                        v = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ), JOB )
+                        call dsigma%cell_cond_h%setV( v )
                         !
                         k0 = self%metric%grid%NzAir
                         k1 = k0 + 1
                         k2 = self%metric%grid%Nz
                         !
-                        v = dsigma%cell_cond(1)%getV() * sigma_cell%v(:,:,k1:k2)
-                        call dsigma%cell_cond(1)%setV( v ) !* by self or dsigma ????
+                        v = dsigma%cell_cond_h%getV() * sigma_cell%v(:,:,k1:k2)
+                        call dsigma%cell_cond_h%setV( v ) !* by self or dsigma ????
                         !
                     class default
                         stop "Error: dPDEmappingTModelParameterCell_SG_VTI > Unclassified sigma_cell."
@@ -668,51 +736,80 @@ contains
         class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
         character(:), allocatable, intent( in ) :: param_type
         !
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        complex( kind=prec ), allocatable :: v_h(:, :, :), v_v(:, :, :)
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
-            stop "Error: setTypeModelParameterCell_SG > Not allocated."
+            stop "Error: setTypeModelParameterCell_SG_VTI > Self not allocated."
         endif
         !
-        do i = 1, size( self%cell_cond )
+        !> Horizontal & Vertical
+        v_h = self%cell_cond_h%getV()
+        v_v = self%cell_cond_v%getV()
+        !
+        if( trim( param_type ) .EQ. trim( self%param_type ) ) then
+            ! Nothing to be done
+        elseif( self%param_type == "" ) then
+            self%param_type = trim( param_type )
+        elseif( self%param_type == LINEAR ) then
             !
-            v = self%cell_cond(i)%getV()
-            if( trim( param_type ) .EQ. trim( self%param_type ) ) then
-                ! Nothing to be done
-            elseif( self%param_type == "" ) then
-                self%param_type = trim( param_type )
-            elseif( self%param_type == LINEAR ) then
+            if( param_type == LOGE ) then
                 !
-                if( param_type == LOGE ) then
-                    v = log( v )
-                    call self%cell_cond(i)%setV( v )
-                elseif( param_type == LOG_10) then
-                    v = log10( real( v, kind=prec ) )
-                    call self%cell_cond(i)%setV( v )
-                endif
+                v_h = log( v_h )
+                call self%cell_cond_h%setV( v_h )
                 !
-            elseif( param_type == LINEAR ) then
+                v_v = log( v_v )
+                call self%cell_cond_v%setV( v_v )
                 !
-                if( self%param_type == LOGE ) then
-                    v = exp( v )
-                    call self%cell_cond(i)%setV( v )
-                elseif( self%param_type == LOG_10 ) then
-                    v = exp( v * log(10.) )
-                    call self%cell_cond(i)%setV( v )
-                endif
+            elseif( param_type == LOG_10) then
                 !
-            elseif( ( self%param_type == LOGE ) .AND. ( param_type == LOG_10 ) ) then
-                v = v / log(10.)
-                call self%cell_cond(i)%setV( v )
-            elseif( ( self%param_type == LOG_10 ) .AND. ( param_type == LOGE ) ) then
-                v = v * log(10.)
-                call self%cell_cond(i)%setV( v )
-            else
-                stop "Error: setTypeModelParameterCell_SG > Unknown param_type."
+                v_h = log10( real( v_h, kind=prec ) )
+                call self%cell_cond_h%setV( v_h )
+                !
+                v_v = log10( real( v_v, kind=prec ) )
+                call self%cell_cond_v%setV( v_v )
+                !
             endif
             !
-        enddo
+        elseif( param_type == LINEAR ) then
+            !
+            if( self%param_type == LOGE ) then
+                !
+                v_h = exp( v_h )
+                call self%cell_cond_h%setV( v_h )
+                !
+                v_v = exp( v_v )
+                call self%cell_cond_v%setV( v_v )
+                !
+            elseif( self%param_type == LOG_10 ) then
+                !
+                v_h = exp( v_h * log(10.) )
+                call self%cell_cond_h%setV( v_h )
+                !
+                v_v = exp( v_v * log(10.) )
+                call self%cell_cond_v%setV( v_v )
+                !
+            endif
+            !
+        elseif( ( self%param_type == LOGE ) .AND. ( param_type == LOG_10 ) ) then
+            !
+            v_h = v_h / log(10.)
+            call self%cell_cond_h%setV( v_h )
+            !
+            v_v = v_v / log(10.)
+            call self%cell_cond_v%setV( v_v )
+            !
+        elseif( ( self%param_type == LOG_10 ) .AND. ( param_type == LOGE ) ) then
+            !
+            v_h = v_h * log(10.)
+            call self%cell_cond_h%setV( v_h )
+            !
+            v_v = v_v * log(10.)
+            call self%cell_cond_v%setV( v_v )
+            !
+        else
+            stop "Error: setTypeModelParameterCell_SG_VTI > Unknown param_type."
+        endif
         !
         self%param_type = param_type 
         !
@@ -750,12 +847,12 @@ contains
         !write( *, * ) "     > Write Model to file: [", file_name, "]"
         !
         !> Convert modelParam to natural log or log10 for output
-        !paramType = userParamType
+        !param_type = userparam_type
         !
         !if( self%%is_vti ) then
-        !    call getValue_modelParam(m, paramType, self%cell_cond, v_v=ccond_v)
+        !    call getValue_modelParam(m, param_type, self%cell_cond, v_v=ccond_v)
         !else
-        !    call getValue_modelParam(m, paramType, self%cell_cond)
+        !    call getValue_modelParam(m, param_type, self%cell_cond)
         !endif
         !
         open( ioModelParam, file = file_name, action = "write", form = "formatted", iostat = ios )
@@ -798,11 +895,11 @@ contains
             write( ioModelParam, * )
             !
             !> Convert (horizontal) conductivity to resistivity
-            rho_h = self%cell_cond(1)
+            rho_h = self%cell_cond_h
             if((index(self%param_type,"LOGE" ) > 0) .OR. (index(self%param_type,"LOG10" ) > 0)) then
-                rho_h%v = -self%cell_cond(1)%getV()
+                rho_h%v = -self%cell_cond_h%getV()
             elseif(index(self%param_type,"LINEAR" ) > 0) then
-                rho_h%v = ONE/self%cell_cond(1)%getV()
+                rho_h%v = ONE/self%cell_cond_h%getV()
             endif
             !
             !> Write the (horizontal) resistivity
@@ -824,11 +921,11 @@ contains
             enddo
             !
             !> Convert (vertical) conductivity to resistivity
-            rho_v = self%cell_cond(2)
+            rho_v = self%cell_cond_v
             if((index(self%param_type,"LOGE" ) > 0) .OR. (index(self%param_type,"LOG10" ) > 0)) then
-                rho_v%v = -self%cell_cond(2)%getV()
+                rho_v%v = -self%cell_cond_v%getV()
             elseif(index(self%param_type,"LINEAR" ) > 0) then
-                rho_v%v = ONE/self%cell_cond(2)%getV()
+                rho_v%v = ONE/self%cell_cond_v%getV()
             endif
             !
             !> Write the (vertical) resistivity

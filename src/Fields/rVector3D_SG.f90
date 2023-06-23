@@ -57,6 +57,8 @@ module rVector3D_SG
             procedure, public :: interpFunc => interpFuncrVector3D_SG
             !
             !> Miscellaneous
+            procedure, public :: getAxis => getAxisrVector3D_SG
+            !
             procedure, public :: getReal => getRealrVector3D_SG
             procedure, public :: setArray => setArrayrVector3D_SG
             procedure, public :: getArray => getArrayrVector3D_SG
@@ -624,7 +626,7 @@ contains
         !
         select type( cell_in )
             !
-			class is( rScalar3D_SG_t )
+            class is( rScalar3D_SG_t )
                 !
                 v_xend = size( cell_in%v, 1 )
                 v_yend = size( cell_in%v, 2 )
@@ -632,7 +634,7 @@ contains
                 !
                 select case( grid_type )
                     !
-					case(EDGE)
+                    case(EDGE)
 
                         !> for x-components inside the domain
                         do ix = 1, self%grid%nx
@@ -681,13 +683,14 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine avgCellVTIrVector3D_SG( self, cell_in, ptype )
+    subroutine avgCellVTIrVector3D_SG( self, cell_h_in, cell_v_in, ptype )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_in
+        class( Scalar_t ), intent( in ) :: cell_h_in, cell_v_in
         character(*), intent( in ), optional :: ptype
         !
+        complex( kind=prec ), allocatable :: v_h(:, :, :), v_v(:, :, :)
         character(10) :: grid_type
         integer :: xend, yend, zend
         integer :: v_xend, v_yend, v_zend
@@ -704,68 +707,65 @@ contains
         endif
         !
         if( self%store_state /= compound ) then
-			call self%switchStoreState
+            call self%switchStoreState
         endif
         !
-        select type( cell_in )
+        v_h = cell_h_in%getV()
+        v_v = cell_v_in%getV()
+        !
+        v_xend = size( v_h, 1 )
+        v_yend = size( v_h, 2 )
+        v_zend = size( v_v, 3 )
+        !
+        select case( grid_type )
             !
-			class is( rScalar3D_SG_t )
+            case( EDGE )
                 !
-                v_xend = size( cell_in(1)%v, 1 )
-                v_yend = size( cell_in(1)%v, 2 )
-                v_zend = size( cell_in(2)%v, 3 )
+                !> for x-components inside the domain
+                do ix = 1, self%grid%nx
+                    do iy = 2, self%grid%ny
+                        do iz = 2, self%grid%nz
+                            self%x(ix, iy, iz) = ( v_h(ix, iy-1, iz-1) + v_h(ix, iy, iz-1) + &
+                            v_h(ix, iy-1, iz) + v_h(ix, iy, iz) ) / 4.0d0
+                        enddo
+                    enddo
+                enddo
                 !
-                select case( grid_type )
-                    !
-					case( EDGE )
-						!
-						!> for x-components inside the domain
-						do ix = 1, self%grid%nx
-							do iy = 2, self%grid%ny
-								do iz = 2, self%grid%nz
-									self%x(ix, iy, iz) = (cell_in(1)%v(ix, iy-1, iz-1) + cell_in(1)%v(ix, iy, iz-1) + &
-									cell_in(1)%v(ix, iy-1, iz) + cell_in(1)%v(ix, iy, iz)) / 4.0d0
-								enddo
-							enddo
-						enddo
-						!
-						!> for y-components inside the domain
-						do ix = 2, self%grid%nx
-							do iy = 1, self%grid%ny
-								do iz = 2, self%grid%nz
-									self%y(ix, iy, iz) = (cell_in(1)%v(ix-1, iy, iz-1) + cell_in(1)%v(ix, iy, iz-1) + &
-									cell_in(1)%v(ix-1, iy, iz) + cell_in(1)%v(ix, iy, iz)) / 4.0d0
-								enddo
-							enddo
-						enddo
-						!
-						!> for z-components inside the domain
-						do ix = 2, self%grid%nx
-							do iy = 2, self%grid%ny
-								do iz = 1, self%grid%nz
-									self%z(ix, iy, iz) = (cell_in(2)%v(ix-1, iy-1, iz) + cell_in(2)%v(ix-1, iy, iz) + &
-									cell_in(2)%v(ix, iy-1, iz) + cell_in(2)%v(ix, iy, iz)) / 4.0d0
-								enddo
-							enddo
-						enddo
-						!
-                    case( FACE )
-                        !
-						xend = size(self%x, 1)
-                        self%x(2:xend-1,:,:) = cell_in(1)%v(1:v_xend-1,:,:) + cell_in(1)%v(2:v_xend,:,:)
-                        !
-                        yend = size(self%y, 1)
-                        self%y(:, 2:yend-1, :) = cell_in(1)%v(:, 1:v_yend-1, :) + cell_in(1)%v(:, 2:v_yend, :)
-                        !
-                        zend = size(self%z, 1) 
-                        self%z(:, :, 2:zend-1) = cell_in(2)%v(:, :, 1:v_zend-1) + cell_in(2)%v(:, :, 2:v_zend)
-						!
-                end select
-				!
-            class default
-                stop "Error: avgCellVTIrVector3D_SG > Incompatible input Scalar_t."
-				!
-        end select
+                !> for y-components inside the domain
+                do ix = 2, self%grid%nx
+                    do iy = 1, self%grid%ny
+                        do iz = 2, self%grid%nz
+                            self%y(ix, iy, iz) = ( v_h(ix-1, iy, iz-1) + v_h(ix, iy, iz-1) + &
+                            v_h(ix-1, iy, iz) + v_h(ix, iy, iz) ) / 4.0d0
+                        enddo
+                    enddo
+                enddo
+                !
+                !> for z-components inside the domain
+                do ix = 2, self%grid%nx
+                    do iy = 2, self%grid%ny
+                        do iz = 1, self%grid%nz
+                            self%z(ix, iy, iz) = ( v_v(ix-1, iy-1, iz) + v_v(ix-1, iy, iz) + &
+                            v_v(ix, iy-1, iz) + v_v(ix, iy, iz)) / 4.0d0
+                        enddo
+                    enddo
+                enddo
+                !
+            case( FACE )
+                !
+                xend = size(self%x, 1)
+                self%x(2:xend-1,:,:) = v_h(1:v_xend-1,:,:) + v_h(2:v_xend,:,:)
+                !
+                yend = size(self%y, 1)
+                self%y(:, 2:yend-1, :) = v_h(:, 1:v_yend-1, :) + v_h(:, 2:v_yend, :)
+                !
+                zend = size(self%z, 1) 
+                self%z(:, :, 2:zend-1) = v_v(:, :, 1:v_zend-1) + v_v(:, :, 2:v_zend)
+                !
+            case default
+                stop "Error: avgCellVTIrVector3D_SG: Unknown type"
+            !
+        end select !type
         !
     end subroutine avgCellVTIrVector3D_SG
     !
@@ -1474,6 +1474,28 @@ contains
         end select
         !
     end subroutine interpFuncrVector3D_SG
+    !
+    !> No function briefing
+    !
+    function getAxisrVector3D_SG( self, comp_lbl ) result( comp )
+        implicit none
+        !
+        class( rVector3D_SG_t ), intent( in ) :: self
+        character, intent( in ) :: comp_lbl
+        !
+        complex( kind=prec ), allocatable :: comp(:, :, :)
+        !
+        if( comp_lbl == "x" .OR. comp_lbl == "X" ) then
+            comp = cmplx( self%x, 0.0, kind=prec )
+        elseif( comp_lbl == "y" .OR. comp_lbl == "Y" ) then
+            comp = cmplx( self%y, 0.0, kind=prec )
+        elseif( comp_lbl == "z" .OR. comp_lbl == "Z" ) then
+            comp = cmplx( self%z, 0.0, kind=prec )
+        else
+            stop "Error: getAxisrVector3D_SG > wrong component label"
+        endif
+        !
+    end function getAxisrVector3D_SG
     !
     !> No subroutine briefing
     !

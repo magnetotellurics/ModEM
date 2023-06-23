@@ -54,7 +54,7 @@ module ModelParameter
             procedure( interface_dot_product_model_parameter ), deferred, public :: dotProd
             generic :: operator(.dot.) => dotProd
             !
-            procedure( interface_modelparamtocell_model_parameter ), deferred, public :: ModelParamToCell
+            procedure( interface_modelparam_to_cell_modelparameter ), deferred, public :: ModelParamToCell
             !
             procedure( interface_pdemapping_model_parameter ), deferred, public :: PDEmapping
             procedure( interface_dpdemapping_model_parameter ), deferred, public :: dPDEmapping
@@ -166,6 +166,17 @@ module ModelParameter
         end subroutine interface_set_type_model_parameter
         !
         !> No interface subroutine briefing
+        subroutine interface_modelparam_to_cell_modelparameter( self, cCond_h, param_type, grid, air_cond, cCond_v)
+            import :: ModelParameter_t, Scalar_t, Grid_t, prec
+            class( ModelParameter_t ), intent( in ) :: self
+            class( Scalar_t ), allocatable, intent( inout ) :: cCond_h
+            character(:), allocatable, intent( out ), optional :: param_type
+            class( Grid_t ), allocatable, intent( out ), optional :: grid
+            real( kind=prec ), intent( out ), optional :: air_cond
+            class( Scalar_t ), allocatable, intent( inout ), optional :: cCond_v
+        end subroutine interface_modelparam_to_cell_modelparameter
+        !
+        !> No interface subroutine briefing
         subroutine interface_pdemapping_model_parameter( self, eVec )
             import :: ModelParameter_t, Vector_t
             class( ModelParameter_t ), intent( in ) :: self
@@ -186,18 +197,6 @@ module ModelParameter
             class( Vector_t ), intent( in ) :: eVec
             class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         end subroutine interface_dpdemapping_t_model_parameter
-        !
-        !> No interface subroutine briefing
-        subroutine interface_modelparamtocell_model_parameter( self, cCond_h, paramType, grid, AirCond, cCond_v )
-            import :: ModelParameter_t, rScalar3D_SG_t, Grid_t, prec
-            class( ModelParameter_t ), intent( in ) :: self
-            type( rScalar3D_SG_t ), intent( inout ) :: cCond_h
-            character(:), allocatable, intent( out ), optional :: paramType
-            class( Grid_t ), allocatable, intent( out ), optional :: grid
-            real( kind=prec ), intent( out ), optional :: AirCond
-            type( rScalar3D_SG_t ), intent( out ), optional :: cCond_v
-            !
-        end subroutine interface_modelparamtocell_model_parameter
         !
         !> No interface subroutine briefing
         subroutine interface_write_model_parameter( self, file_name, comment )

@@ -29,7 +29,7 @@ module rVector3D_MR
     type, extends( rVector3D_SG_t ) :: rVector3D_MR_t
         !
         type( rVector3D_SG_t ), allocatable :: sub_vectors(:)
-		!
+        !
         integer, dimension(:), allocatable :: ind_active
         !
         contains
@@ -93,6 +93,8 @@ module rVector3D_MR
             procedure, public :: interpFunc => interpFuncRVector3D_MR
             !
             !> Miscellaneous
+            procedure, public :: getAxis => getAxisRVector3D_MR
+            !
             procedure, public :: getReal => getRealRVector3D_MR
             procedure, public :: getArray => getArrayRVector3D_MR
             procedure, public :: setArray => setArrayRVector3D_MR
@@ -838,9 +840,9 @@ contains
         !
         select case(self%grid_type)
             !
-			case(EDGE)
+            case(EDGE)
                 !
-				self%x(:, (/1, self%NdX(2)/), :) = real( cvalue, kind=prec )
+                self%x(:, (/1, self%NdX(2)/), :) = real( cvalue, kind=prec )
                 self%x(:, :, (/1, self%NdX(3)/)) = real( cvalue, kind=prec )
                 self%y((/1, self%NdY(1)/), :, :) = real( cvalue, kind=prec )
                 self%y(:, :, (/1, self%NdY(3)/)) = real( cvalue, kind=prec )
@@ -849,7 +851,7 @@ contains
                 !
             case(FACE)
                 !
-				self%x((/1, self%NdX(1)/), :, :) = real( cvalue, kind=prec )
+                self%x((/1, self%NdX(1)/), :, :) = real( cvalue, kind=prec )
                 self%y(:, (/1, self%NdY(2)/), :) = real( cvalue, kind=prec )
                 self%z(:, :, (/1, self%NdZ(3)/)) = real( cvalue, kind=prec )
                 !
@@ -1189,79 +1191,22 @@ contains
         class( Scalar_t ), intent( in ) :: cell_in
         character(*), intent( in ), optional :: ptype
         !
-        character(10) :: type
-        integer :: xend, yend, zend
-        integer :: v_xend, v_yend, v_zend
-        integer :: ix, iy, iz
-        !
-        if( index( self%grid_type, CELL ) > 0 ) then
-            stop "Error: avgCellRVector3D_MR > Only CELL type supported."
-        endif
-        !
-        if( .NOT. present(ptype)) then
-            type = EDGE
-        else
-            type = ptype
-        endif
-        !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
-        !
-        select type( cell_in )
-            class is( rScalar3D_MR_t )
-                !
-                v_xend = size( cell_in%v, 1 )
-                v_yend = size( cell_in%v, 2 )
-                v_zend = size( cell_in%v, 3 )
-                !
-                select case(type)
-                    case(EDGE)
-
-                        !> for x-components inside the domain
-                        do ix = 1, self%grid%nx
-                           do iy = 2, self%grid%ny
-                              do iz = 2, self%grid%nz
-                                 self%x(ix, iy, iz) = (cell_in%v(ix, iy-1, iz-1) + cell_in%v(ix, iy, iz-1) + &
-                                      cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz)) / 4.0d0
-                              enddo
-                           enddo
-                        enddo
-                        
-                        !> for y-components inside the domain
-                        do ix = 2, self%grid%nx
-                           do iy = 1, self%grid%ny
-                              do iz = 2, self%grid%nz
-                                 self%y(ix, iy, iz) = (cell_in%v(ix-1, iy, iz-1) + cell_in%v(ix, iy, iz-1) + &
-                                      cell_in%v(ix-1, iy, iz) + cell_in%v(ix, iy, iz)) / 4.0d0
-                              enddo
-                           enddo
-                        enddo
-                        
-                        do ix = 2, self%grid%nx
-                              do iy = 2, self%grid%ny
-                                 do iz = 1, self%grid%nz
-                                    self%z(ix, iy, iz) = (cell_in%v(ix-1, iy-1, iz) + cell_in%v(ix-1, iy, iz) + &
-                                         cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz)) / 4.0d0
-                                 enddo
-                              enddo
-                           enddo
-                        !
-                    case(FACE)
-                        xend = size(self%x, 1)
-                        self%x(2:xend-1,:,:) = cell_in%v(1:v_xend-1,:,:) + cell_in%v(2:v_xend,:,:)
-                        !
-                        yend = size(self%y, 1)
-                        self%y(:, 2:yend-1, :) = cell_in%v(:, 1:v_yend-1, :) + cell_in%v(:, 2:v_yend, :)
-                        !
-                        zend = size(self%z, 1) 
-                        self%z(:, :, 2:zend-1) = cell_in%v(:, :, 1:v_zend-1) + cell_in%v(:, :, 2:v_zend)
-                end select
-            class default
-                stop "Error: avgCellRVector3D_MR > Incompatible input Scalar_t."
-        end select
+        stop "Error: avgCellRVector3D_MR > Not implemented yet"
         !
     end subroutine avgCellRVector3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine avgCellVTIRVector3D_MR( self, ell_h_in, cell_v_in, ptype )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_h_in, cell_v_in
+        character(*), intent( in ), optional :: ptype
+        !
+        stop "Error: avgCellVTIRVector3D_MR > Not implemented yet"
+        !
+    end subroutine avgCellVTIRVector3D_MR
     !
     !> No subroutine briefing
     !
@@ -1936,6 +1881,20 @@ contains
         end select
         !
     end subroutine interpFuncRVector3D_MR
+    !
+    !> No function briefing
+    !
+    function getAxisRVector3D_MR( self, comp_lbl ) result( comp )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( in ) :: self
+        character, intent( in ) :: comp_lbl
+        !
+        complex( kind=prec ), allocatable :: comp(:, :, :)
+        !
+        stop "Error: getAxisRVector3D_MR still not implemented"
+        !
+    end function getAxisRVector3D_MR
     !
     !> No subroutine briefing
     !
