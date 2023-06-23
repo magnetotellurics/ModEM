@@ -6,11 +6,12 @@
 !
 module ModelParameterCell_SG_VTI
     !
+    use ModelParameterCell_SG
+    !
     use Constants
     use FileUnits
     use rScalar3D_SG
     use rVector3D_SG 
-    use ModelParameter
     use Grid3D_SG
     use ModelParameter1D
     use ModelParameter2D
@@ -25,34 +26,34 @@ module ModelParameterCell_SG_VTI
             !
             final :: ModelParameterCell_SG_VTI_dtor
             !
-            procedure, public :: getCond => getCondModelParameterCell_SG_VTI
-            procedure, public :: setCond => setCondModelParameterCell_SG_VTI
+            procedure, public :: getCond => getCondModel_ParameterCell_SG_VTI
+            procedure, public :: setCond => setCondModel_ParameterCell_SG_VTI
             !
-            procedure, public :: zeros => zerosModelParameterCell_SG_VTI
+            procedure, public :: zeros => zeros_ModelParameterCell_SG_VTI
             !
-            procedure, public :: copyFrom => copyFromModelParameterCell_SG_VTI
+            procedure, public :: copyFrom => copyFrom_ModelParameterCell_SG_VTI
             !
-            procedure, public :: countModel => countModelParameterCell_SG_VTI
+            procedure, public :: countModel => countModel_ModelParameterCell_SG_VTI
             !
-            procedure, public :: dotProd => dotProdModelParameterCell_SG_VTI
+            procedure, public :: dotProd => dotProd_ModelParameterCell_SG_VTI
             !
-            procedure, public :: linCombModel => linCombModelModelParameterCell_SG_VTI
-            procedure, public :: linCombScalar => linCombScalarModelParameterCell_SG_VTI
+            procedure, public :: linCombModel => linCombModel_ModelParameterCell_SG_VTI
+            procedure, public :: linCombScalar => linCombScalar_ModelParameterCell_SG_VTI
             !
-            procedure, public :: PDEmapping => PDEmappingModelParameterCell_SG_VTI
-            procedure, public :: dPDEmapping => dPDEmappingModelParameterCell_SG_VTI
-            procedure, public :: dPDEmappingT => dPDEmappingTModelParameterCell_SG_VTI
+            procedure, public :: PDEmapping => PDEmapping_ModelParameterCell_SG_VTI
+            procedure, public :: dPDEmapping => dPDEmapping_ModelParameterCell_SG_VTI
+            procedure, public :: dPDEmapping_T => dPDEmapping_T_ModelParameterCell_SG_VTI
             !
-            procedure, public :: slice1D => slice1DModelParameterCell_SG_VTI
-            procedure, public :: slice2D => slice2DModelParameterCell_SG_VTI
+            procedure, public :: slice1D => slice1D_ModelParameterCell_SG_VTI
+            procedure, public :: slice2D => slice2D_ModelParameterCell_SG_VTI
             !
-            procedure, public :: avgModel1D => avgModel1DModelParameterCell_SG_VTI
+            procedure, public :: avgModel1D => avgModel1D_ModelParameterCell_SG_VTI
             !
-            procedure, public :: setType => setTypeModelParameterCell_SG_VTI
+            procedure, public :: setType => setType_ModelParameterCell_SG_VTI
             !
-            procedure, public :: write => writeParameterCell_SG
+            procedure, public :: write => write_ModelParameterCell_SG_VTI
             !
-            procedure, public :: print => printParameterCell_SG
+            procedure, public :: print => print_ModelParameterCell_SG_VTI
             !
     end type ModelParameterCell_SG_VTI_t
     !
@@ -102,7 +103,7 @@ contains
         !
         if( present( param_type ) ) then
             !
-            call self%setSigMap( param_type )
+            call self%setsigMap( param_type )
             !
         endif
         !
@@ -127,7 +128,7 @@ contains
     !
     !> No subroutine briefing
     !
-    function slice1DModelParameterCell_SG_VTI( self, ix, iy ) result( model_param_1D )
+    function slice1D_ModelParameterCell_SG_VTI( self, ix, iy ) result( model_param_1D )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
@@ -143,17 +144,17 @@ contains
         allocate( cond_slice( model_param_1D%grid%nz ) )
         !
         v = self%cell_cond_h%getV()
-        cond_slice = self%SigMap( real( v( ix, iy, : ), kind=prec ) )
+        cond_slice = self%sigMap( real( v( ix, iy, : ), kind=prec ) )
         !
         call model_param_1D%setConductivity( cond_slice, self%air_cond, self%param_type, self%mKey )
         !
         deallocate( cond_slice )
         !
-    end function slice1DModelParameterCell_SG_VTI
+    end function slice1D_ModelParameterCell_SG_VTI
     !
     !> No subroutine briefing
     !
-    function avgModel1DModelParameterCell_SG_VTI( self ) result( model_param_1D )
+    function avgModel1D_ModelParameterCell_SG_VTI( self ) result( model_param_1D )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
@@ -183,7 +184,7 @@ contains
                 enddo
             enddo
             !
-            cond_slice(k) = self%SigMap( real( temp_sigma_value / wt, kind=prec ) )
+            cond_slice(k) = self%sigMap( real( temp_sigma_value / wt, kind=prec ) )
             !
         enddo
         !
@@ -191,11 +192,11 @@ contains
         !
         deallocate( cond_slice )
         !
-    end function avgModel1DModelParameterCell_SG_VTI
+    end function avgModel1D_ModelParameterCell_SG_VTI
     !
     !> No subroutine briefing
     !
-    function slice2DModelParameterCell_SG_VTI( self, axis, j ) result( m2D )
+    function slice2D_ModelParameterCell_SG_VTI( self, axis, j ) result( m2D )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
@@ -216,24 +217,24 @@ contains
         v = self%cell_cond_h%getV()
         !real( self%cell_cond_h%getV(), kind=prec )
         if( axis == 1 ) then
-            cond_slice = self%SigMap( real( v(j,:,:), kind=prec ) )
+            cond_slice = self%sigMap( real( v(j,:,:), kind=prec ) )
         elseif( axis == 2 ) then
-            cond_slice = self%SigMap( real( v(:,j,:), kind=prec ) )
+            cond_slice = self%sigMap( real( v(:,j,:), kind=prec ) )
         elseif( axis == 3 ) then
-            cond_slice = self%SigMap( real( v(:,:,j), kind=prec ) )
+            cond_slice = self%sigMap( real( v(:,:,j), kind=prec ) )
         else
-            stop "Error: slice2DModelParameterCell_SG_VTI > wrong axis"
+            stop "Error: slice2D_ModelParameterCell_SG_VTI > wrong axis"
         endif
         !
         call m2D%setConductivity( cond_slice, self%air_cond, param_type, self%mKey )
         !
         deallocate( cond_slice )
         !
-    end function slice2DModelParameterCell_SG_VTI
+    end function slice2D_ModelParameterCell_SG_VTI
     !
     !> No interface subroutine briefing
     !
-    subroutine getCondModelParameterCell_SG_VTI( self, ccond )
+    subroutine getCondModel_ParameterCell_SG_VTI( self, ccond )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
@@ -242,11 +243,11 @@ contains
         if( allocated( ccond ) ) deallocate( ccond )
         allocate( ccond, source = self%cell_cond_h )
         !
-    end subroutine getCondModelParameterCell_SG_VTI
+    end subroutine getCondModel_ParameterCell_SG_VTI
     !
     !> No interface subroutine briefing
     !
-    subroutine setCondModelParameterCell_SG_VTI( self, ccond, i_cond )
+    subroutine setCondModel_ParameterCell_SG_VTI( self, ccond, i_cond )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
@@ -269,7 +270,7 @@ contains
                 !
             else
                 !
-                stop "Error: setCondModelParameterCell_SG_VTI > VTI not support anisotropy level greater than 2"
+                stop "Error: setCondModel_ParameterCell_SG_VTI > VTI not support anisotropy level greater than 2"
                 !
             endif
             !
@@ -280,10 +281,10 @@ contains
             !
         endif
         !
-    end subroutine setCondModelParameterCell_SG_VTI
+    end subroutine setCondModel_ParameterCell_SG_VTI
     !
     !> No subroutine briefing
-    subroutine zerosModelParameterCell_SG_VTI( self )
+    subroutine zeros_ModelParameterCell_SG_VTI( self )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
@@ -291,10 +292,10 @@ contains
         call self%cell_cond_h%zeros
         call self%cell_cond_v%zeros
         !
-    end subroutine zerosModelParameterCell_SG_VTI
+    end subroutine zeros_ModelParameterCell_SG_VTI
     !
     !> No subroutine briefing
-    subroutine copyFromModelParameterCell_SG_VTI( self, rhs )
+    subroutine copyFrom_ModelParameterCell_SG_VTI( self, rhs )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
@@ -320,17 +321,17 @@ contains
                 !
                 self%cell_cond_v = rhs%cell_cond_v
                 !
-                self%SigMap_ptr => rhs%SigMap_ptr
+                self%sigMap_ptr => rhs%sigMap_ptr
                 !
             class default
-               stop "Error: copyFromModelParameterCell_SG_VTI > Incompatible input."
+               stop "Error: copyFrom_ModelParameterCell_SG_VTI > Incompatible input."
             !
         end select
         !
-    end subroutine copyFromModelParameterCell_SG_VTI
+    end subroutine copyFrom_ModelParameterCell_SG_VTI
     !
     !> ????
-    function countModelParameterCell_SG_VTI( self ) result( counter )
+    function countModel_ModelParameterCell_SG_VTI( self ) result( counter )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
@@ -340,7 +341,7 @@ contains
         counter = 0
         !
         if( .NOT. self%cell_cond_h%is_allocated ) then
-            stop "Error: countModelParameterCell_SG_VTI > cell_cond_h not allocated!"
+            stop "Error: countModel_ModelParameterCell_SG_VTI > cell_cond_h not allocated!"
         endif
         !
         !> Horizontal
@@ -355,10 +356,10 @@ contains
         !
         counter = counter + self%cell_cond_v%Nx * self%cell_cond_v%Ny * nz_earth
         !
-    end function countModelParameterCell_SG_VTI
+    end function countModel_ModelParameterCell_SG_VTI
     !
     !>
-    subroutine linCombModelModelParameterCell_SG_VTI( self, a1, a2, rhs )
+    subroutine linCombModel_ModelParameterCell_SG_VTI( self, a1, a2, rhs )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
@@ -379,7 +380,7 @@ contains
                     call self%cell_cond_h%setV( v )
                     !
                 else
-                    stop "Error: linCombModelModelParameterCell_SG_VTI > Incompatible rhs cell_cond_h"
+                    stop "Error: linCombModel_ModelParameterCell_SG_VTI > Incompatible rhs cell_cond_h"
                 endif
                 !
                 !> Vertical
@@ -390,20 +391,20 @@ contains
                     call self%cell_cond_v%setV( v )
                     !
                 else
-                    stop "Error: linCombModelModelParameterCell_SG_VTI > Incompatible rhs cell_cond_v"
+                    stop "Error: linCombModel_ModelParameterCell_SG_VTI > Incompatible rhs cell_cond_v"
                 endif
                 !
             class default
-                stop "Error: linCombModelModelParameterCell_SG_VTI > undefined rhs"
+                stop "Error: linCombModel_ModelParameterCell_SG_VTI > undefined rhs"
             !
         end select
         !
         !self%air_cond = rhs%air_cond
         !
-    end subroutine linCombModelModelParameterCell_SG_VTI
+    end subroutine linCombModel_ModelParameterCell_SG_VTI
     !
     !>
-    subroutine linCombScalarModelParameterCell_SG_VTI( self, a1, a2, rhs )
+    subroutine linCombScalar_ModelParameterCell_SG_VTI( self, a1, a2, rhs )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
@@ -421,7 +422,7 @@ contains
             call self%cell_cond_h%setV( v )
             !
         else
-            stop "Error: linCombScalarModelParameterCell_SG_VTI > Incompatible cell_cond_h"
+            stop "Error: linCombScalar_ModelParameterCell_SG_VTI > Incompatible cell_cond_h"
         endif
         !
         !> Vertical
@@ -432,16 +433,16 @@ contains
             call self%cell_cond_v%setV( v )
             !
         else
-            stop "Error: linCombScalarModelParameterCell_SG_VTI > Incompatible cell_cond_v"
+            stop "Error: linCombScalar_ModelParameterCell_SG_VTI > Incompatible cell_cond_v"
         endif
         !
         !self%air_cond = rhs%air_cond
         !
-    end subroutine linCombScalarModelParameterCell_SG_VTI
+    end subroutine linCombScalar_ModelParameterCell_SG_VTI
     !
     !> No subroutine briefing
     !
-    function dotProdModelParameterCell_SG_VTI( self, rhs ) result( rvalue )
+    function dotProd_ModelParameterCell_SG_VTI( self, rhs ) result( rvalue )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
@@ -461,7 +462,7 @@ contains
                     rvalue = rvalue + sum( self%cell_cond_h%getV() * rhs%cell_cond_h%getV() )
                     !
                 else
-                    stop "Error: dotProdModelParameterCell_SG_VTI > Incompatible rhs"
+                    stop "Error: dotProd_ModelParameterCell_SG_VTI > Incompatible rhs"
                 endif
                 !
                 !> Vertical
@@ -470,26 +471,25 @@ contains
                     rvalue = rvalue + sum( self%cell_cond_v%getV() * rhs%cell_cond_v%getV() )
                     !
                 else
-                    stop "Error: dotProdModelParameterCell_SG_VTI > Incompatible rhs"
+                    stop "Error: dotProd_ModelParameterCell_SG_VTI > Incompatible rhs"
                 endif
                 !
             class default
-                stop "Error: dotProdModelParameterCell_SG_VTI > Unclassified rhs"
+                stop "Error: dotProd_ModelParameterCell_SG_VTI > Unclassified rhs"
             !
         end select
         !
-    end function dotProdModelParameterCell_SG_VTI
+    end function dotProd_ModelParameterCell_SG_VTI
     !
     !> Map the entire model cells into a single edge Vector_t (eVec).
     !
-    subroutine PDEmappingModelParameterCell_SG_VTI( self, eVec )
+    subroutine PDEmapping_ModelParameterCell_SG_VTI( self, eVec )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( inout ) :: eVec
         !
         type( rScalar3D_SG_t ) :: sigma_cell_h, sigma_cell_v
-        complex( kind=prec ), allocatable :: v(:, :, :)
         integer :: k0, k1, k2
         !
         if( .NOT. allocated( eVec ) ) then
@@ -508,9 +508,7 @@ contains
         !
         sigma_cell_h%v( :, :, 1:k0 ) = self%air_cond
         !
-        sigma_cell_h%v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ) )
-        !
-        !sigma_cell_h%v( :, :, : ) = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ) )
+        sigma_cell_h%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond_h%getV(), kind=prec ) )
         !
         call sigma_cell_h%mult( self%metric%VCell )
         !
@@ -520,29 +518,27 @@ contains
         !
         sigma_cell_v%v( :, :, 1:k0 ) = self%air_cond
         !
-        sigma_cell_v%v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond_v%getV(), kind=prec ) )
-        !
-        !sigma_cell_v%v( :, :, : ) = self%SigMap( real( self%cell_cond_v%getV(), kind=prec ) )
+        sigma_cell_v%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond_v%getV(), kind=prec ) )
         !
         call sigma_cell_v%mult( self%metric%VCell )
         !
-        !> Call interface avgCells
+        !> Call avgCells interface for both directions
         call eVec%avgCells( sigma_cell_h, sigma_cell_v )
         !
         call eVec%div( self%metric%VEdge )
         !
-    end subroutine PDEmappingModelParameterCell_SG_VTI
+    end subroutine PDEmapping_ModelParameterCell_SG_VTI
     !
     !> Map the perturbation between two models onto a single Vector_t (eVec).
     !
-    subroutine dPDEmappingModelParameterCell_SG_VTI( self, dsigma, eVec )
+    subroutine dPDEmapping_ModelParameterCell_SG_VTI( self, dsigma, eVec )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
         class( ModelParameter_t ), intent( in ) :: dsigma
         class( Vector_t ), allocatable, intent( inout ) :: eVec
         !
-        type( rScalar3D_SG_t ) :: sigma_cell
+        type( rScalar3D_SG_t ) :: sigma_cell_h, sigma_cell_v
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
@@ -554,40 +550,72 @@ contains
         !
         call eVec%zeros
         !
-        sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
+        !> Horizontal
+        sigma_cell_h = rScalar3D_SG_t( self%metric%grid, CELL )
         !
         k0 = self%metric%grid%NzAir
         k1 = k0 + 1
         k2 = self%metric%grid%Nz
         !
-        !> Ensure values in air are zero.
-        call sigma_cell%zeros
+        call sigma_cell_h%zeros
         !
-        sigma_cell%v( :, :, k1:k2 ) = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ), JOB )
+        sigma_cell_h%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond_h%getV(), kind=prec ), JOB )
         !
-        !> Required to access the cell_cond attribute of ModelParameterCell_SG_VTI
         select type( dsigma )
             !
+            class is( ModelParameterCell_SG_t )
+                !
+                sigma_cell_h%v(:,:,k1:k2) = sigma_cell_h%v(:,:,k1:k2) * dsigma%cell_cond%getV()
+                !
             class is( ModelParameterCell_SG_VTI_t )
                 !
-                sigma_cell%v(:,:,k1:k2) = sigma_cell%v(:,:,k1:k2) * dsigma%cell_cond_h%getV()
+                sigma_cell_h%v(:,:,k1:k2) = sigma_cell_h%v(:,:,k1:k2) * dsigma%cell_cond_h%getV()
                 !
             class default
-                stop "Error: dPDEmappingModelParameterCell_SG_VTI > Unclassified dsigma"
+                stop "Error: dPDEmapping_ModelParameterCell_SG_VTI > Unclassified dsigma"
             !
         end select
         !
-        call sigma_cell%mult( self%metric%Vcell )
+        call sigma_cell_h%mult( self%metric%Vcell )
         !
-        call eVec%avgCells( sigma_cell )
+        !> Vertical
+        sigma_cell_v = rScalar3D_SG_t( self%metric%grid, CELL )
+        !
+        k0 = self%metric%grid%NzAir
+        k1 = k0 + 1
+        k2 = self%metric%grid%Nz
+        !
+        call sigma_cell_v%zeros
+        !
+        sigma_cell_v%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond_v%getV(), kind=prec ), JOB )
+        !
+        select type( dsigma )
+            !
+            class is( ModelParameterCell_SG_t )
+                !
+                sigma_cell_v%v(:,:,k1:k2) = sigma_cell_v%v(:,:,k1:k2) * dsigma%cell_cond%getV()
+                !
+            class is( ModelParameterCell_SG_VTI_t )
+                !
+                sigma_cell_v%v(:,:,k1:k2) = sigma_cell_v%v(:,:,k1:k2) * dsigma%cell_cond_v%getV()
+                !
+            class default
+                stop "Error: dPDEmapping_ModelParameterCell_SG_VTI > Unclassified dsigma"
+            !
+        end select
+        !
+        call sigma_cell_v%mult( self%metric%Vcell )
+        !
+        !> Call avgCells interface for both directions
+        call eVec%avgCells( sigma_cell_h, sigma_cell_v )
         !
         call eVec%div( self%metric%Vedge )
         !
-    end subroutine dPDEmappingModelParameterCell_SG_VTI
+    end subroutine dPDEmapping_ModelParameterCell_SG_VTI
     !
     !> Transpose the perturbation represented in a Vector_t (eVec), to a new dsigma model.
     !
-    subroutine dPDEmappingTModelParameterCell_SG_VTI( self, eVec, dsigma )
+    subroutine dPDEmapping_T_ModelParameterCell_SG_VTI( self, eVec, dsigma )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
@@ -595,12 +623,13 @@ contains
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
         class( Vector_t ), allocatable :: temp_interior
-        class( Scalar_t ), allocatable :: sigma_cell
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        class( Scalar_t ), allocatable :: sigma_cell_h, sigma_cell_v
+        complex( kind=prec ), allocatable :: v(:, :, :), s_v(:, :, :)
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
-        !allocate( dsigma, source = ModelParameterCell_SG_VTI_t( self%param_grid, self%cell_cond, self%param_type ) )
+        !
+        allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, self%cell_cond_h, self%param_type ) )
         !
         select type( dsigma )
             !
@@ -612,41 +641,54 @@ contains
                 !
                 call temp_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
                 !
-                call temp_interior%sumEdges( sigma_cell, .TRUE. )
+                !> Horizontal
+                call temp_interior%sumEdges( sigma_cell_h, .TRUE. )
+                !
+                call sigma_cell_h%mult( self%metric%Vcell )
+                !
+                v = self%sigMap( real( self%cell_cond_h%getV(), kind=prec ), JOB )
+                call dsigma%cell_cond_h%setV( v )
+                !
+                k0 = self%metric%grid%NzAir
+                k1 = k0 + 1
+                k2 = self%metric%grid%Nz
+                !
+                s_v = sigma_cell_h%getV()
+                !
+                v = dsigma%cell_cond_h%getV() * s_v(:,:,k1:k2)
+                !
+                call dsigma%cell_cond_h%setV( v )
+                !
+                !> Vertical
+                call temp_interior%sumEdges( sigma_cell_v, .TRUE. )
                 !
                 deallocate( temp_interior )
                 !
-                select type( sigma_cell )
-                    !
-                    class is( rScalar3D_SG_t )
-                        !
-                        call sigma_cell%mult( self%metric%Vcell )
-                        !
-                        v = self%SigMap( real( self%cell_cond_h%getV(), kind=prec ), JOB )
-                        call dsigma%cell_cond_h%setV( v )
-                        !
-                        k0 = self%metric%grid%NzAir
-                        k1 = k0 + 1
-                        k2 = self%metric%grid%Nz
-                        !
-                        v = dsigma%cell_cond_h%getV() * sigma_cell%v(:,:,k1:k2)
-                        call dsigma%cell_cond_h%setV( v ) !* by self or dsigma ????
-                        !
-                    class default
-                        stop "Error: dPDEmappingTModelParameterCell_SG_VTI > Unclassified sigma_cell."
-                end select
-                        !
+                call sigma_cell_v%mult( self%metric%Vcell )
+                !
+                v = self%sigMap( real( self%cell_cond_v%getV(), kind=prec ), JOB )
+                call dsigma%cell_cond_v%setV( v )
+                !
+                k0 = self%metric%grid%NzAir
+                k1 = k0 + 1
+                k2 = self%metric%grid%Nz
+                !
+                s_v = sigma_cell_v%getV()
+                !
+                v = dsigma%cell_cond_v%getV() * s_v(:,:,k1:k2)
+                !
+                call dsigma%cell_cond_v%setV( v )
+                !
             class default
-                stop "Error: dPDEmappingTModelParameterCell_SG_VTI > Incompatible input [eVec]."
+                stop "Error: dPDEmapping_T_ModelParameterCell_SG_VTI > Unclassified dsigma"
+            !
         end select
         !
-        deallocate( sigma_cell )
-        !
-    end subroutine dPDEmappingTModelParameterCell_SG_VTI
+    end subroutine dPDEmapping_T_ModelParameterCell_SG_VTI
     !
     !> No subroutine briefing
     !
-    subroutine setTypeModelParameterCell_SG_VTI( self, param_type )
+    subroutine setType_ModelParameterCell_SG_VTI( self, param_type )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
@@ -656,7 +698,7 @@ contains
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
-            stop "Error: setTypeModelParameterCell_SG_VTI > Self not allocated."
+            stop "Error: setType_ModelParameterCell_SG_VTI > Self not allocated."
         endif
         !
         !> Horizontal & Vertical
@@ -724,16 +766,16 @@ contains
             call self%cell_cond_v%setV( v_v )
             !
         else
-            stop "Error: setTypeModelParameterCell_SG_VTI > Unknown param_type."
+            stop "Error: setType_ModelParameterCell_SG_VTI > Unknown param_type."
         endif
         !
         self%param_type = param_type 
         !
-    end subroutine setTypeModelParameterCell_SG_VTI
+    end subroutine setType_ModelParameterCell_SG_VTI
     !
     !> No subroutine briefing
     !
-    subroutine printParameterCell_SG( self )
+    subroutine print_ModelParameterCell_SG_VTI( self )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
@@ -743,13 +785,13 @@ contains
         !
         !call self%cell_cond%print
         !
-    end subroutine printParameterCell_SG
+    end subroutine print_ModelParameterCell_SG_VTI
     !
     !> opens cfile on unit ioModelParam, writes out object of
     !> type modelParam in Weerachai Siripunvaraporn"s format,
     !> closes file.
     !
-    subroutine writeParameterCell_SG( self, file_name, comment )
+    subroutine write_ModelParameterCell_SG_VTI( self, file_name, comment )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
@@ -874,11 +916,11 @@ contains
             !
         else
             !
-            write( *, * ) "Error opening file in writeParameterCell_SG [", file_name, "]!"
+            write( *, * ) "Error opening file in write_ModelParameterCell_SG_VTI [", file_name, "]!"
             stop
             !
         endif
         !
-    end subroutine writeParameterCell_SG
+    end subroutine write_ModelParameterCell_SG_VTI
 
 end Module ModelParameterCell_SG_VTI

@@ -25,13 +25,13 @@ module Source
         !
         contains
             !
-            procedure, public :: init => initializeSource
+            procedure, public :: init => initialize_Source
             !
-            procedure, public :: dealloc => deallocateSource
+            procedure, public :: dealloc => deallocate_Source
             !
-            procedure, public :: setE => setESource
+            procedure, public :: setE => setE_Source
             !
-            procedure, public :: setRhs => setRhsSource
+            procedure, public :: setRhs => setRHS_Source
             !
             procedure( interface_create_e_source ), deferred, public :: createE
             !
@@ -63,7 +63,7 @@ module Source
     contains
     !
     !> No subroutine briefing
-    subroutine setESource( self, E )
+    subroutine setE_Source( self, E )
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
@@ -77,10 +77,10 @@ module Source
         !
         call self%createRHS()
         !
-    end subroutine setESource
+    end subroutine setE_Source
     !
     !> No subroutine briefing
-    subroutine setRhsSource( self, rhs )
+    subroutine setRHS_Source( self, rhs )
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
@@ -92,10 +92,10 @@ module Source
         !
         allocate( self%rhs, source = rhs )
         !
-    end subroutine setRhsSource
+    end subroutine setRHS_Source
     !
     !> No subroutine briefing
-    subroutine initializeSource( self )
+    subroutine initialize_Source( self )
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
@@ -114,10 +114,10 @@ module Source
         !
         self%sigma => null()
         !
-    end subroutine initializeSource
+    end subroutine initialize_Source
     !
     !> No subroutine briefing
-    subroutine deallocateSource( self )
+    subroutine deallocate_Source( self )
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
@@ -126,7 +126,7 @@ module Source
         !
         deallocate( self%E )
         !
-    end subroutine deallocateSource
+    end subroutine deallocate_Source
 !
     function minNode( x, xNode ) result( ix )
         implicit none

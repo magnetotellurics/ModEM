@@ -786,7 +786,7 @@ contains
                         !
                         call unpackScalarBuffer( model%cell_cond, main_grid, parent_buffer, parent_buffer_size, index )
                         !
-                        call model%setSigMap( model%param_type )
+                        call model%setsigMap( model%param_type )
                         !
                 end select
                 !
@@ -814,7 +814,7 @@ contains
                         !
                         call unpackScalarBuffer( model%cell_cond_v, main_grid, parent_buffer, parent_buffer_size, index )
                         !
-                        call model%setSigMap( model%param_type )
+                        call model%setsigMap( model%param_type )
                         !
                 end select
                 !

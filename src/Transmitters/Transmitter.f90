@@ -314,8 +314,8 @@ module Transmitter
             !> Free up local memory
             deallocate( eSens )
             !
-            !> Get dsigma from dPDEmappingT, using first position of eSens
-            call sigma%dPDEmappingT( real_sens, dsigma )
+            !> Get dsigma from dPDEmapping_T, using first position of eSens
+            call sigma%dPDEmapping_T( real_sens, dsigma )
             !
             deallocate( real_sens )
             !

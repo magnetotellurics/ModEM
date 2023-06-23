@@ -20,8 +20,9 @@ module SourceMT_1D
             !
             final :: SourceMT_1D_dtor
             !
-            procedure, public :: createE => createESourceMT_1D
-            procedure, public :: createRHS => createRHSSourceMT_1D
+            procedure, public :: createE => createE_SourceMT_1D
+            !
+            procedure, public :: createRHS => createRHS_SourceMT_1D
             !
     end type SourceMT_1D_T
     !
@@ -69,7 +70,7 @@ contains
     end subroutine SourceMT_1D_dtor
     !
     !> Set self%E from forward modeling 1D
-    subroutine createESourceMT_1D( self )
+    subroutine createE_SourceMT_1D( self )
         implicit none
         !
         class( SourceMT_1D_t ), intent( inout ) :: self
@@ -125,7 +126,7 @@ contains
                     endif
                     !
                 class default
-                    stop "Error: createESourceMT_1D: Unclassified Vector"
+                    stop "Error: createE_SourceMT_1D: Unclassified Vector"
             end select
             !
         enddo
@@ -134,10 +135,10 @@ contains
         !
         call self%createRHS()
         !
-    end subroutine createESourceMT_1D
+    end subroutine createE_SourceMT_1D
     !
     !> Set RHS from self%E
-    subroutine createRHSSourceMT_1D( self )
+    subroutine createRHS_SourceMT_1D( self )
         implicit none
         !
         class( SourceMT_1D_t ), intent( inout ) :: self
@@ -163,6 +164,6 @@ contains
             !
         enddo
         !
-    end subroutine createRHSSourceMT_1D
+    end subroutine createRHS_SourceMT_1D
     !
 end module SourceMT_1D

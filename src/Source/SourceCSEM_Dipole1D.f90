@@ -17,13 +17,13 @@ module SourceCSEM_Dipole1D
             !
             final :: SourceCSEM_Dipole1D_dtor
             !
-            procedure, public :: createE => createESourceCSEM_Dipole1D
+            procedure, public :: createE => createE_SourceCSEM_Dipole1D
             !
-            procedure, public :: createRHS => createRHSSourceCSEM_Dipole1D
+            procedure, public :: createRHS => createRHS_SourceCSEM_Dipole1D
             !
-            procedure, public :: set1DModel => set1DModelSourceCSEM_Dipole1D
+            procedure, public :: set1DModel => set1DModel_SourceCSEM_Dipole1D
             !
-            procedure, private :: setTempSourceCSEM_Dipole1D, create_Ep_from_Dipole1D
+            procedure, private :: setTemp_SourceCSEM_Dipole1D, create_Ep_from_Dipole1D
             !
     end type SourceCSEM_Dipole1D_T
     !
@@ -84,7 +84,7 @@ contains
     !
     !> Set self%E from forward modeling 1D
     !
-    subroutine createESourceCSEM_Dipole1D( self )
+    subroutine createE_SourceCSEM_Dipole1D( self )
         implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
@@ -135,7 +135,7 @@ contains
         !
         call self%createRHS
         !
-    end subroutine createESourceCSEM_Dipole1D
+    end subroutine createE_SourceCSEM_Dipole1D
     !
     !> No subroutine briefing
     !
@@ -272,7 +272,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setTempSourceCSEM_Dipole1D( self, sigma_cell )
+    subroutine setTemp_SourceCSEM_Dipole1D( self, sigma_cell )
         implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
@@ -332,31 +332,31 @@ contains
            !
         elseif( trim( get_1D_from ) == "At_Tx_Position" ) then
             !
-            stop "Error: setTempSourceCSEM_Dipole1D > At_Tx_Position not implemented yet"
+            stop "Error: setTemp_SourceCSEM_Dipole1D > At_Tx_Position not implemented yet"
             !
         elseif( trim(get_1d_from) == "Geometric_mean_around_Tx" ) then
             !
-            stop "Error: setTempSourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet"
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet"
             !
         elseif( trim(get_1d_from) == "Full_Geometric_mean" ) then
             !
-            stop "Error: setTempSourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet"
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet"
             !
         elseif( trim( get_1d_from ) == "Fixed_Value" ) then
             !
-            stop "Error: setTempSourceCSEM_Dipole1D > Fixed_Value not implemented yet"
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Fixed_Value not implemented yet"
             !
         else
             !
-            stop "Error: setTempSourceCSEM_Dipole1D > Unknown get_1d_from"
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Unknown get_1d_from"
             !
         endif
         !
-    end subroutine setTempSourceCSEM_Dipole1D
+    end subroutine setTemp_SourceCSEM_Dipole1D
     !
     !> No subroutine briefing
     !
-    subroutine set1DModelSourceCSEM_Dipole1D( self )
+    subroutine set1DModel_SourceCSEM_Dipole1D( self )
         implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
@@ -369,7 +369,7 @@ contains
                 !
                 allocate( sigma_cell, source = sigma%cell_cond )
                 !
-                call self%setTempSourceCSEM_Dipole1D( sigma_cell )
+                call self%setTemp_SourceCSEM_Dipole1D( sigma_cell )
                 !
                 call self%setCondAnomally( sigma_cell, self%cond_anomaly )
                 !
@@ -377,18 +377,18 @@ contains
                 !
             class is( ModelParameterCell_SG_VTI_t )
                 !
-                stop "Error: set1DModelSourceCSEM_Dipole1D > One shouldn't use Dipole1D with VTI"
+                stop "Error: set1DModel_SourceCSEM_Dipole1D > One shouldn't use Dipole1D with VTI"
                 !
             class default
-                stop "Error: set1DModelSourceCSEM_Dipole1D > Unclassified sigma"
+                stop "Error: set1DModel_SourceCSEM_Dipole1D > Unclassified sigma"
             !
         end select
         !
-    end subroutine set1DModelSourceCSEM_Dipole1D
+    end subroutine set1DModel_SourceCSEM_Dipole1D
     !
     !> Set RHS from self%E
     !
-    subroutine createRHSSourceCSEM_Dipole1D( self )
+    subroutine createRHS_SourceCSEM_Dipole1D( self )
         implicit none
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
@@ -400,6 +400,6 @@ contains
         !
         call self%rhs(1)%mult( self%model_operator%metric%Vedge )
         !
-    end subroutine createRHSSourceCSEM_Dipole1D
+    end subroutine createRHS_SourceCSEM_Dipole1D
     !
 end module SourceCSEM_Dipole1D

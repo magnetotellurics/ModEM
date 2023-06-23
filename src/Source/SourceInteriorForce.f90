@@ -16,8 +16,9 @@ module SourceInteriorForce
         !
         contains
             !
-            procedure, public :: createE => createESourceInteriorForce
-            procedure, public :: createRHS => createRHSSourceInteriorForce
+            procedure, public :: createE => createE_SourceInteriorForce
+            !
+            procedure, public :: createRHS => createRHS_SourceInteriorForce
             !
     end type SourceInteriorForce_t
     !
@@ -65,17 +66,17 @@ contains
     end function SourceInteriorForce_ctor
     !
     !> Set self%E from Forward Modeling 1D
-    subroutine createESourceInteriorForce( self )
+    subroutine createE_SourceInteriorForce( self )
         implicit none
         !
         class( SourceInteriorForce_t ), intent( inout ) :: self
         !
-        stop "Error: Dummy createESourceInteriorForce, not to be implemented"
+        stop "Error: Dummy createE_SourceInteriorForce, not to be implemented"
         !
-    end subroutine createESourceInteriorForce
+    end subroutine createE_SourceInteriorForce
     !
     !> Set RHS from self%E
-    subroutine createRHSSourceInteriorForce( self )
+    subroutine createRHS_SourceInteriorForce( self )
         implicit none
         !
         class( SourceInteriorForce_t ), intent( inout ) :: self
@@ -101,6 +102,6 @@ contains
             !
         enddo
         !
-    end subroutine createRHSSourceInteriorForce
+    end subroutine createRHS_SourceInteriorForce
     !
 end module SourceInteriorForce

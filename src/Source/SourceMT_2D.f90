@@ -10,16 +10,17 @@ module SourceMT_2D
     use Forward2D
     !
     type, extends( Source_t ) :: SourceMT_2D_t
-          !
-          !> No derived properties
-          !
-          contains
-             !
-             final :: SourceMT_2D_dtor
-             !
-             procedure, public :: createE => createESourceMT_2D
-             procedure, public :: createRHS => createRHSSourceMT_2D
-             !
+        !
+        !> No derived properties
+        !
+        contains
+            !
+            final :: SourceMT_2D_dtor
+            !
+            procedure, public :: createE => createE_SourceMT_2D
+            !
+            procedure, public :: createRHS => createRHS_SourceMT_2D
+            !
     end type SourceMT_2D_T
     !
     interface SourceMT_2D_t
@@ -64,7 +65,7 @@ contains
     end subroutine SourceMT_2D_dtor
     !
     !> Set self%E from forward modelling 2D
-    subroutine createESourceMT_2D( self )
+    subroutine createE_SourceMT_2D( self )
         implicit none
         !
         class( SourceMT_2D_t ), intent( inout ) :: self
@@ -137,17 +138,17 @@ contains
                         E%z( i_slice, :, : ) = E2D%Ez( :, : )
                         !
                     class default
-                        stop "SourceMT_2D_t:createESourceMT_2D: Unclassified e_vector"
+                        stop "SourceMT_2D_t:createE_SourceMT_2D: Unclassified e_vector"
                 end select
                 !
             enddo
             !
       enddo
       !
-    end subroutine createESourceMT_2D
+    end subroutine createE_SourceMT_2D
     !
     !> Set RHS from self%E
-    subroutine createRHSSourceMT_2D( self )
+    subroutine createRHS_SourceMT_2D( self )
         implicit none
         !
         class( SourceMT_2D_t ), intent( inout ) :: self
@@ -172,6 +173,6 @@ contains
             !
         enddo
         !
-    end subroutine createRHSSourceMT_2D
+    end subroutine createRHS_SourceMT_2D
     !
 end module SourceMT_2D

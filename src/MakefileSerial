@@ -247,7 +247,7 @@ $(OBJDIR)/ModelParameterCell_SG.o:ModelParameter/ModelParameterCell_SG.f90 $(OBJ
 $(OBJDIR)/ModelOperator_SP.o:ModelOperator/ModelOperator_SP.f90 $(OBJDIR)/ModelOperator.o $(OBJDIR)/spOpTopology_SG.o $(OBJDIR)/MetricElements_CSG.o $(OBJDIR)/ModelParameterCell_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelOperator/ModelOperator_SP.f90 -o $(OBJDIR)/ModelOperator_SP.o
 
-$(OBJDIR)/ModelParameterCell_SG_VTI.o:ModelParameter/ModelParameterCell_SG_VTI.f90 $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/ModelParameter2D.o 
+$(OBJDIR)/ModelParameterCell_SG_VTI.o:ModelParameter/ModelParameterCell_SG_VTI.f90 $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/ModelParameter2D.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelParameter/ModelParameterCell_SG_VTI.f90 -o $(OBJDIR)/ModelParameterCell_SG_VTI.o
 
 $(OBJDIR)/iScalar3D_SG.o:Fields/iScalar3D_SG.f90 $(OBJDIR)/Scalar.o $(OBJDIR)/Grid3D_SG.o 

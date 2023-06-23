@@ -21,13 +21,13 @@ module SourceCSEM_EM1D
             !
             final :: SourceCSEM_EM1D_dtor
             !
-            procedure, public :: createE => createESourceCSEM_EM1D
+            procedure, public :: createE => createE_SourceCSEM_EM1D
             !
-            procedure, public :: createRHS => createRHSSourceCSEM_EM1D
+            procedure, public :: createRHS => createRHS_SourceCSEM_EM1D
             !
-            procedure, public :: set1DModel => set1DModelSourceCSEM_EM1D
+            procedure, public :: set1DModel => set1DModel_SourceCSEM_EM1D
             !
-            procedure, private :: setTempSourceCSEM_EM1D, create_Ep_from_EM1D
+            procedure, private :: setTemp_SourceCSEM_EM1D, create_Ep_from_EM1D
             !
             procedure, private :: create_background_data, create_source_data
             !
@@ -90,7 +90,7 @@ contains
     !
     !> Set self%E from forward modeling 1D
     !
-    subroutine createESourceCSEM_EM1D( self )
+    subroutine createE_SourceCSEM_EM1D( self )
         implicit none
         !
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
@@ -143,11 +143,11 @@ contains
                         E%z = self%cond_anomaly_v%getAxis("z") * E_P%z
                         !
                     class default
-                        stop "createESourceCSEM_EM1D > Unclassified E_P"
+                        stop "createE_SourceCSEM_EM1D > Unclassified E_P"
                 end select
                 !
             class default
-                stop "createESourceCSEM_EM1D > Unclassified E"
+                stop "createE_SourceCSEM_EM1D > Unclassified E"
         end select
         !
         call self%E(1)%mult( i_omega_mu )
@@ -165,7 +165,7 @@ contains
         !
         call self%createRHS
         !
-    end subroutine createESourceCSEM_EM1D
+    end subroutine createE_SourceCSEM_EM1D
     !
     !> No subroutine briefing
     !
@@ -227,7 +227,7 @@ contains
     !
     !> Set RHS from self%E
     !
-    subroutine createRHSSourceCSEM_EM1D( self )
+    subroutine createRHS_SourceCSEM_EM1D( self )
         implicit none
         !
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
@@ -239,11 +239,11 @@ contains
         !
         call self%rhs(1)%mult( self%model_operator%metric%Vedge )
         !
-    end subroutine createRHSSourceCSEM_EM1D
+    end subroutine createRHS_SourceCSEM_EM1D
     !
     !> No subroutine briefing
     !
-    subroutine setTempSourceCSEM_EM1D( self, sigma_cell_h, sigma_cell_v )
+    subroutine setTemp_SourceCSEM_EM1D( self, sigma_cell_h, sigma_cell_v )
         implicit none
         !
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
@@ -331,27 +331,27 @@ contains
             !
         elseif( trim( get_1D_from ) == "At_Tx_Position" ) then
             !
-            stop "Error: setTempSourceCSEM_Dipole1D > At_Tx_Position not implemented yet"
+            stop "Error: setTemp_SourceCSEM_Dipole1D > At_Tx_Position not implemented yet"
             !
         elseif( trim(get_1d_from) == "Geometric_mean_around_Tx" ) then
             !
-            stop "Error: setTempSourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet"
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet"
             !
         elseif( trim(get_1d_from) == "Full_Geometric_mean" ) then
             !
-            stop "Error: setTempSourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet"
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet"
             !
         elseif( trim( get_1d_from ) == "Fixed_Value" ) then
             !
-            stop "Error: setTempSourceCSEM_Dipole1D > Fixed_Value not implemented yet"
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Fixed_Value not implemented yet"
             !
         else
             !
-            stop "Error: setTempSourceCSEM_Dipole1D > Unknown get_1d_from"
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Unknown get_1d_from"
             !
         endif
         !
-    end subroutine setTempSourceCSEM_EM1D
+    end subroutine setTemp_SourceCSEM_EM1D
     !
     !> this is a private routine, used to extract layer averages from
     !> a 3D conductivity parameter (sigma) and set up
@@ -359,7 +359,7 @@ contains
     !> (2) sig1D => !> (S/m) Layer conductivities 
     !> (3) zlay1D => !> (m)   Depth to top of each layer, first layer ignored the 1D Model  z_P, sigma_P
     !
-    subroutine set1DModelSourceCSEM_EM1D( self )
+    subroutine set1DModel_SourceCSEM_EM1D( self )
         implicit none
         !
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
@@ -372,7 +372,7 @@ contains
                 !
                 allocate( sigma_cell_h, source = sigma%cell_cond )
                 !
-                call self%setTempSourceCSEM_EM1D( sigma_cell_h, sigma_cell_h )
+                call self%setTemp_SourceCSEM_EM1D( sigma_cell_h, sigma_cell_h )
                 !
                 sig1D = sig1D_temp_h
                 !
@@ -389,7 +389,7 @@ contains
                 allocate( sigma_cell_h, source = sigma%cell_cond_h )
                 allocate( sigma_cell_v, source = sigma%cell_cond_v )
                 !
-                call self%setTempSourceCSEM_EM1D( sigma_cell_h, sigma_cell_v )
+                call self%setTemp_SourceCSEM_EM1D( sigma_cell_h, sigma_cell_v )
                 !
                 sig1D = sig1D_temp_h
                 !
@@ -404,11 +404,11 @@ contains
                 deallocate( sigma_cell_v )
                 !
             class default
-                stop "Error: set1DModelSourceCSEM_EM1D > Unclassified sigma"
+                stop "Error: set1DModel_SourceCSEM_EM1D > Unclassified sigma"
             !
         end select
         !
-    end subroutine set1DModelSourceCSEM_EM1D
+    end subroutine set1DModel_SourceCSEM_EM1D
     !
     !> No Subroutine briefing
     !

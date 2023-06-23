@@ -11,6 +11,7 @@ module ModelReader_Weerachai
     use ModelParameterCell_SG
     use ModelParameterCell_SG_VTI
     use ModelReader
+    use ForwardControlFile
     !
     type, extends( ModelReader_t ), public :: ModelReader_Weerachai_t
         !
@@ -90,6 +91,8 @@ contains
             !> Create the grid object with nzAir = 0 -- no air layers so far
             allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
             !
+            anisotropic_level = 1
+            !
             !> Read conductivity values in a model parameter object.
             if( index( someChar, "ANI" ) > 0 ) then
                 !
@@ -100,15 +103,25 @@ contains
                 read( args(7), "(I8)" ) anisotropic_level
                 !
                 !> 
-                if( anisotropic_level == 2 ) then
-                    write( *, "( a28, i8 )" ) "Anisotropy level: ", anisotropic_level
+                if( anisotropic_level /= 1 .AND. source_type_csem == SRC_CSEM_DIPOLE1D ) then
+                    !
+                    stop "Error: readModelReaderWeerachai > One shouldn't use Dipole1D with Anisotropy!"
+                    !
+                endif
+                !
+                if( anisotropic_level == 0 ) then
+                    !
+                    write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m Unspecified level of anisotropy, using VTI."
+                    !
+                    anisotropic_level = 2
+                    !
+                elseif( anisotropic_level == 2 ) then
+                    write( *, "( a33, i8 )" ) "VTI, anisotropy level: ", anisotropic_level
                 else
-                    write( *, * ) "Error: readModelReaderWeerachai > Only level 2 is implemented yet!"
+                    write( *, * ) "Error: readModelReaderWeerachai > Anisotropic level [", anisotropic_level, "] not implemented yet!"
                     stop
                 endif
                 !
-            else
-                anisotropic_level = 1
             end if
             !
             !>
@@ -141,9 +154,9 @@ contains
                         deallocate( rho )
                         !
                         if( anisotropic_level == 1 ) then
-                        !
-                        allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
-                        !
+                            !
+                            allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
+                            !
                         else
                             !
                             if( allocated( model ) ) then

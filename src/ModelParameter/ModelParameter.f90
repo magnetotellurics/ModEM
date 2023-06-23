@@ -24,15 +24,15 @@ module ModelParameter
         !
         logical :: is_allocated
         !
-        procedure( interface_sigmap_model_parameter ), pointer, nopass :: SigMap_ptr
+        procedure( interface_sigmap_model_parameter ), pointer, nopass :: sigMap_ptr
         !
         contains
             !
-            procedure, public :: init => initializeModelParameter
+            procedure, public :: init => initialize_ModelParameter
             !
-            procedure, public :: setMetric => setMetricModelParameter
-            procedure, public :: SigMap => SigMapModelParameter
-            procedure, public :: SetSigMap => SetSigMapModelParameter
+            procedure, public :: setMetric => setMetric_ModelParameter
+            procedure, public :: sigMap => sigMap_ModelParameter
+            procedure, public :: setSigMap => setSigMap_ModelParameter
             !
             !> Interfaces
             procedure( interface_set_type_model_parameter ), deferred, public :: SetType
@@ -56,7 +56,7 @@ module ModelParameter
             !
             procedure( interface_pdemapping_model_parameter ), deferred, public :: PDEmapping
             procedure( interface_dpdemapping_model_parameter ), deferred, public :: dPDEmapping
-            procedure( interface_dpdemapping_t_model_parameter ), deferred, public :: dPDEmappingT
+            procedure( interface_dpdemapping_t_model_parameter ), deferred, public :: dPDEmapping_T
             !
             procedure( interface_slice_1d_model_parameter ), deferred, public :: Slice1D
             procedure( interface_slice_2d_model_parameter ), deferred, public :: Slice2D
@@ -204,7 +204,7 @@ module ModelParameter
 contains
     !
     !> No subroutine briefing
-    subroutine setMetricModelParameter( self, metric )
+    subroutine setMetric_ModelParameter( self, metric )
         implicit none
         !
         class( ModelParameter_t ), intent( inout ) :: self
@@ -212,10 +212,10 @@ contains
         !
         self%metric => metric
         !
-    end subroutine setMetricModelParameter
+    end subroutine setMetric_ModelParameter
     !
     !> No procedure briefing
-    elemental function SigMapModelParameter( self, x, job ) result( y )
+    elemental function sigMap_ModelParameter( self, x, job ) result( y )
         implicit none
         !
         class( ModelParameter_t), intent( in ) :: self
@@ -226,10 +226,10 @@ contains
         !
         y = self%Sigmap_ptr( x )
         !
-    end function SigMapModelParameter
+    end function sigMap_ModelParameter
     !
     !> No subroutine briefing
-    subroutine SetSigMapModelParameter( self, param_type )
+    subroutine setSigMap_ModelParameter( self, param_type )
         implicit none
         !
         class( ModelParameter_t ) :: self
@@ -237,15 +237,15 @@ contains
         !
         select case( param_type )
             case( LOGE )
-                self%SigMap_ptr => SigMap_Log
+                self%sigMap_ptr => sigMap_Log
             case( LINEAR )
-                self%SigMap_ptr => SigMap_Linear
+                self%sigMap_ptr => sigMap_Linear
         end select
         !
-    end subroutine SetSigMapModelParameter
+    end subroutine setSigMap_ModelParameter
     !
     !> No procedure briefing
-    pure function SigMap_Linear( x, job ) result( y )
+    pure function sigMap_Linear( x, job ) result( y )
         implicit none
         !
         real( kind=prec ), intent( in ) :: x
@@ -254,10 +254,10 @@ contains
         !
         y = x
         !
-    end function SigMap_Linear
+    end function sigMap_Linear
     !
     !> No procedure briefing
-    pure function SigMap_Log( x, p_job ) result( y )
+    pure function sigMap_Log( x, p_job ) result( y )
         implicit none
         !
         real( kind=prec ), intent( in ) :: x
@@ -281,10 +281,10 @@ contains
                y = log( x )
         end select
         !
-    end function SigMap_Log
+    end function sigMap_Log
     !
     !> No subroutine briefing
-    subroutine initializeModelParameter( self )
+    subroutine initialize_ModelParameter( self )
         implicit none
         !
         class( ModelParameter_t ), intent( inout ) :: self
@@ -299,8 +299,8 @@ contains
         !
         self%is_allocated = .FALSE.
         !
-        self%SigMap_ptr => null()
+        self%sigMap_ptr => null()
         !
-    end subroutine initializeModelParameter
+    end subroutine initialize_ModelParameter
 
 end module ModelParameter
