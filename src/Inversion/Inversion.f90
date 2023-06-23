@@ -115,11 +115,11 @@ contains
         endif
         !
         write( io_unit,"(a10)",advance="no" ) trim(comment)//":"
-        write( io_unit,"(a3,es12.6)",advance="no" ) " f=", f
-        write( io_unit,"(a4,es12.6)",advance="no" ) " m2=", mNorm
-        write( io_unit,"(a5,f11.6)",advance="no" ) " rms=", rms
-        write( io_unit,"(a8,es12.6)",advance="no" ) " lambda=", lambda
-        write( io_unit,"(a7,es12.6)") " alpha=", alpha
+        write( io_unit,"(a3,es15.3)",advance="no" ) " f=", f
+        write( io_unit,"(a4,es15.3)",advance="no" ) " m2=", mNorm
+        write( io_unit,"(a5,f15.3)",advance="no" ) " rms=", rms
+        write( io_unit,"(a8,es15.3)",advance="no" ) " lambda=", lambda
+        write( io_unit,"(a7,es15.3)") " alpha=", alpha
         !
     end subroutine printf
     !

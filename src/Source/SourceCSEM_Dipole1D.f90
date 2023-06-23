@@ -229,8 +229,6 @@ contains
                 !
            enddo
            !
-           write( 1969, * ) sig1D
-           !
         elseif( trim( get_1D_from ) == "At_Tx_Position" ) then
             !
             stop "Error: setTemp_SourceCSEM_Dipole1D > At_Tx_Position not implemented yet"

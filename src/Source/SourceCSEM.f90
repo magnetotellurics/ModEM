@@ -71,8 +71,6 @@ module SourceCSEM
         !
         v = R_ZERO
         !
-        write( 1970, * ) sig1D
-        !
         do k = nzAir+1, nlay1D
             !
             sigma_1d = sig1D(k)

@@ -359,13 +359,6 @@ contains
                 !> Polak-Ribiere variant
                 self%beta = ( g_dot_g - g_dot_gPrev ) / gPrev_dot_gPrev
                 !
-                write( *, * ) "g_dot_g: ", g_dot_g
-                write( *, * ) "g_dot_gPrev: ", g_dot_gPrev
-                write( *, * ) "gPrev_dot_gPrev: ", gPrev_dot_gPrev
-                write( *, * ) "g_dot_h: ", g_dot_h
-                write( *, * ) "beta: ", self%beta
-                !stop
-                !
                 !> restart CG if the orthogonality conditions fail. Using the fact that
                 !> h_{i+1} = g_{i+1} + beta * h_i. In order for the next directional
                 !> derivative = -g_{i+1}.dot.h_{i+1} to be negative, the condition
