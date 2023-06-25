@@ -334,7 +334,7 @@ module Transmitter
             character :: char_i_pol
             real( kind=prec ) :: omega
             !
-            omega = ( 2.0 * PI / self%period )
+            omega = 2.0 * PI / self%period
             !
             !> Loop over all polarizations (MT n_pol = 2)
             do i_pol = 1, self%n_pol

@@ -26,8 +26,8 @@ module ModelParameterCell_SG_VTI
             !
             final :: ModelParameterCell_SG_VTI_dtor
             !
-            procedure, public :: getCond => getCondModel_ParameterCell_SG_VTI
-            procedure, public :: setCond => setCondModel_ParameterCell_SG_VTI
+            procedure, public :: getCond => getCond_ModelParameterCell_SG_VTI
+            procedure, public :: setCond => setCond_Model_ParameterCell_SG_VTI
             !
             procedure, public :: zeros => zeros_ModelParameterCell_SG_VTI
             !
@@ -233,7 +233,7 @@ contains
     !
     !> No interface subroutine briefing
     !
-    subroutine getCondModel_ParameterCell_SG_VTI( self, ccond )
+    subroutine getCond_ModelParameterCell_SG_VTI( self, ccond )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
@@ -242,45 +242,36 @@ contains
         if( allocated( ccond ) ) deallocate( ccond )
         allocate( ccond, source = self%cell_cond_h )
         !
-    end subroutine getCondModel_ParameterCell_SG_VTI
+    end subroutine getCond_ModelParameterCell_SG_VTI
     !
     !> No interface subroutine briefing
     !
-    subroutine setCondModel_ParameterCell_SG_VTI( self, ccond, i_cond )
+    subroutine setCond_Model_ParameterCell_SG_VTI( self, ccond, i_cond )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
         class( Scalar_t ), allocatable, intent( in ) :: ccond
-        integer, intent( in ), optional :: i_cond
+        integer, intent( in ) :: i_cond
         !
         integer :: i
         !
-        if( present( i_cond ) ) then
-            !
-            if( i_cond == 1 ) then
-                !
-                if( allocated( self%cell_cond_h ) ) deallocate( self%cell_cond_h )
-                allocate( self%cell_cond_h, source = ccond )
-                !
-            elseif( i_cond == 2 ) then
-                !
-                if( allocated( self%cell_cond_v ) ) deallocate( self%cell_cond_v )
-                allocate( self%cell_cond_v, source = ccond )
-                !
-            else
-                !
-                stop "Error: setCondModel_ParameterCell_SG_VTI > VTI not support anisotropy level greater than 2"
-                !
-            endif
-            !
-        else
+        if( i_cond == 1 ) then
             !
             if( allocated( self%cell_cond_h ) ) deallocate( self%cell_cond_h )
             allocate( self%cell_cond_h, source = ccond )
             !
+        elseif( i_cond == 2 ) then
+            !
+            if( allocated( self%cell_cond_v ) ) deallocate( self%cell_cond_v )
+            allocate( self%cell_cond_v, source = ccond )
+            !
+        else
+            !
+            stop "Error: setCond_Model_ParameterCell_SG_VTI > VTI not support anisotropy level greater than 2"
+            !
         endif
         !
-    end subroutine setCondModel_ParameterCell_SG_VTI
+    end subroutine setCond_Model_ParameterCell_SG_VTI
     !
     !> No subroutine briefing
     subroutine zeros_ModelParameterCell_SG_VTI( self )

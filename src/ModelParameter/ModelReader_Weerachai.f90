@@ -116,7 +116,7 @@ contains
                     anisotropic_level = 2
                     !
                 elseif( anisotropic_level == 2 ) then
-                    write( *, "( a33, i8 )" ) "VTI, anisotropy level: ", anisotropic_level
+                    write( *, "( a34, i8 )" ) "VTI, anisotropy level: ", anisotropic_level
                 else
                     write( *, * ) "Error: readModelReaderWeerachai > Anisotropic level [", anisotropic_level, "] not implemented yet!"
                     stop

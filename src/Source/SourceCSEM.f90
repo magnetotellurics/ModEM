@@ -8,7 +8,6 @@ module SourceCSEM
     use cVector3D_SG
     use rVector3D_SG
     use Grid3D_SG
-    use EM1D
     !
     character(:), allocatable :: source_type_csem
     character( len=15 ), parameter :: SRC_CSEM_EM1D = "SourceCSEM_EM1D"
@@ -24,7 +23,7 @@ module SourceCSEM
     !
     type, abstract, extends( Source_t ) :: SourceCSEM_t
         !
-        ! No derived properties
+        real( kind=prec ) :: location(3)
         !
         contains
             !
@@ -47,50 +46,120 @@ module SourceCSEM
     !
     contains
     !
-    subroutine setCondAnomally( self, sigma_cell, cond_anomaly )
+    subroutine setCondAnomally( self, sigma_cell, cond_anomaly, ani_level )
         implicit none
         !
         class( SourceCSEM_t ), intent( inout ) :: self
         class( Scalar_t ), intent( in ) :: sigma_cell
         class( Vector_t ), allocatable, intent( inout ) :: cond_anomaly
+        integer, intent( in ) :: ani_level
         !
-        class( ModelParameter_t ), allocatable :: aModel
-        class( Scalar_t ), allocatable :: cond_cell
+        class( Scalar_t ), allocatable :: sigma_cell_1d
         complex( kind=prec ), allocatable :: v(:, :, :)
-        real( kind=prec ) :: wt, sigma_1d
-        integer :: nzAir, i, j, k
+        class( ModelParameter_t ), allocatable :: aModel
+        real( kind=prec ) :: wt, temp_sigma_1d
+        integer :: nzAir, nzEarth, i, j, k
         class( Vector_t ), allocatable :: cond_nomaly
         !
-        !>
         nzAir = sigma_cell%grid%nzAir
         !
-        !> Set 1D conductivities to an auxiliary cond_cell
-        allocate( cond_cell, source = sigma_cell )
+        nlay1D = sigma_cell%nz + nzAir
         !
-        v = cond_cell%getV()
+        if( allocated( zlay1D ) ) deallocate( zlay1D )
+        allocate( zlay1D( nlay1D ) )
         !
-        v = R_ZERO
+        do i = 1, nlay1D
+            zlay1D(i) = sigma_cell%grid%zEdge(i)
+        enddo
         !
-        do k = nzAir+1, nlay1D
+        !> For create sig1D, we divide this process into two parts (1) for air layers and 
+        !>    (2) for earth layers
+        !> For air layer, sig1D equal to air layer conductivity
+        !> For earth layer, The Geometric mean is be used to create sig1D
+        !
+        if( allocated( sig1D ) ) deallocate( sig1D )
+        allocate( sig1D( nlay1D ) )
+        !
+        sig1D(1:nzAir) = SIGMA_AIR
+        !
+        !> Verbose
+        write( *, "( a33 )" ) "- Get 1D according to:", trim( get_1d_from )
+        !
+        if( trim( get_1D_from ) == "Geometric_mean" ) then
             !
-            sigma_1d = sig1D(k)
+            v = sigma_cell%getV()
             !
-            if( trim( self%sigma%param_type ) == LOGE ) sigma_1d = log( sigma_1d )
+            do k = nzAir+1, nlay1D
+                !
+                wt = R_ZERO
+                temp_sigma_1d = R_ZERO
+                !
+                do i = 1, sigma_cell%grid%Nx
+                    do j = 1, sigma_cell%grid%Ny
+                        !
+                        wt = wt + sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
+                        !
+                        temp_sigma_1d = temp_sigma_1d + v(i,j,k-nzAir) * &
+                        sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
+                        !
+                    enddo
+                enddo
+                !
+                sig1D(k) = exp( temp_sigma_1d / wt )
+                !
+            enddo
             !
-            do i = 1, cond_cell%grid%Nx
-                do j = 1, cond_cell%grid%Ny
-                    v( i, j, k-nzAir ) = sigma_1d
+        elseif( trim( get_1D_from ) == "At_Tx_Position" ) then
+            !
+            stop "Error: setTemp_SourceCSEM_Dipole1D > At_Tx_Position not implemented yet"
+            !
+        elseif( trim(get_1d_from) == "Geometric_mean_around_Tx" ) then
+            !
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet"
+            !
+        elseif( trim(get_1d_from) == "Full_Geometric_mean" ) then
+            !
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet"
+            !
+        elseif( trim( get_1d_from ) == "Fixed_Value" ) then
+            !
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Fixed_Value not implemented yet"
+            !
+        else
+            !
+            stop "Error: setTemp_SourceCSEM_Dipole1D > Unknown get_1d_from"
+            !
+        endif
+        !
+        nzEarth = sigma_cell%grid%nzEarth
+        !
+        v = SIGMA_AIR
+        !
+        do k = 1, nzEarth
+            !
+            temp_sigma_1d = sig1D( k + nzAir )
+            !
+            if( trim( self%sigma%param_type ) == LOGE ) temp_sigma_1d = log( temp_sigma_1d )
+            !
+            do i = 1, sigma_cell%grid%Nx
+                do j = 1, sigma_cell%grid%Ny
+                    v( i, j, k ) = temp_sigma_1d
                 enddo
             enddo
             !
         enddo
         !
-        call cond_cell%setV( v )
+        allocate( sigma_cell_1d, source = sigma_cell )
         !
-        !> Create ModelParam - aModel with these conductivities
+        call sigma_cell_1d%setV( v )
+        !
+        !> Create ModelParam from 1D: aModel
+        !> with sigma_cell_1d conductivity in the proper anisotropic direction
         allocate( aModel, source = self%sigma )
-        call aModel%setCond( cond_cell )
+        call aModel%setCond( sigma_cell_1d, ani_level )
         call aModel%setType( self%sigma%param_type )
+        !
+        deallocate( sigma_cell_1d )
         !
         allocate( cond_nomaly, source = rVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
         call aModel%PDEmapping( cond_nomaly )
@@ -99,12 +168,8 @@ module SourceCSEM
         allocate( cond_anomaly, source = rVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
         call self%sigma%PDEmapping( cond_anomaly )
         !
-        deallocate( aModel )
-        !
         !cond_anomaly = cond_anomaly - cond_nomaly
         call cond_anomaly%sub( cond_nomaly )
-        !
-        deallocate( cond_nomaly )
         !
     end subroutine setCondAnomally
     !

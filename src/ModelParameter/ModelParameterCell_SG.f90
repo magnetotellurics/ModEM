@@ -244,12 +244,10 @@ contains
         !
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
         class( Scalar_t ), allocatable, intent( in ) :: ccond
-        integer, intent( in ), optional :: i_cond
+        integer, intent( in ) :: i_cond
         !
-        if( present( i_cond ) ) then
-            !
-            stop "Error: setCondModel_ParameterCell_SG > One shouldn't use vertical cond here"
-            !
+        if( i_cond /= 1 ) then
+            stop "Error: setCondModel_ParameterCell_SG > This class does not support anisotropy"
         endif
         !
         if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )

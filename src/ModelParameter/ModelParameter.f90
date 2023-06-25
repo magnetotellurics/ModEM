@@ -108,7 +108,7 @@ module ModelParameter
             import :: ModelParameter_t, Scalar_t
             class( ModelParameter_t ), intent( inout ) :: self
             class( Scalar_t ), allocatable, intent( in ) :: ccond
-            integer, intent( in ), optional :: i_cond
+            integer, intent( in ) :: i_cond
         end subroutine interface_set_cond_model_parameter
         !
         !> No interface subroutine briefing

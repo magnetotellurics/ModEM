@@ -161,7 +161,7 @@ contains
     !> Calculate JmHat for the data_tx's transmitter:
     !>     Set the transmitter's source by calling PMult.
     !>     Solve e_sens for the transmitter.
-    !> Send dsigma%cell_cond_h to master process
+    !> Send JmHat data to master process
     !> Require previous call of workerSolve or masterSolveAll
     !
     subroutine workerJMult()
