@@ -28,4 +28,6 @@ module FileUnits
     !
     integer, parameter :: ioGradRMS = 1121
     !
+    integer, parameter :: ioPlot = 1122
+    !
 end module FileUnits

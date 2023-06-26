@@ -123,7 +123,7 @@ contains
                 call main_grid%updateAirLayers( air_layer%nz, air_layer%dz )
                 !
                 ! Verbose
-                write( *, * ) "    Model Air Layers [i, dz(i)]:"
+                write( *, "( a39 )" ) "Model Air Layers [i, dz(i)]:"
                 !
                 do i = air_layer%nz, 1, -(1)
                     write( *, "( i20, f20.3 )" ) i, air_layer%dz(i)

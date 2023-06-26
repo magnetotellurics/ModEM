@@ -479,6 +479,10 @@ contains
         !
         type_index = 0
         !
+        open( unit = ioPlot, file = file_name//"_plot", action = "write", form = "formatted", iostat = ios )
+        !
+        write( ioPlot, * ) file_name
+        !
         open( unit = ioPredData, file = file_name, action = "write", form = "formatted", iostat = ios )
         !
         if( ios == 0 ) then
@@ -550,11 +554,15 @@ contains
                         !
                     end select
                     !
+                    write( ioPlot, * ) real( c_value, kind=prec )
+                    !
                 enddo
                 !
             enddo
             !
             close( ioPredData )
+            !
+            close( ioPlot )
             !
         else
             write( *, * ) "Error opening [", file_name, "] in writeDataGroupTxArray!"
