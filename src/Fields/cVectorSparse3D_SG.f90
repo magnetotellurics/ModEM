@@ -1,5 +1,5 @@
 !
-!> Lone class to define a CVectorSparse3D_SG
+!> Lone class to define a cVectorSparse3D_SG
 !
 module cVectorSparse3D_SG
     !
@@ -16,75 +16,75 @@ module cVectorSparse3D_SG
         !
         contains
             !
-            final :: CVectorSparse3D_SG_dtor
+            final :: cVectorSparse3D_SG_dtor
             !
             !> Boundary operations
-            procedure, public :: setAllBoundary => setAllBoundaryCVectorSparse3D_SG
-            procedure, public :: setOneBoundary => setOneBoundaryCVectorSparse3D_SG
-            procedure, public :: intBdryIndices => intBdryIndicesCVectorSparse3D_SG
+            procedure, public :: setAllBoundary => setAllBoundary_cVectorSparse3D_SG
+            procedure, public :: setOneBoundary => setOneBoundary_cVectorSparse3D_SG
+            procedure, public :: intBdryIndices => intBdryIndices_cVectorSparse3D_SG
             !
             !> Dimensioning operations
-            procedure, public :: length => lengthCVectorSparse3D_SG
-            procedure, public :: setVecComponents => setVecComponentsCVectorSparse3D_SG
+            procedure, public :: length => length_cVectorSparse3D_SG
+            procedure, public :: setVecComponents => setVecComponents_cVectorSparse3D_SG
             !
             !> Arithmetic/algebraic unary operations
-            procedure, public :: zeros => zerosCVectorSparse3D_SG
-            procedure, public :: conjugate => conjugateCVectorSparse3D_SG
+            procedure, public :: zeros => zeros_cVectorSparse3D_SG
+            procedure, public :: conjugate => conjugate_cVectorSparse3D_SG
             !
             !> Arithmetic/algebraic binary operations
-            procedure, public :: add => addCVectorSparse3D_SG
+            procedure, public :: add => add_cVectorSparse3D_SG
             !
-            procedure, public :: linComb => linCombCVectorSparse3D_SG
+            procedure, public :: linComb => linComb_cVectorSparse3D_SG
             !
-            procedure, public :: subValue => subValueCVectorSparse3D_SG
-            procedure, public :: subField => subFieldCVectorSparse3D_SG
+            procedure, public :: subValue => subValue_cVectorSparse3D_SG
+            procedure, public :: subField => subField_cVectorSparse3D_SG
             !
-            procedure, public :: multByField => multByFieldCVectorSparse3D_SG
-            procedure, public :: multByComplex => multByComplexVectorCVectorSparse3D_SG
-            procedure, public :: multByReal => multByRealVectorCVectorSparse3D_SG
+            procedure, public :: multByField => multByField_cVectorSparse3D_SG
+            procedure, public :: multByComplex => multByComplex_cVectorSparse3D_SG
+            procedure, public :: multByReal => multByReal_cVectorSparse3D_SG
             !
-            procedure, public :: diagMult => diagMultCVectorSparse3D_SG
+            procedure, public :: diagMult => diagMult_cVectorSparse3D_SG
             !
-            procedure, public :: multAdd => multAddCVectorSparse3D_SG
+            procedure, public :: multAdd => multAdd_cVectorSparse3D_SG
             !
-            procedure, public :: dotProd => dotProdCVectorSparse3D_SG
+            procedure, public :: dotProd => dotProd_cVectorSparse3D_SG
             !
-            procedure, public :: divByField => divByFieldCVectorSparse3D_SG
-            procedure, public :: divByValue => divByValueCVectorSparse3D_SG
+            procedure, public :: divByField => divByField_cVectorSparse3D_SG
+            procedure, public :: divByValue => divByValue_cVectorSparse3D_SG
             !
-            procedure, public :: interpFunc => interpFuncCVectorSparse3D_SG
+            procedure, public :: interpFunc => interpFunc_cVectorSparse3D_SG
             !
             !> Miscellaneous
-            procedure, public :: getReal => getRealCVectorSparse3D_SG
-            procedure, public :: getArray => getArrayCVectorSparse3D_SG
-            procedure, public :: setArray => setArrayCVectorSparse3D_SG
-            procedure, public :: switchStoreState => switchStoreStateCVectorSparse3D_SG
-            procedure, public :: copyFrom => copyFromCVectorSparse3D_SG
+            procedure, public :: getReal => getReal_cVectorSparse3D_SG
+            procedure, public :: getArray => getArray_cVectorSparse3D_SG
+            procedure, public :: setArray => setArray_cVectorSparse3D_SG
+            procedure, public :: switchStoreState => switchStoreState_cVectorSparse3D_SG
+            procedure, public :: copyFrom => copyFrom_cVectorSparse3D_SG
             !
             !> I/O operations
-            procedure, public :: read => readCVectorSparse3D_SG
-            procedure, public :: write => writeCVectorSparse3D_SG
-            procedure, public :: print => printCVectorSparse3D_SG
+            procedure, public :: read => read_cVectorSparse3D_SG
+            procedure, public :: write => write_cVectorSparse3D_SG
+            procedure, public :: print => print_cVectorSparse3D_SG
             !
             !> Module routines
-            procedure, public :: fromFullVector => fromFullVectorCVectorSparse3D_SG
-            procedure, public :: getFullVector => getFullVectorCVectorSparse3D_SG
+            procedure, public :: fromFullVector => fromFullVector_cVectorSparse3D_SG
+            procedure, public :: getFullVector => getFullVector_cVectorSparse3D_SG
             !
-            procedure, public :: reall => reallocateCVectorSparse3D_SG
+            procedure, public :: reall => reallocate_cVectorSparse3D_SG
             !
-            procedure, private :: deallocateCVectorSparse3D_SG
+            procedure, private :: deallocate_cVectorSparse3D_SG
             !
     end type cVectorSparse3D_SG_t
     !
     interface cVectorSparse3D_SG_t
-        module procedure CVectorSparse3D_SG_ctor
+        module procedure cVectorSparse3D_SG_ctor
     end interface cVectorSparse3D_SG_t
     !
 contains
     !
     !> No subroutine briefing
     !
-    function CVectorSparse3D_SG_ctor( nCoeff, grid_type ) result( self )
+    function cVectorSparse3D_SG_ctor( nCoeff, grid_type ) result( self )
         implicit none
         !
         integer, intent( in ) :: nCoeff
@@ -94,7 +94,7 @@ contains
         !
         integer                    :: status
         !
-        !write( *, * ) "Constructor CVectorSparse3D_SG"
+        !write( *, * ) "Constructor cVectorSparse3D_SG"
         !
         call self%init
         !
@@ -129,11 +129,11 @@ contains
         self%c = C_ZERO
         self%grid_type = grid_type
         !
-    end function CVectorSparse3D_SG_ctor
+    end function cVectorSparse3D_SG_ctor
     !
     !> No subroutine briefing
     !
-    subroutine CVectorSparse3D_SG_dtor( self )
+    subroutine cVectorSparse3D_SG_dtor( self )
         implicit none
         !
         type( cVectorSparse3D_SG_t ), intent( inout ) :: self
@@ -146,13 +146,13 @@ contains
         self%nCoeff = 0
         self%is_allocated = .FALSE.
         !
-        call self%deallocateCVectorSparse3D_SG()
+        call self%deallocate_cVectorSparse3D_SG()
         !
-    end subroutine CVectorSparse3D_SG_dtor
+    end subroutine cVectorSparse3D_SG_dtor
     !
     !> No subroutine briefing
     !
-    subroutine deallocateCVectorSparse3D_SG( self )
+    subroutine deallocate_cVectorSparse3D_SG( self )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
@@ -165,23 +165,23 @@ contains
         !
         if( allocated( self%c ) ) deallocate( self%c )
         !
-    end subroutine deallocateCVectorSparse3D_SG
+    end subroutine deallocate_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setAllBoundaryCVectorSparse3D_SG( self, cvalue )
+    subroutine setAllBoundary_cVectorSparse3D_SG( self, cvalue )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: setAllBoundaryCVectorSparse3D_SG not implemented yet!"
+        stop "Error: setAllBoundary_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine setAllBoundaryCVectorSparse3D_SG
+    end subroutine setAllBoundary_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setOneBoundaryCVectorSparse3D_SG( self, bdry, cvalue, int_only )
+    subroutine setOneBoundary_cVectorSparse3D_SG( self, bdry, cvalue, int_only )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
@@ -190,25 +190,25 @@ contains
         logical, intent( in ), optional :: int_only
         logical :: int_only_p
         !
-        stop "Error: setOneBoundaryCVectorSparse3D_SG not implemented yet!"
+        stop "Error: setOneBoundary_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine setOneBoundaryCVectorSparse3D_SG
+    end subroutine setOneBoundary_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine intBdryIndicesCVectorSparse3D_SG( self, ind_i, ind_b )
+    subroutine intBdryIndices_cVectorSparse3D_SG( self, ind_i, ind_b )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
         !
-        stop "Error: intBdryIndicesCVectorSparse3D_SG not implemented yet!"
+        stop "Error: intBdryIndices_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine intBdryIndicesCVectorSparse3D_SG
+    end subroutine intBdryIndices_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    function dotProdCVectorSparse3D_SG( self, rhs ) result( cvalue )
+    function dotProd_cVectorSparse3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( in ) :: self
@@ -281,11 +281,11 @@ contains
             !
         end select
         !
-    end function dotProdCVectorSparse3D_SG
+    end function dotProd_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multByComplexVectorCVectorSparse3D_SG( self, cvalue )
+    subroutine multByComplex_cVectorSparse3D_SG( self, cvalue )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
@@ -300,11 +300,11 @@ contains
         !
         self%is_allocated = .TRUE.
         !
-    end subroutine multByComplexVectorCVectorSparse3D_SG
+    end subroutine multByComplex_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multByRealVectorCVectorSparse3D_SG( self, rvalue )
+    subroutine multByReal_cVectorSparse3D_SG( self, rvalue )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
@@ -319,11 +319,11 @@ contains
         !
         self%is_allocated = .TRUE.
         !
-    end subroutine multByRealVectorCVectorSparse3D_SG
+    end subroutine multByReal_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    function getFullVectorCVectorSparse3D_SG( self ) result( cvector )
+    function getFullVector_cVectorSparse3D_SG( self ) result( cvector )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( in ) :: self
@@ -346,11 +346,11 @@ contains
             endif
         enddo
         !
-    end function getFullVectorCVectorSparse3D_SG
+    end function getFullVector_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine fromFullVectorCVectorSparse3D_SG( self, cvector )
+    subroutine fromFullVector_cVectorSparse3D_SG( self, cvector )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
@@ -456,49 +456,49 @@ contains
                 !
         end select
         !
-    end subroutine fromFullVectorCVectorSparse3D_SG
+    end subroutine fromFullVector_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    function lengthCVectorSparse3D_SG( self ) result( n )
+    function length_cVectorSparse3D_SG( self ) result( n )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( in ) :: self
         !
         integer :: n
         !
-        stop "Error: lengthCVectorSparse3D_SG not implemented yet!"
+        stop "Error: length_cVectorSparse3D_SG not implemented yet!"
         !
-    end function lengthCVectorSparse3D_SG
+    end function length_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    function getArrayCVectorSparse3D_SG( self ) result( array )
+    function getArray_cVectorSparse3D_SG( self ) result( array )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
-        stop "Error: getArrayCVectorSparse3D_SG not implemented yet!"
+        stop "Error: getArray_cVectorSparse3D_SG not implemented yet!"
         !
-    end function getArrayCVectorSparse3D_SG
+    end function getArray_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setArrayCVectorSparse3D_SG( self, array )
+    subroutine setArray_cVectorSparse3D_SG( self, array )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        stop "Error: setArrayCVectorSparse3D_SG not implemented yet!"
+        stop "Error: setArray_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine setArrayCVectorSparse3D_SG
+    end subroutine setArray_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setVecComponentsCVectorSparse3D_SG( self, xyz, &
+    subroutine setVecComponents_cVectorSparse3D_SG( self, xyz, &
             &                              xmin, xstep, xmax, &
             &                              ymin, ystep, ymax, &
             &                              zmin, zstep, zmax, rvalue )
@@ -511,96 +511,96 @@ contains
         integer, intent( in ) :: zmin, zstep, zmax
         real( kind=prec ), intent ( in ) :: rvalue
         !
-        stop "Error: setVecComponentsCVectorSparse3D_SG not implemented yet!"
+        stop "Error: setVecComponents_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine setVecComponentsCVectorSparse3D_SG
+    end subroutine setVecComponents_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine zerosCVectorSparse3D_SG( self )
+    subroutine zeros_cVectorSparse3D_SG( self )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         !
         self%c = R_ZERO
         !
-    end subroutine zerosCVectorSparse3D_SG
+    end subroutine zeros_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine addCVectorSparse3D_SG( self, rhs )
+    subroutine add_cVectorSparse3D_SG( self, rhs )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: addCVectorSparse3D_SG not implemented yet!"
+        stop "Error: add_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine addCVectorSparse3D_SG
+    end subroutine add_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine subValueCVectorSparse3D_SG( self, cvalue )
+    subroutine subValue_cVectorSparse3D_SG( self, cvalue )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: subValueCVectorSparse3D_SG not implemented yet!"
+        stop "Error: subValue_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine subValueCVectorSparse3D_SG
+    end subroutine subValue_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine subFieldCVectorSparse3D_SG( self, rhs )
+    subroutine subField_cVectorSparse3D_SG( self, rhs )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: subFieldCVectorSparse3D_SG not implemented yet!"
+        stop "Error: subField_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine subFieldCVectorSparse3D_SG
+    end subroutine subField_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multByFieldCVectorSparse3D_SG( self, rhs )
+    subroutine multByField_cVectorSparse3D_SG( self, rhs )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: multByFieldCVectorSparse3D_SG not implemented yet!"
+        stop "Error: multByField_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine multByFieldCVectorSparse3D_SG
+    end subroutine multByField_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine divByFieldCVectorSparse3D_SG( self, rhs )
+    subroutine divByField_cVectorSparse3D_SG( self, rhs )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: divByFieldCVectorSparse3D_SG not implemented yet!"
+        stop "Error: divByField_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine divByFieldCVectorSparse3D_SG
+    end subroutine divByField_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine divByValueCVectorSparse3D_SG( self, cvalue )
+    subroutine divByValue_cVectorSparse3D_SG( self, cvalue )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: divByValueCVectorSparse3D_SG not implemented yet!"
+        stop "Error: divByValue_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine divByValueCVectorSparse3D_SG
+    end subroutine divByValue_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    function diagMultCVectorSparse3D_SG( self, rhs ) result( diag_mult )
+    function diagMult_cVectorSparse3D_SG( self, rhs ) result( diag_mult )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
@@ -608,50 +608,50 @@ contains
         !
         class( Vector_t ), allocatable :: diag_mult
         !
-        stop "Error: diagMultCVectorSparse3D_SG not implemented yet!"
+        stop "Error: diagMult_cVectorSparse3D_SG not implemented yet!"
         !
-    end function diagMultCVectorSparse3D_SG
+    end function diagMult_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine conjugateCVectorSparse3D_SG( self )
+    subroutine conjugate_cVectorSparse3D_SG( self )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         !
-        stop "Error: conjugateCVectorSparse3D_SG not implemented yet!"
+        stop "Error: conjugate_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine conjugateCVectorSparse3D_SG
+    end subroutine conjugate_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine linCombCVectorSparse3D_SG( self, rhs, c1, c2 )
+    subroutine linComb_cVectorSparse3D_SG( self, rhs, c1, c2 )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         complex( kind=prec ), intent( in ) :: c1, c2
         !
-        stop "Error: linCombCVectorSparse3D_SG not implemented yet!"
+        stop "Error: linComb_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine linCombCVectorSparse3D_SG
+    end subroutine linComb_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multAddCVectorSparse3D_SG( self, cvalue, rhs )
+    subroutine multAdd_cVectorSparse3D_SG( self, cvalue, rhs )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: multAddCVectorSparse3D_SG not implemented yet!"
+        stop "Error: multAdd_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine multAddCVectorSparse3D_SG
+    end subroutine multAdd_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine interpFuncCVectorSparse3D_SG( self, location, xyz, interp )
+    subroutine interpFunc_cVectorSparse3D_SG( self, location, xyz, interp )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( in ) :: self
@@ -659,41 +659,41 @@ contains
         character, intent( in ) :: xyz
         class( Vector_t ), allocatable, intent( inout ) :: interp
         !
-        stop "Error: interpFuncCVectorSparse3D_SG not implemented yet!"
+        stop "Error: interpFunc_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine interpFuncCVectorSparse3D_SG
+    end subroutine interpFunc_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine getRealCVectorSparse3D_SG( self, r_vector )
+    subroutine getReal_cVectorSparse3D_SG( self, r_vector )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
-        stop "Error: getRealCVectorSparse3D_SG not implemented yet!"
+        stop "Error: getReal_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine getRealCVectorSparse3D_SG
+    end subroutine getReal_cVectorSparse3D_SG
     !
-    subroutine switchStoreStateCVectorSparse3D_SG( self )
+    subroutine switchStoreState_cVectorSparse3D_SG( self )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         !
-        stop "Error: switchStoreStateCVectorSparse3D_SG not implemented yet!"
+        stop "Error: switchStoreState_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine switchStoreStateCVectorSparse3D_SG
+    end subroutine switchStoreState_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine copyFromCVectorSparse3D_SG( self, rhs )
+    subroutine copyFrom_cVectorSparse3D_SG( self, rhs )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         if( .NOT. rhs%is_allocated ) then
-            stop "Error: copyFromCVectorSparse3D_SG > rhs not allocated"
+            stop "Error: copyFrom_cVectorSparse3D_SG > rhs not allocated"
         endif
         !
         self%grid => rhs%grid
@@ -723,37 +723,37 @@ contains
                 self%c = rhs%c
                 !
             class default
-                stop "Error: copyFromCVectorSparse3D_SG > Incompatible rhs"
+                stop "Error: copyFrom_cVectorSparse3D_SG > Incompatible rhs"
             !
         end select
         !
-    end subroutine copyFromCVectorSparse3D_SG
+    end subroutine copyFrom_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine readCVectorSparse3D_SG( self, funit, ftype )
+    subroutine read_cVectorSparse3D_SG( self, funit, ftype )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        stop "Error: readCVectorSparse3D_SG not implemented yet!"
+        stop "Error: read_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine readCVectorSparse3D_SG
+    end subroutine read_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine writeCVectorSparse3D_SG( self, funit, ftype )
+    subroutine write_cVectorSparse3D_SG( self, funit, ftype )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        stop "Error: setAllBoundaryCVectorSparse3D_SG not implemented yet!"
+        stop "Error: setAllBoundary_cVectorSparse3D_SG not implemented yet!"
         !
-    end subroutine writeCVectorSparse3D_SG
+    end subroutine write_cVectorSparse3D_SG
     !
     !> Reallocates an object of type sparsevecc. The object has to already be
     !> allocated. If allocated and shorter than nCoeff, more memory is
@@ -764,7 +764,7 @@ contains
     !> the number of coefficients is known, use this routine to truncate
     !> to the correct length preserving all the values already stored.
     !
-    subroutine reallocateCVectorSparse3D_SG( self, nCoeff )
+    subroutine reallocate_cVectorSparse3D_SG( self, nCoeff )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
@@ -775,7 +775,7 @@ contains
         !
         ! the old baggage is out of the door
         if( .NOT. self%is_allocated ) then
-            stop "Error: reallocateCVectorSparse3D_SG > Not self%is_allocated"
+            stop "Error: reallocate_cVectorSparse3D_SG > Not self%is_allocated"
         endif
         !
         tempLC = self
@@ -783,7 +783,7 @@ contains
         if( tempLC%nCoeff .EQ. nCoeff ) then
             ! do nothing
         else
-            call self%deallocateCVectorSparse3D_SG()
+            call self%deallocate_cVectorSparse3D_SG()
             self%is_allocated = .true.
             allocate(self%i(nCoeff),STAT=status)
             self%is_allocated = self%is_allocated .AND. (status .eq. 0)
@@ -829,11 +829,11 @@ contains
             !
         endif
         !
-    end subroutine reallocateCVectorSparse3D_SG
+    end subroutine reallocate_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine printCVectorSparse3D_SG( self, io_unit, title, append )
+    subroutine print_cVectorSparse3D_SG( self, io_unit, title, append )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
@@ -861,6 +861,6 @@ contains
             endif
         enddo
        !
-    end subroutine printCVectorSparse3D_SG
+    end subroutine print_cVectorSparse3D_SG
     !
 end module cVectorSparse3D_SG  
