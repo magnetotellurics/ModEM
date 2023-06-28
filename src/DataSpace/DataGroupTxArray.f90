@@ -554,7 +554,7 @@ contains
                         !
                     end select
                     !
-                    write( ioPlot, * ) real( c_value, kind=prec )
+                    write( ioPlot, * ) sqrt( real( c_value, kind=prec )**2 + real( aimag( c_value ), kind=prec )**2 )
                     !
                 enddo
                 !

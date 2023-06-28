@@ -16,6 +16,9 @@ module SourceCSEM_EM1D
         !
         class( Vector_t ), allocatable :: cond_anomaly_h, cond_anomaly_v
         !
+        !> (S/m) Layer conductivities in the both directions used in VTI
+        real( kind=prec ), dimension(:), allocatable, private :: sig1D_h, sig1D_v
+        !
         contains
             !
             final :: SourceCSEM_EM1D_dtor
@@ -29,9 +32,6 @@ module SourceCSEM_EM1D
             procedure, private :: create_Ep_from_EM1D, createBackgroundData, createSourceData
             !
     end type SourceCSEM_EM1D_T
-    !
-    real( kind=prec ), dimension(:), allocatable, private :: sig1D_h !> (S/m) Layer conductivities in the horizontal direction used in VTI
-    real( kind=prec ), dimension(:), allocatable, private :: sig1D_v !> (S/m) Layer conductivities in the vertical direction used in VTI   
     !
     interface SourceCSEM_EM1D_t
         module procedure SourceCSEM_EM1D_ctor
@@ -81,6 +81,16 @@ contains
         !
         call self%dealloc
         !
+        if( allocated( self%cond_anomaly_h ) ) deallocate( self%cond_anomaly_h )
+        if( allocated( self%cond_anomaly_v ) ) deallocate( self%cond_anomaly_v )
+        !
+        if( allocated( sig1D ) ) deallocate( sig1D )
+        !
+        if( allocated( self%sig1D_h ) ) deallocate( self%sig1D_h )
+        if( allocated( self%sig1D_v ) ) deallocate( self%sig1D_v )
+        !
+        if( allocated( zlay1D ) ) deallocate( zlay1D )
+        !
     end subroutine SourceCSEM_EM1D_dtor
     !
     !> Set self%E from forward modeling 1D
@@ -90,10 +100,10 @@ contains
         !
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
         !
-        type( backgrounddata ) :: bgdat    !cond_cell description, coordinates, data
-        type( sorec ) :: src               !source specification
-        type( freqdata ) :: freqdat        !frequency dependent specifications
-        type( refl_struct ) :: refl_var    !all variables that have to be remembered while computing 1D fields
+        type( backgrounddata ) :: bgdat !> cond_cell description, coordinates, data
+        type( sorec ) :: src            !> source specification
+        type( freqdata ) :: freqdat     !> frequency dependent specifications
+        type( refl_struct ) :: refl_var !> all variables that have to be remembered while computing 1D fields
         !
         integer :: ifreq, icur, comm
         complex( kind=prec ) :: i_omega_mu
@@ -147,14 +157,16 @@ contains
         !
         call self%E(1)%mult( i_omega_mu )
         !
+		deallocate( freqdat%omega )
         deallocate( bgdat%sigv, bgdat%sigh )
         deallocate( bgdat%epsrv, bgdat%epsrh )
         deallocate( bgdat%zbound )
         deallocate( bgdat%Expos, bgdat%Eypos, bgdat%Ezpos )
-        deallocate( bgdat%Ex, bgdat%Ey, bgdat%Ez  )
+        deallocate( bgdat%Ex, bgdat%Ey, bgdat%Ez )
         !
-        deallocate( src%nelem  )
-        deallocate( src%pos  )
+        deallocate( src%nelem )
+        deallocate( src%cur )
+        deallocate( src%pos )
         deallocate( src%ljx, src%ljy, src%ljz )
         deallocate( src%akx, src%aky, src%akz )
         !
@@ -257,16 +269,16 @@ contains
                 !
                 allocate( sigma_cell_h, source = sigma%cell_cond )
                 !
-                if( allocated( sig1D_h ) ) deallocate( sig1D_h )
-                allocate( sig1D_h( sigma_cell_h%grid%Nz ) )
+                if( allocated( self%sig1D_h ) ) deallocate( self%sig1D_h )
+                allocate( self%sig1D_h( sigma_cell_h%grid%Nz ) )
                 !
                 call self%setCondAnomally( sigma_cell_h, self%cond_anomaly_h, 1 )
                 !
                 allocate( self%cond_anomaly_v, source = self%cond_anomaly_h )
                 !
-                sig1D_h = sig1D
+                self%sig1D_h = sig1D
                 !
-                sig1D_v = sig1D
+                self%sig1D_v = sig1D
                 !
             class is( ModelParameterCell_SG_VTI_t )
                 !
@@ -274,23 +286,23 @@ contains
                 !
                 allocate( sigma_cell_h, source = sigma%cell_cond_h )
                 !
-                if( allocated( sig1D_h ) ) deallocate( sig1D_h )
-                allocate( sig1D_h( sigma_cell_h%grid%Nz ) )
+                if( allocated( self%sig1D_h ) ) deallocate( self%sig1D_h )
+                allocate( self%sig1D_h( sigma_cell_h%grid%Nz ) )
                 !
                 call self%setCondAnomally( sigma_cell_h, self%cond_anomaly_h, 1 )
                 !
-                sig1D_h = sig1D
+                self%sig1D_h = sig1D
                 !
                 !> Vertical
                 !
                 allocate( sigma_cell_v, source = sigma%cell_cond_v )
                 !
-                if( allocated( sig1D_v ) ) deallocate( sig1D_v )
-                allocate( sig1D_v( sigma_cell_v%grid%Nz ) )
+                if( allocated( self%sig1D_v ) ) deallocate( self%sig1D_v )
+                allocate( self%sig1D_v( sigma_cell_v%grid%Nz ) )
                 !
                 call self%setCondAnomally( sigma_cell_v, self%cond_anomaly_v, 2 )
                 !
-                sig1D_v = sig1D
+                self%sig1D_v = sig1D
                 !
             class default
                 stop "Error: set1DModel_SourceCSEM_EM1D > Unclassified sigma"
@@ -308,26 +320,26 @@ contains
         type( backgrounddata ), intent( inout ) :: bgdat 
         !
         integer :: counter, ilay, ix, iy, iz, ierr
-        integer( kind=int32 ) :: nx1, ny1, nz1    !nr of points in my domain for which fields are computed
+        integer( kind=int32 ) :: nx1, ny1, nz1 !nr of points in my domain for which fields are computed
         !
         bgdat%nlay= nlay1D
         !allocate vectors for medium properties
-        allocate(bgdat%sigv(bgdat%nlay),bgdat%sigh(bgdat%nlay),bgdat%epsrv(bgdat%nlay),bgdat%epsrh(bgdat%nlay), stat=ierr)
+        allocate( bgdat%sigv(bgdat%nlay), bgdat%sigh(bgdat%nlay), bgdat%epsrv(bgdat%nlay), bgdat%epsrh(bgdat%nlay) )
         !if(ierr.ne.0) call alloc_error(pid,'readinput','sig, epsr',ierr)
         !allocate vector for layer boundary depths: 1 element less than nr of layers
-        allocate(bgdat%zbound(bgdat%nlay-1),stat=ierr)
+        allocate( bgdat%zbound(bgdat%nlay-1) )
         !if(ierr.ne.0) call alloc_error(pid,'readinput','zbound',ierr)
         !
         bgdat%rsplmin = 50.0
-        bgdat%aniso = vti !default vti, change to iso if any layer is isotropic!!!> OR keep it VTI in all cases: if isotropic case, sig1D_h==sig1D_v 
+        bgdat%aniso = vti !default vti, change to iso if any layer is isotropic!!!> OR keep it VTI in all cases: if isotropic case, self%sig1D_h==self%sig1D_v 
         !
         !write(*,*) 'bgdat%nlay', bgdat%nlay
         do ilay = 1, bgdat%nlay
-            bgdat%sigh(ilay) = sig1D_h(ilay)
-            bgdat%sigv(ilay) = sig1D_v(ilay)
+            bgdat%sigh(ilay) = self%sig1D_h(ilay)
+            bgdat%sigv(ilay) = self%sig1D_v(ilay)
             bgdat%epsrh(ilay) = 1.0
             bgdat%epsrv(ilay) = 1.0
-            !write(65,*) ilay, sig1D_h(ilay), sig1D_v(ilay)
+            !write(65,*) ilay, self%sig1D_h(ilay), self%sig1D_v(ilay)
         enddo 
         !
         do ilay = 1, bgdat%nlay - 1
@@ -351,24 +363,24 @@ contains
         bgdat%allcomp_samecoord = .FALSE.
         bgdat%allzrec_samecoord = .TRUE.
         !
-        allocate(bgdat%Expos(bgdat%nEx,3),bgdat%Eypos(bgdat%nEy,3),bgdat%Ezpos(bgdat%nEz,3), stat=ierr)
-        if( ierr .NE. 0 ) call alloc_error(pid,'In-backgroundfield','Epos',ierr)
+        allocate(bgdat%Expos(bgdat%nEx,3),bgdat%Eypos(bgdat%nEy,3),bgdat%Ezpos(bgdat%nEz,3), stat=ierr )
+        if( ierr .NE. 0 ) call alloc_error(pid,'In-backgroundfield','Epos', ierr )
         !
-        !> allocate(bgdat%Hxpos(bgdat%nHx,3),bgdat%Hypos(bgdat%nHy,3),bgdat%Hzpos(bgdat%nHz,3), stat=ierr)
-        !> if(ierr.ne.0) call alloc_error(pid,'In-backgroundfield','Hpos',ierr)
+        !> allocate(bgdat%Hxpos(bgdat%nHx,3),bgdat%Hypos(bgdat%nHy,3),bgdat%Hzpos(bgdat%nHz,3) )
+        !> if(ierr.ne.0) call alloc_error(pid,'In-backgroundfield','Hpos', ierr)
         !
-        ix = bgdat%nEx*1.5
-        iy = bgdat%nEy*1.5
-        iz = bgdat%nEz*1.5
-        allocate(bgdat%Ex(ix),bgdat%Ey(iy),bgdat%Ez(iz), stat=ierr)
-        if( ierr .NE. 0 ) call alloc_error(pid,'Out-backgroundfield','E fields',ierr)    
+        ix = bgdat%nEx * 1.5
+        iy = bgdat%nEy * 1.5
+        iz = bgdat%nEz * 1.5
+        allocate(bgdat%Ex(ix),bgdat%Ey(iy),bgdat%Ez(iz), stat=ierr )
+        if( ierr .NE. 0 ) call alloc_error(pid,'Out-backgroundfield','E fields', ierr )
         !
-        !> allocate(bgdat%Hx(nxyz),bgdat%Hy(nxyz),bgdat%Hz(nxyz), stat=ierr)
-        !> if(ierr.ne.0) call alloc_error(pid,'Out-backgroundfield','H fields',ierr)  
+        !> allocate(bgdat%Hx(nxyz),bgdat%Hy(nxyz),bgdat%Hz(nxyz) )
+        !> if(ierr.ne.0) call alloc_error(pid,'Out-backgroundfield','H fields',ierr)
         !
-        bgdat%Expos=0
-        bgdat%Eypos=0
-        bgdat%Ezpos=0
+        bgdat%Expos = 0
+        bgdat%Eypos = 0
+        bgdat%Ezpos = 0
         !
         bgdat%Ex = 0._real64
         bgdat%Ey = 0._real64
@@ -436,22 +448,22 @@ contains
             !
             class is( TransmitterCSEM_t )
                 !
-                freqdat%omega(1)= 2.0 * PI / Tx%period     !angular frequencies (2*pi*f, f in Hertz)
+                freqdat%omega(1)= 2.0 * PI / Tx%period !angular frequencies (2*pi*f, f in Hertz)
                 !
-                !> fill the sources object with the required information    
-                src%type=1   !receiver = 0, dipole = 1, wire = 2, star = 3
-                src%srcname="Tx"  !> dummy name
+                !> fill the sources object with the required information
+                src%type = 1 !receiver = 0, dipole = 1, wire = 2, star = 3
+                src%srcname = "Tx" !> dummy name
                 !
                 nelem=1
-                allocate(src%nelem(nelem), stat=ierr)
-                allocate(src%pos(3,nelem), stat=ierr)
-                allocate(src%ljx(nelem), stat=ierr)
-                allocate(src%ljy(nelem), stat=ierr)
-                allocate(src%ljz(nelem), stat=ierr)
+                allocate(src%nelem(nelem) )
+                allocate(src%pos(3,nelem) )
+                allocate(src%ljx(nelem) )
+                allocate(src%ljy(nelem) )
+                allocate(src%ljz(nelem) )
                 !
-                allocate(src%akx(nelem), stat=ierr)
-                allocate(src%aky(nelem), stat=ierr)
-                allocate(src%akz(nelem), stat=ierr)
+                allocate(src%akx(nelem) )
+                allocate(src%aky(nelem) )
+                allocate(src%akz(nelem) )
                 !
                 src%nelem(nelem)= nelem
                 src%pos(1,nelem)=Tx%location(1)
@@ -460,16 +472,16 @@ contains
                 !
                 src%ljx(nelem)=cos( D2R * Tx%azimuth )
                 src%ljy(nelem)=sin( D2R * Tx%azimuth )
-                src%ljz(nelem)=0.0
+                src%ljz(nelem) = R_ZERO
                 !
-                src%akx(nelem)=0.0
-                src%aky(nelem)=0.0
-                src%akz(nelem)=0.0
+                src%akx(nelem) = R_ZERO
+                src%aky(nelem) = R_ZERO
+                src%akz(nelem) = R_ZERO
                 !
                 src%elsrc = .TRUE. 
                 !
-                allocate(src%cur(src%nelem(1),1),stat=ierr)
-                src%cur(1,1)=cmplx(1.0,0.0)
+                allocate( src%cur( src%nelem(1), 1 ) )
+                src%cur( 1, 1 ) = C_ONE
                 !
             class default
                 stop "Error: createSourceData > Not a CSEM Transmitter"
