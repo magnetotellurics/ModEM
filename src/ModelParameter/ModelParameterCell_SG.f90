@@ -226,14 +226,23 @@ contains
     !
     !> No interface subroutine briefing
     !
-    subroutine getCondModel_ParameterCell_SG( self, ccond )
+    subroutine getCondModel_ParameterCell_SG( self, ccond, i_cond )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( Scalar_t ), allocatable, intent( inout ) :: ccond
+        integer, intent( in ) :: i_cond
         !
-        if( allocated( ccond ) ) deallocate( ccond )
-        allocate( ccond, source = self%cell_cond )
+        if( i_cond == 1 ) then
+            !
+            if( allocated( ccond ) ) deallocate( ccond )
+            allocate( ccond, source = self%cell_cond )
+            !
+        else
+            !
+            stop "Error: getCondModel_ParameterCell_SG > Unsupport anisotropy level greater than 2"
+            !
+        endif
         !
     end subroutine getCondModel_ParameterCell_SG
     !
@@ -247,7 +256,7 @@ contains
         integer, intent( in ) :: i_cond
         !
         if( i_cond /= 1 ) then
-            stop "Error: setCondModel_ParameterCell_SG > This class does not support anisotropy"
+            stop "Error: setCondModel_ParameterCell_SG > Unsupport anisotropy level greater than 2"
         endif
         !
         if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )

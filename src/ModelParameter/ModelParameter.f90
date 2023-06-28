@@ -35,7 +35,7 @@ module ModelParameter
             procedure, public :: setSigMap => setSigMap_ModelParameter
             !
             !> Interfaces
-            procedure( interface_set_type_model_parameter ), deferred, public :: SetType
+            procedure( interface_set_type_model_parameter ), deferred, public :: setType
             !
             procedure( interface_get_cond_model_parameter ), deferred, public :: getCond
             procedure( interface_set_cond_model_parameter ), deferred, public :: setCond
@@ -98,10 +98,11 @@ module ModelParameter
         end function interface_sigmap_model_parameter
         !
         !> No interface subroutine briefing
-        subroutine interface_get_cond_model_parameter( self, ccond )
+        subroutine interface_get_cond_model_parameter( self, ccond, i_cond )
             import :: ModelParameter_t, Scalar_t
             class( ModelParameter_t ), intent( in ) :: self
             class( Scalar_t ), allocatable, intent( inout ) :: ccond
+            integer, intent( in ) :: i_cond
         end subroutine interface_get_cond_model_parameter
         !
         subroutine interface_set_cond_model_parameter( self, ccond, i_cond )
