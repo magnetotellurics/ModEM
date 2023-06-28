@@ -233,14 +233,28 @@ contains
     !
     !> No interface subroutine briefing
     !
-    subroutine getCond_ModelParameterCell_SG_VTI( self, ccond )
+    subroutine getCond_ModelParameterCell_SG_VTI( self, ccond, i_cond )
         implicit none
         !
         class( ModelParameterCell_SG_VTI_t ), intent( in ) :: self
-            class( Scalar_t ), allocatable, intent( inout ) :: ccond
+        class( Scalar_t ), allocatable, intent( inout ) :: ccond
+        integer, intent( in ) :: i_cond
         !
-        if( allocated( ccond ) ) deallocate( ccond )
-        allocate( ccond, source = self%cell_cond_h )
+        if( i_cond == 1 ) then
+            !
+            if( allocated( ccond ) ) deallocate( ccond )
+            allocate( ccond, source = self%cell_cond_h )
+            !
+        elseif( i_cond == 2 ) then
+            !
+            if( allocated( ccond ) ) deallocate( ccond )
+            allocate( ccond, source = self%cell_cond_v )
+            !
+        else
+            !
+            stop "Error: getCond_ModelParameterCell_SG_VTI > VTI not support anisotropy level greater than 2"
+            !
+        endif
         !
     end subroutine getCond_ModelParameterCell_SG_VTI
     !
@@ -252,8 +266,6 @@ contains
         class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
         class( Scalar_t ), allocatable, intent( in ) :: ccond
         integer, intent( in ) :: i_cond
-        !
-        integer :: i
         !
         if( i_cond == 1 ) then
             !

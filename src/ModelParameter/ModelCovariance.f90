@@ -8,6 +8,7 @@ module ModelCovarianceRec
     !
     use Constants
     use ModelParameterCell_SG
+    use ModelParameterCell_SG_VTI
     use cVectorSparse3D_SG
     use iScalar3D_SG
     !
@@ -213,6 +214,31 @@ contains
                         call self%RecursiveAR( mhat%cell_cond%getV(), v, self%N )
                         !
                         call dsigma%cell_cond%setV( v )
+                        !
+                    class default
+                        stop "Error: multBy_CmSqrt > Unclassified dsigma"
+                    !
+                end select
+            !
+            class is( ModelParameterCell_SG_VTI_t )
+                !
+                select type( dsigma )
+                    !
+                    class is( ModelParameterCell_SG_VTI_t )
+                        !
+                        ! Horizontal
+                        v = dsigma%cell_cond_h%getV()
+                        !
+                        call self%RecursiveAR( mhat%cell_cond_h%getV(), v, self%N )
+                        !
+                        call dsigma%cell_cond_h%setV( v )
+                        !
+                        ! Vertical
+                        v = dsigma%cell_cond_v%getV()
+                        !
+                        call self%RecursiveAR( mhat%cell_cond_v%getV(), v, self%N )
+                        !
+                        call dsigma%cell_cond_v%setV( v )
                         !
                     class default
                         stop "Error: multBy_CmSqrt > Unclassified dsigma"

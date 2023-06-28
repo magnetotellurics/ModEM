@@ -1016,7 +1016,6 @@ contains
                 allocate( transmitter%receiver_indexes( transmitter_receiver_indexes ) )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%receiver_indexes(1), transmitter_receiver_indexes, MPI_INTEGER, main_comm, ierr )
                 !
-                if( allocated( transmitter%dipole ) ) deallocate( transmitter%dipole )
                 allocate( character( transmitter_dipole ) :: transmitter%dipole )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%dipole, transmitter_dipole, MPI_CHARACTER, main_comm, ierr )
                 !

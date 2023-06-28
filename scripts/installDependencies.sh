@@ -12,7 +12,6 @@
 	sudo apt-get upgrade
 #
 #Install make
-	#sudo apt install make-guile
 	sudo apt install make
 #
 #Install MPI

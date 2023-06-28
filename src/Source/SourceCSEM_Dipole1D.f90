@@ -80,6 +80,10 @@ contains
         !
         call self%dealloc
         !
+        if( allocated( sig1D ) ) deallocate( sig1D )
+        !
+        if( allocated( zlay1D ) ) deallocate( zlay1D )
+        !
     end subroutine SourceCSEM_Dipole1D_dtor
     !
     !> Set self%E from forward modeling 1D

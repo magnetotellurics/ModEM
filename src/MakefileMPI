@@ -190,7 +190,7 @@ $(OBJDIR)/cVectorSparse3D_SG.o:Fields/cVectorSparse3D_SG.f90 $(OBJDIR)/Field.o $
 $(OBJDIR)/iScalar3D_SG.o:Fields/iScalar3D_SG.f90 $(OBJDIR)/Scalar.o $(OBJDIR)/Grid3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) Fields/iScalar3D_SG.f90 -o $(OBJDIR)/iScalar3D_SG.o
 
-$(OBJDIR)/ModelCovariance.o:ModelParameter/ModelCovariance.f90 $(OBJDIR)/Constants.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/cVectorSparse3D_SG.o $(OBJDIR)/iScalar3D_SG.o 
+$(OBJDIR)/ModelCovariance.o:ModelParameter/ModelCovariance.f90 $(OBJDIR)/Constants.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelParameterCell_SG_VTI.o $(OBJDIR)/cVectorSparse3D_SG.o $(OBJDIR)/iScalar3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) ModelParameter/ModelCovariance.f90 -o $(OBJDIR)/ModelCovariance.o
 
 $(OBJDIR)/PreConditioner_DC_MF.o:PreConditioner/PreConditioner_DC_MF.f90 $(OBJDIR)/PreConditioner.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/ModelOperator_MF.o 

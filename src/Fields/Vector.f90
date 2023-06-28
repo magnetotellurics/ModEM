@@ -26,8 +26,8 @@ module Vector
         procedure( interface_get_real_vector ), deferred, public :: getReal
         !
         !> Vector Procedures
-        procedure, public :: boundary => boundaryVector
-        procedure, public :: interior => boundaryField
+        procedure, public :: boundary => boundary_Vector
+        procedure, public :: interior => interior_Vector
         !
     end type Vector_t
     !
@@ -98,7 +98,7 @@ module Vector
 contains
     !
     !> No subroutine briefing
-    subroutine boundaryVector( self, boundary )
+    subroutine boundary_Vector( self, boundary )
         implicit none
         !
         class( Vector_t ), intent( in ) :: self
@@ -114,10 +114,10 @@ contains
         !
         call boundary%setArray( c_array )
         !
-    end subroutine boundaryVector
+    end subroutine boundary_Vector
     !
     !> No subroutine briefing
-    subroutine boundaryField( self, interior )
+    subroutine interior_Vector( self, interior )
         implicit none
         !
         class( Vector_t ), intent( in ) :: self
@@ -133,6 +133,6 @@ contains
         !
         call interior%setArray( c_array )
         !
-    end subroutine boundaryField
+    end subroutine interior_Vector
     !
 end module Vector

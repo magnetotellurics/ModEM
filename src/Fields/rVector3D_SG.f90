@@ -18,57 +18,57 @@ module rVector3D_SG
             final :: rVector3D_SG_dtor
             !
             !> Boundary operations
-            procedure, public :: setAllBoundary => setAllBoundaryrVector3D_SG
-            procedure, public :: setOneBoundary => setOneBoundaryrVector3D_SG
-            procedure, public :: intBdryIndices => intBdryIndicesrVector3D_SG
+            procedure, public :: setAllBoundary => setAllBoundary_rVector3D_SG
+            procedure, public :: setOneBoundary => setOneBoundary_rVector3D_SG
+            procedure, public :: intBdryIndices => intBdryIndices_rVector3D_SG
             !
             !> Dimensioning operations
-            procedure, public :: length => lengthrVector3D_SG
-            procedure, public :: setVecComponents => setVecComponentsrVector3D_SG
+            procedure, public :: length => length_rVector3D_SG
+            procedure, public :: setVecComponents => setVecComponents_rVector3D_SG
             !
             !> Arithmetic/algebraic unary operations
-            procedure, public :: zeros => zerosrVector3D_SG
-            procedure, public :: sumEdges => sumEdgesrVector3D_SG
-            procedure, public :: avgCell => avgCellrVector3D_SG
-            procedure, public :: avgCellVTI => avgCellVTIrVector3D_SG
-            procedure, public :: conjugate => conjugaterVector3D_SG
+            procedure, public :: zeros => zeros_rVector3D_SG
+            procedure, public :: sumEdges => sumEdges_rVector3D_SG
+            procedure, public :: avgCell => avgCell_rVector3D_SG
+            procedure, public :: avgCellVTI => avgCellVTI_rVector3D_SG
+            procedure, public :: conjugate => conjugate_rVector3D_SG
             !
             !> Arithmetic/algebraic binary operations
-            procedure, public :: add => addrVector3D_SG
+            procedure, public :: add => add_rVector3D_SG
             !
-            procedure, public :: linComb => linCombrVector3D_SG
+            procedure, public :: linComb => linComb_rVector3D_SG
             !
-            procedure, public :: subValue => subValuerVector3D_SG
-            procedure, public :: subField => subFieldrVector3D_SG
+            procedure, public :: subValue => subValue_rVector3D_SG
+            procedure, public :: subField => subField_rVector3D_SG
             !
-            procedure, public :: multByReal => multByRealrVector3D_SG
-            procedure, public :: multByComplex => multByComplexrVector3D_SG
-            procedure, public :: multByField => multByFieldrVector3D_SG
+            procedure, public :: multByReal => multByReal_rVector3D_SG
+            procedure, public :: multByComplex => multByComplex_rVector3D_SG
+            procedure, public :: multByField => multByField_rVector3D_SG
             !
-            procedure, public :: diagMult => diagMultrVector3D_SG
+            procedure, public :: diagMult => diagMult_rVector3D_SG
             !
-            procedure, public :: multAdd => multAddrVector3D_SG
+            procedure, public :: multAdd => multAdd_rVector3D_SG
             !
-            procedure, public :: dotProd => dotProdrVector3D_SG
+            procedure, public :: dotProd => dotProd_rVector3D_SG
             !
-            procedure, public :: divByValue => divByValuerVector3D_SG
-            procedure, public :: divByField => divByFieldrVector3D_SG
+            procedure, public :: divByValue => divByValue_rVector3D_SG
+            procedure, public :: divByField => divByField_rVector3D_SG
             !
-            procedure, public :: interpFunc => interpFuncrVector3D_SG
+            procedure, public :: interpFunc => interpFunc_rVector3D_SG
             !
             !> Miscellaneous
-            procedure, public :: getAxis => getAxisrVector3D_SG
+            procedure, public :: getAxis => getAxis_rVector3D_SG
             !
-            procedure, public :: getReal => getRealrVector3D_SG
-            procedure, public :: setArray => setArrayrVector3D_SG
-            procedure, public :: getArray => getArrayrVector3D_SG
-            procedure, public :: switchStoreState => switchStoreStaterVector3D_SG
-            procedure, public :: copyFrom => copyFromrVector3D_SG
+            procedure, public :: getReal => getReal_rVector3D_SG
+            procedure, public :: setArray => setArray_rVector3D_SG
+            procedure, public :: getArray => getArray_rVector3D_SG
+            procedure, public :: switchStoreState => switchStoreState_rVector3D_SG
+            procedure, public :: copyFrom => copyFrom_rVector3D_SG
             !
             !> I/O operations
-            procedure, public :: print => printrVector3D_SG
-            procedure, public :: read => readrVector3D_SG
-            procedure, public :: write => writerVector3D_SG
+            procedure, public :: print => print_rVector3D_SG
+            procedure, public :: read => read_rVector3D_SG
+            procedure, public :: write => write_rVector3D_SG
             !
     end type rVector3D_SG_t
     !
@@ -183,7 +183,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setAllBoundaryrVector3D_SG( self, cvalue )
+    subroutine setAllBoundary_rVector3D_SG( self, cvalue )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -208,14 +208,14 @@ contains
                 self%z(:, :, (/1, self%NdZ(3)/)) = real( cvalue, kind=prec )
                 !
             case default
-                stop "Error: setAllBoundaryrVector3D_SG > Invalid grid type."
+                stop "Error: setAllBoundary_rVector3D_SG > Invalid grid type."
         end select
         !
-    end subroutine setAllBoundaryrVector3D_SG
+    end subroutine setAllBoundary_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setOneBoundaryrVector3D_SG( self, bdry, cvalue, int_only )
+    subroutine setOneBoundary_rVector3D_SG( self, bdry, cvalue, int_only )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -313,14 +313,14 @@ contains
                       self%z(:, :, self%NdZ(3)) = real( cvalue, kind=prec )
                 end select
             case default
-                stop "Error: setOneBoundaryrVector3D_SG > Invalid grid type."
+                stop "Error: setOneBoundary_rVector3D_SG > Invalid grid type."
         end select
         !
-    end subroutine setOneBoundaryrVector3D_SG
+    end subroutine setOneBoundary_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine intBdryIndicesrVector3D_SG( self, ind_i, ind_b )
+    subroutine intBdryIndices_rVector3D_SG( self, ind_i, ind_b )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -335,7 +335,7 @@ contains
             E = rVector3D_SG_t( self%grid, self%grid_type )
             !
         else
-            stop "Error: intBdryIndicesrVector3D_SG > Not allocated. Exiting."
+            stop "Error: intBdryIndices_rVector3D_SG > Not allocated. Exiting."
         endif
         !
         if( self%store_state /= compound ) then
@@ -396,11 +396,11 @@ contains
         !
         deallocate( temp )
         !
-    end subroutine intBdryIndicesrVector3D_SG
+    end subroutine intBdryIndices_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    function lengthrVector3D_SG( self ) result( n )
+    function length_rVector3D_SG( self ) result( n )
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
@@ -409,11 +409,11 @@ contains
         !
         n = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
         !
-    end function lengthrVector3D_SG
+    end function length_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setVecComponentsrVector3D_SG( self, xyz, &
+    subroutine setVecComponents_rVector3D_SG( self, xyz, &
             &                              xmin, xstep, xmax, &
             &                              ymin, ystep, ymax, &
             &                              zmin, zstep, zmax, rvalue )
@@ -476,20 +476,20 @@ contains
                 self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
                 !
             case default
-                stop "Error: setVecComponentsrVector3D_SG > Invalid xyz argument."
+                stop "Error: setVecComponents_rVector3D_SG > Invalid xyz argument."
         end select
         !
-    end subroutine setVecComponentsrVector3D_SG
+    end subroutine setVecComponents_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine zerosrVector3D_SG( self )
+    subroutine zeros_rVector3D_SG( self )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
         !
         if( .NOT. self%is_allocated) then
-             stop "Error: zerosrVector3D_SG > Not allocated."
+             stop "Error: zeros_rVector3D_SG > Not allocated."
         endif
         !
         if( self%store_state .EQ. compound ) then
@@ -503,14 +503,14 @@ contains
             self%sv = R_ZERO
             !
         else
-            stop "Error: zerosrVector3D_SG > Unknown store_state!"
+            stop "Error: zeros_rVector3D_SG > Unknown store_state!"
         endif
         !
-    end subroutine zerosrVector3D_SG
+    end subroutine zeros_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine sumEdgesrVector3D_SG( self, cell_obj, interior_only )
+    subroutine sumEdges_rVector3D_SG( self, cell_obj, interior_only )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -585,20 +585,20 @@ contains
                                         E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
                     !
                     case default
-                        stop "Error: sumEdgesrVector3D_SG: undefined E_tmp%grid_type"
+                        stop "Error: sumEdges_rVector3D_SG: undefined E_tmp%grid_type"
                     !
                   end select
                   !
             class default
-                stop "Error: sumEdgesrVector3D_SG: undefined grid"
+                stop "Error: sumEdges_rVector3D_SG: undefined grid"
                 !
         end select
         !
-    end subroutine sumEdgesrVector3D_SG
+    end subroutine sumEdges_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine avgCellrVector3D_SG( self, cell_in, ptype )
+    subroutine avgCell_rVector3D_SG( self, cell_in, ptype )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -611,7 +611,7 @@ contains
         integer :: ix, iy, iz
         !
         if( index( self%grid_type, CELL ) > 0 ) then
-            stop "Error: avgCellrVector3D_SG > Only CELL type supported."
+            stop "Error: avgCell_rVector3D_SG > Only CELL type supported."
         endif
         !
         if( .NOT. present(ptype) ) then
@@ -676,14 +676,14 @@ contains
                         self%z(:, :, 2:zend-1) = cell_in%v(:, :, 1:v_zend-1) + cell_in%v(:, :, 2:v_zend)
                 end select
             class default
-                stop "Error: avgCellrVector3D_SG > Incompatible input Scalar_t."
+                stop "Error: avgCell_rVector3D_SG > Incompatible input Scalar_t."
         end select
         !
-    end subroutine avgCellrVector3D_SG
+    end subroutine avgCell_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine avgCellVTIrVector3D_SG( self, cell_h_in, cell_v_in, ptype )
+    subroutine avgCellVTI_rVector3D_SG( self, cell_h_in, cell_v_in, ptype )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -697,7 +697,7 @@ contains
         integer :: ix, iy, iz
         !
         if( index( self%grid_type, CELL ) > 0 ) then
-            stop "Error: avgCellVTIrVector3D_SG > Only CELL type supported."
+            stop "Error: avgCellVTI_rVector3D_SG > Only CELL type supported."
         endif
         !
         if( .NOT. present(ptype) ) then
@@ -763,33 +763,33 @@ contains
                 self%z(:, :, 2:zend-1) = v_v(:, :, 1:v_zend-1) + v_v(:, :, 2:v_zend)
                 !
             case default
-                stop "Error: avgCellVTIrVector3D_SG: Unknown type"
+                stop "Error: avgCellVTI_rVector3D_SG: Unknown type"
             !
         end select !type
         !
-    end subroutine avgCellVTIrVector3D_SG
+    end subroutine avgCellVTI_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine conjugaterVector3D_SG( self )
+    subroutine conjugate_rVector3D_SG( self )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
         !
-        stop "Error: conjugaterVector3D_SG: Do not try to conjugate a real vector!"
+        stop "Error: conjugate_rVector3D_SG: Do not try to conjugate a real vector!"
         !
-    end subroutine conjugaterVector3D_SG
+    end subroutine conjugate_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine addrVector3D_SG( self, rhs )
+    subroutine add_rVector3D_SG( self, rhs )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         if( .NOT. rhs%is_allocated) then
-             stop "Error: addrVector3D_SG > rhs not allocated."
+             stop "Error: add_rVector3D_SG > rhs not allocated."
         endif
         !
         if( self%isCompatible( rhs ) ) then
@@ -811,23 +811,23 @@ contains
                         self%sv = self%sv + rhs%sv
                         !
                     else
-                        stop "Error: addrVector3D_SG > Unknown rhs store_state!"
+                        stop "Error: add_rVector3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: addrVector3D_SG > Undefined rhs"
+                    stop "Error: add_rVector3D_SG > Undefined rhs"
                 !
             end select
             !
         else
-            stop "Error: addrVector3D_SG > Incompatible inputs."
+            stop "Error: add_rVector3D_SG > Incompatible inputs."
         endif
         !
-    end subroutine addrVector3D_SG
+    end subroutine add_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine linCombrVector3D_SG( self, rhs, c1, c2 )
+    subroutine linComb_rVector3D_SG( self, rhs, c1, c2 )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -853,21 +853,21 @@ contains
                         self%sv = c1 * self%sv + c2 * rhs%sv
                         !
                     else
-                        stop "Error: linCombrVector3D_SG > Unknown rhs store_state!"
+                        stop "Error: linComb_rVector3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: linCombrVector3D_SG > rhs undefined."
+                    stop "Error: linComb_rVector3D_SG > rhs undefined."
             end select
             !
         else
-            stop "Error: linCombrVector3D_SG > Incompatible inputs."
+            stop "Error: linComb_rVector3D_SG > Incompatible inputs."
         endif
         !
-    end subroutine linCombrVector3D_SG
+    end subroutine linComb_rVector3D_SG
     !
     !> No subroutine briefing
-    subroutine subValuerVector3D_SG( self, cvalue )
+    subroutine subValue_rVector3D_SG( self, cvalue )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -884,14 +884,14 @@ contains
             self%sv = self%sv - cvalue
             !
         else
-            stop "Error: subValuerVector3D_SG > Unknown self store_state!"
+            stop "Error: subValue_rVector3D_SG > Unknown self store_state!"
         endif
         !
-    end subroutine subValuerVector3D_SG
+    end subroutine subValue_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine subFieldrVector3D_SG( self, rhs )
+    subroutine subField_rVector3D_SG( self, rhs )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -916,23 +916,23 @@ contains
                         self%sv = self%sv - rhs%sv
                         !
                     else
-                        stop "Error: subFieldrVector3D_SG > Unknown rhs store_state!"
+                        stop "Error: subField_rVector3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: subFieldrVector3D_SG > Undefined rhs"
+                    stop "Error: subField_rVector3D_SG > Undefined rhs"
                 !
             end select
             !
         else
-            stop "Error: subFieldrVector3D_SG > Incompatible inputs."
+            stop "Error: subField_rVector3D_SG > Incompatible inputs."
         endif
         !
-    end subroutine subFieldrVector3D_SG
+    end subroutine subField_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multByRealrVector3D_SG( self, rvalue )
+    subroutine multByReal_rVector3D_SG( self, rvalue )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -949,14 +949,14 @@ contains
             self%sv = self%sv * rvalue
             !
         else
-            stop "Error: multByRealrVector3D_SG > Unknown self store_state!"
+            stop "Error: multByReal_rVector3D_SG > Unknown self store_state!"
         endif
         !
-    end subroutine multByRealrVector3D_SG
+    end subroutine multByReal_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multByComplexrVector3D_SG( self, cvalue )
+    subroutine multByComplex_rVector3D_SG( self, cvalue )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -973,14 +973,14 @@ contains
             self%sv = self%sv * cvalue
             !
         else
-            stop "Error: multByComplexrVector3D_SG > Unknown self store_state!"
+            stop "Error: multByComplex_rVector3D_SG > Unknown self store_state!"
         endif
         !
-    end subroutine multByComplexrVector3D_SG
+    end subroutine multByComplex_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multByFieldrVector3D_SG( self, rhs )
+    subroutine multByField_rVector3D_SG( self, rhs )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -1005,7 +1005,7 @@ contains
                         self%sv = self%sv * rhs%sv
                         !
                     else
-                        stop "Error: multByFieldrVector3D_SG > Unknown rhs store_state!"
+                        stop "Error: multByField_rVector3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class is( rScalar3D_SG_t )
@@ -1021,7 +1021,7 @@ contains
                         self%sv = self%sv * rhs%sv
                         !
                     else
-                        stop "Error: multByFieldrVector3D_SG > Unknown rhs store_state!"
+                        stop "Error: multByField_rVector3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class is( cScalar3D_SG_t )
@@ -1037,23 +1037,23 @@ contains
                         self%sv = self%sv * rhs%sv
                         !
                     else
-                        stop "Error: multByFieldrVector3D_SG > Unknown rhs store_state!"
+                        stop "Error: multByField_rVector3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: multByFieldrVector3D_SG: undefined rhs"
+                    stop "Error: multByField_rVector3D_SG: undefined rhs"
                 !
             end select
             !
         else
-            stop "Error: multByFieldrVector3D_SG: incompatible rhs"
+            stop "Error: multByField_rVector3D_SG: incompatible rhs"
         endif
         !
-    end subroutine multByFieldrVector3D_SG
+    end subroutine multByField_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    function diagMultrVector3D_SG( self, rhs ) result( diag_mult )
+    function diagMult_rVector3D_SG( self, rhs ) result( diag_mult )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -1087,28 +1087,28 @@ contains
                                 diag_mult%sv = self%sv * rhs%sv
                                 !
                             else
-                                stop "Error: diagMultrVector3D_SG > Unknown rhs store_state!"
+                                stop "Error: diagMult_rVector3D_SG > Unknown rhs store_state!"
                             endif
                             !
                         class default
-                            stop "Error: diagMultrVector3D_SG > Undefined rhs"
+                            stop "Error: diagMult_rVector3D_SG > Undefined rhs"
                         !
                     end select
                 !
                 class default
-                    stop "Error: diagMultrVector3D_SG > Undefined diag_mult"
+                    stop "Error: diagMult_rVector3D_SG > Undefined diag_mult"
                 !
             end select
             !
         else
-            stop "Error: diagMultrVector3D_SG > Incompatible inputs."
+            stop "Error: diagMult_rVector3D_SG > Incompatible inputs."
         endif
         !
-    end function diagMultrVector3D_SG
+    end function diagMult_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multAddrVector3D_SG( self, cvalue, rhs )
+    subroutine multAdd_rVector3D_SG( self, cvalue, rhs )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -1134,23 +1134,23 @@ contains
                         self%sv = self%sv + cvalue * rhs%sv
                         !
                     else
-                        stop "Error: multAddrVector3D_SG > Unknown rhs store_state!"
+                        stop "Error: multAdd_rVector3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: multAddrVector3D_SG > rhs undefined."
+                    stop "Error: multAdd_rVector3D_SG > rhs undefined."
                 !
             end select
             !
         else
-            stop "Error: multAddrVector3D_SG >Incompatible inputs."
+            stop "Error: multAdd_rVector3D_SG >Incompatible inputs."
         endif
         !
-    end subroutine multAddrVector3D_SG
+    end subroutine multAdd_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    function dotProdrVector3D_SG( self, rhs ) result( cvalue )
+    function dotProd_rVector3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
@@ -1161,7 +1161,7 @@ contains
         cvalue = C_ZERO
         !
         if(( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated )) then
-            stop "Error: dotProdrVector3D_SG > Input vectors not allocated."
+            stop "Error: dotProd_rVector3D_SG > Input vectors not allocated."
         endif
         !
         if( self%isCompatible( rhs ) ) then
@@ -1183,27 +1183,27 @@ contains
                             cvalue = cvalue + cmplx( sum( self%sv * rhs%sv ), 0.0, kind=prec )
                             !
                         else
-                            stop "Error: dotProdrVector3D_SG > Unknown rhs store_state!"
+                            stop "Error: dotProd_rVector3D_SG > Unknown rhs store_state!"
                         endif
                         !
                     class default
-                        stop "Error: dotProdrVector3D_SG: undefined rhs"
+                        stop "Error: dotProd_rVector3D_SG: undefined rhs"
                     !
                 end select
                 !
             else
-                stop "Error: dotProdrVector3D_SG > Incompatible store_state"
+                stop "Error: dotProd_rVector3D_SG > Incompatible store_state"
             endif
             !
         else
-            stop "Error: dotProdrVector3D_SG > Incompatible rhs"
+            stop "Error: dotProd_rVector3D_SG > Incompatible rhs"
         endif
         !
-    end function dotProdrVector3D_SG
+    end function dotProd_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine divByValuerVector3D_SG( self, cvalue )
+    subroutine divByValue_rVector3D_SG( self, cvalue )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -1220,14 +1220,14 @@ contains
             self%sv = self%sv / cvalue
             !
         else
-            stop "Error: divByValuerVector3D_SG > Unknown self store_state!"
+            stop "Error: divByValue_rVector3D_SG > Unknown self store_state!"
         endif
         !
-    end subroutine divByValuerVector3D_SG
+    end subroutine divByValue_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine divByFieldrVector3D_SG( self, rhs )
+    subroutine divByField_rVector3D_SG( self, rhs )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -1252,7 +1252,7 @@ contains
                         self%sv = self%sv / rhs%sv
                         !
                     else
-                        stop "Error: divByFieldrVector3D_SG > Unknown rhs store_state!"
+                        stop "Error: divByField_rVector3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class is( rScalar3D_SG_t )
@@ -1268,7 +1268,7 @@ contains
                         self%sv = self%sv / rhs%sv
                         !
                     else
-                        stop "Error: divByFieldrVector3D_SG > Unknown rhs store_state!"
+                        stop "Error: divByField_rVector3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class is( cScalar3D_SG_t )
@@ -1284,23 +1284,23 @@ contains
                         self%sv = self%sv / rhs%sv
                         !
                     else
-                        stop "Error: divByFieldrVector3D_SG > Unknown rhs store_state!"
+                        stop "Error: divByField_rVector3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: divByFieldrVector3D_SG: undefined rhs"
+                    stop "Error: divByField_rVector3D_SG: undefined rhs"
                 !
             end select
             !
         else
-            stop "Error: divByFieldrVector3D_SG: incompatible rhs"
+            stop "Error: divByField_rVector3D_SG: incompatible rhs"
         endif
         !
-    end subroutine divByFieldrVector3D_SG
+    end subroutine divByField_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine interpFuncrVector3D_SG( self, location, xyz, interp )
+    subroutine interpFunc_rVector3D_SG( self, location, xyz, interp )
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
@@ -1381,12 +1381,12 @@ contains
                         end select !xyz
                         !
                     case default
-                        stop "Error: multAddrVector3D_SG > self%grid_type undefined."
+                        stop "Error: multAdd_rVector3D_SG > self%grid_type undefined."
                     !
                 end select !GRID TYPE
                 !
             class default
-                stop "Error: interpFuncrVector3D_SG: undefined grid"
+                stop "Error: interpFunc_rVector3D_SG: undefined grid"
                 !
         end select !GRID
         !
@@ -1469,15 +1469,15 @@ contains
                 end select
                 !
             class default
-                stop "Error: interpFuncrVector3D_SG: undefined interp"
+                stop "Error: interpFunc_rVector3D_SG: undefined interp"
                 !
         end select
         !
-    end subroutine interpFuncrVector3D_SG
+    end subroutine interpFunc_rVector3D_SG
     !
     !> No function briefing
     !
-    function getAxisrVector3D_SG( self, comp_lbl ) result( comp )
+    function getAxis_rVector3D_SG( self, comp_lbl ) result( comp )
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
@@ -1492,14 +1492,14 @@ contains
         elseif( comp_lbl == "z" .OR. comp_lbl == "Z" ) then
             comp = cmplx( self%z, 0.0, kind=prec )
         else
-            stop "Error: getAxisrVector3D_SG > wrong component label"
+            stop "Error: getAxis_rVector3D_SG > wrong component label"
         endif
         !
-    end function getAxisrVector3D_SG
+    end function getAxis_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine getRealrVector3D_SG( self, r_vector )
+    subroutine getReal_rVector3D_SG( self, r_vector )
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
@@ -1509,11 +1509,11 @@ contains
         !
         call r_vector%copyFrom( self )
         !
-    end subroutine getRealrVector3D_SG
+    end subroutine getReal_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    function getArrayrVector3D_SG( self ) result( array )
+    function getArray_rVector3D_SG( self ) result( array )
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
@@ -1533,14 +1533,14 @@ contains
             array = cmplx( self%sv, 0.0, kind=prec )
             !
         else
-            stop "Error: getArrayrVector3D_SG > Unknown store_state!"
+            stop "Error: getArray_rVector3D_SG > Unknown store_state!"
         endif
         !
-    end function getArrayrVector3D_SG
+    end function getArray_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setArrayrVector3D_SG( self, array )
+    subroutine setArray_rVector3D_SG( self, array )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -1570,14 +1570,14 @@ contains
             self%sv = array
             !
         else
-            stop "Error: setArrayrVector3D_SG > Unknown store_state!"
+            stop "Error: setArray_rVector3D_SG > Unknown store_state!"
         endif
         !
-    end subroutine setArrayrVector3D_SG
+    end subroutine setArray_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine switchStoreStaterVector3D_SG( self )
+    subroutine switchStoreState_rVector3D_SG( self )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -1616,7 +1616,7 @@ contains
                     allocate( self%z( self%nx, self%ny, self%nz + 1 ) )
                     !
                 else
-                    stop "Error: switchStoreStaterVector3D_SG > Only EDGE or FACE types allowed."
+                    stop "Error: switchStoreState_rVector3D_SG > Only EDGE or FACE types allowed."
                 endif
                 !
                 ! Ex
@@ -1641,18 +1641,18 @@ contains
             !
         end select
         !
-    end subroutine switchStoreStaterVector3D_SG
+    end subroutine switchStoreState_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine copyFromrVector3D_SG( self, rhs )
+    subroutine copyFrom_rVector3D_SG( self, rhs )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         if( .NOT. rhs%is_allocated ) then
-            stop "Error: copyFromrVector3D_SG > rhs not allocated"
+            stop "Error: copyFrom_rVector3D_SG > rhs not allocated"
         endif
         !
         self%grid => rhs%grid
@@ -1687,20 +1687,20 @@ contains
                     self%sv = rhs%sv
                     !
                 else
-                    stop "Error: copyFromrVector3D_SG > Unknown store_state!"
+                    stop "Error: copyFrom_rVector3D_SG > Unknown store_state!"
                 endif
                 !
             class default
-                stop "Error: copyFromrVector3D_SG > Undefined rhs"
+                stop "Error: copyFrom_rVector3D_SG > Undefined rhs"
         end select
         !
         self%is_allocated = .TRUE.
         !
-    end subroutine copyFromrVector3D_SG
+    end subroutine copyFrom_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine readrVector3D_SG( self, funit, ftype )
+    subroutine read_rVector3D_SG( self, funit, ftype )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -1726,12 +1726,12 @@ contains
             !> Check that the file is unformatted if binary, formatted if ascii.
             if((index(isbinary, "yes") > 0 .OR.index(isbinary, "YES") > 0) &
                   .AND.   .NOT. binary ) then
-                write( *, * ) "Error: readrVector3D_SG > Unable to readrVector3D_SG vector from unformatted file. ", &
+                write( *, * ) "Error: read_rVector3D_SG > Unable to read_rVector3D_SG vector from unformatted file. ", &
                         trim(fname), "."
                 stop
             else if((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
                   .AND.binary) then
-                write( *, * ) "Error: readrVector3D_SG > Unable to readrVector3D_SG vector from formatted file ", &
+                write( *, * ) "Error: read_rVector3D_SG > Unable to read_rVector3D_SG vector from formatted file ", &
                         trim(fname), "."
                 stop
             endif
@@ -1739,16 +1739,16 @@ contains
             read(funit) Nx, Ny, Nz, grid_type
             !
             if(  .NOT. self%is_allocated) then
-                write( *, * ) "Error: readrVector3D_SG > Vector must be allocated before readrVector3D_SGing from ", &
+                write( *, * ) "Error: read_rVector3D_SG > Vector must be allocated before readrVector3D_SGing from ", &
                         trim(fname), "."
                 stop
             else if(self%grid_type.NE.grid_type) then
-                write( *, * ) "Error: readrVector3D_SG > Vector must be of type ", grid_type, &
+                write( *, * ) "Error: read_rVector3D_SG > Vector must be of type ", grid_type, &
                         &            "           before readrVector3D_SGing from ", trim (fname), "."
                 stop
             else if((self%nx.NE.Nx).OR. &
                   (self%ny.NE.Ny).OR.(self%nz.NE.Nz)) then
-                write( *, * ) "Error: readrVector3D_SG > Wrong size of vector on input from ", trim (fname), "."
+                write( *, * ) "Error: read_rVector3D_SG > Wrong size of vector on input from ", trim (fname), "."
                 stop
             endif
             !
@@ -1757,14 +1757,14 @@ contains
             read(funit) self%z
             !
         else
-            stop "Error: readrVector3D_SG: unable to open file"
+            stop "Error: read_rVector3D_SG: unable to open file"
         endif
         !
-    end subroutine readrVector3D_SG
+    end subroutine read_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine writerVector3D_SG( self, funit, ftype )
+    subroutine write_rVector3D_SG( self, funit, ftype )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -1775,7 +1775,7 @@ contains
         character(80) :: fname, isbinary
         !
         if( .NOT. self%is_allocated) then
-            stop "Error: writerVector3D_SG > Not allocated."
+            stop "Error: write_rVector3D_SG > Not allocated."
         endif
         !
         !> Make sure the store_state is compound
@@ -1792,12 +1792,12 @@ contains
             !> Check that the file is unformatted if binary, formatted if ascii.
             if((index(isbinary, "yes") > 0 .OR. index(isbinary, "YES") > 0) &
                   .AND.   .NOT. binary) then
-                write( *, * ) "Error: writerVector3D_SG > Unable to writerVector3D_SG vector to unformatted file. ", &
+                write( *, * ) "Error: write_rVector3D_SG > Unable to write_rVector3D_SG vector to unformatted file. ", &
                         trim(fname), "."
                 stop
             else if((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
                   .AND.binary) then
-                write( *, * ) "Error: writerVector3D_SG > Unable to writerVector3D_SG vector to formatted file. ", &
+                write( *, * ) "Error: write_rVector3D_SG > Unable to write_rVector3D_SG vector to formatted file. ", &
                         trim(fname), "."
                 stop
             endif
@@ -1808,14 +1808,14 @@ contains
             write(funit) self%z
             !
         else
-            stop "Error: writerVector3D_SG > unable to open file"
+            stop "Error: write_rVector3D_SG > unable to open file"
         endif
         !
-    end subroutine writerVector3D_SG
+    end subroutine write_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine printrVector3D_SG( self, io_unit, title, append )
+    subroutine print_rVector3D_SG( self, io_unit, title, append )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -1872,7 +1872,7 @@ contains
              enddo
         enddo
         !
-    end subroutine printrVector3D_SG
+    end subroutine print_rVector3D_SG
     !
     !> Convert an input Rvector E to a 1-D real array,
     !> following standard staggered grid ordering
