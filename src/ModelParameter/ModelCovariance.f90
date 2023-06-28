@@ -162,11 +162,11 @@ contains
                     !
                     class is( ModelParameterCell_SG_t )
                         !
-                        v = target_model%cell_cond%getV()
+                        v = target_model%cell_cond(1)%getV()
                         !
-                        call self%RecursiveAR( temp_model%cell_cond%getV(), v, 2 )
+                        call self%RecursiveAR( temp_model%cell_cond(1)%getV(), v, 2 )
                         !
-                        call target_model%cell_cond%setV( v )
+                        call target_model%cell_cond(1)%setV( v )
                         !
                     class default
                         stop "Error: multBy_Cm > Unclassified target_model"
@@ -196,59 +196,32 @@ contains
         class( ModelParameter_t ), allocatable, intent( in ) :: mhat
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        class( Scalar_t ), allocatable, dimension(:) :: mhat_cell_cond, dsigma_cell_cond
+        complex( kind=prec ), allocatable :: dsigma_v(:, :, :)
+        integer :: i
         !
         if( allocated( dsigma ) ) deallocate( dsigma )
         allocate( dsigma, source = mhat )
         !
-        select type( mhat )
+        call mhat%getCond( mhat_cell_cond )
+        !
+        allocate( dsigma_cell_cond, source = mhat_cell_cond )
+        !
+        do i = 1, size( mhat_cell_cond )
             !
-            class is( ModelParameterCell_SG_t )
-                !
-                select type( dsigma )
-                    !
-                    class is( ModelParameterCell_SG_t )
-                        !
-                        v = dsigma%cell_cond%getV()
-                        !
-                        call self%RecursiveAR( mhat%cell_cond%getV(), v, self%N )
-                        !
-                        call dsigma%cell_cond%setV( v )
-                        !
-                    class default
-                        stop "Error: multBy_CmSqrt > Unclassified dsigma"
-                    !
-                end select
+            dsigma_v = mhat_cell_cond(i)%getV()
             !
-            class is( ModelParameterCell_SG_VTI_t )
-                !
-                select type( dsigma )
-                    !
-                    class is( ModelParameterCell_SG_VTI_t )
-                        !
-                        ! Horizontal
-                        v = dsigma%cell_cond_h%getV()
-                        !
-                        call self%RecursiveAR( mhat%cell_cond_h%getV(), v, self%N )
-                        !
-                        call dsigma%cell_cond_h%setV( v )
-                        !
-                        ! Vertical
-                        v = dsigma%cell_cond_v%getV()
-                        !
-                        call self%RecursiveAR( mhat%cell_cond_v%getV(), v, self%N )
-                        !
-                        call dsigma%cell_cond_v%setV( v )
-                        !
-                    class default
-                        stop "Error: multBy_CmSqrt > Unclassified dsigma"
-                    !
-                end select
-                !
-            class default
-                stop "Error: multBy_CmSqrt > Unclassified mhat"
+            call self%RecursiveAR( mhat_cell_cond(i)%getV(), dsigma_v, self%N )
             !
-        end select
+            call dsigma_cell_cond(i)%setV( dsigma_v )
+            !
+        enddo
+        !
+        deallocate( mhat_cell_cond )
+        !
+        call dsigma%setCond( dsigma_cell_cond )
+        !
+        deallocate( dsigma_cell_cond )
         !
     end subroutine multBy_CmSqrt
     !
@@ -278,11 +251,11 @@ contains
                     !
                     class is( ModelParameterCell_SG_t )
                         !
-                        v = mhat%cell_cond%getV()
+                        v = mhat%cell_cond(1)%getV()
                         !
-                        call self%RecursiveARInv( dm%cell_cond%getV(), v, self%N )
+                        call self%RecursiveARInv( dm%cell_cond(1)%getV(), v, self%N )
                         !
-                        call mhat%cell_cond%setV( v )
+                        call mhat%cell_cond(1)%setV( v )
                         !
                     class default
                         stop "Error: multBy_CmSqrtInv > Unclassified dm"

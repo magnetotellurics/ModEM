@@ -165,7 +165,7 @@ contains
                                 !
                             else
                                 !
-                                allocate( model, source = ModelParameterCell_SG_VTI_t( grid, ccond, paramType, anisotropic_level ) )
+                                allocate( model, source = ModelParameterCell_SG_VTI_t( grid, ccond, paramType ) )
                                 !
                             endif
                             !

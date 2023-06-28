@@ -244,11 +244,11 @@ contains
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         integer, intent( in ), optional :: i_sol
-        class( Scalar_t ), allocatable, dimension(:), intent( inout ), optional :: s_hat
+        class( ModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
         !
         class( Transmitter_t ), pointer :: Tx
         class( ModelParameter_t ), allocatable :: dsigma_tx
-        class( Scalar_t ), allocatable :: temp_scalar
+        class( Scalar_t ), allocatable, dimension(:) :: temp_scalar
         integer :: i_tx, sol_index
         !
         ! Verbose
@@ -278,9 +278,7 @@ contains
             !
             if( present( s_hat ) ) then
                 !
-                call dsigma_tx%getCond( temp_scalar )
-                !
-                s_hat( i_tx ) = temp_scalar
+                allocate( s_hat( i_tx ), source = dsigma_tx )
                 !
             endif
             !

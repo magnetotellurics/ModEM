@@ -514,7 +514,7 @@ contains
         real( kind=prec ) :: Ndata, n_model
         type( DataGroupTx_t ), allocatable, dimension(:) :: res
         class( ModelParameter_t ), allocatable :: dsigma, JTd, CmJTd
-        class( Scalar_t ), allocatable, dimension(:) :: s_hat
+        class( ModelParameter_t ), allocatable, dimension(:) :: s_hat
         !
         ! compute the smoothed model parameter vector
         call model_cov%multBy_CmSqrt( mHat, dsigma )
@@ -532,7 +532,7 @@ contains
         call normalizeData( res, 2 )
         !
         !> ????
-        allocate( rScalar3D_SG_t :: s_hat( size( all_data ) ) )
+        !allocate( rScalar3D_SG_t :: s_hat( size( all_data ) ) )
         !
 #ifdef MPI
         call masterJMult_T( dsigma, res, JTd, i_sol, s_hat )
@@ -999,12 +999,12 @@ contains
     subroutine weightGradrients( s_hat, d, dHat, JTd )
         implicit none
         !
-        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: s_hat
+        class( ModelParameter_t ), allocatable, dimension(:), intent( in ) :: s_hat
         type( DataGroupTx_t ), dimension(:), intent( in ) :: d, dHat
         class( ModelParameter_t ), intent( inout ) :: JTd
         !
         integer :: Ndata, i_tx, n_tx, ios
-        class( Scalar_t ), allocatable :: temp_scalar
+        class( Scalar_t ), allocatable, dimension(:) :: shat_cond
         real( kind=prec ) :: grad_norm, rms, SS
         real( kind=prec ) :: sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
         real( kind=prec ) :: sum_tx_rms, mt_rms, csem_rms
@@ -1084,10 +1084,7 @@ contains
                 !
             enddo
             !
-            !> Get gradient conductivity
-            call JTd%getCond( temp_scalar )
-            !
-            grad_norm = real( sqrt( temp_scalar%dotProd( temp_scalar ) ), kind=prec )
+            grad_norm = real( sqrt( JTd%dotProd( JTd ) ), kind=prec )
             !
             write( *, * ) "MODEL GRAD NORM: ", grad_norm
             write( ioGradLog, * ) "MODEL GRAD NORM: ", grad_norm
@@ -1128,23 +1125,20 @@ contains
                 !
                 do i_tx = 1, n_tx
                     !
-                    temp_scalar = s_hat( i_tx )
+                    call s_hat( i_tx )%getCond( shat_cond )
                     !
-                    call temp_scalar%mult( tx_weights( i_tx ) )
+                    !call shat_cond%mult( tx_weights( i_tx ) )
                     !
                     !> ADAPT TO THE WHOLE MODEL
-                    !call JTd%linComb( ONE, ONE, temp_scalar )
+                    !call JTd%linComb( ONE, ONE, grad_cond )
                     !
                 enddo
                 !
             endif
             !
-            deallocate( temp_scalar )
+            deallocate( shat_cond )
             !
-            !> Get gradient conductivity
-            call JTd%getCond( temp_scalar )
-            !
-            grad_norm = real( sqrt( temp_scalar%dotProd( temp_scalar ) ), kind=prec )
+            grad_norm = real( sqrt( JTd%dotProd( JTd ) ), kind=prec )
             !
             
             write( *, * ) "FINAL GRAD NORM: ", grad_norm
@@ -1155,7 +1149,7 @@ contains
             !
             write( ioGradLog, * ) "FINAL GRAD NORM: ", grad_norm
             !
-            deallocate( tx_weights, tx_grad_norms, tx_rms, temp_scalar )
+            deallocate( tx_weights, tx_grad_norms, tx_rms )
             !
             close( ioGradLog )
             !

@@ -478,7 +478,7 @@ contains
     end subroutine amultModelOperatorMF
     !
     !> No subroutine briefing
-	!
+    !
     subroutine multAibModelOperatorMF( self, inE, outE )
         implicit none
         !
@@ -709,7 +709,7 @@ contains
                 !
                 select type( inPhi )
                     !
-					class is ( cScalar3D_SG_t )
+                    class is ( cScalar3D_SG_t )
                         !
                         call outE%Zeros
                         !
@@ -767,6 +767,7 @@ contains
                 endif
                 !
                 select type( inE )
+                    !
                     class is(cVector3D_SG_t)
                         !
                         call outPhi%zeros
@@ -784,7 +785,8 @@ contains
                                 enddo
                             enddo
                         enddo
-                        class default
+                        !
+                    class default
                         stop "Error: divModelOperatorMF> inE type unknown"
                 end select
             class default

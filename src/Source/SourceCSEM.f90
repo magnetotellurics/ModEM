@@ -46,20 +46,21 @@ module SourceCSEM
     !
     contains
     !
-    subroutine setCondAnomally( self, sigma_cell, cond_anomaly, ani_level )
+    subroutine setCondAnomally( self, cond_anomaly, ani_level )
         implicit none
         !
-        class( SourceCSEM_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: sigma_cell
-        class( Vector_t ), allocatable, intent( inout ) :: cond_anomaly
+        class( SourceCSEM_t ), intent( in) :: self
+        type( rVector3D_SG_t ), intent( out ) :: cond_anomaly
         integer, intent( in ) :: ani_level
         !
-        class( Scalar_t ), allocatable :: sigma_cell_1d
+        class( Scalar_t ), allocatable :: sigma_cell
         complex( kind=prec ), allocatable :: v(:, :, :)
         class( ModelParameter_t ), allocatable :: aModel
         real( kind=prec ) :: wt, temp_sigma_1d
         integer :: nzAir, nzEarth, i, j, k
-        class( Vector_t ), allocatable :: cond_nomaly
+        type( rVector3D_SG_t ) :: cond_nomaly
+        !
+        call self%sigma%getCond( sigma_cell, ani_level )
         !
         nzAir = sigma_cell%grid%nzAir
         !
@@ -149,23 +150,21 @@ module SourceCSEM
             !
         enddo
         !
-        allocate( sigma_cell_1d, source = sigma_cell )
-        !
-        call sigma_cell_1d%setV( v )
+        call sigma_cell%setV( v )
         !
         !> Create ModelParam from 1D: aModel
-        !> with sigma_cell_1d conductivity in the proper anisotropic direction
+        !> with sigma_cell conductivity in the proper anisotropic direction
         allocate( aModel, source = self%sigma )
-        call aModel%setCond( sigma_cell_1d, ani_level )
+        call aModel%setCond( sigma_cell, ani_level )
         call aModel%setType( self%sigma%param_type )
         !
-        deallocate( sigma_cell_1d )
+        deallocate( sigma_cell )
         !
-        allocate( cond_nomaly, source = rVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
+        cond_nomaly = rVector3D_SG_t( self%sigma%metric%grid, EDGE )
         call aModel%PDEmapping( cond_nomaly )
         !
         !> Map sigma to cond_edges vector
-        allocate( cond_anomaly, source = rVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
+        cond_anomaly = rVector3D_SG_t( self%sigma%metric%grid, EDGE )
         call self%sigma%PDEmapping( cond_anomaly )
         !
         !cond_anomaly = cond_anomaly - cond_nomaly

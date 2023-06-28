@@ -11,7 +11,7 @@ module SourceCSEM_Dipole1D
         !
         real( kind=prec ) :: azimuth, dip, moment
         !
-        class( Vector_t ), allocatable :: cond_anomaly
+        type( rVector3D_SG_t ) :: cond_anomaly
         !
         contains
             !
@@ -147,28 +147,7 @@ contains
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
         !
-        class( Scalar_t ), allocatable :: sigma_cell
-        integer :: i, nzAir
-        !
-        select type( sigma => self%sigma )
-            !
-            class is( ModelParameterCell_SG_t )
-                !
-                !> Horizontal
-                allocate( sigma_cell, source = sigma%cell_cond )
-                !
-                call self%setCondAnomally( sigma_cell, self%cond_anomaly, 1 )
-                !
-                deallocate( sigma_cell )
-                !
-            class is( ModelParameterCell_SG_VTI_t )
-                !
-                stop "Error: set1DModel_SourceCSEM_Dipole1D > One shouldn't use Dipole1D with VTI"
-                !
-            class default
-                stop "Error: set1DModel_SourceCSEM_Dipole1D > Unclassified sigma"
-            !
-        end select
+        call self%setCondAnomally( self%cond_anomaly, 1 )
         !
     end subroutine set1DModel_SourceCSEM_Dipole1D
     !

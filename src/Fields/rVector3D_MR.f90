@@ -1096,11 +1096,11 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine sumEdgesRVector3D_MR( self, cell_obj, interior_only )
+    subroutine sumEdgesRVector3D_MR( self, cell_out, interior_only )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Scalar_t ), allocatable, intent( inout ) :: cell_obj
+        class( rVector3D_MR_t ), intent( in ) :: self
+        class( Scalar_t ), intent( inout ) :: cell_out
         logical, optional, intent( in ) :: interior_only
         !
         integer :: x_xend, x_yend, x_zend
@@ -1109,11 +1109,11 @@ contains
         type( rVector3D_MR_t ) :: E_tmp
         logical :: is_interior_only
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
-        !
         E_tmp = self
+        !
+        if( self%store_state /= compound ) then
+             call E_tmp%switchStoreState
+        endif
         !
         is_interior_only = .FALSE.
         !
@@ -1123,19 +1123,18 @@ contains
             call E_tmp%setAllBoundary( C_ZERO )
         endif
         !
-        if( allocated( cell_obj ) ) then
-            cell_obj = rScalar3D_MR_t( self%grid, CELL )
-        else
-            allocate( cell_obj, source = rScalar3D_MR_t( self%grid, CELL ) )
+        if( .NOT. cell_out%is_allocated ) then
+            stop "Error: sumEdgesRVector3D_MR: Unallocated cell_out"
         endif
         !
-        select type( cell_obj )
+        select type( cell_out )
             !
             class is( rScalar3D_MR_t )
                 !
                 select case( E_tmp%grid_type )
                     !
-                    case(EDGE)
+                    case( EDGE )
+                        !
                         x_xend = size(E_tmp%x, 1)
                         x_yend = size(E_tmp%x, 2)
                         x_zend = size(E_tmp%x, 3)
@@ -1148,7 +1147,7 @@ contains
                         z_yend = size(E_tmp%z, 2)
                         z_zend = size(E_tmp%z, 3)
                         !
-                        cell_obj%v = E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
+                        cell_out%v = E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
                         E_tmp%x(:,2:x_yend,1:x_zend-1)       + &
                         E_tmp%x(:,1:x_yend-1,2:x_zend)       + &
                         E_tmp%x(:,2:x_yend,2:x_zend)         + &
@@ -1161,23 +1160,22 @@ contains
                         E_tmp%z(1:z_xend-1,2:z_yend,:)       + &
                         E_tmp%z(2:z_xend,2:z_yend,:)
                         !
-                    case(FACE)
+                    case( FACE )
+                        !
                         x_xend = size(E_tmp%x, 1)
                         y_xend = size(E_tmp%y, 1)
                         z_xend = size(E_tmp%z, 1)
                         !
-                        cell_obj%v =    E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
-                                        E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:) + &
-                                        E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
-                    !
+                        cell_out%v = E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
+                                     E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:) + &
+                                     E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
+                        !
                     case default
                         stop "Error: sumEdgesRVector3D_MR: undefined E_tmp%grid_type"
-                    !
                   end select
-                  !
-            class default
-                stop "Error: sumEdgesRVector3D_MR: undefined grid"
                 !
+            class default
+                stop "Error: sumEdgesRVector3D_MR: Unclassified cell_out"
         end select
         !
     end subroutine sumEdgesRVector3D_MR

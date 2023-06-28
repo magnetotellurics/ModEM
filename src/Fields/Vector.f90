@@ -61,10 +61,10 @@ module Vector
         end subroutine interface_interp_func_vector
         !
         !> No interface subroutine briefing
-        subroutine interface_sum_edges_vector( self, cell_obj, interior_only )
+        subroutine interface_sum_edges_vector( self, cell_out, interior_only )
             import :: Vector_t, Scalar_t
-            class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), allocatable, intent( inout ) :: cell_obj
+            class( Vector_t ), intent( in ) :: self
+            class( Scalar_t ), intent( inout ) :: cell_out
             logical, optional, intent( in ) :: interior_only
         end subroutine interface_sum_edges_vector
         !

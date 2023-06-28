@@ -14,7 +14,7 @@ module SourceCSEM_EM1D
         !
         integer :: i_tx
         !
-        class( Vector_t ), allocatable :: cond_anomaly_h, cond_anomaly_v
+        type( rVector3D_SG_t ) :: cond_anomaly_h, cond_anomaly_v
         !
         !> (S/m) Layer conductivities in the both directions used in VTI
         real( kind=prec ), dimension(:), allocatable, private :: sig1D_h, sig1D_v
@@ -80,9 +80,6 @@ contains
         !write( *, * ) "Destructor SourceCSEM_EM1D_t"
         !
         call self%dealloc
-        !
-        if( allocated( self%cond_anomaly_h ) ) deallocate( self%cond_anomaly_h )
-        if( allocated( self%cond_anomaly_v ) ) deallocate( self%cond_anomaly_v )
         !
         if( allocated( sig1D ) ) deallocate( sig1D )
         !
@@ -157,7 +154,7 @@ contains
         !
         call self%E(1)%mult( i_omega_mu )
         !
-		deallocate( freqdat%omega )
+        deallocate( freqdat%omega )
         deallocate( bgdat%sigv, bgdat%sigh )
         deallocate( bgdat%epsrv, bgdat%epsrh )
         deallocate( bgdat%zbound )
@@ -259,55 +256,34 @@ contains
         !
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
         !
-        class( Scalar_t ), allocatable :: sigma_cell_h, sigma_cell_v
+        integer :: ani_level
+        class( Scalar_t ), allocatable, dimension(:) :: sigma_cell
         !
-        select type( sigma => self%sigma )
+        call self%sigma%getCond( sigma_cell )
+        !
+        ani_level = size( sigma_cell )
+        !
+        if( ani_level == 1 .OR. ani_level == 2 ) then
             !
-            class is( ModelParameterCell_SG_t )
-                !
-                !> Only Horizontal
-                !
-                allocate( sigma_cell_h, source = sigma%cell_cond )
-                !
-                if( allocated( self%sig1D_h ) ) deallocate( self%sig1D_h )
-                allocate( self%sig1D_h( sigma_cell_h%grid%Nz ) )
-                !
-                call self%setCondAnomally( sigma_cell_h, self%cond_anomaly_h, 1 )
-                !
-                allocate( self%cond_anomaly_v, source = self%cond_anomaly_h )
-                !
-                self%sig1D_h = sig1D
-                !
-                self%sig1D_v = sig1D
-                !
-            class is( ModelParameterCell_SG_VTI_t )
-                !
-                !> Horizontal
-                !
-                allocate( sigma_cell_h, source = sigma%cell_cond_h )
-                !
-                if( allocated( self%sig1D_h ) ) deallocate( self%sig1D_h )
-                allocate( self%sig1D_h( sigma_cell_h%grid%Nz ) )
-                !
-                call self%setCondAnomally( sigma_cell_h, self%cond_anomaly_h, 1 )
-                !
-                self%sig1D_h = sig1D
-                !
-                !> Vertical
-                !
-                allocate( sigma_cell_v, source = sigma%cell_cond_v )
-                !
-                if( allocated( self%sig1D_v ) ) deallocate( self%sig1D_v )
-                allocate( self%sig1D_v( sigma_cell_v%grid%Nz ) )
-                !
-                call self%setCondAnomally( sigma_cell_v, self%cond_anomaly_v, 2 )
-                !
-                self%sig1D_v = sig1D
-                !
-            class default
-                stop "Error: set1DModel_SourceCSEM_EM1D > Unclassified sigma"
+            !> Horizontal
+            if( allocated( self%sig1D_h ) ) deallocate( self%sig1D_h )
+            allocate( self%sig1D_h( sigma_cell(1)%grid%Nz ) )
             !
-        end select
+            call self%setCondAnomally( self%cond_anomaly_h, 1 )
+            !
+            self%sig1D_h = sig1D
+            !
+            !> Vertical
+            if( allocated( self%sig1D_v ) ) deallocate( self%sig1D_v )
+            allocate( self%sig1D_v( sigma_cell( ani_level )%grid%Nz ) )
+            !
+            call self%setCondAnomally( self%cond_anomaly_v, ani_level )
+            !
+            self%sig1D_v = sig1D
+            !
+        else
+            stop "Error: set1DModel_SourceCSEM_EM1D > Anisotropy with level above 2 not yet supported"
+        endif
         !
     end subroutine set1DModel_SourceCSEM_EM1D
     !

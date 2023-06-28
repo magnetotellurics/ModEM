@@ -37,8 +37,13 @@ module ModelParameter
             !> Interfaces
             procedure( interface_set_type_model_parameter ), deferred, public :: setType
             !
-            procedure( interface_get_cond_model_parameter ), deferred, public :: getCond
-            procedure( interface_set_cond_model_parameter ), deferred, public :: setCond
+            procedure( interface_get_one_cond_model_parameter ), deferred, public :: getOneCond
+            procedure( interface_get_all_cond_model_parameter ), deferred, public :: getAllCond
+            generic :: getCond => getOneCond, getAllCond
+            !
+            procedure( interface_set_one_cond_model_parameter ), deferred, public :: setOneCond
+            procedure( interface_set_all_cond_model_parameter ), deferred, public :: setAllCond
+            generic :: setCond => setOneCond, setAllCond
             !
             procedure( interface_zeros_model_parameter ), deferred, public :: zeros
             !
@@ -98,19 +103,37 @@ module ModelParameter
         end function interface_sigmap_model_parameter
         !
         !> No interface subroutine briefing
-        subroutine interface_get_cond_model_parameter( self, ccond, i_cond )
+        !
+        subroutine interface_get_one_cond_model_parameter( self, cell_cond, i_cond )
             import :: ModelParameter_t, Scalar_t
             class( ModelParameter_t ), intent( in ) :: self
-            class( Scalar_t ), allocatable, intent( inout ) :: ccond
+            class( Scalar_t ), allocatable, intent( inout ) :: cell_cond
             integer, intent( in ) :: i_cond
-        end subroutine interface_get_cond_model_parameter
+        end subroutine interface_get_one_cond_model_parameter
         !
-        subroutine interface_set_cond_model_parameter( self, ccond, i_cond )
+        !> No interface subroutine briefing
+        !
+        subroutine interface_get_all_cond_model_parameter( self, cell_cond )
+            import :: ModelParameter_t, Scalar_t
+            class( ModelParameter_t ), intent( in ) :: self
+            class( Scalar_t ), allocatable, dimension(:), intent( inout ) :: cell_cond
+        end subroutine interface_get_all_cond_model_parameter
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_set_one_cond_model_parameter( self, cell_cond, i_cond )
             import :: ModelParameter_t, Scalar_t
             class( ModelParameter_t ), intent( inout ) :: self
-            class( Scalar_t ), allocatable, intent( in ) :: ccond
+            class( Scalar_t ), intent( in ) :: cell_cond
             integer, intent( in ) :: i_cond
-        end subroutine interface_set_cond_model_parameter
+        end subroutine interface_set_one_cond_model_parameter
+        !
+        !> No interface subroutine briefing
+        subroutine interface_set_all_cond_model_parameter( self, cell_cond )
+            import :: ModelParameter_t, Scalar_t
+            class( ModelParameter_t ), intent( inout ) :: self
+            class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_cond
+        end subroutine interface_set_all_cond_model_parameter
         !
         !> No interface subroutine briefing
         subroutine interface_zeros_model_parameter( self )
@@ -195,7 +218,7 @@ module ModelParameter
         !> No interface subroutine briefing
         subroutine interface_print_model_parameter( self )
             import :: ModelParameter_t
-            class( ModelParameter_t ), intent( in ) :: self
+            class( ModelParameter_t ), intent( inout ) :: self
         end subroutine interface_print_model_parameter
         ! !
     end interface
