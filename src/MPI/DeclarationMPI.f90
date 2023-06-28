@@ -666,15 +666,15 @@ contains
                 !
                 model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
                 !
-                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond )
+                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond(1) )
                 !
             class is( ModelParameterCell_SG_VTI_t )
                 !
                 model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
                 !
-                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond_h )
+                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond(1) )
                 !
-                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond_v )
+                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond(2) )
                 !
             class default
                stop "allocateModelBuffer: Unclassified model"
@@ -720,7 +720,7 @@ contains
                 !
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
-                call packScalarBuffer( model%cell_cond, parent_buffer, parent_buffer_size, index )
+                call packScalarBuffer( model%cell_cond(1), parent_buffer, parent_buffer_size, index )
                 !
             class is( ModelParameterCell_SG_VTI_t )
                 !
@@ -734,9 +734,9 @@ contains
                 !
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
-                call packScalarBuffer( model%cell_cond_h, parent_buffer, parent_buffer_size, index )
+                call packScalarBuffer( model%cell_cond(1), parent_buffer, parent_buffer_size, index )
                 !
-                call packScalarBuffer( model%cell_cond_v, parent_buffer, parent_buffer_size, index )
+                call packScalarBuffer( model%cell_cond(2), parent_buffer, parent_buffer_size, index )
                 !
             class default
                stop "packModelBuffer: Unclassified model"
@@ -754,7 +754,8 @@ contains
         integer, intent( in ) :: parent_buffer_size
         integer, intent( inout ) :: index
         !
-        integer :: param_type_size
+        integer :: i, param_type_size
+        class( Scalar_t ), allocatable :: cell_cond
         !
         param_type_size = 0
         !
@@ -784,7 +785,11 @@ contains
                         !
                         call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                         !
-                        call unpackScalarBuffer( model%cell_cond, main_grid, parent_buffer, parent_buffer_size, index )
+                        allocate( rScalar3D_SG_t :: model%cell_cond(1) )
+                        !
+                        call unpackScalarBuffer( cell_cond, main_grid, parent_buffer, parent_buffer_size, index )
+                        !
+                        model%cell_cond(1) = cell_cond
                         !
                         call model%setsigMap( model%param_type )
                         !
@@ -810,9 +815,17 @@ contains
                         !
                         call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                         !
-                        call unpackScalarBuffer( model%cell_cond_h, main_grid, parent_buffer, parent_buffer_size, index )
+                        allocate( rScalar3D_SG_t :: model%cell_cond(2) )
                         !
-                        call unpackScalarBuffer( model%cell_cond_v, main_grid, parent_buffer, parent_buffer_size, index )
+                        do i = 1, 2
+                            !
+                            call unpackScalarBuffer( cell_cond, main_grid, parent_buffer, parent_buffer_size, index )
+                            !
+                            model%cell_cond(i) = cell_cond
+                            !
+                            deallocate( cell_cond )
+                            !
+                        enddo
                         !
                         call model%setsigMap( model%param_type )
                         !

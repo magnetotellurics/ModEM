@@ -77,7 +77,7 @@ contains
         !
         integer :: nzAir
         !
-        write( *, * ) "Constructor ModelParameterCell_SG_t"
+        !write( *, * ) "Constructor ModelParameterCell_SG_t"
         !
         call self%init
         !
@@ -94,6 +94,7 @@ contains
                     grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
         allocate( rScalar3D_SG_t :: self%cell_cond(1) )
+        !
         self%cell_cond(1) = cell_cond
         !
         self%cell_cond(1)%store_state = compound
@@ -114,7 +115,7 @@ contains
         !
         type( ModelParameterCell_SG_t ), intent( inout ) :: self
         !
-        write( *, * ) "Destructor ModelParameterCell_SG"
+        !write( *, * ) "Destructor ModelParameterCell_SG"
         !
         if( allocated( self%param_grid ) ) deallocate( self%param_grid )
         !

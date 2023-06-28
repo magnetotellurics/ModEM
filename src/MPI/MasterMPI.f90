@@ -280,9 +280,8 @@ contains
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         integer, intent( in ), optional :: i_sol
-        class( Scalar_t ), allocatable, dimension(:), intent( inout ), optional :: s_hat
+        class( ModelParameter_t ), allocatable, dimension(:), intent( inout ), optional :: s_hat
         !
-        class( Scalar_t ), allocatable :: tx_dsigma_cond
         class( ModelParameter_t ), allocatable :: tx_dsigma
         !
         integer :: worker_rank, i_tx, tx_received, sol_index
@@ -339,19 +338,13 @@ contains
             !
             call receiveFromAny()
             !
-            call dsigma%getCond( tx_dsigma_cond )
-            !
             call receiveModel( tx_dsigma, job_info%worker_rank )
             !
-            call tx_dsigma%getCond( tx_dsigma_cond )
-            !
             if( present( s_hat ) ) then
-                s_hat( job_info%i_tx ) = tx_dsigma_cond
+                s_hat( job_info%i_tx ) = tx_dsigma
             endif
             !
             call dsigma%linComb( ONE, ONE, tx_dsigma )
-            !
-            deallocate( tx_dsigma_cond )
             !
             tx_received = tx_received + 1
             i_tx = i_tx + 1
@@ -374,15 +367,11 @@ contains
             !
             call receiveModel( tx_dsigma, job_info%worker_rank )
             !
-            call tx_dsigma%getCond( tx_dsigma_cond )
-            !
             if( present( s_hat ) ) then
-                s_hat( job_info%i_tx ) = tx_dsigma_cond
+                s_hat( job_info%i_tx ) = tx_dsigma
             endif
             !
             call dsigma%linComb( ONE, ONE, tx_dsigma )
-            !
-            deallocate( tx_dsigma_cond )
             !
             tx_received = tx_received + 1
             !

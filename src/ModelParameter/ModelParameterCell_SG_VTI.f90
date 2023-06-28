@@ -53,7 +53,7 @@ contains
         !
         integer :: nzAir
         !
-        write( *, * ) "Constructor ModelParameterCell_SG_VTI_t"
+        !write( *, * ) "Constructor ModelParameterCell_SG_VTI_t"
         !
         call self%init
         !
