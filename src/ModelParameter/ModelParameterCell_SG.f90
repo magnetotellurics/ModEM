@@ -521,12 +521,14 @@ contains
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
         class( Vector_t ), allocatable :: temp_interior
-        class( Scalar_t ), allocatable :: sigma_cell
+        type( rScalar3D_SG_t ) :: sigma_cell
         complex( kind=prec ), allocatable :: v(:, :, :), s_v(:, :, :)
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: k0, k1, k2
         !
         allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, self%cell_cond(1), self%param_type ) )
+        !
+        sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
         !
         select type( dsigma )
             !
