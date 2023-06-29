@@ -295,7 +295,7 @@ contains
         class( SourceCSEM_EM1D_t ), intent( in ) :: self
         type( backgrounddata ), intent( inout ) :: bgdat 
         !
-        integer :: counter, ilay, ix, iy, iz, ierr
+        integer( kind=int32 ) :: counter, ilay, ix, iy, iz, ierr
         integer( kind=int32 ) :: nx1, ny1, nz1 !nr of points in my domain for which fields are computed
         !
         bgdat%nlay= nlay1D
@@ -306,15 +306,15 @@ contains
         allocate( bgdat%zbound(bgdat%nlay-1) )
         !if(ierr.ne.0) call alloc_error(pid,'readinput','zbound',ierr)
         !
-        bgdat%rsplmin = 50.0
+        bgdat%rsplmin = 50.0_real64
         bgdat%aniso = vti !default vti, change to iso if any layer is isotropic!!!> OR keep it VTI in all cases: if isotropic case, self%sig1D_h==self%sig1D_v 
         !
         !write(*,*) 'bgdat%nlay', bgdat%nlay
         do ilay = 1, bgdat%nlay
-            bgdat%sigh(ilay) = self%sig1D_h(ilay)
-            bgdat%sigv(ilay) = self%sig1D_v(ilay)
-            bgdat%epsrh(ilay) = 1.0
-            bgdat%epsrv(ilay) = 1.0
+            bgdat%sigh( ilay ) = self%sig1D_h( ilay )
+            bgdat%sigv( ilay ) = self%sig1D_v( ilay )
+            bgdat%epsrh( ilay ) = 1.0_real64
+            bgdat%epsrv( ilay ) = 1.0_real64
             !write(65,*) ilay, self%sig1D_h(ilay), self%sig1D_v(ilay)
         enddo 
         !
@@ -345,9 +345,9 @@ contains
         !> allocate(bgdat%Hxpos(bgdat%nHx,3),bgdat%Hypos(bgdat%nHy,3),bgdat%Hzpos(bgdat%nHz,3) )
         !> if(ierr.ne.0) call alloc_error(pid,'In-backgroundfield','Hpos', ierr)
         !
-        ix = bgdat%nEx * 1.5
-        iy = bgdat%nEy * 1.5
-        iz = bgdat%nEz * 1.5
+        ix = bgdat%nEx * 1.5_real64
+        iy = bgdat%nEy * 1.5_real64
+        iz = bgdat%nEz * 1.5_real64
         allocate(bgdat%Ex(ix),bgdat%Ey(iy),bgdat%Ez(iz), stat=ierr )
         if( ierr .NE. 0 ) call alloc_error(pid,'Out-backgroundfield','E fields', ierr )
         !
