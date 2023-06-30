@@ -2,7 +2,7 @@
 # Generated using: ./fmkmf.pl [OPTIONS] ModEM.f90 > Makefile
 # with command line options
 # -p .:1D:2D:CSEM/EM1D:CSEM/EM1D/src:CSEM/Dipole1D:DataIO:DataSpace:Inversion:SP_Topology:Fields:ForwardSolver:Grid:ModelOperator:PreConditioner:ModelParameter:Receivers:Solver:Source:Transmitters:Utils
-# -f90 gfortran (compiler)
+# -f90 gfortran -std=f2008 (compiler)
 # -opt -g -Wno-all -fbacktrace -ffree-line-length-none (compiler optimisation)
 # -lp -L/usr/lib64  -L/usr/lib/x86_64-linux-gnu (linking options: path to libraries)
 # -l -llapack -lblas -lfftw3l -lfftw3f -lfftw3 (linking options)
@@ -45,7 +45,7 @@
 # ------------------Macro-Defs---------------------
 include Makefile.local
 OBJDIR = ../../objs/MT3D_OO
-F90 = gfortran
+F90 = gfortran -std=f2008
 FFLAGS = -g -Wno-all -fbacktrace -ffree-line-length-none
 MPIFLAGS = -x f95-cpp-input -I/usr/include/
 MODULE = -J $(OBJDIR)

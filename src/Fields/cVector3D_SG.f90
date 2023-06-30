@@ -53,7 +53,7 @@ module cVector3D_SG
             procedure, public :: divByField => divByFieldCVector3D_SG
             procedure, public :: divByValue => divByValueCVector3D_SG
             !
-            procedure, public :: interpFunc => interpFuncCVector3D_SG
+            procedure, public :: interpFunc => interpFunc_cVector3D_SG
             !
             !> Miscellaneous
             procedure, public :: getAxis => getAxisCVector3D_SG
@@ -1467,7 +1467,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine interpFuncCVector3D_SG( self, location, xyz, interp )
+    subroutine interpFunc_cVector3D_SG( self, location, xyz, interp )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
@@ -1486,13 +1486,14 @@ contains
                 !
                 select case( self%grid_type )
                     !
-                    case(EDGE)
+                    case( EDGE )
                         !
                         allocate( interp, source = cVector3D_SG_t( grid, EDGE ) )
                         !
-                        select case(xyz)
+                        select case( xyz )
                             !
                             case("x")
+                                !
                                 allocate(xC(size(grid%del_x)))
                                 allocate(yC(size(grid%dy + 1)))
                                 allocate(zC(size(grid%dz + 1)))
@@ -1500,7 +1501,9 @@ contains
                                 xC = CumSum(grid%del_x)
                                 yC = CumSum([0._prec, grid%dy])
                                 zC = CumSum([0._prec, grid%dz])
+                                !
                             case("y")
+                                !
                                 allocate(xC(size(grid%dx + 1)))
                                 allocate(yC(size(grid%del_y)))
                                 allocate(zC(size(grid%dz)))
@@ -1508,57 +1511,65 @@ contains
                                 xC = CumSum([0._prec, grid%dx])
                                 yC = CumSum([grid%del_y])
                                 zC = CumSum([0._prec, grid%dz])
+                                !
                             case("z")
+                                !
                                 allocate(xC(size(grid%dx + 1)))
                                 allocate(yC(size(grid%dy + 1)))
                                 allocate(zC(size(grid%del_z)))
-                                
+                                !
                                 xC = CumSum([0._prec, grid%dx])
                                 yC = CumSum([0._prec, grid%dy])
                                 zC = CumSum([grid%del_z])
                                 !
                             case default
-                                stop "Error: interpFuncCVector3D_SG: Unknown xyz"
+                                stop "Error: interpFunc_cVector3D_SG: Unknown xyz"
                             !
                         end select
                         !
-                    case(FACE)
+                    case( FACE )
                         !
-                        allocate(interp, source = cVector3D_SG_t(grid, FACE))
+                        allocate( interp, source = cVector3D_SG_t( grid, FACE ) )
                         !
-                        select case(xyz)
-                            case("x")
+                        select case( xyz )
+                            !
+                            case( "x" )
+                                !
                                 allocate(xC(size(grid%dx + 1)))
                                 allocate(yC(size(grid%del_y)))
                                 allocate(zC(size(grid%del_z)))
-                                
+                                !
                                 xC = CumSum([0._prec, grid%dx])
                                 yC = CumSum([grid%del_y])
                                 zC = CumSum([grid%del_z])
-                            case("y")
+                                !
+                            case( "y" )
+                                !
                                 allocate(xC(size(grid%del_x)))
                                 allocate(yC(size(grid%dy + 1)))
                                 allocate(zC(size(grid%del_z)))
-                                
+                                !
                                 xC = CumSum([grid%del_x])
                                 yC = CumSum([0._prec, grid%dy])
                                 zC = CumSum([grid%del_z])
-                            case("z")
+                                !
+                            case( "z" )
+                                !
                                 allocate(xC(size(grid%del_x)))
                                 allocate(yC(size(grid%del_y)))
                                 allocate(zC(size(grid%dz + 1)))
-                                
+                                !
                                 xC = CumSum([grid%del_x])
                                 yC = CumSum([grid%del_y])
                                 zC = CumSum([0._prec, grid%dz])
                                 !
                             case default
-                                stop "Error: interpFuncCVector3D_SG: Unknown xyz"
+                                stop "Error: interpFunc_cVector3D_SG: Unknown xyz"
                             !
                         end select
                         !
                     case default
-                        stop "Error: interpFuncCVector3D_SG: Unknown grid_type"
+                        stop "Error: interpFunc_cVector3D_SG: Unknown grid_type"
                     !
                 end select
                 !
@@ -1590,6 +1601,11 @@ contains
                 !
                 deallocate( tmp )
                 !
+                !> ????
+                ix = findloc( location(1) > xC, .TRUE., back = .TRUE., dim = 1 )
+                iy = findloc( location(2) > yC, .TRUE., back = .TRUE., dim = 1 )
+                iz = findloc( location(3) > zC, .TRUE., back = .TRUE., dim = 1 )
+                !
                 ! Find weights
                 wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))
                 !
@@ -1603,13 +1619,14 @@ contains
                 !
                 deallocate( zC )
                 !
-                select type(interp)
+                select type( interp )
                     !
                     class is( cVector3D_SG_t )
                         !
                         select case(xyz)
                             !
                             case("x")
+                                !
                                 interp%x(ix,iy,iz) = wx*wy*wz
                                 interp%x(ix+1,iy,iz) = (1-wx)*wy*wz
                                 interp%x(ix,iy+1,iz) = wx*(1-wy)*wz
@@ -1618,8 +1635,9 @@ contains
                                 interp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
                                 interp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
                                 interp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                                
+                                !
                             case("y")
+                                !
                                 interp%y(ix,iy,iz) = wx*wy*wz
                                 interp%y(ix+1,iy,iz) = (1-wx)*wy*wz
                                 interp%y(ix,iy+1,iz) = wx*(1-wy)*wz
@@ -1628,8 +1646,9 @@ contains
                                 interp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
                                 interp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
                                 interp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                                
+                                !
                             case("z")
+                                !
                                 interp%z(ix,iy,iz) = wx*wy*wz
                                 interp%z(ix+1,iy,iz) = (1-wx)*wy*wz
                                 interp%z(ix,iy+1,iz) = wx*(1-wy)*wz
@@ -1640,21 +1659,21 @@ contains
                                 interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
                                 !
                             case default
-                                stop "Error: interpFuncCVector3D_SG: Unknown xyz"
-                        !
+                                stop "Error: interpFunc_cVector3D_SG: Unknown xyz"
+                            !
                         end select !XYZ
                     !
                     class default
-                        stop "Error: interpFuncCVector3D_SG: undefined interp"
+                        stop "Error: interpFunc_cVector3D_SG: undefined interp"
                 !
                 end select !XYZ
             !
             class default
-                stop "Error: interpFuncCVector3D_SG: undefined grid"
+                stop "Error: interpFunc_cVector3D_SG: undefined grid"
                 !
         end select !GRID
         !
-    end subroutine interpFuncCVector3D_SG
+    end subroutine interpFunc_cVector3D_SG
     !
     !> No function briefing
     !

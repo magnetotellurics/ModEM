@@ -11,7 +11,7 @@ RESULT=$?
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > MT FWD ISO FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -20,7 +20,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -f -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > MT FWD VTI FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -29,7 +29,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -f -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > DIPOLE1D FWD FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -38,7 +38,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -f -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > EM1D ISO FWD FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -47,7 +47,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -f -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > EM1D VTI FWD FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -60,7 +60,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -j -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > MT JMULT ISO FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -69,7 +69,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -j -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > MT JMULT VTI FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -78,7 +78,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -j -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > DIPOLE1D JMULT FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -87,7 +87,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -j -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > EM1D ISO JMULT FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -96,7 +96,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -j -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > EM1D VTI JMULT FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -109,7 +109,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -jt -m ../docs/vti_re
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > MT JMULT ISO FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -118,7 +118,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -jt -m ../docs/vti_re
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > MT JMULT VTI FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -127,7 +127,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -jt -m ../docs/vti_re
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > DIPOLE1D JMULT_T FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -136,7 +136,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -jt -m ../docs/vti_re
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > EM1D ISO JMULT_T FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -145,7 +145,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -jt -m ../docs/vti_re
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > EM1D VTI JMULT_T FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -158,7 +158,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -i -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > MT NLCG ISO FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -167,7 +167,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -i -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > MT NLCG VTI FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -176,7 +176,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -i -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > DIPOLE1D NLCG FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -185,7 +185,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -i -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > EM1D ISO NLCG FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -194,7 +194,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -i -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > EM1D VTI NLCG FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -207,7 +207,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -i -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > MT DCG ISO FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -216,7 +216,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -i -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > MT DCG VTI FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -225,7 +225,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -i -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > DIPOLE1D DCG FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -234,7 +234,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -i -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > EM1D ISO DCG FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #
@@ -243,7 +243,7 @@ mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -i -m ../docs/vti_res
 if [ "$RESULT" -ne "0" ]; then
     #
     echo " > EM1D VTI DCG FAILS!"
-    return $RESULT
+    exit $RESULT
     #
 fi
 #

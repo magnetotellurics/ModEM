@@ -59,30 +59,30 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
     bgdat%Ex = 0._real64
     bgdat%Ey = 0._real64
     bgdat%Ez = 0._real64
-	if(bgdat%nHx .gt.0 ) then
+    if(bgdat%nHx .gt.0 ) then
     bgdat%Hx = 0._real64
     bgdat%Hy = 0._real64
     bgdat%Hz = 0._real64
-	endif
+    endif
   endif
   if(dowhat.ge.deriv) then
     bgdat%dExdm = 0._real64
     bgdat%dEydm = 0._real64
     bgdat%dEzdm = 0._real64
-	if(bgdat%nHx .gt.0 ) then
+    if(bgdat%nHx .gt.0 ) then
     bgdat%dHxdm = 0._real64
     bgdat%dHydm = 0._real64
     bgdat%dHzdm = 0._real64
-	endif
+    endif
     if(aniso .eq. vti) then
       bgdat%dExdmv = 0._real64
       bgdat%dEydmv = 0._real64
       bgdat%dEzdmv = 0._real64
-	  if(bgdat%nHx .gt.0 ) then
+      if(bgdat%nHx .gt.0 ) then
       bgdat%dHxdmv = 0._real64
       bgdat%dHydmv = 0._real64
       bgdat%dHzdmv = 0._real64
-	  endif
+      endif
     endif
   endif
 
@@ -315,8 +315,12 @@ subroutine reflectivity_unified(src,bgdat,refl_var,ifreq,icur,comm)
                   endif
                 enddo
               endif hedderivExy
-
-            deallocate(trans_above_rec,trans_below_rec,dz_above_rec,dz_below_rec, stat=ierr)
+            !
+            deallocate( trans_above_rec )
+            deallocate( trans_below_rec )
+            deallocate( dz_above_rec )
+            deallocate( dz_below_rec )
+            !
           enddo recdepthshedExy !loop over receiver depths
 
           !----- Ez ----------------------------

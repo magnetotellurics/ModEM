@@ -84,7 +84,7 @@ module SourceCSEM
         sig1D(1:nzAir) = SIGMA_AIR
         !
         !> Verbose
-        write( *, "( a33 )" ) "- Get 1D according to:", trim( get_1d_from )
+        write( *, "( a39, a14 )" ) "- Get 1D according to: ", trim( get_1d_from )
         !
         if( trim( get_1D_from ) == "Geometric_mean" ) then
             !
