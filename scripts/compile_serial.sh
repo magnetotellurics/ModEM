@@ -1,5 +1,7 @@
 #!/bin/bash
 #
+chmod 777 Build/*
+#
 ./Build/Configure.modem.ubuntu.gfortran MakefileSerial SERIAL ModEM.f90
 make -f MakefileSerial clean
 make -f MakefileSerial
