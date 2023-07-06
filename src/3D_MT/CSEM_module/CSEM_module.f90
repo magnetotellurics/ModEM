@@ -899,10 +899,10 @@ logical, intent(in), optional       :: FromFile
 
    call copy_modelParam(amodel,sigma)   
    call setType_modelParam(amodel,paramType)
-   call setValue_modelParam(amodel,paramType,model,vAir)   
+   call setValue_modelParam(amodel,paramType,model,vAir,model)   
    call ModelParamToEdge(amodel,condNomaly_h)
 
-   call getValue_modelParam(sigma,paramType,model,vAir)  !It is just to get model structure (place holder)
+   !call getValue_modelParam(sigma,paramType,model,vAir)  !It is just to get model structure (place holder)
    ! Put the background (Primary) v "condNomaly" conductivities in ModEM model format
    model%v=R_ZERO
    do k = 1,nzEarth
@@ -918,7 +918,7 @@ logical, intent(in), optional       :: FromFile
 
    call copy_modelParam(amodel,sigma)   
    call setType_modelParam(amodel,paramType)
-   call setValue_modelParam(amodel,paramType,model,vAir)   
+   call setValue_modelParam(amodel,paramType,model,vAir,model)   
    call ModelParamToEdge(amodel,condNomaly_v)
    
   ! clean up
