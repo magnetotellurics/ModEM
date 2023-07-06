@@ -1409,30 +1409,33 @@ contains
                 yC = yC + grid%oy
                 zC = zC - sum(grid%dz(1:grid%nzAir)) - grid%oz
                 !
-                ix = size( location(1) )
-                !
                 tmp = location(1) > xC
-                do i = size(tmp), 1, -1 
+                !
+                ix = size( tmp )
+                !
+                do i = size( tmp ), 1, -1 
                     if(tmp(i)) then
                         ix = i
                         exit
                     endif
                 enddo
                 !
-                iy= size( location(2) )
-                !
                 tmp = location(2) > yC
-                do i = size(tmp), 1, -1 
+                !
+                iy = size( tmp )
+                !
+                do i = size( tmp ), 1, -1 
                     if(tmp(i)) then
                         iy = i
                         exit
                     endif
                 enddo
                 !
-                iz = size( location(3) )
-                !
                 tmp = location(3) > zC
-                do i = size(tmp), 1, -1 
+                !
+                iz = size( tmp )
+                !
+                do i = size( tmp ), 1, -1 
                     if(tmp(i)) then
                         iz = i
                         exit
