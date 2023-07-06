@@ -263,8 +263,8 @@ contains
         class( Vector_t ), intent( in ) :: eVec
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
-        class( Vector_t ), allocatable :: temp_interior
-        class( Scalar_t ), allocatable, dimension(:) :: sigma_cell
+        class( Vector_t ), allocatable :: evec_interior
+        type( rScalar3D_SG_t ) :: sigma_cell
         complex( kind=prec ), allocatable :: v(:, :, :), s_v(:, :, :)
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: i, k0, k1, k2
@@ -277,28 +277,29 @@ contains
                 !
                 call dsigma%setCond( self%cell_cond(2), 2 )
                 !
-                call eVec%interior( temp_interior )
+                call eVec%interior( evec_interior )
                 !
-                call temp_interior%div( self%metric%Vedge )
+                call evec_interior%div( self%metric%Vedge )
                 !
-                call temp_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
+                call evec_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
                 !
                 k0 = self%metric%grid%NzAir
                 k1 = k0 + 1
                 k2 = self%metric%grid%Nz
                 !
-                allocate( rScalar3D_SG_t :: sigma_cell(2) )
+                sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
+                !
+                call evec_interior%sumEdges( sigma_cell, .TRUE. )
+                !
+                call sigma_cell%mult( self%metric%Vcell )
+                !
+                s_v = sigma_cell%getV()
                 !
                 do i = 1, size( self%cell_cond )
                     !
-                    call temp_interior%sumEdges( sigma_cell(i), .TRUE. )
-                    !
-                    call sigma_cell(i)%mult( self%metric%Vcell )
-                    !
                     v = self%sigMap( real( self%cell_cond(i)%getV(), kind=prec ), JOB )
-                    call dsigma%cell_cond(i)%setV( v )
                     !
-                    s_v = sigma_cell(i)%getV()
+                    call dsigma%cell_cond(i)%setV( v )
                     !
                     v = dsigma%cell_cond(i)%getV() * s_v(:,:,k1:k2)
                     !
@@ -329,15 +330,6 @@ contains
         !
         ! Verbose
         !write( *, * ) "     > Write Model to file: [", file_name, "]"
-        !
-        !> Convert modelParam to natural log or log10 for output
-        !param_type = userparam_type
-        !
-        !if( self%%is_vti ) then
-        !    call getValue_modelParam(m, param_type, self%cell_cond, v_v=ccond_v)
-        !else
-        !    call getValue_modelParam(m, param_type, self%cell_cond)
-        !endif
         !
         open( ioModelParam, file = file_name, action = "write", form = "formatted", iostat = ios )
         !

@@ -531,8 +531,21 @@ contains
         !
         call normalizeData( res, 2 )
         !
-        !> ????
-        !allocate( rScalar3D_SG_t :: s_hat( size( all_data ) ) )
+        !> ALLOCATE S_HAT ????
+        select type( sigma )
+            !
+            class is( ModelParameterCell_SG_t )
+                !
+                allocate( ModelParameterCell_SG_t :: s_hat( size( all_data ) ) )
+                !
+            class is( ModelParameterCell_SG_VTI_t )
+                !
+                allocate( ModelParameterCell_SG_VTI_t :: s_hat( size( all_data ) ) )
+                !
+            class default
+               call errStop( "gradient > Unclassified model" )
+            !
+        end select
         !
 #ifdef MPI
         call masterJMult_T( dsigma, res, JTd, i_sol, s_hat )

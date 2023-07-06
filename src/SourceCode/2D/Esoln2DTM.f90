@@ -3,7 +3,7 @@
 !
 Module Esoln2DTM
     !
-    use Constants
+    use Utilities
     use Grid2D
     !
     type :: Esoln2DTM_t
@@ -44,14 +44,14 @@ Module Esoln2DTM
         self%grid => grid    !> Set pointer to grid
 
         allocate(self%Ey(ny,nz+1),STAT=status)
-        if(status /= 0) then
-            write( *, * ) "Error:Esoln2DTM_ctor: allocation failed"
+        if( status /= 0 ) then
+            call errStop( "Esoln2DTM_ctor: Ey allocation failed" )
         endif
         !
         allocate(self%Ez(ny+1,nz),STAT=status)
         !
         if(status /= 0) then
-            write( *, * ) "Error:Esoln2DTM_ctor: allocation failed"
+            call errStop( "Esoln2DTM_ctor: Ez allocation failed" )
         endif
         self%is_allocated = .TRUE.
         self%Ey = C_ZERO

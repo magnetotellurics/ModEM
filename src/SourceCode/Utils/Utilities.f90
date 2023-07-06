@@ -2,7 +2,11 @@ module Utilities
     !
     use Constants
     !
-    implicit none
+    integer :: warning_counter = 0
+    !
+    public :: clean, minNode, maxNode
+    public :: errStop, warning
+    public :: QSort
     !
     !> Variables required for storing the date and time in SECONDS. If used
     !> throughout the program, these make the routine profiling easier
@@ -15,28 +19,29 @@ module Utilities
         !
     end type timer_t
     !
-    contains
+contains
     !
     !> No Subroutine Briefing
     !
-    subroutine errStop(msg)
+    subroutine errStop( msg )
         implicit none
         !
         character(*), intent( in ) :: msg
-        write(0, "(a9)", advance="no") "Error: "
-        write(0, *) trim(msg)
+        write( *, * ) achar(27)//"[31m# Error:"//achar(27)//"[0m "//trim( msg )
+        write( *, *) trim( msg )
         stop
         !
     end subroutine errStop
     !
     !> No Subroutine Briefing
     !
-    subroutine warning(msg)
+    subroutine warning( msg )
         implicit none
         !
         character(*), intent( in ) :: msg
-        write(0, "(a9)", advance="no") "Warning: "
-        write(0, *) trim(msg)
+        write( *, * ) achar(27)//"[91m# Warning:"//achar(27)//"[0m "//trim( msg )
+        !
+        warning_counter = warning_counter + 1
         !
     end subroutine warning
     !
@@ -105,30 +110,12 @@ module Utilities
     end subroutine clear_time
     !
     !> This is a utility routine that provides an expression used to battle
-    !> against machine error problems. It Return the same real or real(8)
-    !> as the input, but without the extra digits at the end that are often
-    !> a cause of wrong comparisons in the if statements. ALWAYS use clean(x)
-    !> instead of x in an inequality!!!
-    !> LARGE_REAL is defined in the module math_constants
-    !> A.K.
-    !
-    function clean( x )
-        implicit none
-        !
-        real( kind=prec ), intent( in ) :: x
-        real( kind=prec ) :: clean
-        !
-        clean = dnint( x * R_LARGE ) / R_LARGE
-        !
-    end function clean
-    !
-    !> This is a utility routine that provides an expression used to battle
     !> against machine error problems. Both input and output are values in km.
     !> The function rounds the value to the nearest meter. This is useful to
     !> ensure that the grid read from a file does not depend on system precision.
     !> A.K.
     !
-    function nearest_meter(x) result(clean)
+    function nearest_meter(x) result( clean )
         implicit none
         !
         real( kind=prec ), intent( in ) :: x
@@ -203,70 +190,6 @@ module Utilities
         endif
         !
     end subroutine find_index
-    !
-    !> This is a utility routine, used by several data functional
-    !> set up routines, and for other interpolation functions
-    !> Return index ix such that  xNode(ix) <= x < xNode(ix+1)
-    !> If x is out of range:
-    !> x < xNode(1) Return 0; if x> xNode(nx) Return nx
-    !> Assumes xNode is strictly increasing; does not check this
-    !> NOTE: as presently coded, when xNode is called with center
-    !>(face) node positions, this routine will return zero for
-    !> the coordinates in the outer half cell nearest the boundary
-    !> If evaluation over the complete model domain is to be allowed
-    !> a more general interpolation rule will be required.
-    !> A.K.: modified to allow input of any size, nx = size(xNode).
-    !
-    function minNode(x, xNode) result(ix)
-        implicit none
-        !
-        real( kind=prec ), intent( in ) :: x
-        real( kind=prec ), dimension(:), intent( in ) :: xNode
-        !
-        integer :: ix
-        integer :: i
-        !
-        ix = size(xNode)
-        do i = 1, size(xNode)
-            if(clean(xNode(i)) .GT. clean(x)) then
-                ix = i-1
-                exit
-            endif
-        enddo
-        !
-    end function minNode
-    !
-    !> This is a utility routine, used by several data functional
-    !> set up routines, and for other interpolation functions
-    !> Return index ix such that  xNode(ix) <= x < xNode(ix+1)
-    !> If x is out of range:
-    !> x > xNode(1) Return 0; if x< xNode(nx) Return nx
-    !> Assumes xNode is strictly decreasing; does not check this
-    !> NOTE: as presently coded, when xNode is called with center
-    !>(face) node positions, this routine will return zero for
-    !> the coordinates in the outer half cell nearest the boundary
-    !> If evaluation over the complete model domain is to be allowed
-    !> a more general interpolation rule will be required.
-    !> A.K.: modified to allow input of any size, nx = size(xNode).
-    !
-    function maxNode(x, xNode) result(ix)
-        implicit none
-        !
-        real( kind=prec ), intent( in ) :: x
-        real( kind=prec ), dimension(:), intent( in ) :: xNode
-        !
-        integer :: ix
-        integer :: i
-        !
-        ix = size(xNode)
-        do i = 1, size(xNode)
-            if(clean(xNode(i)) .LT. clean(x)) then
-                ix = i-1
-                exit
-            endif
-        enddo
-
-    end function maxNode
     !
     !> Replicates the corresponding function in Matlab: for an integer array, 
     !> outputs true if our integer is in the array, otherwise false.
@@ -429,51 +352,6 @@ module Utilities
         !
     end function isnan
     !
-    !> Some Fortran Character Utilities:
-    !> See http://gbenthien.net/strings/Strings.pdf  for more information and addtional subroutines
-    !
-    !> Converts multiple spaces and tabs to single spaces; deletes control characters;
-    !> removes initial spaces.
-    !
-    subroutine compact(str)
-        implicit none
-        !
-        character(len=*):: str
-        character(len=1):: ch
-        character(len=len_trim(str)):: outstr
-        integer :: lenstr, isp, ich, k, i
-        str=adjustl(str)
-        lenstr=len_trim(str)
-        outstr=" "
-        isp=0
-        k=0
-        !
-        do i=1, lenstr
-            ch=str(i:i)
-            ich=iachar(ch)
-            !
-            select case(ich)
-                !
-                case(9, 32)     ! space or tab character
-                    if(isp==0) then
-                        k=k+1
-                        outstr(k:k)=" "
-                    endif
-                    isp=1
-                    !
-                case(33:)      ! not a space, quote, or control character
-                    k=k+1
-                    outstr(k:k)=ch
-                    isp=0
-                    !
-            end select
-            !
-        enddo
-        !
-        str=adjustl(outstr)
-        !
-    end subroutine compact
-    !
     !> Routine finds the first instance of a character from "delims" in the
     !> the string "str". The characters before the found delimiter are
     !> output in "before". The characters after the found delimiter are
@@ -608,6 +486,84 @@ module Utilities
         end select
         !
     end function is_digit
+    !
+    !> This is a utility routine that provides an expression used to battle
+    !> against machine error problems. It returns the same real or real(8)
+    !> as the input, but without the extra digits at the end that are often
+    !> a cause of wrong comparisons in the if statements. ALWAYS use clean(x)
+    !> instead of x in an inequality!!!
+    !> R_LARGE is defined in the module math_constants
+    !> A.K.
+    !
+    function clean( x )
+        implicit none
+        !
+        real( kind=prec ), intent( in ) :: x
+        real( kind=prec ) :: clean
+        !
+        clean = dnint( x * R_LARGE) / R_LARGE
+        !
+    end function clean
+    !
+    !> This is a utility routine, used by several data functional
+    !> set up routines, and for other interpolation functions
+    !> Return index ix such that  xNode(ix) <= x < xNode(ix+1)
+    !> If x is out of range:
+    !> x < xNode(1) Return 0; if x> xNode(nx) Return nx
+    !> Assumes xNode is strictly increasing; does not check this
+    !> NOTE: as presently coded, when xNode is called with center
+    !>(face) node positions, this routine will return zero for
+    !> the coordinates in the outer half cell nearest the boundary
+    !> If evaluation over the complete model domain is to be allowed
+    !> a more general interpolation rule will be required.
+    !> A.K.: modified to allow input of any size, nx = size(xNode).
+    !
+    function minNode( x, xNode ) result( ix )
+        implicit none
+        !
+        real( kind=prec ), intent( in ) :: x
+        real( kind=prec ), dimension(:), intent( in ) :: xNode
+        !
+        integer :: ix, i
+        !
+        do i = 1, size( xNode )
+            if( clean( xNode(i) ) .GT. clean(x) ) then
+                ix = i-1
+                exit
+            endif
+        enddo
+        !
+    end function minNode
+    !
+    !>    This is a utility routine, used by several data functional
+    !>    set up routines, and for other interpolation functions
+    !>    Returns index ix such that    xNode(ix) <= x < xNode(ix+1)
+    !>    If x is out of range:
+    !>    x > xNode(1) returns 0; if x< xNode(nx) returns nx
+    !>    Assumes xNode is strictly decreasing; does not check this
+    !>    NOTE: as presently coded, when xNode is called with center
+    !>    (face) node positions, this routine will return zero for
+    !>    the coordinates in the outer half cell nearest the boundary
+    !>    If evaluation over the complete model domain is to be allowed
+    !>    a more general interpolation rule will be required.
+    !>    A.K.: modified to allow input of any size, nx = size(xNode).
+    !
+    function maxNode( x, xNode ) result( ix )
+        implicit none
+        !
+        real( kind=prec ), intent( in ) :: x
+        real( kind=prec ), dimension(:), intent( in ) :: xNode
+        !
+        integer :: ix, i
+        !
+        do i = 1, size(xNode)
+           if( clean( xNode(i) ) .LT. clean(x) ) then
+                ix = i-1
+                exit
+           endif
+        enddo
+        !
+    end function maxNode
     !
     !> A simple recursive quick sort routine using a middle pivot
     !> the average time complexity is O(nlog(n)), with the worst case of 

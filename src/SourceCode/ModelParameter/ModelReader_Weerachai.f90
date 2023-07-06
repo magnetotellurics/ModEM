@@ -95,32 +95,9 @@ contains
             anisotropic_level = 1
             !
             !> Read conductivity values in a model parameter object.
-            if( index( someChar, "ANI" ) > 0 ) then
+            if( index( someChar, "VTI" ) > 0 ) then
                 !
-                someChar = trim( someChar )
-                !
-                call Parse( someChar, " ", args, p_nargs )
-                !
-                read( args(7), "(I8)" ) anisotropic_level
-                !
-                !> Check if Isotropic and Dipole1D
-                if( anisotropic_level /= 1 .AND. source_type_csem == SRC_CSEM_DIPOLE1D ) then
-                    stop "Error: readModelReaderWeerachai > One shouldn't use Dipole1D with Anisotropy!"
-                endif
-                !
-                !> Check anisotropic_level, if not exist define as 
-                if( anisotropic_level == 0 ) then
-                    !
-                    write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m Unspecified level of anisotropy, using VTI."
-                    !
-                    anisotropic_level = 2
-                    !
-                elseif( anisotropic_level == 2 ) then
-                    write( *, "( a34, i8 )" ) "VTI, anisotropy level: ", anisotropic_level
-                else
-                    write( *, * ) "Error: readModelReaderWeerachai > Anisotropic level [", anisotropic_level, "] not implemented yet!"
-                    stop
-                endif
+                anisotropic_level = 2
                 !
             end if
             !

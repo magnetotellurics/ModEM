@@ -108,12 +108,12 @@ contains
         self%divergence_correction%solver%omega = self%solver%omega
         !
         !> Set conductivity for the divergence_correction
-        call self%divergence_correction%setCond()
+        call self%divergence_correction%setCond
         !
         !> Set preconditioner for this solver´s preconditioner
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
-        call self%initDiagnostics()
+        call self%initDiagnostics
         !
     end subroutine setFrequencyForwardSolverIT_DC
     !

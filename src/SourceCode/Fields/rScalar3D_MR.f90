@@ -18,65 +18,65 @@ module rScalar3D_MR
             final :: rScalar3D_MR_dtor
             !
             !> MR Routines
-            procedure, public :: initializeSub => initializeSubRScalar3D_MR
+            procedure, public :: initializeSub => initializeSub_rScalar3D_MR
             !
-            procedure, public :: setIndexArrays => setIndexArraysRScalar3D_MR
+            procedure, public :: setIndexArrays => setIndexArrays_rScalar3D_MR
             !
-            procedure, public :: setFull => setFullRScalar3D_MR
-            procedure, public :: getFull => getFullRScalar3D_MR
+            procedure, public :: setFull => setFull_rScalar3D_MR
+            procedure, public :: getFull => getFull_rScalar3D_MR
             !
-            procedure, public :: lengthFull => lengthFullRScalar3D_MR
-            procedure, public :: findFull => findFullRScalar3D_MR
+            procedure, public :: lengthFull => lengthFull_rScalar3D_MR
+            procedure, public :: findFull => findFull_rScalar3D_MR
             !
-            procedure, public :: findValue => findValueRScalar3D_MR
+            procedure, public :: findValue => findValue_rScalar3D_MR
             !
-            procedure, public :: sgToMR => sgToRScalar3D_MR
+            procedure, public :: sgToMR => sgTo_rScalar3D_MR
             !
             !> Boundary operations
-            procedure, public :: setAllBoundary => setAllBoundaryRScalar3D_MR
-            procedure, public :: setOneBoundary => setOneBoundaryRScalar3D_MR
-            procedure, public :: intBdryIndices => intBdryIndicesRScalar3D_MR
+            procedure, public :: setAllBoundary => setAllBoundary_rScalar3D_MR
+            procedure, public :: setOneBoundary => setOneBoundary_rScalar3D_MR
+            procedure, public :: intBdryIndices => intBdryIndices_rScalar3D_MR
             !
             !> Dimensioning operations
-            procedure, public :: length => lengthRScalar3D_MR
-            procedure, public :: setVecComponents => setVecComponentsRScalar3D_MR
+            procedure, public :: length => length_rScalar3D_MR
+            procedure, public :: setVecComponents => setVecComponents_rScalar3D_MR
             !
             !> Arithmetic/algebraic unary operations
-            procedure, public :: zeros => zerosRScalar3D_MR
-            procedure, public :: conjugate => conjugateRScalar3D_MR
+            procedure, public :: zeros => zeros_rScalar3D_MR
+            procedure, public :: conjugate => conjugate_rScalar3D_MR
             !
             !> Arithmetic/algebraic binary operations
-            procedure, public :: add => addRScalar3D_MR
+            procedure, public :: add => add_rScalar3D_MR
             !
-            procedure, public :: linComb => linCombRScalar3D_MR
+            procedure, public :: linComb => linComb_rScalar3D_MR
             !
-            procedure, public :: subValue => subValueRScalar3D_MR
-            procedure, public :: subField => subFieldRScalar3D_MR
+            procedure, public :: subValue => subValue_rScalar3D_MR
+            procedure, public :: subField => subField_rScalar3D_MR
             !
-            procedure, public :: multByReal => multByRealRScalar3D_MR
-            procedure, public :: multByComplex => multByComplexRScalar3D_MR
-            procedure, public :: multByField => multByFieldRScalar3D_MR
+            procedure, public :: multByReal => multByReal_rScalar3D_MR
+            procedure, public :: multByComplex => multByComplex_rScalar3D_MR
+            procedure, public :: multByField => multByField_rScalar3D_MR
             !
-            procedure, public :: multAdd => multAddRScalar3D_MR
+            procedure, public :: multAdd => multAdd_rScalar3D_MR
             !
-            procedure, public :: dotProd => dotProdRScalar3D_MR
+            procedure, public :: dotProd => dotProd_rScalar3D_MR
             !
-            procedure, public :: divByField => divByFieldRScalar3D_MR
-            procedure, public :: divByValue => divByValueRScalar3D_MR
+            procedure, public :: divByField => divByField_rScalar3D_MR
+            procedure, public :: divByValue => divByValue_rScalar3D_MR
             !
             !> Miscellaneous
-            procedure, public :: getV => getVRScalar3D_MR
-            procedure, public :: setV => setVRScalar3D_MR
+            procedure, public :: getV => getV_rScalar3D_MR
+            procedure, public :: setV => setV_rScalar3D_MR
             !
-            procedure, public :: getArray => getArrayRScalar3D_MR
-            procedure, public :: setArray => setArrayRScalar3D_MR
-            procedure, public :: switchStoreState => switchStoreStateRScalar3D_MR
-            procedure, public :: copyFrom => copyFromRScalar3D_MR
+            procedure, public :: getArray => getArray_rScalar3D_MR
+            procedure, public :: setArray => setArray_rScalar3D_MR
+            procedure, public :: switchStoreState => switchStoreState_rScalar3D_MR
+            procedure, public :: copyFrom => copyFrom_rScalar3D_MR
             !
             !> I/O operations
-            procedure, public :: read => readRScalar3D_MR
-            procedure, public :: write => writeRScalar3D_MR
-            procedure, public :: print => printRScalar3D_MR
+            procedure, public :: read => read_rScalar3D_MR
+            procedure, public :: write => write_rScalar3D_MR
+            procedure, public :: print => print_rScalar3D_MR
             !
     end type rScalar3D_MR_t
     !
@@ -137,7 +137,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine initializeSubRScalar3D_MR( self ) 
+    subroutine initializeSub_rScalar3D_MR( self ) 
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -160,15 +160,15 @@ contains
                 call self%zeros
                 !
             class default
-                stop "Error: initializeSubRScalar3D_MR > Unclassified grid"
+                stop "Error: initializeSub_rScalar3D_MR > Unclassified grid"
             !
         end select
         !
-    end subroutine initializeSubRScalar3D_MR
+    end subroutine initializeSub_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setIndexArraysRScalar3D_MR( self, xy_in ) 
+    subroutine setIndexArrays_rScalar3D_MR( self, xy_in ) 
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -206,7 +206,7 @@ contains
                         int_only = .TRUE.
                     case default
                         !
-                        stop "Error: setIndexArraysRScalar3D_MR > Invalid grid type option!"
+                        stop "Error: setIndexArrays_rScalar3D_MR > Invalid grid type option!"
                     !
                 end select
                 !
@@ -239,7 +239,7 @@ contains
                 end do
                 !
             class default
-                stop "Error: setIndexArraysRScalar3D_MR > Unclassified grid"
+                stop "Error: setIndexArrays_rScalar3D_MR > Unclassified grid"
             !
         end select
         !
@@ -315,11 +315,11 @@ contains
             endif
         end do
         !
-    end subroutine setIndexArraysRScalar3D_MR
+    end subroutine setIndexArrays_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setFullRScalar3D_MR( self, v )
+    subroutine setFull_rScalar3D_MR( self, v )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -340,16 +340,16 @@ contains
                 end do
                 !
             class default
-                stop "Error: setFullRScalar3D_MR > Unclassified grid"
+                stop "Error: setFull_rScalar3D_MR > Unclassified grid"
             !
         end select
         !
-    end subroutine setFullRScalar3D_MR
+    end subroutine setFull_rScalar3D_MR
     !
     !> Creates standard (1-D array) for all sub-scalars,
     !> INCLUDING redundant interface nodes.
     !
-    subroutine getFullRScalar3D_MR( self, v )
+    subroutine getFull_rScalar3D_MR( self, v )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
@@ -379,15 +379,15 @@ contains
                 end do
                 !
             class default
-                stop "Error: getFullRScalar3D_MR > Unclassified grid"
+                stop "Error: getFull_rScalar3D_MR > Unclassified grid"
             !
         end select
         !
-    end subroutine getFullRScalar3D_MR
+    end subroutine getFull_rScalar3D_MR
     !
     !> No function briefing
     !
-    function lengthFullRScalar3D_MR( self ) result( n )
+    function lengthFull_rScalar3D_MR( self ) result( n )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
@@ -405,15 +405,15 @@ contains
                 end do
                 !
             class default
-                stop "Error: lengthFullRScalar3D_MR > Unclassified grid"
+                stop "Error: lengthFull_rScalar3D_MR > Unclassified grid"
             !
         end select
         !
-    end function lengthFullRScalar3D_MR
+    end function lengthFull_rScalar3D_MR
     !
     !> No function briefing
     !
-    function findFullRScalar3D_MR( self, c ) result( I )
+    function findFull_rScalar3D_MR( self, c ) result( I )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
@@ -441,11 +441,11 @@ contains
             endif
         end do
         !
-    end function findFullRScalar3D_MR
+    end function findFull_rScalar3D_MR
     !
     !> No function briefing
     !
-    function findValueRScalar3D_MR(self, c) result (I)
+    function findValue_rScalar3D_MR(self, c) result (I)
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
@@ -474,9 +474,9 @@ contains
             endif
         end do
         !
-    end function findValueRScalar3D_MR
+    end function findValue_rScalar3D_MR
     !
-    subroutine sgToRScalar3D_MR( self, sg_v )
+    subroutine sgTo_rScalar3D_MR( self, sg_v )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -523,11 +523,11 @@ contains
                 end do
                 !
             class default
-                stop "Error: lengthFullRScalar3D_MR > Unclassified grid"
+                stop "Error: lengthFull_rScalar3D_MR > Unclassified grid"
             !
         end select
         !
-    end subroutine sgToRScalar3D_MR
+    end subroutine sgTo_rScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -554,19 +554,19 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setAllBoundaryRScalar3D_MR( self, cvalue )
+    subroutine setAllBoundary_rScalar3D_MR( self, cvalue )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: setAllBoundaryRScalar3D_MR not implemented!"
+        stop "Error: setAllBoundary_rScalar3D_MR not implemented!"
         !
-    end subroutine setAllBoundaryRScalar3D_MR
+    end subroutine setAllBoundary_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setOneBoundaryRScalar3D_MR( self, bdry, cvalue, int_only )
+    subroutine setOneBoundary_rScalar3D_MR( self, bdry, cvalue, int_only )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -641,14 +641,14 @@ contains
                  end select
                  !
             case default
-                 stop "Error: setOneBoundaryRScalar3D_MR > Invalid grid type"
+                 stop "Error: setOneBoundary_rScalar3D_MR > Invalid grid type"
         end select
         !
-    end subroutine setOneBoundaryRScalar3D_MR
+    end subroutine setOneBoundary_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine intBdryIndicesRScalar3D_MR( self, ind_i, ind_b )
+    subroutine intBdryIndices_rScalar3D_MR( self, ind_i, ind_b )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -665,11 +665,11 @@ contains
         ind_i = self%ind_interior
         ind_b = self%ind_boundaries
         !
-    end subroutine intBdryIndicesRScalar3D_MR
+    end subroutine intBdryIndices_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    function lengthRScalar3D_MR( self ) result( field_length )
+    function length_rScalar3D_MR( self ) result( field_length )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
@@ -678,11 +678,11 @@ contains
         !
         field_length = size( self%ind_active )
         !
-    end function lengthRScalar3D_MR
+    end function length_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setVecComponentsRScalar3D_MR( self, xyz, &
+    subroutine setVecComponents_rScalar3D_MR( self, xyz, &
                                              xmin, xstep, xmax, &
                                              ymin, ystep, ymax, &
                                              zmin, zstep, zmax, rvalue )
@@ -718,11 +718,11 @@ contains
         !
         self%v(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
         !
-    end subroutine setVecComponentsRScalar3D_MR
+    end subroutine setVecComponents_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine zerosRScalar3D_MR( self )
+    subroutine zeros_rScalar3D_MR( self )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -738,124 +738,124 @@ contains
                 end do
                 !
             class default
-                stop "Error: zerosRScalar3D_MR > Unclassified grid"
+                stop "Error: zeros_rScalar3D_MR > Unclassified grid"
             !
         end select
         !
-    end subroutine zerosRScalar3D_MR
+    end subroutine zeros_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine conjugateRScalar3D_MR( self )
+    subroutine conjugate_rScalar3D_MR( self )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         !
-        stop "Error: conjugateRScalar3D_MR: Do not try to conjugate a real scalar!"
+        stop "Error: conjugate_rScalar3D_MR: Do not try to conjugate a real scalar!"
         !
-    end subroutine conjugateRScalar3D_MR
+    end subroutine conjugate_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine addRScalar3D_MR( self, rhs )
+    subroutine add_rScalar3D_MR( self, rhs )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: addRScalar3D_MR not implemented!"
+        stop "Error: add_rScalar3D_MR not implemented!"
         !
-    end subroutine addRScalar3D_MR
+    end subroutine add_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine linCombRScalar3D_MR( self, rhs, c1, c2 )
+    subroutine linComb_rScalar3D_MR( self, rhs, c1, c2 )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         complex( kind=prec ), intent( in ) :: c1, c2
         !
-        stop "Error: linCombRScalar3D_MR not implemented!"
+        stop "Error: linComb_rScalar3D_MR not implemented!"
         !
-    end subroutine linCombRScalar3D_MR
+    end subroutine linComb_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine subValueRScalar3D_MR( self, cvalue )
+    subroutine subValue_rScalar3D_MR( self, cvalue )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: subValueRScalar3D_MR not implemented!"
+        stop "Error: subValue_rScalar3D_MR not implemented!"
         !
-    end subroutine subValueRScalar3D_MR
+    end subroutine subValue_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine subFieldRScalar3D_MR( self, rhs )
+    subroutine subField_rScalar3D_MR( self, rhs )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: subFieldRScalar3D_MR not implemented!"
+        stop "Error: subField_rScalar3D_MR not implemented!"
         !
-    end subroutine subFieldRScalar3D_MR
+    end subroutine subField_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine multByRealRScalar3D_MR( self, rvalue )
+    subroutine multByReal_rScalar3D_MR( self, rvalue )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: rvalue
         !
-        stop "Error: multByRealRScalar3D_MR not implemented!"
+        stop "Error: multByReal_rScalar3D_MR not implemented!"
         !
-    end subroutine multByRealRScalar3D_MR
+    end subroutine multByReal_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine multByComplexRScalar3D_MR( self, cvalue )
+    subroutine multByComplex_rScalar3D_MR( self, cvalue )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: multByComplexRScalar3D_MR not implemented!"
+        stop "Error: multByComplex_rScalar3D_MR not implemented!"
         !
-    end subroutine multByComplexRScalar3D_MR
+    end subroutine multByComplex_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine multByFieldRScalar3D_MR( self, rhs )
+    subroutine multByField_rScalar3D_MR( self, rhs )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: multByFieldRScalar3D_MR not implemented!"
+        stop "Error: multByField_rScalar3D_MR not implemented!"
         !
-    end subroutine multByFieldRScalar3D_MR
+    end subroutine multByField_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine multAddRScalar3D_MR( self, cvalue, rhs )
+    subroutine multAdd_rScalar3D_MR( self, cvalue, rhs )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: multAddRScalar3D_MR not implemented!"
+        stop "Error: multAdd_rScalar3D_MR not implemented!"
         !
-    end subroutine multAddRScalar3D_MR
+    end subroutine multAdd_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    function dotProdRScalar3D_MR( self, rhs ) result( cvalue )
+    function dotProd_rScalar3D_MR( self, rhs ) result( cvalue )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
@@ -863,37 +863,37 @@ contains
         !
         complex( kind=prec ) :: cvalue
         !
-        stop "Error: dotProdRScalar3D_MR not implemented!"
+        stop "Error: dotProd_rScalar3D_MR not implemented!"
         !
-    end function dotProdRScalar3D_MR
+    end function dotProd_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine divByValueRScalar3D_MR( self, cvalue )
+    subroutine divByValue_rScalar3D_MR( self, cvalue )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: divByValueRScalar3D_MR not implemented!"
+        stop "Error: divByValue_rScalar3D_MR not implemented!"
         !
-    end subroutine divByValueRScalar3D_MR
+    end subroutine divByValue_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine divByFieldRScalar3D_MR( self, rhs )
+    subroutine divByField_rScalar3D_MR( self, rhs )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: divByFieldRScalar3D_MR not implemented!"
+        stop "Error: divByField_rScalar3D_MR not implemented!"
         !
-    end subroutine divByFieldRScalar3D_MR
+    end subroutine divByField_rScalar3D_MR
     !
     !> No function briefing
     !
-    function getVRScalar3D_MR( self ) result( v )
+    function getV_rScalar3D_MR( self ) result( v )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
@@ -902,23 +902,23 @@ contains
         !
         stop "Error: getVRScalar3D_SG not implemented!"
         !
-    end function getVRScalar3D_MR
+    end function getV_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setVRScalar3D_MR( self, v )
+    subroutine setV_rScalar3D_MR( self, v )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
         !
-        stop "Error: setVRScalar3D_MR not implemented!"
+        stop "Error: setV_rScalar3D_MR not implemented!"
         !
-    end subroutine setVRScalar3D_MR
+    end subroutine setV_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    function getArrayRScalar3D_MR( self ) result( array )
+    function getArray_rScalar3D_MR( self ) result( array )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
@@ -934,11 +934,11 @@ contains
         !
         deallocate( v_full )
         !
-    end function getArrayRScalar3D_MR
+    end function getArray_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setArrayRScalar3D_MR( self, array )
+    subroutine setArray_rScalar3D_MR( self, array )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -954,11 +954,11 @@ contains
         !
         deallocate( vFull )
         !
-    end subroutine setArrayRScalar3D_MR
+    end subroutine setArray_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine switchStoreStateRScalar3D_MR( self )
+    subroutine switchStoreState_rScalar3D_MR( self )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -994,7 +994,7 @@ contains
                     allocate( self%v( self%nx, self%ny, self%nz - nzAir ) )
                     !
                 else
-                     write( *, * ) "Error: switchStoreStateRScalar3D_MR > unrecognized grid type: [", self%grid_type, "]"
+                     write( *, * ) "Error: switchStoreState_rScalar3D_MR > unrecognized grid type: [", self%grid_type, "]"
                      stop
                 endif
                 !
@@ -1005,16 +1005,16 @@ contains
                 self%store_state = compound
                 !
             case default
-                write( *, * ) "Error: switchStoreStateRScalar3D_MR > Unknown store_state :[", self%store_state, "]"
+                write( *, * ) "Error: switchStoreState_rScalar3D_MR > Unknown store_state :[", self%store_state, "]"
                 stop
             !
         end select
         !
-    end subroutine switchStoreStateRScalar3D_MR
+    end subroutine switchStoreState_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine copyFromRScalar3D_MR( self, rhs )
+    subroutine copyFrom_rScalar3D_MR( self, rhs )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -1023,7 +1023,7 @@ contains
         integer :: i
         !
         if( .NOT. rhs%is_allocated ) then
-            stop "Error: copyFromRScalar3D_MR > rhs not allocated"
+            stop "Error: copyFrom_rScalar3D_MR > rhs not allocated"
         endif
         !
         self%grid => rhs%grid
@@ -1058,7 +1058,7 @@ contains
                     self%sv = rhs%sv
                     !
                 else
-                    stop "Error: copyFromRScalar3D_MR > Unknown store_state!"
+                    stop "Error: copyFrom_rScalar3D_MR > Unknown store_state!"
                 endif
                 !
                 do i = 1, size( self%sub_scalars )
@@ -1068,41 +1068,41 @@ contains
                 self%is_allocated = .TRUE.
                 !
             class default
-                stop "Error: copyFromRScalar3D_MR > Unclassified rhs"
+                stop "Error: copyFrom_rScalar3D_MR > Unclassified rhs"
             !
         end select
         !
-    end subroutine copyFromRScalar3D_MR
+    end subroutine copyFrom_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine readRScalar3D_MR( self, funit, ftype )
+    subroutine read_rScalar3D_MR( self, funit, ftype )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        stop "Error: readRScalar3D_MR not implemented!"
+        stop "Error: read_rScalar3D_MR not implemented!"
         !
-    end subroutine readRScalar3D_MR
+    end subroutine read_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine writeRScalar3D_MR( self, funit, ftype )
+    subroutine write_rScalar3D_MR( self, funit, ftype )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        stop "Error: writeRScalar3D_MR not implemented!"
+        stop "Error: write_rScalar3D_MR not implemented!"
         !
-    end subroutine writeRScalar3D_MR
+    end subroutine write_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine printRScalar3D_MR( self, io_unit, title, append )
+    subroutine print_rScalar3D_MR( self, io_unit, title, append )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -1138,6 +1138,6 @@ contains
             enddo
         enddo
         !
-    end subroutine printRScalar3D_MR
+    end subroutine print_rScalar3D_MR
     !
 end module rScalar3D_MR

@@ -38,6 +38,7 @@ contains
     subroutine runProgram()
         implicit none
         !
+        character( len=20 ) :: str_msg
         real( kind=prec ) :: t_start, t_finish
         integer :: int_time
         !
@@ -79,6 +80,15 @@ contains
         !
         write( *, * )
         write( *, * ) "Finish ModEM-OO: ", getLiteralTime( int_time )
+        !
+        if( warning_counter .GT. 0 ) then
+            !
+            write( str_msg, "(I2)") warning_counter
+            !
+            call warning( str_msg )
+            !
+        endif
+        !
         write( *, * )
         !
     end subroutine runProgram
@@ -111,6 +121,10 @@ contains
             case( "JobInversion" )
                 !
                 call jobInversion
+                !
+            case( "JobSplitModel" )
+                !
+                call jobSplitModel
                 !
             case default
                 !

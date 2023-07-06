@@ -153,7 +153,7 @@ contains
                         !
                     case( MODELOP_SP2 )
                         !
-                        stop "Error: handleModelFile > MODELOP_SP2 not implemented"
+                        call errStop( "handleModelFile > MODELOP_SP2 not implemented" )
                         !
                     case( "" )
                         !
@@ -163,8 +163,7 @@ contains
                         !
                     case default
                         !
-                        write( *, * ) "Wrong Model Operator type: [", model_operator_type, "]"
-                        stop
+                        call errStop( "handleModelFile > Wrong Model Operator type: ["//model_operator_type//"]" )
                         !
                 end select
                 !
@@ -175,8 +174,8 @@ contains
                 call model_operator%setCond( sigma0 )
                 !
             class default
-                stop "Error: handleModelFile > Unclassified main_grid"
-            !
+                call errStop( "handleModelFile > Unclassified main_grid" )
+                !
         end select
         !
     end subroutine handleModelFile
@@ -210,8 +209,10 @@ contains
         !> Local object to dealt data, self-destructs at the end of the subroutine
         type( DataFileStandard_t ) :: data_file_standard
         !
+        character( len=100 ) :: str_msg
         integer :: i_tx, i_rx, n_rx, n_tx
         !
+        !>
         write( *, * ) "     < Data File: [", data_file_name, "]"
         !
         data_file_standard = DataFileStandard_t( ioStartup, data_file_name )
@@ -227,8 +228,8 @@ contains
             !
         else
             !
-            write( *, * ) "Error: handleDataFile > Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
-            stop
+            write( str_msg, "(A55, I2, A5, I2, A1 )") "handleDataFile > Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
+            call errStop( str_msg )
             !
         endif
             !
@@ -241,10 +242,10 @@ contains
             enddo
             !
         else
-             !
-             write( *, * ) "Error: handleDataFile > Number of Tx mismatched from Header :[", n_tx, " and ", data_file_standard%n_tx, "]"
-             stop
-             !
+            !
+            write( str_msg, "(A54, I2, A5, I2, A1 )") "handleDataFile > Number of Tx mismatched from Header :[", n_tx, " and ", data_file_standard%n_tx, "]"
+            call errStop( str_msg )
+            !
         endif
         !
         write( *, * ) "          Checked ", countData( all_measured_data ), " DataGroups."
@@ -284,6 +285,61 @@ contains
         !
     end subroutine handleInversionControlFile
     !
+    !> Routine to run a full ForwardModeling job 
+    !> and deliver the result(PredictedData) in a text file <all_predicted_data.dat>
+    !
+    subroutine jobSplitModel()
+        implicit none
+        !
+        class( ModelParameter_t ), allocatable :: model, aux_model
+        !
+        ! Verbose
+        write( *, * ) "     - Start jobSplitModel"
+        !
+        if( has_model_file ) then
+            !
+            call handleModelFile( model )
+        !
+        else
+            call errStop( "jobSplitModel > Missing Model file!" )
+        endif
+        !
+        select type( model )
+            !
+            class is( ModelParameterCell_SG_t )
+                !
+                call errStop( "jobSplitModel: Isotropic model already fully splited" )
+                !
+            class is( ModelParameterCell_SG_VTI_t )
+                !
+                !> Create model with horizontal cond
+                allocate( aux_model, source = ModelParameterCell_SG_t( model%metric%grid, model%cell_cond(1), model%param_type ) )
+                !
+                call aux_model%setMetric( model%metric )
+                !
+                call aux_model%write( model_file_name//"_h" )
+                !
+                write( *, * ) "               < Created ["//model_file_name//"_h] file."
+                !
+                !> Set vertical cond
+                call aux_model%setCond( model%cell_cond(2), 1 )
+                !
+                call aux_model%write( model_file_name//"_v" )
+                !
+                write( *, * ) "               < Created ["//model_file_name//"_v] file."
+                !
+            class default
+                call errStop( "jobSplitModel: Unclassified model" )
+            !
+        end select
+        !
+        deallocate( model, aux_model )
+        !
+        ! Verbose
+        write( *, * ) "     - Finish jobSplitModel"
+        !
+    end subroutine jobSplitModel
+    !
     !> Handle all the arguments passed in the execution command line
     !
     subroutine handleArguments()
@@ -302,158 +358,164 @@ contains
             argument_index = 1
             !
             do while( argument_index <= command_argument_count() ) 
-                 !
-                 call get_command_argument( argument_index, argument )
-                 !
-                 select case( argument )
-                      !
-                      case( "-cf", "--ctrl_fwd" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         fwd_control_file_name = trim( argument )
-                         !
-                         if( len( fwd_control_file_name ) > 0 ) has_fwd_control_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-ci", "--ctrl_inv" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         inv_control_file_name = trim( argument )
-                         !
-                         if( len( inv_control_file_name ) > 0 ) has_inv_control_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-d", "--data" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         data_file_name = trim( argument )
-                         !
-                         if( len( data_file_name ) > 0 ) has_data_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-f", "--forward" )
-                         !
-                         modem_job = "JobForwardModeling"
-                         !
-                         argument_index = argument_index + 1
-                         !
-                      case( "-j", "--jmult" )
-                         !
-                         modem_job = "JobJMult"
-                         !
-                         argument_index = argument_index + 1
-                         !
-                      case( "-jt", "--jmult_t" )
-                         !
-                         modem_job = "JobJMult_T"
-                         !
-                         argument_index = argument_index + 1
-                         !
-                      case( "-i", "--inversion" )
-                         !
-                         modem_job = "JobInversion"
-                         !
-                         argument_index = argument_index + 1
-                         !
-                      case( "-m", "--model" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         model_file_name = trim( argument )
-                         !
-                         if( len( model_file_name ) > 0 ) has_model_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-c", "--cov" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         cov_file_name = trim( argument )
-                         !
-                         if( len( cov_file_name ) > 0 ) has_cov_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-o", "--outdir" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         outdir_name = trim( argument )
-                         !
-                         if( len( outdir_name ) > 0 ) has_outdir_name = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-pm", "--pmodel" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         pmodel_file_name = trim( argument )
-                         !
-                         if( len( pmodel_file_name ) > 0 ) has_pmodel_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-dm", "--dsigma" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         dsigma_file_name = trim( argument )
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-pd", "--predicted" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         predicted_data_file_name = trim( argument )
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-jm", "--jmhat" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         jmhat_data_file_name = trim( argument )
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-es", "--esolution" )
-                         !
-                         call get_command_argument( argument_index + 1, argument )
-                         e_solution_file_name = trim( argument )
-                         !
-                         if( len( e_solution_file_name ) > 0 ) has_e_solution_file = .TRUE.
-                         !
-                         argument_index = argument_index + 2
-                         !
-                      case( "-v", "--version" )
-                         !
-                         write( *, * ) "    + ModEM-OO version "//VERSION
+                !
+                call get_command_argument( argument_index, argument )
+                !
+                select case( argument )
+                    !
+                    case( "-cf", "--ctrl_fwd" )
+                        !
+                        call get_command_argument( argument_index + 1, argument )
+                        fwd_control_file_name = trim( argument )
+                        !
+                        if( len( fwd_control_file_name ) > 0 ) has_fwd_control_file = .TRUE.
+                        !
+                        argument_index = argument_index + 2
+                        !
+                    case( "-ci", "--ctrl_inv" )
+                        !
+                        call get_command_argument( argument_index + 1, argument )
+                        inv_control_file_name = trim( argument )
+                        !
+                        if( len( inv_control_file_name ) > 0 ) has_inv_control_file = .TRUE.
+                        !
+                        argument_index = argument_index + 2
+                        !
+                    case( "-d", "--data" )
+                        !
+                        call get_command_argument( argument_index + 1, argument )
+                        data_file_name = trim( argument )
+                        !
+                        if( len( data_file_name ) > 0 ) has_data_file = .TRUE.
+                        !
+                        argument_index = argument_index + 2
+                        !
+                    case( "-f", "--forward" )
+                        !
+                        modem_job = "JobForwardModeling"
+                        !
+                        argument_index = argument_index + 1
+                        !
+                    case( "-j", "--jmult" )
+                        !
+                        modem_job = "JobJMult"
+                        !
+                        argument_index = argument_index + 1
+                        !
+                    case( "-jt", "--jmult_t" )
+                        !
+                        modem_job = "JobJMult_T"
+                        !
+                        argument_index = argument_index + 1
+                        !
+                    case( "-i", "--inversion" )
+                        !
+                        modem_job = "JobInversion"
+                        !
+                        argument_index = argument_index + 1
+                        !
+                    case( "-s", "--split" )
+                        !
+                        modem_job = "JobSplitModel"
+                        !
+                        argument_index = argument_index + 1
+                        !
+                    case( "-m", "--model" )
+                        !
+                        call get_command_argument( argument_index + 1, argument )
+                        model_file_name = trim( argument )
+                        !
+                        if( len( model_file_name ) > 0 ) has_model_file = .TRUE.
+                        !
+                        argument_index = argument_index + 2
+                        !
+                    case( "-c", "--cov" )
+                        !
+                        call get_command_argument( argument_index + 1, argument )
+                        cov_file_name = trim( argument )
+                        !
+                        if( len( cov_file_name ) > 0 ) has_cov_file = .TRUE.
+                        !
+                        argument_index = argument_index + 2
+                        !
+                    case( "-o", "--outdir" )
+                        !
+                        call get_command_argument( argument_index + 1, argument )
+                        outdir_name = trim( argument )
+                        !
+                        if( len( outdir_name ) > 0 ) has_outdir_name = .TRUE.
+                        !
+                        argument_index = argument_index + 2
+                        !
+                    case( "-pm", "--pmodel" )
+                        !
+                        call get_command_argument( argument_index + 1, argument )
+                        pmodel_file_name = trim( argument )
+                        !
+                        if( len( pmodel_file_name ) > 0 ) has_pmodel_file = .TRUE.
+                        !
+                        argument_index = argument_index + 2
+                        !
+                    case( "-dm", "--dsigma" )
+                        !
+                        call get_command_argument( argument_index + 1, argument )
+                        dsigma_file_name = trim( argument )
+                        !
+                        argument_index = argument_index + 2
+                        !
+                    case( "-pd", "--predicted" )
+                        !
+                        call get_command_argument( argument_index + 1, argument )
+                        predicted_data_file_name = trim( argument )
+                        !
+                        argument_index = argument_index + 2
+                        !
+                    case( "-jm", "--jmhat" )
+                        !
+                        call get_command_argument( argument_index + 1, argument )
+                        jmhat_data_file_name = trim( argument )
+                        !
+                        argument_index = argument_index + 2
+                        !
+                    case( "-es", "--esolution" )
+                        !
+                        call get_command_argument( argument_index + 1, argument )
+                        e_solution_file_name = trim( argument )
+                        !
+                        if( len( e_solution_file_name ) > 0 ) has_e_solution_file = .TRUE.
+                        !
+                        argument_index = argument_index + 2
+                        !
+                    case( "-v", "--version" )
+                        !
+                        write( *, * ) "    + ModEM-OO version "//VERSION
                         stop
-                         !
-                      case( "-h", "--help" )
-                         !
-                         call printHelp()
-                         stop
-                         !
-                      case( "-tmp", "--template" )
-                         !
-                         call printForwardControlFileTemplate
-                         call printInversionControlFileTemplate
-                         stop
-                         !
-                      case( "-vb", "--verbose" )
-                         !
-                         stop "Error: handleArguments > Verbose level not implemented yet!"
-                         !
-                      case default
-                         !
-                         write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown Argument: [", trim( argument ), "]"
-                         call printHelp()
-                         stop
-                         !
-                 end select
-                 !
-                 argument = ""
-                 !
+                        !
+                    case( "-h", "--help" )
+                        !
+                        call printHelp()
+                        stop
+                        !
+                    case( "-tmp", "--template" )
+                        !
+                        call printForwardControlFileTemplate
+                        call printInversionControlFileTemplate
+                        stop
+                        !
+                    case( "-vb", "--verbose" )
+                        !
+                        call errStop( "handleArguments > Verbose level not implemented yet!" )
+                        !
+                    case default
+                        !
+                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown Argument: [", trim( argument ), "]"
+                        call printHelp()
+                        stop
+                    !
+                end select
+                !
+                argument = ""
+                !
             enddo
             !
         endif
@@ -683,6 +745,7 @@ contains
         write( *, * ) "        [-j],  [--jmult]     :  Jacobian Multiplication."
         write( *, * ) "        [-jt], [--jmult_t]   :  Transposed Jacobian Multiplication."
         write( *, * ) "        [-i],  [--inversion] :  Inversion."
+        write( *, * ) "        [-s],  [--split]     :  Split one input model into single axes."
         write( *, * )
         write( *, * ) "    Other arguments:"
         write( *, * ) "        [-d],  [--data]      :  Flag to precede data file path."

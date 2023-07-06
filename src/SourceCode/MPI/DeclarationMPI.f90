@@ -739,7 +739,7 @@ contains
                 call packScalarBuffer( model%cell_cond(2), parent_buffer, parent_buffer_size, index )
                 !
             class default
-               stop "packModelBuffer: Unclassified model"
+                call errStop( "packModelBuffer: Unclassified model" )
             !
         end select
         !

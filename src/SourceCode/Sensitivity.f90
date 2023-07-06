@@ -300,12 +300,12 @@ contains
     !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
     !
-    subroutine JMult_T_Tx( sigma, tx_data, dsigma, i_sol )
+    subroutine JMult_T_Tx( sigma, tx_data, tx_dsigma, i_sol )
         implicit none
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), intent( in ) :: tx_data
-        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: tx_dsigma
         integer, intent( in ), optional :: i_sol
         !
         class( Vector_t ), allocatable :: lrows
@@ -322,9 +322,9 @@ contains
         if( present( i_sol ) ) sol_index = i_sol
         !
         !> Initialize dsigma with zeros
-        allocate( dsigma, source = sigma )
+        allocate( tx_dsigma, source = sigma )
         !
-        call dsigma%zeros
+        call tx_dsigma%zeros
         !
         !> Pointer to the tx_data's Transmitter
         Tx => getTransmitter( tx_data%i_tx )
@@ -336,7 +336,7 @@ contains
         !
         do i_pol = 1, Tx%n_pol
             !
-            bSrc( i_pol ) = cVector3D_SG_t( sigma%metric%grid, EDGE )
+            bSrc( i_pol ) = cVector3D_SG_t( tx_dsigma%metric%grid, EDGE )
             call bSrc( i_pol )%zeros
             !
         enddo
@@ -399,7 +399,7 @@ contains
         !> Solve Transmitter's e_sens with the new SourceInteriorForce
         call Tx%solve
         !
-        call Tx%PMult_t( sigma, dsigma )
+        call Tx%PMult_t( sigma, tx_dsigma )
         !
     end subroutine JMult_T_Tx
     !

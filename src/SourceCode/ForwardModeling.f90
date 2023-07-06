@@ -13,7 +13,7 @@ module ForwardModeling
     public :: solveAll, solveTx
     public :: jobForwardModeling, serialForwardModeling
     public :: createDistributeForwardSolver
-    public :: writeAllESolution, writeAllESolutionHeader
+    public :: writeAllESolutionHeader
     !
 contains
     !
@@ -121,6 +121,9 @@ contains
         !
         call Tx%solve
         !
+        !>
+        if( has_e_solution_file ) call Tx%writeESolution
+        !
     end subroutine solveTx
     !
     !> Routine to run a full ForwardModeling job 
@@ -152,6 +155,9 @@ contains
             stop "Error: jobForwardModeling > Missing Data file!"
         endif
         !
+        !>
+        if( has_e_solution_file ) call writeAllESolutionHeader( size( transmitters ), transmitters(1)%Tx%n_pol, e_solution_file_name )
+        !
         all_predicted_data = all_measured_data
         !
 #ifdef MPI
@@ -172,8 +178,6 @@ contains
         call serialForwardModeling( sigma, all_predicted_data )
         !
 #endif
-        !
-        if( has_e_solution_file ) call writeAllESolution( e_solution_file_name )
         !
         call writeData( all_predicted_data, predicted_data_file_name )
         !
@@ -283,40 +287,6 @@ contains
         enddo
         !
     end subroutine createDistributeForwardSolver
-    !
-    !> Write all e_solutions, with its proper Rx headers, 
-    !> into to the binary file <predicted_data_file_name>
-    !
-    subroutine writeAllESolution( file_name )
-        implicit none
-        !
-        character(*), intent( in ) :: file_name
-        !
-        integer :: i_tx, n_tx
-        !
-        if( .NOT. allocated( transmitters ) .OR. size( transmitters ) .LT. 1 ) then
-            stop "Error: writeAllESolution > Theres no transmitters to write!"
-        endif
-        !
-        if( .NOT. allocated( transmitters(1)%Tx%e_sol_0 ) .OR. size( transmitters(1)%Tx%e_sol_0 ) .LT. 1 ) then
-            stop "Error: writeAllESolution > Theres no e_sol_0 to write!"
-        endif
-        !
-        ! Verbose
-        write( *, * ) "          > Write All ESolutions to file: [", file_name, "]"
-        !
-        !>
-        n_tx = size( transmitters )
-        !
-        call writeAllESolutionHeader( n_tx, transmitters(1)%Tx%n_pol, file_name )
-        !
-        do i_tx = 1, n_tx
-            !
-            call transmitters( i_tx )%Tx%writeESolution()
-            !
-        enddo
-        !
-    end subroutine writeAllESolution
     !
     !> Write a header into the ESolution binary file
     !

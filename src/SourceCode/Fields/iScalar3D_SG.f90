@@ -18,50 +18,50 @@ module iScalar3D_SG
             final :: iScalar3D_SG_dtor
             !
             !> Boundary operations
-            procedure, public :: setAllBoundary => setAllBoundaryiScalar3D_SG
-            procedure, public :: setOneBoundary => setOneBoundaryiScalar3D_SG
-            procedure, public :: intBdryIndices => intBdryIndicesiScalar3D_SG
+            procedure, public :: setAllBoundary => setAllBoundary_iScalar3D_SG
+            procedure, public :: setOneBoundary => setOneBoundary_iScalar3D_SG
+            procedure, public :: intBdryIndices => intBdryIndices_iScalar3D_SG
             !
             !> Dimensioning operations
-            procedure, public :: length => lengthiScalar3D_SG
-            procedure, public :: setVecComponents => setVecComponentsiScalar3D_SG
+            procedure, public :: length => length_iScalar3D_SG
+            procedure, public :: setVecComponents => setVecComponents_iScalar3D_SG
             !
             !> Arithmetic/algebraic unary operations
-            procedure, public :: zeros => zerosiScalar3D_SG
-            procedure, public :: conjugate => conjugateiScalar3D_SG
+            procedure, public :: zeros => zeros_iScalar3D_SG
+            procedure, public :: conjugate => conjugate_iScalar3D_SG
             !
             !> Arithmetic/algebraic binary operations
-            procedure, public :: add => addiScalar3D_SG
+            procedure, public :: add => add_iScalar3D_SG
             !
-            procedure, public :: linComb => linCombiScalar3D_SG
+            procedure, public :: linComb => linComb_iScalar3D_SG
             !
-            procedure, public :: subValue => subValueiScalar3D_SG
-            procedure, public :: subField => subFieldiScalar3D_SG
+            procedure, public :: subValue => subValue_iScalar3D_SG
+            procedure, public :: subField => subField_iScalar3D_SG
             !
-            procedure, public :: multByReal => multByRealiScalar3D_SG
-            procedure, public :: multByComplex => multByComplexiScalar3D_SG
-            procedure, public :: multByField => multByFieldiScalar3D_SG
+            procedure, public :: multByReal => multByReal_iScalar3D_SG
+            procedure, public :: multByComplex => multByComplex_iScalar3D_SG
+            procedure, public :: multByField => multByField_iScalar3D_SG
             !
-            procedure, public :: multAdd => multAddiScalar3D_SG
+            procedure, public :: multAdd => multAdd_iScalar3D_SG
             !
-            procedure, public :: dotProd => dotProdiScalar3D_SG
+            procedure, public :: dotProd => dotProd_iScalar3D_SG
             !
-            procedure, public :: divByField => divByFieldiScalar3D_SG
-            procedure, public :: divByValue => divByValueiScalar3D_SG
+            procedure, public :: divByField => divByField_iScalar3D_SG
+            procedure, public :: divByValue => divByValue_iScalar3D_SG
             !
             !> Miscellaneous
-            procedure, public :: getV => getViScalar3D_SG
-            procedure, public :: setV => setViScalar3D_SG
+            procedure, public :: getV => getV_iScalar3D_SG
+            procedure, public :: setV => setV_iScalar3D_SG
             !
-            procedure, public :: getArray => getArrayiScalar3D_SG
-            procedure, public :: setArray => setArrayiScalar3D_SG
-            procedure, public :: switchStoreState => switchStoreStateiScalar3D_SG
-            procedure, public :: copyFrom => copyFromiScalar3D_SG
+            procedure, public :: getArray => getArray_iScalar3D_SG
+            procedure, public :: setArray => setArray_iScalar3D_SG
+            procedure, public :: switchStoreState => switchStoreState_iScalar3D_SG
+            procedure, public :: copyFrom => copyFrom_iScalar3D_SG
             !
             !> I/O operations
-            procedure, public :: read => readiScalar3D_SG
-            procedure, public :: write => writeiScalar3D_SG
-            procedure, public :: print => printiScalar3D_SG
+            procedure, public :: read => read_iScalar3D_SG
+            procedure, public :: write => write_iScalar3D_SG
+            procedure, public :: print => print_iScalar3D_SG
             !
     end type iScalar3D_SG_t
     !
@@ -164,7 +164,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setAllBoundaryiScalar3D_SG( self, cvalue )
+    subroutine setAllBoundary_iScalar3D_SG( self, cvalue )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -183,15 +183,15 @@ contains
                 self%v(:, :, (/1, self%NdV(3)/)) = cvalue
                 !
             case default
-                stop "Error: setAllBoundaryiScalar3D_SG > Grid type not recognized."
+                stop "Error: setAllBoundary_iScalar3D_SG > Grid type not recognized."
             !
         end select
         !
-    end subroutine setAllBoundaryiScalar3D_SG
+    end subroutine setAllBoundary_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setOneBoundaryiScalar3D_SG( self, bdry, cvalue, int_only )
+    subroutine setOneBoundary_iScalar3D_SG( self, bdry, cvalue, int_only )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -262,15 +262,15 @@ contains
                 end select
                 !
             case default
-                stop "Error: setOneBoundaryiScalar3D_SG > Invalid grid type"
+                stop "Error: setOneBoundary_iScalar3D_SG > Invalid grid type"
             !
         end select
         !
-    end subroutine setOneBoundaryiScalar3D_SG
+    end subroutine setOneBoundary_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine intBdryIndicesiScalar3D_SG( self, ind_i, ind_b )
+    subroutine intBdryIndices_iScalar3D_SG( self, ind_i, ind_b )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -285,7 +285,7 @@ contains
             phi = iScalar3D_SG_t( self%grid, self%grid_type )
             !
         else
-            stop "Error: intBdryIndicesiScalar3D_SG > Not allocated. Exiting."
+            stop "Error: intBdryIndices_iScalar3D_SG > Not allocated. Exiting."
         endif
         !
         if( self%store_state /= compound ) then
@@ -306,7 +306,7 @@ contains
                  temp = phi%getArray()
                  !
             case default
-                 stop "Error: intBdryIndicesiScalar3D_SG: Unknown self%grid_type"
+                 stop "Error: intBdryIndices_iScalar3D_SG: Unknown self%grid_type"
                  !
         end select
         !
@@ -336,11 +336,11 @@ contains
         !
         deallocate( temp )
         !
-    end subroutine intBdryIndicesiScalar3D_SG
+    end subroutine intBdryIndices_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    function lengthiScalar3D_SG( self ) result( field_length )
+    function length_iScalar3D_SG( self ) result( field_length )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( in ) :: self
@@ -349,11 +349,11 @@ contains
         !
         field_length = self%Nxyz
         !
-    end function lengthiScalar3D_SG
+    end function length_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setVecComponentsiScalar3D_SG( self, xyz, &
+    subroutine setVecComponents_iScalar3D_SG( self, xyz, &
                                              xmin, xstep, xmax, &
                                              ymin, ystep, ymax, &
                                              zmin, zstep, zmax, rvalue )
@@ -389,17 +389,17 @@ contains
         !
         self%v(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
         !
-    end subroutine setVecComponentsiScalar3D_SG
+    end subroutine setVecComponents_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine zerosiScalar3D_SG( self )
+    subroutine zeros_iScalar3D_SG( self )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
         !
         if( .NOT. self%is_allocated) then
-             stop "Error: zerosiScalar3D_SG > self not allocated."
+             stop "Error: zeros_iScalar3D_SG > self not allocated."
         endif
         !
         if( self%store_state .EQ. compound ) then
@@ -411,32 +411,32 @@ contains
             self%sv = R_ZERO
             !
         else
-            stop "Error: zerosiScalar3D_SG > Unknown store_state!"
+            stop "Error: zeros_iScalar3D_SG > Unknown store_state!"
         endif
         !
-    end subroutine zerosiScalar3D_SG
+    end subroutine zeros_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine conjugateiScalar3D_SG( self )
+    subroutine conjugate_iScalar3D_SG( self )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
         !
-        stop "Error: conjugateiScalar3D_SG: do not try to conjugate a real scalar!"
+        stop "Error: conjugate_iScalar3D_SG: do not try to conjugate a real scalar!"
         !
-    end subroutine conjugateiScalar3D_SG
+    end subroutine conjugate_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine addiScalar3D_SG( self, rhs )
+    subroutine add_iScalar3D_SG( self, rhs )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         if( .NOT. rhs%is_allocated) then
-             stop "Error: addiScalar3D_SG > rhs not allocated."
+             stop "Error: add_iScalar3D_SG > rhs not allocated."
         endif
         !
         if( self%isCompatible( rhs ) ) then
@@ -456,23 +456,23 @@ contains
                         self%sv = self%sv + rhs%sv
                         !
                     else
-                        stop "Error: addiScalar3D_SG > Unknown rhs store_state!"
+                        stop "Error: add_iScalar3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: addiScalar3D_SG: undefined rhs"
+                    stop "Error: add_iScalar3D_SG: undefined rhs"
                 !
             end select
             !
         else
-            stop "Error: addiScalar3D_SG > Incompatible inputs."
+            stop "Error: add_iScalar3D_SG > Incompatible inputs."
         endif
         !
-    end subroutine addiScalar3D_SG
+    end subroutine add_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine linCombiScalar3D_SG( self, rhs, c1, c2 )
+    subroutine linComb_iScalar3D_SG( self, rhs, c1, c2 )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -497,22 +497,22 @@ contains
                         self%sv = c1 * self%sv + c2 * rhs%sv
                         !
                     else
-                        stop "Error: linCombiScalar3D_SG > Unknown rhs store_state!"
+                        stop "Error: linComb_iScalar3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: linCombiScalar3D_SG: undefined rhs"
+                    stop "Error: linComb_iScalar3D_SG: undefined rhs"
                 !
             end select
         else
-            stop "Error: linCombiScalar3D_SG > Incompatible rhs"
+            stop "Error: linComb_iScalar3D_SG > Incompatible rhs"
         endif
         !
-    end subroutine linCombiScalar3D_SG
+    end subroutine linComb_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine subValueiScalar3D_SG( self, cvalue )
+    subroutine subValue_iScalar3D_SG( self, cvalue )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -527,14 +527,14 @@ contains
             self%sv = self%sv - cvalue
             !
         else
-            stop "Error: subValueiScalar3D_SG > Unknown self store_state!"
+            stop "Error: subValue_iScalar3D_SG > Unknown self store_state!"
         endif
         !
-    end subroutine subValueiScalar3D_SG
+    end subroutine subValue_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine subFieldiScalar3D_SG( self, rhs )
+    subroutine subField_iScalar3D_SG( self, rhs )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -557,23 +557,23 @@ contains
                         self%sv = self%sv - rhs%sv
                         !
                     else
-                        stop "Error: subFieldiScalar3D_SG > Unknown rhs store_state!"
+                        stop "Error: subField_iScalar3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: subFieldiScalar3D_SG: undefined rhs"
+                    stop "Error: subField_iScalar3D_SG: undefined rhs"
                 !
             end select
             !
         else
-            stop "Error: subFieldiScalar3D_SG > Incompatible inputs."
+            stop "Error: subField_iScalar3D_SG > Incompatible inputs."
         endif
         !
-    end subroutine subFieldiScalar3D_SG
+    end subroutine subField_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multByRealiScalar3D_SG( self, rvalue )
+    subroutine multByReal_iScalar3D_SG( self, rvalue )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -588,14 +588,14 @@ contains
             self%sv = self%sv * rvalue
             !
         else
-            stop "Error: multByRealiScalar3D_SG > Unknown self store_state!"
+            stop "Error: multByReal_iScalar3D_SG > Unknown self store_state!"
         endif
         !
-    end subroutine multByRealiScalar3D_SG
+    end subroutine multByReal_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multByComplexiScalar3D_SG( self, cvalue )
+    subroutine multByComplex_iScalar3D_SG( self, cvalue )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -610,14 +610,14 @@ contains
             self%sv = self%sv * cvalue
             !
         else
-            stop "Error: multByComplexiScalar3D_SG > Unknown self store_state!"
+            stop "Error: multByComplex_iScalar3D_SG > Unknown self store_state!"
         endif
         !
-    end subroutine multByComplexiScalar3D_SG
+    end subroutine multByComplex_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multByFieldiScalar3D_SG( self, rhs )
+    subroutine multByField_iScalar3D_SG( self, rhs )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -640,23 +640,23 @@ contains
                         self%sv = self%sv * rhs%sv
                         !
                     else
-                        stop "Error: multByFieldiScalar3D_SG > Unknown rhs store_state!"
+                        stop "Error: multByField_iScalar3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: multByFieldiScalar3D_SG: undefined rhs"
+                    stop "Error: multByField_iScalar3D_SG: undefined rhs"
                 !
             end select
             !
         else
-            stop "Error: multByFieldiScalar3D_SG: incompatible rhs"
+            stop "Error: multByField_iScalar3D_SG: incompatible rhs"
         endif
         !
-    end subroutine multByFieldiScalar3D_SG
+    end subroutine multByField_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine multAddiScalar3D_SG( self, cvalue, rhs )
+    subroutine multAdd_iScalar3D_SG( self, cvalue, rhs )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -680,24 +680,24 @@ contains
                         self%sv = self%sv + cvalue * rhs%sv
                         !
                     else
-                        stop "Error: multAddiScalar3D_SG > Unknown rhs store_state!"
+                        stop "Error: multAdd_iScalar3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: multAddiScalar3D_SG > rhs undefined."
+                    stop "Error: multAdd_iScalar3D_SG > rhs undefined."
                     !
             end select
             !
             !
         else
-            stop "Error: multAddiScalar3D_SG >Incompatible inputs."
+            stop "Error: multAdd_iScalar3D_SG >Incompatible inputs."
         endif
         !
-    end subroutine multAddiScalar3D_SG
+    end subroutine multAdd_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    function dotProdiScalar3D_SG( self, rhs ) result( cvalue )
+    function dotProd_iScalar3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( in ) :: self
@@ -726,23 +726,23 @@ contains
                         endif
                         !
                     class default
-                        stop "Error: dotProdiScalar3D_SG > undefined rhs"
+                        stop "Error: dotProd_iScalar3D_SG > undefined rhs"
                     !
                 end select
                 !
             else
-                stop "Error: dotProdiScalar3D_SG > Incompatible store_state"
+                stop "Error: dotProd_iScalar3D_SG > Incompatible store_state"
             endif
             !
         else
-            stop "Error: dotProdiScalar3D_SG > Incompatible rhs"
+            stop "Error: dotProd_iScalar3D_SG > Incompatible rhs"
         endif
         !
-    end function dotProdiScalar3D_SG
+    end function dotProd_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine divByValueiScalar3D_SG( self, cvalue )
+    subroutine divByValue_iScalar3D_SG( self, cvalue )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -757,14 +757,14 @@ contains
             self%sv = self%sv / cvalue
             !
         else
-            stop "Error: divByValueiScalar3D_SG > Unknown self store_state!"
+            stop "Error: divByValue_iScalar3D_SG > Unknown self store_state!"
         endif
         !
-    end subroutine divByValueiScalar3D_SG
+    end subroutine divByValue_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine divByFieldiScalar3D_SG( self, rhs )
+    subroutine divByField_iScalar3D_SG( self, rhs )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -787,23 +787,23 @@ contains
                         self%sv = self%sv / rhs%sv
                         !
                     else
-                        stop "Error: divByFieldiScalar3D_SG > Unknown rhs store_state!"
+                        stop "Error: divByField_iScalar3D_SG > Unknown rhs store_state!"
                     endif
                     !
                 class default
-                    stop "Error: divByFieldiScalar3D_SG: undefined rhs"
+                    stop "Error: divByField_iScalar3D_SG: undefined rhs"
                 !
             end select
             !
         else
-            stop "Error: divByFieldiScalar3D_SG: incompatible rhs"
+            stop "Error: divByField_iScalar3D_SG: incompatible rhs"
         endif
         !
-    end subroutine divByFieldiScalar3D_SG
+    end subroutine divByField_iScalar3D_SG
     !
     !> No function briefing
     !
-    function getViScalar3D_SG( self ) result( v )
+    function getV_iScalar3D_SG( self ) result( v )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( in ) :: self
@@ -812,11 +812,11 @@ contains
         !
         v = cmplx( self%v, 0.0, kind=prec )
         !
-    end function getViScalar3D_SG
+    end function getV_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setViScalar3D_SG( self, v )
+    subroutine setV_iScalar3D_SG( self, v )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -824,11 +824,11 @@ contains
         !
         self%v = real( v, kind=prec )
         !
-    end subroutine setViScalar3D_SG
+    end subroutine setV_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    function getArrayiScalar3D_SG( self ) result( array )
+    function getArray_iScalar3D_SG( self ) result( array )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( in ) :: self
@@ -844,14 +844,14 @@ contains
             array = self%sv
             !
         else
-            stop "Error: getArrayiScalar3D_SG > Unknown store_state!"
+            stop "Error: getArray_iScalar3D_SG > Unknown store_state!"
         endif
         !
-    end function getArrayiScalar3D_SG
+    end function getArray_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setArrayiScalar3D_SG( self, array )
+    subroutine setArray_iScalar3D_SG( self, array )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -866,14 +866,14 @@ contains
             self%sv = array
             !
         else
-            stop "Error: setArrayiScalar3D_SG > Unknown store_state!"
+            stop "Error: setArray_iScalar3D_SG > Unknown store_state!"
         endif
         !
-    end subroutine setArrayiScalar3D_SG
+    end subroutine setArray_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine switchStoreStateiScalar3D_SG( self )
+    subroutine switchStoreState_iScalar3D_SG( self )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -920,23 +920,23 @@ contains
                 self%store_state = compound
                 !
             case default
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m switchStoreStateiScalar3D_SG > Unknown store_state :[", self%store_state, "]"
+                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m switchStoreState_iScalar3D_SG > Unknown store_state :[", self%store_state, "]"
                 stop
             !
         end select
         !
-    end subroutine switchStoreStateiScalar3D_SG
+    end subroutine switchStoreState_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine copyFromiScalar3D_SG( self, rhs )
+    subroutine copyFrom_iScalar3D_SG( self, rhs )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         if( .NOT. rhs%is_allocated ) then
-            stop "Error: copyFromiScalar3D_SG > rhs not allocated"
+            stop "Error: copyFrom_iScalar3D_SG > rhs not allocated"
         endif
         !
         self%grid => rhs%grid
@@ -968,21 +968,21 @@ contains
                     self%sv = rhs%sv
                     !
                 else
-                    stop "Error: copyFromiScalar3D_SG > Unknown store_state!"
+                    stop "Error: copyFrom_iScalar3D_SG > Unknown store_state!"
                 endif
                 !
             class default
-                stop "Error: copyFromiScalar3D_SG > Unclassified rhs"
+                stop "Error: copyFrom_iScalar3D_SG > Unclassified rhs"
             !
         end select
         !
         self%is_allocated = .TRUE.
         !
-    end subroutine copyFromiScalar3D_SG
+    end subroutine copyFrom_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine readiScalar3D_SG( self, funit, ftype )
+    subroutine read_iScalar3D_SG( self, funit, ftype )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -1032,11 +1032,11 @@ contains
                  if( istat /= 0) exit
                  !
                  if( (k1 < 0) .OR. (k2 > Nz)) then
-                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m iScalar3D_SG::readiScalar3D_SG: "
+                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m iScalar3D_SG::read_iScalar3D_SG: "
                         write( *, * ) "      While reading the ", i, "th block."
                         stop
                  elseif( k1 > k2) then
-                        write( *, * ) "Warning: iScalar3D_SG::readiScalar3D_SG: "
+                        write( *, * ) "Warning: iScalar3D_SG::read_iScalar3D_SG: "
                         write( *, * ) "                Block ", i, " will be ignored."
                  endif
                  !
@@ -1044,7 +1044,7 @@ contains
                         read(funit, *, iostat = istat) temp
                         
                         if( istat /= 0) then
-                             write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m iScalar3D_SG::readiScalar3D_SG: "
+                             write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m iScalar3D_SG::read_iScalar3D_SG: "
                              write( *, * ) "            While reading the ", j, "th row in ", i,"th block."
                              stop
                         endif
@@ -1063,14 +1063,14 @@ contains
             deallocate( temp )
             !
         !else
-            !stop "Error: readiScalar3D_SG: unable to open file"
+            !stop "Error: read_iScalar3D_SG: unable to open file"
         !endif
         !
-    end subroutine readiScalar3D_SG
+    end subroutine read_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine writeiScalar3D_SG( self, funit, ftype )
+    subroutine write_iScalar3D_SG( self, funit, ftype )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -1084,7 +1084,7 @@ contains
         character(80) :: fname, isbinary
         !
         if(  .NOT. self%is_allocated) then
-             stop "Error: writeiScalar3D_SG > Not allocated"
+             stop "Error: write_iScalar3D_SG > Not allocated"
         endif
         !
         !> Make sure the store_state is compound
@@ -1106,13 +1106,13 @@ contains
             !
             if( (index(isbinary, "yes") > 0 .OR. index(isbinary, "YES") > 0) &
                      .AND. .NOT. binary) then             
-                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m writeiScalar3D_SG > Unable to write vector to unformatted file ", &
+                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m write_iScalar3D_SG > Unable to write vector to unformatted file ", &
                             trim(fname), "."
                  !
                  stop
             elseif( (index(isbinary,"no") > 0 .OR. index(isbinary,"NO") > 0) &
                      .AND.binary) then
-                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m writeiScalar3D_SG > Unable to write vector to formatted file ", &
+                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m write_iScalar3D_SG > Unable to write vector to formatted file ", &
                             trim(fname), "."
                  !
                  stop
@@ -1149,7 +1149,7 @@ contains
                 write( funit, "(2i5)", iostat = istat ) k1, k2
                 !
                 if( istat /= 0) then
-                    stop "Error: writeiScalar3D_SG > Failed while writing to file."
+                    stop "Error: write_iScalar3D_SG > Failed while writing to file."
                 endif
                 !
                 temp = self%v(:, :, k1)
@@ -1173,11 +1173,11 @@ contains
             stop "Error: readRVector3D_SG: unable to open file"
         endif
         !
-    end subroutine writeiScalar3D_SG
+    end subroutine write_iScalar3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine printiScalar3D_SG( self, io_unit, title, append )
+    subroutine print_iScalar3D_SG( self, io_unit, title, append )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
@@ -1213,6 +1213,6 @@ contains
              enddo
         enddo
         !
-    end subroutine printiScalar3D_SG
+    end subroutine print_iScalar3D_SG
     !
 end module iScalar3D_SG
