@@ -53,15 +53,15 @@ mpirun -np $procs $hostfile ./Mod3DMT_STD -T $m0_vti pred_em1d_vti_on.dat dsigma
 #
 # NLCG
 #
-mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_iso pred_mt_iso_on.dat $ctrl_inv $ctrl_em1d
+#mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_iso pred_mt_iso_on.dat $ctrl_inv $ctrl_em1d
 #
-mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_vti pred_mt_vti_on.dat $ctrl_inv $ctrl_em1d
+#mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_vti pred_mt_vti_on.dat $ctrl_inv $ctrl_em1d
 #
-mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_iso pred_dip1d_on.dat $ctrl_inv $ctrl_dip1d
+#mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_iso pred_dip1d_on.dat $ctrl_inv $ctrl_dip1d
 #
-mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_iso pred_em1d_iso_on.dat $ctrl_inv $ctrl_em1d
+#mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_iso pred_em1d_iso_on.dat $ctrl_inv $ctrl_em1d
 #
-mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_vti pred_em1d_vti_on.dat $ctrl_inv $ctrl_em1d
+#mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_vti pred_em1d_vti_on.dat $ctrl_inv $ctrl_em1d
 #
 # DCG
 #

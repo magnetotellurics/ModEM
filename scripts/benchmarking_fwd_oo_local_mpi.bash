@@ -62,15 +62,15 @@ mpirun -np $procs $hostfile ./ModEM_MPI -jt -m $m0_vti -d pred_em1d_vti_oo_seria
 # NLCG
 ################################################################
 #
-mpirun -np $procs $hostfile ./ModEM_MPI -i -m $m0_iso -d pred_mt_iso_oo_serial.dat -ci $ctrl_nlcg -cf $ctrl_em1d -o mt_iso_oo_serial_nlcg
+#mpirun -np $procs $hostfile ./ModEM_MPI -i -m $m0_iso -d pred_mt_iso_oo_serial.dat -ci $ctrl_nlcg -cf $ctrl_em1d -o mt_iso_oo_serial_nlcg
 #
-mpirun -np $procs $hostfile ./ModEM_MPI -i -m $m0_vti -d pred_mt_vti_oo_serial.dat -ci $ctrl_nlcg -cf $ctrl_em1d -o mt_vti_oo_serial_nlcg
+#mpirun -np $procs $hostfile ./ModEM_MPI -i -m $m0_vti -d pred_mt_vti_oo_serial.dat -ci $ctrl_nlcg -cf $ctrl_em1d -o mt_vti_oo_serial_nlcg
 #
-mpirun -np $procs $hostfile ./ModEM_MPI -i -m $m0_iso -d pred_dip1d_oo_serial.dat -ci $ctrl_nlcg -cf $ctrl_dip1d -o dip1d_oo_serial_nlcg
+#mpirun -np $procs $hostfile ./ModEM_MPI -i -m $m0_iso -d pred_dip1d_oo_serial.dat -ci $ctrl_nlcg -cf $ctrl_dip1d -o dip1d_oo_serial_nlcg
 #
-mpirun -np $procs $hostfile ./ModEM_MPI -i -m $m0_iso -d pred_em1d_iso_oo_serial.dat -ci $ctrl_nlcg -cf $ctrl_em1d -o em1d_iso_oo_serial_nlcg
+#mpirun -np $procs $hostfile ./ModEM_MPI -i -m $m0_iso -d pred_em1d_iso_oo_serial.dat -ci $ctrl_nlcg -cf $ctrl_em1d -o em1d_iso_oo_serial_nlcg
 #
-mpirun -np $procs $hostfile ./ModEM_MPI -i -m $m0_vti -d pred_em1d_vti_oo_serial.dat -ci $ctrl_nlcg -cf $ctrl_em1d -o em1d_vti_oo_serial_nlcg
+#mpirun -np $procs $hostfile ./ModEM_MPI -i -m $m0_vti -d pred_em1d_vti_oo_serial.dat -ci $ctrl_nlcg -cf $ctrl_em1d -o em1d_vti_oo_serial_nlcg
 #
 ################################################################
 # DCG
