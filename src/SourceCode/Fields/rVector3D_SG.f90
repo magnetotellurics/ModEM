@@ -1517,9 +1517,9 @@ contains
                     !
                 end select
                 !
-                !xC = xC + grid%ox
-                !yC = yC + grid%oy
-                !zC = zC - sum(grid%dz(1:grid%nzAir)) - grid%oz
+                xC = xC + grid%ox
+                yC = yC + grid%oy
+                zC = zC - sum(grid%dz(1:grid%nzAir)) - grid%oz
                 !
                 tmp = location(1) > xC
                 !
@@ -1557,9 +1557,9 @@ contains
                 deallocate( tmp )
                 !
                 !> ????
-                ix = findloc(location(1) > xC, .TRUE., back = .TRUE., dim = 1)
-                iy = findloc(location(2) > yC, .TRUE., back = .TRUE., dim = 1)
-                iz = findloc(location(3) > zC, .TRUE., back = .TRUE., dim = 1)
+                !ix = findloc(location(1) > xC, .TRUE., back = .TRUE., dim = 1)
+                !iy = findloc(location(2) > yC, .TRUE., back = .TRUE., dim = 1)
+                !iz = findloc(location(3) > zC, .TRUE., back = .TRUE., dim = 1)
                 !
                 ! Find weights
                 wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))
