@@ -228,7 +228,6 @@ module Transmitter
             !> Get map_e_vector from dPDEmapping
             call sigma%dPDEmapping( dsigma, map_e_vector )
             !
-            !> ON WORKING
             minus_i_omega_mu = -isign * mu_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
             !
             !> Initialize and fill bSrc

@@ -28,7 +28,8 @@ module cVector3D_SG
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zeros_cVector3D_SG
             !
-            procedure, public :: sumEdges => sumEdges_cVector3D_SG
+            procedure, public :: sumEdge => sumEdge_cVector3D_SG
+            procedure, public :: sumEdgeVTI => sumEdgeVTI_cVector3D_SG
             !
             procedure, public :: avgCell => avgCell_cVector3D_SG
             procedure, public :: avgCellVTI => avgCellVTI_cVector3D_SG
@@ -515,7 +516,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine sumEdges_cVector3D_SG( self, cell_out, interior_only )
+    subroutine sumEdge_cVector3D_SG( self, cell_out, interior_only )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
@@ -597,7 +598,115 @@ contains
                 stop "Error: sumEdges_cVector3D_SG: Unclassified cell_out"
         end select
         !
-    end subroutine sumEdges_cVector3D_SG
+    end subroutine sumEdge_cVector3D_SG
+    !
+    subroutine sumEdgeVTI_cVector3D_SG( self, cell_h_out, cell_v_out, interior_only )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in ) :: self
+        class( Scalar_t ), intent( inout ) :: cell_h_out, cell_v_out
+        logical, optional, intent( in ) :: interior_only
+        !
+        complex( kind=prec ), allocatable :: sigma_v(:, :, :)
+        integer :: x_xend, x_yend, x_zend
+        integer :: y_xend, y_yend, y_zend
+        integer :: z_xend, z_yend, z_zend
+        type( rVector3D_SG_t ) :: E_tmp
+        logical :: is_interior_only
+        !
+        E_tmp = self
+        !
+        if( self%store_state /= compound ) then
+             call E_tmp%switchStoreState
+        endif
+        !
+        is_interior_only = .FALSE.
+        !
+        if( present( interior_only ) ) is_interior_only = interior_only
+        !
+        if( is_interior_only ) then
+            call E_tmp%setAllBoundary( C_ZERO )
+        endif
+        !
+        if( .NOT. cell_h_out%is_allocated ) then
+            stop "Error: sumEdgeVTI_cVector3D_SG: Unallocated cell_h_out"
+        endif
+        !
+        if( .NOT. cell_v_out%is_allocated ) then
+            stop "Error: sumEdgeVTI_cVector3D_SG: Unallocated cell_v_out"
+        endif
+        !
+        select type( cell_h_out )
+            !
+            class is( cScalar3D_SG_t )
+                !
+                select type( cell_v_out )
+                    !
+                    class is( cScalar3D_SG_t )
+                        !
+                        select case( E_tmp%grid_type )
+                            !
+                            case( EDGE )
+                                !
+                                x_xend = size( E_tmp%x, 1 )
+                                x_yend = size( E_tmp%x, 2 )
+                                x_zend = size( E_tmp%x, 3 )
+                                !
+                                y_xend = size( E_tmp%y, 1 )
+                                y_yend = size( E_tmp%y, 2 )
+                                y_zend = size( E_tmp%y, 3 )
+                                !
+                                z_xend = size( E_tmp%z, 1 )
+                                z_yend = size( E_tmp%z, 2 )
+                                z_zend = size( E_tmp%z, 3 )
+                                !
+                                sigma_v = cmplx( E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
+                                E_tmp%x(:,2:x_yend,1:x_zend-1)       + &
+                                E_tmp%x(:,1:x_yend-1,2:x_zend)       + &
+                                E_tmp%x(:,2:x_yend,2:x_zend)         + &
+                                E_tmp%y(1:y_xend-1,:,1:y_zend-1)     + &
+                                E_tmp%y(2:y_xend,:,1:y_zend-1)       + &
+                                E_tmp%y(1:y_xend-1,:,2:y_zend)       + &
+                                E_tmp%y(2:y_xend,:,2:y_zend), 0.0, kind=prec )
+                                !
+                                call cell_h_out%setV( sigma_v )
+                                !
+                                sigma_v = cmplx( E_tmp%z(1:z_xend-1,1:z_yend-1,:)     + &
+                                E_tmp%z(2:z_xend,1:z_yend-1,:)       + &
+                                E_tmp%z(1:z_xend-1,2:z_yend,:)       + &
+                                E_tmp%z(2:z_xend,2:z_yend,:), 0.0, kind=prec )
+                                !
+                                call cell_v_out%setV( sigma_v )
+                                !
+                            case( FACE )
+                                !
+                                x_xend = size( E_tmp%x, 1 )
+                                y_xend = size( E_tmp%y, 1 )
+                                z_xend = size( E_tmp%z, 1 )
+                                !
+                                sigma_v = cmplx( E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
+                                             E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:), 0.0, kind=prec )
+                                !
+                                call cell_h_out%setV( sigma_v )
+                                !
+                                sigma_v = cmplx( E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend), 0.0, kind=prec )
+                                !
+                                call cell_v_out%setV( sigma_v )
+                                !
+                            case default
+                                stop "Error: sumEdgeVTI_rVector3D_SG: undefined E_tmp%grid_type"
+                            !
+                        end select
+                        !
+                    class default
+                        stop "Error: sumEdgeVTI_cVector3D_SG: Unclassified cell_v_out"
+                end select
+                !
+            class default
+                stop "Error: sumEdgeVTI_cVector3D_SG: Unclassified cell_h_out"
+        end select
+        !
+    end subroutine sumEdgeVTI_cVector3D_SG
     !
     !> No subroutine briefing
     !

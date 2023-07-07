@@ -264,8 +264,8 @@ contains
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
         class( Vector_t ), allocatable :: evec_interior
-        type( rScalar3D_SG_t ) :: sigma_cell
-        complex( kind=prec ), allocatable :: v(:, :, :), s_v(:, :, :)
+        type( rScalar3D_SG_t ) :: sigma_h_cell, sigma_v_cell
+        complex( kind=prec ), allocatable :: sigma_v(:, :, :)
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: i, k0, k1, k2
         !
@@ -287,25 +287,37 @@ contains
                 k1 = k0 + 1
                 k2 = self%metric%grid%Nz
                 !
-                sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
+                sigma_h_cell = rScalar3D_SG_t( self%metric%grid, CELL )
                 !
-                call evec_interior%sumEdges( sigma_cell, .TRUE. )
+                sigma_v_cell = rScalar3D_SG_t( self%metric%grid, CELL )
                 !
-                call sigma_cell%mult( self%metric%Vcell )
+                call evec_interior%sumEdges( sigma_h_cell, sigma_v_cell, .TRUE. )
                 !
-                s_v = sigma_cell%getV()
+                !> Horizontal
+                sigma_v = self%sigMap( real( self%cell_cond(1)%getV(), kind=prec ), JOB )
                 !
-                do i = 1, size( self%cell_cond )
-                    !
-                    v = self%sigMap( real( self%cell_cond(i)%getV(), kind=prec ), JOB )
-                    !
-                    call dsigma%cell_cond(i)%setV( v )
-                    !
-                    v = dsigma%cell_cond(i)%getV() * s_v(:,:,k1:k2)
-                    !
-                    call dsigma%cell_cond(i)%setV( v )
-                    !
-                enddo
+                call dsigma%cell_cond(1)%setV( sigma_v )
+                !
+                call sigma_h_cell%mult( self%metric%Vcell )
+                !
+                sigma_v = sigma_h_cell%getV()
+                !
+                sigma_v = sigma_v(:,:,k1:k2) * dsigma%cell_cond(1)%getV()
+                !
+                call dsigma%cell_cond(1)%setV( sigma_v )
+                !
+                !> Vertical
+                sigma_v = self%sigMap( real( self%cell_cond(2)%getV(), kind=prec ), JOB )
+                !
+                call dsigma%cell_cond(2)%setV( sigma_v )
+                !
+                call sigma_v_cell%mult( self%metric%Vcell )
+                !
+                sigma_v = sigma_v_cell%getV()
+                !
+                sigma_v = sigma_v(:,:,k1:k2) * dsigma%cell_cond(2)%getV()
+                !
+                call dsigma%cell_cond(2)%setV( sigma_v )
                 !
             class default
                 stop "Error: dPDEmapping_T_ModelParameterCell_SG_VTI > Unclassified dsigma"

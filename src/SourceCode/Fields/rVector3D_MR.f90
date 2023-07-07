@@ -64,9 +64,13 @@ module rVector3D_MR
             !
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zeros_rVector3D_MR
-            procedure, public :: sumEdges => sumEdges_rVector3D_MR
+            !
+            procedure, public :: sumEdge => sumEdge_rVector3D_MR
+            procedure, public :: sumEdgeVTI => sumEdgeVTI_rVector3D_MR
+            !
             procedure, public :: avgCell => avgCell_rVector3D_MR
             procedure, public :: avgCellVTI => avgCellVTI_rVector3D_MR
+            !
             procedure, public :: conjugate => conjugate_rVector3D_MR
             !
             !> Arithmetic/algebraic binary operations
@@ -1179,6 +1183,32 @@ contains
         end select
         !
     end subroutine sumEdges_rVector3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine sumEdgeVTI_rVector3D_MR( self, cell_in, ptype )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( Scalar_t ), intent( in ) :: cell_in
+        character(*), intent( in ), optional :: ptype
+        !
+        stop "Error: sumEdgeVTI_rVector3D_MR > Not implemented yet"
+        !
+    end subroutine sumEdgeVTI_rVector3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine avgCellVTI_rVector3D_MR( self, ell_h_in, cell_v_in, ptype )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_h_in, cell_v_in
+        character(*), intent( in ), optional :: ptype
+        !
+        stop "Error: avgCellVTI_rVector3D_MR > Not implemented yet"
+        !
+    end subroutine avgCellVTI_rVector3D_MR
     !
     !> No subroutine briefing
     !

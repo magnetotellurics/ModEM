@@ -17,7 +17,9 @@ module Vector
         procedure( interface_diag_mult_vector ), deferred, public :: diagMult
         procedure( interface_interp_func_vector ), deferred, public :: interpFunc
         !
-        procedure( interface_sum_edges_vector ), deferred, public :: sumEdges
+        procedure( interface_sum_edge_vector ), deferred, public :: sumEdge
+        procedure( interface_sum_edge_vti_vector ), deferred, public :: sumEdgeVTI
+        generic :: sumEdges => sumEdge, sumEdgeVTI
         !
         procedure( interface_avg_cells_vector ), deferred, public :: avgCell
         procedure( interface_avg_cells_VTI_vector ), deferred, public :: avgCellVTI
@@ -61,12 +63,20 @@ module Vector
         end subroutine interface_interp_func_vector
         !
         !> No interface subroutine briefing
-        subroutine interface_sum_edges_vector( self, cell_out, interior_only )
+        subroutine interface_sum_edge_vector( self, cell_out, interior_only )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( in ) :: self
             class( Scalar_t ), intent( inout ) :: cell_out
             logical, optional, intent( in ) :: interior_only
-        end subroutine interface_sum_edges_vector
+        end subroutine interface_sum_edge_vector
+        !
+        !> No interface subroutine briefing
+        subroutine interface_sum_edge_vti_vector( self, cell_h_out, cell_v_out, interior_only )
+            import :: Vector_t, Scalar_t
+            class( Vector_t ), intent( in ) :: self
+            class( Scalar_t ), intent( inout ) :: cell_h_out, cell_v_out
+            logical, optional, intent( in ) :: interior_only
+        end subroutine interface_sum_edge_vti_vector
         !
         !> No interface subroutine briefing
         !
