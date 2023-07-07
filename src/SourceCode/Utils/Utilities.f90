@@ -1,6 +1,7 @@
 module Utilities
     !
     use Constants
+    !use DeclarationMPI
     !
     integer :: warning_counter = 0
     !
@@ -29,6 +30,12 @@ contains
         character(*), intent( in ) :: msg
         write( *, * ) achar(27)//"[31m# Error:"//achar(27)//"[0m "//trim( msg )
         write( *, *) trim( msg )
+        !
+!#ifdef MPI
+        !
+        !call MPI_Finalize( ierr )
+!#endif
+        !
         stop
         !
     end subroutine errStop

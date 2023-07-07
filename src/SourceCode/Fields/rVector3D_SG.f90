@@ -553,17 +553,17 @@ contains
                     !
                     case( EDGE )
                         !
-                        x_xend = size( E_tmp%x, 1)
-                        x_yend = size( E_tmp%x, 2)
-                        x_zend = size( E_tmp%x, 3)
+                        x_xend = size( E_tmp%x, 1 )
+                        x_yend = size( E_tmp%x, 2 )
+                        x_zend = size( E_tmp%x, 3 )
                         !
-                        y_xend = size( E_tmp%y, 1)
-                        y_yend = size( E_tmp%y, 2)
-                        y_zend = size( E_tmp%y, 3)
+                        y_xend = size( E_tmp%y, 1 )
+                        y_yend = size( E_tmp%y, 2 )
+                        y_zend = size( E_tmp%y, 3 )
                         !
-                        z_xend = size(E_tmp%z, 1)
-                        z_yend = size(E_tmp%z, 2)
-                        z_zend = size(E_tmp%z, 3)
+                        z_xend = size(E_tmp%z, 1 )
+                        z_yend = size(E_tmp%z, 2 )
+                        z_zend = size(E_tmp%z, 3 )
                         !
                         cell_out%v = E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
                         E_tmp%x(:,2:x_yend,1:x_zend-1)       + &
@@ -592,7 +592,7 @@ contains
                         stop "Error: sumEdges_rVector3D_SG: undefined E_tmp%grid_type"
                     !
                   end select
-                !
+                  !
             class default
                 stop "Error: sumEdges_rVector3D_SG: Unclassified cell_out"
         end select
@@ -1557,9 +1557,9 @@ contains
                 deallocate( tmp )
                 !
                 !> ????
-                !ix = findloc(location(1) > xC, .TRUE., back = .TRUE., dim = 1)
-                !iy = findloc(location(2) > yC, .TRUE., back = .TRUE., dim = 1)
-                !iz = findloc(location(3) > zC, .TRUE., back = .TRUE., dim = 1)
+                ix = findloc(location(1) > xC, .TRUE., back = .TRUE., dim = 1)
+                iy = findloc(location(2) > yC, .TRUE., back = .TRUE., dim = 1)
+                iz = findloc(location(3) > zC, .TRUE., back = .TRUE., dim = 1)
                 !
                 ! Find weights
                 wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))

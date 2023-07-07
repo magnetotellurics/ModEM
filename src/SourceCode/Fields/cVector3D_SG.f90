@@ -57,7 +57,7 @@ module cVector3D_SG
             procedure, public :: divByField => divByField_cVector3D_SG
             procedure, public :: divByValue => divByValue_cVector3D_SG
             !
-            procedure, public :: interpFunc => interpFunc__cVector3D_SG
+            procedure, public :: interpFunc => interpFunc_cVector3D_SG
             !
             !> Miscellaneous
             procedure, public :: getAxis => getAxis_cVector3D_SG
@@ -1579,7 +1579,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine interpFunc__cVector3D_SG( self, location, xyz, interp )
+    subroutine interpFunc_cVector3D_SG( self, location, xyz, interp )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
@@ -1635,7 +1635,7 @@ contains
                                 zC = CumSum([grid%del_z])
                                 !
                             case default
-                                stop "Error: interpFunc__cVector3D_SG: Unknown xyz"
+                                stop "Error: interpFunc_cVector3D_SG: Unknown xyz"
                             !
                         end select
                         !
@@ -1676,12 +1676,12 @@ contains
                                 zC = CumSum([0._prec, grid%dz])
                                 !
                             case default
-                                stop "Error: interpFunc__cVector3D_SG: Unknown xyz"
+                                stop "Error: interpFunc_cVector3D_SG: Unknown xyz"
                             !
                         end select
                         !
                     case default
-                        stop "Error: interpFunc__cVector3D_SG: Unknown grid_type"
+                        stop "Error: interpFunc_cVector3D_SG: Unknown grid_type"
                     !
                 end select
                 !
@@ -1725,9 +1725,9 @@ contains
                 deallocate( tmp )
                 !
                 !> ????
-                !ix = findloc( location(1) > xC, .TRUE., back = .TRUE., dim = 1 )
-                !iy = findloc( location(2) > yC, .TRUE., back = .TRUE., dim = 1 )
-                !iz = findloc( location(3) > zC, .TRUE., back = .TRUE., dim = 1 )
+                ix = findloc( location(1) > xC, .TRUE., back = .TRUE., dim = 1 )
+                iy = findloc( location(2) > yC, .TRUE., back = .TRUE., dim = 1 )
+                iz = findloc( location(3) > zC, .TRUE., back = .TRUE., dim = 1 )
                 !
                 ! Find weights
                 wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))
@@ -1782,21 +1782,21 @@ contains
                                 interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
                                 !
                             case default
-                                stop "Error: interpFunc__cVector3D_SG: Unknown xyz"
+                                stop "Error: interpFunc_cVector3D_SG: Unknown xyz"
                             !
                         end select !XYZ
                     !
                     class default
-                        stop "Error: interpFunc__cVector3D_SG: undefined interp"
+                        stop "Error: interpFunc_cVector3D_SG: undefined interp"
                 !
                 end select !XYZ
             !
             class default
-                stop "Error: interpFunc__cVector3D_SG: undefined grid"
+                stop "Error: interpFunc_cVector3D_SG: undefined grid"
                 !
         end select !GRID
         !
-    end subroutine interpFunc__cVector3D_SG
+    end subroutine interpFunc_cVector3D_SG
     !
     !> No function briefing
     !
