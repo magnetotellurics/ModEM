@@ -1,4 +1,4 @@
-Model and data output file name    : VTI
+Model and data output file name    : BLOCK2
 Initial damping factor lambda      : 1.
 To update lambda divide by         : 10.
 Initial search step in model units : 1.
