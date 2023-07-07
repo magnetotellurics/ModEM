@@ -15,7 +15,7 @@ if [ "$RESULT" -ne "0" ]; then
     #
 fi
 #
-mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -f -m ../docs/vti_results/VTI_H10_V10/model_VTI_h10_v10.mod -d ../docs/vti_results/Data_Z.dat -pd pred_mt_vti_oo.dat -es esol_mt_vti_oo.bin -cf ../docs/vti_results/oo_fwd_control_em1d
+mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -f -m ../docs/vti_results/model_VTI_h10_v10.mod -d ../docs/vti_results/Data_Z.dat -pd pred_mt_vti_oo.dat -es esol_mt_vti_oo.bin -cf ../docs/vti_results/oo_fwd_control_em1d
 #
 if [ "$RESULT" -ne "0" ]; then
     #
@@ -42,7 +42,7 @@ if [ "$RESULT" -ne "0" ]; then
     #
 fi
 #
-mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -f -m ../docs/vti_results/VTI_H10_V10/model_VTI_h10_v10.mod -d ../docs/vti_results/Data_Ey.dat -pd pred_em1d_vti_oo.dat -es esol_em1d_vti_oo.bin -cf ../docs/vti_results/oo_fwd_control_em1d
+mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -f -m ../docs/vti_results/model_VTI_h10_v10.mod -d ../docs/vti_results/Data_Ey.dat -pd pred_em1d_vti_oo.dat -es esol_em1d_vti_oo.bin -cf ../docs/vti_results/oo_fwd_control_em1d
 #
 if [ "$RESULT" -ne "0" ]; then
     #
@@ -64,7 +64,7 @@ if [ "$RESULT" -ne "0" ]; then
     #
 fi
 #
-mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -j -m ../docs/vti_results/model_VTI_h0_v0.mod -pm ../docs/vti_results/VTI_H10_V10/model_VTI_h10_v10.mod -d ../docs/vti_results/Data_Z.dat -jm jmhat_mt_vti_oo.dat -cf ../docs/vti_results/oo_fwd_control_em1d
+mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -j -m ../docs/vti_results/model_VTI_h0_v0.mod -pm ../docs/vti_results/model_VTI_h10_v10.mod -d ../docs/vti_results/Data_Z.dat -jm jmhat_mt_vti_oo.dat -cf ../docs/vti_results/oo_fwd_control_em1d
 #
 if [ "$RESULT" -ne "0" ]; then
     #
@@ -91,7 +91,7 @@ if [ "$RESULT" -ne "0" ]; then
     #
 fi
 #
-mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -j -m ../docs/vti_results/model_VTI_h0_v0.mod -pm ../docs/vti_results/VTI_H10_V10/model_VTI_h10_v10.mod -d ../docs/vti_results/Data_Ey.dat -jm jmhat_em1d_vti_oo.dat -cf ../docs/vti_results/oo_fwd_control_em1d
+mpirun -np 22 --hostfile ../../hostfile_22.txt ./ModEM_MPI -j -m ../docs/vti_results/model_VTI_h0_v0.mod -pm ../docs/vti_results/model_VTI_h10_v10.mod -d ../docs/vti_results/Data_Ey.dat -jm jmhat_em1d_vti_oo.dat -cf ../docs/vti_results/oo_fwd_control_em1d
 #
 if [ "$RESULT" -ne "0" ]; then
     #
