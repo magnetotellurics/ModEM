@@ -12,12 +12,12 @@ data_csem="Data_Ey.dat"
 ctrl_dip1d="on_fwd_control_dip1d"
 ctrl_em1d="on_fwd_control_em1d"
 ctrl_inv="on_inv_control"
-#hostfile="--hostfile ../../hostfile_$procs.txt"
-hostfile=""
+hostfile="--hostfile ../../hostfile_$procs.txt"
+#hostfile=""
 #
 # FWD
 #
-mpirun -np $procs $hostfile ./Mod3DMT_STD -F $pm_iso $data_mt pred_mt_iso_on.dat esol_mt_iso_on.bin $ctrl_em1d
+#mpirun -np $procs $hostfile ./Mod3DMT_STD -F $pm_iso $data_mt pred_mt_iso_on.dat esol_mt_iso_on.bin $ctrl_em1d
 #
 mpirun -np $procs $hostfile ./Mod3DMT_STD -F $pm_vti $data_mt pred_mt_vti_on.dat esol_mt_vti_on.bin $ctrl_em1d
 #
@@ -55,7 +55,7 @@ mpirun -np $procs $hostfile ./Mod3DMT_STD -T $m0_vti pred_em1d_vti_on.dat dsigma
 #
 #mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_iso pred_mt_iso_on.dat $ctrl_inv $ctrl_em1d
 #
-#mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_vti pred_mt_vti_on.dat $ctrl_inv $ctrl_em1d
+mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_vti pred_mt_vti_on.dat $ctrl_inv $ctrl_em1d
 #
 #mpirun -np $procs $hostfile ./Mod3DMT_STD -I NLCG $m0_iso pred_dip1d_on.dat $ctrl_inv $ctrl_dip1d
 #
