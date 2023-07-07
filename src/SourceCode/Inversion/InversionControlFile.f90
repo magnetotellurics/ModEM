@@ -1,0 +1,171 @@
+!>*************
+!>
+!> Class to read a control file
+!> And set Inversion parameters
+!>
+!>*************
+!>
+module InversionControlFile
+    !
+    use Constants
+    use String
+    !
+    character(:), allocatable :: inversion_type
+    character( len=3 ), parameter :: DCG = "DCG"
+    character( len=4 ), parameter :: NLCG = "NLCG"
+    !
+    character(:), allocatable :: joint_type
+    character( len=15 ), parameter :: INV_UNWEIGHTED = "UnweightedJoint"
+    character( len=12 ), parameter :: INV_TX_BASED = "TxBasedJoint"
+    !
+    type :: InversionControlFile_t
+        !
+        !> Inversion parameters
+        character(:), allocatable :: inversion_type, joint_type
+        character(:), allocatable :: max_inv_iters, max_grad_iters
+        character(:), allocatable :: error_tol, rms_tol
+        character(:), allocatable :: lambda, lambda_tol, lambda_div
+        character(:), allocatable :: startdm, fdiffTol
+        !
+        contains
+            !
+            final :: InversionControlFile_dtor
+            !
+    end type InversionControlFile_t
+    !
+    interface InversionControlFile_t
+        module procedure InversionControlFile_ctor
+    end interface InversionControlFile_t
+!
+contains
+    !
+    !> Procedure InversionControlFile_ctor
+    !> Read line by line of the data file, create Data Entry objects(MT, MT_REF or CSEM)
+    !
+    function InversionControlFile_ctor( funit, fname ) result( self )
+        implicit none
+        !
+        integer, intent( in ) :: funit
+        character(:), allocatable, intent( in ) :: fname
+        !
+        type( InversionControlFile_t ) :: self
+        !
+        character(1000) :: full_line_text
+        character(len=200), dimension(20) :: args
+        character(:), allocatable :: line_text
+        integer :: line_counter, io_stat, p_nargs
+        !
+        !write( *,* ) "Constructor InversionControlFile_t"
+        !
+        call Compact( fname )
+        !
+        open( unit = funit, file = fname, iostat = io_stat, status = "old" )
+        !
+        if( io_stat == 0 ) then
+            !
+            do
+                read( funit, "(a)", END = 10 ) full_line_text
+                line_text = adjustl( full_line_text )
+                line_text = trim( line_text )
+                !
+                call Parse( line_text, ":", args, p_nargs )
+                !
+                if( index( line_text, "#" ) == 0 .AND. index( line_text, ">" ) == 0 ) then
+                    !
+                    if( index( line_text, "inversion_type" ) > 0 ) then
+                        self%inversion_type = trim( args(2) )
+                    elseif( index( line_text, "joint_type" ) > 0 ) then
+                        self%joint_type = trim( args(2) )
+                    elseif( index( line_text, "max_inv_iters" ) > 0 ) then
+                        self%max_inv_iters = trim( args(2) )
+                    elseif( index( line_text, "max_grad_iters" ) > 0 ) then
+                        self%max_grad_iters = trim( args(2) )
+                    elseif( index( line_text, "error_tol" ) > 0 ) then
+                        self%error_tol = trim( args(2) )
+                    elseif( index( line_text, "rms_tol" ) > 0 ) then
+                        self%rms_tol = trim( args(2) )
+                    elseif( index( line_text, "lambda_tol" ) > 0 ) then
+                        self%lambda_tol = trim( args(2) )
+                    elseif( index( line_text, "lambda_div" ) > 0 ) then
+                        self%lambda_div = trim( args(2) )
+                    elseif( index( line_text, "lambda" ) > 0 ) then
+                        self%lambda = trim( args(2) )
+                    elseif( index( line_text, "startdm" ) > 0 ) then
+                        self%startdm = trim( args(2) )
+                    elseif( index( line_text, "fdiffTol" ) > 0 ) then
+                        self%fdiffTol = trim( args(2) )
+                    else
+                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unsupported Inversion parameter: ["//trim(line_text)//"]"
+                        stop 
+                    endif
+                    !
+                endif
+                !
+            enddo
+            !
+10          close( unit = funit )
+            !
+            ! Inversion type
+            if( allocated( self%inversion_type ) ) then
+                !
+                select case( self%inversion_type )
+                    !
+                    case( "DCG" )
+                        inversion_type = DCG
+                    case( "NLCG" )
+                        inversion_type = NLCG
+                    case default
+                        inversion_type = ""
+                    stop "Error: Wrong inversion_type control, use [DCG|NLCG]"
+                    !
+                end select
+                !
+            endif
+            !
+            ! Joint type
+            if( allocated( self%joint_type ) ) then
+                !
+                select case( self%joint_type )
+                    !
+                    case( "Unweighted" )
+                        joint_type = INV_UNWEIGHTED
+                    case( "TxBased" )
+                        joint_type = INV_TX_BASED
+                    case default
+                        joint_type = ""
+                    stop "Error: Wrong joint_type control, use [Unweighted|TxBased]"
+                    !
+                end select
+                !
+            endif
+            !
+        else
+            write( *, * ) "Error opening [", fname, "] in InversionControlFile_ctor"
+            stop
+        endif
+        !
+    end function InversionControlFile_ctor
+    !
+    !> Deconstructor routine:
+    !>     Deallocates inherent properties of this class.
+    subroutine InversionControlFile_dtor( self )
+        implicit none
+        !
+        type( InversionControlFile_t ), intent( inout ) :: self
+        !
+        !write( *,* ) "Destructor InversionControlFile_t"
+        !
+        if( allocated( self%inversion_type ) ) deallocate( self%inversion_type )
+        if( allocated( self%max_inv_iters ) ) deallocate( self%max_inv_iters )
+        if( allocated( self%max_grad_iters ) ) deallocate( self%max_grad_iters )
+        if( allocated( self%error_tol ) ) deallocate( self%error_tol )
+        if( allocated( self%rms_tol ) ) deallocate( self%rms_tol )
+        if( allocated( self%lambda ) ) deallocate( self%lambda )
+        if( allocated( self%lambda_tol ) ) deallocate( self%lambda_tol )
+        if( allocated( self%lambda_div ) ) deallocate( self%lambda_div )
+        if( allocated( self%startdm ) ) deallocate( self%startdm )
+        if( allocated( self%fdiffTol ) ) deallocate( self%fdiffTol )
+        !
+    end subroutine InversionControlFile_dtor
+    !
+end module InversionControlFile
