@@ -1725,9 +1725,9 @@ contains
                 deallocate( tmp )
                 !
                 !> ????
-                ix = findloc( location(1) > xC, .TRUE., back = .TRUE., dim = 1 )
-                iy = findloc( location(2) > yC, .TRUE., back = .TRUE., dim = 1 )
-                iz = findloc( location(3) > zC, .TRUE., back = .TRUE., dim = 1 )
+                !ix = findloc( location(1) > xC, .TRUE., back = .TRUE., dim = 1 )
+                !iy = findloc( location(2) > yC, .TRUE., back = .TRUE., dim = 1 )
+                !iz = findloc( location(3) > zC, .TRUE., back = .TRUE., dim = 1 )
                 !
                 ! Find weights
                 wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))

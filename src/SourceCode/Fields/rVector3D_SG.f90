@@ -1517,9 +1517,9 @@ contains
                     !
                 end select
                 !
-                xC = xC + grid%ox
-                yC = yC + grid%oy
-                zC = zC - sum(grid%dz(1:grid%nzAir)) - grid%oz
+                !xC = xC + grid%ox
+                !yC = yC + grid%oy
+                !zC = zC - sum(grid%dz(1:grid%nzAir)) - grid%oz
                 !
                 tmp = location(1) > xC
                 !
