@@ -293,6 +293,8 @@ contains
                 !
                 call evec_interior%sumEdges( sigma_h_cell, sigma_v_cell, .TRUE. )
                 !
+                deallocate( evec_interior )
+                !
                 !> Horizontal
                 sigma_v = self%sigMap( real( self%cell_cond(1)%getV(), kind=prec ), JOB )
                 !

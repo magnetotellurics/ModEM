@@ -283,8 +283,27 @@ contains
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
         class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_cond
         !
-        if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
-        self%cell_cond = cell_cond
+		integer :: i
+		!
+        do i = 1, size( cell_cond )
+            !
+            if( .NOT. cell_cond(i)%is_allocated )then
+                !
+                write( *, * ) "Error: setAllCond_ModelParameterCell_SG > cell_cond has no Axis [", i, "]"
+                stop
+                !
+            endif
+            !
+            if( .NOT. self%cell_cond(i)%is_allocated )then
+                !
+                write( *, * ) "Error: setAllCond_ModelParameterCell_SG > self has no Axis [", i, "]"
+                stop
+                !
+            endif
+            !
+            self%cell_cond(i) = cell_cond(i)
+            !
+        enddo
         !
     end subroutine setAllCond_ModelParameterCell_SG
     !
@@ -520,7 +539,7 @@ contains
         class( Vector_t ), intent( in ) :: eVec
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
-        class( Vector_t ), allocatable :: temp_interior
+        class( Vector_t ), allocatable :: evec_interior
         type( rScalar3D_SG_t ) :: sigma_cell
         complex( kind=prec ), allocatable :: v(:, :, :), s_v(:, :, :)
         character( len=5 ), parameter :: JOB = "DERIV"
@@ -534,15 +553,15 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                call eVec%interior( temp_interior )
+                call eVec%interior( evec_interior )
                 !
-                call temp_interior%div( self%metric%Vedge )
+                call evec_interior%div( self%metric%Vedge )
                 !
-                call temp_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
+                call evec_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
                 !
-                call temp_interior%sumEdges( sigma_cell, .TRUE. )
+                call evec_interior%sumEdges( sigma_cell, .TRUE. )
                 !
-                deallocate( temp_interior )
+                deallocate( evec_interior )
                 !
                 call sigma_cell%mult( self%metric%Vcell )
                 !
