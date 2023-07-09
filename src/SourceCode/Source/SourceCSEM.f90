@@ -7,6 +7,7 @@ module SourceCSEM
     use dipole1d
     use cVector3D_SG
     use rVector3D_SG
+    use rScalar3D_SG
     use Grid3D_SG
     !
     character(:), allocatable :: source_type_csem
@@ -53,15 +54,15 @@ module SourceCSEM
         type( rVector3D_SG_t ), intent( out ) :: cond_anomaly
         integer, intent( in ) :: ani_level
         !
-        class( Scalar_t ), allocatable :: sigma_cell
+        type( rScalar3D_SG_t ) :: sigma_cell
         complex( kind=prec ), allocatable :: v(:, :, :)
         class( ModelParameter_t ), allocatable :: aModel
         real( kind=prec ) :: wt, temp_sigma_1d
         integer :: nzAir, nzEarth, i, j, k
         type( rVector3D_SG_t ) :: cond_nomaly
         !
-		!>
-        allocate( sigma_cell, source = self%sigma%getCond( ani_level ) )
+        !>
+        sigma_cell = self%sigma%getCond( ani_level )
         !
         nzAir = sigma_cell%grid%nzAir
         !

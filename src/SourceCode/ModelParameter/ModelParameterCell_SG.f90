@@ -385,8 +385,6 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-                write(*,*) "##### ENTER COPY #####"
-                !
                 self%metric => rhs%metric
                 !
                 self%mKey = rhs%mKey
@@ -662,20 +660,20 @@ contains
         k2 = self%metric%grid%Nz
         !
         do i = 1, self%anisotropic_level
-			sigma_cell(i) = rScalar3D_SG_t( self%metric%grid, CELL )
+            sigma_cell(i) = rScalar3D_SG_t( self%metric%grid, CELL )
         enddo
         !
         !> Call specific sumEdges based on anisotropic_level
         if( self%anisotropic_level == 1 ) then
-			!
-			call evec_interior%sumEdges( sigma_cell(1), .TRUE. )
-			!
+            !
+            call evec_interior%sumEdges( sigma_cell(1), .TRUE. )
+            !
         elseif( self%anisotropic_level == 2 ) then
-			!
-			call evec_interior%sumEdges( sigma_cell(1), sigma_cell(2), .TRUE. )
-			!
+            !
+            call evec_interior%sumEdges( sigma_cell(1), sigma_cell(2), .TRUE. )
+            !
         else
-		!
+        !
         call errStop( "dPDEmapping_T_ModelParameterCell_SG > unsupported anisotropy level" )
         endif
         !

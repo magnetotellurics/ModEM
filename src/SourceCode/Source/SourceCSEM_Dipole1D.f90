@@ -5,7 +5,6 @@ module SourceCSEM_Dipole1D
     !
     use SourceCSEM
     use ModelParameterCell_SG
-    !use ModelParameterCell_SG_VTI
     !
     type, extends( SourceCSEM_t ) :: SourceCSEM_Dipole1D_t
         !
