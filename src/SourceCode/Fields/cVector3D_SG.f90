@@ -660,21 +660,21 @@ contains
                                 z_yend = size( E_tmp%z, 2 )
                                 z_zend = size( E_tmp%z, 3 )
                                 !
-                                sigma_v = cmplx( E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
+                                sigma_v = E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
                                 E_tmp%x(:,2:x_yend,1:x_zend-1)       + &
                                 E_tmp%x(:,1:x_yend-1,2:x_zend)       + &
                                 E_tmp%x(:,2:x_yend,2:x_zend)         + &
                                 E_tmp%y(1:y_xend-1,:,1:y_zend-1)     + &
                                 E_tmp%y(2:y_xend,:,1:y_zend-1)       + &
                                 E_tmp%y(1:y_xend-1,:,2:y_zend)       + &
-                                E_tmp%y(2:y_xend,:,2:y_zend), 0.0, kind=prec )
+                                E_tmp%y(2:y_xend,:,2:y_zend)
                                 !
                                 call cell_h_out%setV( sigma_v )
                                 !
-                                sigma_v = cmplx( E_tmp%z(1:z_xend-1,1:z_yend-1,:)     + &
+                                sigma_v = E_tmp%z(1:z_xend-1,1:z_yend-1,:)     + &
                                 E_tmp%z(2:z_xend,1:z_yend-1,:)       + &
                                 E_tmp%z(1:z_xend-1,2:z_yend,:)       + &
-                                E_tmp%z(2:z_xend,2:z_yend,:), 0.0, kind=prec )
+                                E_tmp%z(2:z_xend,2:z_yend,:)
                                 !
                                 call cell_v_out%setV( sigma_v )
                                 !
@@ -684,12 +684,12 @@ contains
                                 y_xend = size( E_tmp%y, 1 )
                                 z_xend = size( E_tmp%z, 1 )
                                 !
-                                sigma_v = cmplx( E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
-                                             E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:), 0.0, kind=prec )
+                                sigma_v = E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
+                                          E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:)
                                 !
                                 call cell_h_out%setV( sigma_v )
                                 !
-                                sigma_v = cmplx( E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend), 0.0, kind=prec )
+                                sigma_v = E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
                                 !
                                 call cell_v_out%setV( sigma_v )
                                 !

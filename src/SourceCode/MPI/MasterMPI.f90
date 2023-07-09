@@ -341,7 +341,7 @@ contains
             call receiveModel( tx_dsigma, job_info%worker_rank )
             !
             if( present( s_hat ) ) then
-                s_hat( job_info%i_tx ) = tx_dsigma
+                !s_hat( job_info%i_tx ) = tx_dsigma
             endif
             !
             call dsigma%linComb( ONE, ONE, tx_dsigma )
@@ -368,7 +368,7 @@ contains
             call receiveModel( tx_dsigma, job_info%worker_rank )
             !
             if( present( s_hat ) ) then
-                s_hat( job_info%i_tx ) = tx_dsigma
+                !s_hat( job_info%i_tx ) = tx_dsigma
             endif
             !
             call dsigma%linComb( ONE, ONE, tx_dsigma )

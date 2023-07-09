@@ -119,7 +119,7 @@ contains
         !
         if( allocated( self%param_grid ) ) deallocate( self%param_grid )
         !
-        if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
+        !if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
         !
     end subroutine ModelParameterCell_SG_dtor
     !
@@ -268,8 +268,8 @@ contains
             self%cell_cond( i_cond ) = cell_cond
             !
         else
-            write( *, * ) "Error: setOneCond_ModelParameterCell_SG > Unsupport anisotropy level [", i_cond, "]"
-            stop
+            !
+            call errStop( "setOneCond_ModelParameterCell_SG > Unsupport general anisotropy yet" )
             !
         endif
         !
@@ -283,25 +283,22 @@ contains
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
         class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_cond
         !
-		integer :: i
-		!
+        integer :: i
+        !
         do i = 1, size( cell_cond )
             !
-            if( .NOT. cell_cond(i)%is_allocated )then
+            if( .NOT. cell_cond(i)%is_allocated ) then
                 !
-                write( *, * ) "Error: setAllCond_ModelParameterCell_SG > cell_cond has no Axis [", i, "]"
-                stop
+                call errStop( "setAllCond_ModelParameterCell_SG > cell_cond has no V" )
                 !
-            endif
-            !
-            if( .NOT. self%cell_cond(i)%is_allocated )then
+            else if( .NOT. self%cell_cond(i)%is_allocated )then
                 !
-                write( *, * ) "Error: setAllCond_ModelParameterCell_SG > self has no Axis [", i, "]"
-                stop
+                call errStop( "setAllCond_ModelParameterCell_SG > self has no V" )
                 !
             endif
             !
-            self%cell_cond(i) = cell_cond(i)
+            if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
+            allocate( self%cell_cond, source = cell_cond )
             !
         enddo
         !

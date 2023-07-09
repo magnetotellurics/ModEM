@@ -149,36 +149,29 @@ contains
         class( ModelCovarianceRec_t ), intent( in ) :: self
         class( ModelParameter_t ), allocatable, intent( inout ) :: target_model
         !
-        class( ModelParameter_t ), allocatable :: temp_model
+        integer :: i
+        class( Scalar_t ), allocatable, dimension(:) :: target_cell_cond, temp_cell_cond
         complex( kind=prec ), allocatable :: v(:, :, :)
         !
-        allocate( temp_model, source = target_model )
+        call target_model%getCond( target_cell_cond )
         !
-        select type( temp_model )
-            !
-            class is( ModelParameterCell_SG_t )
-                !
-                select type( target_model )
-                    !
-                    class is( ModelParameterCell_SG_t )
-                        !
-                        v = target_model%cell_cond(1)%getV()
-                        !
-                        call self%RecursiveAR( temp_model%cell_cond(1)%getV(), v, 2 )
-                        !
-                        call target_model%cell_cond(1)%setV( v )
-                        !
-                    class default
-                        stop "Error: multBy_Cm > Unclassified target_model"
-                    !
-                end select
-                !
-            class default
-                stop "Error: multBy_Cm > Unclassified temp_model"
-            !
-        end select
+        call target_model%getCond( temp_cell_cond )
         !
-        deallocate( temp_model )
+        do i = 1, size( target_cell_cond )
+            !
+            v = target_cell_cond(i)%getV()
+            !
+            call self%RecursiveAR( temp_cell_cond(i)%getV(), v, 2 )
+            !
+            call target_cell_cond(i)%setV( v )
+            !
+        enddo
+        !
+        deallocate( temp_cell_cond )
+        !
+        call target_model%setCond( target_cell_cond )
+        !
+        deallocate( target_cell_cond )
         !
     end subroutine multBy_Cm
     !
