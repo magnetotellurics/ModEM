@@ -119,7 +119,8 @@ contains
         !
         if( allocated( self%param_grid ) ) deallocate( self%param_grid )
         !
-        if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
+        !> CRASHING ????
+		if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
         !
     end subroutine ModelParameterCell_SG_dtor
     !
@@ -326,10 +327,16 @@ contains
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( in ) :: rhs
         !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "copyFrom_ModelParameterCell_SG > rhs not allocated." )
+        endif
+        !
         select type( rhs )
             !
             class is( ModelParameterCell_SG_t )
                 !
+				write(*,*) "##### ENTER COPY #####"
+				!
                 self%metric => rhs%metric
                 !
                 self%mKey = rhs%mKey

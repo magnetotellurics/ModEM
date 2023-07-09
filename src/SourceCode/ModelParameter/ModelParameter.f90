@@ -143,7 +143,7 @@ module ModelParameter
         !
         !> No interface subroutine briefing
         subroutine interface_copy_from_model_parameter( self, rhs )
-            import :: ModelParameter_t            
+            import :: ModelParameter_t
             class( ModelParameter_t ), intent( inout ) :: self
             class( ModelParameter_t ), intent( in ) :: rhs
         end subroutine interface_copy_from_model_parameter

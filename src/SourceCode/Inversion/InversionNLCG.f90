@@ -168,6 +168,7 @@ contains
             !
             ! starting model contains the rough deviations from the prior
             allocate( mHat, source = dsigma )
+            mHat = dsigma
             !
 			write(*,*) "NLCG 1"
 			!
@@ -192,6 +193,8 @@ contains
             !
             !> Initialize Gradient Model
             allocate( grad, source = sigma )
+            grad = sigma
+            !
             call grad%zeros
             !
             !> compute gradient of the full penalty functional
@@ -219,11 +222,15 @@ contains
             nCG = 0
             !
             allocate( g, source = grad )
+            g = grad
+            !
             allocate( gPrev, source = grad )
+            gPrev = grad
             !
             call g%linComb( MinusONE, R_ZERO, grad )
             !
             allocate( h, source = g )
+            h = g
             !
             call self%outputFiles( dHat, all_data, dsigma, mHat )
             !
@@ -278,13 +285,7 @@ contains
                 end select
                 !
                 n_func = n_func + nLS
-                ! !
-                ! if( allocated( gPrev ) ) deallocate( gPrev )
-                ! allocate( gPrev, source = g )
-                ! !
-                ! if( allocated( g ) ) deallocate( g )
-                ! allocate( g, source = grad )
-                ! !
+                !
                 gPrev = g
                 g = grad
                 !
@@ -722,6 +723,7 @@ contains
         niter = 0
         !
         allocate( mHat_0, source = mHat )
+		mHat_0 = mHat
         !
         f_0 = f
         !
@@ -743,6 +745,7 @@ contains
         !
         ! compute the trial mHat, f, dHat, e_all, rms
         allocate( mHat_1, source = mHat_0 )
+		mHat_1 = mHat_0
         !
         call mHat_1%linComb( ONE, alpha_1, h )
         !
@@ -773,9 +776,8 @@ contains
             dHat = dHat_1
             i_sol = 1
             !
-            if( allocated( mHat ) ) deallocate( mHat )
-            allocate( mHat, source = mHat_1 )
-            !
+			mHat = mHat_1
+			!
             self%rms = rms_1
             !
             f = f_1
@@ -783,9 +785,8 @@ contains
             ! compute the gradient and exit
             if( relaxation ) then
                 !
-                if( allocated( mHat ) ) deallocate( mHat )
-                allocate( mHat, source = mHat_0 )
-                !
+				mHat = mHat_0
+				!
                 call mHat%linComb( ONE, gamma * self%alpha, h )
                 !
                 i_sol = 0
@@ -811,8 +812,7 @@ contains
         ! otherwise compute the functional at the minimizer of the quadratic
         self%alpha = -b / ( TWO * a )
         !
-        if( allocated( mHat ) ) deallocate( mHat )
-        allocate( mHat, source = mHat_0 )
+        mHat = mHat_0
         !
         call mHat%linComb( ONE, self%alpha, h )
         !
@@ -836,8 +836,7 @@ contains
                 dHat = dHat_1
                 i_sol = 1
                 !
-                if( allocated( mHat ) ) deallocate( mHat )
-                allocate( mHat, source = mHat_1 )
+                mHat = mHat_1
                 !
                 self%rms = rms_1
                 f = f_1
@@ -847,8 +846,7 @@ contains
             ! compute the gradient and exit
             if( relaxation ) then
                 !
-                if( allocated( mHat ) ) deallocate( mHat )
-                allocate( mHat, source = mHat_0 )
+                mHat = mHat_0
                 !
                 call mHat%linComb( ONE, gamma * self%alpha, h )
                 !
@@ -906,8 +904,7 @@ contains
                 self%alpha = ( -b + sqrt( b*b - 3*a*g_0 ) ) / ( 3 * a )
                 !
                 ! compute the penalty functional
-                if( allocated( mHat ) ) deallocate( mHat )
-                allocate( mHat, source = mHat_0 )
+                mHat = mHat_0
                 !
                 call mHat%linComb( ONE, self%alpha, h )
                 !
@@ -959,8 +956,7 @@ contains
             dHat = dHat_1
             i_sol = 1
             !
-            if( allocated( mHat ) ) deallocate( mHat )
-            allocate( mHat, source = mHat_1 )
+            mHat = mHat_1
             !
             self%rms = rms_1
             f = f_1
@@ -970,8 +966,7 @@ contains
         ! compute gradient of the full penalty functional and exit
         if( relaxation ) then
             !
-            if( allocated( mHat ) ) deallocate( mHat )
-            allocate( mHat, source = mHat_0 )
+            mHat = mHat_0
             !
             call mHat%linComb( ONE, gamma * self%alpha, h )
             !

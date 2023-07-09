@@ -30,6 +30,8 @@ module ModelParameterCell_SG_VTI
             procedure, public :: dPDEmapping => dPDEmapping_ModelParameterCell_SG_VTI
             procedure, public :: dPDEmapping_T => dPDEmapping_T_ModelParameterCell_SG_VTI
             !
+            procedure, public :: copyFrom => copyFrom_ModelParameterCell_SG_VTI
+            !
             procedure, public :: write => write_ModelParameterCell_SG_VTI
             !
     end type ModelParameterCell_SG_VTI_t
@@ -327,6 +329,42 @@ contains
         end select
         !
     end subroutine dPDEmapping_T_ModelParameterCell_SG_VTI
+    !
+    !> No subroutine briefing
+    subroutine copyFrom_ModelParameterCell_SG_VTI( self, rhs )
+        implicit none
+        !
+        class( ModelParameterCell_SG_VTI_t ), intent( inout ) :: self
+        class( ModelParameter_t ), intent( in ) :: rhs
+        !
+        select type( rhs )
+            !
+            class is( ModelParameterCell_SG_VTI_t )
+                !
+				write(*,*) "##### ENTER COPY VTI #####"
+				!
+                self%metric => rhs%metric
+                !
+                self%mKey = rhs%mKey
+                !
+                self%air_cond = rhs%air_cond
+                !
+                self%param_type = rhs%param_type
+                !
+                self%is_allocated = rhs%is_allocated
+                !
+                self%param_grid = rhs%param_grid
+                !
+                self%cell_cond = rhs%cell_cond
+                !
+                self%sigMap_ptr => rhs%sigMap_ptr
+                !
+            class default
+               stop "Error: copyFrom_ModelParameterCell_SG_VTI > Unclassified rhs."
+            !
+        end select
+        !
+    end subroutine copyFrom_ModelParameterCell_SG_VTI
     !
     !> opens cfile on unit ioModelParam, writes out object of
     !> type modelParam in Weerachai Siripunvaraporn"s format,

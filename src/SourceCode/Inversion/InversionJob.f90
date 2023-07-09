@@ -49,6 +49,7 @@ contains
             !
             !> Initialize pmodel with Zeros
             allocate( dsigma, source = sigma )
+            dsigma = sigma
             !
             call dsigma%zeros
             !

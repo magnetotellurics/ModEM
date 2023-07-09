@@ -191,7 +191,7 @@ contains
         implicit none
         !
         class( ModelCovarianceRec_t ), intent( in ) :: self
-        class( ModelParameter_t ), allocatable, intent( in ) :: mhat
+        class( ModelParameter_t ), intent( in ) :: mhat
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
         class( Scalar_t ), allocatable, dimension(:) :: mhat_cell_cond, dsigma_cell_cond
@@ -206,6 +206,7 @@ contains
         !
         if( allocated( dsigma ) ) deallocate( dsigma )
         allocate( dsigma, source = mhat )
+        dsigma = mhat
         !
         write(*,*) "multBy_CmSqrt 2"
         !
