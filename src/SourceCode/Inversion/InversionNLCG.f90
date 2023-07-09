@@ -184,6 +184,10 @@ contains
             !
             call dsigma%linComb( ONE, ONE, sigma )
             !
+            !> Initialize Gradient Model
+            allocate( grad, source = sigma )
+            call grad%zeros
+            !
             !> compute gradient of the full penalty functional
             call gradient( self, all_data, sigma, mHat, grad, dHat, i_sol )
             !
@@ -207,6 +211,7 @@ contains
             nCG = 0
             !
             allocate( g, source = grad )
+            allocate( gPrev, source = grad )
             !
             call g%linComb( MinusONE, R_ZERO, grad )
             !
@@ -265,12 +270,15 @@ contains
                 end select
                 !
                 n_func = n_func + nLS
-                !
-                if( allocated( gPrev ) ) deallocate( gPrev )
-                allocate( gPrev, source = g )
-                !
-                if( allocated( g ) ) deallocate( g )
-                allocate( g, source = grad )
+                ! !
+                ! if( allocated( gPrev ) ) deallocate( gPrev )
+                ! allocate( gPrev, source = g )
+                ! !
+                ! if( allocated( g ) ) deallocate( g )
+                ! allocate( g, source = grad )
+                ! !
+                gPrev = g
+                g = grad
                 !
                 call g%linComb( MinusONE, R_ZERO, grad )
                 !
@@ -339,8 +347,7 @@ contains
                     write( ioInvLog, * ) "Restarting NLCG with the damping parameter updated"
                     call printf( "to", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
                     !
-                    if( allocated( h ) ) deallocate( h )
-                    allocate( h, source = g )
+                    h = g
                     !
                     nCG = 0
                     !
@@ -382,15 +389,21 @@ contains
                     !
                 endif
                 !
-                if( allocated( h ) ) deallocate( h )
-                allocate( h, source = g )
+                h = g
                 !
                 call h%linComb( ONE, self%beta, h )
                 !
             enddo
             !
+            deallocate( grad )
+            deallocate( g )
+            deallocate( gPrev )
+            deallocate( h )
+            !
             !> multiply by C^{1/2} and add m_0
             call model_cov%multBy_CmSqrt( mHat, dsigma )
+            !
+            deallocate( mHat )
             !
             call dsigma%linComb( ONE, ONE, sigma )
             !
@@ -403,9 +416,6 @@ contains
             !
             ! Verbose
             write( *, * ) "     - Finish Inversion NLCG, output files in [", trim( outdir_name ), "]"
-            !
-            if( allocated( gPrev ) ) deallocate( gPrev )
-            deallocate( mHat, grad, g, h )
             !
         else
             !
@@ -530,28 +540,32 @@ contains
         call subData( res, dHat )
         !
         call normalizeData( res, 2 )
-        !
-        !> ALLOCATE S_HAT ????
-        select type( sigma )
-            !
-            class is( ModelParameterCell_SG_t )
-                !
-                allocate( ModelParameterCell_SG_t :: s_hat( size( all_data ) ) )
-                !
-            class is( ModelParameterCell_SG_VTI_t )
-                !
-                allocate( ModelParameterCell_SG_VTI_t :: s_hat( size( all_data ) ) )
-                !
-            class default
-               call errStop( "gradient > Unclassified model" )
-            !
-        end select
-        !
+        ! !
+        ! !> ALLOCATE S_HAT ????
+        ! select type( sigma )
+            ! !
+            ! class is( ModelParameterCell_SG_t )
+                ! !
+                ! allocate( ModelParameterCell_SG_t :: s_hat( size( all_data ) ) )
+                ! !
+            ! class is( ModelParameterCell_SG_VTI_t )
+                ! !
+                ! allocate( ModelParameterCell_SG_VTI_t :: s_hat( size( all_data ) ) )
+                ! !
+            ! class default
+               ! call errStop( "gradient > Unclassified model" )
+            ! !
+        ! end select
+        ! !
 #ifdef MPI
-        call masterJMult_T( dsigma, res, JTd, i_sol, s_hat )
+        !call masterJMult_T( dsigma, res, JTd, i_sol, s_hat )
+        call masterJMult_T( dsigma, res, JTd, i_sol )
 #else
-        call serialJMult_T( dsigma, res, JTd, i_sol, s_hat )
+        !call serialJMult_T( dsigma, res, JTd, i_sol, s_hat )
+        call serialJMult_T( dsigma, res, JTd, i_sol )
 #endif
+        !
+        deallocate( dsigma )
         !
         write( 1984, * ) self%iter, JTd%dotProd( JTd )
         !
@@ -560,6 +574,8 @@ contains
         !
         call model_cov%multBy_CmSqrt( JTd, CmJTd )
         !
+        deallocate( JTd )
+        !
         ! compute the number of data and model parameters for scaling
         n_model = mHat%countModel()
         !
@@ -567,13 +583,11 @@ contains
         ! and add the gradient of the model norm
         Ndata = countValues( dHat )
         !
-        ! Initialize Grad with CmJTd, and linComb with mHat
-        if( allocated( grad ) ) deallocate( grad )
-        allocate( grad, source = CmJTd )
+        grad = CmJTd
+        !
+        deallocate( CmJTd )
         !
         call grad%linComb( MinusTWO / Ndata, TWO * self%lambda / n_model, mHat )
-        !
-        deallocate( dsigma, JTd, CmJTd )
         !
     end subroutine gradient
     !
