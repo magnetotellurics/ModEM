@@ -170,15 +170,11 @@ contains
             allocate( mHat, source = dsigma )
             mHat = dsigma
             !
-			write(*,*) "NLCG 1"
-			!
             !  compute the penalty functional and predicted data
             i_sol = 0
             !
             call func( self, all_data, sigma, mHat, r_value, m_norm, dHat, i_sol, self%rms )
             !
-			write(*,*) "NLCG 2"
-			!
             call printf( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
             call printf( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
             !
@@ -187,8 +183,6 @@ contains
             ! output (smoothed) initial model and responses for later reference
             call model_cov%multBy_CmSqrt( mHat, dsigma )
             !
-			write(*,*) "NLCG 3"
-			!
             call dsigma%linComb( ONE, ONE, sigma )
             !
             !> Initialize Gradient Model
@@ -200,8 +194,6 @@ contains
             !> compute gradient of the full penalty functional
             call gradient( self, all_data, sigma, mHat, grad, dHat, i_sol )
             !
-			write(*,*) "NLCG 4"
-			!
             g_norm = sqrt( grad%dotProd( grad ) )
             !
             write( *, "( a42, es12.5 )" ) "GRAD: initial norm of the gradient is", g_norm
@@ -455,17 +447,11 @@ contains
         real( kind=prec ) :: SS
         integer :: Ndata, n_model
 		!
-		write(*,*) "FUNC 1"
-		!
         ! compute the smoothed model parameter vector
         call model_cov%multBy_CmSqrt( mHat, dsigma )
 		!
-		write(*,*) "FUNC 2"
-		!
         ! overwriting input with output
         call dsigma%linComb( ONE, ONE, sigma )
-		!
-		write(*,*) "FUNC 3"
 		!
         ! initialize dHat
         dHat = all_data
@@ -476,11 +462,7 @@ contains
         call serialForwardModeling( dsigma, dHat, i_sol )
 #endif
 		!
-		write(*,*) "FUNC 4"
-		!
         deallocate( dsigma )
-		!
-		write(*,*) "FUNC 5"
 		!
         !> initialize res
         res = all_data
@@ -517,8 +499,6 @@ contains
         endif
         !
         write( 1983, * ) SS, ", ", Ndata, ", ", m_norm, ", ", n_model, ", ", F, ", ", rms
-		!
-		write(*,*) "FUNC 6"
 		!
     end subroutine func
     !
@@ -1167,7 +1147,7 @@ contains
                 !
                 do i_tx = 1, n_tx
                     !
-                    call s_hat( i_tx )%getCond( shat_cond )
+                    !call s_hat( i_tx )%getCond( shat_cond )
                     !
                     !call shat_cond%mult( tx_weights( i_tx ) )
                     !

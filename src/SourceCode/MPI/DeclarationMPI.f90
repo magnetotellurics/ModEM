@@ -26,10 +26,6 @@ module DeclarationMPI
     integer :: grid_derived_type
     integer, parameter :: grid_3d_sg = 1
     !
-    integer :: model_derived_type
-    integer, parameter :: model_cell_sg = 1
-    integer, parameter :: model_cell_sg_vti = 2
-    !
     integer :: transmitter_derived_type, transmitters_size
     integer, parameter :: transmitter_mt = 1
     integer, parameter :: transmitter_csem = 2
@@ -666,19 +662,13 @@ contains
                 !
                 model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
                 !
-                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond(1) )
-                !
-            class is( ModelParameterCell_SG_VTI_t )
-                !
-                model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
-                !
-                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond(1) )
-                !
-                model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond(2) )
+                do i = 1, model%anisotropic_level
+                    model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond(i) )
+                enddo
                 !
             class default
-               stop "allocateModelBuffer: Unclassified model"
-            !
+                call errStop( "allocateModelBuffer > Unclassified model" )
+                !
         end select
         !
         do i = 1, size( nbytes )
@@ -706,41 +696,29 @@ contains
         integer, intent( in ) :: parent_buffer_size
         integer, intent( inout ) :: index
         !
+        integer :: i
+        !
+        call MPI_PACK( model%anisotropic_level, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        !
+        call MPI_PACK( len( model%param_type ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( model%mKey(1), 8, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( model%param_type, len( model%param_type ), MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( model%air_cond, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( model%is_allocated, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        !
         select type( model )
             !
             class is( ModelParameterCell_SG_t )
                 !
-                call MPI_PACK( model_cell_sg, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                !
-                call MPI_PACK( len( model%param_type ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( model%mKey(1), 8, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( model%param_type, len( model%param_type ), MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( model%air_cond, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( model%is_allocated, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                !
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
-                call packScalarBuffer( model%cell_cond(1), parent_buffer, parent_buffer_size, index )
-                !
-            class is( ModelParameterCell_SG_VTI_t )
-                !
-                call MPI_PACK( model_cell_sg_vti, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                !
-                call MPI_PACK( len( model%param_type ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( model%mKey(1), 8, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( model%param_type, len( model%param_type ), MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( model%air_cond, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( model%is_allocated, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                !
-                call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
-                !
-                call packScalarBuffer( model%cell_cond(1), parent_buffer, parent_buffer_size, index )
-                !
-                call packScalarBuffer( model%cell_cond(2), parent_buffer, parent_buffer_size, index )
+                do i = 1, model%anisotropic_level
+                    call packScalarBuffer( model%cell_cond(i), parent_buffer, parent_buffer_size, index )
+                enddo
                 !
             class default
-                call errStop( "packModelBuffer: Unclassified model" )
-            !
+                call errStop( "packModelBuffer > Unclassified model" )
+                !
         end select
         !
     end subroutine packModelBuffer
@@ -760,80 +738,42 @@ contains
         param_type_size = 0
         !
         if( allocated( model ) ) deallocate( model )
+        allocate( ModelParameterCell_SG_t :: model )
         !
-        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model_derived_type, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%anisotropic_level, 1, MPI_INTEGER, main_comm, ierr )
         !
-        select case( model_derived_type )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, param_type_size, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%mKey(1), 8, MPI_INTEGER, main_comm, ierr )
+        !
+        allocate( character( param_type_size ) :: model%param_type )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%param_type, param_type_size, MPI_CHARACTER, main_comm, ierr )
+        !
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%air_cond, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
+        !
+        select type( model )
             !
-            case( model_cell_sg )
+            class is( ModelParameterCell_SG_t )
                 !
-                if( allocated( model ) ) deallocate( model )
-                allocate( ModelParameterCell_SG_t :: model )
+                call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
-                select type( model )
+                allocate( rScalar3D_SG_t :: model%cell_cond( model%anisotropic_level ) )
+                !
+                do i = 1, model%anisotropic_level
                     !
-                    class is( ModelParameterCell_SG_t )
-                        !
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, param_type_size, 1, MPI_INTEGER, main_comm, ierr )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%mKey(1), 8, MPI_INTEGER, main_comm, ierr )
-                        !
-                        allocate( character( param_type_size ) :: model%param_type )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%param_type, param_type_size, MPI_CHARACTER, main_comm, ierr )
-                        !
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%air_cond, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
-                        !
-                        call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
-                        !
-                        allocate( rScalar3D_SG_t :: model%cell_cond(1) )
-                        !
-                        call unpackScalarBuffer( cell_cond, main_grid, parent_buffer, parent_buffer_size, index )
-                        !
-                        model%cell_cond(1) = cell_cond
-                        !
-                        call model%setsigMap( model%param_type )
-                        !
-                end select
-                !
-            case( model_cell_sg_vti )
-                !
-                if( allocated( model ) ) deallocate( model )
-                allocate( ModelParameterCell_SG_VTI_t :: model )
-                !
-                select type( model )
+                    call unpackScalarBuffer( cell_cond, main_grid, parent_buffer, parent_buffer_size, index )
                     !
-                    class is( ModelParameterCell_SG_VTI_t )
-                        !
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, param_type_size, 1, MPI_INTEGER, main_comm, ierr )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%mKey(1), 8, MPI_INTEGER, main_comm, ierr )
-                        !
-                        allocate( character( param_type_size ) :: model%param_type )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%param_type, param_type_size, MPI_CHARACTER, main_comm, ierr )
-                        !
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%air_cond, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
-                        !
-                        call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
-                        !
-                        allocate( rScalar3D_SG_t :: model%cell_cond(2) )
-                        !
-                        do i = 1, 2
-                            !
-                            call unpackScalarBuffer( cell_cond, main_grid, parent_buffer, parent_buffer_size, index )
-                            !
-                            model%cell_cond(i) = cell_cond
-                            !
-                            deallocate( cell_cond )
-                            !
-                        enddo
-                        !
-                        call model%setsigMap( model%param_type )
-                        !
-                end select
+                    call model%setCond( cell_cond, i )
+                    !
+                    deallocate( cell_cond )
+                    !
+                enddo
                 !
-            case default
-               stop "unpackModelBuffer: Unclassified model"
-            !
+                call model%setsigMap( model%param_type )
+                !
+            class default
+                call errStop( "unpackModelBuffer > Unclassified model" )
+                !
         end select
         !
     end subroutine unpackModelBuffer

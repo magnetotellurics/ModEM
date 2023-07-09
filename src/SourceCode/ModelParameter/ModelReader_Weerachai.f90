@@ -9,7 +9,7 @@ module ModelReader_Weerachai
     use Grid3D_SG
     use rScalar3D_SG
     use ModelParameterCell_SG
-    use ModelParameterCell_SG_VTI
+    !use ModelParameterCell_SG_VTI
     use ModelReader
     use ForwardControlFile
     !
@@ -40,8 +40,7 @@ contains
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         real( kind=prec ) :: ox, oy, oz, rotDeg
         real( kind=prec ), dimension(:, :, :), allocatable :: rho
-        complex( kind=prec ), dimension(:, :, :), allocatable :: v
-        class( Scalar_t  ), allocatable :: ccond
+        type( rScalar3D_SG_t ) :: ccond
         real( kind=prec ) :: ALPHA
         character(len=200), dimension(20) :: args
         !
@@ -116,23 +115,24 @@ contains
                     !
                     class is( Grid3D_SG_t )
                         !
-                        if( allocated( ccond ) ) deallocate( ccond )
-                        allocate( ccond, source = rScalar3D_SG_t( grid, CELL_EARTH ) )
+                        ccond = rScalar3D_SG_t( grid, CELL_EARTH )
                         !
                         if( index( paramType, "LOGE" ) > 0 .OR. &
                             index( paramType, "LOG10" ) > 0 ) then
-                            v = -rho
-                            call ccond%setV( v )
+                            !
+                            ccond%v = -rho
+                            !
                         elseif( index(paramType, "LINEAR") > 0 ) then
-                            v = ONE/rho
-                            call ccond%setV( v )
+                            !
+                            ccond%v = ONE/rho
+                            !
                         endif
                         !
                         deallocate( rho )
                         !
                         if( anisotropic_level == 1 ) then
                             !
-                            allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
+                            allocate( model, source = ModelParameterCell_SG_t( grid, ccond, 1, paramType ) )
                             !
                         else
                             !
@@ -142,7 +142,7 @@ contains
                                 !
                             else
                                 !
-                                allocate( model, source = ModelParameterCell_SG_VTI_t( grid, ccond, paramType ) )
+                                allocate( model, source = ModelParameterCell_SG_t( grid, ccond, 2, paramType ) )
                                 !
                             endif
                             !

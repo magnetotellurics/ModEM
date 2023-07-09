@@ -16,6 +16,8 @@ module ModelParameter
         !
         class( MetricElements_t ), pointer :: metric
         !
+        integer :: anisotropic_level
+        !
         real( kind=prec ) :: air_cond
         !
         character(:), allocatable :: param_type
@@ -104,20 +106,21 @@ module ModelParameter
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_get_one_cond_model_parameter( self, cell_cond, i_cond )
-            import :: ModelParameter_t, Scalar_t
+        function interface_get_one_cond_model_parameter( self, i_cond ) result( cell_cond )
+            import :: ModelParameter_t, rScalar3D_SG_t
             class( ModelParameter_t ), intent( in ) :: self
-            class( Scalar_t ), allocatable, intent( inout ) :: cell_cond
             integer, intent( in ) :: i_cond
-        end subroutine interface_get_one_cond_model_parameter
+            !
+            type( rScalar3D_SG_t ) :: cell_cond
+        end function interface_get_one_cond_model_parameter
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_get_all_cond_model_parameter( self, cell_cond )
-            import :: ModelParameter_t, Scalar_t
+        function interface_get_all_cond_model_parameter( self ) result( cell_cond )
+            import :: ModelParameter_t, rScalar3D_SG_t
             class( ModelParameter_t ), intent( in ) :: self
-            class( Scalar_t ), allocatable, dimension(:), intent( inout ) :: cell_cond
-        end subroutine interface_get_all_cond_model_parameter
+            type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
+        end function interface_get_all_cond_model_parameter
         !
         !> No interface subroutine briefing
         !
@@ -132,7 +135,7 @@ module ModelParameter
         subroutine interface_set_all_cond_model_parameter( self, cell_cond )
             import :: ModelParameter_t, Scalar_t
             class( ModelParameter_t ), intent( inout ) :: self
-            class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_cond
+            class( Scalar_t ), dimension(:), intent( in ) :: cell_cond
         end subroutine interface_set_all_cond_model_parameter
         !
         !> No interface subroutine briefing

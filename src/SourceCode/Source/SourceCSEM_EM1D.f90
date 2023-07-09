@@ -8,7 +8,7 @@ module SourceCSEM_EM1D
     use TransmitterCSEM
     use TransmitterArray
     use ModelParameterCell_SG
-    use ModelParameterCell_SG_VTI
+    !use ModelParameterCell_SG_VTI
     !
     type, extends( SourceCSEM_t ) :: SourceCSEM_EM1D_t
         !
@@ -259,7 +259,8 @@ contains
         integer :: ani_level
         class( Scalar_t ), allocatable, dimension(:) :: sigma_cell
         !
-        call self%sigma%getCond( sigma_cell )
+        !>
+        allocate( sigma_cell, source = self%sigma%getCond() )
         !
         ani_level = size( sigma_cell )
         !

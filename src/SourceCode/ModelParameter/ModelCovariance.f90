@@ -8,8 +8,9 @@ module ModelCovarianceRec
     !
     use Constants
     use ModelParameterCell_SG
-    use ModelParameterCell_SG_VTI
+    !use ModelParameterCell_SG_VTI
     use cVectorSparse3D_SG
+    use rScalar3D_SG
     use iScalar3D_SG
     !
     !> define the mask for air and ocean here. By default, we do not switch off
@@ -150,34 +151,24 @@ contains
         class( ModelParameter_t ), allocatable, intent( inout ) :: target_model
         !
         integer :: i
-        class( Scalar_t ), allocatable, dimension(:) :: target_cell_cond, temp_cell_cond
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        type( rScalar3D_SG_t ), allocatable, dimension(:) :: target_cell_cond, temp_cell_cond
         !
         if( .NOT. target_model%is_allocated ) then
             call errStop( "multBy_Cm > target_model not allocated!" )
         endif
         !
-        call target_model%getCond( target_cell_cond )
+        target_cell_cond = target_model%getCond()
         !
-        call target_model%getCond( temp_cell_cond )
+        temp_cell_cond = target_cell_cond
         !
         do i = 1, size( target_cell_cond )
             !
-            v = target_cell_cond(i)%getV()
-            !
-            call self%RecursiveAR( temp_cell_cond(i)%getV(), v, 2 )
-            !
-            call target_cell_cond(i)%setV( v )
+            call self%RecursiveAR( target_cell_cond(i)%v, temp_cell_cond(i)%v, 2 )
             !
         enddo
         !
-        deallocate( temp_cell_cond )
+        call target_model%setCond( temp_cell_cond )
         !
-        call target_model%setCond( target_cell_cond )
-        !
-        deallocate( target_cell_cond )
-        !
-
     end subroutine multBy_Cm
     !
     !> Multiplies by the square root of the model covariance,
@@ -194,11 +185,8 @@ contains
         class( ModelParameter_t ), intent( in ) :: mhat
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
-        class( Scalar_t ), allocatable, dimension(:) :: mhat_cell_cond, dsigma_cell_cond
-        complex( kind=prec ), allocatable :: dsigma_v(:, :, :)
+        type( rScalar3D_SG_t ), allocatable, dimension(:) :: mhat_cell_cond, dsigma_cell_cond
         integer :: i
-        !
-        write(*,*) "multBy_CmSqrt 1"
         !
         if( .NOT. mhat%is_allocated ) then
             call errStop( "multBy_CmSqrt > mhat not allocated!" )
@@ -208,39 +196,17 @@ contains
         allocate( dsigma, source = mhat )
         dsigma = mhat
         !
-        write(*,*) "multBy_CmSqrt 2"
+        mhat_cell_cond = mhat%getCond()
         !
-        call mhat%getCond( mhat_cell_cond )
-        !
-        write(*,*) "multBy_CmSqrt 3"
-        !
-        allocate( dsigma_cell_cond, source = mhat_cell_cond )
-        !
-        write(*,*) "multBy_CmSqrt 4"
+        dsigma_cell_cond = mhat_cell_cond
         !
         do i = 1, size( mhat_cell_cond )
             !
-            dsigma_v = mhat_cell_cond(i)%getV()
-            !
-            call self%RecursiveAR( mhat_cell_cond(i)%getV(), dsigma_v, self%N )
-            !
-            call dsigma_cell_cond(i)%setV( dsigma_v )
+            call self%RecursiveAR( mhat_cell_cond(i)%v, dsigma_cell_cond(i)%v, self%N )
             !
         enddo
         !
-        write(*,*) "multBy_CmSqrt 5"
-        !
-        deallocate( mhat_cell_cond )
-        !
-        write(*,*) "multBy_CmSqrt 6"
-        !
         call dsigma%setCond( dsigma_cell_cond )
-        !
-        write(*,*) "multBy_CmSqrt 7"
-        !
-        deallocate( dsigma_cell_cond )
-        !
-        write(*,*) "multBy_CmSqrt 8"
         !
     end subroutine multBy_CmSqrt
     !
@@ -486,8 +452,8 @@ contains
         implicit none
         !
         class( ModelCovarianceRec_t ), intent( in ) :: self
-        complex( kind=prec ), intent( in ) :: w(:,:,:)
-        complex( kind=prec ), intent( out ) :: v(:,:,:)
+        real( kind=prec ), intent( in ) :: w(:,:,:)
+        real( kind=prec ), intent( out ) :: v(:,:,:)
         integer, intent( in ) :: n
         integer :: Nx, Ny, NzEarth, i, j, k, iSmooth
         !

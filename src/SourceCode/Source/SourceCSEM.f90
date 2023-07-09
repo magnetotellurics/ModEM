@@ -60,7 +60,8 @@ module SourceCSEM
         integer :: nzAir, nzEarth, i, j, k
         type( rVector3D_SG_t ) :: cond_nomaly
         !
-        call self%sigma%getCond( sigma_cell, ani_level )
+		!>
+        allocate( sigma_cell, source = self%sigma%getCond( ani_level ) )
         !
         nzAir = sigma_cell%grid%nzAir
         !

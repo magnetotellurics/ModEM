@@ -224,7 +224,7 @@ contains
         class( ModelParameter_t ), intent( in ) :: sigma
         !
         integer :: i
-        type( rScalar3D_SG_t ) :: cell_cond
+        type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
         class( ModelParameter_t ), allocatable :: model
         type( rVector3D_SG_t ) :: temp_vec, sig_temp_vec
         !
@@ -249,12 +249,20 @@ contains
         !> that is readily accesible to boundary condition routines
         !> rvector sigma_C is created if it is not yet allocated
         !
-        !> ON -> call ModelParamToCell( sigma, sigma_C )
-        cell_cond = rScalar3D_SG_t( self%metric%grid, CELL_EARTH )
+        allocate( model, source = sigma )
+        model = sigma
         !
-        call cell_cond%setArray( cmplx( self%VomegaMuSig, 0.0, kind=prec ) )
+        allocate( cell_cond( model%anisotropic_level ) )
         !
-        allocate( model, source = ModelParameterCell_SG_t( self%metric%grid, cell_cond ) )
+        do i = 1, model%anisotropic_level
+            !
+            cell_cond(i) = rScalar3D_SG_t( self%metric%grid, CELL_EARTH )
+            !
+            call cell_cond(i)%setArray( cmplx( self%VomegaMuSig, 0.0, kind=prec ) )
+            !
+        enddo
+        !
+        call model%setCond( cell_cond )
         !
         call sigma%dPDEmapping( model, self%sigma_C )
         !
