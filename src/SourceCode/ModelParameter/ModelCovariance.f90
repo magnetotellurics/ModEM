@@ -153,6 +153,10 @@ contains
         class( Scalar_t ), allocatable, dimension(:) :: target_cell_cond, temp_cell_cond
         complex( kind=prec ), allocatable :: v(:, :, :)
         !
+        if( .NOT. target_model%is_allocated ) then
+            call errStop( "multBy_Cm > target_model not allocated!" )
+        endif
+        !
         call target_model%getCond( target_cell_cond )
         !
         call target_model%getCond( temp_cell_cond )
@@ -173,6 +177,7 @@ contains
         !
         deallocate( target_cell_cond )
         !
+
     end subroutine multBy_Cm
     !
     !> Multiplies by the square root of the model covariance,
@@ -193,12 +198,24 @@ contains
         complex( kind=prec ), allocatable :: dsigma_v(:, :, :)
         integer :: i
         !
+        write(*,*) "multBy_CmSqrt 1"
+        !
+        if( .NOT. mhat%is_allocated ) then
+            call errStop( "multBy_CmSqrt > mhat not allocated!" )
+        endif
+        !
         if( allocated( dsigma ) ) deallocate( dsigma )
         allocate( dsigma, source = mhat )
         !
+        write(*,*) "multBy_CmSqrt 2"
+        !
         call mhat%getCond( mhat_cell_cond )
         !
+        write(*,*) "multBy_CmSqrt 3"
+        !
         allocate( dsigma_cell_cond, source = mhat_cell_cond )
+        !
+        write(*,*) "multBy_CmSqrt 4"
         !
         do i = 1, size( mhat_cell_cond )
             !
@@ -210,11 +227,19 @@ contains
             !
         enddo
         !
+        write(*,*) "multBy_CmSqrt 5"
+        !
         deallocate( mhat_cell_cond )
+        !
+        write(*,*) "multBy_CmSqrt 6"
         !
         call dsigma%setCond( dsigma_cell_cond )
         !
+        write(*,*) "multBy_CmSqrt 7"
+        !
         deallocate( dsigma_cell_cond )
+        !
+        write(*,*) "multBy_CmSqrt 8"
         !
     end subroutine multBy_CmSqrt
     !

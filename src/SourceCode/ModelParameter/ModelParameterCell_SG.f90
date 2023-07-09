@@ -119,7 +119,7 @@ contains
         !
         if( allocated( self%param_grid ) ) deallocate( self%param_grid )
         !
-        !if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
+        if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
         !
     end subroutine ModelParameterCell_SG_dtor
     !
@@ -250,7 +250,7 @@ contains
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( Scalar_t ), allocatable, dimension(:), intent( inout ) :: cell_cond
         !
-        cell_cond = self%cell_cond
+        allocate( cell_cond, source = self%cell_cond )
         !
     end subroutine getAllCond_ModelParameterCell_SG
     !
