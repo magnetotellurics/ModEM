@@ -30,8 +30,8 @@ module Solver
             !
             procedure( interface_set_solver_defaults ), deferred, public :: setDefaults
             !
-            procedure, public :: init => initializeSolver
-            procedure, public :: dealloc => deallocateSolver
+            procedure, public :: baseInit => initializeSolver
+            procedure, public :: baseDealloc => deallocateSolver
             !
             procedure, public :: setParameters => setParametersSolver
             procedure, public :: zeroDiagnostics => zeroDiagnosticsSolver

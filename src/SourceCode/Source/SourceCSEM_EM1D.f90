@@ -51,7 +51,7 @@ contains
         !
         !write( *, * ) "Constructor SourceCSEM_EM1D_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%model_operator => model_operator
         !
@@ -70,7 +70,7 @@ contains
     end function SourceCSEM_EM1D_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     subroutine SourceCSEM_EM1D_dtor( self )
         implicit none
         !
@@ -78,7 +78,7 @@ contains
         !
         !write( *, * ) "Destructor SourceCSEM_EM1D_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         if( allocated( sig1D ) ) deallocate( sig1D )
         !

@@ -96,7 +96,7 @@ contains
         !
         !write( *, * ) "Constructor cVectorSparse3D_SG"
         !
-        call self%init
+        call self%baseInit
         !
         ! the old baggage is out of the door
         if(self%is_allocated) then
@@ -140,7 +140,7 @@ contains
         !
         !write( *, * ) "Destructor cVectorSparse3D_SG_t:"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         self%grid_type = ""
         self%nCoeff = 0

@@ -39,7 +39,7 @@ contains
         !
         !> write( *, * ) "Constructor TransmitterCSEM_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%n_pol = 1
         !
@@ -62,7 +62,7 @@ contains
     end function TransmitterCSEM_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !
     subroutine TransmitterCSEM_dtor( self )
         implicit none
@@ -71,7 +71,7 @@ contains
         !
         !> write( *, * ) "Destructor TransmitterCSEM_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         deallocate( self%dipole )
         !

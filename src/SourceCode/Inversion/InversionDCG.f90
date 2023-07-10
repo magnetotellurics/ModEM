@@ -17,9 +17,9 @@ module InversionDCG
             !
             final :: InversionDCG_dtor
             !
-            procedure, public :: solve => solveInversionDCG
+            procedure, public :: solve => solve_InversionDCG
             !
-            procedure, public :: outputFiles => outputFilesInversionDCG
+            procedure, public :: outputFiles => outputFiles_InversionDCG
             !
             procedure, private :: Calc_FWD, CG_DS_standard, MultA_DS
             !
@@ -40,7 +40,7 @@ contains
         !
         !write( *, * ) "Constructor InversionDCG_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%max_grad_iters = 20
         self%error_tol = 10E-4
@@ -67,7 +67,7 @@ contains
     end function InversionDCG_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !
     subroutine InversionDCG_dtor( self )
         implicit none
@@ -82,7 +82,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine solveInversionDCG( self, all_data, sigma, dsigma )
+    subroutine solve_InversionDCG( self, all_data, sigma, dsigma )
         implicit none
         !
         class( InversionDCG_t ), intent( inout ) :: self
@@ -198,7 +198,7 @@ contains
             !
         endif
         !
-    end subroutine solveInversionDCG
+    end subroutine solve_InversionDCG
     !
     !> No subroutine briefing
     !
@@ -374,7 +374,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine outputFilesInversionDCG( self, all_predicted_data, res, dsigma, mHat )
+    subroutine outputFiles_InversionDCG( self, all_predicted_data, res, dsigma, mHat )
         implicit none
         !
         class( InversionDCG_t ), intent( in ) :: self
@@ -406,7 +406,7 @@ contains
         !
         call mHat%write( trim( out_file_name ) )
         !
-    end subroutine outputFilesInversionDCG
+    end subroutine outputFiles_InversionDCG
     !
 end module InversionDCG
 !

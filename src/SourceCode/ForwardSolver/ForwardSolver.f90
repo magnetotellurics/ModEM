@@ -28,8 +28,8 @@ module ForwardSolver
         !
         contains
             !
-            procedure, public :: init => initializeForwardSolver
-            procedure, public :: dealloc => deallocateForwardSolver
+            procedure, public :: baseInit => initializeForwardSolver
+            procedure, public :: baseDealloc => deallocateForwardSolver
             !
             procedure( interface_set_frequency_foward_solver ), deferred, public :: setFrequency
             !

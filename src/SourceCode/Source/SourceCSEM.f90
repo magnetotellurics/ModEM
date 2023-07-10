@@ -16,8 +16,8 @@ module SourceCSEM
     !
     character(:), allocatable :: get_1d_from
     character( len=5 ), parameter :: FROM_FIXED_VALUE = "Fixed"
-    character( len=14 ), parameter :: FROM_GEO_MEAN = "Geometric_mean"
-    character( len=14 ), parameter :: FROM_TX_GEO_MEAN = "Mean_around_Tx"
+    character( len=14 ), parameter :: FROM_GEOM_MEAN = "Geometric_mean"
+    character( len=14 ), parameter :: FROM_TX_GEOM_MEAN = "Mean_around_Tx"
     character( len=11 ), parameter :: FROM_TX_LOCATION = "Tx_Position"
     !
     class( Vector_t ), allocatable :: E_p
@@ -159,8 +159,6 @@ module SourceCSEM
         allocate( aModel, source = self%sigma )
         call aModel%setCond( sigma_cell, ani_level )
         call aModel%setType( self%sigma%param_type )
-        !
-        deallocate( sigma_cell )
         !
         cond_nomaly = rVector3D_SG_t( self%sigma%metric%grid, EDGE )
         call aModel%PDEmapping( cond_nomaly )

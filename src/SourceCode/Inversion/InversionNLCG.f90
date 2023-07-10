@@ -28,9 +28,9 @@ module InversionNLCG
             !
             final :: InversionNLCG_dtor
             !
-            procedure, public :: solve => solveInversionNLCG
+            procedure, public :: solve => solve_InversionNLCG
             !
-            procedure, public :: outputFiles => outputFilesInversionNLCG
+            procedure, public :: outputFiles => outputFiles_InversionNLCG
             !
             procedure, private :: func, gradient, updateDampingParameter
             !
@@ -57,7 +57,7 @@ contains
         !
         !write( *, * ) "Constructor InversionNLCG_t"
         !
-        call self%init
+        call self%baseInit
         !
         !> NLCG Default Parameters
         ! the factor that ensures sufficient decrease in the line search >=1e-4
@@ -109,7 +109,7 @@ contains
     end function InversionNLCG_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !
     subroutine InversionNLCG_dtor( self )
         implicit none
@@ -122,7 +122,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine solveInversionNLCG( self, all_data, sigma, dsigma )
+    subroutine solve_InversionNLCG( self, all_data, sigma, dsigma )
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
@@ -200,7 +200,7 @@ contains
             write( ioInvLog, "( a42, es12.5 )" ) "GRAD: initial norm of the gradient is", g_norm
             !
             if( g_norm < TOL6 ) then
-                stop "Error: NLCGsolver: Problem with your gradient computations: first gradient is zero"
+                call errStop( "solve_InversionNLCG > Problem with your gradient computations: first gradient is zero" )
             else
                 !
                 self%alpha = self%startdm / g_norm
@@ -265,14 +265,14 @@ contains
                         !
                     case( "Quadratic" )
                         !
-                        stop "Error: NLCGsolver: Quadratic Line Search not Implemented"
+                        call errStop( "solve_InversionNLCG > Quadratic Line Search not implemented." )
                         !
                     case( "Wolfe" )
                         !
-                        stop "Error: NLCGsolver: Wolfe Line Search not Implemented"
+                        call errStop( "solve_InversionNLCG > Wolfe Line Search not implemented." )
                         !
                     case default
-                        stop "Error: NLCGsolver: Unknown line search requested in NLCG"
+                        call errStop( "solve_InversionNLCG > Unknown Line Search requested!" )
                     !
                 end select
                 !
@@ -420,12 +420,11 @@ contains
             !
         else
             !
-            write( *, * ) "Error opening [", trim( outdir_name )//"/NLCG.log", "] in writeData!"
-            stop
+            call errStop( "solve_InversionNLCG > opening ["//trim( outdir_name )//"/NLCG.log] in writeData!" )
             !
         endif
         !
-    end subroutine solveInversionNLCG
+    end subroutine solve_InversionNLCG
     !
     !> Compute the full penalty functional F
     !> Also output the predicted data and the EM solution
@@ -446,13 +445,13 @@ contains
         class( ModelParameter_t ), allocatable :: dsigma
         real( kind=prec ) :: SS
         integer :: Ndata, n_model
-		!
+        !
         ! compute the smoothed model parameter vector
         call model_cov%multBy_CmSqrt( mHat, dsigma )
-		!
+        !
         ! overwriting input with output
         call dsigma%linComb( ONE, ONE, sigma )
-		!
+        !
         ! initialize dHat
         dHat = all_data
         !
@@ -461,9 +460,9 @@ contains
 #else
         call serialForwardModeling( dsigma, dHat, i_sol )
 #endif
-		!
+        !
         deallocate( dsigma )
-		!
+        !
         !> initialize res
         res = all_data
         !
@@ -499,7 +498,7 @@ contains
         endif
         !
         write( 1983, * ) SS, ", ", Ndata, ", ", m_norm, ", ", n_model, ", ", F, ", ", rms
-		!
+        !
     end subroutine func
     !
     !> Computes the gradient of the penalty functional,
@@ -703,7 +702,7 @@ contains
         niter = 0
         !
         allocate( mHat_0, source = mHat )
-		mHat_0 = mHat
+        mHat_0 = mHat
         !
         f_0 = f
         !
@@ -725,7 +724,7 @@ contains
         !
         ! compute the trial mHat, f, dHat, e_all, rms
         allocate( mHat_1, source = mHat_0 )
-		mHat_1 = mHat_0
+        mHat_1 = mHat_0
         !
         call mHat_1%linComb( ONE, alpha_1, h )
         !
@@ -739,8 +738,9 @@ contains
         niter = niter + 1
         !
         if( f_1 - f_0 >= R_LARGE ) then
-            write( *, * ) "Error: lineSearchCubic > Try a smaller starting r_value of alpha."
-            stop
+            !
+            call errStop( "lineSearchCubic > Try a smaller starting r_value of alpha." )
+            !
         endif
         !
         ! try fitting a quadratic
@@ -756,8 +756,8 @@ contains
             dHat = dHat_1
             i_sol = 1
             !
-			mHat = mHat_1
-			!
+            mHat = mHat_1
+            !
             self%rms = rms_1
             !
             f = f_1
@@ -765,8 +765,8 @@ contains
             ! compute the gradient and exit
             if( relaxation ) then
                 !
-				mHat = mHat_0
-				!
+                mHat = mHat_0
+                !
                 call mHat%linComb( ONE, gamma * self%alpha, h )
                 !
                 i_sol = 0
@@ -1004,7 +1004,7 @@ contains
                         write( ioGradRMS, "( A12, i3, A2 )", advance = "no" ) "CSEM", i_tx, ", "
                         !
                     class default
-                        stop "Error: writeHeaders > Unclassified Transmitter"
+                        call errStop( "writeHeaders > Unclassified Transmitter" )
                     !
                 end select
                 !
@@ -1097,7 +1097,7 @@ contains
                         write( ioGradLog, * ) "CSEM > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
                         !
                     class default
-                        stop "Error: handleGradVectorsNLCG > Unclassified Transmitter"
+                        call errStop( "handleGradVectorsNLCG > Unclassified Transmitter" )
                     !
                 end select
                 !
@@ -1177,8 +1177,7 @@ contains
             !
         else
             !
-            write( *, * ) "Error opening [", trim( outdir_name )//"/GradNLCG.log", "] in handleGradVectorsNLCG!"
-            stop
+            call errStop( "weightGradrients > cant open ["//trim( outdir_name )//"/GradNLCG.log!" )
             !
         endif
         !
@@ -1186,7 +1185,7 @@ contains
     !
     !> ????
     !
-    subroutine outputFilesInversionNLCG( self, all_predicted_data, res, dsigma, mHat )
+    subroutine outputFiles_InversionNLCG( self, all_predicted_data, res, dsigma, mHat )
         implicit none
         !
         class( InversionNLCG_t ), intent( in ) :: self
@@ -1218,7 +1217,7 @@ contains
         !
         call mHat%write( trim( out_file_name ) )
         !
-    end subroutine outputFilesInversionNLCG
+    end subroutine outputFiles_InversionNLCG
     !
 end module InversionNLCG
 !

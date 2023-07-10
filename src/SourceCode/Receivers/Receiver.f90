@@ -45,9 +45,9 @@ module Receiver
             !
             procedure, public :: savePredictedData => savePredictedDataRx
             !
-            procedure, public :: init => initializeRx
+            procedure, public :: baseInit => initializeRx
             !
-            procedure, public :: dealloc => deallocateRx
+            procedure, public :: baseDealloc => deallocateRx
             !
     end type Receiver_t
     !

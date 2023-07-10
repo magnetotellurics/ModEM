@@ -86,7 +86,7 @@ contains
         !
         !write( *, * ) "Constructor rScalar3D_SG"
         !
-        call self%init
+        call self%baseInit
         !
         self%grid => grid
         self%grid_type = grid_type
@@ -145,7 +145,7 @@ contains
         !
         !write( *, * ) "Destructor rScalar3D_SG"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         if( allocated( self%v ) ) deallocate( self%v )
         if( allocated( self%sv ) ) deallocate( self%sv )

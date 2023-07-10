@@ -122,7 +122,7 @@ contains
         !
         !>    solve system of equations -- solver will have to know about
         !>     (a) the equations to solve -- the divergence correction operator
-        !>     is modOp%divCgrad
+        !>     is modOp%divCGrad
         !>     (b) preconditioner: object, and preconditioner matrix
         call self%solver%solve( phiRHS, phiSol )
         !

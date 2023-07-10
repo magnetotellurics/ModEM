@@ -81,7 +81,7 @@ contains
         !
         !write( *, * ) "Constructor ModelParameterCell_SG_t"
         !
-        call self%init
+        call self%baseInit
         !
         if( .NOT. present( param_type ) ) then
             self%param_type = LOGE
@@ -128,7 +128,7 @@ contains
         !
         !write( *, * ) "Constructor ModelParameterCell_SG_t"
         !
-        call self%init
+        call self%baseInit
         !
         if( .NOT. present( param_type ) ) then
             self%param_type = LOGE
@@ -404,7 +404,7 @@ contains
                 self%sigMap_ptr => rhs%sigMap_ptr
                 !
             class default
-               stop "Error: copyFrom_ModelParameterCell_SG > Unclassified rhs."
+                call errStop( "copyFrom_ModelParameterCell_SG > Unclassified rhs." )
             !
         end select
         !
@@ -467,10 +467,11 @@ contains
                 enddo
                 !
             class default
-                stop "Error: linComb_ModelParameterCell_SG > undefined rhs"
+                call errStop( "linComb_ModelParameterCell_SG > undefined rhs" )
             !
         end select
         !
+        !> ????
         !self%air_cond = rhs%air_cond
         !
     end subroutine linComb_ModelParameterCell_SG
@@ -574,9 +575,14 @@ contains
         class( ModelParameter_t ), intent( in ) :: dsigma
         class( Vector_t ), allocatable, intent( inout ) :: eVec
         !
+        type( rScalar3D_SG_t ) :: dsigma_cond
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: sigma_cell
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: i, k0, k1, k2
+        !
+        if( .NOT. dsigma%is_allocated ) then
+            call errStop( "dPDEmapping_ModelParameterCell_SG > dsigma not allocated" )
+        endif
         !
         if( .NOT. allocated( eVec ) ) then
             allocate( eVec, source = rVector3D_SG_t( self%metric%grid, EDGE ) )
@@ -592,24 +598,17 @@ contains
             !
             sigma_cell(i) = rScalar3D_SG_t( self%metric%grid, CELL )
             !
+            call sigma_cell(i)%zeros
+            !
             k0 = self%metric%grid%NzAir
             k1 = k0 + 1
             k2 = self%metric%grid%Nz
             !
-            call sigma_cell(i)%zeros
-            !
             sigma_cell(i)%v( :, :, k1:k2 ) = self%sigMap( self%cell_cond(i)%v, JOB )
             !
-            select type( dsigma )
-                !
-                class is( ModelParameterCell_SG_t )
-                    !
-                    sigma_cell(i)%v(:,:,k1:k2) = sigma_cell(i)%v(:,:,k1:k2) * dsigma%cell_cond(i)%v
-                    !
-                class default
-                    call errStop( "dPDEmapping_ModelParameterCell_SG > Unclassified dsigma" )
-                !
-            end select
+            dsigma_cond = dsigma%getCond(i)
+            !
+            sigma_cell(i)%v( :, :, k1:k2 ) = sigma_cell(i)%v( :, :, k1:k2 ) * dsigma_cond%v
             !
             call sigma_cell(i)%mult( self%metric%Vcell )
             !
@@ -641,6 +640,7 @@ contains
         class( Vector_t ), intent( in ) :: eVec
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
+        type( rScalar3D_SG_t ), allocatable, dimension(:) :: dsigma_cond
         class( Vector_t ), allocatable :: evec_interior
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: sigma_cell
         complex( kind=prec ), allocatable :: sigma_v(:, :, :)
@@ -679,26 +679,21 @@ contains
         !
         deallocate( evec_interior )
         !
-        allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, self%cell_cond, self%param_type ) )
+        dsigma_cond = self%cell_cond
         !
-        select type( dsigma )
+        do i = 1, self%anisotropic_level
             !
-            class is( ModelParameterCell_SG_t )
-                !
-                do i = 1, self%anisotropic_level
-                    !
-                    dsigma%cell_cond(i)%v = self%sigMap( self%cell_cond(i)%v, JOB )
-                    !
-                    call sigma_cell(i)%mult( self%metric%Vcell )
-                    !
-                    dsigma%cell_cond(i)%v = sigma_cell(i)%v(:,:,k1:k2) * dsigma%cell_cond(i)%v
-                    !
-                enddo
-                !
-            class default
-                stop "Error: dPDEmapping_T_ModelParameterCell_SG > Unclassified dsigma"
+            call dsigma_cond(i)%zeros
             !
-        end select
+            dsigma_cond(i)%v = self%sigMap( self%cell_cond(i)%v, JOB )
+            !
+            call sigma_cell(i)%mult( self%metric%Vcell )
+            !
+            dsigma_cond(i)%v = dsigma_cond(i)%v * sigma_cell(i)%v( :, :, k1:k2 )
+            !
+        enddo
+        !
+        allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, dsigma_cond, self%param_type ) )
         !
     end subroutine dPDEmapping_T_ModelParameterCell_SG
     !
@@ -713,7 +708,7 @@ contains
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
-            stop "Error: setType_ModelParameterCell_SG > Self not allocated."
+                call errStop( "setType_ModelParameterCell_SG > Self not allocated." )
         endif
         !
         do i = 1, self%anisotropic_level
@@ -755,7 +750,7 @@ contains
                 self%cell_cond(i)%v = self%cell_cond(i)%v * log(10.)
                 !
             else
-                stop "Error: setType_ModelParameterCell_SG > Unknown param_type."
+                call errStop( "setType_ModelParameterCell_SG > Unknown param_type." )
             endif
             !
         enddo
@@ -795,22 +790,13 @@ contains
         character(*), intent( in ) :: file_name
         character(*), intent( in ), optional :: comment
         !
-        type( rScalar3D_SG_t ) :: rho_v, rho_h, ccond_v
+        type( rScalar3D_SG_t ) :: rho
         integer :: Nx, Ny, NzEarth, ii, i, j, k, ios
         !
         ! Verbose
         !write( *, * ) "     > Write Model to file: [", file_name, "]"
         !
-        !> Convert modelParam to natural log or log10 for output
-        !paramType = userParamType
-        !
-        !if( self%%is ) then
-        !    call getValue_modelParam(m, paramType, self%cell_cond(1), v_v=ccond_v)
-        !else
-        !    call getValue_modelParam(m, paramType, self%cell_cond(1))
-        !endif
-        !
-        open( unit = ioModelParam, file = file_name, action = "write", form = "formatted", iostat = ios )
+        open( ioModelParam, file = file_name, action = "write", form = "formatted", iostat = ios )
         !
         if( ios == 0 ) then
             !
@@ -827,7 +813,17 @@ contains
             !
             write( ioModelParam, "(4i5)", advance = "no" ) Nx, Ny, NzEarth, 0
             !
-            write( ioModelParam, "(a10)", advance = "yes" ) trim( self%param_type )
+            write( ioModelParam, "(a10)", advance = "no" ) trim( self%param_type )
+            !
+            if( self%anisotropic_level == 2 ) then
+                !
+                write( ioModelParam, * ) " VTI"
+                !
+            else
+                !
+                write( ioModelParam, * )
+                !
+            endif
             !
             !> Write self%metric%grid spacings
             do j = 1, self%metric%grid%nx
@@ -848,14 +844,16 @@ contains
             !
             write( ioModelParam, * )
             !
+            write( *, * ) self%anisotropic_level
+            !
             do ii = 1, self%anisotropic_level
                 !
                 !> Convert (horizontal) conductivity to resistivity
-                rho_h = self%cell_cond(ii)
+                rho = self%cell_cond(ii)
                 if( index( self%param_type,"LOGE" ) > 0 .OR. index( self%param_type,"LOG10" ) > 0 ) then
-                    rho_h%v = -self%cell_cond(ii)%v
-                elseif( index(self%param_type,"LINEAR" ) > 0) then
-                    rho_h%v = ONE/self%cell_cond(ii)%v
+                    rho%v = -self%cell_cond(ii)%v
+                elseif( index(self%param_type,"LINEAR" ) > 0 ) then
+                    rho%v = ONE / self%cell_cond(ii)%v
                 endif
                 !
                 !> Write the (horizontal) resistivity
@@ -865,7 +863,7 @@ contains
                 do k = 1, nzEarth
                     do j = 1, Ny
                         do i = Nx, 1, -1
-                            write( ioModelParam, "(es13.5)", iostat = ios, advance = "no" ) rho_h%v(i,j,k)
+                            write( ioModelParam, "(es13.5)", iostat = ios, advance = "no" ) rho%v(i,j,k)
                         enddo
                         !
                         write( ioModelParam, * )
@@ -896,5 +894,6 @@ contains
         endif
         !
     end subroutine write_ModelParameterCell_SG
+
 
 end Module ModelParameterCell_SG

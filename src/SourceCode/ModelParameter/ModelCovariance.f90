@@ -4,11 +4,10 @@
 !> Recursive autoregression
 !>
 !
-module ModelCovarianceRec
+module ModelCovariance
     !
     use Constants
     use ModelParameterCell_SG
-    !use ModelParameterCell_SG_VTI
     use cVectorSparse3D_SG
     use rScalar3D_SG
     use iScalar3D_SG
@@ -20,7 +19,7 @@ module ModelCovarianceRec
     integer, parameter, private :: OCEAN = 9
     integer, parameter, private :: FREE  = 1 ! anything 1-8
     !
-    type :: ModelCovarianceRec_t
+    type :: ModelCovariance_t
         !
         !> Dimensions of the grid
         integer :: Nx, Ny, NzEarth
@@ -45,7 +44,7 @@ module ModelCovarianceRec
         !
         contains
             !
-            final :: ModelCovarianceRec_dtor
+            final :: ModelCovariance_dtor
             !
             procedure, public :: multBy_Cm
             procedure, public :: multBy_CmSqrt
@@ -53,28 +52,26 @@ module ModelCovarianceRec
             procedure, public :: read_CmSqrt
             procedure, public :: RecursiveAR
             procedure, public :: RecursiveARInv
-            procedure, public :: SmoothX
-            procedure, public :: SmoothY
-            procedure, public :: SmoothZ
+            procedure, public :: SmoothX, SmoothY, SmoothZ
             procedure, public :: Scaling
             !
     end type
     !
-    interface ModelCovarianceRec_t
-         module procedure ModelCovarianceRec_ctor
-    end interface ModelCovarianceRec_t
+    interface ModelCovariance_t
+         module procedure ModelCovariance_ctor
+    end interface ModelCovariance_t
     !
 contains
     !
     !> Initializes self variable stored in RecursiveAR.hd. If cfile
     !> is specified, gets this information from file.
-    function ModelCovarianceRec_ctor( m, cfile ) result( self )
+    function ModelCovariance_ctor( m, cfile ) result( self )
         implicit none
         !
         class( ModelParameter_t ), allocatable, intent( in ) :: m
         character(*), intent( in ), optional :: cfile
         !
-        type( ModelCovarianceRec_t ) :: self
+        type( ModelCovariance_t ) :: self
         !
         integer :: istat
         logical :: exists
@@ -83,8 +80,10 @@ contains
         self%Nx = m%metric%grid%Nx
         self%Ny = m%metric%grid%Ny
         self%NzEarth = m%metric%grid%NzEarth
+        !
         allocate( self%Sx(self%NzEarth), STAT=istat )
         allocate( self%Sy(self%NzEarth), STAT=istat )
+        !
         self%Sx = 0.3
         self%Sy = 0.3
         self%Sz = 0.3
@@ -106,27 +105,25 @@ contains
                 call self%read_CmSqrt( cfile )
             else
                 !
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unable to find the input covariance file [", trim( cfile ), "]!"
-                stop
+                call errStop( "ModelCovariance_ctor > Unable to find the input covariance file ["//trim( cfile )//"]!" )
                 !
             endif
             !
             if( ( self%Nx /= m%metric%grid%Nx ) .OR. ( self%Ny /= m%metric%grid%Ny ) .OR. ( self%NzEarth /= m%metric%grid%NzEarth ) ) then
                 !
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Grid dimensions do not match in input covariance file [", trim( cfile ), "]!"
-                stop
+                call errStop( "ModelCovariance_ctor > Grid dimensions do not match in input covariance file ["//trim( cfile )//"]!" )
                 !
             endif
             !
         endif
         !
-    end function ModelCovarianceRec_ctor
+    end function ModelCovariance_ctor
     !
     !> No subroutine briefing
-    subroutine ModelCovarianceRec_dtor( self )
+    subroutine ModelCovariance_dtor( self )
         implicit none
         !
-        type( ModelCovarianceRec_t ), intent( inout ) :: self
+        type( ModelCovariance_t ), intent( inout ) :: self
         !
         integer :: istat
         !
@@ -135,7 +132,7 @@ contains
         !call deall_iscalar( self%mask )
         self%is_allocated = .FALSE.
         !
-    end subroutine ModelCovarianceRec_dtor
+    end subroutine ModelCovariance_dtor
     !
     !> Multiplies by the full model covariance,
     !> which is viewed as a smoothing operator. Intended
@@ -147,7 +144,7 @@ contains
     subroutine multBy_Cm( self, target_model )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         class( ModelParameter_t ), allocatable, intent( inout ) :: target_model
         !
         integer :: i
@@ -181,7 +178,7 @@ contains
     subroutine multBy_CmSqrt( self, mhat, dsigma )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         class( ModelParameter_t ), intent( in ) :: mhat
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
@@ -220,7 +217,7 @@ contains
     function multBy_CmSqrtInv( self, dm ) result ( mhat )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         class( ModelParameter_t ), allocatable, intent( in ) :: dm
         class( ModelParameter_t ), allocatable :: mhat
         !
@@ -243,12 +240,12 @@ contains
                         call mhat%cell_cond(1)%setV( v )
                         !
                     class default
-                        stop "Error: multBy_CmSqrtInv > Unclassified dm"
+                        call errStop( "multBy_CmSqrtInv > Unclassified dm" )
                     !
                 end select
                 !
             class default
-                stop "Error: multBy_CmSqrtInv > Unclassified mhat"
+                call errStop( "multBy_CmSqrtInv > Unclassified mhat" )
             !
         end select
         !
@@ -292,7 +289,7 @@ contains
     subroutine read_CmSqrt( self, cfile )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( inout ) :: self
+        class( ModelCovariance_t ), intent( inout ) :: self
         character(*), intent( in ) :: cfile
         !
         !> Exception rules
@@ -302,7 +299,7 @@ contains
         integer :: k1, k2, Nx, Ny, Nz, NzEarth, nrules, nS, i, j, k, n, ios, istat
         !
         if( .NOT. self%is_allocated ) then
-            stop "Error: Model covariance must be is_allocated before reading from file in read_CmSqrt"
+            call errStop( "read_CmSqrt > Model covariance must be is_allocated before reading from file!" )
         endif
         !
         open( unit=ioCovariance, file=cfile, form="formatted", status="old", iostat = ios )
@@ -353,7 +350,7 @@ contains
                  if( istat /= 0) exit
                  !
                  if( ( k1 < 0 ) .OR. ( k2 > Nz ) ) then
-                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m read_CmSqrt > While reading the ", i, "th block."
+                        write( *, * ) "Error: read_CmSqrt > While reading the ", i, "th block!"
                         stop
                  elseif( k1 > k2) then
                         write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m read_CmSqrt > Block ", i, " will be ignored."
@@ -364,7 +361,7 @@ contains
                         read(ioCovariance, *, iostat = istat) temp
                         !
                         if( istat /= 0) then
-                             write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m read_CmSqrt > While reading the ", j, "th row in ", i,"th block."
+                             write( *, * ) "Error: read_CmSqrt > While reading the ", j, "th row in ", i,"th block."
                              stop
                         endif
                         !
@@ -384,7 +381,7 @@ contains
             close( ioCovariance )
             !
         else
-            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m read_CmSqrt > Cant open file [", cfile, "]!"
+            write( *, * ) "Error: read_CmSqrt > Cant open file [", cfile, "]!"
             stop
         endif
         !
@@ -451,7 +448,7 @@ contains
     subroutine RecursiveAR( self, w, v, n )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         real( kind=prec ), intent( in ) :: w(:,:,:)
         real( kind=prec ), intent( out ) :: v(:,:,:)
         integer, intent( in ) :: n
@@ -463,7 +460,7 @@ contains
         !
         if( maxval( abs(shape(w) - shape(v) ) ) > 0 ) then
             !
-            stop "Error: The input arrays should be of the same shapes in RecursiveAR!"
+            call errStop( "RecursiveAR > The input arrays should be of the same shapes!" )
             !
         endif
         !
@@ -557,7 +554,7 @@ contains
     subroutine RecursiveARInv( self, w, v, n)
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         complex( kind=prec ), intent( in ) :: w(:,:,:)
         complex( kind=prec ), intent( out ) :: v(:,:,:)
         integer, intent( in ) :: n
@@ -570,7 +567,8 @@ contains
         NzEarth = size( w, 3 )
         !
         if( maxval( abs( shape(w) - shape(v) ) ) > 0 ) then
-            stop "Error: The input arrays should be of the same shapes in RecursiveARInv"
+            !
+            call errStop( "RecursiveARInv > The input arrays should be of the same shapes in RecursiveARInv" )
         endif
         !
         allocate( u( Nx, Ny, NzEarth ), stat=istat )
@@ -674,24 +672,24 @@ contains
     function SmoothX( self, i, j, k ) result( alpha )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         integer, intent( in ) :: i, j, k
         real( kind=prec ) :: alpha
         !
         integer :: n
         !
         if( .NOT. associated( self%Sx ) ) then
-            stop "Error: self%Sx has to be is_allocated before calling SmoothX"
+            call errStop( "SmoothX > self%Sx has to be is_allocated before calling this" )
         endif
         !
         alpha = self%Sx(k)
         !
         if((i < 1) .OR. (i > self%Nx)) then
-            stop "Error: index i out of bounds in SmoothX(i,j,k)"
+            call errStop( "SmoothX > index i out of bounds in SmoothX(i,j,k)" )
         elseif((j < 1) .OR. (j > self%Ny)) then
-            stop "Error: index j out of bounds in SmoothX(i,j,k)"
+            call errStop( "SmoothX > index j out of bounds in SmoothX(i,j,k)" )
         elseif((k < 1) .OR. (k > self%NzEarth)) then
-            stop "Error: index k out of bounds in SmoothX(i,j,k)"
+            call errStop( "SmoothX > index k out of bounds in SmoothX(i,j,k)" )
         endif
         !
         if( self%S%is_allocated .AND. (self%S%nCoeff > 0) ) then
@@ -713,24 +711,24 @@ contains
     function SmoothY( self, i, j, k ) result( beta )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         integer, intent( in ) :: i, j, k
         real( kind=prec ) :: beta
         !
         integer :: n
         !
         if( .NOT. associated( self%Sy ) ) then
-            stop "Error: self%Sy has to be is_allocated before calling SmoothY"
+            call errStop( "SmoothY > self%Sy has to be is_allocated before calling this" )
         endif
         !
         beta = self%Sy(k)
         !
         if( ( i < 1 ) .OR. ( i > self%Nx ) ) then
-            stop "Error: index i out of bounds in SmoothY(i,j,k)"
-        elseif((j < 1) .OR. (j > self%Ny)) then
-            stop "Error: index j out of bounds in SmoothY(i,j,k)"
-        elseif((k < 1) .OR. (k > self%NzEarth)) then
-            stop "Error: index k out of bounds in SmoothY(i,j,k)"
+            call errStop( "SmoothY > index i out of bounds in Y(i,j,k)" )
+        elseif( (j < 1) .OR. ( j > self%Ny) ) then
+            call errStop( "SmoothY > index j out of bounds in Y(i,j,k)" )
+        elseif( (k < 1) .OR. ( k > self%NzEarth) ) then
+            call errStop( "SmoothY > index k out of bounds in Y(i,j,k)" )
         endif
         !
         if( self%S%is_allocated .AND. ( self%S%nCoeff > 0 ) ) then
@@ -752,7 +750,7 @@ contains
     function SmoothZ( self, i, j, k ) result( gamma )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         integer, intent( in ) :: i, j, k
         real( kind=prec ) :: gamma
         !
@@ -761,11 +759,11 @@ contains
         gamma = self%Sz
         !
         if((i < 1) .OR. (i > self%Nx)) then
-            stop "Error: index i out of bounds in SmoothZ(i,j,k)"
+            call errStop( "SmoothZ > index i out of bounds in Z(i,j,k)" )
         elseif((j < 1) .OR. (j > self%Ny)) then
-            stop "Error: index j out of bounds in SmoothZ(i,j,k)"
+            call errStop( "SmoothZ > index j out of bounds in Z(i,j,k)" )
         elseif((k < 1) .OR. (k > self%NzEarth)) then
-            stop "Error: index k out of bounds in SmoothZ(i,j,k)"
+            call errStop( "SmoothZ > index k out of bounds in Z(i,j,k)" )
         endif
         !
         if( self%S%is_allocated .AND. ( self%S%nCoeff > 0 ) ) then
@@ -787,16 +785,16 @@ contains
     function Scaling( self, i, j, k ) result( c )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         integer, intent( in ) :: i,j,k
         real( kind=prec ) :: c, alpha, beta, gamma
         !
         if((i < 1) .OR. (i > self%Nx)) then
-            stop "Error: index i out of bounds in Scaling(i,j,k)"
+            call errStop( "Scaling > index i out of bounds in Scaling(i,j,k)" )
         elseif((j < 1) .OR. (j > self%Ny)) then
-            stop "Error: index j out of bounds in Scaling(i,j,k)"
+            call errStop( "Scaling > index j out of bounds in Scaling(i,j,k)" )
         elseif((k < 1) .OR. (k > self%NzEarth)) then
-            stop "Error: index k out of bounds in Scaling(i,j,k)"
+            call errStop( "Scaling > index k out of bounds in Scaling(i,j,k)" )
         endif
         !
         alpha = self%SmoothX( i, j, k )
@@ -813,4 +811,4 @@ contains
         !
     end function Scaling
     !
-end Module ModelCovarianceRec
+end Module ModelCovariance

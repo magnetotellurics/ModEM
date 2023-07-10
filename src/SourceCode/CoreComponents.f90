@@ -16,7 +16,7 @@ module CoreComponents
     use ModelParameterCell_SG
     !use ModelParameterCell_SG_VTI
     !
-    use ModelCovarianceRec
+    use ModelCovariance
     !
     use ForwardSolverIT_DC
     !
@@ -47,7 +47,7 @@ module CoreComponents
     !
     class( ForwardSolver_t ), allocatable, target :: forward_solver
     !
-    class( ModelCovarianceRec_t ), allocatable :: model_cov
+    class( ModelCovariance_t ), allocatable :: model_cov
     !
     !> Program Control Variables
     character(8) :: str_date
@@ -312,18 +312,20 @@ contains
             !
         else
             !
-            !> Create model with horizontal cond
-            cell_cond = model%getCond( 1 )
+            !> Create new isotropic model with target horizontal cond
+            cell_cond = model%getCond(1)
             !
             allocate( aux_model, source = ModelParameterCell_SG_t( model%metric%grid, cell_cond, 1, model%param_type ) )
+            !
+            call aux_model%setMetric( model_operator%metric )
             !
             call aux_model%write( model_file_name//"_h" )
             !
             write( *, * ) "               < Created ["//model_file_name//"_h] file."
             !
-            cell_cond = model%getCond( 2 )
+            !> Set new model horizontal as the target vertical cond
+            cell_cond = model%getCond(2)
             !
-            !> Set vertical cond
             call aux_model%setCond( cell_cond, 1 )
             !
             call aux_model%write( model_file_name//"_v" )

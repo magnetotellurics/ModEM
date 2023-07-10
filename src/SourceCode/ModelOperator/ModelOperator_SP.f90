@@ -33,26 +33,26 @@ module ModelOperator_SP
             !
             final :: ModelOperator_SP_dtor
             !
-            procedure, public :: setEquations => setEquationsModelOperatorSP
-            procedure, public :: setCond => setCondModelOperatorSP
-            procedure, public :: amult => amultModelOperatorSP
-            procedure, public :: multAib => multAibModelOperatorSP
-            procedure, public :: multCurlT => multCurlTModelOperatorSP
-            procedure, public :: divCorSetUp => divCorSetUpModelOperatorSP
+            procedure, public :: setEquations => setEquations_ModelOperator_SP
+            procedure, public :: setCond => setCond_ModelOperator_SP
+            procedure, public :: amult => amultModelOperator_SP
+            procedure, public :: multAib => multAib_ModelOperator_SP
+            procedure, public :: multCurlT => multCurlT_ModelOperator_SP
+            procedure, public :: divCorSetUp => divCorSetUp_ModelOperator_SP
             !
-            procedure, public :: divCorInit => divCorInitModelOperatorSP
+            procedure, public :: divCorInit => divCorInitModelOperator_SP
+            !
+            procedure :: divCGrad => divCGrad_ModelOperator_SP
+            procedure :: divC => divC_ModelOperator_SP
+            procedure :: grad => grad_ModelOperator_SP
+            procedure :: div => div_ModelOperator_SP
+            !
+            procedure :: create => create_ModelOperator_SP 
+            procedure :: dealloc => deallocate_ModelOperator_SP
+            !
+            procedure, public :: print => print_ModelOperator_SP
             !
             procedure, private :: updateOmegaMuSig
-            !
-            procedure :: divCgrad => divCgradModelOperatorSP
-            procedure :: divC => divCModelOperatorSP
-            procedure :: grad => gradModelOperatorSP
-            procedure :: div => divModelOperatorSP
-            !
-            procedure :: create => createModelOperatorSP 
-            procedure :: deallocate => deallocateModelOperatorSP
-            !
-            procedure, public :: print => printModelOperatorSP
             !
     end type ModelOperator_SP_t
     !
@@ -73,7 +73,7 @@ contains
         !
         !write( *, * ) "Constructor ModelOperator_SP"
         !
-        call self%init
+        call self%baseInit
         !
         !> Instantiation of the specific object MetricElements
         allocate( self%metric, source = MetricElements_CSG_t( grid ) )
@@ -83,7 +83,7 @@ contains
     end function ModelOperator_SP_ctor
     !
     !> No subroutine briefing
-    subroutine createModelOperatorSP( self )
+    subroutine create_ModelOperator_SP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
@@ -117,7 +117,7 @@ contains
         !
         self%is_allocated = .TRUE.
         !
-    end subroutine createModelOperatorSP
+    end subroutine create_ModelOperator_SP
     !
     !> ModelOperator_SP destructor
     subroutine ModelOperator_SP_dtor( self )
@@ -127,15 +127,15 @@ contains
         !
         !write( *, * ) "Destructor ModelOperator_SP_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
-        call self%deallocate()
+        call self%dealloc
         !
     end subroutine ModelOperator_SP_dtor
     !
     !> No subroutine briefing
     !
-    subroutine deallocateModelOperatorSP( self )
+    subroutine deallocate_ModelOperator_SP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
@@ -163,13 +163,13 @@ contains
         !
         self%is_allocated = .FALSE.
         !
-    end subroutine deallocateModelOperatorSP
+    end subroutine deallocate_ModelOperator_SP
     !
     !> No subroutine briefing
     !> using existing curl operator, create sparse matrix CC
     !> Note: this is the symmetric form, multiplied by edge volume elements
     !
-    subroutine setEquationsModelOperatorSP( self )
+    subroutine setEquations_ModelOperator_SP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
@@ -213,11 +213,11 @@ contains
         !
         call self%divCorSetUp
         !
-    end subroutine setEquationsModelOperatorSP
+    end subroutine setEquations_ModelOperator_SP
     !
     !> No subroutine briefing
     !
-    subroutine setCondModelOperatorSP( self, sigma )
+    subroutine setCond_ModelOperator_SP( self, sigma )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
@@ -268,7 +268,7 @@ contains
         !
         deallocate( model )
         !
-    end subroutine setCondModelOperatorSP
+    end subroutine setCond_ModelOperator_SP
     !
     !> No subroutine briefing
     !
@@ -312,7 +312,7 @@ contains
     !> To complete setup conductivity is required
     !> DivCorInit has to be called before this routine
     !
-    subroutine divCorInitModelOperatorSP( self )
+    subroutine divCorInitModelOperator_SP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
@@ -364,12 +364,12 @@ contains
         !
         deallocate( allNodes, d )
         !
-    end subroutine divCorInitModelOperatorSP
+    end subroutine divCorInitModelOperator_SP
     !
     !> To complete setup conductivity is required
     !> DivCorInit has to be called before this routine
     !
-    subroutine divCorSetUpModelOperatorSP( self )
+    subroutine divCorSetUp_ModelOperator_SP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
@@ -414,13 +414,13 @@ contains
         !
         deallocate( allNodes )
         !
-    end subroutine divCorSetUpModelOperatorSP
+    end subroutine divCorSetUp_ModelOperator_SP
     !
     !> Implement the sparse matrix multiply for curl-curl operator
     !> for interior elements
     !> assume output y is already allocated
     !
-    subroutine amultModelOperatorSP( self, omega, inE, outE, p_adjoint )
+    subroutine amultModelOperator_SP( self, omega, inE, outE, p_adjoint )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
@@ -434,7 +434,7 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: array_inE_int, array_result
         !
         if( .NOT. inE%is_allocated ) then
-            stop "Error: amultModelOperatorSP > inE not allocated"
+            stop "Error: amultModelOperator_SP > inE not allocated"
         endif
         !
         array_inE = inE%getArray()
@@ -464,13 +464,13 @@ contains
         !
         call outE%setArray( array_outE )
         !
-    end subroutine amultModelOperatorSP
+    end subroutine amultModelOperator_SP
     !
     !> Implement the sparse matrix multiply for curl-curl operator
     !> for interior/boundary elements
     !> assume output y is already allocated
     !
-    subroutine multAibModelOperatorSP( self, inE, outE )
+    subroutine multAib_ModelOperator_SP( self, inE, outE )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
@@ -481,7 +481,7 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: array_inE_bdry, array_outE_int
         !
         if( .NOT. inE%is_allocated ) then
-            stop "Error: amultModelOperatorSP > inE not allocated"
+            stop "Error: amultModelOperator_SP > inE not allocated"
         endif
         !
         array_inE = inE%getArray()
@@ -498,11 +498,11 @@ contains
         !
         call outE%setArray( array_outE )
         !
-    end subroutine multAibModelOperatorSP
+    end subroutine multAib_ModelOperator_SP
     !
     !> No subroutine briefing
     !
-    subroutine multCurlTModelOperatorSP( self, inH, outE )
+    subroutine multCurlT_ModelOperator_SP( self, inH, outE )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
@@ -518,7 +518,7 @@ contains
                 call inH%div( self%Metric%FaceArea )
                 !
                 if( .NOT. outE%is_allocated ) then
-                     write( *, * ) "Error:  multCurlTModelOperatorSP > outE not allocated"
+                     write( *, * ) "Error:  multCurlT_ModelOperator_SP > outE not allocated"
                 endif
                 !
                 select type( outE )
@@ -553,21 +553,21 @@ contains
                         enddo
                         !
                     class default
-                        stop "Error: multCurlTModelOperatorSP > Unclassified outE"
+                        stop "Error: multCurlT_ModelOperator_SP > Unclassified outE"
                 end select
                     !> 
             class default
-                stop "Error: multCurlTModelOperatorSP > Unclassified input inH"
+                stop "Error: multCurlT_ModelOperator_SP > Unclassified input inH"
                 !
         end select
         !
         call outE%mult( self%metric%Edgelength )
         !
-    end subroutine multCurlTModelOperatorSP
+    end subroutine multCurlT_ModelOperator_SP
     !
     !> No subroutine briefing
     !
-    subroutine divCgradModelOperatorSP( self, inPhi, outPhi )
+    subroutine divCGrad_ModelOperator_SP( self, inPhi, outPhi )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
@@ -590,11 +590,11 @@ contains
         !
         call outPhi%setArray( array_outPhi )
         !
-    end subroutine divCgradModelOperatorSP
+    end subroutine divCGrad_ModelOperator_SP
     !
     !> No subroutine briefing
     !
-    subroutine divCModelOperatorSP( self, inE, outPhi )
+    subroutine divC_ModelOperator_SP( self, inE, outPhi )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
@@ -617,10 +617,10 @@ contains
         !
         call outPhi%setArray( array_outPhi )
         !
-    end subroutine divCModelOperatorSP
+    end subroutine divC_ModelOperator_SP
     !
     !> No subroutine briefing
-    subroutine gradModelOperatorSP( self, inPhi, outE )
+    subroutine grad_ModelOperator_SP( self, inPhi, outE )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
@@ -641,10 +641,10 @@ contains
         !
         call outE%setArray( array_outE )
         !
-    end subroutine gradModelOperatorSP
+    end subroutine grad_ModelOperator_SP
     !
     !> No subroutine briefing
-    subroutine divModelOperatorSP( self, inE, outPhi )
+    subroutine div_ModelOperator_SP( self, inE, outPhi )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
@@ -668,16 +668,16 @@ contains
         !
         call outPhi%setArray( array_outPhi )
         !
-    end subroutine divModelOperatorSP
+    end subroutine div_ModelOperator_SP
     !
     !> No subroutine briefing
-    subroutine printModelOperatorSP( self )
+    subroutine print_ModelOperator_SP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
         !
         stop "Subroutine print not implemented for ModelOperator_SP"
         !
-    end subroutine printModelOperatorSP
+    end subroutine print_ModelOperator_SP
     !
 end module ModelOperator_SP

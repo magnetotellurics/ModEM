@@ -18,7 +18,7 @@ module Inversion
         !
         contains
             !
-            procedure, public :: init => initializeInversion
+            procedure, public :: baseInit => initializeInversion
             !
             procedure( interface_solve_inversion ), deferred, public :: solve
             !

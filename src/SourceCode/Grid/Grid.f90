@@ -69,8 +69,8 @@ module Grid
             procedure( interface_slice_2d_grid ), deferred, public :: slice2D
             !
             !> Base Grid methods
-            procedure, public :: init => initialize_Grid
-            procedure, public :: dealloc => deallocate_Grid
+            procedure, public :: baseInit => initialize_Grid
+            procedure, public :: baseDealloc => deallocate_Grid
             !
             procedure, public :: getDimensions => getDimensions_Grid
             !

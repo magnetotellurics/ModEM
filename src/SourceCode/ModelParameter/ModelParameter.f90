@@ -30,7 +30,7 @@ module ModelParameter
         !
         contains
             !
-            procedure, public :: init => initialize_ModelParameter
+            procedure, public :: baseInit => initialize_ModelParameter
             !
             procedure, public :: setMetric => setMetric_ModelParameter
             procedure, public :: sigMap => sigMap_ModelParameter

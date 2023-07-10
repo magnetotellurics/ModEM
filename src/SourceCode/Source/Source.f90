@@ -25,9 +25,9 @@ module Source
         !
         contains
             !
-            procedure, public :: init => initialize_Source
+            procedure, public :: baseInit => initialize_Source
             !
-            procedure, public :: dealloc => deallocate_Source
+            procedure, public :: baseDealloc => deallocate_Source
             !
             procedure, public :: setE => setE_Source
             !

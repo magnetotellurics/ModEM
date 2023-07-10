@@ -22,7 +22,7 @@ module MetricElements
         !
      contains
         !
-        procedure, public :: dealloc => deallocateMetricElements
+        procedure, public :: baseDealloc => deallocateMetricElements
         !
         procedure, public :: setMetricElements
         !

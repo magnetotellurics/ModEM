@@ -77,7 +77,7 @@ contains
             class is( ModelOperator_SP_t )
                 !
                 write( *, * ) "DEVELPMENT HOT SPOT > setPreConditioner_DC_SP:"
-                write( *, * ) "model_operator%VDsG_L and model_operator%VDsG_U should be allocated before at divCorSetUpModelOperatorSP"
+                write( *, * ) "model_operator%VDsG_L and model_operator%VDsG_U should be allocated before at divCorSetUp_ModelOperator_SP"
                 !
                 if( allocated( self%phi ) ) deallocate( self%phi )
                 !

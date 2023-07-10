@@ -76,8 +76,8 @@ module Field
             procedure( interface_print_field ), deferred, public :: print
             !
             !> Field procedures
-            procedure, public :: init => initializeField
-            procedure, public :: dealloc => deallocateField
+            procedure, public :: baseInit => initializeField
+            procedure, public :: baseDealloc => deallocateField
             procedure, public :: isCompatible => isCompatibleField
             !
             procedure, public :: setIndexArrays => setIndexArraysField

@@ -41,7 +41,7 @@ contains
         !
         !write( *, * ) "Constructor SourceInteriorForce_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%model_operator => model_operator
         !

@@ -19,7 +19,7 @@ module PreConditioner_CC_MF
             !
             procedure, public :: LTSolve => LTSolvePreConditioner_CC_MF !> These are left (M1) and right (M2)
             procedure, public :: UTSolve => UTSolvePreConditioner_CC_MF !> preconditioning matrices for curl-curl equation.
-            procedure, public :: LUSolve => LUSolvePreConditioner_CC_MF !> preconditoner for symmetric divCgrad operator
+            procedure, public :: LUSolve => LUSolvePreConditioner_CC_MF !> preconditoner for symmetric divCGrad operator
             !
     end type PreConditioner_CC_MF_t
     !

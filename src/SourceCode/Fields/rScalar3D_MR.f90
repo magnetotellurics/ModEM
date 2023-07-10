@@ -538,7 +538,7 @@ contains
         !
         !write( *, * ) "Destructor rScalar3D_MR"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         if( allocated( self%v ) ) deallocate( self%v )
         if( allocated( self%sv ) ) deallocate( self%sv )

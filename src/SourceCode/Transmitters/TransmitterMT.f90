@@ -38,7 +38,7 @@ module TransmitterMT
         !
         !write( *, * ) "Constructor TransmitterMT_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%n_pol = 2
         !
@@ -51,7 +51,7 @@ module TransmitterMT
     end function TransmitterMT_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !
     subroutine TransmitterMT_dtor( self )
         implicit none
@@ -60,7 +60,7 @@ module TransmitterMT
         !
         !write( *, * ) "Destructor TransmitterMT_t:", self%id
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine TransmitterMT_dtor
     !

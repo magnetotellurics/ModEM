@@ -95,7 +95,7 @@ contains
         !
         !write( *, * ) "Constructor cVector3D_SG"
         !
-        call self%init
+        call self%baseInit
         !
         self%grid => grid
         !
@@ -164,7 +164,7 @@ contains
         !
         !write( *, * ) "Destructor cVector3D_SG"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         if( allocated( self%x ) ) deallocate( self%x )
         if( allocated( self%y ) ) deallocate( self%y )

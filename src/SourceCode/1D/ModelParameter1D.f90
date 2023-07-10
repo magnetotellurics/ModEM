@@ -71,7 +71,7 @@ contains
     end function ModelParameter1D_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !>     Deallocates inherent properties of this class.
     subroutine ModelParameter1D_dtor( self )
         implicit none

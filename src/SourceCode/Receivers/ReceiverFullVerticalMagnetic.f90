@@ -43,7 +43,7 @@ contains
         !
         !write( *, * ) "Constructor ReceiverFullVerticalMagnetic_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%location = location
         !
@@ -93,7 +93,7 @@ contains
         !
         !write( *, * ) "Destructor ReceiverFullVerticalMagnetic_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine ReceiverFullVerticalMagnetic_dtor
     !

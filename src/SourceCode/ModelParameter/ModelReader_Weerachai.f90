@@ -71,18 +71,18 @@ contains
             read(ioPrm, *) (dy(j), j = 1, ny)
             read(ioPrm, *) (dz(j), j = nzAir + 1, nzAir + nzEarth)
             !
-            if(someIndex /= 0) then
-                stop "Error: readModelReaderWeerachai > Mapping not supported."
+            if( someIndex /= 0 ) then
+                call errStop( "readModelReaderWeerachai > Mapping not supported." )
             endif
             !
             !> By default assume "LINEAR RHO" -
             !> Weerachai"s linear resistivity format
-            if(index(someChar, "LOGE") > 0) then
-                 paramType = LOGE
-            elseif(index(someChar, "LOG10") > 0) then
-                 paramType = LOG_10
+            if( index( someChar, "LOGE" ) > 0 ) then
+                paramType = LOGE
+            elseif( index( someChar, "LOG10" ) > 0) then
+                paramType = LOG_10
             else
-                 paramType = LINEAR
+                paramType = LINEAR
             endif
             !
             !> The default method for creating air layers in the grid has been deleted
@@ -149,7 +149,7 @@ contains
                         endif
                         !
                     class default
-                        stop "Error: readModelReaderWeerachai > Unclassified grid"
+                        call errStop( "readModelReaderWeerachai > Unclassified grid" )
                     !
                 end select
                 !
@@ -183,8 +183,7 @@ contains
             close( ioPrm )
             !
         else
-            write( *, * ) "Error opening [", file_name, "] in readModelReaderWeerachai"
-            stop
+            call errStop( "Error opening ["//file_name//"] in readModelReaderWeerachai" )
         endif
         !
     end subroutine readModelReaderWeerachai

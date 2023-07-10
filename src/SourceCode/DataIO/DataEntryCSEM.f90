@@ -38,7 +38,7 @@ contains
         !
         !write( *, * ) "Constructor DataEntryCSEM_t", dipole
         !
-        call self%init
+        call self%baseInit
         !
         self%i_de = i_de
         self%dtype = trim( dtype )
@@ -65,7 +65,7 @@ contains
     end function DataEntryCSEM_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !
     subroutine DataEntryCSEM_dtor( self )
         implicit none
@@ -74,7 +74,7 @@ contains
         !
         !write( *, * ) "Destructor DataEntryCSEM_t:", self%id
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         if( allocated( self%dipole ) ) deallocate( self%dipole )
         !

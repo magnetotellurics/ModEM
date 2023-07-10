@@ -44,7 +44,7 @@ contains
         !
         !write( *, * ) "Constructor DataEntryMT_REF_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%i_de = i_de
         self%dtype = trim( dtype )
@@ -65,7 +65,7 @@ contains
     end function DataEntryMT_REF_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !
     subroutine DataEntryMT_REF_dtor( self )
         implicit none
@@ -74,7 +74,7 @@ contains
         !
         !write( *, * ) "Destructor DataEntryMT_REF_t:", self%id
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         if( allocated( self%code_ref ) ) deallocate( self%code_ref )
         !

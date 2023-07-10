@@ -16,9 +16,9 @@ module DataEntry
         !
         procedure( interface_write ), deferred, public :: write
         !
-        procedure, public :: init => initializeDataEntry
+        procedure, public :: baseInit => initializeDataEntry
         !
-        procedure, public :: dealloc => deallocateDataEntry
+        procedure, public :: baseDealloc => deallocateDataEntry
         !
         procedure, public :: isEqual => isEqualDe
         !
