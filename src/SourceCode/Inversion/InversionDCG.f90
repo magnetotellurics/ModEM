@@ -219,13 +219,9 @@ contains
         all_predicted_data = all_data
         !
 #ifdef MPI
-        !
         call masterForwardModelling( dsigma, all_predicted_data )
-        !
 #else
-        !
         call serialForwardModeling( dsigma, all_predicted_data )
-        !
 #endif
         !
         res = all_data
@@ -308,7 +304,7 @@ contains
             !
             self%beta = r_norm / r_norm_pre
             !
-            ! Compute new p: p = r + beta*p    
+            ! Compute new p: p = r + beta * p
             call linCombData( ONE, r, self%beta, p, p )
             !
             self%iter = self%iter + 1

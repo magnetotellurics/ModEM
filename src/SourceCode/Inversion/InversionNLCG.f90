@@ -24,6 +24,8 @@ module InversionNLCG
         ! optional relaxation parameter (Renormalized Steepest Descent algorithm)
         real( kind=prec ) :: gamma
         !
+        real( kind=prec ) :: g_norm
+        !
         contains
             !
             final :: InversionNLCG_dtor
@@ -154,12 +156,21 @@ contains
         !
         self%iter = 0
         !
+        !> Write func plot header
+        open( unit = ioFuncPlot, file = trim( outdir_name )//"/"//trim( outdir_name )//".func_plot", action = "write", form = "formatted", iostat = ios )
+        if( ios == 0 ) then
+            write( ioFuncPlot, * ) "SS, Ndata, mNorm, nModel, F, RMS"
+            close( ioFuncPlot )
+        else
+            call errStop( "solve_InversionNLCG > cant open ["//trim( outdir_name )//".func_plot]." )
+        endif
+        !
+        !> Open main Inversion log 
         open( unit = ioInvLog, file = trim( outdir_name )//"/NLCG.log", status="unknown", position="append", iostat=ios )
         !
         if( ios == 0 ) then
             !
-            write( 1983, * ) "SS, Ndata, mNorm, nModel, F, RMS"
-            !
+            !> Write log starting messages
             write( *, "( a50, es12.5 )" ) "The initial damping parameter lambda is ", self%lambda
             write( *, "( a64, f12.6 )" ) "The initial line search step size (in model units) is ", self%startdm
             !
@@ -175,8 +186,8 @@ contains
             !
             call func( self, all_data, sigma, mHat, r_value, m_norm, dHat, i_sol, self%rms )
             !
-            call printf( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
-            call printf( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
+            call printLog( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
+            call printLog( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
             !
             n_func = 1
             !
@@ -226,15 +237,18 @@ contains
             !
             call self%outputFiles( dHat, all_data, dsigma, mHat )
             !
-            write( 1982, * ) "Iter, Alpha, Beta, gNorm, RMS"
+            !> Write Inversion plot header
+            open( unit = ioInvPlot, file = trim( outdir_name )//"/"//trim( outdir_name )//".inv_plot", status="unknown", iostat=ios )
+            if( ios == 0 ) then
+                write( ioInvPlot, * ) "Iter, Alpha, Beta, gNorm, RMS"
+                close( ioInvPlot )
+            else
+                call errStop( "solve_InversionNLCG > cant open ["//trim( outdir_name )//"/"//trim( outdir_name )//".inv_plot"//"]" )
+            endif
             !
             do! while( rms .GE. self%rms_tol .AND. self%iter .LT. self%max_iters )
                 !
-                write( 1982, * ) self%iter, ", ", &
-                                    self%alpha, ", ", &
-                                    self%beta, ", ", &
-                                    g_norm, ", ", &
-                                    self%rms
+                call self%printInvPlot( g_norm )
                 !
                 !  test for convergence ...
                 if( self%rms .LT. self%rms_tol .OR. self%iter .GE. self%max_iters ) then
@@ -296,8 +310,8 @@ contains
                 !
                 m_norm = mHat%dotProd( mHat ) / n_model
                 !
-                call printf( "with", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
-                call printf( "with", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
+                call printLog( "with", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
+                call printLog( "with", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
                 !
                 ! write out the intermediate model solution and responses
                 call model_cov%multBy_CmSqrt( mHat, dsigma )
@@ -343,10 +357,10 @@ contains
                     !
                     !> restart
                     write( *, * ) "Restarting NLCG with the damping parameter updated"
-                    call printf( "to", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
+                    call printLog( "to", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
                     !
                     write( ioInvLog, * ) "Restarting NLCG with the damping parameter updated"
-                    call printf( "to", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
+                    call printLog( "to", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
                     !
                     h = g
                     !
@@ -497,7 +511,7 @@ contains
             !
         endif
         !
-        write( 1983, * ) SS, ", ", Ndata, ", ", m_norm, ", ", n_model, ", ", F, ", ", rms
+        call printFuncPlot( SS, Ndata, m_norm, n_model, F, rms )
         !
     end subroutine func
     !
@@ -566,8 +580,6 @@ contains
 #endif
         !
         deallocate( dsigma )
-        !
-        write( 1984, * ) self%iter, JTd%dotProd( JTd )
         !
         !> FURTHER JOINT DEVELOPMENT ????
         !call weightGradrients( s_hat, all_data, dHat, JTd )
@@ -732,8 +744,8 @@ contains
         !
         call self%func( all_data, sigma, mHat_1, f_1, mNorm_1, dHat_1, i_sol, rms_1 )
         !
-        call printf( "STARTLS", self%lambda, self%alpha, f_1, mNorm_1, rms_1, .TRUE. )
-        call printf( "STARTLS", self%lambda, self%alpha, f_1, mNorm_1, rms_1, .FALSE. )
+        call printLog( "STARTLS", self%lambda, self%alpha, f_1, mNorm_1, rms_1, .TRUE. )
+        call printLog( "STARTLS", self%lambda, self%alpha, f_1, mNorm_1, rms_1, .FALSE. )
         !
         niter = niter + 1
         !
@@ -773,8 +785,8 @@ contains
                 !
                 call self%func( all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
                 !
-                call printf( "RELAX", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
-                call printf( "RELAX", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
+                call printLog( "RELAX", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+                call printLog( "RELAX", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
                 !
             endif
             !
@@ -800,8 +812,8 @@ contains
         !
         call func( self, all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
         !
-        call printf( "QUADLS", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
-        call printf( "QUADLS", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
+        call printLog( "QUADLS", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+        call printLog( "QUADLS", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
         !
         niter = niter + 1
         !
@@ -834,8 +846,8 @@ contains
                 !
                 call self%func( all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
                 !
-                call printf( "QUADLS_RLX", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
-                call printf( "QUADLS_RLX", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
+                call printLog( "QUADLS_RLX", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+                call printLog( "QUADLS_RLX", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
                 !
             endif
             !
@@ -892,8 +904,8 @@ contains
                 !
                 call self%func( all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
                 !
-                call printf( "CUBICLS", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
-                call printf( "CUBICLS", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
+                call printLog( "CUBICLS", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+                call printLog( "CUBICLS", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
                 !
                 niter = niter + 1
                 !
@@ -954,8 +966,8 @@ contains
             !
             call self%func( all_data, sigma, mHat, f,m_norm, dHat, i_sol, self%rms )
             !
-            call printf( "RELAX2", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
-            call printf( "RELAX2", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
+            call printLog( "RELAX2", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+            call printLog( "RELAX2", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
             !
         endif
         !

@@ -92,8 +92,8 @@ contains
         nzAir = 0
         !
         allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
-                    ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
-                    grid%dz( grid%nzAir+1:grid%nz ) ) )
+                ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+                  grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
         self%anisotropic_level = anisotropic_level
         !
@@ -263,7 +263,7 @@ contains
         elseif( axis == 3 ) then
             cond_slice = self%sigMap( real( self%cell_cond(1)%v(:,:,j), kind=prec ) )
         else
-            stop "Error: slice2D_ModelParameterCell_SG > wrong axis"
+            call errStop( "slice2D_ModelParameterCell_SG > wrong axis" )
         endif
         !
         call m2D%setConductivity( cond_slice, self%air_cond, param_type, self%mKey )
