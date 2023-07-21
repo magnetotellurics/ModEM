@@ -42,7 +42,8 @@ module InversionNLCG
     !
     logical :: is_complex = .TRUE.
     !
-    private :: weightGradrients, writeHeaders
+    !private :: weightGradrients
+    private :: writeHeaders
     !
     interface InversionNLCG_t
         module procedure InversionNLCG_ctor
@@ -554,29 +555,11 @@ contains
         call subData( res, dHat )
         !
         call normalizeData( res, 2 )
-        ! !
-        ! !> ALLOCATE S_HAT ????
-        ! select type( sigma )
-            ! !
-            ! class is( ModelParameterCell_SG_t )
-                ! !
-                ! allocate( ModelParameterCell_SG_t :: s_hat( size( all_data ) ) )
-                ! !
-            ! class is( ModelParameterCell_SG_VTI_t )
-                ! !
-                ! allocate( ModelParameterCell_SG_VTI_t :: s_hat( size( all_data ) ) )
-                ! !
-            ! class default
-               ! call errStop( "gradient > Unclassified model" )
-            ! !
-        ! end select
-        ! !
+        !
 #ifdef MPI
-        !call masterJMult_T( dsigma, res, JTd, i_sol, s_hat )
-        call masterJMult_T( dsigma, res, JTd, i_sol )
+        call masterJMult_T( dsigma, res, JTd, i_sol, s_hat )
 #else
-        !call serialJMult_T( dsigma, res, JTd, i_sol, s_hat )
-        call serialJMult_T( dsigma, res, JTd, i_sol )
+        call serialJMult_T( dsigma, res, JTd, i_sol, s_hat )
 #endif
         !
         deallocate( dsigma )
@@ -924,7 +907,7 @@ contains
                 ! check that the function still decreases to avoid infinite loops in case of a bug
                 if( abs( f_j - f_i ) < TOL8 ) then
                     !
-                    write( *, * ) achar(27)//"[91m# Warning:"//achar(27)//"[0m exiting cubic search since the function no longer decreases!"
+                    call warning( "Exiting cubic search since the function no longer decreases!" )
                     write( ioInvLog, * ) "Warning: exiting cubic search since the function no longer decreases!"
                     !
                     exit
@@ -1029,172 +1012,182 @@ contains
         close( ioGradRMS )
         !
     end subroutine writeHeaders
-    !
-    subroutine weightGradrients( s_hat, d, dHat, JTd )
-        implicit none
-        !
-        class( ModelParameter_t ), allocatable, dimension(:), intent( in ) :: s_hat
-        type( DataGroupTx_t ), dimension(:), intent( in ) :: d, dHat
-        class( ModelParameter_t ), intent( inout ) :: JTd
-        !
-        integer :: Ndata, i_tx, n_tx, ios
-        class( Scalar_t ), allocatable, dimension(:) :: shat_cond
-        real( kind=prec ) :: grad_norm, rms, SS
-        real( kind=prec ) :: sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
-        real( kind=prec ) :: sum_tx_rms, mt_rms, csem_rms
-        type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
-        real( kind=prec ), allocatable, dimension(:) :: tx_weights, tx_grad_norms, tx_rms
-        !
-        !> Open a file for output the operations realized on the gradient
-        open( unit = ioGradLog, file = trim( outdir_name )//"/GradNLCG.log", status="unknown", position="append", iostat=ios )
-        !
-        open( unit = ioGradNorm, file = trim( outdir_name )//"/GradNorm.log", status="unknown", position="append", iostat=ios )
-        !
-        open( unit = ioGradRMS, file = trim( outdir_name )//"/GradRMS.log", status="unknown", position="append", iostat=ios )
-        !
-        if( ios == 0 ) then
-            !
-            write( ioGradLog, * ) "##########################"
-            !
-            res = d
-            !
-            !> res = res - dHat
-            call subData( res, dHat )
-            !
-            Nres = res
-            call normalizeData( Nres, 2 )
-            !
-            !> Zero the variables for summation
-            sum_tx_grad_norm = 0.0
-            sum_tx_rms = 0.0
-            mt_grad_norm = 0.0
-            csem_grad_norm = 0.0
-            mt_rms = 0.0
-            csem_rms = 0.0
-            !
-            !> Allocate arrays to store values for each of the n_tx transmitters
-            n_tx = size( transmitters )
-            !
-            allocate( tx_weights( n_tx ) )
-            allocate( tx_grad_norms( n_tx ) )
-            allocate( tx_rms( n_tx ) )
-            !
-            do i_tx = 1, n_tx
-                !
-                tx_grad_norms( i_tx ) = sqrt( s_hat( i_tx )%dotProd( s_hat( i_tx ) ) )
-                !
-                write( ioGradNorm, "( f15.3, A1 )", advance = "no" ) tx_grad_norms( i_tx ), ","
-                !
-                tx_rms( i_tx ) = sqrt( res( i_tx )%dotProd( Nres( i_tx ) ) / ( size( Nres( i_tx )%data ) * Nres( i_tx )%data(1)%n_comp * 2 ) )
-                !
-                write( ioGradRMS, "( f15.3, A1 )", advance = "no" ) tx_rms( i_tx ), ","
-                !
-                !> Instantiate Transmitter's Source - According to transmitter type and chosen via control file
-                select type( Tx => getTransmitter( i_tx ) )
-                    !
-                    class is( TransmitterMT_t )
-                        !
-                        mt_grad_norm = mt_grad_norm + tx_grad_norms( i_tx )
-                        mt_rms = mt_rms + tx_rms( i_tx )
-                        !
-                        write( *, * ) "MT > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
-                        write( ioGradLog, * ) "MT > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
-                        !
-                    class is( TransmitterCSEM_t )
-                        !
-                        csem_grad_norm = csem_grad_norm + tx_grad_norms( i_tx )
-                        csem_rms = csem_rms + tx_rms( i_tx )
-                        !
-                        write( *, * ) "CSEM > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
-                        write( ioGradLog, * ) "CSEM > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
-                        !
-                    class default
-                        call errStop( "handleGradVectorsNLCG > Unclassified Transmitter" )
-                    !
-                end select
-                !
-                sum_tx_grad_norm = sum_tx_grad_norm + tx_grad_norms( i_tx )
-                sum_tx_rms = sum_tx_rms + tx_rms( i_tx )
-                !
-            enddo
-            !
-            grad_norm = real( sqrt( JTd%dotProd( JTd ) ), kind=prec )
-            !
-            write( *, * ) "MODEL GRAD NORM: ", grad_norm
-            write( ioGradLog, * ) "MODEL GRAD NORM: ", grad_norm
-            !
-            write( *, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
-            write( ioGradLog, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
-            !
-            SS = dotProdData( res, Nres )
-            !
-            Ndata = countValues( res )
-            !
-            rms = sqrt( SS / Ndata )
-            !
-            write( *, * ) "RMS: ", rms
-            !
-            write( ioGradRMS, "( f15.3 )" ) rms
-            !
-            close( ioGradRMS )
-            !
-            write( ioGradLog, * ) "RMS: ", rms
-            !
-            write( *, * ) "AVG/SUM TX RMS = MT + CSEM", sum_tx_rms/n_tx, sum_tx_rms, mt_rms, csem_rms
-            write( ioGradLog, * ) "AVG/SUM TX RMS = MT + CSEM", sum_tx_rms/n_tx, sum_tx_rms, mt_rms, csem_rms
-            !
-            do i_tx = 1, n_tx
-                !
-                tx_weights( i_tx ) = sum_tx_grad_norm / ( tx_grad_norms( i_tx ) * n_tx )
-                !
-            enddo
-            !
-            write( *, * ) "TX WEIGHTS: ", tx_weights
-            write( ioGradLog, * ) "TX WEIGHTS: ", tx_weights
-            !
-            if( joint_type /= INV_UNWEIGHTED ) then
-                !
-                !> Set back the weighted gradient conductivity
-                call JTd%zeros
-                !
-                do i_tx = 1, n_tx
-                    !
-                    !call s_hat( i_tx )%getCond( shat_cond )
-                    !
-                    !call shat_cond%mult( tx_weights( i_tx ) )
-                    !
-                    !> ADAPT TO THE WHOLE MODEL
-                    !call JTd%linComb( ONE, ONE, grad_cond )
-                    !
-                enddo
-                !
-            endif
-            !
-            deallocate( shat_cond )
-            !
-            grad_norm = real( sqrt( JTd%dotProd( JTd ) ), kind=prec )
-            !
+    ! !
+    ! subroutine weightGradrients( s_hat, d, dHat, JTd )
+        ! implicit none
+        ! !
+        ! class( ModelParameter_t ), allocatable, dimension(:), intent( in ) :: s_hat
+        ! type( DataGroupTx_t ), dimension(:), intent( in ) :: d, dHat
+        ! class( ModelParameter_t ), intent( inout ) :: JTd
+        ! !
+        ! integer :: Ndata, i, i_tx, n_tx, ios
+        ! class( Scalar_t ), allocatable, dimension(:) :: shat_cond, JTd_cond
+        ! real( kind=prec ) :: grad_norm, rms, SS
+        ! real( kind=prec ) :: sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
+        ! real( kind=prec ) :: sum_tx_rms, mt_rms, csem_rms
+        ! type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
+        ! real( kind=prec ), allocatable, dimension(:) :: tx_weights, tx_grad_norms, tx_rms
+        ! !
+        ! !> Open a file for output the operations realized on the gradient
+        ! open( unit = ioGradLog, file = trim( outdir_name )//"/GradNLCG.log", status="unknown", position="append", iostat=ios )
+        ! !
+        ! open( unit = ioGradNorm, file = trim( outdir_name )//"/GradNorm.log", status="unknown", position="append", iostat=ios )
+        ! !
+        ! open( unit = ioGradRMS, file = trim( outdir_name )//"/GradRMS.log", status="unknown", position="append", iostat=ios )
+        ! !
+        ! if( ios == 0 ) then
+            ! !
+            ! write( ioGradLog, * ) "##########################"
+            ! !
+            ! res = d
+            ! !
+            ! !> res = res - dHat
+            ! call subData( res, dHat )
+            ! !
+            ! Nres = res
+            ! call normalizeData( Nres, 2 )
+            ! !
+            ! !> Zero the variables for summation
+            ! sum_tx_grad_norm = 0.0
+            ! sum_tx_rms = 0.0
+            ! mt_grad_norm = 0.0
+            ! csem_grad_norm = 0.0
+            ! mt_rms = 0.0
+            ! csem_rms = 0.0
+            ! !
+            ! !> Allocate arrays to store values for each of the n_tx transmitters
+            ! n_tx = size( transmitters )
+            ! !
+            ! allocate( tx_weights( n_tx ) )
+            ! allocate( tx_grad_norms( n_tx ) )
+            ! allocate( tx_rms( n_tx ) )
+            ! !
+            ! do i_tx = 1, n_tx
+                ! !
+                ! tx_grad_norms( i_tx ) = sqrt( s_hat( i_tx )%dotProd( s_hat( i_tx ) ) )
+                ! !
+                ! write( ioGradNorm, "( f15.3, A1 )", advance = "no" ) tx_grad_norms( i_tx ), ","
+                ! !
+                ! tx_rms( i_tx ) = sqrt( res( i_tx )%dotProd( Nres( i_tx ) ) / ( size( Nres( i_tx )%data ) * Nres( i_tx )%data(1)%n_comp * 2 ) )
+                ! !
+                ! write( ioGradRMS, "( f15.3, A1 )", advance = "no" ) tx_rms( i_tx ), ","
+                ! !
+                ! !> Instantiate Transmitter's Source - According to transmitter type and chosen via control file
+                ! select type( Tx => getTransmitter( i_tx ) )
+                    ! !
+                    ! class is( TransmitterMT_t )
+                        ! !
+                        ! mt_grad_norm = mt_grad_norm + tx_grad_norms( i_tx )
+                        ! mt_rms = mt_rms + tx_rms( i_tx )
+                        ! !
+                        ! write( *, * ) "MT > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        ! write( ioGradLog, * ) "MT > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        ! !
+                    ! class is( TransmitterCSEM_t )
+                        ! !
+                        ! csem_grad_norm = csem_grad_norm + tx_grad_norms( i_tx )
+                        ! csem_rms = csem_rms + tx_rms( i_tx )
+                        ! !
+                        ! write( *, * ) "CSEM > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        ! write( ioGradLog, * ) "CSEM > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        ! !
+                    ! class default
+                        ! call errStop( "handleGradVectorsNLCG > Unclassified Transmitter" )
+                    ! !
+                ! end select
+                ! !
+                ! sum_tx_grad_norm = sum_tx_grad_norm + tx_grad_norms( i_tx )
+                ! sum_tx_rms = sum_tx_rms + tx_rms( i_tx )
+                ! !
+            ! enddo
+            ! !
+            ! grad_norm = real( sqrt( JTd%dotProd( JTd ) ), kind=prec )
+            ! !
+            ! write( *, * ) "MODEL GRAD NORM: ", grad_norm
+            ! write( ioGradLog, * ) "MODEL GRAD NORM: ", grad_norm
+            ! !
+            ! write( *, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
+            ! write( ioGradLog, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
+            ! !
+            ! SS = dotProdData( res, Nres )
+            ! !
+            ! Ndata = countValues( res )
+            ! !
+            ! rms = sqrt( SS / Ndata )
+            ! !
+            ! write( *, * ) "RMS: ", rms
+            ! !
+            ! write( ioGradRMS, "( f15.3 )" ) rms
+            ! !
+            ! close( ioGradRMS )
+            ! !
+            ! write( ioGradLog, * ) "RMS: ", rms
+            ! !
+            ! write( *, * ) "AVG/SUM TX RMS = MT + CSEM", sum_tx_rms/n_tx, sum_tx_rms, mt_rms, csem_rms
+            ! write( ioGradLog, * ) "AVG/SUM TX RMS = MT + CSEM", sum_tx_rms/n_tx, sum_tx_rms, mt_rms, csem_rms
+            ! !
+            ! do i_tx = 1, n_tx
+                ! !
+                ! tx_weights( i_tx ) = sum_tx_grad_norm / ( tx_grad_norms( i_tx ) * n_tx )
+                ! !
+            ! enddo
+            ! !
+            ! write( *, * ) "TX WEIGHTS: ", tx_weights
+            ! write( ioGradLog, * ) "TX WEIGHTS: ", tx_weights
+            ! !
+            ! if( joint_type /= INV_UNWEIGHTED ) then
+                ! !
+                ! !> Set back the weighted gradient conductivity
+                ! call JTd%zeros
+                ! !
+                ! JTd_cond = JTd%getCond()
+                ! !
+                ! do i_tx = 1, n_tx
+                    ! !
+                    ! shat_cond = s_hat( i_tx )%getCond()
+                    ! !
+                    ! do i = 1, size( shat_cond )
+                        ! !
+                        ! call shat_cond(i)%mult( tx_weights( i_tx ) )
+                        ! !
+                        ! !
+                        ! !> ADAPT TO THE WHOLE MODEL
+                        ! call JTd_cond(i)%linComb( ONE, ONE, shat_cond(i) )
+                        ! !
+                    ! enddo
+                    ! !
+                    
+                ! enddo
+                ! !
+                ! call JTd%setCond( JTd_cond )
+                ! !
+            ! endif
+            ! !
+            ! deallocate( shat_cond )
+            ! !
+            ! grad_norm = real( sqrt( JTd%dotProd( JTd ) ), kind=prec )
+            ! !
             
-            write( *, * ) "FINAL GRAD NORM: ", grad_norm
-            !
-            write( ioGradNorm, "( f15.3 )" ) grad_norm
-            !
-            close( ioGradNorm )
-            !
-            write( ioGradLog, * ) "FINAL GRAD NORM: ", grad_norm
-            !
-            deallocate( tx_weights, tx_grad_norms, tx_rms )
-            !
-            close( ioGradLog )
-            !
-        else
-            !
-            call errStop( "weightGradrients > cant open ["//trim( outdir_name )//"/GradNLCG.log!" )
-            !
-        endif
-        !
-    end subroutine weightGradrients
-    !
+            ! write( *, * ) "FINAL GRAD NORM: ", grad_norm
+            ! !
+            ! write( ioGradNorm, "( f15.3 )" ) grad_norm
+            ! !
+            ! close( ioGradNorm )
+            ! !
+            ! write( ioGradLog, * ) "FINAL GRAD NORM: ", grad_norm
+            ! !
+            ! deallocate( tx_weights, tx_grad_norms, tx_rms )
+            ! !
+            ! close( ioGradLog )
+            ! !
+        ! else
+            ! !
+            ! call errStop( "weightGradrients > cant open ["//trim( outdir_name )//"/GradNLCG.log!" )
+            ! !
+        ! endif
+        ! !
+    ! end subroutine weightGradrients
+    ! !
     !> ????
     !
     subroutine outputFiles_InversionNLCG( self, all_predicted_data, res, dsigma, mHat )

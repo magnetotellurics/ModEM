@@ -60,7 +60,7 @@ contains
         !> Send 1 transmitter to first available worker
         do while( i_tx < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             tx_received = tx_received + 1
             i_tx = i_tx + 1
@@ -75,7 +75,7 @@ contains
         !> Receive job_done from each worker
         do while( tx_received < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             tx_received = tx_received + 1
             !
@@ -146,7 +146,7 @@ contains
         !> Send 1 transmitter to first available worker
         do while( i_tx < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveData( all_predicted_data( job_info%i_tx ), job_info%worker_rank )
             !
@@ -167,7 +167,7 @@ contains
         !> Receive job_done from each worker
         do while( tx_received < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveData( all_predicted_data( job_info%i_tx ), job_info%worker_rank )
             !
@@ -238,7 +238,7 @@ contains
         !> Send 1 transmitter to first available worker
         do while( i_tx < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveData( JmHat( job_info%i_tx ), job_info%worker_rank )
             !
@@ -258,7 +258,7 @@ contains
         !> Receive job_done from each worker
         do while( tx_received < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveData( JmHat( job_info%i_tx ), job_info%worker_rank )
             !
@@ -280,7 +280,7 @@ contains
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         integer, intent( in ), optional :: i_sol
-        class( ModelParameter_t ), allocatable, dimension(:), intent( inout ), optional :: s_hat
+        class( ModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
         !
         class( ModelParameter_t ), allocatable :: tx_dsigma
         !
@@ -333,15 +333,20 @@ contains
             !
         enddo
         !
+        !> Allocate s_hat array
+        if( present( s_hat ) ) then
+            allocate( ModelParameterCell_SG_t :: s_hat( size( transmitters ) ) )
+        endif
+        !
         !> Send 1 transmitter to first available worker
         do while( i_tx < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveModel( tx_dsigma, job_info%worker_rank )
             !
             if( present( s_hat ) ) then
-                !s_hat( job_info%i_tx ) = tx_dsigma
+                s_hat( job_info%i_tx ) = tx_dsigma
             endif
             !
             call dsigma%linComb( ONE, ONE, tx_dsigma )
@@ -363,12 +368,12 @@ contains
         !> Receive job_done from each worker
         do while( tx_received < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveModel( tx_dsigma, job_info%worker_rank )
             !
             if( present( s_hat ) ) then
-                !s_hat( job_info%i_tx ) = tx_dsigma
+                s_hat( job_info%i_tx ) = tx_dsigma
             endif
             !
             call dsigma%linComb( ONE, ONE, tx_dsigma )
