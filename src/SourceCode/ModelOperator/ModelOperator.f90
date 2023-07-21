@@ -21,9 +21,6 @@ module ModelOperator
         !
         contains 
             !
-            procedure, public :: dealloc => deallocateModelOperator
-            procedure, public :: init => initializeModelOperator
-            !
             procedure( interface_set_equations_model_operator ), deferred, public :: setEquations
             procedure( interface_set_cond_model_operator ), deferred, public :: setCond
             procedure( interface_amult_model_operator ), deferred, public :: amult
@@ -31,12 +28,15 @@ module ModelOperator
             procedure( interface_multcurl_t_model_operator ), deferred, public :: multCurlT
             !
             procedure( interface_divcor_setup_model_operator ), deferred, public :: divCorSetUp
-            procedure( interface_divc_grad_model_operator ), deferred, public :: divCgrad
+            procedure( interface_divc_grad_model_operator ), deferred, public :: divCGrad
             procedure( interface_divc_model_operator ), deferred, public :: divC
             procedure( interface_grad_model_operator ), deferred, public :: grad
             procedure( interface_div_model_operator ), deferred, public :: div
             !
             procedure( interface_print_model_operator ), deferred, public :: print
+            !
+            procedure, public :: baseInit => baseInit_ModelOperator
+            procedure, public :: baseDealloc => baseDealloc_ModelOperator
             !
     end type ModelOperator_t
     !
@@ -151,7 +151,7 @@ module ModelOperator
 contains
     !
     !> No subroutine briefing
-    subroutine initializeModelOperator( self )
+    subroutine baseInit_ModelOperator( self )
         implicit none
         !
         class( ModelOperator_t ), intent( inout ) :: self
@@ -162,16 +162,16 @@ contains
         !
         call date_and_time( values=self%mKey )
         !
-    end subroutine initializeModelOperator
+    end subroutine baseInit_ModelOperator
     !
     !> No subroutine briefing
-    subroutine deallocateModelOperator( self )
+    subroutine baseDealloc_ModelOperator( self )
         implicit none
         !
         class( ModelOperator_t ), intent( inout ) :: self
         !
         if( allocated( self%metric ) ) deallocate( self%metric )
         !
-    end subroutine deallocateModelOperator
+    end subroutine baseDealloc_ModelOperator
     !
 end module ModelOperator

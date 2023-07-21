@@ -814,7 +814,7 @@ contains
         !
         !write( *, * ) "Destructor rVector3D_MR"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         if( allocated( self%x ) ) deallocate( self%x )
         if( allocated( self%y ) ) deallocate( self%y )

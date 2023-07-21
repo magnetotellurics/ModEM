@@ -120,8 +120,8 @@ contains
                     case( "SP2" )
                         model_operator_type = MODELOP_SP2
                     case default
-                        model_operator_type = ""
-                        stop "Error: Wrong model_operator_type control, use [MF|SP|SP2]"
+                        !
+                        call errStop( "ForwardControlFile_ctor > Wrong model_operator_type control, use [MF|SP|SP2]" )
                 end select
                 !
                 write( *, "( A30, A20)" ) "          model_operator_type = ", model_operator_type
@@ -137,8 +137,8 @@ contains
                     case( "MR" )
                         grid_type = GRID_MR
                     case default
-                        grid_type = ""
-                        stop "Error: Wrong grid_type control, use [SG|MR]"
+                        !
+                        call errStop( "ForwardControlFile_ctor > Wrong grid_type control, use [SG|MR]" )
                 end select
                 !
                 write( *, "( A30, A20)" ) "          Grid Type = ", grid_type
@@ -165,8 +165,8 @@ contains
                     case( "IT_DC" )
                         forward_solver_type = FWD_IT_DC
                     case default
-                        forward_solver_type = ""
-                        stop "Error: Wrong forward_solver control, use [FILE|IT|IT_DC]"
+                        !
+                        call errStop( "ForwardControlFile_ctor > Wrong forward_solver control, use [FILE|IT|IT_DC]" )
                     !
                 end select
                 !
@@ -184,8 +184,8 @@ contains
                     case( "2D" )
                         source_type_mt = SRC_MT_2D
                     case default
-                        source_type_mt = ""
-                        stop "Error: Wrong MT Source control, use [1D|2D]"
+                        !
+                        call errStop( "ForwardControlFile_ctor > Wrong MT Source control, use [1D|2D]" )
                         !
                 end select
                 !
@@ -203,8 +203,8 @@ contains
                     case( "Dipole1D" )
                         source_type_csem = SRC_CSEM_DIPOLE1D
                     case default
-                        source_type_csem = ""
-                        stop "Error: Wrong CSEM Source control, use [EM1D|Dipole1D]"
+                        !
+                        call errStop( "ForwardControlFile_ctor > Wrong CSEM Source control, use [EM1D|Dipole1D]" )
                         !
                 end select
                 !
@@ -220,14 +220,14 @@ contains
                     case( "Fixed" )
                         get_1d_from = FROM_FIXED_VALUE
                     case( "Geometric_mean" )
-                        get_1d_from = FROM_GEO_MEAN
+                        get_1d_from = FROM_GEOM_MEAN
                     case( "Mean_around_Tx" )
-                        get_1d_from = FROM_TX_GEO_MEAN
+                        get_1d_from = FROM_TX_GEOM_MEAN
                     case( "Tx_Position" )
                         get_1d_from = FROM_TX_LOCATION
                     case default
-                        get_1d_from = ""
-                        write( *, * ) "Error: Wrong get_1d_from, use [Fixed|Geometric_mean|Mean_around_Tx|Tx_Position]"
+                        !
+                        call errStop( "ForwardControlFile_ctor > Wrong get_1d_from, use [Fixed|Geometric_mean|Mean_around_Tx|Tx_Position]" )
                         !
                 end select
                 !
@@ -245,8 +245,8 @@ contains
                     case( "mirror" )
                         model_method = MM_METHOD_MIRROR
                     case default
-                        model_method = ""
-                    stop "Error: Wrong model_method control, use [mirror|fixed height]"
+                        !
+                        call errStop( "ForwardControlFile_ctor > Wrong model_method control, use [mirror|fixed height]" )
                     !
                 end select
                 write( *, "( A30, A20)" ) "          Model Method = ", model_method
@@ -317,8 +317,8 @@ contains
             endif
             !
         else
-            write( *, * ) "Error opening [", fname, "] in ForwardControlFile_ctor"
-            stop
+            !
+            call errStop( "ForwardControlFile_ctor > Cant opening file ["//fname//"]" )
         endif
         !
     end function ForwardControlFile_ctor

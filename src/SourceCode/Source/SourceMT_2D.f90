@@ -41,7 +41,7 @@ contains
         !
         !write( *, * ) "Constructor SourceMT_2D_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%model_operator => model_operator
         self%sigma => sigma
@@ -51,7 +51,7 @@ contains
     end function SourceMT_2D_ctor
     !
     !> Deconstructor routine:
-    !>     Call the base routine dealloc().
+    !>     Call the base routine baseDealloc().
     subroutine SourceMT_2D_dtor( self )
         !
         implicit none
@@ -60,7 +60,7 @@ contains
         !
         !write( *, * ) "Destructor SourceMT_2D_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine SourceMT_2D_dtor
     !

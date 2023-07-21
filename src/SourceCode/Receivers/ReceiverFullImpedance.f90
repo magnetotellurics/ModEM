@@ -41,7 +41,7 @@ contains
         !
         !write( *, * ) "Constructor ReceiverFullImpedance_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%location = location
         !
@@ -76,7 +76,7 @@ contains
         !
         !write( *, * ) "Destructor ReceiverFullImpedance_t:", self%id
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine ReceiverFullImpedance_dtor
     !

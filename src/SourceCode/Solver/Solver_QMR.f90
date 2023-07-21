@@ -36,7 +36,7 @@ contains
         !
         !write( *, * ) "Constructor Solver_QMR_t"
         !
-        call self%init
+        call self%baseInit
         !
         !> Instantiate the PreConditioner object according to the ModelOperator type
         select type( model_operator )

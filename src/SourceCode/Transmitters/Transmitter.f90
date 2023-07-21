@@ -33,9 +33,9 @@ module Transmitter
             !
             procedure( interface_print_tx ), deferred, public :: print
             !
-            procedure, public :: init => initializeTx
+            procedure, public :: baseInit => initializeTx
             !
-            procedure, public :: dealloc => deallocateTx
+            procedure, public :: baseDealloc => deallocateTx
             !
             procedure, public :: updateFwdKey => updateFwdKeyTx
             !

@@ -14,9 +14,9 @@ module CoreComponents
     use ModelOperator_SP
     !
     use ModelParameterCell_SG
-    use ModelParameterCell_SG_VTI
+    !use ModelParameterCell_SG_VTI
     !
-    use ModelCovarianceRec
+    use ModelCovariance
     !
     use ForwardSolverIT_DC
     !
@@ -47,7 +47,7 @@ module CoreComponents
     !
     class( ForwardSolver_t ), allocatable, target :: forward_solver
     !
-    class( ModelCovarianceRec_t ), allocatable :: model_cov
+    class( ModelCovariance_t ), allocatable :: model_cov
     !
     !> Program Control Variables
     character(8) :: str_date
@@ -292,6 +292,7 @@ contains
         implicit none
         !
         class( ModelParameter_t ), allocatable :: model, aux_model
+        type( rScalar3D_SG_t ) :: cell_cond
         !
         ! Verbose
         write( *, * ) "     - Start jobSplitModel"
@@ -304,39 +305,39 @@ contains
             call errStop( "jobSplitModel > Missing Model file!" )
         endif
         !
-        select type( model )
+        !> Just VTI implemented yet
+        if( model%anisotropic_level /= 2 ) then
             !
-            class is( ModelParameterCell_SG_t )
-                !
-                call errStop( "jobSplitModel: Isotropic model already fully splited" )
-                !
-            class is( ModelParameterCell_SG_VTI_t )
-                !
-                !> Create model with horizontal cond
-                allocate( aux_model, source = ModelParameterCell_SG_t( model%metric%grid, model%cell_cond(1), model%param_type ) )
-                !
-                call aux_model%setMetric( model%metric )
-                !
-                call aux_model%write( model_file_name//"_h" )
-                !
-                write( *, * ) "               < Created ["//model_file_name//"_h] file."
-                !
-                !> Set vertical cond
-                call aux_model%setCond( model%cell_cond(2), 1 )
-                !
-                call aux_model%write( model_file_name//"_v" )
-                !
-                write( *, * ) "               < Created ["//model_file_name//"_v] file."
-                !
-            class default
-                call errStop( "jobSplitModel: Unclassified model" )
+            call errStop( "jobSplitModel unsupported for this model" )
             !
-        end select
-        !
-        deallocate( model, aux_model )
-        !
-        ! Verbose
-        write( *, * ) "     - Finish jobSplitModel"
+        else
+            !
+            !> Create new isotropic model with target horizontal cond
+            cell_cond = model%getCond(1)
+            !
+            allocate( aux_model, source = ModelParameterCell_SG_t( model%metric%grid, cell_cond, 1, model%param_type ) )
+            !
+            call aux_model%setMetric( model_operator%metric )
+            !
+            call aux_model%write( model_file_name//"_h" )
+            !
+            write( *, * ) "               < Created ["//model_file_name//"_h] file."
+            !
+            !> Set new model horizontal as the target vertical cond
+            cell_cond = model%getCond(2)
+            !
+            call aux_model%setCond( cell_cond, 1 )
+            !
+            call aux_model%write( model_file_name//"_v" )
+            !
+            write( *, * ) "               < Created ["//model_file_name//"_v] file."
+            !
+            deallocate( model, aux_model )
+            !
+            ! Verbose
+            write( *, * ) "     - Finish jobSplitModel"
+            !
+        endif
         !
     end subroutine jobSplitModel
     !

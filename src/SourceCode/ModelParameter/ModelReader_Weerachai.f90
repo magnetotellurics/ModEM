@@ -9,7 +9,7 @@ module ModelReader_Weerachai
     use Grid3D_SG
     use rScalar3D_SG
     use ModelParameterCell_SG
-    use ModelParameterCell_SG_VTI
+    !use ModelParameterCell_SG_VTI
     use ModelReader
     use ForwardControlFile
     !
@@ -40,8 +40,7 @@ contains
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         real( kind=prec ) :: ox, oy, oz, rotDeg
         real( kind=prec ), dimension(:, :, :), allocatable :: rho
-        complex( kind=prec ), dimension(:, :, :), allocatable :: v
-        class( Scalar_t  ), allocatable :: ccond
+        type( rScalar3D_SG_t ) :: ccond
         real( kind=prec ) :: ALPHA
         character(len=200), dimension(20) :: args
         !
@@ -72,18 +71,18 @@ contains
             read(ioPrm, *) (dy(j), j = 1, ny)
             read(ioPrm, *) (dz(j), j = nzAir + 1, nzAir + nzEarth)
             !
-            if(someIndex /= 0) then
-                stop "Error: readModelReaderWeerachai > Mapping not supported."
+            if( someIndex /= 0 ) then
+                call errStop( "readModelReaderWeerachai > Mapping not supported." )
             endif
             !
             !> By default assume "LINEAR RHO" -
             !> Weerachai"s linear resistivity format
-            if(index(someChar, "LOGE") > 0) then
-                 paramType = LOGE
-            elseif(index(someChar, "LOG10") > 0) then
-                 paramType = LOG_10
+            if( index( someChar, "LOGE" ) > 0 ) then
+                paramType = LOGE
+            elseif( index( someChar, "LOG10" ) > 0) then
+                paramType = LOG_10
             else
-                 paramType = LINEAR
+                paramType = LINEAR
             endif
             !
             !> The default method for creating air layers in the grid has been deleted
@@ -116,23 +115,24 @@ contains
                     !
                     class is( Grid3D_SG_t )
                         !
-                        if( allocated( ccond ) ) deallocate( ccond )
-                        allocate( ccond, source = rScalar3D_SG_t( grid, CELL_EARTH ) )
+                        ccond = rScalar3D_SG_t( grid, CELL_EARTH )
                         !
                         if( index( paramType, "LOGE" ) > 0 .OR. &
                             index( paramType, "LOG10" ) > 0 ) then
-                            v = -rho
-                            call ccond%setV( v )
+                            !
+                            ccond%v = -rho
+                            !
                         elseif( index(paramType, "LINEAR") > 0 ) then
-                            v = ONE/rho
-                            call ccond%setV( v )
+                            !
+                            ccond%v = ONE/rho
+                            !
                         endif
                         !
                         deallocate( rho )
                         !
                         if( anisotropic_level == 1 ) then
                             !
-                            allocate( model, source = ModelParameterCell_SG_t( grid, ccond, paramType ) )
+                            allocate( model, source = ModelParameterCell_SG_t( grid, ccond, 1, paramType ) )
                             !
                         else
                             !
@@ -142,14 +142,14 @@ contains
                                 !
                             else
                                 !
-                                allocate( model, source = ModelParameterCell_SG_VTI_t( grid, ccond, paramType ) )
+                                allocate( model, source = ModelParameterCell_SG_t( grid, ccond, 2, paramType ) )
                                 !
                             endif
                             !
                         endif
                         !
                     class default
-                        stop "Error: readModelReaderWeerachai > Unclassified grid"
+                        call errStop( "readModelReaderWeerachai > Unclassified grid" )
                     !
                 end select
                 !
@@ -183,8 +183,7 @@ contains
             close( ioPrm )
             !
         else
-            write( *, * ) "Error opening [", file_name, "] in readModelReaderWeerachai"
-            stop
+            call errStop( "Error opening ["//file_name//"] in readModelReaderWeerachai" )
         endif
         !
     end subroutine readModelReaderWeerachai

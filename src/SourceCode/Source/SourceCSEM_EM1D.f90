@@ -8,7 +8,6 @@ module SourceCSEM_EM1D
     use TransmitterCSEM
     use TransmitterArray
     use ModelParameterCell_SG
-    use ModelParameterCell_SG_VTI
     !
     type, extends( SourceCSEM_t ) :: SourceCSEM_EM1D_t
         !
@@ -52,7 +51,7 @@ contains
         !
         !write( *, * ) "Constructor SourceCSEM_EM1D_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%model_operator => model_operator
         !
@@ -71,7 +70,7 @@ contains
     end function SourceCSEM_EM1D_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     subroutine SourceCSEM_EM1D_dtor( self )
         implicit none
         !
@@ -79,7 +78,7 @@ contains
         !
         !write( *, * ) "Destructor SourceCSEM_EM1D_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         if( allocated( sig1D ) ) deallocate( sig1D )
         !
@@ -256,28 +255,27 @@ contains
         !
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
         !
-        integer :: ani_level
-        class( Scalar_t ), allocatable, dimension(:) :: sigma_cell
+        type( rScalar3D_SG_t ) :: sigma_cell
         !
-        call self%sigma%getCond( sigma_cell )
-        !
-        ani_level = size( sigma_cell )
-        !
-        if( ani_level == 1 .OR. ani_level == 2 ) then
+        if( self%sigma%anisotropic_level == 1 .OR. self%sigma%anisotropic_level == 2 ) then
             !
             !> Horizontal
+            sigma_cell = self%sigma%getCond(1)
+            !
             if( allocated( self%sig1D_h ) ) deallocate( self%sig1D_h )
-            allocate( self%sig1D_h( sigma_cell(1)%grid%Nz ) )
+            allocate( self%sig1D_h( sigma_cell%grid%Nz ) )
             !
             call self%setCondAnomally( self%cond_anomaly_h, 1 )
             !
             self%sig1D_h = sig1D
             !
             !> Vertical
-            if( allocated( self%sig1D_v ) ) deallocate( self%sig1D_v )
-            allocate( self%sig1D_v( sigma_cell( ani_level )%grid%Nz ) )
+            sigma_cell = self%sigma%getCond( self%sigma%anisotropic_level )
             !
-            call self%setCondAnomally( self%cond_anomaly_v, ani_level )
+            if( allocated( self%sig1D_v ) ) deallocate( self%sig1D_v )
+            allocate( self%sig1D_v( sigma_cell%grid%Nz ) )
+            !
+            call self%setCondAnomally( self%cond_anomaly_v, self%sigma%anisotropic_level )
             !
             self%sig1D_v = sig1D
             !

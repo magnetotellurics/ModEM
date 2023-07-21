@@ -19,7 +19,7 @@ module ModelParameterCell_SG
         !
         class( Grid_t ), allocatable :: param_grid
         !
-        class( Scalar_t ), allocatable, dimension(:) :: cell_cond
+        type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
         !
         contains
             !
@@ -59,18 +59,20 @@ module ModelParameterCell_SG
     end type ModelParameterCell_SG_t
     !
     interface ModelParameterCell_SG_t
-         module procedure ModelParameterCell_SG_ctor
+         module procedure ModelParameterCell_SG_ctor_one_cond
+         module procedure ModelParameterCell_SG_ctor_all_conds
     end interface ModelParameterCell_SG_t
     !
 contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_SG_ctor( grid, cell_cond, param_type ) result( self )
+    function ModelParameterCell_SG_ctor_one_cond( grid, cell_cond, anisotropic_level, param_type ) result( self )
         implicit none
         !
         class( Grid_t ), intent( in ) :: grid
-        class( Scalar_t ), intent( in ) :: cell_cond
+        type( rScalar3D_SG_t ), intent( in ) :: cell_cond
+        integer, intent( in ) :: anisotropic_level
         character(:), allocatable, optional, intent( in ) :: param_type
         !
         type( ModelParameterCell_SG_t ) :: self
@@ -79,7 +81,7 @@ contains
         !
         !write( *, * ) "Constructor ModelParameterCell_SG_t"
         !
-        call self%init
+        call self%baseInit
         !
         if( .NOT. present( param_type ) ) then
             self%param_type = LOGE
@@ -90,10 +92,12 @@ contains
         nzAir = 0
         !
         allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
-                    ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
-                    grid%dz( grid%nzAir+1:grid%nz ) ) )
+                ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+                  grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
-        allocate( rScalar3D_SG_t :: self%cell_cond(1) )
+        self%anisotropic_level = anisotropic_level
+        !
+        allocate( self%cell_cond( anisotropic_level ) )
         !
         self%cell_cond(1) = cell_cond
         !
@@ -107,7 +111,53 @@ contains
         !
         self%is_allocated = .TRUE.
         !
-    end function ModelParameterCell_SG_ctor
+    end function ModelParameterCell_SG_ctor_one_cond
+    !
+    !> No subroutine briefing
+    !
+    function ModelParameterCell_SG_ctor_all_conds( grid, cell_cond, param_type ) result( self )
+        implicit none
+        !
+        class( Grid_t ), intent( in ) :: grid
+        type( rScalar3D_SG_t ), dimension(:), intent( in ) :: cell_cond
+        character(:), allocatable, optional, intent( in ) :: param_type
+        !
+        type( ModelParameterCell_SG_t ) :: self
+        !
+        integer :: i, nzAir
+        !
+        !write( *, * ) "Constructor ModelParameterCell_SG_t"
+        !
+        call self%baseInit
+        !
+        if( .NOT. present( param_type ) ) then
+            self%param_type = LOGE
+        else
+            self%param_type = trim( param_type )
+        endif
+        !
+        nzAir = 0
+        !
+        allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
+                ( grid%nz - grid%nzAir ), grid%dx, grid%dy, grid%dz( grid%nzAir+1:grid%nz ) ) )
+        !
+        self%anisotropic_level = size( cell_cond )
+        !
+        self%cell_cond = cell_cond
+        !
+        do i = 1, self%anisotropic_level
+            self%cell_cond(i)%store_state = compound
+        enddo
+        !
+        if( present( param_type ) ) then
+            !
+            call self%setsigMap( param_type )
+        !
+        endif
+        !
+        self%is_allocated = .TRUE.
+        !
+    end function ModelParameterCell_SG_ctor_all_conds
     !
     !> No subroutine briefing
     subroutine ModelParameterCell_SG_dtor( self )
@@ -120,7 +170,7 @@ contains
         if( allocated( self%param_grid ) ) deallocate( self%param_grid )
         !
         !> CRASHING ????
-		if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
+        if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
         !
     end subroutine ModelParameterCell_SG_dtor
     !
@@ -134,15 +184,13 @@ contains
         !
         type( ModelParameter1D_t ) ::  model_param_1D 
         !
-        complex( kind=prec ), allocatable :: v(:, :, :)
         real( kind=prec ), allocatable, dimension(:) :: cond_slice
         !
         model_param_1D = ModelParameter1D_t( self%metric%grid%slice1D() )
         !
         allocate( cond_slice( model_param_1D%grid%nz ) )
         !
-        v = self%cell_cond(1)%getV()
-        cond_slice = self%sigMap( real( v( ix, iy, : ), kind=prec ) )
+        cond_slice = self%sigMap( real( self%cell_cond(1)%v( ix, iy, : ), kind=prec ) )
         !
         call model_param_1D%setConductivity( cond_slice, self%air_cond, self%param_type, self%mKey )
         !
@@ -159,12 +207,9 @@ contains
         !
         type( ModelParameter1D_t ) ::  model_param_1D 
         !
-        complex( kind=prec ), allocatable :: v(:, :, :)
         real( kind=prec ), allocatable, dimension(:) :: cond_slice
         real( kind=prec ) :: wt, temp_sigma_value
         integer :: i, j, k
-        !
-        v = self%cell_cond(1)%getV()
         !
         model_param_1D = ModelParameter1D_t( self%metric%grid%slice1D() )
         !
@@ -177,7 +222,7 @@ contains
             do i = 1, self%metric%grid%Nx
                 do j = 1, self%metric%grid%Ny
                     wt = wt + self%metric%grid%dx(i) * self%metric%grid%dy(j)
-                    temp_sigma_value = temp_sigma_value + v( i, j, k ) * &
+                    temp_sigma_value = temp_sigma_value + self%cell_cond(1)%v( i, j, k ) * &
                     self%metric%grid%dx(i) * self%metric%grid%dy(j)
                 enddo
             enddo
@@ -203,7 +248,6 @@ contains
         type( ModelParameter2D_t ) :: m2D 
         !
         character(:), allocatable :: param_type
-        complex( kind=prec ), allocatable :: v(:, :, :)
         real( kind=prec ), allocatable, dimension(:,:) :: cond_slice
         !
         param_type = LINEAR
@@ -212,16 +256,14 @@ contains
         !
         allocate( cond_slice( self%metric%grid%ny, self%metric%grid%nzEarth ) )
         !
-        v = self%cell_cond(1)%getV()
-        !
         if( axis == 1 ) then
-            cond_slice = self%sigMap( real( v(j,:,:), kind=prec ) )
+            cond_slice = self%sigMap( real( self%cell_cond(1)%v(j,:,:), kind=prec ) )
         elseif( axis == 2 ) then
-            cond_slice = self%sigMap( real( v(:,j,:), kind=prec ) )
+            cond_slice = self%sigMap( real( self%cell_cond(1)%v(:,j,:), kind=prec ) )
         elseif( axis == 3 ) then
-            cond_slice = self%sigMap( real( v(:,:,j), kind=prec ) )
+            cond_slice = self%sigMap( real( self%cell_cond(1)%v(:,:,j), kind=prec ) )
         else
-            stop "Error: slice2D_ModelParameterCell_SG > wrong axis"
+            call errStop( "slice2D_ModelParameterCell_SG > wrong axis" )
         endif
         !
         call m2D%setConductivity( cond_slice, self%air_cond, param_type, self%mKey )
@@ -232,28 +274,36 @@ contains
     !
     !> No function briefing
     !
-    subroutine getOneCond_ModelParameterCell_SG( self, cell_cond, i_cond )
+    function getOneCond_ModelParameterCell_SG( self, i_cond ) result( cell_cond )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( Scalar_t ), allocatable, intent( inout ) :: cell_cond
         integer, intent( in ) :: i_cond
         !
-        allocate( cell_cond, source = self%cell_cond( i_cond ) )
+        type( rScalar3D_SG_t ) :: cell_cond
         !
-    end subroutine getOneCond_ModelParameterCell_SG
+        if( i_cond .GT. self%anisotropic_level ) then
+            !
+            call errStop( "getOneCond_ModelParameterCell_SG > conductivity level too high" )
+            !
+        endif
+        !
+        cell_cond = self%cell_cond( i_cond )
+        !
+    end function getOneCond_ModelParameterCell_SG
     !
     !> No function briefing
     !
-    subroutine getAllCond_ModelParameterCell_SG( self, cell_cond )
+    function getAllCond_ModelParameterCell_SG( self ) result( cell_cond )
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( Scalar_t ), allocatable, dimension(:), intent( inout ) :: cell_cond
         !
-        allocate( cell_cond, source = self%cell_cond )
+        type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
         !
-    end subroutine getAllCond_ModelParameterCell_SG
+        cell_cond = self%cell_cond
+        !
+    end function getAllCond_ModelParameterCell_SG
     !
     !> No interface subroutine briefing
     !
@@ -264,7 +314,7 @@ contains
         class( Scalar_t ), intent( in ) :: cell_cond
         integer, intent( in ) :: i_cond
         !
-        if( i_cond .LE. size( self%cell_cond ) ) then
+        if( i_cond .LE. self%anisotropic_level ) then
             !
             self%cell_cond( i_cond ) = cell_cond
             !
@@ -282,11 +332,11 @@ contains
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_cond
+        class( Scalar_t ), dimension(:), intent( in ) :: cell_cond
         !
         integer :: i
         !
-        do i = 1, size( cell_cond )
+        do i = 1, self%anisotropic_level
             !
             if( .NOT. cell_cond(i)%is_allocated ) then
                 !
@@ -298,7 +348,7 @@ contains
                 !
             endif
             !
-            self%cell_cond = cell_cond
+            self%cell_cond(i) = cell_cond(i)
             !
         enddo
         !
@@ -312,7 +362,7 @@ contains
         !
         integer :: i
         !
-        do i = 1, size( self%cell_cond )
+        do i = 1, self%anisotropic_level
             !
             call self%cell_cond(i)%zeros
             !
@@ -335,11 +385,11 @@ contains
             !
             class is( ModelParameterCell_SG_t )
                 !
-				write(*,*) "##### ENTER COPY #####"
-				!
                 self%metric => rhs%metric
                 !
                 self%mKey = rhs%mKey
+                !
+                self%anisotropic_level = rhs%anisotropic_level
                 !
                 self%air_cond = rhs%air_cond
                 !
@@ -354,7 +404,7 @@ contains
                 self%sigMap_ptr => rhs%sigMap_ptr
                 !
             class default
-               stop "Error: copyFrom_ModelParameterCell_SG > Unclassified rhs."
+                call errStop( "copyFrom_ModelParameterCell_SG > Unclassified rhs." )
             !
         end select
         !
@@ -370,7 +420,7 @@ contains
         !
         counter = 0
         !
-        do i = 1, size( self%cell_cond )
+        do i = 1, self%anisotropic_level
             !
             if( .NOT. self%cell_cond(i)%is_allocated ) then
                 write( *, * ) "Error: countModel_ModelParameterCell_SG > cell_cond (", i, ") not allocated!"
@@ -394,26 +444,34 @@ contains
         real( kind=prec ), intent( in ) :: a1, a2
         class( ModelParameter_t ), intent( in ) :: rhs
         !
+        integer :: i
         complex( kind=prec ), allocatable :: v(:, :, :)
         !
         select type( rhs )
             !
             class is( ModelParameterCell_SG_t )
                 !
-                if( self%cell_cond(1)%isCompatible( rhs%cell_cond(1) ) ) then
+                do i = 1, self%anisotropic_level
                     !
-                    v = a1 * self%cell_cond(1)%getV() + a2 * rhs%cell_cond(1)%getV()
-                    call self%cell_cond(1)%setV( v )
+                    if( self%cell_cond(i)%isCompatible( rhs%cell_cond(i) ) ) then
+                        !
+                        v = a1 * self%cell_cond(i)%v + a2 * rhs%cell_cond(i)%v
+                        !
+                        call self%cell_cond(i)%setV( v )
+                        !
+                    else
+                        write( *, * ) "Error: linComb_ModelParameterCell_SG > Incompatible rhs cell_cond (", i, ")!"
+                        stop
+                    endif
                     !
-                else
-                    stop "Error: linComb_ModelParameterCell_SG > Incompatible rhs"
-                endif
+                enddo
                 !
             class default
-                stop "Error: linComb_ModelParameterCell_SG > undefined rhs"
+                call errStop( "linComb_ModelParameterCell_SG > undefined rhs" )
             !
         end select
         !
+        !> ????
         !self%air_cond = rhs%air_cond
         !
     end subroutine linComb_ModelParameterCell_SG
@@ -425,22 +483,32 @@ contains
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( ModelParameter_t ), intent( in ) :: rhs
+        !
         real( kind=prec ) :: rvalue
+        !
+        integer :: i
+        !
+        rvalue = R_ZERO
         !
         select type( rhs )
             !
             class is( ModelParameterCell_SG_t )
                 !
-                if( self%cell_cond(1)%isCompatible( rhs%cell_cond(1) ) ) then
+                do i = 1, self%anisotropic_level
                     !
-                    rvalue = sum( self%cell_cond(1)%getV() * rhs%cell_cond(1)%getV() )
+                    if( self%cell_cond(i)%isCompatible( rhs%cell_cond(i) ) ) then
+                        !
+                        rvalue = rvalue + sum( self%cell_cond(i)%v * rhs%cell_cond(i)%v )
+                        !
+                    else
+                        write( *, * ) "Error: dotProd_ModelParameterCell_SG > Incompatible rhs cell_cond (", i, ")!"
+                        stop
+                    endif
                     !
-                else
-                    stop "Error: dotProd_ModelParameterCell_SG > Incompatible rhs"
-                endif
+                enddo
                 !
             class default
-                stop "Error: dotProd_ModelParameterCell_SG > undefined rhs"
+                call errStop( "dotProd_ModelParameterCell_SG > Unclassified rhs" )
             !
         end select
         !
@@ -454,8 +522,8 @@ contains
         class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( inout ) :: eVec
         !
-        type( rScalar3D_SG_t ) :: sigma_cell
-        integer :: k0, k1, k2
+        type( rScalar3D_SG_t ), allocatable, dimension(:) :: sigma_cell
+        integer :: i, k0, k1, k2
         !
         if( .NOT. allocated( eVec ) ) then
             allocate( eVec, source = rVector3D_SG_t( self%metric%grid, EDGE ) )
@@ -463,19 +531,36 @@ contains
             eVec = rVector3D_SG_t( self%metric%grid, EDGE )
         endif
         !
+        allocate( sigma_cell( self%anisotropic_level ) )
+        !
         k0 = self%metric%grid%nzAir
         k1 = k0 + 1
         k2 = self%metric%grid%Nz
         !
-        sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
+        do i = 1, self%anisotropic_level
+            !
+            sigma_cell(i) = rScalar3D_SG_t( self%metric%grid, CELL )
+            !
+            sigma_cell(i)%v( :, :, 1:k0 ) = self%air_cond
+            !
+            sigma_cell(i)%v( :, :, k1:k2 ) = self%sigMap( self%cell_cond(i)%v )
+            !
+            call sigma_cell(i)%mult( self%metric%VCell )
+            !
+        enddo
         !
-        sigma_cell%v( :, :, 1:k0 ) = self%air_cond
-        !
-        sigma_cell%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%getV(), kind=prec ) )
-        !
-        call sigma_cell%mult( self%metric%VCell )
-        !
-        call eVec%avgCells( sigma_cell )
+        !> Call due avgCells based on anisotropic_level
+        if( self%anisotropic_level == 1 ) then
+            !
+            call eVec%avgCells( sigma_cell(1) )
+            !
+        elseif( self%anisotropic_level == 2 ) then
+            !
+            call eVec%avgCells( sigma_cell(1), sigma_cell(2) )
+            !
+        else
+            call errStop( "PDEmapping_ModelParameterCell_SG > unsupported anisotropy level" )
+        endif
         !
         call eVec%div( self%metric%VEdge )
         !
@@ -490,9 +575,14 @@ contains
         class( ModelParameter_t ), intent( in ) :: dsigma
         class( Vector_t ), allocatable, intent( inout ) :: eVec
         !
-        type( rScalar3D_SG_t ) :: sigma_cell
+        type( rScalar3D_SG_t ) :: dsigma_cond
+        type( rScalar3D_SG_t ), allocatable, dimension(:) :: sigma_cell
         character( len=5 ), parameter :: JOB = "DERIV"
-        integer :: k0, k1, k2
+        integer :: i, k0, k1, k2
+        !
+        if( .NOT. dsigma%is_allocated ) then
+            call errStop( "dPDEmapping_ModelParameterCell_SG > dsigma not allocated" )
+        endif
         !
         if( .NOT. allocated( eVec ) ) then
             allocate( eVec, source = rVector3D_SG_t( self%metric%grid, EDGE ) )
@@ -500,34 +590,42 @@ contains
             eVec = rVector3D_SG_t( self%metric%grid, EDGE )
         endif
         !
+        allocate( sigma_cell( self%anisotropic_level ) )
+        !
         call eVec%zeros
         !
-        sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
-        !
-        k0 = self%metric%grid%NzAir
-        k1 = k0 + 1
-        k2 = self%metric%grid%Nz
-        !
-        !> Ensure values in air are zero.
-        call sigma_cell%zeros
-        !
-        sigma_cell%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%getV(), kind=prec ), JOB )
-        !
-        !> Required to access the cell_cond attribute of ModelParameterCell_SG
-        select type( dsigma )
+        do i = 1, self%anisotropic_level
             !
-            class is( ModelParameterCell_SG_t )
-                !
-                sigma_cell%v(:,:,k1:k2) = sigma_cell%v(:,:,k1:k2) * dsigma%cell_cond(1)%getV()
-                !
-            class default
-                stop "Error: dPDEmapping_ModelParameterCell_SG > Unclassified dsigma"
+            sigma_cell(i) = rScalar3D_SG_t( self%metric%grid, CELL )
             !
-        end select
+            call sigma_cell(i)%zeros
+            !
+            k0 = self%metric%grid%NzAir
+            k1 = k0 + 1
+            k2 = self%metric%grid%Nz
+            !
+            sigma_cell(i)%v( :, :, k1:k2 ) = self%sigMap( self%cell_cond(i)%v, JOB )
+            !
+            dsigma_cond = dsigma%getCond(i)
+            !
+            sigma_cell(i)%v( :, :, k1:k2 ) = sigma_cell(i)%v( :, :, k1:k2 ) * dsigma_cond%v
+            !
+            call sigma_cell(i)%mult( self%metric%Vcell )
+            !
+        enddo
         !
-        call sigma_cell%mult( self%metric%Vcell )
-        !
-        call eVec%avgCells( sigma_cell )
+        !> Call specific avgCells based on anisotropic_level
+        if( self%anisotropic_level == 1 ) then
+            !
+            call eVec%avgCells( sigma_cell(1) )
+            !
+        elseif( self%anisotropic_level == 2 ) then
+            !
+            call eVec%avgCells( sigma_cell(1), sigma_cell(2) )
+            !
+        else
+            call errStop( "dPDEmapping_ModelParameterCell_SG > unsupported anisotropy level" )
+        endif
         !
         call eVec%div( self%metric%Vedge )
         !
@@ -542,48 +640,60 @@ contains
         class( Vector_t ), intent( in ) :: eVec
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
+        type( rScalar3D_SG_t ), allocatable, dimension(:) :: dsigma_cond
         class( Vector_t ), allocatable :: evec_interior
-        type( rScalar3D_SG_t ) :: sigma_cell
-        complex( kind=prec ), allocatable :: v(:, :, :), s_v(:, :, :)
+        type( rScalar3D_SG_t ), allocatable, dimension(:) :: sigma_cell
+        complex( kind=prec ), allocatable :: sigma_v(:, :, :)
         character( len=5 ), parameter :: JOB = "DERIV"
-        integer :: k0, k1, k2
+        integer :: i, k0, k1, k2
         !
-        allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, self%cell_cond(1), self%param_type ) )
+        allocate( sigma_cell( self%anisotropic_level ) )
         !
-        sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
+        call eVec%interior( evec_interior )
         !
-        select type( dsigma )
+        call evec_interior%div( self%metric%Vedge )
+        !
+        call evec_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
+        !
+        k0 = self%metric%grid%NzAir
+        k1 = k0 + 1
+        k2 = self%metric%grid%Nz
+        !
+        do i = 1, self%anisotropic_level
+            sigma_cell(i) = rScalar3D_SG_t( self%metric%grid, CELL )
+        enddo
+        !
+        !> Call specific sumEdges based on anisotropic_level
+        if( self%anisotropic_level == 1 ) then
             !
-            class is( ModelParameterCell_SG_t )
-                !
-                call eVec%interior( evec_interior )
-                !
-                call evec_interior%div( self%metric%Vedge )
-                !
-                call evec_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
-                !
-                call evec_interior%sumEdges( sigma_cell, .TRUE. )
-                !
-                deallocate( evec_interior )
-                !
-                call sigma_cell%mult( self%metric%Vcell )
-                !
-                v = self%sigMap( real( self%cell_cond(1)%getV(), kind=prec ), JOB )
-                call dsigma%cell_cond(1)%setV( v )
-                !
-                k0 = self%metric%grid%NzAir
-                k1 = k0 + 1
-                k2 = self%metric%grid%Nz
-                !
-                s_v = sigma_cell%getV()
-                !
-                v = dsigma%cell_cond(1)%getV() * s_v(:,:,k1:k2)
-                !
-                call dsigma%cell_cond(1)%setV( v )
-                !
-            class default
-                stop "Error: dPDEmapping_T_ModelParameterCell_SG > Incompatible input [eVec]."
-        end select
+            call evec_interior%sumEdges( sigma_cell(1), .TRUE. )
+            !
+        elseif( self%anisotropic_level == 2 ) then
+            !
+            call evec_interior%sumEdges( sigma_cell(1), sigma_cell(2), .TRUE. )
+            !
+        else
+        !
+        call errStop( "dPDEmapping_T_ModelParameterCell_SG > unsupported anisotropy level" )
+        endif
+        !
+        deallocate( evec_interior )
+        !
+        dsigma_cond = self%cell_cond
+        !
+        do i = 1, self%anisotropic_level
+            !
+            call dsigma_cond(i)%zeros
+            !
+            dsigma_cond(i)%v = self%sigMap( self%cell_cond(i)%v, JOB )
+            !
+            call sigma_cell(i)%mult( self%metric%Vcell )
+            !
+            dsigma_cond(i)%v = dsigma_cond(i)%v * sigma_cell(i)%v( :, :, k1:k2 )
+            !
+        enddo
+        !
+        allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, dsigma_cond, self%param_type ) )
         !
     end subroutine dPDEmapping_T_ModelParameterCell_SG
     !
@@ -595,16 +705,13 @@ contains
         class( ModelParameterCell_SG_t ), intent( inout ) :: self
         character(:), allocatable, intent( in ) :: param_type
         !
-        complex( kind=prec ), allocatable :: v(:, :, :), v_v(:, :, :)
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
-            stop "Error: setType_ModelParameterCell_SG_VTI > Self not allocated."
+                call errStop( "setType_ModelParameterCell_SG > Self not allocated." )
         endif
         !
-        do i = 1, size( self%cell_cond )
-            !
-            v = self%cell_cond(i)%getV()
+        do i = 1, self%anisotropic_level
             !
             if( trim( param_type ) .EQ. trim( self%param_type ) ) then
                 ! Nothing to be done
@@ -614,13 +721,11 @@ contains
                 !
                 if( param_type == LOGE ) then
                     !
-                    v = log( v )
-                    call self%cell_cond(i)%setV( v )
+                    self%cell_cond(i)%v = log( self%cell_cond(i)%v )
                     !
                 elseif( param_type == LOG_10) then
                     !
-                    v = log10( real( v, kind=prec ) )
-                    call self%cell_cond(i)%setV( v )
+                    self%cell_cond(i)%v = log10( self%cell_cond(i)%v )
                     !
                 endif
                 !
@@ -628,28 +733,24 @@ contains
                 !
                 if( self%param_type == LOGE ) then
                     !
-                    v = exp( v )
-                    call self%cell_cond(i)%setV( v )
+                    self%cell_cond(i)%v = exp( self%cell_cond(i)%v )
                     !
                 elseif( self%param_type == LOG_10 ) then
                     !
-                    v = exp( v * log(10.) )
-                    call self%cell_cond(i)%setV( v )
+                    self%cell_cond(i)%v = exp( self%cell_cond(i)%v * log(10.) )
                     !
                 endif
                 !
             elseif( ( self%param_type == LOGE ) .AND. ( param_type == LOG_10 ) ) then
                 !
-                v = v / log(10.)
-                call self%cell_cond(i)%setV( v )
+                self%cell_cond(i)%v = self%cell_cond(i)%v / log(10.)
                 !
             elseif( ( self%param_type == LOG_10 ) .AND. ( param_type == LOGE ) ) then
                 !
-                v = v * log(10.)
-                call self%cell_cond(i)%setV( v )
+                self%cell_cond(i)%v = self%cell_cond(i)%v * log(10.)
                 !
             else
-                stop "Error: setType_ModelParameterCell_SG_VTI > Unknown param_type."
+                call errStop( "setType_ModelParameterCell_SG > Unknown param_type." )
             endif
             !
         enddo
@@ -670,7 +771,7 @@ contains
         write( *, * ) "ModelParameterCell_SG_t:", self%mKey, self%air_cond, self%param_type, &
         self%is_allocated, self%param_grid%nx, self%param_grid%ny, self%param_grid%nz, self%param_grid%nzAir
         !
-        do i = 1, size( self%cell_cond )
+        do i = 1, self%anisotropic_level
             !
             call self%cell_cond(i)%print
             !
@@ -689,22 +790,13 @@ contains
         character(*), intent( in ) :: file_name
         character(*), intent( in ), optional :: comment
         !
-        type( rScalar3D_SG_t ) :: rho_v, rho_h, ccond_v
-        integer :: Nx, Ny, NzEarth, i, j, k, ios
+        type( rScalar3D_SG_t ) :: rho
+        integer :: Nx, Ny, NzEarth, ii, i, j, k, ios
         !
         ! Verbose
         !write( *, * ) "     > Write Model to file: [", file_name, "]"
         !
-        !> Convert modelParam to natural log or log10 for output
-        !paramType = userParamType
-        !
-        !if( self%%is_vti ) then
-        !    call getValue_modelParam(m, paramType, self%cell_cond(1), v_v=ccond_v)
-        !else
-        !    call getValue_modelParam(m, paramType, self%cell_cond(1))
-        !endif
-        !
-        open( unit = ioModelParam, file = file_name, action = "write", form = "formatted", iostat = ios )
+        open( ioModelParam, file = file_name, action = "write", form = "formatted", iostat = ios )
         !
         if( ios == 0 ) then
             !
@@ -721,7 +813,17 @@ contains
             !
             write( ioModelParam, "(4i5)", advance = "no" ) Nx, Ny, NzEarth, 0
             !
-            write( ioModelParam, "(a10)", advance = "yes" ) trim( self%param_type )
+            write( ioModelParam, "(a10)", advance = "no" ) trim( self%param_type )
+            !
+            if( self%anisotropic_level == 2 ) then
+                !
+                write( ioModelParam, * ) " VTI"
+                !
+            else
+                !
+                write( ioModelParam, * )
+                !
+            endif
             !
             !> Write self%metric%grid spacings
             do j = 1, self%metric%grid%nx
@@ -742,29 +844,35 @@ contains
             !
             write( ioModelParam, * )
             !
-            !> Convert (horizontal) conductivity to resistivity
-            rho_h = self%cell_cond(1)
-            if((index(self%param_type,"LOGE" ) > 0) .OR. (index(self%param_type,"LOG10" ) > 0)) then
-                rho_h%v = -self%cell_cond(1)%getV()
-            elseif(index(self%param_type,"LINEAR" ) > 0) then
-                rho_h%v = ONE/self%cell_cond(1)%getV()
-            endif
+            write( *, * ) self%anisotropic_level
             !
-            !> Write the (horizontal) resistivity
-            !
-            write( ioModelParam, * )
-            !
-            do k = 1, nzEarth
-                do j = 1, Ny
-                    do i = Nx, 1, -1
-                        write( ioModelParam, "(es13.5)", iostat = ios, advance = "no" ) rho_h%v(i,j,k)
+            do ii = 1, self%anisotropic_level
+                !
+                !> Convert (horizontal) conductivity to resistivity
+                rho = self%cell_cond(ii)
+                if( index( self%param_type,"LOGE" ) > 0 .OR. index( self%param_type,"LOG10" ) > 0 ) then
+                    rho%v = -self%cell_cond(ii)%v
+                elseif( index(self%param_type,"LINEAR" ) > 0 ) then
+                    rho%v = ONE / self%cell_cond(ii)%v
+                endif
+                !
+                !> Write the (horizontal) resistivity
+                !
+                write( ioModelParam, * )
+                !
+                do k = 1, nzEarth
+                    do j = 1, Ny
+                        do i = Nx, 1, -1
+                            write( ioModelParam, "(es13.5)", iostat = ios, advance = "no" ) rho%v(i,j,k)
+                        enddo
+                        !
+                        write( ioModelParam, * )
+                        !
                     enddo
                     !
                     write( ioModelParam, * )
                     !
                 enddo
-                !
-                write( ioModelParam, * )
                 !
             enddo
             !
@@ -786,5 +894,6 @@ contains
         endif
         !
     end subroutine write_ModelParameterCell_SG
+
 
 end Module ModelParameterCell_SG

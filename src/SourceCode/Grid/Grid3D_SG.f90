@@ -102,7 +102,7 @@ contains
         !
         !write( *, * ) "Constructor Grid3D_SG_t"
         !
-        call self%init
+        call self%baseInit
         !
         call self%create( nx, ny, nzAir, nzEarth )
         !
@@ -113,7 +113,7 @@ contains
     end function Grid3D_SG_t_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     subroutine Grid3D_SG_dtor( self )
         implicit none
         !
@@ -121,7 +121,7 @@ contains
         !
         !write( *, * ) "Destructor Grid3D_SG_t", self%nx, self%ny, self%nz
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine Grid3D_SG_dtor
     !
@@ -155,7 +155,7 @@ contains
         !
         integer :: nx, ny, nz
         !
-        if( self%is_allocated ) call self%dealloc
+        if( self%is_allocated ) call self%baseDealloc
         !
         nx = self%nx
         ny = self%ny
@@ -481,7 +481,7 @@ contains
         !
         rotdeg_old = self%rotdeg
         !
-        call self%dealloc
+        call self%baseDealloc
         call self%create( nx_old, ny_old, nzAir, nzEarth_old )
         !
         !> Set air layers to dzAir values and copy the rest

@@ -271,6 +271,13 @@ contains
             stop "Error: serialJMult_T > sigma not allocated"
         endif
         !
+        !> Allocate s_hat array
+        if( present( s_hat ) ) then
+            !
+            allocate( ModelParameterCell_SG_t :: s_hat( size( transmitters ) ) )
+            !
+        endif
+        !
         !> Loop over all transmitters
         do i_tx = 1, size( transmitters )
             !
@@ -278,8 +285,7 @@ contains
             !
             if( present( s_hat ) ) then
                 !
-                !if( allocated( s_hat( i_tx ) ) ) deallocate( s_hat( i_tx ) )
-                !allocate( s_hat( i_tx ), source = dsigma_tx )
+                s_hat( i_tx ) = dsigma_tx
                 !
             endif
             !

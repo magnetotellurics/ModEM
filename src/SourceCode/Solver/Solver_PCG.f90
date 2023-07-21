@@ -36,7 +36,7 @@ contains
         !
         !write( *, * ) "Constructor Solver_PCG_t"
         !
-        call self%init
+        call self%baseInit
         !
         !> Instantiate the PreConditioner object according to the ModelOperator type
         select type( model_operator )
@@ -98,7 +98,7 @@ contains
         !>    if we can make AMult generic, with versions that operate on cScalar/cVector
         !>     this could be more generic ...    also could change the name of this operator
         !>      to make this more obvious
-        call self%preconditioner%model_operator%divCgrad( x, r )
+        call self%preconditioner%model_operator%divCGrad( x, r )
         !
         !>     r = b-r
         call r%linComb( b, C_MinusOne, C_ONE )
@@ -124,7 +124,7 @@ contains
             call p%linComb( s, beta, C_ONE )
             !
             call q%zeros
-            call self%preconditioner%model_operator%divCgrad( p, q )
+            call self%preconditioner%model_operator%divCGrad( p, q )
             !
             alpha = delta / p%dotProd(q)
             !

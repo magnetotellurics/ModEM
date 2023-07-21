@@ -51,7 +51,7 @@ contains
         !
         !write( *, * ) "Constructor ForwardSolverIT_DC_t"
         !
-        call self%init
+        call self%baseInit
         !
         select case( solver_type )
             !

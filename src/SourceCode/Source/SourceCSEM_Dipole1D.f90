@@ -5,7 +5,6 @@ module SourceCSEM_Dipole1D
     !
     use SourceCSEM
     use ModelParameterCell_SG
-    use ModelParameterCell_SG_VTI
     !
     type, extends( SourceCSEM_t ) :: SourceCSEM_Dipole1D_t
         !
@@ -46,7 +45,7 @@ contains
         !
         !write( *, * ) "Constructor SourceCSEM_Dipole1D_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%model_operator => model_operator
         !
@@ -69,7 +68,7 @@ contains
     end function SourceCSEM_Dipole1D_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !
     subroutine SourceCSEM_Dipole1D_dtor( self )
         implicit none
@@ -78,7 +77,7 @@ contains
         !
         !write( *, * ) "Destructor SourceCSEM_Dipole1D_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         if( allocated( sig1D ) ) deallocate( sig1D )
         !

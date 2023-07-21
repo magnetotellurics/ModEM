@@ -44,7 +44,7 @@ contains
         !
         !> write( *, * ) "Constructor ReceiverExyAmpliPhase_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%location = location
         !
@@ -97,7 +97,7 @@ contains
         !
         !> write( *, * ) "Destructor ReceiverExyAmpliPhase_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine ReceiverExyAmpliPhase_dtor
     !

@@ -30,7 +30,7 @@ module Grid1D
             final :: Grid1D_dtor
             !
             procedure, public :: alloc => allocateGrid1D
-            procedure, public :: dealloc => deallocateGrid1D
+            procedure, public :: baseDealloc => deallocateGrid1D
             procedure, public :: setup => setupGrid1D
             procedure, public :: getDimensions => getDimensionsGrid1D
             procedure, public :: setCellSizes => setCellSizesGrid1D
@@ -72,7 +72,7 @@ contains
     end function Grid1D_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     subroutine Grid1D_dtor( self )
         implicit none
         !
@@ -80,7 +80,7 @@ contains
         !
         !write( *, * ) "Destructor Grid1D"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine Grid1D_dtor
     !

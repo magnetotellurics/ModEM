@@ -41,9 +41,9 @@ module DataFile
         !
         contains
             !
-            procedure, public :: init => initializeDataFile
+            procedure, public :: baseInit => initializeDataFile
             !
-            procedure, public :: dealloc => deallocateDataFile
+            procedure, public :: baseDealloc => deallocateDataFile
             !
             procedure, public :: loadReceiversAndTransmitters
             !

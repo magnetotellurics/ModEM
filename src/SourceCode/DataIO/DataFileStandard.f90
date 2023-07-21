@@ -46,7 +46,7 @@ contains
         !
         !write( *, * ) "Constructor DataFileStandard_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%file_name = fname
         !
@@ -328,7 +328,7 @@ contains
         !
         !write( *, * ) "Destructor DataFileStandard_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine DataFileStandard_dtor
     !

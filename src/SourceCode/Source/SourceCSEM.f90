@@ -7,6 +7,7 @@ module SourceCSEM
     use dipole1d
     use cVector3D_SG
     use rVector3D_SG
+    use rScalar3D_SG
     use Grid3D_SG
     !
     character(:), allocatable :: source_type_csem
@@ -15,8 +16,8 @@ module SourceCSEM
     !
     character(:), allocatable :: get_1d_from
     character( len=5 ), parameter :: FROM_FIXED_VALUE = "Fixed"
-    character( len=14 ), parameter :: FROM_GEO_MEAN = "Geometric_mean"
-    character( len=14 ), parameter :: FROM_TX_GEO_MEAN = "Mean_around_Tx"
+    character( len=14 ), parameter :: FROM_GEOM_MEAN = "Geometric_mean"
+    character( len=14 ), parameter :: FROM_TX_GEOM_MEAN = "Mean_around_Tx"
     character( len=11 ), parameter :: FROM_TX_LOCATION = "Tx_Position"
     !
     class( Vector_t ), allocatable :: E_p
@@ -53,14 +54,15 @@ module SourceCSEM
         type( rVector3D_SG_t ), intent( out ) :: cond_anomaly
         integer, intent( in ) :: ani_level
         !
-        class( Scalar_t ), allocatable :: sigma_cell
+        type( rScalar3D_SG_t ) :: sigma_cell
         complex( kind=prec ), allocatable :: v(:, :, :)
         class( ModelParameter_t ), allocatable :: aModel
         real( kind=prec ) :: wt, temp_sigma_1d
         integer :: nzAir, nzEarth, i, j, k
         type( rVector3D_SG_t ) :: cond_nomaly
         !
-        call self%sigma%getCond( sigma_cell, ani_level )
+        !>
+        sigma_cell = self%sigma%getCond( ani_level )
         !
         nzAir = sigma_cell%grid%nzAir
         !
@@ -157,8 +159,6 @@ module SourceCSEM
         allocate( aModel, source = self%sigma )
         call aModel%setCond( sigma_cell, ani_level )
         call aModel%setType( self%sigma%param_type )
-        !
-        deallocate( sigma_cell )
         !
         cond_nomaly = rVector3D_SG_t( self%sigma%metric%grid, EDGE )
         call aModel%PDEmapping( cond_nomaly )

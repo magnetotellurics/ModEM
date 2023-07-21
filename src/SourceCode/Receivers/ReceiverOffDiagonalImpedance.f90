@@ -43,7 +43,7 @@ contains
         !
         !> write( *, * ) "Constructor ReceiverOffDiagonalImpedance_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%location = location
         !
@@ -79,7 +79,7 @@ contains
         !
         !> write( *, * ) "Destructor ReceiverOffDiagonalImpedance_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine ReceiverOffDiagonalImpedance_dtor
     !

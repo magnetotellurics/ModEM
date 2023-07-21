@@ -72,7 +72,7 @@ contains
         !
         !write( *, * ) "Destructor MetricElements_CSG"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine MetricElements_CSG_dtor
     !

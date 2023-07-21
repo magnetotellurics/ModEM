@@ -28,23 +28,23 @@ module ModelOperator_MF
               !
               final :: ModelOperator_MF_dtor
               !
-              procedure, public :: setEquations => setEquationsModelOperatorMF
-              procedure, public :: setCond => setCondModelOperatorMF
-              procedure, public :: amult => amultModelOperatorMF
-              procedure, public :: multAib => multAibModelOperatorMF
-              procedure, public :: multCurlT => multCurlTModelOperatorMF
-              procedure, public :: divCorSetUp => divCorSetUpModelOperatorMF
+              procedure, public :: setEquations => setEquations_ModelOperator_MF
+              procedure, public :: setCond => setCond_ModelOperator_MF
+              procedure, public :: amult => amult_ModelOperator_MF
+              procedure, public :: multAib => multAib_ModelOperator_MF
+              procedure, public :: multCurlT => multCurlT_ModelOperator_MF
+              procedure, public :: divCorSetUp => divCorSetUp_ModelOperator_MF
               !
-              procedure :: divCgrad => divCgradModelOperatorMF
-              procedure :: divC => divCModelOperatorMF
-              procedure :: grad => gradModelOperatorMF
-              procedure :: div => divModelOperatorMF
+              procedure :: divCGrad => divCGrad_ModelOperator_MF
+              procedure :: divC => divC_ModelOperator_MF
+              procedure :: grad => grad_ModelOperator_MF
+              procedure :: div => div_ModelOperator_MF
               !
-              procedure :: create => createModelOperatorMF 
-              procedure :: allocate => allocateModelOperatorMF
-              procedure :: deallocate => deallocateModelOperatorMF
+              procedure :: create => create_ModelOperator_MF 
+              procedure :: alloc => allocate_ModelOperator_MF
+              procedure :: dealloc => deallocate_ModelOperator_MF
               !
-              procedure, public :: print => printModelOperatorMF
+              procedure, public :: print => print_ModelOperator_MF
               !
     end type ModelOperator_MF_t
     !
@@ -65,7 +65,7 @@ contains
         !
         !write( *, * ) "Constructor ModelOperator_MF"
         !
-        call self%init
+        call self%baseInit
         !
         !> Instantiation of the specific object MetricElements
         allocate( self%metric, source = MetricElements_CSG_t( grid ) )
@@ -82,12 +82,12 @@ contains
         !
         !write( *, * ) "Destructor ModelOperator_MF_t"
         !
-        call self%deallocate()
+        call self%baseDealloc()
         !
     end subroutine ModelOperator_MF_dtor
     !
     !> No subroutine briefing
-    subroutine createModelOperatorMF( self, grid )
+    subroutine create_ModelOperator_MF( self, grid )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( inout ) :: self
@@ -97,12 +97,12 @@ contains
         !
         self%metric%grid => grid
         !
-        call self%allocate()
+        call self%alloc
         !
-    end subroutine createModelOperatorMF
+    end subroutine create_ModelOperator_MF
     !
     !> No subroutine briefing
-    subroutine allocateModelOperatorMF( self )
+    subroutine allocate_ModelOperator_MF( self )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( inout ) :: self
@@ -147,15 +147,15 @@ contains
         !
         self%is_allocated = .TRUE.
         !
-    end subroutine allocateModelOperatorMF
+    end subroutine allocate_ModelOperator_MF
     !
     !> No subroutine briefing
-    subroutine deallocateModelOperatorMF( self )
+    subroutine deallocate_ModelOperator_MF( self )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( inout ) :: self
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         deallocate( self%xXY )
         deallocate( self%xXZ )
@@ -177,11 +177,11 @@ contains
         !
         self%is_allocated = .FALSE.
         !
-    end subroutine deallocateModelOperatorMF
+    end subroutine deallocate_ModelOperator_MF
     !
     !> No subroutine briefing
     !
-    subroutine setEquationsModelOperatorMF( self )
+    subroutine setEquations_ModelOperator_MF( self )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( inout ) :: self
@@ -277,10 +277,10 @@ contains
         !
         self%eqset = .TRUE.
         !
-    end subroutine setEquationsModelOperatorMF
+    end subroutine setEquations_ModelOperator_MF
     !
     !> No subroutine briefing
-    subroutine setCondModelOperatorMF( self, sigma )
+    subroutine setCond_ModelOperator_MF( self, sigma )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( inout ) :: self
@@ -288,10 +288,10 @@ contains
         !
         call sigma%PDEmapping( self%sigma_E )
         !
-    end subroutine setCondModelOperatorMF
+    end subroutine setCond_ModelOperator_MF
     !
     !> No subroutine briefing
-    subroutine divCorSetUpModelOperatorMF( self )
+    subroutine divCorSetUp_ModelOperator_MF( self )
         implicit none
         !
         class( ModelOperator_MF_t ), intent(inout) :: self
@@ -357,7 +357,7 @@ contains
                 enddo
                     !
             class default
-                stop "Error: getFullVectorCSparsevector3D_SG > undefined grid"
+                call errStop( "divCorSetUp_ModelOperator_MF > undefined grid" )
                 !
         end select
         !
@@ -371,11 +371,11 @@ contains
         self%db2%y(:, self%metric%grid%ny, :) = R_ZERO
         self%db2%z(:, :, self%metric%grid%nz) = R_ZERO
         !
-    end subroutine divCorSetUpModelOperatorMF
+    end subroutine divCorSetUp_ModelOperator_MF
     !
     !> No subroutine briefing
     !
-    subroutine amultModelOperatorMF( self, omega, inE, outE, p_adjoint )
+    subroutine amult_ModelOperator_MF( self, omega, inE, outE, p_adjoint )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
@@ -405,7 +405,7 @@ contains
             class is( cVector3D_SG_t )
                 !
                 if( .NOT. outE%is_allocated ) then
-                    stop "Error: amultModelOperatorMF > output vector outE not allocated"
+                    call errStop( "amult_ModelOperator_MF > output vector outE not allocated" )
                 endif
                 !
                 select type( outE )
@@ -466,20 +466,20 @@ contains
                         call outE%mult( self%metric%Vedge )
                         !
                     class default
-                        stop "Error: amultModelOperatorMF > Undefined outE."
+                        call errStop( "amult_ModelOperator_MF > Undefined outE." )
                         !
                 end select
                 !
             class default
-                stop "Error: amultModelOperatorMF > Undefined inE."
+                call errStop( "amult_ModelOperator_MF > Undefined inE." )
                 !
         end select
         !
-    end subroutine amultModelOperatorMF
+    end subroutine amult_ModelOperator_MF
     !
     !> No subroutine briefing
     !
-    subroutine multAibModelOperatorMF( self, inE, outE )
+    subroutine multAib_ModelOperator_MF( self, inE, outE )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
@@ -489,17 +489,17 @@ contains
         real( kind=prec ) :: omega
         !
         if(.NOT. outE%is_allocated) then
-            stop "Error: multAibModelOperatorMF > outE not allocated"
+            call errStop( "multAib_ModelOperator_MF > outE not allocated" )
         endif
         !
         omega = R_ZERO
         !
         call self%amult( omega, inE, outE ) 
         !
-    end subroutine multAibModelOperatorMF
+    end subroutine multAib_ModelOperator_MF
     !
     !> No subroutine briefing
-    subroutine multCurlTModelOperatorMF( self, inH, outE )
+    subroutine multCurlT_ModelOperator_MF( self, inH, outE )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
@@ -514,7 +514,7 @@ contains
                 call inH%div( self%Metric%FaceArea )
                 !
                 if( .NOT. outE%is_allocated ) then
-                     write( *, * ) "Error:  multCurlTModelOperatorMF > output vector not allocated"
+                     call errStop( "multCurlT_ModelOperator_MF > output vector not allocated" )
                 endif
                 !
                 select type( outE )
@@ -548,20 +548,20 @@ contains
                         enddo
                         !
                     class default
-                        stop "Error: multCurlTModelOperatorMF > Incompatible input [outE]"
+                        call errStop( "multCurlT_ModelOperator_MF > Incompatible outE" )
                 end select
                     !
             class default
-                stop "Error: multCurlTModelOperatorMF > Incompatible input [inH]"
+                call errStop( "multCurlT_ModelOperator_MF > Incompatible inH" )
                 !
         end select
         !
         call outE%mult( self%metric%Edgelength )
         !
-    end subroutine multCurlTModelOperatorMF
+    end subroutine multCurlT_ModelOperator_MF
     !
     !> No subroutine briefing
-    subroutine divCgradModelOperatorMF( self, inPhi, outPhi )
+    subroutine divCGrad_ModelOperator_MF( self, inPhi, outPhi )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
@@ -570,50 +570,51 @@ contains
         !
         integer :: ix, iy, iz
         !
-        select type( outphi )
+        select type( outPhi )
             !
             class is( cScalar3D_SG_t )
                 !
                 if( .NOT. outPhi%is_allocated) then
-                    stop "Error: divCgradModelOperatorMF > Output cScalar object not allocated"
+                    call errStop( "divCGrad_ModelOperator_MF > outPhi not allocated" )
                 endif
                 !
                 select type( inPhi )
-                class is( cScalar3D_SG_t )
                     !
-                    !> zero output (already allocated) to start
-                    call outPhi%zeros
-                    !
-                    !> The coefficients are only for interior nodes
-                    do iz = 2, inPhi%nz
-                        do iy = 2, inPhi%ny
-                            do ix = 2, inPhi%nx
-                                outPhi%v(ix, iy, iz) = &
-                                inPhi%v(ix + 1, iy, iz) * self%db2%x(ix,iy,iz) + &
-                                inPhi%v(ix - 1, iy, iz) * self%db1%x(ix, iy, iz) + &
-                                inPhi%v(ix, iy + 1, iz) * self%db2%y(ix, iy, iz) + &
-                                inPhi%v(ix, iy - 1, iz) * self%db1%y(ix, iy, iz) + &
-                                inPhi%v(ix, iy, iz + 1) * self%db2%z(ix, iy, iz) + &
-                                inPhi%v(ix, iy, iz - 1) * self%db1%z(ix, iy, iz) + &
-                                inPhi%v(ix, iy, iz) * self%c%v(ix, iy, iz)
+                    class is( cScalar3D_SG_t )
+                        !
+                        !> zero output (already allocated) to start
+                        call outPhi%zeros
+                        !
+                        !> The coefficients are only for interior nodes
+                        do iz = 2, inPhi%nz
+                            do iy = 2, inPhi%ny
+                                do ix = 2, inPhi%nx
+                                    outPhi%v(ix, iy, iz) = &
+                                    inPhi%v(ix + 1, iy, iz) * self%db2%x(ix,iy,iz) + &
+                                    inPhi%v(ix - 1, iy, iz) * self%db1%x(ix, iy, iz) + &
+                                    inPhi%v(ix, iy + 1, iz) * self%db2%y(ix, iy, iz) + &
+                                    inPhi%v(ix, iy - 1, iz) * self%db1%y(ix, iy, iz) + &
+                                    inPhi%v(ix, iy, iz + 1) * self%db2%z(ix, iy, iz) + &
+                                    inPhi%v(ix, iy, iz - 1) * self%db1%z(ix, iy, iz) + &
+                                    inPhi%v(ix, iy, iz) * self%c%v(ix, iy, iz)
+                                enddo
                             enddo
                         enddo
-                    enddo
-                    !
-                class default
-                    stop "Error: divCgradModelOperatorMF > Incompatible input [inPhi]."
-                    !
-            end select
-                    !
+                        !
+                    class default
+                        call errStop( "divCGrad_ModelOperator_MF > Incompatible inPhi." )
+                        !
+                end select
+                !
             class default
-                stop "Error: divCgradModelOperatorMF > Incompatible input [x]."
+                call errStop( "divCGrad_ModelOperator_MF > Incompatible outPhi." )
                 !
         end select
         !
-    end subroutine divCgradModelOperatorMF
+    end subroutine divCGrad_ModelOperator_MF
     !
     !> No subroutine briefing
-    subroutine divCModelOperatorMF( self, inE, outPhi )
+    subroutine divC_ModelOperator_MF( self, inE, outPhi )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
@@ -623,13 +624,15 @@ contains
         integer :: ix, iy, iz
         !
         select type( outPhi )
+            !
             class is( cScalar3D_SG_t )
                 !
                 if( .NOT. outPhi%is_allocated) then
-                    stop "Error: divCModelOperatorMF > Output cScalar object not allocated"
+                    call errStop( "divC_ModelOperator_MF > outPhi not allocated" )
                 endif
                 !
                 select type( inE )
+                    !
                     class is ( cVector3D_SG_t )
                         !
                         call outPhi%zeros
@@ -680,18 +683,18 @@ contains
                         enddo
                         !
                     class default
-                        stop "Error: divCModelOperatorMF > inE type unknown"
+                        call errStop( "divC_ModelOperator_MF > inE type unknown" )
                 end select
                 !
             class default
-                stop "Error: divCModelOperatorMF > outPhi type unknown"
+                call errStop( "divC_ModelOperator_MF > outPhi type unknown" )
                 !
         end select
         !
-    end subroutine divCModelOperatorMF
+    end subroutine divC_ModelOperator_MF
     !
     !> No subroutine briefing
-    subroutine gradModelOperatorMF( self, inPhi, outE )
+    subroutine grad_ModelOperator_MF( self, inPhi, outE )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
@@ -701,10 +704,12 @@ contains
         integer :: ix, iy, iz
         !
         select type( outE )
+            !
             class is ( cVector3D_SG_t )
                 !
-                if(.NOT.outE%is_allocated) then
-                    stop "Error: gradModelOperatorMF > Output cVector object not allocated"
+                if( .NOT.outE%is_allocated ) then
+                    !
+                    call errStop( "grad_ModelOperator_MF > outE not allocated" )
                 endif
                 !
                 select type( inPhi )
@@ -741,16 +746,17 @@ contains
                         enddo
                         !
                     class default
-                        stop "Error: gradModelOperatorMF > inPhi type unknown"
+                        call errStop( "grad_ModelOperator_MF > inPhi type unknown" )
                 end select
+                !
             class default
-                stop "Error: gradModelOperatorMF > outE type unknown"
+                call errStop( "grad_ModelOperator_MF > outE type unknown" )
         end select
         !
-    end subroutine gradModelOperatorMF
+    end subroutine grad_ModelOperator_MF
     !
     !> No subroutine briefing
-    subroutine divModelOperatorMF( self, inE, outPhi )
+    subroutine div_ModelOperator_MF( self, inE, outPhi )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
@@ -759,16 +765,17 @@ contains
         !
         integer :: ix, iy, iz
         !
-        select type(outPhi)
-            class is(cScalar3D_SG_t)
+        select type( outPhi )
+            !
+            class is( cScalar3D_SG_t )
                 !
-                if(.NOT.outPhi%is_allocated) then
-                    stop "Error: divModelOperatorMF > Output cScalar object not allocated"
+                if( .NOT. outPhi%is_allocated ) then
+                    call errStop( "div_ModelOperator_MF > Output cScalar object not allocated" )
                 endif
                 !
                 select type( inE )
                     !
-                    class is(cVector3D_SG_t)
+                    class is( cVector3D_SG_t )
                         !
                         call outPhi%zeros
                         !
@@ -787,22 +794,24 @@ contains
                         enddo
                         !
                     class default
-                        stop "Error: divModelOperatorMF> inE type unknown"
+                        call errStop( "div_ModelOperator_MF> inE type unknown" )
                 end select
+                !
             class default
-                stop "Error: divModelOperatorMF > outPhi type unknown"
+                call errStop( "div_ModelOperator_MF > outPhi type unknown" )
+                !
         end select
         !
-    end subroutine divModelOperatorMF
+    end subroutine div_ModelOperator_MF
     !
     !> No subroutine briefing
-    subroutine printModelOperatorMF( self )
+    subroutine print_ModelOperator_MF( self )
         implicit none
         !
         class( ModelOperator_MF_t ), intent( in ) :: self
         !
-        stop "Subroutine print not implemented for ModelOperator_MF"
+        call errStop( "print_ModelOperator_MF not implemented yet" )
         !
-    end subroutine printModelOperatorMF
+    end subroutine print_ModelOperator_MF
     !
 end module ModelOperator_MF
