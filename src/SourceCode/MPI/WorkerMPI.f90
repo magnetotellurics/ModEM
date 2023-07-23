@@ -312,7 +312,7 @@ contains
                 !
             case( "" )
                 !
-                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m setTxForwardSolver > Forward Solver type not provided, using IT_DC."
+                call warning( "setTxForwardSolver > Forward Solver type not provided, using IT_DC." )
                 !
                 allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
                 !

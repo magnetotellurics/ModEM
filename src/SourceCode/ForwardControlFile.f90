@@ -57,9 +57,14 @@ contains
         !
         open( unit = funit, file = fname, iostat = io_stat, status = "old" )
         !
-        if( io_stat == 0 ) then
+        if( io_stat /= 0 ) then
+            !
+            call errStop( "ForwardControlFile_ctor > Cant opening file ["//fname//"]" )
+            !
+        else
             !
             do
+                !
                 read( funit, "(a)", END = 10 ) full_line_text
                 line_text = adjustl( full_line_text )
                 line_text = trim( line_text )
@@ -316,9 +321,6 @@ contains
                 !
             endif
             !
-        else
-            !
-            call errStop( "ForwardControlFile_ctor > Cant opening file ["//fname//"]" )
         endif
         !
     end function ForwardControlFile_ctor

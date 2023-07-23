@@ -1,5 +1,5 @@
 !
-!> Some tools that manipulate sparse matrices in CSR storage
+!> Operations over sparse matrices in CSR storage
 !
 module SpOpTools
     !
@@ -8,11 +8,8 @@ module SpOpTools
     use rScalar3D_SG
     use rVector3D_SG
     !
-    implicit none
-    !
     !> Generic matrix types and tools, using CSR storage, 
     !> but with fortran numbering conventions(starting from 1)
-    !
     type :: spMatCSR_Real
         integer :: nRow=0
         integer :: nCol=0
@@ -131,7 +128,7 @@ contains
         implicit none
         !
         integer, intent( in ) :: m, n, nz
-        !   A will be sparse m x n with nz non-zero elements
+        ! A will be sparse m x n with nz non-zero elements
         type( spMatCSR_Real ), intent( inout ) :: A
         !
         integer :: istat
@@ -142,32 +139,35 @@ contains
         !
         A%nRow = m
         A%nCol = n
-        allocate(A%row(m+1), stat = istat )
-        allocate(A%col(nz), stat = istat )
-        allocate(A%val(nz), stat = istat )
-        A%row(m+1)=nz+1
+        allocate( A%row(m+1), stat = istat )
+        allocate( A%col(nz), stat = istat )
+        allocate( A%val(nz), stat = istat )
+        A%row(m+1) = nz + 1
+        !
         A%is_allocated = .TRUE.
         !
     end subroutine create_spMatCSR_Real
     !
     ! No subroutine briefing
     !
-    subroutine create_spMatCSR_Cmplx(m, n, nz, A)
+    subroutine create_spMatCSR_Cmplx( m, n, nz, A )
         implicit none
         !
         integer, intent( in ) :: m, n, nz
         !   A will be sparse m x n with nz non-zero elements
         type( spMatCSR_Cmplx ), intent( inout ) :: A
-
-        if(A%is_allocated) then
-        call deall_spMatCSR(A)
+        !
+        if( A%is_allocated ) then
+            call deall_spMatCSR( A )
         endif
-
+        !
         A%nRow = m
         A%nCol = n
-        allocate(A%row(m+1))
-        allocate(A%col(nz))
-        allocate(A%val(nz))
+        !
+        allocate( A%row(m+1) )
+        allocate( A%col(nz) )
+        allocate( A%val(nz) )
+        !
         A%row(m+1)=nz+1
         A%is_allocated = .TRUE.
         !
@@ -175,118 +175,133 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine create_spMatIJS_Real(m, n, nz, A)
+    subroutine create_spMatIJS_Real( m, n, nz, A )
         implicit none
         !
         integer, intent( in ) :: m, n, nz
-        !   A will be sparse m x n with nz non-zero elements
+        ! A will be sparse m x n with nz non-zero elements
         type(spMatIJS_Real), intent( inout ) :: A
-
-        if(A%is_allocated) then
-        call deall_spMatIJS(A)
+        !
+        if( A%is_allocated ) then
+            call deall_spMatIJS( A )
         endif
-
+        !
         A%nRow = m
         A%nCol = n
-        allocate(A%I(nz))
-        allocate(A%J(nz))
-        allocate(A%S(nz))
+        !
+        allocate( A%I(nz) )
+        allocate( A%J(nz) )
+        allocate( A%S(nz) )
+        !
         A%is_allocated = .TRUE.
         !
     end subroutine create_spMatIJS_Real
     !
     !> No subroutine briefing
     !
-    subroutine create_spMatIJS_Cmplx(m, n, nz, A)
-            implicit none
+    subroutine create_spMatIJS_Cmplx( m, n, nz, A )
+        implicit none
         !
         integer, intent( in ) :: m, n, nz
         !   A will be sparse m x n with nz non-zero elements
         type(spMatIJS_Cmplx), intent( inout ) :: A
-
-        if(A%is_allocated) then
-        call deall_spMatIJS(A)
+        !
+        if( A%is_allocated ) then
+            call deall_spMatIJS( A )
         endif
-
+        !
         A%nRow = m
         A%nCol = n
-        allocate(A%I(nz))
-        allocate(A%J(nz))
-        allocate(A%S(nz))
+        !
+        allocate( A%I(nz) )
+        allocate( A%J(nz) )
+        allocate( A%S(nz) )
+        !
         A%is_allocated = .TRUE.
-        return
+        !
     end subroutine create_spMatIJS_Cmplx
     !
     !> No subroutine briefing
     !
-    subroutine deall_spMatCSR_Real(A)
+    subroutine deall_spMatCSR_Real( A )
         implicit none
         !
         type( spMatCSR_Real ) :: A
-        if(A%is_allocated) then
-        deallocate(A%row)
-        deallocate(A%col)
-        deallocate(A%val)
-        A%is_allocated = .FALSE.
-        A%upper = .FALSE.
-        A%lower = .FALSE.
-        A%nRow = 0
-        A%nCol = 0
-        return
+        !
+        if( A%is_allocated ) then
+            !
+            deallocate(A%row)
+            deallocate(A%col)
+            deallocate(A%val)
+            A%is_allocated = .FALSE.
+            A%upper = .FALSE.
+            A%lower = .FALSE.
+            A%nRow = 0
+            A%nCol = 0
+            !
         endif
+        !
     end subroutine deall_spMatCSR_Real
     !
     !> No subroutine briefing
     !
-    subroutine deall_spMatCSR_Cmplx(A)
+    subroutine deall_spMatCSR_Cmplx( A )
         implicit none
         !
         type( spMatCSR_Cmplx ) :: A
-        if(A%is_allocated) then
-        deallocate(A%row)
-        deallocate(A%col)
-        deallocate(A%val)
-        A%is_allocated = .FALSE.
-        A%upper = .FALSE.
-        A%lower = .FALSE.
-        A%nRow = 0
-        A%nCol = 0
-        return
+        !
+        if( A%is_allocated ) then
+            !
+            deallocate(A%row)
+            deallocate(A%col)
+            deallocate(A%val)
+            A%is_allocated = .FALSE.
+            A%upper = .FALSE.
+            A%lower = .FALSE.
+            A%nRow = 0
+            A%nCol = 0
+            !
         endif
     end subroutine deall_spMatCSR_Cmplx
     !
     !> No subroutine briefing
     !
-    subroutine deall_spMatIJS_Real(A)
+    subroutine deall_spMatIJS_Real( A )
         implicit none
         !
-        type(spMatIJS_Real) :: A
-        if(A%is_allocated) then
-        deallocate(A%I)
-        deallocate(A%J)
-        deallocate(A%S)
-        A%is_allocated = .FALSE.
-        A%nRow = 0
-        A%nCol = 0
-        return
+        type( spMatIJS_Real ) :: A
+        !
+        if( A%is_allocated ) then
+            !
+            deallocate(A%I)
+            deallocate(A%J)
+            deallocate(A%S)
+            A%is_allocated = .FALSE.
+            A%nRow = 0
+            A%nCol = 0
+            !
         endif
+        !
     end subroutine deall_spMatIJS_Real
     !
     !> No subroutine briefing
     !
-    subroutine deall_spMatIJS_Cmplx(A)
+    subroutine deall_spMatIJS_Cmplx( A )
         implicit none
         !
-        type(spMatIJS_Cmplx) :: A
-        if(A%is_allocated) then
-        deallocate(A%I)
-        deallocate(A%J)
-        deallocate(A%S)
-        A%is_allocated = .FALSE.
-        A%nRow = 0
-        A%nCol = 0
-        return
+        type( spMatIJS_Cmplx ) :: A
+        !
+        if( A%is_allocated ) then
+            !
+            deallocate(A%I)
+            deallocate(A%J)
+            deallocate(A%S)
+            A%is_allocated = .FALSE.
+            A%nRow = 0
+            A%nCol = 0
+            !
         endif
+        !
     end subroutine deall_spMatIJS_Cmplx
     !
     !> No function briefing
@@ -2775,10 +2790,10 @@ contains
     !
     !> For a given type find indexes for boundary and interior nodes
     !
-    subroutine boundaryIndexSP( gridType, grid, INDb, INDi )
+    subroutine boundaryIndexSP( grid_type, grid, INDb, INDi )
         implicit none
         !
-        character(*), intent( in ) :: gridType
+        character(*), intent( in ) :: grid_type
         class( Grid_t ), intent( in ) :: grid
         integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
         !
@@ -2787,7 +2802,7 @@ contains
         type( rScalar3D_SG_t ) :: temp_scalar
         real( kind=prec ), allocatable, dimension(:) :: temp_sv
         !
-        selectcase( gridType )
+        selectcase( grid_type )
             !
             case( EDGE )
                 !
@@ -2853,7 +2868,7 @@ contains
                 temp_sv = temp_scalar%sv
                 !
             case default
-                write( *, * ) "Error: boundaryIndexSP > Invalid grid type [", gridType, "]"
+                write( *, * ) "Error: boundaryIndexSP > Invalid grid type [", grid_type, "]"
                 stop
         end select 
         !
@@ -2865,11 +2880,13 @@ contains
         if(allocated(INDi)) then
             deallocate(INDi)
         endif
+		!
         allocate( INDi( nVecT - nBdry ) )
         !
         if(allocated(INDb)) then
             deallocate(INDb)
         endif
+		!
         allocate( INDb( nBdry ) )
         !
         nb = 0

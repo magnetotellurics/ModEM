@@ -107,7 +107,7 @@ contains
         !
         if( size( data_tx_array_1 ) /= size( data_tx_array_2 ) ) then
             !
-            stop "Error: subDataGroupTxArray > different array sizes"
+            call errStop( "subDataGroupTxArray > different array sizes" )
             !
         else
             !
@@ -151,7 +151,7 @@ contains
         !
         if( size( data_tx_array_1 ) /= size( data_tx_array_2 ) ) then
             !
-            stop "Error: dotProdDataGroupTxArray > different array sizes"
+            call errStop( "dotProdDataGroupTxArray > different array sizes" )
             !
         else
             !
@@ -179,11 +179,11 @@ contains
         integer :: i
         !
         if( size( d1 ) /= size( d2 ) ) then
-            stop "Error: linCombDataGroupTxArray > different array sizes: d1, d2"
+            call errStop( "linCombDataGroupTxArray > different array sizes: d1, d2" )
         endif
         !
         if( size( d1 ) /= size( dOut ) ) then
-            stop "Error: linCombDataGroupTxArray > different array sizes: d1, dOut"
+            call errStop( "linCombDataGroupTxArray > different array sizes: d1, dOut" )
         endif
         !
         do i = 1, size( d1 )
@@ -550,7 +550,7 @@ contains
                             write( ioPredData, "( a8, 3es15.6 )" ) trim( receiver%comp_names(j)%str ), real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), r_error
                             !
                         class default
-                            stop "Error: writeDataGroupTxArray: Unclassified data_group!"
+                            call errStop( "writeDataGroupTxArray: Unclassified data_group!" )
                         !
                     end select
                     !
@@ -629,7 +629,7 @@ contains
                     !
                 case default
                     write( *, * ) "Unknown receiver type :[", receiver%rx_type, "]"
-                    stop "Error: DataGroupTxArray > writeHeaderDataGroupTxArray()"
+                    call errStop( "DataGroupTxArray > writeHeaderDataGroupTxArray()" )
                 !
             end select
             !

@@ -168,15 +168,15 @@ contains
                 !
             case( "Full_Interstation_TF" )
                 !
-                stop "Error: DataManager.f08: loadReceiversAndTransmitters(): To implement Full_Interstation_TF !!!!"
+                call errStop( "loadReceiversAndTransmitters > To implement Full_Interstation_TF!" )
                 !
             case( "Off_Diagonal_Rho_Phase" )
                 !
-                stop "Error: DataManager.f08: loadReceiversAndTransmitters(): To implement Off_Diagonal_Rho_Phase !!!!"
+                call errStop( "loadReceiversAndTransmitters > To implement Off_Diagonal_Rho_Phase!" )
                 !
             case( "Phase_Tensor" )
                 !
-                stop "Error: DataManager.f08: loadReceiversAndTransmitters(): To implement Phase_Tensor !!!!"
+                call errStop( "loadReceiversAndTransmitters > To implement Phase_Tensor!" )
                 !
             case( "Off_Diagonal_Impedance" )
                 !
@@ -192,7 +192,7 @@ contains
                 !
             case default
                 write( *, * ) "Unknown Receiver type :[", data_entry%dtype, "]"
-                stop "Error: DataFile > loadReceiversAndTransmitters"
+                call errStop( "loadReceiversAndTransmitters" )
             !
         end select
         !
@@ -303,7 +303,7 @@ contains
                     end select
                 !
                 class default
-                    stop "Error: DataFile.f90 > loadReceiversAndTransmitters > unclassified Transmitter"
+                    call errStop( "loadReceiversAndTransmitters > unclassified Transmitter" )
                 !
             end select
             !
@@ -436,7 +436,7 @@ contains
             enddo
             !
         else
-            stop "Error: contructMeasuredDataGroupTxArray > Unnecessary recreation of predicted data array"
+            call errStop( "contructMeasuredDataGroupTxArray > Unnecessary recreation of predicted data array" )
         endif
         !
     end subroutine contructMeasuredDataGroupTxArray

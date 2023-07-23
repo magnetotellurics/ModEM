@@ -4,7 +4,7 @@
 !
 module Field
     !
-    use Constants
+    use Utilities
     use Grid
     !
     !> Field Store States
@@ -350,6 +350,7 @@ contains
         complex( kind=prec ), dimension(:), allocatable :: c_array
         !
         allocate( aux_field, source = self )
+        !
         call aux_field%zeros()
         !
         call aux_field%setAllBoundary( C_ONE )

@@ -201,7 +201,7 @@ contains
   !
   ! Arguments
   !   igrid     Underlying grid.
-  !   gridType  Definied in GridDef.f90
+  !   grid_type  Definied in GridDef.f90
   !
   !*
   function Vector3d_cmr_complex_t_ctor1 (igrid, grid_type) result (E)

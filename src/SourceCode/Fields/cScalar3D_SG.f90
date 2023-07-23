@@ -123,7 +123,7 @@ contains
         if( self%is_allocated ) then
              self%v = C_ZERO
         else
-             stop "Error: cScalar3D_SG_ctor > Unable to allocate cScalar - invalid grid supplied"
+             call errStop( "Unable to allocate cScalar - invalid grid supplied" )
         endif
         !
         self%Nxyz = product( self%NdV )
@@ -287,7 +287,7 @@ contains
             phi = cScalar3D_SG_t( self%grid, self%grid_type )
             !
         else
-            stop "Error: intBdryIndices_cScalar3D_SG > Not allocated. Exiting."
+            call errStop( "intBdryIndices_cScalar3D_SG > Not allocated. Exiting." )
         endif
         !
         if( self%store_state /= compound ) then
@@ -402,7 +402,7 @@ contains
         class( cScalar3D_SG_t ), intent( inout ) :: self
         !
         if( .NOT. self%is_allocated) then
-             stop "Error: zeros_cScalar3D_SG > Not allocated."
+             call errStop( "zeros_cScalar3D_SG > Not allocated." )
         endif
         !
         if( self%store_state .EQ. compound ) then
@@ -414,7 +414,7 @@ contains
             self%sv = R_ZERO
             !
         else
-            stop "Error: zeros_cScalar3D_SG > Unknown store_state!"
+            call errStop( "zeros_cScalar3D_SG > Unknown store_state!" )
         endif
         !
     end subroutine zeros_cScalar3D_SG
@@ -427,7 +427,7 @@ contains
         class( cScalar3D_SG_t ), intent( inout ) :: self
         !
         if( .NOT. self%is_allocated) then
-             stop "Error: conjugate_cScalar3D_SG > Not allocated."
+             call errStop( "conjugate_cScalar3D_SG > Not allocated." )
         endif
         !
         if( self%store_state .EQ. compound ) then
@@ -439,7 +439,7 @@ contains
             self%sv = conjg( self%sv )
             !
         else
-            stop "Error: conjugate_cScalar3D_SG > Unknown store_state!"
+            call errStop( "conjugate_cScalar3D_SG > Unknown store_state!" )
         endif
         !
     end subroutine conjugate_cScalar3D_SG
@@ -453,7 +453,7 @@ contains
         class( Field_t ), intent( in ) :: rhs
         !
         if( .NOT. rhs%is_allocated) then
-             stop "Error: add_cScalar3D_SG > rhs not allocated."
+             call errStop( "add_cScalar3D_SG > rhs not allocated." )
         endif
         !
         if( self%isCompatible( rhs ) ) then
@@ -473,7 +473,7 @@ contains
                        self%sv = self%sv + rhs%sv
                        !
                    else
-                       stop "Error: add_cScalar3D_SG > Unknown rhs store_state!"
+                       call errStop( "add_cScalar3D_SG > Unknown rhs store_state!" )
                    endif
                    !
                 class is( rScalar3D_SG_t )
@@ -487,16 +487,16 @@ contains
                        self%sv = self%sv + rhs%sv
                        !
                    else
-                       stop "Error: add_cScalar3D_SG > Unknown rhs store_state!"
+                       call errStop( "add_cScalar3D_SG > Unknown rhs store_state!" )
                    endif
                    !
                 class default
-                   stop "Error: add_cScalar3D_SG: undefined rhs"
+                   call errStop( "add_cScalar3D_SG > undefined rhs" )
                 !
             end select
             !
         else
-            stop "Error: add_cScalar3D_SG > Incompatible inputs."
+            call errStop( "add_cScalar3D_SG > Incompatible inputs." )
         endif
         !
     end subroutine add_cScalar3D_SG
@@ -528,15 +528,15 @@ contains
                        self%sv = c1 * self%sv + c2 * rhs%sv
                        !
                    else
-                       stop "Error: linComb_cScalar3D_SG > Unknown rhs store_state!"
+                       call errStop( "linComb_cScalar3D_SG > Unknown rhs store_state!" )
                    endif
                    !
                 class default
-                   stop "Error: linComb_cScalar3D_SG: undefined rhs"
+                   call errStop( "linComb_cScalar3D_SG: undefined rhs" )
                 !
             end select
         else
-            stop "Error: linComb_cScalar3D_SG > Incompatible rhs"
+            call errStop( "linComb_cScalar3D_SG > Incompatible rhs" )
         endif
         !
     end subroutine linComb_cScalar3D_SG
@@ -558,7 +558,7 @@ contains
             self%sv = self%sv - cvalue
             !
         else
-            stop "Error: subValueRVector3D_SG > Unknown self store_state!"
+            call errStop( "subValueRVector3D_SG > Unknown self store_state!" )
         endif
         !
     end subroutine subValue_cScalar3D_SG
@@ -588,7 +588,7 @@ contains
                        self%sv = self%sv - rhs%sv
                        !
                    else
-                       stop "Error: subField_cScalar3D_SG > Unknown rhs store_state!"
+                       call errStop( "subField_cScalar3D_SG > Unknown rhs store_state!" )
                    endif
                    !
                 class is( rScalar3D_SG_t )
@@ -602,16 +602,16 @@ contains
                        self%sv = self%sv - rhs%sv
                        !
                    else
-                       stop "Error: subField_cScalar3D_SG > Unknown rhs store_state!"
+                       call errStop( "subField_cScalar3D_SG > Unknown rhs store_state!" )
                    endif
                    !
                 class default
-                   stop "Error: subField_cScalar3D_SG: undefined rhs"
+                   call errStop( "subField_cScalar3D_SG: undefined rhs" )
                 !
             end select
             !
         else
-            stop "Error: subField_cScalar3D_SG > Incompatible inputs."
+            call errStop( "subField_cScalar3D_SG > Incompatible inputs." )
         endif
         !
     end subroutine subField_cScalar3D_SG
@@ -633,7 +633,7 @@ contains
             self%sv = self%sv * rvalue
             !
         else
-            stop "Error: multByReal_cScalar3D_SG > Unknown self store_state!"
+            call errStop( "multByReal_cScalar3D_SG > Unknown self store_state!" )
         endif
         !
     end subroutine multByReal_cScalar3D_SG
@@ -655,7 +655,7 @@ contains
             self%sv = self%sv * cvalue
             !
         else
-            stop "Error: multByComplex_cScalar3D_SG > Unknown self store_state!"
+            call errStop( "multByComplex_cScalar3D_SG > Unknown self store_state!" )
         endif
         !
     end subroutine multByComplex_cScalar3D_SG
@@ -685,7 +685,7 @@ contains
                        self%sv = self%sv * rhs%sv
                        !
                    else
-                       stop "Error: multByField_cScalar3D_SG > Unknown rhs store_state!"
+                       call errStop( "multByField_cScalar3D_SG > Unknown rhs store_state!" )
                    endif
                    !
                 class is( rScalar3D_SG_t )
@@ -699,16 +699,16 @@ contains
                        self%sv = self%sv * rhs%sv
                        !
                    else
-                       stop "Error: multByField_cScalar3D_SG > Unknown rhs store_state!"
+                       call errStop( "multByField_cScalar3D_SG > Unknown rhs store_state!" )
                    endif
                    !
                 class default
-                   stop "Error: multByField_cScalar3D_SG: undefined rhs"
+                   call errStop( "multByField_cScalar3D_SG > undefined rhs" )
                 !
             end select
             !
         else
-            stop "Error: multByField_cScalar3D_SG: incompatible rhs"
+            call errStop( "multByField_cScalar3D_SG: incompatible rhs" )
         endif
         !
     end subroutine multByField_cScalar3D_SG
@@ -739,16 +739,16 @@ contains
                        self%sv = self%sv + cvalue * rhs%sv
                        !
                    else
-                       stop "Error: multAdd_cScalar3D_SG > Unknown rhs store_state!"
+                       call errStop( "multAdd_cScalar3D_SG > Unknown rhs store_state!" )
                    endif
                    !
                 class default
-                   stop "Error: multAdd_cScalar3D_SG: undefined rhs"
+                   call errStop( "multAdd_cScalar3D_SG: undefined rhs" )
                    !
             end select
             !
         else
-            stop "Error: multAdd_cScalar3D_SG > Incompatible rhs"
+            call errStop( "multAdd_cScalar3D_SG > Incompatible rhs" )
         endif
         !
     end subroutine multAdd_cScalar3D_SG
@@ -780,20 +780,20 @@ contains
                            cvalue = sum( conjg( self%sv ) * rhs%sv )
                            !
                        else
-                           stop "Error: dotProdRVector3D_SG > Unknown rhs store_state!"
+                           call errStop( "dotProdRVector3D_SG > Unknown rhs store_state!" )
                        endif
                        !
                    class default
-                       stop "Error: dotProd_cScalar3D_SG > undefined rhs"
+                       call errStop( "dotProd_cScalar3D_SG > undefined rhs" )
                    !
                 end select
                 !
             else
-                stop "Error: dotProd_cScalar3D_SG > Incompatible store_state"
+                call errStop( "dotProd_cScalar3D_SG > Incompatible store_state" )
             endif
             !
         else
-            stop "Error: dotProd_cScalar3D_SG > Incompatible rhs"
+            call errStop( "dotProd_cScalar3D_SG > Incompatible rhs" )
         endif
         !
     end function dotProd_cScalar3D_SG
@@ -815,7 +815,7 @@ contains
             self%sv = self%sv / cvalue
             !
         else
-            stop "Error: divByValue_cScalar3D_SG > Unknown self store_state!"
+            call errStop( "divByValue_cScalar3D_SG > Unknown self store_state!" )
         endif
         !
     end subroutine divByValue_cScalar3D_SG
@@ -835,40 +835,40 @@ contains
             select type( rhs )
                 !
                 class is( cScalar3D_SG_t )
-                   !
-                   if( rhs%store_state .EQ. compound ) then
-                       !
-                       self%v = self%v / rhs%v
-                       !
-                   else if( rhs%store_state .EQ. singleton ) then
-                       !
-                       self%sv = self%sv / rhs%sv
-                       !
-                   else
-                       stop "Error: multByField_cScalar3D_SG > Unknown rhs store_state!"
-                   endif
-                   !
+                    !
+                    if( rhs%store_state .EQ. compound ) then
+                        !
+                        self%v = self%v / rhs%v
+                        !
+                    else if( rhs%store_state .EQ. singleton ) then
+                        !
+                        self%sv = self%sv / rhs%sv
+                        !
+                    else
+                        call errStop( "multByField_cScalar3D_SG > Unknown rhs store_state!" )
+                    endif
+                    !
                 class is( rScalar3D_SG_t )
-                   !
-                   if( rhs%store_state .EQ. compound ) then
+                    !
+                    if( rhs%store_state .EQ. compound ) then
                        !
                        self%v = self%v / rhs%v
                        !
-                   else if( rhs%store_state .EQ. singleton ) then
+                    else if( rhs%store_state .EQ. singleton ) then
                        !
                        self%sv = self%sv / rhs%sv
                        !
-                   else
-                       stop "Error: multByField_cScalar3D_SG > Unknown rhs store_state!"
-                   endif
-                   !
+                    else
+                       call errStop( "multByField_cScalar3D_SG > Unknown rhs store_state!" )
+                    endif
+                !
                 class default
-                   stop "Error: multByField_cScalar3D_SG: undefined rhs"
+                    call errStop( "multByField_cScalar3D_SG: undefined rhs" )
                 !
             end select
             !
         else
-            stop "Error: multByField_cScalar3D_SG: incompatible rhs"
+            call errStop( "multByField_cScalar3D_SG: incompatible rhs" )
         endif
         !
     end subroutine divByField_cScalar3D_SG
@@ -916,7 +916,7 @@ contains
             array = self%sv
             !
         else
-            stop "Error: getArray_cScalar3D_SG > Unknown store_state!"
+            call errStop( "getArray_cScalar3D_SG > Unknown store_state!" )
         endif
         !
     end function getArray_cScalar3D_SG
@@ -938,7 +938,7 @@ contains
             self%sv = array
             !
         else
-            stop "Error: setArray_cScalar3D_SG > Unknown store_state!"
+            call errStop( "setArray_cScalar3D_SG > Unknown store_state!" )
         endif
         !
     end subroutine setArray_cScalar3D_SG
@@ -1008,7 +1008,7 @@ contains
         class( Field_t ), intent( in ) :: rhs
         !
         if( .NOT. rhs%is_allocated ) then
-            stop "Error: copyFrom_cScalar3D_SG > rhs not allocated"
+            call errStop( "copyFrom_cScalar3D_SG > rhs not allocated" )
         endif
         !
         self%grid => rhs%grid
@@ -1040,7 +1040,7 @@ contains
                    self%sv = rhs%sv
                    !
                 else
-                   stop "Error: copyFrom_cScalar3D_SG > Unknown store_state!"
+                   call errStop( "copyFrom_cScalar3D_SG > Unknown store_state!" )
                 endif
                 !
             class is( rScalar3D_SG_t )
@@ -1057,11 +1057,11 @@ contains
                    self%sv = rhs%sv
                    !
                 else
-                   stop "Error: copyFrom_cScalar3D_SG > Unknown store_state!"
+                   call errStop( "copyFrom_cScalar3D_SG > Unknown store_state!" )
                 endif
                 !
             class default
-                stop "Error: copyFrom_cScalar3D_SG > Unclassified RHS"
+                call errStop( "copyFrom_cScalar3D_SG > Unclassified RHS" )
             !
         end select
         !
@@ -1166,7 +1166,7 @@ contains
             deallocate( temp )
             !
         else
-            stop "Error: read_cScalar3D_SG: unable to open file"
+            call errStop( "read_cScalar3D_SG > unable to open file" )
         endif
         !
     end subroutine read_cScalar3D_SG
@@ -1187,7 +1187,7 @@ contains
         character(80) :: fname, isbinary
         !
         if( .NOT. self%is_allocated) then
-             stop "Error: cScalar3D_SG::write_cScalar3D_SG > Not allocated"
+             call errStop( "write_cScalar3D_SG > Not allocated" )
         endif
         !
         !> Make sure the store_state is compound
@@ -1278,7 +1278,7 @@ contains
             deallocate( temp )
             !
         else
-            stop "Error: readRVector3D_SG: unable to open file"
+            call errStop( "readRVector3D_SG: unable to open file" )
         endif
         !
     end subroutine write_cScalar3D_SG

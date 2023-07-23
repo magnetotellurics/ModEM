@@ -4,7 +4,7 @@
 module DataGroup
     !
     use String
-    use Constants
+    use Utilities
     !
     !> Global file path name for data files
     character(:), allocatable :: predicted_data_file_name, jmhat_data_file_name
@@ -181,7 +181,7 @@ contains
         integer :: nn
         !
         if( .NOT. self%error_bar ) then
-            stop "Error: normalizeDataGroup > no error bars to normalize"
+            call errStop( "normalizeDataGroup > no error bars to normalize" )
         endif
         !
         if( present( norm ) ) then
@@ -219,39 +219,39 @@ contains
         class( DataGroup_t ), intent( inout ) :: d_out
         !
         if( .NOT. self%is_allocated ) then
-            stop "Error: linCombDataGroup > self not allocated"
+            call errStop( "linCombDataGroup > self not allocated" )
         endif
         !
         if( .NOT. d_in%is_allocated ) then
-            stop "Error: linCombDataGroup > d_in not allocated"
+            call errStop( "linCombDataGroup > d_in not allocated" )
         endif
         !
         if( .NOT. d_out%is_allocated ) then
-            stop "Error: linCombDataGroup > d_out not allocated"
+            call errStop( "linCombDataGroup > d_out not allocated" )
         endif
         !
         if( self%i_tx /= d_in%i_tx  ) then
-            stop "Error: linCombDataGroup > different data txs: d1 and d2"
+            call errStop( "linCombDataGroup > different data txs: d1 and d2" )
         endif
         !
         if( self%i_rx /= d_in%i_rx  ) then
-            stop "Error: linCombDataGroup > different data rxs: d1 and d2"
+            call errStop( "linCombDataGroup > different data rxs: d1 and d2" )
         endif
         !
         if( self%n_comp /= d_in%n_comp  ) then
-            stop "Error: linCombDataGroup > different data n_comp: d1 and d2"
+            call errStop( "linCombDataGroup > different data n_comp: d1 and d2" )
         endif
         !
         if( self%i_tx /= d_out%i_tx  ) then
-            stop "Error: linCombDataGroup > different data txs: d1 and d_out"
+            call errStop( "linCombDataGroup > different data txs: d1 and d_out" )
         endif
         !
         if( self%i_rx /= d_out%i_rx  ) then
-            stop "Error: linCombDataGroup > different data rxs: d1 and d_out"
+            call errStop( "linCombDataGroup > different data rxs: d1 and d_out" )
         endif
         !
         if( self%n_comp /= d_out%n_comp  ) then
-            stop "Error: linCombDataGroup > different data n_comp: d1 and d_out"
+            call errStop( "linCombDataGroup > different data n_comp: d1 and d_out" )
         endif
         !
         d_out%error_bar = self%error_bar .OR. d_in%error_bar
@@ -270,7 +270,7 @@ contains
         if( self%error_bar .AND. d_in%error_bar ) then
             !
             if( abs(a) > R_ZERO .AND. abs(b) > R_ZERO ) then
-                stop "Error: linCombDataGroup > unable to add two data vectors with error bars"
+                call errStop( "linCombDataGroup > unable to add two data vectors with error bars" )
             elseif( abs(a) > R_ZERO ) then
                 !
                 d_out%errors = a * self%errors
@@ -351,7 +351,7 @@ contains
         type( DataGroup_t ), intent( in ) :: d_in
         !
         if( .NOT. d_in%is_allocated ) then
-            stop "Error: copyFromDataGroup > d_in not allocated"
+            call errStop( "copyFromDataGroup > d_in not allocated" )
         endif
         !
         self%i_dg = d_in%i_dg

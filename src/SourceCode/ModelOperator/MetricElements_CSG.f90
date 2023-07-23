@@ -279,7 +279,7 @@ contains
     !
     !> CellVolume
     !> Creates volume elements for grid cells
-    !> and stores them as real scalars with gridType=CELL.
+    !> and stores them as real scalars with grid_type=CELL.
     subroutine SetCellVolume( self )
         implicit none
         !
@@ -305,7 +305,7 @@ contains
     !> SetEdgeVolume
     !> Creates volume elements centered around the edges of
     !> the grid, and stores them as real vectors with
-    !> gridType = EDGE.
+    !> grid_type = EDGE.
     subroutine SetEdgeVolume( self )
         implicit none
         !

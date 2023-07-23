@@ -1188,7 +1188,7 @@ contains
         integer :: ix, iy, iz,funit
         !
         if( self%store_state /= compound ) then
-             call self%switchStoreState
+            call self%switchStoreState
         endif
         !
         if( present( io_unit ) ) then
@@ -1196,8 +1196,9 @@ contains
         else
             funit = 0    !>    usually this will work to write to standard output
         endif
-        if(present(title)) then
-          write(funit,*) title
+        !
+        if( present(title) ) then
+            write(funit,*) title
         endif
         !
         write( funit, * ) self%nx, self%ny, self%nz

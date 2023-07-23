@@ -14,7 +14,6 @@ module CoreComponents
     use ModelOperator_SP
     !
     use ModelParameterCell_SG
-    !use ModelParameterCell_SG_VTI
     !
     use ModelCovariance
     !
@@ -591,7 +590,7 @@ contains
                     !
                 case default
                     !
-                    stop "Error: jobInversion > Undefined inversion_type"
+                    call errStop( "jobInversion > Undefined inversion_type" )
                     !
             end select
             !
@@ -819,7 +818,7 @@ contains
             !
         else
             !
-            stop "Error: printInversionControlFileTemplate > opening [fwd_ctrl_template.txt]"
+            call errStop( "printInversionControlFileTemplate > opening [fwd_ctrl_template.txt]" )
             !
         endif
         !
@@ -859,7 +858,7 @@ contains
             !
         else
             !
-            stop "Error: printInversionControlFileTemplate > opening [inv_ctrl_template.txt]"
+            call errStop( "printInversionControlFileTemplate > opening [inv_ctrl_template.txt]" )
             !
         endif
         !

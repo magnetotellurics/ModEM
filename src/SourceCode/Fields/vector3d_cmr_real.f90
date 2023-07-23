@@ -194,7 +194,7 @@ contains
   !
   ! Arguments
   !   igrid     Underlying grid.
-  !   gridType  Defined in GridDef.f90
+  !   grid_type  Defined in GridDef.f90
   !
   !*
   function Vector3d_cmr_real_ctor1 (igrid, grid_type) result(E)

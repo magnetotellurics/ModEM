@@ -113,7 +113,7 @@ contains
                 end select
                 !
             class default
-                stop "Error: solveTx > Unclassified Transmitter"
+                call errStop( "solveTx > Unclassified Transmitter" )
             !
         end select
         !
@@ -144,7 +144,7 @@ contains
             call handleModelFile( sigma )
         !
         else
-            stop "Error: jobForwardModeling > Missing Model file!"
+            call errStop( "jobForwardModeling > Missing Model file!" )
         endif
         !
         if( has_data_file ) then
@@ -152,7 +152,7 @@ contains
             call handleDataFile()
         !
         else
-            stop "Error: jobForwardModeling > Missing Data file!"
+            call errStop( "jobForwardModeling > Missing Data file!" )
         endif
         !
         !>
