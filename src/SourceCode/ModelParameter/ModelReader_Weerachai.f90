@@ -9,7 +9,6 @@ module ModelReader_Weerachai
     use Grid3D_SG
     use rScalar3D_SG
     use ModelParameterCell_SG
-    !use ModelParameterCell_SG_VTI
     use ModelReader
     use ForwardControlFile
     !
