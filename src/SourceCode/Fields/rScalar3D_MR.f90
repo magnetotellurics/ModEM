@@ -153,7 +153,7 @@ contains
                 self%is_allocated = self%is_allocated .AND. ( status .EQ. 0 )
                 !
                 do i = 1, grid%n_grids
-                    self%sub_scalars(i) = rScalar3D_MR_t( grid%sub_grids(i), grid_type )
+                    self%sub_scalars(i) = rScalar3D_MR_t( grid%sub_grids(i), self%grid_type )
                 end do
                 !
                 call self%setIndexArrays
@@ -1023,7 +1023,7 @@ contains
         integer :: i
         !
         if( .NOT. rhs%is_allocated ) then
-            stop "Error: copyFrom_rScalar3D_MR > rhs not allocated"
+            call errStop( "copyFrom_rScalar3D_MR > rhs not allocated" )
         endif
         !
         self%grid => rhs%grid
@@ -1033,18 +1033,27 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-        if( allocated( rhs%ind_interior ) ) &
-        self%ind_interior = rhs%ind_interior
+        if( allocated( rhs%ind_interior ) ) then
+            self%ind_interior = rhs%ind_interior
+        else
+            call errStop( "copyFrom_rScalar3D_MR > rhs%ind_interior not allocated" )
+        endif
         !
-        if( allocated( rhs%ind_boundaries ) ) &
-        self%ind_boundaries = rhs%ind_boundaries
-        !
-        if( allocated( rhs%ind_active ) ) &
-        self%ind_active = rhs%ind_active
+        if( allocated( rhs%ind_boundaries ) ) then
+            self%ind_boundaries = rhs%ind_boundaries
+        else
+            call errStop( "copyFrom_rScalar3D_MR > rhs%ind_boundaries not allocated" )
+        endif
         !
         select type( rhs )
             !
             class is( rScalar3D_MR_t )
+                !
+                if( allocated( rhs%ind_active ) ) then
+                    self%ind_active = rhs%ind_active
+                else
+                    call errStop( "copyFrom_rScalar3D_MR > rhs%ind_active not allocated" )
+                endif
                 !
                 self%NdV = rhs%NdV
                 self%Nxyz = rhs%Nxyz

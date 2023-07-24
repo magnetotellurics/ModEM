@@ -11,28 +11,27 @@ module MetricElements
         !
         class( Grid_t ), pointer :: grid
         !
-        class( Vector_t ), allocatable :: Edgelength
-        class( Vector_t ), allocatable :: FaceArea
-        class( Vector_t ), allocatable :: DualFaceArea
-        class( Vector_t ), allocatable :: DualEdgelength
-        class( Vector_t ), allocatable :: Vedge
+        class( Vector_t ), allocatable :: edge_length, dual_edge_length
         !
-        class( Scalar_t ), allocatable :: Vnode
-        class( Scalar_t ), allocatable :: Vcell
+        class( Vector_t ), allocatable :: face_area, dual_face_area
+        !
+        class( Vector_t ), allocatable :: v_edge
+        !
+        class( Scalar_t ), allocatable :: v_node, v_cell
         !
      contains
+        !
+        procedure( interface_set_edge_length_metric_elements ), deferred, public :: setEdgeLength
+        procedure( interface_set_face_area_metric_elements ), deferred, public :: setFaceArea
+        procedure( interface_set_dual_edge_length_metric_elements ), deferred, public :: setDualEdgeLength
+        procedure( interface_set_dual_face_area_metric_elements ), deferred, public :: setDualFaceArea
+        procedure( interface_set_cell_volume_metric_elements ), deferred, public :: setCellVolume
+        procedure( interface_set_edge_volume_metric_elements ), deferred, public :: setEdgeVolume
+        procedure( interface_set_node_volume_metric_elements ), deferred, public :: setNodeVolume
         !
         procedure, public :: baseDealloc => deallocateMetricElements
         !
         procedure, public :: setMetricElements
-        !
-        procedure( interface_set_edge_length_metric_elements ), deferred, public :: SetEdgelength
-        procedure( interface_set_face_area_metric_elements ), deferred, public :: SetFaceArea
-        procedure( interface_set_dual_edge_length_metric_elements ), deferred, public :: SetDualEdgelength
-        procedure( interface_set_dual_face_area_metric_elements ), deferred, public :: SetDualFaceArea
-        procedure( interface_set_cell_volume_metric_elements ), deferred, public :: SetCellVolume
-        procedure( interface_set_edge_volume_metric_elements ), deferred, public :: SetEdgeVolume
-        procedure( interface_set_node_volume_metric_elements ), deferred, public :: SetNodeVolume
         !
     end type MetricElements_t
     !
@@ -131,21 +130,21 @@ module MetricElements
 contains
     !
     !> No subroutine briefing
-    subroutine SetMetricElements( self )
+    subroutine setMetricElements( self )
         implicit none
         !
         class( MetricElements_t ), intent( inout ) :: self
         !
-        call self%setEdgelength()
-        call self%setFaceArea()
-        call self%setDualEdgelength()
-        call self%setDualFaceArea()
-        call self%setEdgeVolume()
+        call self%setEdgeLength
+        call self%setFaceArea
+        call self%setDualEdgeLength
+        call self%setDualFaceArea
+        call self%setEdgeVolume
         !
-        call self%setCellVolume()
-        call self%setNodeVolume()
+        call self%setCellVolume
+        call self%setNodeVolume
         !
-    end subroutine SetMetricElements
+    end subroutine setMetricElements
     !
     !> No subroutine briefing
     subroutine deallocateMetricElements( self )
@@ -153,14 +152,14 @@ contains
         !
         class( MetricElements_t ), intent( inout ) :: self
         !
-        if( allocated( self%Edgelength ) ) deallocate( self%Edgelength )
-        if( allocated( self%FaceArea ) ) deallocate( self%FaceArea )
-        if( allocated( self%DualFaceArea ) ) deallocate( self%DualFaceArea )
-        if( allocated( self%DualEdgelength ) ) deallocate( self%DualEdgelength )
-        if( allocated( self%Vedge ) ) deallocate( self%Vedge )
+        if( allocated( self%edge_length ) ) deallocate( self%edge_length )
+        if( allocated( self%face_area ) ) deallocate( self%face_area )
+        if( allocated( self%dual_face_area ) ) deallocate( self%dual_face_area )
+        if( allocated( self%dual_edge_length ) ) deallocate( self%dual_edge_length )
+        if( allocated( self%v_edge ) ) deallocate( self%v_edge )
         !
-        if( allocated( self%Vnode ) ) deallocate( self%Vnode )
-        if( allocated( self%Vcell ) ) deallocate( self%Vcell )
+        if( allocated( self%v_node ) ) deallocate( self%v_node )
+        if( allocated( self%v_cell ) ) deallocate( self%v_cell )
         !
     end subroutine deallocateMetricElements
     !

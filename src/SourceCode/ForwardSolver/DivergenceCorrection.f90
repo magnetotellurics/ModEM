@@ -118,7 +118,7 @@ contains
         !> point-wise multiplication with volume weights centered on corner nodes
         !
         !> ???? Interesting point: if changing phiRHS to phiSol, the QMR starts to slowly converge
-        call phiRHS%mult( self%solver%preconditioner%model_operator%metric%Vnode )
+        call phiRHS%mult( self%solver%preconditioner%model_operator%metric%v_node )
         !
         !>    solve system of equations -- solver will have to know about
         !>     (a) the equations to solve -- the divergence correction operator

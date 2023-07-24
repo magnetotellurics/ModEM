@@ -269,7 +269,7 @@ contains
         !> Just for the serialJMult_T SourceInteriorForce case
         if( source%for_transpose ) then
             !
-            call e_solution%mult( self%solver%preconditioner%model_operator%metric%VEdge )
+            call e_solution%mult( self%solver%preconditioner%model_operator%metric%v_edge )
             !
         endif
         !

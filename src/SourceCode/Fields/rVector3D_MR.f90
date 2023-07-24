@@ -34,7 +34,7 @@ module rVector3D_MR
         !
         contains
             !
-            final :: _rVector3D_MR_dtor
+            final :: rVector3D_MR_dtor
             !
             !> MR Routines
             procedure, public :: initializeSub => initializeSub_rVector3D_MR
@@ -64,12 +64,6 @@ module rVector3D_MR
             !
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zeros_rVector3D_MR
-            !
-            procedure, public :: sumEdge => sumEdge_rVector3D_MR
-            procedure, public :: sumEdgeVTI => sumEdgeVTI_rVector3D_MR
-            !
-            procedure, public :: avgCell => avgCell_rVector3D_MR
-            procedure, public :: avgCellVTI => avgCellVTI_rVector3D_MR
             !
             procedure, public :: conjugate => conjugate_rVector3D_MR
             !
@@ -189,7 +183,7 @@ contains
                 self%is_allocated = self%is_allocated .AND. ( status .EQ. 0 )
                 !
                 do i = 1, grid%n_grids
-                    self%sub_vectors(i) = rScalar3D_MR_t( grid%sub_grids(i), grid_type )
+                    self%sub_vectors(i) = rScalar3D_MR_t( grid%sub_grids(i), self%grid_type )
                 end do
                 !
                 call self%setIndexArrays
@@ -642,7 +636,7 @@ contains
         !
         grid => sg_v%grid
         !
-        call Edgelength( grid, templ_r )
+        call edgeLength( grid, templ_r )
         templ => null()
         call getRVector(templ_r, templ)
         !
@@ -807,7 +801,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine _rVector3D_MR_dtor( self )
+    subroutine rVector3D_MR_dtor( self )
         implicit none
         !
         type( rVector3D_MR_t ), intent( inout ) :: self
@@ -828,7 +822,7 @@ contains
         self%grid_type = ""
         self%is_allocated = .FALSE.
         !
-    end subroutine _rVector3D_MR_dtor
+    end subroutine rVector3D_MR_dtor
     !
     !> No subroutine briefing
     !
@@ -1097,144 +1091,6 @@ contains
         end select
         !
     end subroutine zeros_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine sumEdges_rVector3D_MR( self, cell_out, interior_only )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( in ) :: self
-        class( Scalar_t ), intent( inout ) :: cell_out
-        logical, optional, intent( in ) :: interior_only
-        !
-        integer :: x_xend, x_yend, x_zend
-        integer :: y_xend, y_yend, y_zend
-        integer :: z_xend, z_yend, z_zend
-        type( rVector3D_MR_t ) :: E_tmp
-        logical :: is_interior_only
-        !
-        E_tmp = self
-        !
-        if( self%store_state /= compound ) then
-             call E_tmp%switchStoreState
-        endif
-        !
-        is_interior_only = .FALSE.
-        !
-        if( present( interior_only ) ) is_interior_only = interior_only
-        !
-        if( is_interior_only ) then
-            call E_tmp%setAllBoundary( C_ZERO )
-        endif
-        !
-        if( .NOT. cell_out%is_allocated ) then
-            stop "Error: sumEdges_rVector3D_MR: Unallocated cell_out"
-        endif
-        !
-        select type( cell_out )
-            !
-            class is( rScalar3D_MR_t )
-                !
-                select case( E_tmp%grid_type )
-                    !
-                    case( EDGE )
-                        !
-                        x_xend = size(E_tmp%x, 1)
-                        x_yend = size(E_tmp%x, 2)
-                        x_zend = size(E_tmp%x, 3)
-                        !
-                        y_xend = size(E_tmp%y, 1)
-                        y_yend = size(E_tmp%y, 2)
-                        y_zend = size(E_tmp%y, 3)
-                        !
-                        z_xend = size(E_tmp%z, 1)
-                        z_yend = size(E_tmp%z, 2)
-                        z_zend = size(E_tmp%z, 3)
-                        !
-                        cell_out%v = E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
-                        E_tmp%x(:,2:x_yend,1:x_zend-1)       + &
-                        E_tmp%x(:,1:x_yend-1,2:x_zend)       + &
-                        E_tmp%x(:,2:x_yend,2:x_zend)         + &
-                        E_tmp%y(1:y_xend-1,:,1:y_zend-1)     + &
-                        E_tmp%y(2:y_xend,:,1:y_zend-1)       + &
-                        E_tmp%y(1:y_xend-1,:,2:y_zend)       + &
-                        E_tmp%y(2:y_xend,:,2:y_zend)         + &
-                        E_tmp%z(1:z_xend-1,1:z_yend-1,:)     + &
-                        E_tmp%z(2:z_xend,1:z_yend-1,:)       + &
-                        E_tmp%z(1:z_xend-1,2:z_yend,:)       + &
-                        E_tmp%z(2:z_xend,2:z_yend,:)
-                        !
-                    case( FACE )
-                        !
-                        x_xend = size(E_tmp%x, 1)
-                        y_xend = size(E_tmp%y, 1)
-                        z_xend = size(E_tmp%z, 1)
-                        !
-                        cell_out%v = E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
-                                     E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:) + &
-                                     E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
-                        !
-                    case default
-                        stop "Error: sumEdges_rVector3D_MR: undefined E_tmp%grid_type"
-                  end select
-                !
-            class default
-                stop "Error: sumEdges_rVector3D_MR: Unclassified cell_out"
-        end select
-        !
-    end subroutine sumEdges_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine sumEdgeVTI_rVector3D_MR( self, cell_in, ptype )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: cell_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: sumEdgeVTI_rVector3D_MR > Not implemented yet"
-        !
-    end subroutine sumEdgeVTI_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine avgCellVTI_rVector3D_MR( self, ell_h_in, cell_v_in, ptype )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_h_in, cell_v_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: avgCellVTI_rVector3D_MR > Not implemented yet"
-        !
-    end subroutine avgCellVTI_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine avgCell_rVector3D_MR( self, cell_in, ptype )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: cell_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: avgCell_rVector3D_MR > Not implemented yet"
-        !
-    end subroutine avgCell_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine avgCellVTI_rVector3D_MR( self, ell_h_in, cell_v_in, ptype )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_h_in, cell_v_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: avgCellVTI_rVector3D_MR > Not implemented yet"
-        !
-    end subroutine avgCellVTI_rVector3D_MR
     !
     !> No subroutine briefing
     !
@@ -1904,17 +1760,27 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-        if( allocated( rhs%ind_interior ) ) &
-        self%ind_interior = rhs%ind_interior
+        if( allocated( rhs%ind_interior ) ) then
+            self%ind_interior = rhs%ind_interior
+        else
+            call errStop( "copyFrom_rVector3D_MR > rhs%ind_interior not allocated" )
+        endif
         !
-        if( allocated( rhs%ind_boundaries ) ) &
-        self%ind_boundaries = rhs%ind_boundaries
-        !
-        if( allocated( rhs%ind_active ) ) &
-        self%ind_active = rhs%ind_active
+        if( allocated( rhs%ind_boundaries ) ) then
+            self%ind_boundaries = rhs%ind_boundaries
+        else
+            call errStop( "copyFrom_rVector3D_MR > rhs%ind_boundaries not allocated" )
+        endif
         !
         select type( rhs )
+            !
             class is( rVector3D_MR_t )
+                !
+                if( allocated( rhs%ind_active ) ) then
+                    self%ind_active = rhs%ind_active
+                else
+                    call errStop( "copyFrom_rVector3D_MR > rhs%ind_active not allocated" )
+                endif
                 !
                 self%NdX = rhs%NdX
                 self%NdY = rhs%NdY

@@ -10,6 +10,11 @@ module Constants
     !> Program Version
     character( len=5 ), parameter :: VERSION = "1.0.1"
     !
+    !> TYPE
+    integer, parameter :: real_t = 1
+    integer, parameter :: complex_t = 2
+    integer, parameter :: integer_t = 3
+    !
     !> VECTOR
     character( len=4 ), parameter :: EDGE = "EDGE"
     character( len=4 ), parameter :: FACE = "FACE"
@@ -17,6 +22,7 @@ module Constants
     !> SCALAR
     character( len=4 ), parameter :: NODE = "NODE"
     character( len=4 ), parameter :: CELL = "CELL"
+    !
     character( len=10 ), parameter :: CELL_EARTH = "CELL EARTH"
     !
     !> Possible node types:

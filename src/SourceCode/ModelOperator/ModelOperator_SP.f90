@@ -67,7 +67,7 @@ contains
     function ModelOperator_SP_ctor( grid ) result( self )
         implicit none
         !
-        class( Grid3D_SG_t ), target, intent( in ) :: grid
+        class( Grid_t ), target, intent( in ) :: grid
         !
         type( ModelOperator_SP_t ) :: self
         !
@@ -188,9 +188,13 @@ contains
         call create_spMatCSR( n, m, nz, Ttrans )
         call create_spMatCSR( m, n, nz, self%CC )
         !
-        call RMATxDIAG( T, real( self%metric%Edgelength%getArray(), kind=prec ), Temp )
+        call self%metric%setEdgeLength
         !
-        Dtemp = ( self%metric%DualEdgelength%getArray() / self%metric%FaceArea%getArray() )
+		write(*,*) "setEquations_ModelOperator_SP: ", T%nCol
+        !
+        call RMATxDIAG( T, real( self%metric%edge_length%getArray(), kind=prec ), Temp )
+        !
+        Dtemp = ( self%metric%dual_edge_length%getArray() / self%metric%face_area%getArray() )
         !
         call DIAGxRMAT( Dtemp, Temp, self%CC )
         !
@@ -198,7 +202,7 @@ contains
         !
         call RMATxRMAT( Ttrans, self%CC, Temp )
         !
-        call DIAGxRMAT( real( self%metric%Edgelength%getArray(), kind=prec ), Temp, self%CC )
+        call DIAGxRMAT( real( self%metric%edge_length%getArray(), kind=prec ), Temp, self%CC )
         !
         call subMatrix_Real( self%CC, self%EDGEi, self%EDGEi, self%CCii )
         !
@@ -237,7 +241,7 @@ contains
         !
         self%omega = 1.0
         !
-        temp_vec = self%metric%VEdge
+        temp_vec = self%metric%v_edge
         !
         call temp_vec%switchStoreState()
         !
@@ -290,7 +294,7 @@ contains
             !
             sigVec = sigTemp%getArray()
             !
-            temp_vec = self%metric%VEdge%getArray()
+            temp_vec = self%metric%v_edge%getArray()
             !
             self%VomegaMuSig = MU_0 * inOmega * sigVec( self%EDGEi ) * temp_vec( self%EDGEi )
             !
@@ -328,9 +332,13 @@ contains
         !> (1) first construct VDiv operator transpose of topology
         call RMATtrans( G, Temp )
         !
-        !> pre-multiply by dual face area
-        aux_vec = real( self%metric%DualFaceArea%getArray(), kind=prec )
+        call self%metric%setDualFaceArea
         !
+        !> pre-multiply by dual face area
+        aux_vec = real( self%metric%dual_face_area%getArray(), kind=prec )
+        !
+		write(*,*) "divCorInitModelOperator_SP: ", Temp%nCol
+		!
         call RMATxDIAG( Temp, aux_vec, Temp2 )
         !
         !write( *, * ) "size( aux_vec ), Temp2%nRow, Temp2%nCol: ", size( aux_vec ), Temp2%nRow, Temp2%nCol
@@ -346,7 +354,7 @@ contains
         !> all nodes-> interior edges (not clear this is what we want!)
         allocate( d( G%nRow ) )
         !
-        aux_vec = real( self%metric%Edgelength%getArray(), kind=prec )
+        aux_vec = real( self%metric%edge_length%getArray(), kind=prec )
         !
         do i = 1, G%nRow
             d(i) = 1. / aux_vec(i)
@@ -385,12 +393,14 @@ contains
         !
         d = ( self%VomegaMuSig / ( mu_0 * self%omega ) )
         !
-        temp_vec = self%metric%VEdge
+        temp_vec = self%metric%v_edge
         !
         call temp_vec%switchStoreState
         !
         d = ( d / temp_vec%sv( self%EDGEi ) )
         !
+		write(*,*) "divCorSetUp_ModelOperator_SP: ", self%VDiv%nCol
+		!
         call RMATxDIAG( self%VDiv, d, self%VDs )
         !
         !>Construct VDsG: symmetric operator for divergence correction solver
@@ -515,7 +525,7 @@ contains
             !
             class is( cVector3D_SG_t )
                 !
-                call inH%div( self%Metric%FaceArea )
+                call inH%div( self%Metric%face_area )
                 !
                 if( .NOT. outE%is_allocated ) then
                      write( *, * ) "Error:  multCurlT_ModelOperator_SP > outE not allocated"
@@ -561,7 +571,7 @@ contains
                 !
         end select
         !
-        call outE%mult( self%metric%Edgelength )
+        call outE%mult( self%metric%edge_length )
         !
     end subroutine multCurlT_ModelOperator_SP
     !

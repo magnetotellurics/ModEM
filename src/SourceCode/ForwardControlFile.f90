@@ -16,7 +16,7 @@ module ForwardControlFile
         !> FWD Components parameters
         character(:), allocatable :: model_operator_type
         !
-        character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type
+        character(:), allocatable :: grid_reader_type, grid_format, forward_solver_type
         character(:), allocatable :: source_type_mt, source_type_csem, get_1d_from
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
@@ -75,8 +75,8 @@ contains
                     !
                     if( index( line_text, "grid_reader" ) > 0 ) then
                         self%grid_reader_type = trim( args(2) )
-                    elseif( index( line_text, "grid_type" ) > 0 ) then
-                        self%grid_type = trim( args(2) )
+                    elseif( index( line_text, "grid_format" ) > 0 ) then
+                        self%grid_format = trim( args(2) )
                     elseif( index( line_text, "model_operator_type" ) > 0 ) then
                         self%model_operator_type = trim( args(2) )
                     elseif( index( line_text, "forward_solver_type" ) > 0 ) then
@@ -134,19 +134,19 @@ contains
             endif
             !
             ! Grid type
-            if( allocated( self%grid_type ) ) then
+            if( allocated( self%grid_format ) ) then
                 !
-                select case( self%grid_type )
+                select case( self%grid_format )
                     case( "SG" )
-                        grid_type = GRID_SG
+                        grid_format = GRID_SG
                     case( "MR" )
-                        grid_type = GRID_MR
+                        grid_format = GRID_MR
                     case default
                         !
-                        call errStop( "ForwardControlFile_ctor > Wrong grid_type control, use [SG|MR]" )
+                        call errStop( "ForwardControlFile_ctor > Wrong grid_format control, use [SG|MR]" )
                 end select
                 !
-                write( *, "( A30, A20)" ) "          Grid Type = ", grid_type
+                write( *, "( A30, A20)" ) "          Grid Type = ", grid_format
                 !
             endif
             !
@@ -337,7 +337,7 @@ contains
         if( allocated( self%model_operator_type ) ) deallocate( self%model_operator_type )
         !
         if( allocated( self%grid_reader_type ) ) deallocate( self%grid_reader_type )
-        if( allocated( self%grid_type ) ) deallocate( self%grid_type )
+        if( allocated( self%grid_format ) ) deallocate( self%grid_format )
         !
         if( allocated( self%forward_solver_type ) ) deallocate( self%forward_solver_type )
         !

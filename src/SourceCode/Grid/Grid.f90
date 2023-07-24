@@ -5,7 +5,7 @@
 !
 module Grid
     !
-    use Constants
+    use Utilities
     use Grid1D
     use Grid2D
     !
@@ -14,7 +14,7 @@ module Grid
     !
     real( kind=prec ) :: model_max_height
     !
-    character(:), allocatable :: grid_type
+    character(:), allocatable :: grid_format
     character( len=12 ), parameter :: GRID_SG = "StandardGrid"
     character( len=19 ), parameter :: GRID_MR = "MultiresolutionGrid"
     !
@@ -63,7 +63,7 @@ module Grid
             procedure( interface_vector_index ), deferred, public :: vectorIndex
             procedure( interface_limits ), deferred, public :: limits
             !
-            procedure( interface_set_cell_sizes ), deferred, public :: setCellSizes
+            procedure( interface_setup_grid ), deferred, public :: setup
             !
             procedure( interface_slice_1d_grid ), deferred, public :: slice1D
             procedure( interface_slice_2d_grid ), deferred, public :: slice2D
@@ -83,7 +83,35 @@ module Grid
             procedure, public :: setGeometry => setGeometry_Grid
             procedure, public :: getGeometry => getGeometry_Grid
             !
+            procedure, public :: setCellSizes => setCellSizes_Grid
+            procedure, public :: getCellSizes => getCellSizes_Grid
+            !
+            procedure, public :: create => create_Grid
+            procedure, public :: allocateDim => allocateDim_Grid
+            !
+            procedure, public :: setupAirLayers => setupAirLayers_Grid
+            procedure, public :: updateAirLayers => updateAirLayers_Grid
+            !
     end type Grid_t
+    !
+    !> Details needed to unambiguosly compute and/or store the air layers;
+    !> method options are: mirror; fixed height; read from file
+    !> for backwards compatibility, all of the defaults are set to what
+    !> was previously hard coded (AK; May 19, 2017)
+    !> For backwards compatibility, default is "mirror 10 3. 30."
+    !>    GDE 12/17/21 : new method "undefined" is default -- force
+    !>        explicit setting of air layers (can still hard code a default
+    !>         in the driver program!)
+    !
+    type :: TAirLayers
+        !
+        character(:), allocatable :: method
+        integer :: nz
+        real( kind=prec ) :: maxHeight, minTopDz, alpha
+        real( kind=prec ), allocatable, dimension(:) :: dz
+        logical :: is_allocated
+        !
+    end type TAirLayers
     !
     abstract interface
         !
@@ -152,11 +180,11 @@ module Grid
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_set_cell_sizes( self, dx, dy, dz )
+        subroutine interface_setup_grid( self, origin )
             import :: Grid_t, prec
             class( Grid_t ), intent( inout ) :: self
-            real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
-        end subroutine interface_set_cell_sizes
+            real( kind=prec ), intent( in ), optional :: origin(3)
+        end subroutine interface_setup_grid
         !
         !> No interface function briefing
         !
@@ -217,28 +245,29 @@ contains
         self%ny = 0
         self%nz = 0
         !
-        deallocate( self%dx )
-        deallocate( self%dy )
-        deallocate( self%dz )
+        if( allocated( self%dx ) ) deallocate( self%dx )
+        if( allocated( self%dy ) ) deallocate( self%dy )
+        if( allocated( self%dz ) ) deallocate( self%dz )
         !
-        deallocate( self%dx_inv )
-        deallocate( self%dy_inv )
-        deallocate( self%dz_inv )
+        if( allocated( self%dx_inv ) ) deallocate( self%dx_inv )
+        if( allocated( self%dy_inv ) ) deallocate( self%dy_inv )
+        if( allocated( self%dz_inv ) ) deallocate( self%dz_inv )
         !
-        deallocate( self%del_x )
-        deallocate( self%del_y )
-        deallocate( self%del_z )
+        if( allocated( self%del_x ) ) deallocate( self%del_x )
+        if( allocated( self%del_y ) ) deallocate( self%del_y )
+        if( allocated( self%del_z ) ) deallocate( self%del_z )
         !
-        deallocate( self%del_x_inv )
-        deallocate( self%del_y_inv )
-        deallocate( self%del_z_inv )
+        if( allocated( self%del_x_inv ) ) deallocate( self%del_x_inv )
+        if( allocated( self%del_y_inv ) ) deallocate( self%del_y_inv )
+        if( allocated( self%del_z_inv ) ) deallocate( self%del_z_inv )
         !
-        deallocate( self%x_edge )
-        deallocate( self%y_edge )
-        deallocate( self%z_edge )
-        deallocate( self%x_center )
-        deallocate( self%y_center )
-        deallocate( self%z_center )
+        if( allocated( self%x_edge ) ) deallocate( self%x_edge )
+        if( allocated( self%y_edge ) ) deallocate( self%y_edge )
+        if( allocated( self%z_edge ) ) deallocate( self%z_edge )
+        !
+        if( allocated( self%x_center ) ) deallocate( self%x_center )
+        if( allocated( self%y_center ) ) deallocate( self%y_center )
+        if( allocated( self%z_center ) ) deallocate( self%z_center )
         !
         self%is_allocated = .FALSE.
         !
@@ -336,5 +365,315 @@ contains
         s = self%geometry
         !
     end function getGeometry_Grid
+    !
+    !> No subroutine briefing
+    !
+    subroutine setCellSizes_Grid( self, dx, dy, dz )
+        implicit none
+        !
+        class( Grid_t ), intent( inout ) :: self
+        real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setCellSizes_Grid > Grid not allocated." )
+        endif
+        !
+        !> Check dimensions
+        if( ( size( dx ) .NE. size( self%dx ) ) .OR. &
+            ( size( dy ) .NE. size( self%dy ) ) .OR. &
+            ( size( dz ) .NE. size( self%dz ) ) ) then
+            !
+            call errStop( "setCellSizes_Grid > Incompatible sizes for cell arrays." )
+            !
+        endif
+        !
+        self%dx = dx
+        self%dy = dy
+        self%dz = dz
+        !
+    end subroutine setCellSizes_Grid
+    !
+    !> No subroutine briefing
+    subroutine getCellSizes_Grid( self, dx, dy, dz )
+        implicit none
+        !
+        class( Grid_t ), intent( in ) :: self
+        real( kind=prec ), intent( out ) :: dx(:), dy(:), dz(:)
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getCellSizes_Grid > Grid not allocated." )
+        endif
+        !
+        !> Check dimensions
+        if( ( size( dx ) .NE. size( self%dx ) ) .OR. &
+            ( size( dy ) .NE. size( self%dy ) ) .OR. &
+            ( size( dz ) .NE. size( self%dz ) ) ) then
+            !
+            call errStop( "getCellSizes_Grid > Incompatible sizes for cell arrays." )
+            !
+        endif
+        !
+        dx = self%dx
+        dy = self%dy
+        dz = self%dz
+        !
+    end subroutine getCellSizes_Grid
+    !
+    !> No subroutine briefing
+    subroutine create_Grid( self, nx, ny, nzAir, nzEarth )
+        implicit none
+        !
+        class( Grid_t ), intent( inout ) :: self
+        integer, intent( in ) :: nx, ny, nzAir, nzEarth
+        !
+        integer :: nz
+        !
+        nz = nzEarth + nzAir
+        !
+        self%nzAir = nzAir
+        self%nzEarth = nzEarth
+        !
+        self%nx = nx
+        self%ny = ny
+        self%nz = nz
+        !
+        call self%allocateDim
+        !
+    end subroutine create_Grid
+    !
+    !> No subroutine briefing
+    subroutine allocateDim_Grid( self )
+        implicit none
+        !
+        class( Grid_t ), intent( inout ) :: self
+        !
+        integer :: nx, ny, nz
+        !
+        if( self%is_allocated ) call self%baseDealloc
+        !
+        nx = self%nx
+        ny = self%ny
+        nz = self%nz
+        !
+        allocate( self%dx(nx) )
+        allocate( self%dy(ny) )
+        allocate( self%dz(nz) )
+        !
+        !> dx_inv = 1/ dx and similarly for dy_inv and dz_inv
+        allocate( self%dx_inv(nx) )
+        allocate( self%dy_inv(ny) )
+        allocate( self%dz_inv(nz) )
+        !
+        !> del_x, del_y, and del_z are the distances between
+        !> the electrical field defined on the center of the
+        !> edges in x, y, and z axes, respectively.
+        allocate( self%del_x(nx + 1) )
+        allocate( self%del_y(ny + 1) )
+        allocate( self%del_z(nz + 1) )
+        !
+        allocate( self%del_x_inv(nx + 1) )
+        allocate( self%del_y_inv(ny + 1) )
+        allocate( self%del_z_inv(nz + 1) )
+        !
+        !> x_edge is the array for cumulative distance of the edge
+        !> for each grid (starting from the coordinate axes) with
+        !> dimensions nx + 1.
+        !> x_center is the array for cumulative distance of the center
+        !> for each grid (starting from the coordinate axes) with
+        !> dimension n.
+        !> y_edge, y_center, z_edge, z_center are analagous arrays for
+        !> other directions.
+        !
+        allocate( self%x_edge(nx + 1) )
+        allocate( self%y_edge(ny + 1) )
+        allocate( self%z_edge(nz + 1) )
+        allocate( self%x_center(nx) )
+        allocate( self%y_center(ny) )
+        allocate( self%z_center(nz) )
+        !
+        self%is_allocated = .TRUE.
+        !
+    end subroutine allocateDim_Grid
+    !
+    !> setupAirLayers computes the Dz in the airlayers structure
+    !> using the grid to get the top layers Dz;
+    !> all values expected in km on input
+    !> For backwards compatibility, default is "mirror 10 3. 30."
+    !> but the use of "fixed height 12 1000" is recommended
+    !
+    subroutine setupAirLayers_Grid( self, airLayers, method, &
+                                        nzAir, maxHeight, minTopDz, &
+                                        alpha, dzAir )
+        implicit none
+        !
+        class( Grid_t ), intent( inout ) :: self
+        type( TAirLayers ), intent( inout ) :: airlayers
+        character(:), allocatable, intent( in ), optional :: method
+        integer, intent( in ), optional :: nzAir
+        real( kind=prec ), intent( in ), optional :: maxHeight, minTopDz, alpha
+        real( kind=prec ), intent( in ), optional, pointer :: dzAir
+        !
+        integer :: ix, iy, iz, i, j
+        integer :: status
+        real( kind=prec ) :: z1_log, dlogz, z_log, height1, height2
+        !
+        airLayers%is_allocated = .FALSE.
+        !
+        if( present( method ) ) then
+            airlayers%method = method
+        else
+            airlayers%method = "fixed height"
+        endif
+        !
+        if( present( nzAir ) ) then
+            airlayers%nz = nzAir
+        else
+            airlayers%nz = model_n_air_layer
+        endif
+        !
+        if( .NOT. ( index( airLayers%method, "read from file" ) > 0 ) ) then
+            if( airLayers%is_allocated ) then
+                deallocate( airlayers%dz )
+            endif
+            allocate( airLayers%dz( airLayers%nz ) )
+            airLayers%is_allocated = .TRUE.
+        endif
+        !
+        if( present( maxHeight ) ) then
+            airLayers%maxHeight = 1000. * maxHeight
+        else
+            airLayers%maxHeight = model_max_height
+        endif
+        
+        if( present( minTopDz ) ) then
+            airLayers%minTopDz = 1000. * minTopDz
+        else
+            airLayers%minTopDz = 100.0
+        endif
+        
+        if( present( alpha ) ) then
+            airLayers%alpha = alpha
+        else
+            airLayers%alpha = 3.
+        endif
+        !
+        if( index( airLayers%method, "mirror" ) > 0 ) then
+            !
+            !> Following is Kush"s approach to setting air layers:
+            !> mirror imaging the dz values in the air layer with respect to
+            !> earth layer as far as we can using the following formulation
+            !> air layer(bottom:top) = (alpha)^(j-1) * earth layer(top:bottom)
+            !
+            do iz = airLayers%nz, 1, -1
+                j = airLayers%nz - iz + 1
+                airLayers%dz(iz) = ((airLayers%alpha)**(j - 1) ) * self%dz(self%nzAir + j)
+            enddo
+            !
+            !> The topmost air layer has to be at least 30 km
+            if(airLayers%dz(1).lt.airLayers%minTopDz) then
+                airLayers%dz(1) = airLayers%minTopDz
+            endif
+
+        else if(index(airLayers%method, "fixed height") > 0) then 
+            !
+            !> ON IMPLEMENTATION
+            z1_log = log10( self%Dz( self%NzAir + 1 ) )
+            dlogz = ( log10( airlayers%maxHeight ) - z1_log ) / ( airlayers%Nz )
+
+            z_log = z1_log
+            do iz = airlayers%Nz, 1, -1
+                airlayers%Dz(iz) = 10.**(z_log+dlogz) - 10.**(z_log)
+                z_log = z_log + dlogz
+            enddo
+            !
+            !> OTHER IMPLEMENTATION
+            !
+            ! z1_log = log10(self%dz(self%nzAir + 1) )
+            ! dlogz = (log10(airLayers%maxHeight) - z1_log)/(airLayers%nz-1)
+            ! z_log = z1_log
+            ! height1 = 10.**z1log
+            ! airLayers%dz(airLayers%Nz) = height1
+            ! do iz = airLayers%Nz-1, 1, -1
+                ! z_log = z_log + dlogz
+                ! height2 = 10.**z_log 
+                ! airLayers%dz(iz) = height2-height1
+                ! height1 = height2
+            ! enddo
+            !
+        elseif( index( airLayers%method, "read from file" ) > 0 ) then
+            !
+            !> Air layers have been read from file and are
+            !> already stored in Dz, so only need to reallocate
+            !> if passing a new array to it.
+            !
+            if( present( dzAir) ) then
+                !
+                if( airLayers%is_allocated) then
+                    deallocate( airLayers%dz )
+                endif
+                !
+                allocate( airLayers%dz(airLayers%nz) )
+                airLayers%dz = dzAir
+                !
+            endif
+            !
+        endif
+        !
+    end subroutine setupAirLayers_Grid
+    !
+    !> Procedure updateAirLayers_Grid3D_SG
+    !> Assumes that the grid is already defined, and merely
+    !> includes the new air layers in the grid.
+    subroutine updateAirLayers_Grid( self, nzAir, dzAir )
+        implicit none
+        !
+        class( Grid_t ), intent( inout ) :: self
+        integer, intent( in ) :: nzAir
+        real( kind=prec ), intent( in ) :: dzAir(:)
+        !
+        integer :: nzAir_old, nzEarth_old
+        integer :: nx_old, ny_old, nz_old
+        real( kind=prec ), allocatable :: dx_old(:), dy_old(:), dz_old(:)
+        real( kind=prec ) :: ox_old, oy_old, oz_old
+        real( kind=prec ) :: rotDeg_old
+        character( len=80 ) :: geometry_old
+        !
+        if( .NOT. self%is_allocated ) then
+             call errStop( "updateAirLayers_Grid3D_SG > Grid not allocated." )
+        endif
+        !
+        nx_old = self%nx
+        ny_old = self%ny
+        nz_old = self%nz
+        nzAir_old = self%nzair
+        nzEarth_old = self%nzEarth
+        dx_old = self%dx
+        dy_old = self%dy
+        dz_old = self%dz
+        geometry_old = self%getGeometry()
+        !
+        ox_old = self%ox
+        oy_old = self%oy
+        oz_old = self%oz
+        !
+        rotdeg_old = self%rotdeg
+        !
+        call self%baseDealloc
+        call self%create( nx_old, ny_old, nzAir, nzEarth_old )
+        !
+        !> Set air layers to dzAir values and copy the rest
+        self%dz(1:nzAir) = dzAir
+        self%dz(nzAir+1:self%nz) = dz_old( nzAir_old+1:nz_old )
+        self%dy = dy_old
+        self%dx = dx_old
+        !
+        call self%setOrigin( ox_old, oy_old, oz_old )
+        call self%setRotation( rotdeg_old )
+        call self%setGeometry( geometry_old )
+        !
+        !> setup the rest of the grid from scratch
+        call self%setup
+        !
+    end subroutine updateAirLayers_Grid
     !
 end module Grid

@@ -7,6 +7,7 @@ module ModelReader_Weerachai
     use String
     use Grid
     use Grid3D_SG
+    use Grid3D_MR
     use rScalar3D_SG
     use ModelParameterCell_SG
     use ModelReader
@@ -43,6 +44,10 @@ contains
         real( kind=prec ) :: ALPHA
         character(len=200), dimension(20) :: args
         !
+        integer, allocatable, dimension(:) :: layers, levels
+        !
+        layers = (/ 0, 3, 1, 4, 2, 4 /)
+        !
         someChar = ""
         paramType = ""
         someIndex = 0
@@ -56,8 +61,8 @@ contains
             read(ioPrm, "(a80)") someChar
             !
             !> Now read the second line with the grid dimensions
-            read(ioPrm, "(a80)") someChar
-            read(someChar, *) nx, ny, nzEarth, someIndex
+            read( ioPrm, "(a80)" ) someChar
+            read( someChar, * ) nx, ny, nzEarth, someIndex
             !
             !> Now read the second line with the grid dimensions
             nzAir = 0
@@ -86,8 +91,15 @@ contains
             !
             !> The default method for creating air layers in the grid has been deleted
             !
-            !> Create the grid object with nzAir = 0 -- no air layers so far
-            allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
+            select case( grid_format )
+                !
+                case( GRID_SG )
+                    allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
+                case( GRID_MR )
+                    allocate( grid, source = Grid3D_MR_t( nx, ny, nzAir, nzEarth, dx, dy, dz, layers ) )
+                case default
+                    call errStop( "readModelReaderWeerachai > Unknow grid_format ["//grid_format//"]." )
+            end select
             !
             !> Consider isotope at first
             anisotropic_level = 1
@@ -103,56 +115,47 @@ contains
             do ii = 1, anisotropic_level
                 !
                 allocate( rho( nx, ny, nzEarth ) )
+                !
                 do k = 1, nzEarth
                     do j = 1, ny
                         read(ioPrm, *, iostat = io_stat) (rho(i, j, k), i = nx, 1, -1)
                     enddo
                 enddo
                 !
-                !> Convert from resistivity to conductivity
-                select type( grid )
-                    !
-                    class is( Grid3D_SG_t )
-                        !
-                        ccond = rScalar3D_SG_t( grid, CELL_EARTH )
-                        !
-                        if( index( paramType, "LOGE" ) > 0 .OR. &
-                            index( paramType, "LOG10" ) > 0 ) then
-                            !
-                            ccond%v = -rho
-                            !
-                        elseif( index(paramType, "LINEAR") > 0 ) then
-                            !
-                            ccond%v = ONE/rho
-                            !
-                        endif
-                        !
-                        deallocate( rho )
-                        !
-                        if( anisotropic_level == 1 ) then
-                            !
-                            allocate( model, source = ModelParameterCell_SG_t( grid, ccond, 1, paramType ) )
-                            !
-                        else
-                            !
-                            if( allocated( model ) ) then
-                                !
-                                call model%setCond( ccond, ii )
-                                !
-                            else
-                                !
-                                allocate( model, source = ModelParameterCell_SG_t( grid, ccond, 2, paramType ) )
-                                !
-                            endif
-                            !
-                        endif
-                        !
-                    class default
-                        call errStop( "readModelReaderWeerachai > Unclassified grid" )
-                    !
-                end select
+                ccond = rScalar3D_SG_t( grid, CELL_EARTH )
                 !
-            end do    
+                if( index( paramType, "LOGE" ) > 0 .OR. &
+                    index( paramType, "LOG10" ) > 0 ) then
+                    !
+                    ccond%v = -rho
+                    !
+                elseif( index(paramType, "LINEAR") > 0 ) then
+                    !
+                    ccond%v = ONE/rho
+                    !
+                endif
+                !
+                deallocate( rho )
+                !
+                if( anisotropic_level == 1 ) then
+                    !
+                    allocate( model, source = ModelParameterCell_SG_t( grid, ccond, 1, paramType ) )
+                    !
+                else
+                    !
+                    if( allocated( model ) ) then
+                        !
+                        call model%setCond( ccond, ii )
+                        !
+                    else
+                        !
+                        allocate( model, source = ModelParameterCell_SG_t( grid, ccond, 2, paramType ) )
+                        !
+                    endif
+                    !
+                endif
+                !
+            end do
             !
             !> ALWAYS convert modelParam to natural log for computations ????
             paramType = LOGE

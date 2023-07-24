@@ -59,7 +59,7 @@ contains
     function ModelOperator_MF_ctor( grid ) result( self )
         implicit none
         !
-        class( Grid3D_SG_t ), target, intent( in ) :: grid
+        class( Grid_t ), target, intent( in ) :: grid
         !
         type( ModelOperator_MF_t ) :: self
         !
@@ -329,29 +329,30 @@ contains
             enddo
         enddo
         !
-        select type( vnode => self%Metric%Vnode )
-            class is( rScalar3D_SG_t )
+        select type( v_node => self%Metric%v_node )
+            !
+			class is( rScalar3D_SG_t )
                 !
                 do iz = 2, self%metric%grid%nz
                     do iy = 2, self%metric%grid%ny
                         do ix = 2, self%metric%grid%nx
                             self%db1%x(ix, iy, iz) = self%db1%x(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
+                            v_node%v(ix,iy,iz)
                             !
                             self%db1%y(ix, iy, iz) = self%db1%y(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
+                            v_node%v(ix,iy,iz)
                             !
                             self%db1%z(ix, iy, iz) = self%db1%z(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
+                            v_node%v(ix,iy,iz)
                             !
                             self%db2%x(ix, iy, iz) = self%db2%x(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
+                            v_node%v(ix,iy,iz)
                             !
                             self%db2%y(ix, iy, iz) = self%db2%y(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
+                            v_node%v(ix,iy,iz)
                             !
                             self%db2%z(ix, iy, iz) = self%db2%z(ix, iy, iz) * &
-                            vnode%v(ix,iy,iz)
+                            v_node%v(ix,iy,iz)
                         enddo
                     enddo
                 enddo
@@ -361,7 +362,7 @@ contains
                 !
         end select
         !
-        call self%c%mult( self%Metric%Vnode )
+        call self%c%mult( self%Metric%v_node )
         !
         self%db1%x(2, :, :) = R_ZERO
         self%db1%y(:, 2, :) = R_ZERO
@@ -463,7 +464,7 @@ contains
                             enddo
                         enddo
                         !
-                        call outE%mult( self%metric%Vedge )
+                        call outE%mult( self%metric%v_edge )
                         !
                     class default
                         call errStop( "amult_ModelOperator_MF > Undefined outE." )
@@ -511,7 +512,7 @@ contains
         select type( inH )
             class is( cVector3D_SG_t )
                 !
-                call inH%div( self%Metric%FaceArea )
+                call inH%div( self%Metric%face_area )
                 !
                 if( .NOT. outE%is_allocated ) then
                      call errStop( "multCurlT_ModelOperator_MF > output vector not allocated" )
@@ -556,7 +557,7 @@ contains
                 !
         end select
         !
-        call outE%mult( self%metric%Edgelength )
+        call outE%mult( self%metric%edge_length )
         !
     end subroutine multCurlT_ModelOperator_MF
     !

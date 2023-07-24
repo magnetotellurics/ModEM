@@ -22,7 +22,7 @@
 !*
 module Vector3d_cmr_real
   use GridDef, only : grid_t, setup_grid, create_grid
-  use GridCalc, only : Edgelength
+  use GridCalc, only : edgeLength
   use sg_vector, only : rvector, create_rvector
   use sg_scalar, only : rscalar, create_rscalar
   use vecTranslate, only : getRVector, setRVector, setlimits
@@ -1139,7 +1139,7 @@ contains
     
     grid => sg_v%grid
     
-    call Edgelength (grid, templ_r)
+    call edgeLength (grid, templ_r)
     templ => null ()
     call getRVector (templ_r, templ)
     

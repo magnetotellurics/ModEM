@@ -240,7 +240,7 @@ contains
         !
         self%rhs(1) = self%E(1)
         !
-        call self%rhs(1)%mult( self%model_operator%metric%Vedge )
+        call self%rhs(1)%mult( self%model_operator%metric%v_edge )
         !
     end subroutine createRHS_SourceCSEM_EM1D
     !

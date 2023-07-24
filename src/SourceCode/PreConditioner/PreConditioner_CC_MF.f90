@@ -171,7 +171,7 @@ contains
                                     !
                                     outE = inE
                                     !
-                                    call outE%div( model_operator%Metric%Vedge )
+                                    call outE%div( model_operator%Metric%v_edge )
                                     !
                                     do ix = 1, inE%nx
                                         do iz = 2, inE%nz
@@ -246,7 +246,7 @@ contains
                                     enddo
                                     !
                                     !>     for adjoint to the division by volume elements last
-                                    call outE%div( model_operator%Metric%Vedge )
+                                    call outE%div( model_operator%Metric%v_edge )
                                     !
                                 endif
                                 !

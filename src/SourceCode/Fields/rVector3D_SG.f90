@@ -76,7 +76,7 @@ module rVector3D_SG
             !
     end type rVector3D_SG_t
     !
-    public :: getRvector, setRvector, Edgelength
+    public :: getRvector, setRvector, edgeLength
     !
     interface rVector3D_SG_t
         module procedure rVector3D_SG_ctor
@@ -2127,31 +2127,31 @@ contains
         !
     end subroutine setRvector
     !
-    subroutine Edgelength( grid, l_E )
+    subroutine edgeLength( grid, l_e )
         implicit none
         !
         class( Grid_t ), intent( in ) :: grid
-        type( rVector3D_SG_t ), intent( inout )  :: l_E
+        type( rVector3D_SG_t ), intent( inout )  :: l_e
         !
         integer :: ix, iy, iz
         !
-        l_E = rVector3D_SG_t( grid, EDGE )
+        l_e = rVector3D_SG_t( grid, EDGE )
         !
         ! x-component edge length elements
         do ix = 1,grid%nx
-            l_E%x(ix, :, :) = grid%dx(ix)
+            l_e%x(ix, :, :) = grid%dx(ix)
         enddo
         !
         ! y-component edge length elements
         do iy = 1,grid%ny
-            l_E%y(:, iy, :) = grid%dy(iy)
+            l_e%y(:, iy, :) = grid%dy(iy)
         enddo
         !
         ! z-component edge length elements
         do iz = 1,grid%nz
-            l_E%z(:, :, iz) = grid%dz(iz)
+            l_e%z(:, :, iz) = grid%dz(iz)
         enddo
         !
-    end subroutine Edgelength
+    end subroutine edgeLength
     !
 end module rVector3D_SG

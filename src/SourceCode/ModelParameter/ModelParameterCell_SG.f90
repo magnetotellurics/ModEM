@@ -79,7 +79,7 @@ contains
         !
         integer :: nzAir
         !
-        !write( *, * ) "Constructor ModelParameterCell_SG_t"
+        write( *, * ) "Constructor ModelParameterCell_SG_t"
         !
         call self%baseInit
         !
@@ -90,6 +90,8 @@ contains
         endif
         !
         nzAir = 0
+        !
+        write( *, * ) "param_grid : (", grid%nx, grid%ny, nzAir, grid%nz - grid%nzAir, ")"
         !
         allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
                 ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
@@ -545,7 +547,7 @@ contains
             !
             sigma_cell(i)%v( :, :, k1:k2 ) = self%sigMap( self%cell_cond(i)%v )
             !
-            call sigma_cell(i)%mult( self%metric%VCell )
+            call sigma_cell(i)%mult( self%metric%v_cell )
             !
         enddo
         !
@@ -562,7 +564,7 @@ contains
             call errStop( "PDEmapping_ModelParameterCell_SG > unsupported anisotropy level" )
         endif
         !
-        call eVec%div( self%metric%VEdge )
+        call eVec%div( self%metric%v_edge )
         !
     end subroutine PDEmapping_ModelParameterCell_SG
     !
@@ -610,7 +612,7 @@ contains
             !
             sigma_cell(i)%v( :, :, k1:k2 ) = sigma_cell(i)%v( :, :, k1:k2 ) * dsigma_cond%v
             !
-            call sigma_cell(i)%mult( self%metric%Vcell )
+            call sigma_cell(i)%mult( self%metric%v_cell )
             !
         enddo
         !
@@ -627,7 +629,7 @@ contains
             call errStop( "dPDEmapping_ModelParameterCell_SG > unsupported anisotropy level" )
         endif
         !
-        call eVec%div( self%metric%Vedge )
+        call eVec%div( self%metric%v_edge )
         !
     end subroutine dPDEmapping_ModelParameterCell_SG
     !
@@ -651,7 +653,7 @@ contains
         !
         call eVec%interior( evec_interior )
         !
-        call evec_interior%div( self%metric%Vedge )
+        call evec_interior%div( self%metric%v_edge )
         !
         call evec_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
         !
@@ -687,7 +689,7 @@ contains
             !
             dsigma_cond(i)%v = self%sigMap( self%cell_cond(i)%v, JOB )
             !
-            call sigma_cell(i)%mult( self%metric%Vcell )
+            call sigma_cell(i)%mult( self%metric%v_cell )
             !
             dsigma_cond(i)%v = dsigma_cond(i)%v * sigma_cell(i)%v( :, :, k1:k2 )
             !

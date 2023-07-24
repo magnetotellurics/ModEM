@@ -27,15 +27,15 @@ module MetricElements_CSG
         !
         final :: MetricElements_CSG_dtor
         !
-        procedure, public :: SetEdgelength
-        procedure, public :: SetFaceArea
-        procedure, public :: SetDualEdgelength
-        procedure, public :: SetDualFaceArea
-        procedure, public :: SetCellVolume
-        procedure, public :: SetEdgeVolume
-        procedure, public :: SetNodeVolume
+        procedure, public :: setEdgeLength
+        procedure, public :: setFaceArea
+        procedure, public :: setDualEdgeLength
+        procedure, public :: setDualFaceArea
+        procedure, public :: setCellVolume
+        procedure, public :: setEdgeVolume
+        procedure, public :: setNodeVolume
         !
-        procedure, public :: allocate => allocateMetricElements_CSG
+        procedure, public :: alloc => allocateMetricElements_CSG
         !
     end type MetricElements_CSG_t
     !
@@ -50,17 +50,17 @@ contains
     function MetricElements_CSG_ctor( grid ) result( self )
         implicit none
         !
-        class( Grid3D_SG_t ), target, intent( in ) :: grid
+        class( Grid_t ), target, intent( in ) :: grid
         type( MetricElements_CSG_t ) :: self
         !
         !write( *, * ) "Constructor MetricElements_CSG_t"
         !
         self%grid => grid
         !
-        call self%allocate()
+        call self%alloc
         !
         !>    if were going to allocate storage for all, just set all now!
-        call self%setMetricElements()
+        call self%setMetricElements
         !
     end function MetricElements_CSG_Ctor
     !
@@ -82,28 +82,28 @@ contains
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
-        allocate( self%Edgelength, source = rVector3D_SG_t( self%grid, EDGE ) )
-        allocate( self%FaceArea, source = rVector3D_SG_t( self%grid, FACE ) )
-        allocate( self%DualEdgelength, source = rVector3D_SG_t( self%grid, FACE ) )
-        allocate( self%DualFaceArea, source = rVector3D_SG_t( self%grid, EDGE ) )
-        allocate( self%Vedge, source = rVector3D_SG_t( self%grid, EDGE ) )
+        allocate( self%edge_length, source = rVector3D_SG_t( self%grid, EDGE ) )
+        allocate( self%face_area, source = rVector3D_SG_t( self%grid, FACE ) )
+        allocate( self%dual_edge_length, source = rVector3D_SG_t( self%grid, FACE ) )
+        allocate( self%dual_face_area, source = rVector3D_SG_t( self%grid, EDGE ) )
+        allocate( self%v_edge, source = rVector3D_SG_t( self%grid, EDGE ) )
         !
-        allocate( self%VNode, source = rScalar3D_SG_t( self%grid, NODE ) )
-        allocate( self%Vcell, source = rScalar3D_SG_t( self%grid, CELL ) )
+        allocate( self%v_node, source = rScalar3D_SG_t( self%grid, NODE ) )
+        allocate( self%v_cell, source = rScalar3D_SG_t( self%grid, CELL ) )
         !
     end subroutine allocateMetricElements_CSG
     !
-    !> SetEdgelength
+    !> setEdgeLength
     !> Creates line elements defined on edges of the primary grid.
     !> Edge length elements are defined on interior and boundary edges.
-    subroutine SetEdgelength( self )
+    subroutine setEdgeLength( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
         !
-        select type( edge_length => self%Edgelength )
+        select type( edge_length => self%edge_length )
             !
             class is( rVector3D_SG_t )
                 !
@@ -125,20 +125,20 @@ contains
             !
         end select
         !
-    end subroutine SetEdgelength
+    end subroutine setEdgeLength
     !
-    !> SetDualEdgelength
+    !> setDualEdgeLength
     !> Creates line elements defined on edges of the dual grid.
     !> Edge length elements are defined on interior and boundary faces.
     !> Note that dual edge lengths are already defined in grid.
-    subroutine SetDualEdgelength( self )
+    subroutine setDualEdgeLength( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
         !
-        select type( dual_edge_length => self%DualEdgelength )
+        select type( dual_edge_length => self%dual_edge_length )
             !
             class is( rVector3D_SG_t )
                 !
@@ -159,19 +159,19 @@ contains
                 !
         end select
         !
-    end subroutine SetDualEdgelength
+    end subroutine setDualEdgeLength
     !
-    !> SetFaceArea
+    !> setFaceArea
     !> Computes surface area elements on faces of the primary grid.
     !> Face surface area elements are defined on interior and boundary faces.
-    subroutine SetFaceArea( self )
+    subroutine setFaceArea( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
         !
-        select type( face_area => self%FaceArea )
+        select type( face_area => self%face_area )
             class is( rVector3D_SG_t )
                !
                !> x-components
@@ -203,22 +203,22 @@ contains
                !
         end select
         !
-    end subroutine SetFaceArea
+    end subroutine setFaceArea
     !
-    !> SetDualFaceArea
+    !> setDualFaceArea
     !> Computes surface area elements on faces of the dual grid.
     !> Dual Face surface area elements are defined
     !> on interior and boundary edges.
     !> Note: dual edge lengths are already defined
     !> in grid, use these to compute dual-grid face areas.
-    subroutine SetDualFaceArea( self )
+    subroutine setDualFaceArea( self )
         implicit none
       !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
         !
-        select type( dual_face_area => self%DualFaceArea )
+        select type( dual_face_area => self%dual_face_area )
             class is( rVector3D_SG_t )
                !
                !> x-components
@@ -250,17 +250,17 @@ contains
                !
         end select
         !
-    end subroutine SetDualFaceArea
+    end subroutine setDualFaceArea
     !
-    !> SetNodeVolume
-    subroutine SetNodeVolume( self )
+    !> setNodeVolume
+    subroutine setNodeVolume( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: i, j, k
         !
-        select type( vnode => self%Vnode )
+        select type( v_node => self%v_node )
             class is( rScalar3D_SG_t )
                !
                do i = 1, self%grid%nx + 1
@@ -268,58 +268,58 @@ contains
                       do k = 1, self%grid%nz + 1
                           !> note that we are multiplying
                           !> using the distances with corner of a cell as a center
-                          vnode%v(i, j, k) = self%grid%del_x(i) * self%grid%del_y(j) * self%grid%del_z(k)
+                          v_node%v(i, j, k) = self%grid%del_x(i) * self%grid%del_y(j) * self%grid%del_z(k)
                       enddo
                    enddo
                enddo
                !
         end select
         !
-    end subroutine SetNodeVolume
+    end subroutine setNodeVolume
     !
     !> CellVolume
     !> Creates volume elements for grid cells
     !> and stores them as real scalars with grid_type=CELL.
-    subroutine SetCellVolume( self )
+    subroutine setCellVolume( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: i, j, k
         !
-        select type( vcell => self%Vcell )
+        select type( v_cell => self%v_cell )
             class is( rScalar3D_SG_t )
                !
                do i = 1, self%grid%nx 
                    do j = 1, self%grid%ny
                       do k = 1, self%grid%nz
-                          vcell%v(i, j, k) = self%grid%dx(i) * self%grid%dy(j) * self%grid%dz(k)
+                          v_cell%v(i, j, k) = self%grid%dx(i) * self%grid%dy(j) * self%grid%dz(k)
                       enddo
                    enddo
                enddo
                !
         end select
         !
-    end subroutine SetCellVolume
+    end subroutine setCellVolume
     !
-    !> SetEdgeVolume
+    !> setEdgeVolume
     !> Creates volume elements centered around the edges of
     !> the grid, and stores them as real vectors with
     !> grid_type = EDGE.
-    subroutine SetEdgeVolume( self )
+    subroutine setEdgeVolume( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
 
-        !> Vedge = Edgelength*DualFaceArea --- simplest implementation
+        !> v_edge = edge_length*dual_face_area --- simplest implementation
         !> is just to create these (but they might already be created--
         !>     let's assume they are--the way metric element objects are created
         !>      this is always true
-        !call self%setEdgelength()
+        !call self%setEdgeLength()
         !call self%setDualFaceArea()
         !
-        self%Vedge = self%Edgelength
-        call self%Vedge%mult( self%DualFaceArea )
+        self%v_edge = self%edge_length
+        call self%v_edge%mult( self%dual_face_area )
         !
     end subroutine setEdgeVolume
     !

@@ -209,7 +209,8 @@ contains
         select case( self%grid_type )
             !
             case( NODE )
-                if( int_only_p) then
+                !
+				if( int_only_p) then
                     !
                     select case(bdry)
                         case("x1")

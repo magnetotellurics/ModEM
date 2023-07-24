@@ -8,7 +8,9 @@ module CoreComponents
     use ForwardControlFile
     use InversionControlFile
     !
-    use Grid3D_SG
+    use rScalar3D_MR
+    use iScalar3D_SG
+    use rVector3D_MR
     !
     use ModelOperator_MF
     use ModelOperator_SP
@@ -91,6 +93,8 @@ module CoreComponents
     public :: printForwardControlFileTemplate
     public :: printInversionControlFileTemplate
     !
+    public :: createScalar, createVector
+    !
 contains
     !
     !> Read Model File and instantiate global variables: main_grid, model_operator and sigma0
@@ -110,72 +114,62 @@ contains
         !
         !> Initialize main_grid and sigma0 with ModelReader
         !> Only ModelReader_Weerachai by now ????
-        call model_reader%Read( model_file_name, main_grid, sigma0 ) 
+        call model_reader%read( model_file_name, main_grid, sigma0 ) 
         !
-        !> Instantiate the ModelOperator object according to the main_grid type
-        select type( main_grid )
+        call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+        !
+        call main_grid%updateAirLayers( air_layer%nz, air_layer%dz )
+        !
+        ! Verbose
+        write( *, "( a39 )" ) "Model Air Layers [i, dz(i)]:"
+        !
+        do i = air_layer%nz, 1, -(1)
+            write( *, "( i20, f20.3 )" ) i, air_layer%dz(i)
+        enddo
+        !
+        write( *, * ) "          Air layers from the method [", trim( air_layer%method ), "]"
+        !
+        write( *, "( a39, f12.3, a4 )" ) "Top of the air layers is at ", ( sum( air_layer%Dz ) / 1000. ), " km."
+        !
+        write( *, "( a33, f12.3 )" ) "Air layers Max Height ", air_layer%maxHeight
+        !
+        write( *, "( a23, i6, a2, i6, a2, i6, a1 )" ) "dim(x,y,z):(", main_grid%nx, ", ", main_grid%ny, ", ", main_grid%nz, ")"
+        !
+        write( *, "( a30, f16.3, a2, f16.3, a2, f16.3, a4, f16.3 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+        !
+        !> Instantiate model_operator
+        !> Specific type can be chosen via fwd control file
+        select case( model_operator_type )
             !
-            class is( Grid3D_SG_t )
+            case( MODELOP_MF )
                 !
-                call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+                allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
-                call main_grid%updateAirLayers( air_layer%nz, air_layer%dz )
+            case( MODELOP_SP )
                 !
-                ! Verbose
-                write( *, "( a39 )" ) "Model Air Layers [i, dz(i)]:"
+                allocate( model_operator, source = ModelOperator_SP_t( main_grid ) )
                 !
-                do i = air_layer%nz, 1, -(1)
-                    write( *, "( i20, f20.3 )" ) i, air_layer%dz(i)
-                enddo
+            case( MODELOP_SP2 )
                 !
-                write( *, * ) "          Air layers from the method [", trim( air_layer%method ), "]"
+                call errStop( "handleModelFile > MODELOP_SP2 not implemented" )
                 !
-                write( *, "( a39, f12.3, a4 )" ) "Top of the air layers is at ", ( sum( air_layer%Dz ) / 1000. ), " km."
+            case( "" )
                 !
-                write( *, "( a33, f12.3 )" ) "Air layers Max Height ", air_layer%maxHeight
+                call warning( "handleModelFile > model_operator_type not provided, using ModelOperator_MF_t." )
                 !
-                write( *, "( a23, i6, a2, i6, a2, i6, a1 )" ) "dim(x,y,z):(", main_grid%nx, ", ", main_grid%ny, ", ", main_grid%nz, ")"
+                allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
                 !
-                write( *, "( a30, f16.3, a2, f16.3, a2, f16.3, a4, f16.3 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+            case default
                 !
-                !> Instantiate model_operator
-                !> Specific type can be chosen via fwd control file
-                select case( model_operator_type )
-                    !
-                    case( MODELOP_MF )
-                        !
-                        allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
-                        !
-                    case( MODELOP_SP )
-                        !
-                        allocate( model_operator, source = ModelOperator_SP_t( main_grid ) )
-                        !
-                    case( MODELOP_SP2 )
-                        !
-                        call errStop( "handleModelFile > MODELOP_SP2 not implemented" )
-                        !
-                    case( "" )
-                        !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m handleModelFile > model_operator_type not provided, using ModelOperator_MF_t."
-                        !
-                        allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
-                        !
-                    case default
-                        !
-                        call errStop( "handleModelFile > Wrong Model Operator type: ["//model_operator_type//"]" )
-                        !
-                end select
-                !
-                call model_operator%setEquations
-                !
-                call sigma0%setMetric( model_operator%metric )
-                !
-                call model_operator%setCond( sigma0 )
-                !
-            class default
-                call errStop( "handleModelFile > Unclassified main_grid" )
+                call errStop( "handleModelFile > Wrong Model Operator type: ["//model_operator_type//"]" )
                 !
         end select
+        !
+        call model_operator%setEquations
+        !
+        call sigma0%setMetric( model_operator%metric )
+        !
+        call model_operator%setCond( sigma0 )
         !
     end subroutine handleModelFile
     !
@@ -790,7 +784,7 @@ contains
             write( ioFwdTmp, "(A19)" ) "# <Grid parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A33)" ) "#grid_header [ModEM|HDF5] : ModEM"
-            write( ioFwdTmp, "(A30)" ) "#grid_type [SG|MR]        : SG"
+            write( ioFwdTmp, "(A30)" ) "grid_format [SG|MR]       : SG"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A20)" ) "# <Model parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
@@ -863,6 +857,112 @@ contains
         endif
         !
     end subroutine printInversionControlFileTemplate
+    !
+    !> Create proper scalar from the Grid
+    !
+    subroutine createScalar( scalar_type, grid_type, scalar )
+        implicit none
+        !
+        integer, intent( in ) :: scalar_type
+        character( len=4 ), intent( in ) :: grid_type
+        class( Scalar_t ), allocatable, intent( out ) :: scalar
+        !
+        if( grid_type /= NODE .AND. grid_type /= CELL .AND. grid_type /= CELL_EARTH ) then
+            call errStop( "createScalar > grid_type must be NODE, CELL or CELL_EARTH" )
+        else
+            !
+            select type( main_grid )
+                !
+                class is( Grid3D_SG_t )
+                    !
+                    if( scalar_type == real_t ) then
+                        allocate( scalar, source = rScalar3D_SG_t( main_grid, grid_type ) )
+                    elseif( scalar_type == complex_t ) then
+                        allocate( scalar, source = cScalar3D_SG_t( main_grid, grid_type ) )
+                    elseif( scalar_type == integer_t ) then
+                        allocate( scalar, source = iScalar3D_SG_t( main_grid, grid_type ) )
+                    else
+                        call errStop( "createrScalar_SG > choose real_t, complex_t or integer_t" )
+                    endif
+                    !
+                class is( Grid3D_MR_t )
+                    !
+                    if( scalar_type == real_t ) then
+                        allocate( scalar, source = rScalar3D_MR_t( main_grid, grid_type ) )
+                    elseif( scalar_type == complex_t ) then
+                        !allocate( scalar, source = cScalar3D_MR_t( main_grid, grid_type ) )
+                        !
+                        call errStop( "createrScalar_MR > complex_t to be implemented" )
+                    elseif( scalar_type == integer_t ) then
+                        !allocate( scalar, source = iScalar3D_MR_t( main_grid, grid_type ) )
+                        !
+                        call errStop( "createrScalar_MR > integer_t to be implemented" )
+                    else
+                        call errStop( "createrScalar_MR > choose real_t, complex_t or integer_t" )
+                    endif
+                    !
+                class default
+                   call errStop( "createScalar > Unclassified main_grid" )
+                !
+            end select
+            !
+        endif
+        !
+    end subroutine createScalar
+    !
+    !> Create proper vector from the Grid
+    !
+    subroutine createVector( vector_type, grid_type, vector )
+        implicit none
+        !
+        integer, intent( in ) :: vector_type
+        character( len=4 ), intent( in ) :: grid_type
+        class( Vector_t ), allocatable, intent( out ) :: vector
+        !
+        if( grid_type /= EDGE .AND. grid_type /= FACE ) then
+            call errStop( "createVector > grid_type must be EDGE or FACE" )
+        else
+            !
+            select type( main_grid )
+                !
+                class is( Grid3D_SG_t )
+                    !
+                    if( vector_type == real_t ) then
+                        allocate( vector, source = rVector3D_SG_t( main_grid, grid_type ) )
+                    elseif( vector_type == complex_t ) then
+                        allocate( vector, source = cVector3D_SG_t( main_grid, grid_type ) )
+                    elseif( vector_type == integer_t ) then
+                        !allocate( vector, source = iVector3D_SG_t( main_grid, grid_type ) )
+                        !
+                        call errStop( "createVector_SG > integer_t to be implemented" )
+                    else
+                        call errStop( "createVector_SG > choose real_t, complex_t or integer_t" )
+                    endif
+                    !
+                class is( Grid3D_MR_t )
+                    !
+                    if( vector_type == real_t ) then
+                        allocate( vector, source = rVector3D_MR_t( main_grid, grid_type ) )
+                    elseif( vector_type == complex_t ) then
+                        !allocate( vector, source = cVector3D_MR_t( main_grid, grid_type ) )
+                        !
+                        call errStop( "createVector_MR > complex_t to be implemented" )
+                    elseif( vector_type == integer_t ) then
+                        !allocate( vector, source = iVector3D_MR_t( main_grid, grid_type ) )
+                        !
+                        call errStop( "createVector_MR > integer_t to be implemented" )
+                    else
+                        call errStop( "createVector_MR > choose real_t, complex_t or integer_t" )
+                    endif
+                    !
+                class default
+                   call errStop( "createVector > Unclassified main_grid" )
+                !
+            end select
+            !
+        endif
+        !
+    end subroutine createVector
     !
 end module CoreComponents
 !

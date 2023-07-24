@@ -340,10 +340,11 @@ contains
     !>     Take two sizes and allocate the two arrays.
     !>     Fills the two arrays with their proper indices.
     !
-    subroutine setIndexArraysField( self )
+    subroutine setIndexArraysField( self, xy_in )
         implicit none
         !
         class( Field_t ), intent( inout ) :: self
+        logical, intent( in ), optional :: xy_in
         !
         integer :: i, j, k, int_size, bdry_size
         class( Field_t ), allocatable :: aux_field
