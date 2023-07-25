@@ -1,12 +1,12 @@
 !
-!> Derived class to define a ModelOperator_MF
+!> Derived class to define a ModelOperator_MF_SG
 !
-module ModelOperator_MF
+module ModelOperator_MF_SG
     !
     use ModelOperator
     use MetricElements_CSG
     !
-    type, extends( ModelOperator_t ) :: ModelOperator_MF_t
+    type, extends( ModelOperator_t ) :: ModelOperator_MF_SG_t
          !
          real( kind=prec ), allocatable, dimension(:,:) :: xXY, xXZ
          real( kind=prec ), allocatable, dimension(:,:) :: xY, xZ
@@ -26,44 +26,44 @@ module ModelOperator_MF
          !
          contains
               !
-              final :: ModelOperator_MF_dtor
+              final :: ModelOperator_MF_SG_dtor
               !
-              procedure, public :: setEquations => setEquations_ModelOperator_MF
-              procedure, public :: setCond => setCond_ModelOperator_MF
-              procedure, public :: amult => amult_ModelOperator_MF
-              procedure, public :: multAib => multAib_ModelOperator_MF
-              procedure, public :: multCurlT => multCurlT_ModelOperator_MF
-              procedure, public :: divCorSetUp => divCorSetUp_ModelOperator_MF
+              procedure, public :: setEquations => setEquations_ModelOperator_MF_SG
+              procedure, public :: setCond => setCond_ModelOperator_MF_SG
+              procedure, public :: amult => amult_ModelOperator_MF_SG
+              procedure, public :: multAib => multAib_ModelOperator_MF_SG
+              procedure, public :: multCurlT => multCurlT_ModelOperator_MF_SG
+              procedure, public :: divCorSetUp => divCorSetUp_ModelOperator_MF_SG
               !
-              procedure :: divCGrad => divCGrad_ModelOperator_MF
-              procedure :: divC => divC_ModelOperator_MF
-              procedure :: grad => grad_ModelOperator_MF
-              procedure :: div => div_ModelOperator_MF
+              procedure :: divCGrad => divCGrad_ModelOperator_MF_SG
+              procedure :: divC => divC_ModelOperator_MF_SG
+              procedure :: grad => grad_ModelOperator_MF_SG
+              procedure :: div => div_ModelOperator_MF_SG
               !
-              procedure :: create => create_ModelOperator_MF 
-              procedure :: alloc => allocate_ModelOperator_MF
-              procedure :: dealloc => deallocate_ModelOperator_MF
+              procedure :: create => create_ModelOperator_MF_SG 
+              procedure :: alloc => allocate_ModelOperator_MF_SG
+              procedure :: dealloc => deallocate_ModelOperator_MF_SG
               !
-              procedure, public :: print => print_ModelOperator_MF
+              procedure, public :: print => print_ModelOperator_MF_SG
               !
-    end type ModelOperator_MF_t
+    end type ModelOperator_MF_SG_t
     !
-    interface ModelOperator_MF_t
-        module procedure ModelOperator_MF_ctor
-    end interface ModelOperator_MF_t
+    interface ModelOperator_MF_SG_t
+        module procedure ModelOperator_MF_SG_ctor
+    end interface ModelOperator_MF_SG_t
     !
 contains
     !
     !> No subroutine briefing
     !
-    function ModelOperator_MF_ctor( grid ) result( self )
+    function ModelOperator_MF_SG_ctor( grid ) result( self )
         implicit none
         !
         class( Grid_t ), target, intent( in ) :: grid
         !
-        type( ModelOperator_MF_t ) :: self
+        type( ModelOperator_MF_SG_t ) :: self
         !
-        !write( *, * ) "Constructor ModelOperator_MF"
+        !write( *, * ) "Constructor ModelOperator_MF_SG"
         !
         call self%baseInit
         !
@@ -72,25 +72,25 @@ contains
         !
         call self%create( grid )
         !
-    end function ModelOperator_MF_ctor
+    end function ModelOperator_MF_SG_ctor
     !
-    !> ModelOperator_MF destructor
-    subroutine ModelOperator_MF_dtor( self )
+    !> ModelOperator_MF_SG destructor
+    subroutine ModelOperator_MF_SG_dtor( self )
         implicit none
         !
-        type( ModelOperator_MF_t ), intent( inout ) :: self
+        type( ModelOperator_MF_SG_t ), intent( inout ) :: self
         !
-        !write( *, * ) "Destructor ModelOperator_MF_t"
+        !write( *, * ) "Destructor ModelOperator_MF_SG_t"
         !
         call self%baseDealloc()
         !
-    end subroutine ModelOperator_MF_dtor
+    end subroutine ModelOperator_MF_SG_dtor
     !
     !> No subroutine briefing
-    subroutine create_ModelOperator_MF( self, grid )
+    subroutine create_ModelOperator_MF_SG( self, grid )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( inout ) :: self
+        class( ModelOperator_MF_SG_t ), intent( inout ) :: self
         class( Grid_t ), target, intent( in ) :: grid
         !
         self%is_allocated = .FALSE.
@@ -99,13 +99,13 @@ contains
         !
         call self%alloc
         !
-    end subroutine create_ModelOperator_MF
+    end subroutine create_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine allocate_ModelOperator_MF( self )
+    subroutine allocate_ModelOperator_MF_SG( self )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( inout ) :: self
+        class( ModelOperator_MF_SG_t ), intent( inout ) :: self
         !
         allocate( self%xXY( self%metric%grid%ny + 1, 2 ) )
         allocate( self%xXZ( self%metric%grid%nz + 1, 2 ) )
@@ -147,13 +147,13 @@ contains
         !
         self%is_allocated = .TRUE.
         !
-    end subroutine allocate_ModelOperator_MF
+    end subroutine allocate_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine deallocate_ModelOperator_MF( self )
+    subroutine deallocate_ModelOperator_MF_SG( self )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( inout ) :: self
+        class( ModelOperator_MF_SG_t ), intent( inout ) :: self
         !
         call self%baseDealloc
         !
@@ -177,14 +177,14 @@ contains
         !
         self%is_allocated = .FALSE.
         !
-    end subroutine deallocate_ModelOperator_MF
+    end subroutine deallocate_ModelOperator_MF_SG
     !
     !> No subroutine briefing
     !
-    subroutine setEquations_ModelOperator_MF( self )
+    subroutine setEquations_ModelOperator_MF_SG( self )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( inout ) :: self
+        class( ModelOperator_MF_SG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz 
         !
@@ -277,30 +277,31 @@ contains
         !
         self%eqset = .TRUE.
         !
-    end subroutine setEquations_ModelOperator_MF
+    end subroutine setEquations_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine setCond_ModelOperator_MF( self, sigma )
+    subroutine setCond_ModelOperator_MF_SG( self, sigma )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( inout ) :: self
+        class( ModelOperator_MF_SG_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( in ) :: sigma
         !
         call sigma%PDEmapping( self%sigma_E )
         !
-    end subroutine setCond_ModelOperator_MF
+    end subroutine setCond_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine divCorSetUp_ModelOperator_MF( self )
+    subroutine divCorSetUp_ModelOperator_MF_SG( self )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent(inout) :: self
+        class( ModelOperator_MF_SG_t ), intent(inout) :: self
         !
         integer :: ix, iy, iz
         !
         do iz = 2, self%metric%grid%nz
             do iy = 2, self%metric%grid%ny
                 do ix = 2, self%metric%grid%nx
+                    !
                     self%db1%x(ix, iy, iz) = self%Sigma_E%x(ix - 1, iy, iz)/ &
                     (self%metric%grid%dx(ix - 1)*self%metric%grid%del_x(ix))
                     !
@@ -319,23 +320,25 @@ contains
                     self%db2%z(ix, iy, iz) = self%Sigma_E%z(ix, iy, iz)/ &
                     (self%metric%grid%dz(iz)*self%metric%grid%del_z(iz))
                     !
-                    self%c%v(ix, iy, iz) = - (self%db1%x(ix, iy, iz) + &
+                    self%c%v(ix, iy, iz) = -(self%db1%x(ix, iy, iz) + &
                     self%db2%x(ix, iy, iz) + &
                     self%db1%y(ix, iy, iz) + &
                     self%db2%y(ix, iy, iz) + &
                     self%db1%z(ix, iy, iz) + &
-                    self%db2%z(ix, iy, iz))
+                    self%db2%z(ix, iy, iz) )
+                    !
                 enddo
             enddo
         enddo
         !
-        select type( v_node => self%Metric%v_node )
+        select type( v_node => self%metric%v_node )
             !
-			class is( rScalar3D_SG_t )
+            class is( rScalar3D_SG_t )
                 !
                 do iz = 2, self%metric%grid%nz
                     do iy = 2, self%metric%grid%ny
                         do ix = 2, self%metric%grid%nx
+                            !
                             self%db1%x(ix, iy, iz) = self%db1%x(ix, iy, iz) * &
                             v_node%v(ix,iy,iz)
                             !
@@ -353,16 +356,17 @@ contains
                             !
                             self%db2%z(ix, iy, iz) = self%db2%z(ix, iy, iz) * &
                             v_node%v(ix,iy,iz)
+                            !
                         enddo
                     enddo
                 enddo
-                    !
+                !
             class default
-                call errStop( "divCorSetUp_ModelOperator_MF > undefined grid" )
+                call errStop( "divCorSetUp_ModelOperator_MF_SG > undefined grid" )
                 !
         end select
         !
-        call self%c%mult( self%Metric%v_node )
+        call self%c%mult( self%metric%v_node )
         !
         self%db1%x(2, :, :) = R_ZERO
         self%db1%y(:, 2, :) = R_ZERO
@@ -372,17 +376,17 @@ contains
         self%db2%y(:, self%metric%grid%ny, :) = R_ZERO
         self%db2%z(:, :, self%metric%grid%nz) = R_ZERO
         !
-    end subroutine divCorSetUp_ModelOperator_MF
+    end subroutine divCorSetUp_ModelOperator_MF_SG
     !
     !> No subroutine briefing
     !
-    subroutine amult_ModelOperator_MF( self, omega, inE, outE, p_adjoint )
+    subroutine amult_ModelOperator_MF_SG( self, omega, in_e, out_e, p_adjoint )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( in ) :: self
+        class( ModelOperator_MF_SG_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
-        class( Field_t ), intent( in ) :: inE
-        class( Vector_t ), intent( inout ) :: outE
+        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ), optional :: p_adjoint
         !
         integer :: ix, iy, iz
@@ -401,329 +405,331 @@ contains
             cvalue = ONE_I * omega * isign * mu_0
         endif
         !
-        select type( inE )
+        select type( in_e )
             !
             class is( cVector3D_SG_t )
                 !
-                if( .NOT. outE%is_allocated ) then
-                    call errStop( "amult_ModelOperator_MF > output vector outE not allocated" )
+                if( .NOT. out_e%is_allocated ) then
+                    call errStop( "amult_ModelOperator_MF_SG > output vector out_e not allocated" )
                 endif
                 !
-                select type( outE )
+                select type( out_e )
                     !
                     class is( cVector3D_SG_t )
                         !
-                        call outE%zeros
+                        call out_e%zeros
                         !
-                        do iz = 2, inE%nz
-                            do iy = 2, inE%ny
-                                do ix = 1, inE%nx
-                                    outE%x(ix, iy, iz) = self%xY(ix, iy)*(inE%y(ix + 1, iy, iz) - &
-                                    inE%y(ix, iy, iz) - inE%y(ix + 1, iy - 1, iz) + &
-                                    inE%y(ix, iy - 1, iz)) + &
-                                    self%xZ(ix, iz) * (inE%z(ix + 1, iy, iz) - inE%z(ix, iy, iz) - &
-                                    inE%z(ix + 1, iy, iz - 1) + inE%z(ix, iy, iz - 1)) + &
-                                    self%xXY(iy, 2) * inE%x(ix, iy + 1, iz) + &
-                                    self%xXY(iy, 1) * inE%x(ix, iy - 1, iz) + &
-                                    self%xXZ(iz, 2) * inE%x(ix, iy, iz + 1) + &
-                                    self%xXZ(iz, 1) * inE%x(ix, iy, iz - 1) + &
-                                    (self%xXO(iy, iz)+cvalue*self%Sigma_E%x(ix,iy,iz)) * inE%x(ix, iy, iz)
+                        do iz = 2, in_e%nz
+                            do iy = 2, in_e%ny
+                                do ix = 1, in_e%nx
+                                    out_e%x(ix, iy, iz) = self%xY(ix, iy)*(in_e%y(ix + 1, iy, iz) - &
+                                    in_e%y(ix, iy, iz) - in_e%y(ix + 1, iy - 1, iz) + &
+                                    in_e%y(ix, iy - 1, iz)) + &
+                                    self%xZ(ix, iz) * (in_e%z(ix + 1, iy, iz) - in_e%z(ix, iy, iz) - &
+                                    in_e%z(ix + 1, iy, iz - 1) + in_e%z(ix, iy, iz - 1)) + &
+                                    self%xXY(iy, 2) * in_e%x(ix, iy + 1, iz) + &
+                                    self%xXY(iy, 1) * in_e%x(ix, iy - 1, iz) + &
+                                    self%xXZ(iz, 2) * in_e%x(ix, iy, iz + 1) + &
+                                    self%xXZ(iz, 1) * in_e%x(ix, iy, iz - 1) + &
+                                    (self%xXO(iy, iz)+cvalue*self%Sigma_E%x(ix,iy,iz)) * in_e%x(ix, iy, iz)
                                 enddo
                             enddo
                         enddo
                         !
-                        do iz = 2, inE%nz
-                            do iy = 1, inE%ny
-                                do ix = 2, inE%nx
-                                    outE%y(ix, iy, iz) = self%yZ(iy, iz) * (inE%z(ix, iy + 1, iz) - &
-                                    inE%z(ix, iy, iz) - inE%z(ix, iy + 1, iz - 1) + inE%z(ix, iy, iz - 1)) + &
-                                    self%yX(ix, iy) * (inE%x(ix, iy + 1, iz) - inE%x(ix, iy, iz) - &
-                                    inE%x(ix - 1, iy + 1, iz) + inE%x(ix - 1, iy, iz)) + &
-                                    self%yYZ(iz, 2) * inE%y(ix, iy, iz + 1) + &
-                                    self%yYZ(iz, 1) * inE%y(ix, iy, iz - 1) + &
-                                    self%yYX(ix, 2) * inE%y(ix + 1, iy, iz) + &
-                                    self%yYX(ix, 1) * inE%y(ix - 1, iy, iz) + &
-                                    (self%yYO(ix, iz)+cvalue*self%Sigma_E%y(ix,iy,iz)) * inE%y(ix, iy, iz)
+                        do iz = 2, in_e%nz
+                            do iy = 1, in_e%ny
+                                do ix = 2, in_e%nx
+                                    out_e%y(ix, iy, iz) = self%yZ(iy, iz) * (in_e%z(ix, iy + 1, iz) - &
+                                    in_e%z(ix, iy, iz) - in_e%z(ix, iy + 1, iz - 1) + in_e%z(ix, iy, iz - 1)) + &
+                                    self%yX(ix, iy) * (in_e%x(ix, iy + 1, iz) - in_e%x(ix, iy, iz) - &
+                                    in_e%x(ix - 1, iy + 1, iz) + in_e%x(ix - 1, iy, iz)) + &
+                                    self%yYZ(iz, 2) * in_e%y(ix, iy, iz + 1) + &
+                                    self%yYZ(iz, 1) * in_e%y(ix, iy, iz - 1) + &
+                                    self%yYX(ix, 2) * in_e%y(ix + 1, iy, iz) + &
+                                    self%yYX(ix, 1) * in_e%y(ix - 1, iy, iz) + &
+                                    (self%yYO(ix, iz)+cvalue*self%Sigma_E%y(ix,iy,iz)) * in_e%y(ix, iy, iz)
                                 enddo
                             enddo
                         enddo
                         !
-                        do iz = 1, inE%nz
-                            do iy = 2, inE%ny
-                                do ix = 2, inE%nx
-                                    outE%z(ix, iy, iz) = self%zX(ix, iz) * (inE%x(ix, iy, iz + 1) - &
-                                    inE%x(ix, iy, iz) - inE%x(ix - 1, iy, iz + 1) + inE%x(ix - 1, iy, iz)) + &
-                                    self%zY(iy,iz) * (inE%y(ix, iy, iz + 1) - inE%y(ix, iy, iz) - &
-                                    inE%y(ix, iy - 1, iz + 1) + inE%y(ix, iy - 1, iz)) + &
-                                    self%zZX(ix, 2) * inE%z(ix + 1, iy, iz) + &
-                                    self%zZX(ix, 1) * inE%z(ix - 1, iy, iz) + &
-                                    self%zZY(iy, 2) * inE%z(ix, iy + 1, iz) + &
-                                    self%zZY(iy, 1) * inE%z(ix, iy - 1, iz) + &
-                                    (self%zZO(ix, iy)+cvalue*self%Sigma_E%z(ix,iy,iz)) * inE%z(ix, iy, iz)
+                        do iz = 1, in_e%nz
+                            do iy = 2, in_e%ny
+                                do ix = 2, in_e%nx
+                                    out_e%z(ix, iy, iz) = self%zX(ix, iz) * (in_e%x(ix, iy, iz + 1) - &
+                                    in_e%x(ix, iy, iz) - in_e%x(ix - 1, iy, iz + 1) + in_e%x(ix - 1, iy, iz)) + &
+                                    self%zY(iy,iz) * (in_e%y(ix, iy, iz + 1) - in_e%y(ix, iy, iz) - &
+                                    in_e%y(ix, iy - 1, iz + 1) + in_e%y(ix, iy - 1, iz)) + &
+                                    self%zZX(ix, 2) * in_e%z(ix + 1, iy, iz) + &
+                                    self%zZX(ix, 1) * in_e%z(ix - 1, iy, iz) + &
+                                    self%zZY(iy, 2) * in_e%z(ix, iy + 1, iz) + &
+                                    self%zZY(iy, 1) * in_e%z(ix, iy - 1, iz) + &
+                                    (self%zZO(ix, iy)+cvalue*self%Sigma_E%z(ix,iy,iz)) * in_e%z(ix, iy, iz)
                                 enddo
                             enddo
                         enddo
                         !
-                        call outE%mult( self%metric%v_edge )
+                        call out_e%mult( self%metric%v_edge )
                         !
                     class default
-                        call errStop( "amult_ModelOperator_MF > Undefined outE." )
+                        call errStop( "amult_ModelOperator_MF_SG > Undefined out_e." )
                         !
                 end select
                 !
             class default
-                call errStop( "amult_ModelOperator_MF > Undefined inE." )
+                call errStop( "amult_ModelOperator_MF_SG > Undefined in_e." )
                 !
         end select
         !
-    end subroutine amult_ModelOperator_MF
+    end subroutine amult_ModelOperator_MF_SG
     !
     !> No subroutine briefing
     !
-    subroutine multAib_ModelOperator_MF( self, inE, outE )
+    subroutine multAib_ModelOperator_MF_SG( self, in_e, out_e )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Field_t ), intent( in ) :: inE
-        class( Vector_t ), intent( inout ) :: outE
+        class( ModelOperator_MF_SG_t ), intent( in ) :: self
+        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         !
         real( kind=prec ) :: omega
         !
-        if(.NOT. outE%is_allocated) then
-            call errStop( "multAib_ModelOperator_MF > outE not allocated" )
+        if(.NOT. out_e%is_allocated) then
+            call errStop( "multAib_ModelOperator_MF_SG > out_e not allocated" )
         endif
         !
         omega = R_ZERO
         !
-        call self%amult( omega, inE, outE ) 
+        call self%amult( omega, in_e, out_e ) 
         !
-    end subroutine multAib_ModelOperator_MF
+    end subroutine multAib_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine multCurlT_ModelOperator_MF( self, inH, outE )
+    subroutine multCurlT_ModelOperator_MF_SG( self, in_e, out_e )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Field_t ), intent( inout ) :: inH
-        class( Vector_t ), allocatable, intent( inout ) :: outE
+        class( ModelOperator_MF_SG_t ), intent( in ) :: self
+        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), allocatable, intent( inout ) :: out_e
         !
         integer :: ix, iy, iz
         !
-        select type( inH )
+        select type( in_e )
+            !
             class is( cVector3D_SG_t )
                 !
-                call inH%div( self%Metric%face_area )
+                call in_e%div( self%metric%face_area )
                 !
-                if( .NOT. outE%is_allocated ) then
-                     call errStop( "multCurlT_ModelOperator_MF > output vector not allocated" )
+                if( .NOT. out_e%is_allocated ) then
+                     call errStop( "multCurlT_ModelOperator_MF_SG > output vector not allocated" )
                 endif
                 !
-                select type( outE )
+                select type( out_e )
+                    !
                     class is( cVector3D_SG_t )
                         !
                         !> Ex
-                        do iy = 2, inH%Ny
-                            do iz = 2, inH%Nz
-                                outE%x(:, iy, iz) =    (inH%z(:, iy, iz) - &
-                                inH%z(:, iy - 1, iz)) - &
-                                (inH%y(:, iy, iz) - inH%y(:, iy, iz - 1))
+                        do iy = 2, in_e%Ny
+                            do iz = 2, in_e%Nz
+                                out_e%x(:, iy, iz) =    (in_e%z(:, iy, iz) - &
+                                in_e%z(:, iy - 1, iz)) - &
+                                (in_e%y(:, iy, iz) - in_e%y(:, iy, iz - 1))
                             enddo
                         enddo
                         !
                         !> Ey
-                        do iz = 2, inH%Nz
-                            do ix = 2, inH%Nx
-                                outE%y(ix, :, iz) = (inH%x(ix, :, iz) - &
-                                inH%x(ix, :, iz - 1)) - &
-                                (inH%z(ix, :, iz) - inH%z(ix - 1, :, iz))
+                        do iz = 2, in_e%Nz
+                            do ix = 2, in_e%Nx
+                                out_e%y(ix, :, iz) = (in_e%x(ix, :, iz) - &
+                                in_e%x(ix, :, iz - 1)) - &
+                                (in_e%z(ix, :, iz) - in_e%z(ix - 1, :, iz))
                             enddo
                         enddo
                         !
                         !> Ez
-                        do ix = 2, inH%Nx
-                            do iy = 2, inH%Ny
-                                outE%z(ix,iy,:) = (inH%y(ix, iy, :) - &
-                                inH%y(ix - 1, iy, :)) - &
-                                (inH%x(ix, iy, :) - inH%x(ix, iy - 1, :))
+                        do ix = 2, in_e%Nx
+                            do iy = 2, in_e%Ny
+                                out_e%z(ix,iy,:) = (in_e%y(ix, iy, :) - &
+                                in_e%y(ix - 1, iy, :)) - &
+                                (in_e%x(ix, iy, :) - in_e%x(ix, iy - 1, :))
                             enddo
                         enddo
                         !
+                        call out_e%mult( self%metric%edge_length )
+                        !
                     class default
-                        call errStop( "multCurlT_ModelOperator_MF > Incompatible outE" )
+                        call errStop( "multCurlT_ModelOperator_MF_SG > Incompatible out_e" )
+                        !
                 end select
                     !
             class default
-                call errStop( "multCurlT_ModelOperator_MF > Incompatible inH" )
+                call errStop( "multCurlT_ModelOperator_MF_SG > Incompatible in_e" )
                 !
         end select
         !
-        call outE%mult( self%metric%edge_length )
-        !
-    end subroutine multCurlT_ModelOperator_MF
+    end subroutine multCurlT_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine divCGrad_ModelOperator_MF( self, inPhi, outPhi )
+    subroutine divCGrad_ModelOperator_MF_SG( self, in_phi, out_phi )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Scalar_t ), intent( in ) :: inPhi
-        class( Scalar_t ), intent( inout ) :: outPhi
+        class( ModelOperator_MF_SG_t ), intent( in ) :: self
+        class( Scalar_t ), intent( inout ) :: in_phi
+        class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
         !
-        select type( outPhi )
+        select type( out_phi )
             !
             class is( cScalar3D_SG_t )
                 !
-                if( .NOT. outPhi%is_allocated) then
-                    call errStop( "divCGrad_ModelOperator_MF > outPhi not allocated" )
+                if( .NOT. out_phi%is_allocated) then
+                    call errStop( "divCGrad_ModelOperator_MF_SG > out_phi not allocated" )
                 endif
                 !
-                select type( inPhi )
+                select type( in_phi )
                     !
                     class is( cScalar3D_SG_t )
                         !
                         !> zero output (already allocated) to start
-                        call outPhi%zeros
+                        call out_phi%zeros
                         !
                         !> The coefficients are only for interior nodes
-                        do iz = 2, inPhi%nz
-                            do iy = 2, inPhi%ny
-                                do ix = 2, inPhi%nx
-                                    outPhi%v(ix, iy, iz) = &
-                                    inPhi%v(ix + 1, iy, iz) * self%db2%x(ix,iy,iz) + &
-                                    inPhi%v(ix - 1, iy, iz) * self%db1%x(ix, iy, iz) + &
-                                    inPhi%v(ix, iy + 1, iz) * self%db2%y(ix, iy, iz) + &
-                                    inPhi%v(ix, iy - 1, iz) * self%db1%y(ix, iy, iz) + &
-                                    inPhi%v(ix, iy, iz + 1) * self%db2%z(ix, iy, iz) + &
-                                    inPhi%v(ix, iy, iz - 1) * self%db1%z(ix, iy, iz) + &
-                                    inPhi%v(ix, iy, iz) * self%c%v(ix, iy, iz)
+                        do iz = 2, in_phi%nz
+                            do iy = 2, in_phi%ny
+                                do ix = 2, in_phi%nx
+                                    out_phi%v(ix, iy, iz) = &
+                                    in_phi%v(ix + 1, iy, iz) * self%db2%x(ix,iy,iz) + &
+                                    in_phi%v(ix - 1, iy, iz) * self%db1%x(ix, iy, iz) + &
+                                    in_phi%v(ix, iy + 1, iz) * self%db2%y(ix, iy, iz) + &
+                                    in_phi%v(ix, iy - 1, iz) * self%db1%y(ix, iy, iz) + &
+                                    in_phi%v(ix, iy, iz + 1) * self%db2%z(ix, iy, iz) + &
+                                    in_phi%v(ix, iy, iz - 1) * self%db1%z(ix, iy, iz) + &
+                                    in_phi%v(ix, iy, iz) * self%c%v(ix, iy, iz)
                                 enddo
                             enddo
                         enddo
                         !
                     class default
-                        call errStop( "divCGrad_ModelOperator_MF > Incompatible inPhi." )
+                        call errStop( "divCGrad_ModelOperator_MF_SG > Incompatible in_phi." )
                         !
                 end select
                 !
             class default
-                call errStop( "divCGrad_ModelOperator_MF > Incompatible outPhi." )
+                call errStop( "divCGrad_ModelOperator_MF_SG > Incompatible out_phi." )
                 !
         end select
         !
-    end subroutine divCGrad_ModelOperator_MF
+    end subroutine divCGrad_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine divC_ModelOperator_MF( self, inE, outPhi )
+    subroutine divC_ModelOperator_MF_SG( self, in_e, out_phi )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Field_t ), intent( in ) :: inE
-        class( Scalar_t ), intent( inout ) :: outPhi
+        class( ModelOperator_MF_SG_t ), intent( in ) :: self
+        class( Vector_t ), intent( inout ) :: in_e
+        class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
         !
-        select type( outPhi )
+        select type( out_phi )
             !
             class is( cScalar3D_SG_t )
                 !
-                if( .NOT. outPhi%is_allocated) then
-                    call errStop( "divC_ModelOperator_MF > outPhi not allocated" )
+                if( .NOT. out_phi%is_allocated ) then
+                    call errStop( "divC_ModelOperator_MF_SG > out_phi not allocated" )
                 endif
                 !
-                select type( inE )
+                select type( in_e )
                     !
                     class is ( cVector3D_SG_t )
                         !
-                        call outPhi%zeros
+                        call out_phi%zeros
                         !
-                        do ix = 2, outPhi%nx
-                            do iy = 2, outPhi%ny
+                        do ix = 2, out_phi%nx
+                            do iy = 2, out_phi%ny
                                 !
-                                do iz = 2, outPhi%grid%nzAir
-                                    outPhi%v(ix, iy, iz) = &
-                                    SIGMA_AIR * (inE%x(ix, iy, iz) - inE%x(ix - 1, iy, iz)) * &
-                                    inE%grid%del_x_inv(ix) + &
-                                    SIGMA_AIR * (inE%y(ix, iy, iz) - inE%y(ix, iy - 1, iz)) * &
-                                    inE%grid%del_y_inv(iy) + &
-                                    SIGMA_AIR * (inE%z(ix, iy, iz) - inE%z(ix, iy, iz - 1)) * &
-                                    inE%grid%del_z_inv(iz)
+                                do iz = 2, out_phi%grid%nzAir
+                                    out_phi%v(ix, iy, iz) = &
+                                    SIGMA_AIR * (in_e%x(ix, iy, iz) - in_e%x(ix - 1, iy, iz)) * &
+                                    in_e%grid%del_x_inv(ix) + &
+                                    SIGMA_AIR * (in_e%y(ix, iy, iz) - in_e%y(ix, iy - 1, iz)) * &
+                                    in_e%grid%del_y_inv(iy) + &
+                                    SIGMA_AIR * (in_e%z(ix, iy, iz) - in_e%z(ix, iy, iz - 1)) * &
+                                    in_e%grid%del_z_inv(iz)
                                 enddo
-                                
-                                !> FOR NODES AT THE AIR-EARTH INTERFACE
-                                iz = outPhi%grid%nzAir + 1
                                 !
-                                outPhi%v(ix, iy, iz) = &
-                                (self%Sigma_E%x(ix, iy, iz) * inE%x(ix, iy, iz) -         &
-                                self%Sigma_E%x(ix - 1, iy, iz) * inE%x(ix - 1, iy, iz)) * &
-                                inE%grid%del_x_inv(ix) + &
-                                (self%Sigma_E%y(ix, iy, iz) * inE%y(ix, iy, iz) -         &
-                                self%Sigma_E%y(ix, iy - 1, iz) * inE%y(ix, iy - 1, iz)) * &
-                                inE%grid%del_y_inv(iy) + &
-                                (self%Sigma_E%z(ix, iy, iz) * inE%z(ix, iy, iz) -         &
-                                SIGMA_AIR * inE%z(ix, iy, iz - 1)) * &
-                                inE%grid%del_z_inv(iz)
-
+                                !> FOR NODES AT THE AIR-EARTH INTERFACE
+                                iz = out_phi%grid%nzAir + 1
+                                !
+                                out_phi%v(ix, iy, iz) = &
+                                (self%Sigma_E%x(ix, iy, iz) * in_e%x(ix, iy, iz) -         &
+                                self%Sigma_E%x(ix - 1, iy, iz) * in_e%x(ix - 1, iy, iz)) * &
+                                in_e%grid%del_x_inv(ix) + &
+                                (self%Sigma_E%y(ix, iy, iz) * in_e%y(ix, iy, iz) -         &
+                                self%Sigma_E%y(ix, iy - 1, iz) * in_e%y(ix, iy - 1, iz)) * &
+                                in_e%grid%del_y_inv(iy) + &
+                                (self%Sigma_E%z(ix, iy, iz) * in_e%z(ix, iy, iz) -         &
+                                SIGMA_AIR * in_e%z(ix, iy, iz - 1)) * &
+                                in_e%grid%del_z_inv(iz)
+								!
                                 !> FOR NODES INSIDE THE EARTH ONLY
                                 !> THE TOP MOST EARTH NODE HAS AN INTERFACE WITH
                                 !> AIR, THEREFORE THAT ONE IS SKIPPED HERE
-                                do iz = outPhi%grid%nzAir + 2, outPhi%nz
-                                    outPhi%v(ix, iy, iz) = &
-                                    (self%Sigma_E%x(ix,iy,iz)*inE%x(ix, iy, iz) -                 &
-                                    self%Sigma_E%x(ix - 1,iy,iz)*inE%x(ix - 1, iy, iz)) * &
-                                    inE%grid%del_x_inv(ix)            &
-                                    +    (self%Sigma_E%y(ix,iy,iz)*inE%y(ix, iy, iz) -            &
-                                    self%Sigma_E%y(ix,iy - 1,iz)*inE%y(ix, iy - 1, iz)) * &
-                                    inE%grid%del_y_inv(iy)            &
-                                    +    (self%Sigma_E%z(ix,iy,iz)*inE%z(ix, iy, iz) -            &
-                                    self%Sigma_E%z(ix,iy,iz - 1)*inE%z(ix, iy, iz - 1)) * &
-                                    inE%grid%del_z_inv(iz)
+                                do iz = out_phi%grid%nzAir + 2, out_phi%nz
+                                    out_phi%v(ix, iy, iz) = &
+                                    (self%Sigma_E%x(ix,iy,iz)*in_e%x(ix, iy, iz) -                 &
+                                    self%Sigma_E%x(ix - 1,iy,iz)*in_e%x(ix - 1, iy, iz)) * &
+                                    in_e%grid%del_x_inv(ix)            &
+                                    +    (self%Sigma_E%y(ix,iy,iz)*in_e%y(ix, iy, iz) -            &
+                                    self%Sigma_E%y(ix,iy - 1,iz)*in_e%y(ix, iy - 1, iz)) * &
+                                    in_e%grid%del_y_inv(iy)            &
+                                    +    (self%Sigma_E%z(ix,iy,iz)*in_e%z(ix, iy, iz) -            &
+                                    self%Sigma_E%z(ix,iy,iz - 1)*in_e%z(ix, iy, iz - 1)) * &
+                                    in_e%grid%del_z_inv(iz)
                                 enddo
                             enddo
                         enddo
                         !
                     class default
-                        call errStop( "divC_ModelOperator_MF > inE type unknown" )
+                        call errStop( "divC_ModelOperator_MF_SG > in_e type unknown" )
                 end select
                 !
             class default
-                call errStop( "divC_ModelOperator_MF > outPhi type unknown" )
+                call errStop( "divC_ModelOperator_MF_SG > out_phi type unknown" )
                 !
         end select
         !
-    end subroutine divC_ModelOperator_MF
+    end subroutine divC_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine grad_ModelOperator_MF( self, inPhi, outE )
+    subroutine grad_ModelOperator_MF_SG( self, in_phi, out_e )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Scalar_t ), intent( in ) :: inPhi
-        class( Vector_t ), intent( inout ) :: outE
+        class( ModelOperator_MF_SG_t ), intent( in ) :: self
+        class( Scalar_t ), intent( inout ) :: in_phi
+        class( Vector_t ), intent( inout ) :: out_e
         !
         integer :: ix, iy, iz
         !
-        select type( outE )
+        select type( out_e )
             !
             class is ( cVector3D_SG_t )
                 !
-                if( .NOT.outE%is_allocated ) then
-                    !
-                    call errStop( "grad_ModelOperator_MF > outE not allocated" )
+                if( .NOT. out_e%is_allocated ) then
+                    call errStop( "grad_ModelOperator_MF_SG > out_e not allocated" )
                 endif
                 !
-                select type( inPhi )
+                select type( in_phi )
                     !
                     class is ( cScalar3D_SG_t )
                         !
-                        call outE%Zeros
+                        call out_e%Zeros
                         !
                         do ix = 1, self%metric%grid%nx 
                             do iy = 2, self%metric%grid%ny
                                 do iz = 2, self%metric%grid%nz
-                                    outE%x(ix, iy, iz) = (inPhi%v(ix + 1, iy, iz) - &
-                                    inPhi%v(ix, iy, iz)) / self%metric%grid%dx(ix)
+                                    out_e%x(ix, iy, iz) = (in_phi%v(ix + 1, iy, iz) - &
+                                    in_phi%v(ix, iy, iz)) / self%metric%grid%dx(ix)
                                 enddo
                             enddo
                         enddo
@@ -731,8 +737,8 @@ contains
                         do ix = 2, self%metric%grid%nx 
                             do iy = 1, self%metric%grid%ny
                                 do iz = 2, self%metric%grid%nz
-                                    outE%y(ix, iy, iz) = (inPhi%v(ix, iy + 1, iz) - &
-                                    inPhi%v(ix, iy, iz)) / self%metric%grid%dy(iy)
+                                    out_e%y(ix, iy, iz) = (in_phi%v(ix, iy + 1, iz) - &
+                                    in_phi%v(ix, iy, iz)) / self%metric%grid%dy(iy)
                                 enddo
                             enddo
                         enddo
@@ -740,79 +746,79 @@ contains
                         do ix = 2, self%metric%grid%nx 
                             do iy = 2, self%metric%grid%ny
                                 do iz = 1, self%metric%grid%nz    
-                                    outE%z(ix, iy, iz) = (inPhi%v(ix, iy, iz + 1) - &
-                                    inPhi%v(ix, iy, iz)) / self%metric%grid%dz(iz)
+                                    out_e%z(ix, iy, iz) = (in_phi%v(ix, iy, iz + 1) - &
+                                    in_phi%v(ix, iy, iz)) / self%metric%grid%dz(iz)
                                 enddo
                             enddo
                         enddo
                         !
                     class default
-                        call errStop( "grad_ModelOperator_MF > inPhi type unknown" )
+                        call errStop( "grad_ModelOperator_MF_SG > in_phi type unknown" )
                 end select
                 !
             class default
-                call errStop( "grad_ModelOperator_MF > outE type unknown" )
+                call errStop( "grad_ModelOperator_MF_SG > out_e type unknown" )
         end select
         !
-    end subroutine grad_ModelOperator_MF
+    end subroutine grad_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine div_ModelOperator_MF( self, inE, outPhi )
+    subroutine div_ModelOperator_MF_SG( self, in_e, out_phi )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( in ) :: self
-        class( Field_t ), intent( in ) :: inE
-        class( Field_t ), intent( inout ) :: outPhi
+        class( ModelOperator_MF_SG_t ), intent( in ) :: self
+        class( Vector_t ), intent( inout ) :: in_e
+        class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
         !
-        select type( outPhi )
+        select type( out_phi )
             !
             class is( cScalar3D_SG_t )
                 !
-                if( .NOT. outPhi%is_allocated ) then
-                    call errStop( "div_ModelOperator_MF > Output cScalar object not allocated" )
+                if( .NOT. out_phi%is_allocated ) then
+                    call errStop( "div_ModelOperator_MF_SG > Output cScalar object not allocated" )
                 endif
                 !
-                select type( inE )
+                select type( in_e )
                     !
                     class is( cVector3D_SG_t )
                         !
-                        call outPhi%zeros
+                        call out_phi%zeros
                         !
-                        do ix = 2, outPhi%nx
-                            do iy = 2, outPhi%ny
-                                do iz = 2, outPhi%grid%nz
-                                    outPhi%v(ix, iy, iz) = &
-                                    (inE%x(ix, iy, iz) - inE%x(ix - 1, iy, iz)) * &
-                                    inE%grid%del_x_inv(ix) + &
-                                    (inE%y(ix, iy, iz) - inE%y(ix, iy - 1, iz)) * &
-                                    inE%grid%del_y_inv(iy) + &
-                                    (inE%z(ix, iy, iz) - inE%z(ix, iy, iz - 1)) * &
-                                    inE%grid%del_z_inv(iz)
+                        do ix = 2, out_phi%nx
+                            do iy = 2, out_phi%ny
+                                do iz = 2, out_phi%grid%nz
+                                    out_phi%v(ix, iy, iz) = &
+                                    (in_e%x(ix, iy, iz) - in_e%x(ix - 1, iy, iz)) * &
+                                    in_e%grid%del_x_inv(ix) + &
+                                    (in_e%y(ix, iy, iz) - in_e%y(ix, iy - 1, iz)) * &
+                                    in_e%grid%del_y_inv(iy) + &
+                                    (in_e%z(ix, iy, iz) - in_e%z(ix, iy, iz - 1)) * &
+                                    in_e%grid%del_z_inv(iz)
                                 enddo
                             enddo
                         enddo
                         !
                     class default
-                        call errStop( "div_ModelOperator_MF> inE type unknown" )
+                        call errStop( "div_ModelOperator_MF_SG> in_e type unknown" )
                 end select
                 !
             class default
-                call errStop( "div_ModelOperator_MF > outPhi type unknown" )
+                call errStop( "div_ModelOperator_MF_SG > out_phi type unknown" )
                 !
         end select
         !
-    end subroutine div_ModelOperator_MF
+    end subroutine div_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine print_ModelOperator_MF( self )
+    subroutine print_ModelOperator_MF_SG( self )
         implicit none
         !
-        class( ModelOperator_MF_t ), intent( in ) :: self
+        class( ModelOperator_MF_SG_t ), intent( in ) :: self
         !
-        call errStop( "print_ModelOperator_MF not implemented yet" )
+        call errStop( "print_ModelOperator_MF_SG not implemented yet" )
         !
-    end subroutine print_ModelOperator_MF
+    end subroutine print_ModelOperator_MF_SG
     !
-end module ModelOperator_MF
+end module ModelOperator_MF_SG

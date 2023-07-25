@@ -61,34 +61,34 @@ module ModelOperator
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_amult_model_operator( self, omega, inE, outE, p_adjoint )
-            import :: ModelOperator_t, prec, Field_t, Vector_t
+        subroutine interface_amult_model_operator( self, omega, in_e, out_e, p_adjoint )
+            import :: ModelOperator_t, prec, Vector_t
             !
             class( ModelOperator_t ), intent( in ) :: self
             real( kind=prec ), intent( in ), optional :: omega
-            class( Field_t ), intent( in ) :: inE
-            class( Vector_t ), intent( inout ) :: outE
+            class( Vector_t ), intent( inout ) :: in_e
+            class( Vector_t ), intent( inout ) :: out_e
             logical, intent( in ), optional :: p_adjoint
         end subroutine interface_amult_model_operator
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_multaib_model_operator( self, inE, outE )
-            import :: ModelOperator_t, Field_t, Vector_t
+        subroutine interface_multaib_model_operator( self, in_e, out_e )
+            import :: ModelOperator_t, Vector_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Field_t ), intent( in ) :: inE
-            class( Vector_t ), intent( inout ) :: outE
+            class( Vector_t ), intent( inout ) :: in_e
+            class( Vector_t ), intent( inout ) :: out_e
         end subroutine interface_multaib_model_operator
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_multcurl_t_model_operator( self, inH, outE )
-            import :: ModelOperator_t, Field_t, Vector_t
+        subroutine interface_multcurl_t_model_operator( self, in_e, out_e )
+            import :: ModelOperator_t, Vector_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Field_t ), intent( inout ) :: inH
-            class( Vector_t ), allocatable, intent( inout ) :: outE
+            class( Vector_t ), intent( inout ) :: in_e
+            class( Vector_t ), allocatable, intent( inout ) :: out_e
         end subroutine interface_multcurl_t_model_operator
         !
         !> No interface subroutine briefing
@@ -100,42 +100,42 @@ module ModelOperator
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_divc_grad_model_operator( self, inPhi, outPhi )
+        subroutine interface_divc_grad_model_operator( self, in_phi, out_phi )
             import :: ModelOperator_t, Scalar_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Scalar_t ), intent( in ) :: inPhi
-            class( Scalar_t ), intent( inout ) :: outPhi
+            class( Scalar_t ), intent( inout ) :: in_phi
+            class( Scalar_t ), intent( inout ) :: out_phi
         end subroutine interface_divc_grad_model_operator
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_divc_model_operator( self, inE, outPhi )
-            import :: ModelOperator_t, Field_t, Scalar_t
+        subroutine interface_divc_model_operator( self, in_e, out_phi )
+            import :: ModelOperator_t, Vector_t, Scalar_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Field_t ), intent( in ) :: inE
-            class( Scalar_t ), intent( inout ) :: outPhi
+            class( Vector_t ), intent( inout ) :: in_e
+            class( Scalar_t ), intent( inout ) :: out_phi
         end subroutine interface_divc_model_operator
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_grad_model_operator( self, inPhi, outE )
+        subroutine interface_grad_model_operator( self, in_phi, out_e )
             import :: ModelOperator_t, Scalar_t, Vector_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Scalar_t ), intent( in ) :: inPhi
-            class( Vector_t ), intent( inout ) :: outE
+            class( Scalar_t ), intent( inout ) :: in_phi
+            class( Vector_t ), intent( inout ) :: out_e
         end subroutine interface_grad_model_operator
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_div_model_operator( self, inE, outPhi )
-            import :: ModelOperator_t, Field_t
+        subroutine interface_div_model_operator( self, in_e, out_phi )
+            import :: ModelOperator_t, Vector_t, Scalar_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Field_t ), intent( in ) :: inE
-            class( Field_t ), intent( inout ) :: outPhi
+            class( Vector_t ), intent( inout ) :: in_e
+            class( Scalar_t ), intent( inout ) :: out_phi
         end subroutine interface_div_model_operator
         !
         !> No interface subroutine briefing

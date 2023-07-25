@@ -68,6 +68,9 @@ module rScalar3D_MR
             procedure, public :: getV => getV_rScalar3D_MR
             procedure, public :: setV => setV_rScalar3D_MR
             !
+            procedure, public :: getSV => getSV_rScalar3D_MR
+            procedure, public :: setSV => setSV_rScalar3D_MR
+            !
             procedure, public :: getArray => getArray_rScalar3D_MR
             procedure, public :: setArray => setArray_rScalar3D_MR
             procedure, public :: switchStoreState => switchStoreState_rScalar3D_MR
@@ -541,7 +544,7 @@ contains
         call self%baseDealloc
         !
         if( allocated( self%v ) ) deallocate( self%v )
-        if( allocated( self%sv ) ) deallocate( self%sv )
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
         self%nx = 0
         self%ny = 0
@@ -576,9 +579,7 @@ contains
         !
         logical :: int_only_p
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( .NOT. present (int_only)) then
              int_only_p = .FALSE.
@@ -699,9 +700,7 @@ contains
         integer :: y1, y2
         integer :: z1, z2
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         x1 = xmin; x2 = xmax
         y1 = ymin; y2 = ymax
@@ -858,7 +857,7 @@ contains
     function dotProd_rScalar3D_MR( self, rhs ) result( cvalue )
         implicit none
         !
-        class( rScalar3D_MR_t ), intent( in ) :: self
+        class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
@@ -896,11 +895,11 @@ contains
     function getV_rScalar3D_MR( self ) result( v )
         implicit none
         !
-        class( rScalar3D_MR_t ), intent( in ) :: self
+        class( rScalar3D_MR_t ), intent( inout ) :: self
         !
         complex( kind=prec ), allocatable :: v(:, :, :)
         !
-        stop "Error: getVRScalar3D_SG not implemented!"
+        call errStop( "getV_rScalar3D_MR not implemented!" )
         !
     end function getV_rScalar3D_MR
     !
@@ -912,9 +911,34 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
         !
-        stop "Error: setV_rScalar3D_MR not implemented!"
+        call errStop( "setV_rScalar3D_MR not implemented!" )
         !
     end subroutine setV_rScalar3D_MR
+    !
+    !> No function briefing
+    !
+    function getSV_rScalar3D_MR( self ) result( s_v )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ), allocatable :: s_v(:)
+        !
+        call errStop( "getSV_rScalar3D_MR not implemented!" )
+        !
+    end function getSV_rScalar3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine setSV_rScalar3D_MR( self, s_v )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        !
+        call errStop( "setSV_rScalar3D_MR not implemented!" )
+        !
+    end subroutine setSV_rScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -958,57 +982,13 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine switchStoreState_rScalar3D_MR( self )
+    subroutine switchStoreState_rScalar3D_MR( self, store_state )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
+        integer, intent( in ), optional :: store_state
         !
-        integer :: nzAir
-        !
-        select case( self%store_state )
-            !
-            case( compound )
-                !
-                allocate( self%sv( self%length() ) )
-                !
-                self%sv = (/reshape( self%v, (/self%Nxyz, 1/))/)
-                !
-                deallocate( self%v )
-                !
-                self%store_state = singleton
-                !
-            case( singleton )
-                !
-                if( self%grid_type == NODE ) then
-                    !
-                    allocate( self%v( self%nx + 1, self%ny + 1, self%nz + 1 ) )
-                    !
-                else if( self%grid_type == CELL ) then
-                    !
-                    allocate( self%v( self%nx, self%ny, self%nz ) )
-                    !
-                else if( self%grid_type == CELL_EARTH ) then
-                    !
-                    call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
-                    !
-                    allocate( self%v( self%nx, self%ny, self%nz - nzAir ) )
-                    !
-                else
-                     write( *, * ) "Error: switchStoreState_rScalar3D_MR > unrecognized grid type: [", self%grid_type, "]"
-                     stop
-                endif
-                !
-                self%v = reshape( self%sv, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
-                !
-                deallocate( self%sv )
-                !
-                self%store_state = compound
-                !
-            case default
-                write( *, * ) "Error: switchStoreState_rScalar3D_MR > Unknown store_state :[", self%store_state, "]"
-                stop
-            !
-        end select
+        call errStop( "switchStoreState_rScalar3D_MR not implemented!" )
         !
     end subroutine switchStoreState_rScalar3D_MR
     !
@@ -1064,7 +1044,7 @@ contains
                     !
                 else if( rhs%store_state .EQ. singleton ) then
                     !
-                    self%sv = rhs%sv
+                    self%s_v = rhs%s_v
                     !
                 else
                     stop "Error: copyFrom_rScalar3D_MR > Unknown store_state!"
@@ -1121,9 +1101,7 @@ contains
         !
         integer :: ix, iy, iz,funit
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit

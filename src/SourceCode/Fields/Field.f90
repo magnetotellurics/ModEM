@@ -64,11 +64,16 @@ module Field
             generic :: div => divByField, divByValue
             !
             !> Miscellaneous
+            !
+            procedure( interface_get_sv_field ), deferred, public :: getSV
+            procedure( interface_set_sv_field ), deferred, public :: setSV
+            !
             procedure( interface_get_array_field ), deferred, public :: getArray
             procedure( interface_set_array_field ), deferred, public :: setArray
-            procedure( interface_switch_store_state_field ), deferred, public :: switchStoreState
             procedure( interface_copy_from_field ), deferred, public :: copyFrom
             generic :: assignment(=) => copyFrom
+            !
+            procedure( interface_switch_store_state_field ), deferred, public :: switchStoreState
             !
             !> I/O operations
             procedure( interface_read_field ), deferred, public :: read
@@ -137,6 +142,27 @@ module Field
             class( Field_t ), intent( in ) :: self
             integer :: field_length
         end function interface_length_field
+        !
+        !> No interface function briefing
+        !
+        function interface_get_sv_field( self ) result( s_v )
+            import :: Field_t, prec
+            !
+            class( Field_t ), intent( inout ) :: self
+            !
+            complex( kind=prec ), allocatable :: s_v(:)
+            !
+        end function interface_get_sv_field
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_set_sv_field( self, s_v )
+            import :: Field_t, prec
+            !
+            class( Field_t ), intent( inout ) :: self
+            complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+            !
+        end subroutine interface_set_sv_field
         !
         !> No interface function briefing
         function interface_get_array_field( self ) result( array )
@@ -241,15 +267,16 @@ module Field
         !> No interface function briefing
         function interface_dot_product_field( self, rhs ) result( cvalue )
             import :: Field_t, prec
-            class( Field_t ), intent( in ) :: self
+            class( Field_t ), intent( inout ) :: self
             class( Field_t ), intent( in ) :: rhs
             complex( kind=prec ) :: cvalue
         end function interface_dot_product_field
         !
         !> No interface subroutine briefing
-        subroutine interface_switch_store_state_field( self )
+        subroutine interface_switch_store_state_field( self, store_state )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
+            integer, intent( in ), optional :: store_state
         end subroutine interface_switch_store_state_field
         !
         !> No interface subroutine briefing
@@ -352,11 +379,11 @@ contains
         !
         allocate( aux_field, source = self )
         !
-        call aux_field%zeros()
+        call aux_field%zeros
         !
         call aux_field%setAllBoundary( C_ONE )
         !
-        c_array = aux_field%getArray()
+        c_array = aux_field%getSV()
         !
         int_size = 0
         bdry_size = 0

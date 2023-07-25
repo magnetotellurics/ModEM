@@ -37,32 +37,32 @@ module PreConditioner
         end subroutine interface_set_preconditioner
         !
         !> No interface subroutine briefing
-        subroutine interface_ltsolve_preconditioner( self, inE, outE, adjoint )
+        subroutine interface_ltsolve_preconditioner( self, in_e, out_e, adjoint )
             import :: PreConditioner_t, Vector_t
             !
             class( PreConditioner_t ), intent( inout ) :: self
-            class( Vector_t ), intent( in ) :: inE
-            class( Vector_t ), intent( inout ) :: outE
+            class( Vector_t ), intent( inout ) :: in_e
+            class( Vector_t ), intent( inout ) :: out_e
             logical, intent( in ) :: adjoint
         end subroutine interface_ltsolve_preconditioner
         !
         !> No interface subroutine briefing
-        subroutine interface_utsolve_preconditioner( self, inE, outE, adjoint )
+        subroutine interface_utsolve_preconditioner( self, in_e, out_e, adjoint )
             import :: PreConditioner_t, Vector_t
             !
             class( PreConditioner_t ), intent( inout ) :: self
-            class( Vector_t ), intent( in ) :: inE
-            class( Vector_t ), intent( inout ) :: outE
+            class( Vector_t ), intent( inout ) :: in_e
+            class( Vector_t ), intent( inout ) :: out_e
             logical, intent( in ) :: adjoint
         end subroutine interface_utsolve_preconditioner
         !
         !> No interface subroutine briefing
-        subroutine interface_lusolve_preconditioner( self, inPhi, outPhi )
+        subroutine interface_lusolve_preconditioner( self, in_phi, out_phi )
             import :: PreConditioner_t, Scalar_t
             !
             class( PreConditioner_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( in ) :: inPhi
-            class( Scalar_t ), intent( inout ) :: outPhi
+            class( Scalar_t ), intent( inout ) :: in_phi
+            class( Scalar_t ), intent( inout ) :: out_phi
         end subroutine interface_lusolve_preconditioner
         !
     end interface

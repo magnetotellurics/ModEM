@@ -43,7 +43,7 @@ contains
         !> Specific Solver PCG
         self%solver = Solver_PCG_t( model_operator )
         !
-        call self%setCond()
+        call self%setCond
         !
     end function DivergenceCorrection_ctor
     !
@@ -68,7 +68,7 @@ contains
         !
         class( DivergenceCorrection_t ), intent( in ) :: self
         real( kind=prec ), intent( in ) :: omega
-        class( Vector_t ), intent( in ) :: source_e
+        class( Vector_t ), intent( inout ) :: source_e
         class( Scalar_t ), intent( inout ) :: phi0
         !
         complex( kind=prec ) :: i_omega_mu
@@ -85,12 +85,12 @@ contains
     end subroutine rhsDivCorDivergenceCorrection
     !
     !> No subroutine briefing
-    subroutine divCorrDivergenceCorrection( self, inE, outE, phi0 )
+    subroutine divCorrDivergenceCorrection( self, in_e, out_e, phi0 )
         implicit none
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: inE
-        class( Vector_t ), intent( inout ) :: outE
+        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         class( Scalar_t ), intent( in ), optional :: phi0
         !
         class( Scalar_t ), allocatable :: phiSol, phiRHS
@@ -98,12 +98,10 @@ contains
         !
         SourceTerm = present( phi0 )
         !
-        allocate( phiSol, source = cScalar3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, NODE ) )
-        !
-        allocate( phiRHS, source = cScalar3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, NODE ) )
+        call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phiRHS )
         !
         !> compute divergence of currents for input electric field
-        call self%solver%preconditioner%model_operator%DivC( inE, phiRHS )
+        call self%solver%preconditioner%model_operator%DivC( in_e, phiRHS )
         !
         !>  If source term is present, subtract from divergence of currents
         !>  probably OK to use function here -- but could replace with subroutine
@@ -120,6 +118,8 @@ contains
         !> ???? Interesting point: if changing phiRHS to phiSol, the QMR starts to slowly converge
         call phiRHS%mult( self%solver%preconditioner%model_operator%metric%v_node )
         !
+        call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phiSol )
+        !
         !>    solve system of equations -- solver will have to know about
         !>     (a) the equations to solve -- the divergence correction operator
         !>     is modOp%divCGrad
@@ -132,18 +132,18 @@ contains
         !write (*,"(i8, es20.6)") self%solver%n_inv_iter, self%solver%relErr( self%solver%n_inv_iter )
         !endif
         !
-        !> compute gradient of phiSol (Divergence correction for inE)
-        call self%solver%preconditioner%model_operator%grad( phiSol, outE )
+        !> compute gradient of phiSol (Divergence correction for in_e)
+        call self%solver%preconditioner%model_operator%grad( phiSol, out_e )
         !
         deallocate( phiSol )
         !
-        !> subtract Divergence correction from inE
-        !>    outE = inE - outE
+        !> subtract Divergence correction from in_e
+        !>    out_e = in_e - out_e
         !
-        call outE%linComb( inE, C_MinusOne, C_ONE )
+        call out_e%linComb( in_e, C_MinusOne, C_ONE )
         !
         !> divergence of the corrected output electrical field
-        call self%solver%preconditioner%model_operator%DivC( outE, phiRHS )
+        call self%solver%preconditioner%model_operator%DivC( out_e, phiRHS )
         !
         !>  If source term is present, subtract from divergence of currents
         if( SourceTerm ) then

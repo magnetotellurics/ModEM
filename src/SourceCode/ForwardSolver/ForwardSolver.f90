@@ -40,7 +40,7 @@ module ForwardSolver
             procedure( interface_zero_diag_foward_solver ), deferred, public :: zeroDiagnostics
             !
             procedure( interface_create_e_solution_foward_solver ), deferred, public :: createESolution
-			!
+            !
             procedure( interface_copy_from_foward_solver ), deferred, public :: copyFrom
             generic :: assignment(=) => copyFrom
             !
@@ -89,7 +89,7 @@ module ForwardSolver
             !
             class( ForwardSolver_t ), intent( inout ) :: self
             integer, intent( in ) :: pol
-            class( Source_t ), intent( in ) :: source
+            class( Source_t ), intent( inout ) :: source
             class( Vector_t ), intent( inout ) :: e_solution
             !
         end subroutine interface_create_e_solution_foward_solver

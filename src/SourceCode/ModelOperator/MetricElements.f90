@@ -3,9 +3,10 @@
 !
 module MetricElements
     !
-    use Grid
-    use Vector
-    use Scalar
+    use rScalar3D_MR
+    use cVector3D_SG
+    use iScalar3D_SG
+    use rVector3D_MR
     !
     type, abstract :: MetricElements_t
         !
@@ -29,10 +30,12 @@ module MetricElements
         procedure( interface_set_edge_volume_metric_elements ), deferred, public :: setEdgeVolume
         procedure( interface_set_node_volume_metric_elements ), deferred, public :: setNodeVolume
         !
-        procedure, public :: baseDealloc => deallocateMetricElements
+        procedure, public :: baseDealloc => deallocate_MetricElements
         !
         procedure, public :: setMetricElements
         !
+        procedure, public :: createScalar, createVector
+    !
     end type MetricElements_t
     !
     abstract interface
@@ -147,7 +150,7 @@ contains
     end subroutine setMetricElements
     !
     !> No subroutine briefing
-    subroutine deallocateMetricElements( self )
+    subroutine deallocate_MetricElements( self )
         implicit none
         !
         class( MetricElements_t ), intent( inout ) :: self
@@ -161,6 +164,114 @@ contains
         if( allocated( self%v_node ) ) deallocate( self%v_node )
         if( allocated( self%v_cell ) ) deallocate( self%v_cell )
         !
-    end subroutine deallocateMetricElements
+    end subroutine deallocate_MetricElements
+    !
+    !> Create proper scalar from the Grid
+    !
+    subroutine createScalar( self, scalar_type, grid_type, scalar )
+        implicit none
+        !
+        class( MetricElements_t ), intent( in ) :: self
+        integer, intent( in ) :: scalar_type
+        character( len=4 ), intent( in ) :: grid_type
+        class( Scalar_t ), allocatable, intent( out ) :: scalar
+        !
+        if( grid_type /= NODE .AND. grid_type /= CELL .AND. grid_type /= CELL_EARTH ) then
+            call errStop( "createScalar > grid_type must be NODE, CELL or CELL_EARTH" )
+        else
+            !
+            select type( grid => self%grid )
+                !
+                class is( Grid3D_SG_t )
+                    !
+                    if( scalar_type == real_t ) then
+                        allocate( scalar, source = rScalar3D_SG_t( grid, grid_type ) )
+                    elseif( scalar_type == complex_t ) then
+                        allocate( scalar, source = cScalar3D_SG_t( grid, grid_type ) )
+                    elseif( scalar_type == integer_t ) then
+                        allocate( scalar, source = iScalar3D_SG_t( grid, grid_type ) )
+                    else
+                        call errStop( "createrScalar_SG > choose real_t, complex_t or integer_t" )
+                    endif
+                    !
+                class is( Grid3D_MR_t )
+                    !
+                    if( scalar_type == real_t ) then
+                        allocate( scalar, source = rScalar3D_MR_t( grid, grid_type ) )
+                    elseif( scalar_type == complex_t ) then
+                        !allocate( scalar, source = cScalar3D_MR_t( grid, grid_type ) )
+                        !
+                        call errStop( "createrScalar_MR > complex_t to be implemented" )
+                    elseif( scalar_type == integer_t ) then
+                        !allocate( scalar, source = iScalar3D_MR_t( grid, grid_type ) )
+                        !
+                        call errStop( "createrScalar_MR > integer_t to be implemented" )
+                    else
+                        call errStop( "createrScalar_MR > choose real_t, complex_t or integer_t" )
+                    endif
+                    !
+                class default
+                   call errStop( "createScalar > Unclassified grid" )
+                !
+            end select
+            !
+        endif
+        !
+    end subroutine createScalar
+    !
+    !> Create proper vector from the Grid
+    !
+    subroutine createVector( self, vector_type, grid_type, vector )
+        implicit none
+        !
+        class( MetricElements_t ), intent( in ) :: self
+        integer, intent( in ) :: vector_type
+        character( len=4 ), intent( in ) :: grid_type
+        class( Vector_t ), allocatable, intent( out ) :: vector
+        !
+        if( grid_type /= EDGE .AND. grid_type /= FACE ) then
+            call errStop( "createVector > grid_type must be EDGE or FACE" )
+        else
+            !
+            select type( grid => self%grid )
+                !
+                class is( Grid3D_SG_t )
+                    !
+                    if( vector_type == real_t ) then
+                        allocate( vector, source = rVector3D_SG_t( grid, grid_type ) )
+                    elseif( vector_type == complex_t ) then
+                        allocate( vector, source = cVector3D_SG_t( grid, grid_type ) )
+                    elseif( vector_type == integer_t ) then
+                        !allocate( vector, source = iVector3D_SG_t( grid, grid_type ) )
+                        !
+                        call errStop( "createVector_SG > integer_t to be implemented" )
+                    else
+                        call errStop( "createVector_SG > choose real_t, complex_t or integer_t" )
+                    endif
+                    !
+                class is( Grid3D_MR_t )
+                    !
+                    if( vector_type == real_t ) then
+                        allocate( vector, source = rVector3D_MR_t( grid, grid_type ) )
+                    elseif( vector_type == complex_t ) then
+                        !allocate( vector, source = cVector3D_MR_t( grid, grid_type ) )
+                        !
+                        call errStop( "createVector_MR > complex_t to be implemented" )
+                    elseif( vector_type == integer_t ) then
+                        !allocate( vector, source = iVector3D_MR_t( grid, grid_type ) )
+                        !
+                        call errStop( "createVector_MR > integer_t to be implemented" )
+                    else
+                        call errStop( "createVector_MR > choose real_t, complex_t or integer_t" )
+                    endif
+                    !
+                class default
+                   call errStop( "createVector > Unclassified grid" )
+                !
+            end select
+            !
+        endif
+        !
+    end subroutine createVector
     !
 end module MetricElements

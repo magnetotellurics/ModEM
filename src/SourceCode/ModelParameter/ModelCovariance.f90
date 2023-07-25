@@ -218,8 +218,9 @@ contains
         implicit none
         !
         class( ModelCovariance_t ), intent( in ) :: self
-        class( ModelParameter_t ), allocatable, intent( in ) :: dm
-        class( ModelParameter_t ), allocatable :: mhat
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dm
+        !
+		class( ModelParameter_t ), allocatable :: mhat
         !
         complex( kind=prec ), allocatable :: v(:, :, :)
         !

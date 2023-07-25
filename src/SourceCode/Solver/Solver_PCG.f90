@@ -41,7 +41,7 @@ contains
         !> Instantiate the PreConditioner object according to the ModelOperator type
         select type( model_operator )
             !
-            class is( ModelOperator_MF_t )
+            class is( ModelOperator_MF_SG_t )
                 !
                 allocate( self%preconditioner, source = PreConditioner_DC_MF_t( model_operator ) )
             !
@@ -75,7 +75,7 @@ contains
         implicit none
         !
         class( Solver_PCG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: b
+        class( Scalar_t ), intent( inout ) :: b
         class( Scalar_t ), allocatable, intent( inout ) :: x
         !
         !>    these will have to be created in a way to match

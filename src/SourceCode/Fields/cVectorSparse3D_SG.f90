@@ -56,6 +56,10 @@ module cVectorSparse3D_SG
             !
             !> Miscellaneous
             procedure, public :: getReal => getReal_cVectorSparse3D_SG
+            !
+            procedure, public :: getSV => getSV_cVectorSparse3D_SG
+            procedure, public :: setSV => setSV_cVectorSparse3D_SG
+            !
             procedure, public :: getArray => getArray_cVectorSparse3D_SG
             procedure, public :: setArray => setArray_cVectorSparse3D_SG
             procedure, public :: switchStoreState => switchStoreState_cVectorSparse3D_SG
@@ -211,7 +215,7 @@ contains
     function dotProd_cVectorSparse3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
-        class( cVectorSparse3D_SG_t ), intent( in ) :: self
+        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
@@ -354,7 +358,7 @@ contains
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in ) :: cvector
+        class( Vector_t ), intent( inout ) :: cvector
         !
         integer, allocatable, dimension(:,:,:) :: Ix, Jx, Kx, XYZ1
         integer, allocatable, dimension(:,:,:) :: Iy, Jy, Ky, XYZ2
@@ -365,6 +369,8 @@ contains
         select type( cvector )
             !
             class is( cVector3D_SG_t )
+                !
+                call cvector%switchStoreState( compound )
                 !
                 Ix = cvector%x
                 Jx = cvector%x
@@ -470,6 +476,31 @@ contains
         stop "Error: length_cVectorSparse3D_SG not implemented yet!"
         !
     end function length_cVectorSparse3D_SG
+    !
+    !> No function briefing
+    !
+    function getSV_cVectorSparse3D_SG( self ) result( s_v )
+        implicit none
+        !
+        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ), allocatable :: s_v(:)
+        !
+        call errStop( "getSV_cVectorSparse3D_SG not implemented!" )
+        !
+    end function getSV_cVectorSparse3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine setSV_cVectorSparse3D_SG( self, s_v )
+        implicit none
+        !
+        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        !
+        call errStop( "setSV_cVectorSparse3D_SG not implemented!" )
+        !
+    end subroutine setSV_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
@@ -675,10 +706,11 @@ contains
         !
     end subroutine getReal_cVectorSparse3D_SG
     !
-    subroutine switchStoreState_cVectorSparse3D_SG( self )
+    subroutine switchStoreState_cVectorSparse3D_SG( self, store_state )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        integer, intent( in ), optional :: store_state
         !
         stop "Error: switchStoreState_cVectorSparse3D_SG not implemented yet!"
         !

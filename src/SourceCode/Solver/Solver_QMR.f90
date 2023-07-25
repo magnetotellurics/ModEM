@@ -41,7 +41,7 @@ contains
         !> Instantiate the PreConditioner object according to the ModelOperator type
         select type( model_operator )
             !
-            class is( ModelOperator_MF_t )
+            class is( ModelOperator_MF_SG_t )
                 !
                 allocate( self%preconditioner, source = PreConditioner_CC_MF_t( model_operator ) )
                 !
@@ -54,9 +54,9 @@ contains
             !
         end select
         !
-        call self%setDefaults()
+        call self%setDefaults
         !
-        call self%zeroDiagnostics()
+        call self%zeroDiagnostics
         !
     end function Solver_QMR_ctor
     !
@@ -83,7 +83,7 @@ contains
         implicit none
         !
         class( Solver_QMR_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in ) :: b
+        class( Vector_t ), intent( inout ) :: b
         class( Vector_t ), intent( inout ) :: x
         !
         class( Vector_t ), allocatable :: R, Y, Z, V, W, YT, ZT, VT, WT, P, Q, PT, D, S
@@ -160,7 +160,8 @@ contains
             if( ( RHO .EQ. C_ZERO ) .OR. ( PSI .EQ. C_ZERO ) ) then
                 !
                 self%failed = .TRUE.
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m solveQMR > Failed to converge"
+                !
+                call errStop( "solveQMR > Failed to converge" )
                 !
             endif
             !

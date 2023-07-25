@@ -10,7 +10,7 @@ module cVector3D_SG
         !
         complex( kind=prec ), allocatable, dimension(:, :, :) :: x, y, z
         !
-        complex( kind=prec ), allocatable, dimension(:) :: sv
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
         contains
             !
@@ -63,9 +63,19 @@ module cVector3D_SG
             procedure, public :: getAxis => getAxis_cVector3D_SG
             !
             procedure, public :: getReal => getReal_cVector3D_SG
+            !
+            procedure, public :: getX => getX_cVector3D_SG
+            procedure, public :: setX => setX_cVector3D_SG
+            procedure, public :: getY => getY_cVector3D_SG
+            procedure, public :: setY => setY_cVector3D_SG
+            procedure, public :: getZ => getZ_cVector3D_SG
+            procedure, public :: setZ => setZ_cVector3D_SG
+            !
+            procedure, public :: getSV => getSV_cVector3D_SG
+            procedure, public :: setSV => setSV_cVector3D_SG
+            !
             procedure, public :: getArray => getArray_cVector3D_SG
             procedure, public :: setArray => setArray_cVector3D_SG
-            procedure, public :: switchStoreState => switchStoreState_cVector3D_SG
             procedure, public :: copyFrom => copyFrom_cVector3D_SG
             !
             !> I/O operations
@@ -169,7 +179,7 @@ contains
         if( allocated( self%x ) ) deallocate( self%x )
         if( allocated( self%y ) ) deallocate( self%y )
         if( allocated( self%z ) ) deallocate( self%z )
-        if( allocated( self%sv ) ) deallocate( self%sv )
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
         self%nx = 0
         self%ny = 0
@@ -188,9 +198,7 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         select case( self%grid_type )
             !
@@ -228,9 +236,7 @@ contains
         !
         logical :: int_only_p
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( .NOT. present(int_only)) then
             int_only_p = .FALSE.
@@ -341,9 +347,7 @@ contains
             stop "Error: intBdryIndices_cVector3D_SG > Not allocated. Exiting."
         endif
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         select case(self%grid_type)
             case( EDGE )
@@ -436,9 +440,7 @@ contains
         integer :: y1, y2
         integer :: z1, z2
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         x1 = xmin; x2 = xmax
         y1 = ymin; y2 = ymax
@@ -506,7 +508,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = C_ZERO
+            self%s_v = C_ZERO
             !
         else
             stop "Error: zeros_cVector3D_SG > Unknown store_state!"
@@ -519,28 +521,23 @@ contains
     subroutine sumEdge_cVector3D_SG( self, cell_out, interior_only )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in ) :: self
+        class( cVector3D_SG_t ), intent( inout ) :: self
         class( Scalar_t ), intent( inout ) :: cell_out
         logical, optional, intent( in ) :: interior_only
         !
         integer :: x_xend, x_yend, x_zend
         integer :: y_xend, y_yend, y_zend
         integer :: z_xend, z_yend, z_zend
-        type( cVector3D_SG_t ) :: E_tmp
         logical :: is_interior_only
         !
-        E_tmp = self
-        !
-        if( self%store_state /= compound ) then
-             call E_tmp%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         is_interior_only = .FALSE.
         !
         if( present( interior_only ) ) is_interior_only = interior_only
         !
         if( is_interior_only ) then
-            call E_tmp%setAllBoundary( C_ZERO )
+            call self%setAllBoundary( C_ZERO )
         endif
         !
         if( .NOT. cell_out%is_allocated ) then
@@ -551,47 +548,47 @@ contains
             !
             class is( rScalar3D_SG_t )
                 !
-                select case( E_tmp%grid_type )
+                select case( self%grid_type )
                     !
                     case( EDGE )
                         !
-                        x_xend = size(E_tmp%x, 1)
-                        x_yend = size(E_tmp%x, 2)
-                        x_zend = size(E_tmp%x, 3)
+                        x_xend = size(self%x, 1)
+                        x_yend = size(self%x, 2)
+                        x_zend = size(self%x, 3)
                         !
-                        y_xend = size(E_tmp%y, 1)
-                        y_yend = size(E_tmp%y, 2)
-                        y_zend = size(E_tmp%y, 3)
+                        y_xend = size(self%y, 1)
+                        y_yend = size(self%y, 2)
+                        y_zend = size(self%y, 3)
                         !
-                        z_xend = size(E_tmp%z, 1)
-                        z_yend = size(E_tmp%z, 2)
-                        z_zend = size(E_tmp%z, 3)
+                        z_xend = size(self%z, 1)
+                        z_yend = size(self%z, 2)
+                        z_zend = size(self%z, 3)
                         !
-                        cell_out%v = E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
-                        E_tmp%x(:,2:x_yend,1:x_zend-1)       + &
-                        E_tmp%x(:,1:x_yend-1,2:x_zend)       + &
-                        E_tmp%x(:,2:x_yend,2:x_zend)         + &
-                        E_tmp%y(1:y_xend-1,:,1:y_zend-1)     + &
-                        E_tmp%y(2:y_xend,:,1:y_zend-1)       + &
-                        E_tmp%y(1:y_xend-1,:,2:y_zend)       + &
-                        E_tmp%y(2:y_xend,:,2:y_zend)         + &
-                        E_tmp%z(1:z_xend-1,1:z_yend-1,:)     + &
-                        E_tmp%z(2:z_xend,1:z_yend-1,:)       + &
-                        E_tmp%z(1:z_xend-1,2:z_yend,:)       + &
-                        E_tmp%z(2:z_xend,2:z_yend,:)
+                        cell_out%v = self%x(:,1:x_yend-1,1:x_zend-1) + &
+                        self%x(:,2:x_yend,1:x_zend-1)       + &
+                        self%x(:,1:x_yend-1,2:x_zend)       + &
+                        self%x(:,2:x_yend,2:x_zend)         + &
+                        self%y(1:y_xend-1,:,1:y_zend-1)     + &
+                        self%y(2:y_xend,:,1:y_zend-1)       + &
+                        self%y(1:y_xend-1,:,2:y_zend)       + &
+                        self%y(2:y_xend,:,2:y_zend)         + &
+                        self%z(1:z_xend-1,1:z_yend-1,:)     + &
+                        self%z(2:z_xend,1:z_yend-1,:)       + &
+                        self%z(1:z_xend-1,2:z_yend,:)       + &
+                        self%z(2:z_xend,2:z_yend,:)
                         !
                     case( FACE )
                         !
-                        x_xend = size(E_tmp%x, 1)
-                        y_xend = size(E_tmp%y, 1)
-                        z_xend = size(E_tmp%z, 1)
+                        x_xend = size(self%x, 1)
+                        y_xend = size(self%y, 1)
+                        z_xend = size(self%z, 1)
                         !
-                        cell_out%v = E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
-                        E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:) + &
-                        E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
+                        cell_out%v = self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
+                        self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:) + &
+                        self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
                         !
                     case default
-                        stop "Error: sumEdges_cVector3D_SG: undefined E_tmp%grid_type"
+                        stop "Error: sumEdges_cVector3D_SG: undefined self%grid_type"
                 end select
                 !
             class default
@@ -603,7 +600,7 @@ contains
     subroutine sumEdgeVTI_cVector3D_SG( self, cell_h_out, cell_v_out, interior_only )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in ) :: self
+        class( cVector3D_SG_t ), intent( inout ) :: self
         class( Scalar_t ), intent( inout ) :: cell_h_out, cell_v_out
         logical, optional, intent( in ) :: interior_only
         !
@@ -611,21 +608,16 @@ contains
         integer :: x_xend, x_yend, x_zend
         integer :: y_xend, y_yend, y_zend
         integer :: z_xend, z_yend, z_zend
-        type( rVector3D_SG_t ) :: E_tmp
         logical :: is_interior_only
         !
-        E_tmp = self
-        !
-        if( self%store_state /= compound ) then
-             call E_tmp%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         is_interior_only = .FALSE.
         !
         if( present( interior_only ) ) is_interior_only = interior_only
         !
         if( is_interior_only ) then
-            call E_tmp%setAllBoundary( C_ZERO )
+            call self%setAllBoundary( C_ZERO )
         endif
         !
         if( .NOT. cell_h_out%is_allocated ) then
@@ -644,52 +636,52 @@ contains
                     !
                     class is( cScalar3D_SG_t )
                         !
-                        select case( E_tmp%grid_type )
+                        select case( self%grid_type )
                             !
                             case( EDGE )
                                 !
-                                x_xend = size( E_tmp%x, 1 )
-                                x_yend = size( E_tmp%x, 2 )
-                                x_zend = size( E_tmp%x, 3 )
+                                x_xend = size( self%x, 1 )
+                                x_yend = size( self%x, 2 )
+                                x_zend = size( self%x, 3 )
                                 !
-                                y_xend = size( E_tmp%y, 1 )
-                                y_yend = size( E_tmp%y, 2 )
-                                y_zend = size( E_tmp%y, 3 )
+                                y_xend = size( self%y, 1 )
+                                y_yend = size( self%y, 2 )
+                                y_zend = size( self%y, 3 )
                                 !
-                                z_xend = size( E_tmp%z, 1 )
-                                z_yend = size( E_tmp%z, 2 )
-                                z_zend = size( E_tmp%z, 3 )
+                                z_xend = size( self%z, 1 )
+                                z_yend = size( self%z, 2 )
+                                z_zend = size( self%z, 3 )
                                 !
-                                sigma_v = E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
-                                E_tmp%x(:,2:x_yend,1:x_zend-1)       + &
-                                E_tmp%x(:,1:x_yend-1,2:x_zend)       + &
-                                E_tmp%x(:,2:x_yend,2:x_zend)         + &
-                                E_tmp%y(1:y_xend-1,:,1:y_zend-1)     + &
-                                E_tmp%y(2:y_xend,:,1:y_zend-1)       + &
-                                E_tmp%y(1:y_xend-1,:,2:y_zend)       + &
-                                E_tmp%y(2:y_xend,:,2:y_zend)
+                                sigma_v = self%x(:,1:x_yend-1,1:x_zend-1) + &
+                                self%x(:,2:x_yend,1:x_zend-1)       + &
+                                self%x(:,1:x_yend-1,2:x_zend)       + &
+                                self%x(:,2:x_yend,2:x_zend)         + &
+                                self%y(1:y_xend-1,:,1:y_zend-1)     + &
+                                self%y(2:y_xend,:,1:y_zend-1)       + &
+                                self%y(1:y_xend-1,:,2:y_zend)       + &
+                                self%y(2:y_xend,:,2:y_zend)
                                 !
                                 call cell_h_out%setV( sigma_v )
                                 !
-                                sigma_v = E_tmp%z(1:z_xend-1,1:z_yend-1,:)     + &
-                                E_tmp%z(2:z_xend,1:z_yend-1,:)       + &
-                                E_tmp%z(1:z_xend-1,2:z_yend,:)       + &
-                                E_tmp%z(2:z_xend,2:z_yend,:)
+                                sigma_v = self%z(1:z_xend-1,1:z_yend-1,:)     + &
+                                self%z(2:z_xend,1:z_yend-1,:)       + &
+                                self%z(1:z_xend-1,2:z_yend,:)       + &
+                                self%z(2:z_xend,2:z_yend,:)
                                 !
                                 call cell_v_out%setV( sigma_v )
                                 !
                             case( FACE )
                                 !
-                                x_xend = size( E_tmp%x, 1 )
-                                y_xend = size( E_tmp%y, 1 )
-                                z_xend = size( E_tmp%z, 1 )
+                                x_xend = size( self%x, 1 )
+                                y_xend = size( self%y, 1 )
+                                z_xend = size( self%z, 1 )
                                 !
-                                sigma_v = E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
-                                          E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:)
+                                sigma_v = self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
+                                          self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:)
                                 !
                                 call cell_h_out%setV( sigma_v )
                                 !
-                                sigma_v = E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
+                                sigma_v = self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
                                 !
                                 call cell_v_out%setV( sigma_v )
                                 !
@@ -732,9 +724,7 @@ contains
             type = ptype
         endif
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         select type( cell_in )
             !
@@ -807,7 +797,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: cell_h_in, cell_v_in
+        class( Scalar_t ), intent( inout ) :: cell_h_in, cell_v_in
         character(*), intent( in ), optional :: ptype
         !
         complex( kind=prec ), allocatable :: v_h(:, :, :), v_v(:, :, :)
@@ -826,9 +816,7 @@ contains
             type = ptype
         endif
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         v_h = cell_h_in%getV()
         v_v = cell_v_in%getV()
@@ -908,7 +896,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = conjg( self%sv )
+            self%s_v = conjg( self%s_v )
             !
         else
             stop "Error: conjugate_cVector3D_SG > Unknown store_state!"
@@ -930,7 +918,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -944,7 +932,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv + rhs%sv
+                        self%s_v = self%s_v + rhs%s_v
                         !
                     else
                         stop "Error: add_cVector3D_SG > Unknown rhs store_state!"
@@ -960,7 +948,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv + rhs%sv
+                        self%s_v = self%s_v + rhs%s_v
                         !
                     else
                         stop "Error: add_cVector3D_SG > Unknown rhs store_state!"
@@ -976,7 +964,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv + rhs%sv
+                        self%s_v = self%s_v + rhs%s_v
                         !
                     else
                         stop "Error: add_cVector3D_SG > Unknown rhs store_state!"
@@ -992,7 +980,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv + rhs%sv
+                        self%s_v = self%s_v + rhs%s_v
                         !
                     else
                         stop "Error: add_cVector3D_SG > Unknown rhs store_state!"
@@ -1020,7 +1008,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type(rhs)
                 !
@@ -1034,7 +1022,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = c1 * self%sv + c2 * rhs%sv
+                        self%s_v = c1 * self%s_v + c2 * rhs%s_v
                         !
                     else
                         stop "Error: linComb_cVector3D_SG > Unknown rhs store_state!"
@@ -1065,7 +1053,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv - cvalue
+            self%s_v = self%s_v - cvalue
             !
         else
             stop "Error: subValue_cVector3D_SG > Unknown self store_state!"
@@ -1083,7 +1071,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1097,7 +1085,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv - rhs%sv
+                        self%s_v = self%s_v - rhs%s_v
                         !
                     else
                         stop "Error: subField_cVector3D_SG > Unknown rhs store_state!"
@@ -1113,7 +1101,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv - rhs%sv
+                        self%s_v = self%s_v - rhs%s_v
                         !
                     else
                         stop "Error: subField_cVector3D_SG > Unknown rhs store_state!"
@@ -1129,7 +1117,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv - rhs%sv
+                        self%s_v = self%s_v - rhs%s_v
                         !
                     else
                         stop "Error: subField_cVector3D_SG > Unknown rhs store_state!"
@@ -1145,7 +1133,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv - rhs%sv
+                        self%s_v = self%s_v - rhs%s_v
                         !
                     else
                         stop "Error: subField_cVector3D_SG > Unknown rhs store_state!"
@@ -1178,7 +1166,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv * rvalue
+            self%s_v = self%s_v * rvalue
             !
         else
             stop "Error: multByReal_cVector3D_SG > Unknown self store_state!"
@@ -1202,7 +1190,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv * cvalue
+            self%s_v = self%s_v * cvalue
             !
         else
             stop "Error: multByComplex_cVector3D_SG > Unknown self store_state!"
@@ -1220,7 +1208,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1234,7 +1222,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv * rhs%sv
+                        self%s_v = self%s_v * rhs%s_v
                         !
                     else
                         stop "Error: multByField_cVector3D_SG > Unknown rhs store_state!"
@@ -1250,7 +1238,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv * rhs%sv
+                        self%s_v = self%s_v * rhs%s_v
                         !
                     else
                         stop "Error: multByField_cVector3D_SG > Unknown rhs store_state!"
@@ -1266,7 +1254,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv * rhs%sv
+                        self%s_v = self%s_v * rhs%s_v
                         !
                     else
                         stop "Error: multByField_cVector3D_SG > Unknown rhs store_state!"
@@ -1282,7 +1270,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv * rhs%sv
+                        self%s_v = self%s_v * rhs%s_v
                         !
                     else
                         stop "Error: multByField_cVector3D_SG > Unknown rhs store_state!"
@@ -1313,9 +1301,9 @@ contains
             !
             allocate( diag_mult, source = cVector3D_SG_t( self%grid, self%grid_type ) )
             !
-            if( diag_mult%store_state /= rhs%store_state ) call diag_mult%switchStoreState
+            call diag_mult%switchStoreState( rhs%store_state )
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( diag_mult )
                 !
@@ -1333,7 +1321,7 @@ contains
                                 !
                             else if( rhs%store_state .EQ. singleton ) then
                                 !
-                                diag_mult%sv = self%sv * rhs%sv
+                                diag_mult%s_v = self%s_v * rhs%s_v
                                 !
                             else
                                 stop "Error: diagMult_cVector3D_SG > Unknown rhs store_state!"
@@ -1349,7 +1337,7 @@ contains
                                 !
                             else if( rhs%store_state .EQ. singleton ) then
                                 !
-                                diag_mult%sv = self%sv * rhs%sv
+                                diag_mult%s_v = self%s_v * rhs%s_v
                                 !
                             else
                                 stop "Error: diagMult_cVector3D_SG > Unknown rhs store_state!"
@@ -1381,7 +1369,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 class is( cVector3D_SG_t ) 
@@ -1394,7 +1382,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv + cvalue * rhs%sv
+                        self%s_v = self%s_v + cvalue * rhs%s_v
                         !
                     else
                         stop "Error: multAdd_cVector3D_SG > Unknown rhs store_state!"
@@ -1416,7 +1404,7 @@ contains
     function dotProd_cVector3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( in ) :: self
+        class( cVector3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
@@ -1429,34 +1417,30 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state == rhs%store_state ) then
+            call self%switchStoreState( rhs%store_state )
+            !
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( cVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
+                    if( rhs%store_state .EQ. compound ) then
                         !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            cvalue = cvalue + sum( conjg( self%x ) * rhs%x )
-                            cvalue = cvalue + sum( conjg( self%y ) * rhs%y )
-                            cvalue = cvalue + sum( conjg( self%z ) * rhs%z )
-                            !
-                        else if( rhs%store_state .EQ. singleton ) then
-                            !
-                            cvalue = cvalue + sum( conjg( self%sv ) * rhs%sv )
-                            !
-                        else
-                            stop "Error: dotProd_cVector3D_SG > Unknown rhs store_state!"
-                        endif
+                        cvalue = cvalue + sum( conjg( self%x ) * rhs%x )
+                        cvalue = cvalue + sum( conjg( self%y ) * rhs%y )
+                        cvalue = cvalue + sum( conjg( self%z ) * rhs%z )
                         !
-                    class default
-                        stop "Error: dotProd_cVector3D_SG: undefined rhs"
+                    else if( rhs%store_state .EQ. singleton ) then
+                        !
+                        cvalue = cvalue + sum( conjg( self%s_v ) * rhs%s_v )
+                        !
+                    else
+                        stop "Error: dotProd_cVector3D_SG > Unknown rhs store_state!"
+                    endif
                     !
-                end select
+                class default
+                    stop "Error: dotProd_cVector3D_SG: undefined rhs"
                 !
-            else
-                stop "Error: dotProd_cVector3D_SG > Incompatible store_state"
-            endif
+            end select
             !
         else
             stop "Error: dotProd_cVector3D_SG > Incompatible rhs"
@@ -1480,7 +1464,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv / cvalue
+            self%s_v = self%s_v / cvalue
             !
         else
             stop "Error: divByValue_cVector3D_SG > Unknown self store_state!"
@@ -1498,7 +1482,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1512,7 +1496,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv / rhs%sv
+                        self%s_v = self%s_v / rhs%s_v
                         !
                     else
                         stop "Error: divByField_cVector3D_SG > Unknown rhs store_state!"
@@ -1528,7 +1512,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv / rhs%sv
+                        self%s_v = self%s_v / rhs%s_v
                         !
                     else
                         stop "Error: divByField_cVector3D_SG > Unknown rhs store_state!"
@@ -1544,7 +1528,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv / rhs%sv
+                        self%s_v = self%s_v / rhs%s_v
                         !
                     else
                         stop "Error: divByField_cVector3D_SG > Unknown rhs store_state!"
@@ -1560,7 +1544,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv / rhs%sv
+                        self%s_v = self%s_v / rhs%s_v
                         !
                     else
                         stop "Error: divByField_cVector3D_SG > Unknown rhs store_state!"
@@ -1837,6 +1821,132 @@ contains
         !
     end subroutine getReal_cVector3D_SG
     !
+    !> No interface function briefing
+    !
+    function getX_cVector3D_SG( self ) result( x )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ), allocatable :: x(:, :, :)
+        !
+        call self%switchStoreState( compound )
+        !
+        x = self%x
+        !
+    end function getX_cVector3D_SG
+    !
+    !> No interface subroutine briefing
+    !
+    subroutine setX_cVector3D_SG( self, x )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: x(:, :, :)
+        !
+        self%store_state = compound
+        !
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
+        !
+        self%x = x
+        !
+    end subroutine setX_cVector3D_SG
+    !
+    !> No interface function briefing
+    !
+    function getY_cVector3D_SG( self ) result( y )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ), allocatable :: y(:, :, :)
+        !
+        call self%switchStoreState( compound )
+        !
+        y = self%y
+        !
+    end function getY_cVector3D_SG
+    !
+    !> No interface subroutine briefing
+    !
+    subroutine setY_cVector3D_SG( self, y )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: y(:, :, :)
+        !
+        self%store_state = compound
+        !
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
+        !
+        self%y = y
+        !
+    end subroutine setY_cVector3D_SG
+    !
+    !> No interface function briefing
+    !
+    function getZ_cVector3D_SG( self ) result( z )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ), allocatable :: z(:, :, :)
+        !
+        call self%switchStoreState( compound )
+        !
+        z = self%z
+        !
+    end function getZ_cVector3D_SG
+    !
+    !> No interface subroutine briefing
+    !
+    subroutine setZ_cVector3D_SG( self, z )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: z(:, :, :)
+        !
+        self%store_state = compound
+        !
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
+        !
+        self%z = z
+        !
+    end subroutine setZ_cVector3D_SG
+    !
+    !> No function briefing
+    !
+    function getSV_cVector3D_SG( self ) result( s_v )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ), allocatable :: s_v(:)
+        !
+        call self%switchStoreState( singleton )
+        !
+        s_v = self%s_v
+        !
+    end function getSV_cVector3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine setSV_cVector3D_SG( self, s_v )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        !
+        self%store_state = singleton
+        !
+        if( allocated( self%x ) ) deallocate( self%x )
+        if( allocated( self%y ) ) deallocate( self%y )
+        if( allocated( self%z ) ) deallocate( self%z )
+        !
+        self%s_v = s_v
+        !
+    end subroutine setSV_cVector3D_SG
+    !
     !> No function briefing
     !
     function getArray_cVector3D_SG( self ) result( array )
@@ -1856,7 +1966,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            array = self%sv
+            array = self%s_v
             !
         else
             stop "Error: getArray_cVector3D_SG > Unknown store_state!"
@@ -1891,81 +2001,13 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = array
+            self%s_v = array
             !
         else
             stop "Error: getArray_cVector3D_SG > Unknown store_state!"
         endif
         !
     end subroutine setArray_cVector3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine switchStoreState_cVector3D_SG( self )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        !
-        integer i1, i2
-        !
-        select case( self%store_state )
-            !
-            case( compound )
-                !
-                allocate( self%sv( self%length() ) )
-                !
-                self%sv = &
-                (/reshape( self%x, (/self%Nxyz(1), 1/) ), &
-                  reshape( self%y, (/self%Nxyz(2), 1/) ), &
-                  reshape( self%z, (/self%Nxyz(3), 1/) )/)
-                !
-                deallocate( self%x )
-                deallocate( self%y )
-                deallocate( self%z )
-                !
-                self%store_state = singleton
-                !
-            case( singleton )
-                !
-                if( self%grid_type == EDGE ) then
-                    !
-                    allocate( self%x( self%nx, self%ny + 1, self%nz + 1 ) )
-                    allocate( self%y( self%nx + 1, self%ny, self%nz + 1 ) )
-                    allocate( self%z( self%nx + 1, self%ny + 1, self%nz ) )
-                    !
-                else if( self%grid_type == FACE ) then
-                    !
-                    allocate( self%x( self%nx + 1, self%ny, self%nz ) )
-                    allocate( self%y( self%nx, self%ny + 1, self%nz ) )
-                    allocate( self%z( self%nx, self%ny, self%nz + 1 ) )
-                    !
-                else
-                    stop "Error: switchStoreState_cVector3D_SG > Only EDGE or FACE types allowed."
-                endif
-                !
-                ! Ex
-                i1 = 1; i2 = self%Nxyz(1)
-                self%x = reshape( self%sv( i1 : i2 ), self%NdX )
-                !
-                ! Ey
-                i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
-                self%y = reshape( self%sv( i1 : i2 ), self%NdY )
-                !
-                ! Ez
-                i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
-                self%z = reshape( self%sv( i1 : i2 ), self%NdZ )
-                !
-                deallocate( self%sv )
-                !
-                self%store_state = compound
-                !
-            case default
-                write( *, * ) "Error: switchStoreState_cVector3D_SG > Unknown store_state :[", self%store_state, "]"
-                stop
-            !
-        end select
-        !
-    end subroutine switchStoreState_cVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -2014,8 +2056,8 @@ contains
                     !
                 else if( rhs%store_state .EQ. singleton ) then
                     !
-                    if( allocated( self%sv ) ) deallocate( self%sv )
-                    allocate( self%sv, source = rhs%sv )
+                    if( allocated( self%s_v ) ) deallocate( self%s_v )
+                    allocate( self%s_v, source = rhs%s_v )
                     !
                 else
                     stop "Error: copyFrom_cVector3D_SG > Unknown store_state!"
@@ -2036,7 +2078,7 @@ contains
                     !
                 else if( rhs%store_state .EQ. singleton ) then
                     !
-                    self%sv = rhs%sv
+                    self%s_v = rhs%s_v
                     !
                 else
                     stop "Error: copyFrom_cVector3D_SG > Unknown store_state!"
@@ -2065,10 +2107,7 @@ contains
         logical :: ok, hasname, binary
         character(80) :: fname, isbinary
         !
-        !> Make sure the store_state is compound
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         binary = .TRUE.
         !
@@ -2131,10 +2170,7 @@ contains
             stop "Error: write_cVector3D_SG > Not allocated."
         endif
         !
-        !> Make sure the store_state is compound
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         binary = .TRUE.
         !
@@ -2178,9 +2214,7 @@ contains
         !
         integer :: ix, iy, iz, funit
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit

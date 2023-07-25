@@ -4,9 +4,7 @@
 module SpOpTools
     !
     use Utilities
-    use Grid
-    use rScalar3D_SG
-    use rVector3D_SG
+    use MetricElements
     !
     !> Generic matrix types and tools, using CSR storage, 
     !> but with fortran numbering conventions(starting from 1)
@@ -917,7 +915,6 @@ contains
         type( spMatCSR_Real ) :: Btmp
         integer :: i, j, j1, j2, k, m, n, nz, nnz, nzero
         !
-		write(*,*) "RMATxDIAG: ", A%nCol, size( D )
         if( A%nCol .NE. size( D ) ) then
             stop "Error: RMATxDIAG > matrix sizes incompatible"
         endif
@@ -2791,110 +2788,129 @@ contains
     !
     !> For a given type find indexes for boundary and interior nodes
     !
-    subroutine boundaryIndexSP( grid_type, grid, INDb, INDi )
+    subroutine boundaryIndexSP( grid_type, metric, INDb, INDi )
         implicit none
         !
         character(*), intent( in ) :: grid_type
-        class( Grid_t ), intent( in ) :: grid
+        class( MetricElements_t ), intent( in ) :: metric
         integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
         !
         integer :: nVec(3), nVecT, nBdry, nb, ni, i
-        type( rVector3D_SG_t ) :: temp_vector
-        type( rScalar3D_SG_t ) :: temp_scalar
-        real( kind=prec ), allocatable, dimension(:) :: temp_sv
+        class( Vector_t ), allocatable :: temp_vector
+        class( Scalar_t ), allocatable :: temp_scalar
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
         selectcase( grid_type )
             !
             case( EDGE )
                 !
-                temp_vector = rVector3D_SG_t( grid, EDGE )
+                call metric%createVector( real_t, EDGE, temp_vector )
                 !
-                nVec(1) = size(temp_vector%x)
-                nVec(2) = size(temp_vector%y)
-                nVec(3) = size(temp_vector%z)
+                x = temp_vector%getX()
+                y = temp_vector%getY()
+                z = temp_vector%getZ()
+                !
+                nVec(1) = size( x )
+                nVec(2) = size( y )
+                nVec(3) = size( z )
+                !
                 nVecT = nVec(1)+nVec(2)+nVec(3)
                 !
-                temp_vector%x(:, 1, :) = 1
-                temp_vector%x(:, temp_vector%ny+1, :) = 1
-                temp_vector%x(:, :, 1) = 1
-                temp_vector%x(:, :, temp_vector%nz+1) = 1
-                temp_vector%y(1, :, :) = 1
-                temp_vector%y(temp_vector%nx+1, :, :) = 1
-                temp_vector%y(:, :, 1) = 1
-                temp_vector%y(:, :, temp_vector%nz+1) = 1
-                temp_vector%z(1, :, :) = 1
-                temp_vector%z(temp_vector%nx+1, :, :) = 1
-                temp_vector%z(:, 1, :) = 1
-                temp_vector%z(:, temp_vector%ny+1, :) = 1
+                x(:, 1, :) = 1
+                x(:, temp_vector%ny+1, :) = 1
+                x(:, :, 1) = 1
+                x(:, :, temp_vector%nz+1) = 1
+                y(1, :, :) = 1
+                y(temp_vector%nx+1, :, :) = 1
+                y(:, :, 1) = 1
+                y(:, :, temp_vector%nz+1) = 1
+                z(1, :, :) = 1
+                z(temp_vector%nx+1, :, :) = 1
+                z(:, 1, :) = 1
+                z(:, temp_vector%ny+1, :) = 1
                 !
-                call temp_vector%switchStoreState
+                call temp_vector%setX( x )
+                call temp_vector%setY( y )
+                call temp_vector%setZ( z )
                 !
-                temp_sv = temp_vector%sv
+                call temp_vector%switchStoreState( singleton )
+                !
+                s_v = temp_vector%getSV()
                 !
             case( FACE )
                 !
-                temp_vector = rVector3D_SG_t( grid, FACE )
+                call metric%createVector( real_t, FACE, temp_vector )
                 !
-                nVec(1) = size(temp_vector%x)
-                nVec(2) = size(temp_vector%y)
-                nVec(3) = size(temp_vector%z)
+                x = temp_vector%getX()
+                y = temp_vector%getY()
+                z = temp_vector%getZ()
+                !
+                nVec(1) = size( x )
+                nVec(2) = size( y )
+                nVec(3) = size( z )
                 nVecT = nVec(1)+nVec(2)+nVec(3)
                 !
-                temp_vector%x(1, :, :) = 1
-                temp_vector%x(temp_vector%nx+1, :, :) = 1
-                temp_vector%y(:, 1, :) = 1
-                temp_vector%y(:, temp_vector%ny+1, :) = 1
-                temp_vector%z(:, :, 1) = 1
-                temp_vector%z(:, :, temp_vector%nz+1) = 1
+                x(1, :, :) = 1
+                x(temp_vector%nx+1, :, :) = 1
+                y(:, 1, :) = 1
+                y(:, temp_vector%ny+1, :) = 1
+                z(:, :, 1) = 1
+                z(:, :, temp_vector%nz+1) = 1
                 !
-                call temp_vector%switchStoreState
+                call temp_vector%setX( x )
+                call temp_vector%setY( y )
+                call temp_vector%setZ( z )
                 !
-                temp_sv = temp_vector%sv
+                call temp_vector%switchStoreState( singleton )
+                !
+                s_v = temp_vector%getSV()
                 !
             case( NODE )
                 !
-                temp_scalar = rScalar3D_SG_t( grid, NODE )
+                call metric%createScalar( real_t, NODE, temp_scalar )
                 !
-                nVecT = size( temp_scalar%v )
+                x = temp_scalar%getV()
                 !
-                temp_scalar%v(1, :, :) = 1
-                temp_scalar%v(temp_scalar%nx+1, :, :) = 1
-                temp_scalar%v(:, 1, :) = 1
-                temp_scalar%v(:, temp_scalar%ny+1, :) = 1
-                temp_scalar%v(:, :, 1) = 1
-                temp_scalar%v(:, :, temp_scalar%nz+1) = 1
+                nVecT = size( x )
                 !
-                call temp_scalar%switchStoreState
+                x(1, :, :) = 1
+                x(temp_scalar%nx+1, :, :) = 1
+                x(:, 1, :) = 1
+                x(:, temp_scalar%ny+1, :) = 1
+                x(:, :, 1) = 1
+                x(:, :, temp_scalar%nz+1) = 1
                 !
-                temp_sv = temp_scalar%sv
+                call temp_scalar%switchStoreState( singleton )
+                !
+                s_v = temp_scalar%getSV()
                 !
             case default
-                write( *, * ) "Error: boundaryIndexSP > Invalid grid type [", grid_type, "]"
-                stop
+                call errStop( "boundaryIndexSP > Invalid grid type ["//grid_type//"]" )
         end select 
         !
         nBdry = 0
         do i = 1, nVecT
-            nBdry = nBdry + nint( temp_sv(i) )
+            nBdry = nBdry + nint( real( s_v(i), kind=prec ) )
         enddo
         !
         if(allocated(INDi)) then
             deallocate(INDi)
         endif
-		!
+        !
         allocate( INDi( nVecT - nBdry ) )
         !
         if(allocated(INDb)) then
             deallocate(INDb)
         endif
-		!
+        !
         allocate( INDb( nBdry ) )
         !
         nb = 0
         ni = 0
         !
         do i = 1, nVecT
-            if( nint( temp_sv(i) ) .EQ. 1 ) then
+            if( nint( real( s_v(i), kind=prec ) ) .EQ. 1 ) then
                 nb = nb+1
                 INDb(nb) = i
             else
@@ -2902,8 +2918,6 @@ contains
                 INDi(ni) = i
             endif
         enddo
-        !
-        deallocate( temp_sv )
         !
     end subroutine boundaryIndexSP
     !

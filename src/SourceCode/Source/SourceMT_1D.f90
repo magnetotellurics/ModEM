@@ -1,8 +1,6 @@
 !
 !> Derived class to define a MT Source with boundary data computed by 1D solutions
-!>
-!> *************
-!>
+!
 module SourceMT_1D
     !
     use Constants

@@ -9,7 +9,7 @@ module cScalar3D_SG
         !
         complex( kind=prec ), allocatable :: v(:, :, :)
         !
-        complex( kind=prec ), allocatable, dimension(:) :: sv
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
         contains
             !
@@ -22,7 +22,6 @@ module cScalar3D_SG
             procedure, public :: intBdryIndices => intBdryIndices_cScalar3D_SG
             !
             !> Dimensioning operations
-            procedure, public :: length => length_cScalar3D_SG
             procedure, public :: setVecComponents => setVecComponents_cScalar3D_SG
             !
             !> Arithmetic/algebraic unary operations
@@ -52,9 +51,11 @@ module cScalar3D_SG
             procedure, public :: getV => getV_cScalar3D_SG
             procedure, public :: setV => setV_cScalar3D_SG
             !
+            procedure, public :: getSV => getSV_cScalar3D_SG
+            procedure, public :: setSV => setSV_cScalar3D_SG
+            !
             procedure, public :: getArray => getArray_cScalar3D_SG
             procedure, public :: setArray => setArray_cScalar3D_SG
-            procedure, public :: switchStoreState => switchStoreState_cScalar3D_SG
             procedure, public :: copyFrom => copyFrom_cScalar3D_SG
             !
             !> I/O operations
@@ -145,7 +146,7 @@ contains
         call self%baseDealloc
         !
         if( allocated( self%v ) ) deallocate( self%v )
-        if( allocated( self%sv ) ) deallocate( self%sv )
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
         self%nx = 0
         self%ny = 0
@@ -164,9 +165,7 @@ contains
         class( cScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         select case( self%grid_type )
             !
@@ -196,9 +195,7 @@ contains
         !
         logical :: int_only_p
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( .NOT. present (int_only)) then
              int_only_p = .FALSE.
@@ -210,7 +207,7 @@ contains
             !
             case( NODE )
                 !
-				if( int_only_p) then
+                if( int_only_p) then
                     !
                     select case(bdry)
                         case("x1")
@@ -291,9 +288,7 @@ contains
             call errStop( "intBdryIndices_cScalar3D_SG > Not allocated. Exiting." )
         endif
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         select case( self%grid_type )
             !
@@ -344,19 +339,6 @@ contains
     !
     !> No subroutine briefing
     !
-    function length_cScalar3D_SG( self ) result( field_length )
-        implicit none
-        !
-        class( cScalar3D_SG_t ), intent( in ) :: self
-        !
-        integer :: field_length
-        !
-        field_length = self%Nxyz
-        !
-    end function length_cScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
     subroutine setVecComponents_cScalar3D_SG( self, xyz, &
                                            xmin, xstep, xmax, &
                                            ymin, ystep, ymax, &
@@ -374,9 +356,7 @@ contains
         integer :: y1, y2
         integer :: z1, z2
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         x1 = xmin; x2 = xmax
         y1 = ymin; y2 = ymax
@@ -412,7 +392,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = R_ZERO
+            self%s_v = R_ZERO
             !
         else
             call errStop( "zeros_cScalar3D_SG > Unknown store_state!" )
@@ -437,7 +417,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = conjg( self%sv )
+            self%s_v = conjg( self%s_v )
             !
         else
             call errStop( "conjugate_cScalar3D_SG > Unknown store_state!" )
@@ -459,7 +439,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -471,7 +451,7 @@ contains
                        !
                    else if( rhs%store_state .EQ. singleton ) then
                        !
-                       self%sv = self%sv + rhs%sv
+                       self%s_v = self%s_v + rhs%s_v
                        !
                    else
                        call errStop( "add_cScalar3D_SG > Unknown rhs store_state!" )
@@ -485,7 +465,7 @@ contains
                        !
                    else if( rhs%store_state .EQ. singleton ) then
                        !
-                       self%sv = self%sv + rhs%sv
+                       self%s_v = self%s_v + rhs%s_v
                        !
                    else
                        call errStop( "add_cScalar3D_SG > Unknown rhs store_state!" )
@@ -514,7 +494,7 @@ contains
         !>  linear combination, in place: self = c1*self+c2*rhs
         if( self%isCompatible(rhs)) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -526,7 +506,7 @@ contains
                        !
                    else if( rhs%store_state .EQ. singleton ) then
                        !
-                       self%sv = c1 * self%sv + c2 * rhs%sv
+                       self%s_v = c1 * self%s_v + c2 * rhs%s_v
                        !
                    else
                        call errStop( "linComb_cScalar3D_SG > Unknown rhs store_state!" )
@@ -556,7 +536,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv - cvalue
+            self%s_v = self%s_v - cvalue
             !
         else
             call errStop( "subValueRVector3D_SG > Unknown self store_state!" )
@@ -574,7 +554,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -586,7 +566,7 @@ contains
                        !
                    else if( rhs%store_state .EQ. singleton ) then
                        !
-                       self%sv = self%sv - rhs%sv
+                       self%s_v = self%s_v - rhs%s_v
                        !
                    else
                        call errStop( "subField_cScalar3D_SG > Unknown rhs store_state!" )
@@ -600,7 +580,7 @@ contains
                        !
                    else if( rhs%store_state .EQ. singleton ) then
                        !
-                       self%sv = self%sv - rhs%sv
+                       self%s_v = self%s_v - rhs%s_v
                        !
                    else
                        call errStop( "subField_cScalar3D_SG > Unknown rhs store_state!" )
@@ -631,7 +611,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv * rvalue
+            self%s_v = self%s_v * rvalue
             !
         else
             call errStop( "multByReal_cScalar3D_SG > Unknown self store_state!" )
@@ -653,7 +633,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv * cvalue
+            self%s_v = self%s_v * cvalue
             !
         else
             call errStop( "multByComplex_cScalar3D_SG > Unknown self store_state!" )
@@ -671,7 +651,7 @@ contains
         !
         if( self%isCompatible(rhs)) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -683,7 +663,7 @@ contains
                        !
                    else if( rhs%store_state .EQ. singleton ) then
                        !
-                       self%sv = self%sv * rhs%sv
+                       self%s_v = self%s_v * rhs%s_v
                        !
                    else
                        call errStop( "multByField_cScalar3D_SG > Unknown rhs store_state!" )
@@ -697,7 +677,7 @@ contains
                        !
                    else if( rhs%store_state .EQ. singleton ) then
                        !
-                       self%sv = self%sv * rhs%sv
+                       self%s_v = self%s_v * rhs%s_v
                        !
                    else
                        call errStop( "multByField_cScalar3D_SG > Unknown rhs store_state!" )
@@ -725,7 +705,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -737,7 +717,7 @@ contains
                        !
                    else if( rhs%store_state .EQ. singleton ) then
                        !
-                       self%sv = self%sv + cvalue * rhs%sv
+                       self%s_v = self%s_v + cvalue * rhs%s_v
                        !
                    else
                        call errStop( "multAdd_cScalar3D_SG > Unknown rhs store_state!" )
@@ -759,7 +739,7 @@ contains
     function dotProd_cScalar3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
-        class( cScalar3D_SG_t ), intent( in ) :: self
+        class( cScalar3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
@@ -778,7 +758,7 @@ contains
                            !
                        else if( rhs%store_state .EQ. singleton ) then
                            !
-                           cvalue = sum( conjg( self%sv ) * rhs%sv )
+                           cvalue = sum( conjg( self%s_v ) * rhs%s_v )
                            !
                        else
                            call errStop( "dotProdRVector3D_SG > Unknown rhs store_state!" )
@@ -813,7 +793,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv / cvalue
+            self%s_v = self%s_v / cvalue
             !
         else
             call errStop( "divByValue_cScalar3D_SG > Unknown self store_state!" )
@@ -829,9 +809,9 @@ contains
         class( cScalar3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( self%isCompatible(rhs)) then
+        if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -843,7 +823,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv / rhs%sv
+                        self%s_v = self%s_v / rhs%s_v
                         !
                     else
                         call errStop( "multByField_cScalar3D_SG > Unknown rhs store_state!" )
@@ -857,7 +837,7 @@ contains
                        !
                     else if( rhs%store_state .EQ. singleton ) then
                        !
-                       self%sv = self%sv / rhs%sv
+                       self%s_v = self%s_v / rhs%s_v
                        !
                     else
                        call errStop( "multByField_cScalar3D_SG > Unknown rhs store_state!" )
@@ -879,9 +859,11 @@ contains
     function getV_cScalar3D_SG( self ) result( v )
         implicit none
         !
-        class( cScalar3D_SG_t ), intent( in ) :: self
+        class( cScalar3D_SG_t ), intent( inout ) :: self
         !
         complex( kind=prec ), allocatable :: v(:, :, :)
+        !
+        call self%switchStoreState( compound )
         !
         v = self%v
         !
@@ -895,9 +877,44 @@ contains
         class( cScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
         !
+        self%store_state = compound
+        !
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
+        !
         self%v = v
         !
     end subroutine setV_cScalar3D_SG
+    !
+    !> No function briefing
+    !
+    function getSV_cScalar3D_SG( self ) result( s_v )
+        implicit none
+        !
+        class( cScalar3D_SG_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ), allocatable :: s_v(:)
+        !
+        call self%switchStoreState( singleton )
+        !
+        s_v = self%s_v
+        !
+    end function getSV_cScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine setSV_cScalar3D_SG( self, s_v )
+        implicit none
+        !
+        class( cScalar3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        !
+        self%store_state = singleton
+        !
+        if( allocated( self%v ) ) deallocate( self%v )
+        !
+        self%s_v = s_v
+        !
+    end subroutine setSV_cScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -914,7 +931,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            array = self%sv
+            array = self%s_v
             !
         else
             call errStop( "getArray_cScalar3D_SG > Unknown store_state!" )
@@ -936,69 +953,13 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = array
+            self%s_v = array
             !
         else
             call errStop( "setArray_cScalar3D_SG > Unknown store_state!" )
         endif
         !
     end subroutine setArray_cScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine switchStoreState_cScalar3D_SG( self )
-        implicit none
-        !
-        class( cScalar3D_SG_t ), intent( inout ) :: self
-        !
-        integer :: nzAir
-        !
-        select case( self%store_state )
-            !
-            case( compound )
-                !
-                allocate( self%sv( self%length() ) )
-                !
-                self%sv = (/reshape( self%v, (/self%Nxyz, 1/))/)
-                !
-                deallocate( self%v )
-                !
-                self%store_state = singleton
-                !
-            case( singleton )
-                !
-                if( self%grid_type == NODE ) then
-                   !
-                   allocate( self%v( self%nx + 1, self%ny + 1, self%nz + 1 ) )
-                   !
-                else if( self%grid_type == CELL ) then
-                   !
-                   allocate( self%v( self%nx, self%ny, self%nz ) )
-                   !
-                else if( self%grid_type == CELL_EARTH ) then
-                   !
-                   call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
-                   !
-                   allocate( self%v( self%nx, self%ny, self%nz - nzAir ) )
-                   !
-                else
-                    write( *, * ) "Error: switchStoreState_cScalar3D_SG > unrecognized grid type: [", self%grid_type, "]"
-                    stop
-                endif
-                !
-                self%v = reshape( self%sv, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
-                !
-                deallocate( self%sv )
-                !
-                self%store_state = compound
-                !
-            case default
-                write( *, * ) "Error: switchStoreState_cScalar3D_SG > Unknown store_state :[", self%store_state, "]"
-                stop
-            !
-        end select
-        !
-    end subroutine switchStoreState_cScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -1038,7 +999,7 @@ contains
                    !
                 else if( rhs%store_state .EQ. singleton ) then
                    !
-                   self%sv = rhs%sv
+                   self%s_v = rhs%s_v
                    !
                 else
                    call errStop( "copyFrom_cScalar3D_SG > Unknown store_state!" )
@@ -1055,7 +1016,7 @@ contains
                    !
                 else if( rhs%store_state .EQ. singleton ) then
                    !
-                   self%sv = rhs%sv
+                   self%s_v = rhs%s_v
                    !
                 else
                    call errStop( "copyFrom_cScalar3D_SG > Unknown store_state!" )
@@ -1086,10 +1047,7 @@ contains
         logical :: ok, hasname, binary
         character(:), allocatable :: fname, isbinary
         !
-        !> Make sure the store_state is compound
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( .NOT. present( ftype ) ) then
              binary = .FALSE.
@@ -1191,10 +1149,7 @@ contains
              call errStop( "write_cScalar3D_SG > Not allocated" )
         endif
         !
-        !> Make sure the store_state is compound
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if(  .NOT. present(ftype)) then
              binary = .FALSE.
@@ -1296,9 +1251,7 @@ contains
         !
         integer :: ix, iy, iz,funit
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit

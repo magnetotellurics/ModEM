@@ -8,11 +8,7 @@ module CoreComponents
     use ForwardControlFile
     use InversionControlFile
     !
-    use rScalar3D_MR
-    use iScalar3D_SG
-    use rVector3D_MR
-    !
-    use ModelOperator_MF
+    use ModelOperator_MF_SG
     use ModelOperator_SP
     !
     use ModelParameterCell_SG
@@ -93,8 +89,6 @@ module CoreComponents
     public :: printForwardControlFileTemplate
     public :: printInversionControlFileTemplate
     !
-    public :: createScalar, createVector
-    !
 contains
     !
     !> Read Model File and instantiate global variables: main_grid, model_operator and sigma0
@@ -143,7 +137,7 @@ contains
             !
             case( MODELOP_MF )
                 !
-                allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
+                allocate( model_operator, source = ModelOperator_MF_SG_t( main_grid ) )
                 !
             case( MODELOP_SP )
                 !
@@ -155,9 +149,9 @@ contains
                 !
             case( "" )
                 !
-                call warning( "handleModelFile > model_operator_type not provided, using ModelOperator_MF_t." )
+                call warning( "handleModelFile > model_operator_type not provided, using ModelOperator_MF_SG_t." )
                 !
-                allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
+                allocate( model_operator, source = ModelOperator_MF_SG_t( main_grid ) )
                 !
             case default
                 !
@@ -857,112 +851,6 @@ contains
         endif
         !
     end subroutine printInversionControlFileTemplate
-    !
-    !> Create proper scalar from the Grid
-    !
-    subroutine createScalar( scalar_type, grid_type, scalar )
-        implicit none
-        !
-        integer, intent( in ) :: scalar_type
-        character( len=4 ), intent( in ) :: grid_type
-        class( Scalar_t ), allocatable, intent( out ) :: scalar
-        !
-        if( grid_type /= NODE .AND. grid_type /= CELL .AND. grid_type /= CELL_EARTH ) then
-            call errStop( "createScalar > grid_type must be NODE, CELL or CELL_EARTH" )
-        else
-            !
-            select type( main_grid )
-                !
-                class is( Grid3D_SG_t )
-                    !
-                    if( scalar_type == real_t ) then
-                        allocate( scalar, source = rScalar3D_SG_t( main_grid, grid_type ) )
-                    elseif( scalar_type == complex_t ) then
-                        allocate( scalar, source = cScalar3D_SG_t( main_grid, grid_type ) )
-                    elseif( scalar_type == integer_t ) then
-                        allocate( scalar, source = iScalar3D_SG_t( main_grid, grid_type ) )
-                    else
-                        call errStop( "createrScalar_SG > choose real_t, complex_t or integer_t" )
-                    endif
-                    !
-                class is( Grid3D_MR_t )
-                    !
-                    if( scalar_type == real_t ) then
-                        allocate( scalar, source = rScalar3D_MR_t( main_grid, grid_type ) )
-                    elseif( scalar_type == complex_t ) then
-                        !allocate( scalar, source = cScalar3D_MR_t( main_grid, grid_type ) )
-                        !
-                        call errStop( "createrScalar_MR > complex_t to be implemented" )
-                    elseif( scalar_type == integer_t ) then
-                        !allocate( scalar, source = iScalar3D_MR_t( main_grid, grid_type ) )
-                        !
-                        call errStop( "createrScalar_MR > integer_t to be implemented" )
-                    else
-                        call errStop( "createrScalar_MR > choose real_t, complex_t or integer_t" )
-                    endif
-                    !
-                class default
-                   call errStop( "createScalar > Unclassified main_grid" )
-                !
-            end select
-            !
-        endif
-        !
-    end subroutine createScalar
-    !
-    !> Create proper vector from the Grid
-    !
-    subroutine createVector( vector_type, grid_type, vector )
-        implicit none
-        !
-        integer, intent( in ) :: vector_type
-        character( len=4 ), intent( in ) :: grid_type
-        class( Vector_t ), allocatable, intent( out ) :: vector
-        !
-        if( grid_type /= EDGE .AND. grid_type /= FACE ) then
-            call errStop( "createVector > grid_type must be EDGE or FACE" )
-        else
-            !
-            select type( main_grid )
-                !
-                class is( Grid3D_SG_t )
-                    !
-                    if( vector_type == real_t ) then
-                        allocate( vector, source = rVector3D_SG_t( main_grid, grid_type ) )
-                    elseif( vector_type == complex_t ) then
-                        allocate( vector, source = cVector3D_SG_t( main_grid, grid_type ) )
-                    elseif( vector_type == integer_t ) then
-                        !allocate( vector, source = iVector3D_SG_t( main_grid, grid_type ) )
-                        !
-                        call errStop( "createVector_SG > integer_t to be implemented" )
-                    else
-                        call errStop( "createVector_SG > choose real_t, complex_t or integer_t" )
-                    endif
-                    !
-                class is( Grid3D_MR_t )
-                    !
-                    if( vector_type == real_t ) then
-                        allocate( vector, source = rVector3D_MR_t( main_grid, grid_type ) )
-                    elseif( vector_type == complex_t ) then
-                        !allocate( vector, source = cVector3D_MR_t( main_grid, grid_type ) )
-                        !
-                        call errStop( "createVector_MR > complex_t to be implemented" )
-                    elseif( vector_type == integer_t ) then
-                        !allocate( vector, source = iVector3D_MR_t( main_grid, grid_type ) )
-                        !
-                        call errStop( "createVector_MR > integer_t to be implemented" )
-                    else
-                        call errStop( "createVector_MR > choose real_t, complex_t or integer_t" )
-                    endif
-                    !
-                class default
-                   call errStop( "createVector > Unclassified main_grid" )
-                !
-            end select
-            !
-        endif
-        !
-    end subroutine createVector
-    !
+	!
 end module CoreComponents
 !

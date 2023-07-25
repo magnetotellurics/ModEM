@@ -166,7 +166,11 @@ contains
         !
         call transmitter%getSolutionVector( 1, tx_e_1 )
         !
+        call tx_e_1%switchStoreState( compound )
+        !
         call transmitter%getSolutionVector( 2, tx_e_2 )
+        !
+        call tx_e_2%switchStoreState( compound )
         !
         allocate( EE(2,2) )
         EE(1,1) = self%Lex%dotProd( tx_e_1 )

@@ -94,9 +94,19 @@ module rVector3D_MR
             procedure, public :: getAxis => getAxis_rVector3D_MR
             !
             procedure, public :: getReal => getReal_rVector3D_MR
+            !
+            procedure, public :: getX => getX_rVector3D_MR
+            procedure, public :: setX => setX_rVector3D_MR
+            procedure, public :: getY => getY_rVector3D_MR
+            procedure, public :: setY => setY_rVector3D_MR
+            procedure, public :: getZ => getZ_rVector3D_MR
+            procedure, public :: setZ => setZ_rVector3D_MR
+            !
+            procedure, public :: getSV => getSV_rVector3D_MR
+            procedure, public :: setSV => setSV_rVector3D_MR
+            !
             procedure, public :: getArray => getArray_rVector3D_MR
             procedure, public :: setArray => setArray_rVector3D_MR
-            procedure, public :: switchStoreState => switchStoreState_rVector3D_MR
             procedure, public :: copyFrom => copyFrom_rVector3D_MR
             !
             !> I/O operations
@@ -813,7 +823,7 @@ contains
         if( allocated( self%x ) ) deallocate( self%x )
         if( allocated( self%y ) ) deallocate( self%y )
         if( allocated( self%z ) ) deallocate( self%z )
-        if( allocated( self%sv ) ) deallocate( self%sv )
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
         self%nx = 0
         self%ny = 0
@@ -832,9 +842,7 @@ contains
         class( rVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         select case(self%grid_type)
             !
@@ -871,9 +879,7 @@ contains
         !
         logical :: int_only_p
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( .NOT. present(int_only)) then
             int_only_p = .FALSE.
@@ -1017,9 +1023,7 @@ contains
         integer :: y1, y2
         integer :: z1, z2
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         x1 = xmin; x2 = xmax
         y1 = ymin; y2 = ymax
@@ -1117,7 +1121,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1131,7 +1135,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv + rhs%sv
+                        self%s_v = self%s_v + rhs%s_v
                         !
                     else
                         stop "Error: add_rVector3D_MR > Unknown rhs store_state!"
@@ -1159,7 +1163,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type(rhs)
                 !
@@ -1173,7 +1177,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = c1 * self%sv + c2 * rhs%sv
+                        self%s_v = c1 * self%s_v + c2 * rhs%s_v
                         !
                     else
                         stop "Error: linComb_rVector3D_MR > Unknown rhs store_state!"
@@ -1204,7 +1208,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv - cvalue
+            self%s_v = self%s_v - cvalue
             !
         else
             stop "Error: subValue_rVector3D_MR > Unknown self store_state!"
@@ -1222,7 +1226,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1236,7 +1240,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv - rhs%sv
+                        self%s_v = self%s_v - rhs%s_v
                         !
                     else
                         stop "Error: subField_rVector3D_MR > Unknown rhs store_state!"
@@ -1269,7 +1273,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv * rvalue
+            self%s_v = self%s_v * rvalue
             !
         else
             stop "Error: multByReal_rVector3D_MR > Unknown self store_state!"
@@ -1293,7 +1297,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv * cvalue
+            self%s_v = self%s_v * cvalue
             !
         else
             stop "Error: multByComplex_rVector3D_MR > Unknown self store_state!"
@@ -1311,7 +1315,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1325,7 +1329,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv * rhs%sv
+                        self%s_v = self%s_v * rhs%s_v
                         !
                     else
                         stop "Error: multByField_rVector3D_MR > Unknown rhs store_state!"
@@ -1341,7 +1345,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv * rhs%sv
+                        self%s_v = self%s_v * rhs%s_v
                         !
                     else
                         stop "Error: multByField_rVector3D_MR > Unknown rhs store_state!"
@@ -1372,9 +1376,9 @@ contains
             !
             allocate( diag_mult, source = rVector3D_MR_t( self%grid, self%grid_type ) )
             !
-            if( diag_mult%store_state /= rhs%store_state ) call diag_mult%switchStoreState
+            call diag_mult%switchStoreState( rhs%store_state )
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( diag_mult )
                 class is( rVector3D_MR_t )
@@ -1391,7 +1395,7 @@ contains
                                 !
                             else if( rhs%store_state .EQ. singleton ) then
                                 !
-                                diag_mult%sv = self%sv * rhs%sv
+                                diag_mult%s_v = self%s_v * rhs%s_v
                                 !
                             else
                                 stop "Error: diagMult_rVector3D_MR > Unknown rhs store_state!"
@@ -1424,7 +1428,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type(rhs)
                 !
@@ -1438,7 +1442,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv + cvalue * rhs%sv
+                        self%s_v = self%s_v + cvalue * rhs%s_v
                         !
                     else
                         stop "Error: multAdd_rVector3D_MR > Unknown rhs store_state!"
@@ -1460,7 +1464,7 @@ contains
     function dotProd_rVector3D_MR( self, rhs ) result( cvalue )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( rVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
@@ -1487,7 +1491,7 @@ contains
                             !
                         else if( rhs%store_state .EQ. singleton ) then
                             !
-                            cvalue = cvalue + cmplx( sum( self%sv * rhs%sv ), 0.0, kind=prec )
+                            cvalue = cvalue + cmplx( sum( self%s_v * rhs%s_v ), 0.0, kind=prec )
                             !
                         else
                             stop "Error: dotProd_rVector3D_MR > Unknown rhs store_state!"
@@ -1524,7 +1528,7 @@ contains
             !
         else if( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv / cvalue
+            self%s_v = self%s_v / cvalue
             !
         else
             stop "Error: divByValue_rVector3D_MR > Unknown self store_state!"
@@ -1542,7 +1546,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1556,7 +1560,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv / rhs%sv
+                        self%s_v = self%s_v / rhs%s_v
                         !
                     else
                         stop "Error: divByField_rVector3D_MR > Unknown rhs store_state!"
@@ -1572,7 +1576,7 @@ contains
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv / rhs%sv
+                        self%s_v = self%s_v / rhs%s_v
                         !
                     else
                         stop "Error: divByField_rVector3D_MR > Unknown rhs store_state!"
@@ -1631,6 +1635,106 @@ contains
         !
     end subroutine getReal_rVector3D_MR
     !
+    !> No interface function briefing
+    !
+    function getX_rVector3D_MR( self ) result( x )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ), allocatable :: x(:, :, :)
+        !
+        x = self%x
+        !
+    end function getX_rVector3D_MR
+    !
+    !> No interface subroutine briefing
+    !
+    subroutine setX_rVector3D_MR( self, x )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: x(:, :, :)
+        !
+        self%x = x
+        !
+    end subroutine setX_rVector3D_MR
+    !
+    !> No interface function briefing
+    !
+    function getY_rVector3D_MR( self ) result( y )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ), allocatable :: y(:, :, :)
+        !
+        y = self%y
+        !
+    end function getY_rVector3D_MR
+    !
+    !> No interface subroutine briefing
+    !
+    subroutine setY_rVector3D_MR( self, y )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: y(:, :, :)
+        !
+        self%y = y
+        !
+    end subroutine setY_rVector3D_MR
+    !
+    !> No interface function briefing
+    !
+    function getZ_rVector3D_MR( self ) result( z )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ), allocatable :: z(:, :, :)
+        !
+        z = self%z
+        !
+    end function getZ_rVector3D_MR
+    !
+    !> No interface subroutine briefing
+    !
+    subroutine setZ_rVector3D_MR( self, z )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: z(:, :, :)
+        !
+        self%z = z
+        !
+    end subroutine setZ_rVector3D_MR
+    !
+    !> No function briefing
+    !
+    function getSV_rVector3D_MR( self ) result( s_v )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        !
+        complex( kind=prec ), allocatable :: s_v(:)
+        !
+        call errStop( "getSV_rVector3D_MR not implemented!" )
+        !
+    end function getSV_rVector3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine setSV_rVector3D_MR( self, s_v )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        !
+        call errStop( "setSV_rVector3D_MR not implemented!" )
+        !
+    end subroutine setSV_rVector3D_MR
+    !
     !> No subroutine briefing
     !
     function getArray_rVector3D_MR( self ) result( array )
@@ -1673,69 +1777,13 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine switchStoreState_rVector3D_MR( self )
+    subroutine switchStoreState_rVector3D_MR( self, store_state )
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
+        integer, intent( in ), optional :: store_state
         !
-        integer i1, i2
-        !
-        select case( self%store_state )
-            !
-            case( compound )
-                !
-                allocate( self%sv( self%length() ) )
-                !
-                self%sv = &
-                (/reshape( self%x, (/self%Nxyz(1), 1/) ), &
-                  reshape( self%y, (/self%Nxyz(2), 1/) ), &
-                  reshape( self%z, (/self%Nxyz(3), 1/) )/)
-                !
-                deallocate( self%x )
-                deallocate( self%y )
-                deallocate( self%z )
-                !
-                self%store_state = singleton
-                !
-            case( singleton )
-                !
-                if( self%grid_type == EDGE ) then
-                    !
-                    allocate( self%x( self%nx, self%ny + 1, self%nz + 1 ) )
-                    allocate( self%y( self%nx + 1, self%ny, self%nz + 1 ) )
-                    allocate( self%z( self%nx + 1, self%ny + 1, self%nz ) )
-                    !
-                else if( self%grid_type == FACE ) then
-                    !
-                    allocate( self%x( self%nx + 1, self%ny, self%nz ) )
-                    allocate( self%y( self%nx, self%ny + 1, self%nz ) )
-                    allocate( self%z( self%nx, self%ny, self%nz + 1 ) )
-                    !
-                else
-                    stop "Error: switchStoreState_rVector3D_MR > Only EDGE or FACE types allowed."
-                endif
-                !
-                ! Ex
-                i1 = 1; i2 = self%Nxyz(1)
-                self%x = reshape( self%sv( i1 : i2 ), self%NdX )
-                !
-                ! Ey
-                i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
-                self%y = reshape( self%sv( i1 : i2 ), self%NdY )
-                !
-                ! Ez
-                i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
-                self%z = reshape( self%sv( i1 : i2 ), self%NdZ )
-                !
-                deallocate( self%sv )
-                !
-                self%store_state = compound
-                !
-            case default
-                write( *, * ) "Error: switchStoreStateRScalar3D_MR > Unknown store_state :[", self%store_state, "]"
-                stop
-            !
-        end select
+        call errStop( "switchStoreState_rVector3D_MR not implemented!" )
         !
     end subroutine switchStoreState_rVector3D_MR
     !
@@ -1795,7 +1843,7 @@ contains
                     !
                 else if( rhs%store_state .EQ. singleton ) then
                     !
-                    self%sv = rhs%sv
+                    self%s_v = rhs%s_v
                     !
                 else
                     stop "Error: copyFrom_rVector3D_MR > Unknown store_state!"
@@ -1829,10 +1877,7 @@ contains
         logical :: ok, hasname, binary
         character(80) :: fname, isbinary
         !
-        !> Make sure the store_state is compound
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         binary = .TRUE.
         !
@@ -1895,10 +1940,7 @@ contains
             stop "Error: write_rVector3D_MR > Not allocated."
         endif
         !
-        !> Make sure the store_state is compound
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         binary = .TRUE.
         !
@@ -1942,9 +1984,7 @@ contains
         !
         integer :: ix, iy, iz,funit
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit

@@ -44,7 +44,6 @@ contains
         !
         self%model_operator => model_operator
         !
-        !
     end function PreConditioner_DC_SP_ctor
     !
     !> PreConditioner_DC_SP destructor
@@ -79,6 +78,8 @@ contains
                 write( *, * ) "DEVELPMENT HOT SPOT > setPreConditioner_DC_SP:"
                 write( *, * ) "model_operator%VDsG_L and model_operator%VDsG_U should be allocated before at divCorSetUp_ModelOperator_SP"
                 !
+                call self%model_operator%divCorSetUp
+                !
                 if( allocated( self%phi ) ) deallocate( self%phi )
                 !
                 allocate( self%phi( size( model_operator%NODEi ) ) )
@@ -94,12 +95,12 @@ contains
     !
     !> LTsolve and UTsolve are in abstract class and must be definPhid -- but not used for DC which
     !>        this object will be used -- so just dummies here
-    subroutine LTSolvePreConditioner_DC_SP( self, inE, outE, adjoint )
+    subroutine LTSolvePreConditioner_DC_SP( self, in_e, out_e, adjoint )
         implicit none
         !
         class( PreConditioner_DC_SP_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in ) :: inE
-        class( Vector_t ), intent( inout ) :: outE
+        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
         stop "Error: LTSolvePreConditioner_DC_SP not implemented"
@@ -107,12 +108,12 @@ contains
     end subroutine LTSolvePreConditioner_DC_SP
     !
     !> No subroutine briefing
-    subroutine UTSolvePreConditioner_DC_SP( self, inE, outE, adjoint )
+    subroutine UTSolvePreConditioner_DC_SP( self, in_e, out_e, adjoint )
         implicit none
         !
         class( PreConditioner_DC_SP_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in ) :: inE
-        class( Vector_t ), intent( inout ) :: outE
+        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
         stop "Error: UTSolvePreConditioner_DC_SP not implemented"
@@ -123,38 +124,29 @@ contains
     !> apply pre-conditioner, LU solve
     !
     !> No subroutine briefing
-    subroutine LUSolvePreConditioner_DC_SP( self, inPhi, outphi )
+    subroutine LUSolvePreConditioner_DC_SP( self, in_phi, out_phi )
         implicit none
         !
         class( PreConditioner_DC_SP_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: inPhi
-        class( Scalar_t ), intent( inout ) :: outPhi
+        class( Scalar_t ), intent( inout ) :: in_phi
+        class( Scalar_t ), intent( inout ) :: out_phi
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array_interior, temp_array_inPhi, temp_array_outPhi
+        complex( kind=prec ), allocatable, dimension(:) :: array_inPhi, array_outPhi
         !
-        temp_array_inPhi = inPhi%getArray()
+        array_inPhi = in_phi%getSV()
         !
-        temp_array_interior = temp_array_inPhi( inPhi%ind_interior )
-        !
-        temp_array_outPhi = temp_array_interior
-        temp_array_outPhi = C_ZERO
+        array_outPhi = out_phi%getSV()
+        array_outPhi = C_ZERO
         !
         select type( model_operator => self%model_operator )
             !
             class is( ModelOperator_SP_t )
                 !
-                call LTsolve_Real( model_operator%VDsG_L, temp_array_inPhi, self%phi )
+                call LTsolve_Real( model_operator%VDsG_L, array_inPhi, self%phi )
                 !
-                call UTsolve_Real( model_operator%VDsG_U, self%phi, temp_array_outPhi )
+                call UTsolve_Real( model_operator%VDsG_U, self%phi, array_outPhi )
                 !
-                temp_array_inPhi = C_ZERO
-                temp_array_inPhi( inPhi%ind_interior ) = temp_array_outPhi
-                !
-                deallocate( temp_array_outPhi )
-                !
-                call outPhi%setArray( temp_array_inPhi )
-                !
-                deallocate( temp_array_inPhi )
+                call out_phi%setArray( array_outPhi )
                 !
             class default
                 stop "Error: LUSolvePreConditioner_DC_SP > Unclassified ModelOperator"

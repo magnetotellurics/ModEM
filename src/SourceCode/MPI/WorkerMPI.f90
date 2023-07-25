@@ -250,7 +250,7 @@ contains
             !
             class is( Grid3D_SG_t )
                 !
-                allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
+                allocate( model_operator, source = ModelOperator_MF_SG_t( main_grid ) )
                 !
                 call model_operator%setEquations
                 !

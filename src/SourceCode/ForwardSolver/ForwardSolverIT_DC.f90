@@ -83,7 +83,7 @@ contains
         !
         call self%setIterControl
         !
-        call self%initDiagnostics()
+        call self%initDiagnostics
         !
         self%divergence_correction = DivergenceCorrection_t( model_operator )
         !
@@ -167,7 +167,7 @@ contains
         !
         self%relResVec = R_ZERO
         !
-        call self%solver%zeroDiagnostics()
+        call self%solver%zeroDiagnostics
         !
     end subroutine zeroDiagnosticsForwardSolverIT_DC
     !
@@ -178,14 +178,14 @@ contains
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
         integer, intent( in ) :: pol
-        class( Source_t ), intent( in ) :: source
+        class( Source_t ), intent( inout ) :: source
         class( Vector_t ), intent( inout ) :: e_solution
         !
         class( Vector_t ), allocatable :: temp_vec
         class( Scalar_t ), allocatable :: phi0
         integer :: iter
         !
-        call self%solver%zeroDiagnostics()
+        call self%solver%zeroDiagnostics
         !
         self%solver%converged = .FALSE.
         self%solver%failed = .FALSE.
