@@ -61,9 +61,9 @@ contains
                 allocate( self%solver, source = Solver_QMR_t( model_operator ) )
                 !
             case( BiCG )
-                stop "ForwardSolverIT_DC_ctor > Not yet coded for Bi-Conjugate Gradients"
+                call errStop( "ForwardSolverIT_DC_ctor > Not yet coded for Bi-Conjugate Gradients" )
             case default
-                stop "ForwardSolverIT_DC_ctor > Unknown solver"
+                call errStop( "ForwardSolverIT_DC_ctor > Unknown solver" )
             !
         end select
         !
@@ -76,7 +76,7 @@ contains
         self%tol_div_cor = R_ZERO
         !
         !> Set default values for this ForwardSolver
-        call self%setIterDefaults()
+        call self%setIterDefaults
         !
         !> Set max number of all forward solver iterations
         self%max_iter_total = self%max_div_cor * self%solver%max_iters
@@ -95,7 +95,7 @@ contains
         implicit none
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         real( kind=prec ), intent( in ) :: period
         !
         !> Set omega for this ForwardSolver solver
@@ -181,7 +181,7 @@ contains
         class( Source_t ), intent( inout ) :: source
         class( Vector_t ), intent( inout ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_vec
+        class( Vector_t ), allocatable :: temp_vec, temp_e_solution
         class( Scalar_t ), allocatable :: phi0
         integer :: iter
         !
@@ -192,13 +192,14 @@ contains
         self%n_divcor = 0
         self%n_iter_actual = 0
         !
-        e_solution = cVector3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, EDGE )
+        !> Create temp_e_solution Vector
+        call self%solver%preconditioner%model_operator%metric%createVector( complex_t, EDGE, temp_e_solution )
         !
-        call e_solution%zeros
+        call temp_e_solution%zeros
         !
         if( source%non_zero_source ) then
             !
-            allocate( phi0, source = cScalar3D_SG_t( self%solver%preconditioner%model_operator%metric%grid, NODE ) )
+            call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phi0 )
             !
             call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol ), phi0 )
             !
@@ -209,9 +210,9 @@ contains
             select type( solver => self%solver )
                 !
                 class is( Solver_QMR_t )
-                    call solver%solve( source%rhs( pol ), e_solution )
+                    call solver%solve( source%rhs( pol ), temp_e_solution )
                 class default
-                    stop "Error: getESolutionForwardSolverIT_DC > Unknown solver type."
+                    call errStop( "createESolutionForwardSolverIT_DC > Unknown solver type." )
                 !
             end select
             !
@@ -238,15 +239,15 @@ contains
                 if( self%n_divcor < self%max_div_cor ) then
                     !
                     !> USING THIS TEMPORARY VARIABLE IMPROVES THE EXECUTION TIME CONSIDERABLY...
-                    allocate( temp_vec, source = e_solution )
+                    allocate( temp_vec, source = temp_e_solution )
                     !
                     if( source%non_zero_source ) then
                         !
-                        call self%divergence_correction%divCorr( temp_vec, e_solution, phi0 )
+                        call self%divergence_correction%divCorr( temp_vec, temp_e_solution, phi0 )
                         !
                     else
                         !
-                        call self%divergence_correction%divCorr( temp_vec, e_solution )
+                        call self%divergence_correction%divCorr( temp_vec, temp_e_solution )
                         !
                     endif
                     !
@@ -269,7 +270,7 @@ contains
         !> Just for the serialJMult_T SourceInteriorForce case
         if( source%for_transpose ) then
             !
-            call e_solution%mult( self%solver%preconditioner%model_operator%metric%v_edge )
+            call temp_e_solution%mult( self%solver%preconditioner%model_operator%metric%v_edge )
             !
         endif
         !
@@ -283,9 +284,13 @@ contains
             !
         endif
         !
-        call e_solution%add( temp_vec )
+        call temp_e_solution%add( temp_vec )
         !
         deallocate( temp_vec )
+        !
+        e_solution = temp_e_solution
+        !
+        deallocate( temp_e_solution )
         !
     end subroutine createESolutionForwardSolverIT_DC
     !
@@ -325,7 +330,7 @@ contains
                 self%divergence_correction = rhs%divergence_correction
                 !
             class default
-               stop "Error: copyFromForwardSolverIT_DC > Incompatible input."
+               call errStop( "copyFromForwardSolverIT_DC > Incompatible input." )
             !
         end select
         !

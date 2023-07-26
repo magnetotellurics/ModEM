@@ -1081,7 +1081,7 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
         cycle
       endif
 
-      extrap = .true.
+      extrap = .TRUE.
       nrmax = 2
 
     endif
@@ -1140,7 +1140,7 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
 !  Prepare bisection of the smallest interval.
 !
     if( numrl2 == 1 ) then
-      noext = .true.
+      noext = .TRUE.
     endif
 
     if( ier == 5 ) then
@@ -1515,7 +1515,7 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
         cycle
       endif
 
-      extrap = .true.
+      extrap = .TRUE.
       nrmax = 2
 
     endif
@@ -1574,7 +1574,7 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
 !  Prepare bisection of the smallest interval.
 !
     if( numrl2 == 1 ) then
-      noext = .true.
+      noext = .TRUE.
     endif
 
     if( ier == 5 ) then
@@ -2186,7 +2186,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
         cycle
       endif
 
-      extrap = .true.
+      extrap = .TRUE.
       nrmax = 2
 
     endif
@@ -2247,7 +2247,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 !  Prepare bisection of the smallest interval.
 !
     if( numrl2 == 1 ) then
-      noext = .true.
+      noext = .TRUE.
     endif
 
     if( 5 <= ier ) then
@@ -2714,7 +2714,7 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
     if( .not. extrap ) then
       if( abs(blist(maxerr)-alist(maxerr)) > small ) go to 90
-      extrap = .true.
+      extrap = .TRUE.
       nrmax = 2
     endif
 
@@ -2774,7 +2774,7 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !  Prepare bisection of the smallest interval.
 !
     if( numrl2 == 1 ) then
-      noext = .true.
+      noext = .TRUE.
     endif
 
     if( ier == 5 ) then
@@ -6352,12 +6352,12 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 
   if( 5.0e-01*abs(b-a)*domega <= 2.0d0) then
     numrl2 = 1
-    extall = .true.
+    extall = .TRUE.
     rlist2(1) = result
   endif
 
   if( 2.5e-01 * abs(b-a) * domega <= 2.0d0 ) then
-    extall = .true.
+    extall = .TRUE.
   endif
 
   if( dres >= (1.0d0-5.0e+01* epsilon ( defabs ) )*defabs ) then
@@ -6505,12 +6505,12 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
       cycle
     endif
 
-    extall = .true.
+    extall = .TRUE.
     go to 130
 
 60  continue
 
-    extrap = .true.
+    extrap = .TRUE.
     nrmax = 2
 
 70  continue
@@ -6569,7 +6569,7 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 100 continue
 
     if( numrl2 == 1 ) then
-      noext = .true.
+      noext = .TRUE.
     endif
 
     if( ier == 5 ) then

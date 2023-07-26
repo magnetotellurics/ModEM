@@ -37,6 +37,8 @@ module Vector
         procedure, public :: boundary => boundary_Vector
         procedure, public :: interior => interior_Vector
         !
+        procedure, public :: length => length_Vector
+        !
         procedure, public :: switchStoreState => switchStoreState_Vector
         !
     end type Vector_t
@@ -74,7 +76,7 @@ module Vector
         subroutine interface_sum_edge_vector( self, cell_out, interior_only )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( inout ) :: cell_out
+            class( Scalar_t ), intent( out ) :: cell_out
             logical, optional, intent( in ) :: interior_only
         end subroutine interface_sum_edge_vector
         !
@@ -82,7 +84,7 @@ module Vector
         subroutine interface_sum_edge_vti_vector( self, cell_h_out, cell_v_out, interior_only )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( inout ) :: cell_h_out, cell_v_out
+            class( Scalar_t ), intent( out ) :: cell_h_out, cell_v_out
             logical, optional, intent( in ) :: interior_only
         end subroutine interface_sum_edge_vti_vector
         !
@@ -200,6 +202,19 @@ contains
         call interior%setArray( c_array )
         !
     end subroutine interior_Vector
+    !
+    !> No subroutine briefing
+    !
+    function length_Vector( self ) result( n )
+        implicit none
+        !
+        class( Vector_t ), intent( in ) :: self
+        !
+        integer :: n
+        !
+        n = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
+        !
+    end function length_Vector
     !
     !> No subroutine briefing
     !

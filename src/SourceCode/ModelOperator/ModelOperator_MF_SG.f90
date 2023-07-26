@@ -284,7 +284,7 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         !
         call sigma%PDEmapping( self%sigma_E )
         !

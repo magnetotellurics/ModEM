@@ -3,14 +3,13 @@
 !
 module ModelParameter
     !
-    use Constants
+    use Utilities
     use Vector
     use Grid2D
     use ModelParameter1D
     use ModelParameter2D
-    use Grid
     use MetricElements
-    use rScalar3D_SG
+    use Scalar
     !
     type, abstract :: ModelParameter_t
         !
@@ -57,7 +56,6 @@ module ModelParameter
             procedure( interface_lin_comb_model_model_parameter ), deferred, public :: linComb
             !
             procedure( interface_dot_product_model_parameter ), deferred, public :: dotProd
-            generic :: operator(.dot.) => dotProd
             !
             procedure( interface_pdemapping_model_parameter ), deferred, public :: PDEmapping
             procedure( interface_dpdemapping_model_parameter ), deferred, public :: dPDEmapping
@@ -76,7 +74,7 @@ module ModelParameter
         !> No interface function briefing
         function interface_slice_1d_model_parameter( self, ix, iy ) result( model_param_1D )
             import :: ModelParameter_t, ModelParameter1D_t
-            class( ModelParameter_t ), intent( in ) :: self
+            class( ModelParameter_t ), intent( inout ) :: self
             integer, intent( in ) :: ix, iy
             type( ModelParameter1D_t ) ::  model_param_1D 
         end function interface_slice_1d_model_parameter
@@ -84,14 +82,14 @@ module ModelParameter
         !> No interface function briefing
         function interface_avg_model_1d_model_parameter( self ) result( model_param_1D )
             import :: ModelParameter_t, ModelParameter1D_t
-            class( ModelParameter_t ), intent( in ) :: self
+            class( ModelParameter_t ), intent( inout ) :: self
             type( ModelParameter1D_t ) :: model_param_1D
         end function interface_avg_model_1d_model_parameter
         !
         !> No interface function briefing
         function interface_slice_2d_model_parameter( self, axis, j ) result( m2D )
             import :: ModelParameter_t, ModelParameter2D_t
-            class( ModelParameter_t ), intent( in ) :: self
+            class( ModelParameter_t ), intent( inout ) :: self
             integer, intent( in ) :: axis, j
             type( ModelParameter2D_t ) :: m2D 
         end function interface_slice_2d_model_parameter
@@ -107,19 +105,19 @@ module ModelParameter
         !> No interface subroutine briefing
         !
         function interface_get_one_cond_model_parameter( self, i_cond ) result( cell_cond )
-            import :: ModelParameter_t, rScalar3D_SG_t
+            import :: ModelParameter_t, Scalar_t
             class( ModelParameter_t ), intent( in ) :: self
             integer, intent( in ) :: i_cond
             !
-            type( rScalar3D_SG_t ) :: cell_cond
+            class( Scalar_t ), allocatable :: cell_cond
         end function interface_get_one_cond_model_parameter
         !
         !> No interface subroutine briefing
         !
         function interface_get_all_cond_model_parameter( self ) result( cell_cond )
-            import :: ModelParameter_t, rScalar3D_SG_t
+            import :: ModelParameter_t, GenScalar_t
             class( ModelParameter_t ), intent( in ) :: self
-            type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
+            type( GenScalar_t ), allocatable, dimension(:) :: cell_cond
         end function interface_get_all_cond_model_parameter
         !
         !> No interface subroutine briefing
@@ -133,9 +131,9 @@ module ModelParameter
         !
         !> No interface subroutine briefing
         subroutine interface_set_all_cond_model_parameter( self, cell_cond )
-            import :: ModelParameter_t, Scalar_t
+            import :: ModelParameter_t, GenScalar_t
             class( ModelParameter_t ), intent( inout ) :: self
-            class( Scalar_t ), dimension(:), intent( in ) :: cell_cond
+            type( GenScalar_t ), allocatable, dimension(:), intent( in ) :: cell_cond
         end subroutine interface_set_all_cond_model_parameter
         !
         !> No interface subroutine briefing
@@ -163,7 +161,7 @@ module ModelParameter
             import :: ModelParameter_t, prec
             class( ModelParameter_t ), intent( inout ) :: self
             real( kind=prec ), intent( in ) :: a1, a2
-            class( ModelParameter_t ), intent( in ) :: rhs
+            class( ModelParameter_t ), intent( inout ) :: rhs
         end subroutine interface_lin_comb_model_model_parameter
         !
         !> No interface subroutine briefing
@@ -177,7 +175,7 @@ module ModelParameter
         !> No interface function briefing
         function interface_dot_product_model_parameter( self, rhs ) result( rvalue )
             import :: ModelParameter_t, prec
-            class( ModelParameter_t ), intent( in ) :: self, rhs
+            class( ModelParameter_t ), intent( inout ) :: self, rhs
             real( kind=prec ) :: rvalue
         end function interface_dot_product_model_parameter
         !
@@ -189,31 +187,32 @@ module ModelParameter
         end subroutine interface_set_type_model_parameter
         !
         !> No interface subroutine briefing
-        subroutine interface_pdemapping_model_parameter( self, eVec )
+        subroutine interface_pdemapping_model_parameter( self, e_vec )
             import :: ModelParameter_t, Vector_t
-            class( ModelParameter_t ), intent( in ) :: self
-            class( Vector_t ), intent( inout ) :: eVec
+            class( ModelParameter_t ), intent( inout ) :: self
+            class( Vector_t ), intent( inout ) :: e_vec
         end subroutine interface_pdemapping_model_parameter
         !
         !> No interface subroutine briefing
-        subroutine interface_dpdemapping_model_parameter( self, dsigma, eVec )
+        subroutine interface_dpdemapping_model_parameter( self, dsigma, e_vec )
             import :: ModelParameter_t, Vector_t
-            class( ModelParameter_t ), intent( in ) :: self, dsigma
-            class( Vector_t ), intent( inout ) :: eVec
+            class( ModelParameter_t ), intent( inout ) :: self
+            class( ModelParameter_t ), intent( in ) :: dsigma
+            class( Vector_t ), intent( inout ) :: e_vec
         end subroutine interface_dpdemapping_model_parameter
         !
         !> No interface function briefing
-        subroutine interface_dpdemapping_t_model_parameter( self, eVec, dsigma )
+        subroutine interface_dpdemapping_t_model_parameter( self, e_vec, dsigma )
             import :: ModelParameter_t, Vector_t
-            class( ModelParameter_t ), intent( in ) :: self
-            class( Vector_t ), intent( in ) :: eVec
+            class( ModelParameter_t ), intent( inout ) :: self
+            class( Vector_t ), intent( in ) :: e_vec
             class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         end subroutine interface_dpdemapping_t_model_parameter
         !
         !> No interface subroutine briefing
         subroutine interface_write_model_parameter( self, file_name, comment )
             import :: ModelParameter_t, Vector_t
-            class( ModelParameter_t ), intent( in ) :: self
+            class( ModelParameter_t ), intent( inout ) :: self
             character(*), intent( in ) :: file_name
             character(*), intent( in ), optional :: comment
         end subroutine interface_write_model_parameter

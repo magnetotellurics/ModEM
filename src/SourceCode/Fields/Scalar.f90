@@ -5,6 +5,7 @@ module Scalar
     !
     use Field
     !
+    !> Abstract base class
     type, abstract, extends( Field_t ) :: Scalar_t
         !
         integer, dimension(3) :: NdV
@@ -24,6 +25,13 @@ module Scalar
             !
     end type Scalar_t
     !
+    !> Allocatable Scalar element for Old Fortran polymorphism on Arrays!!!
+    type, public :: GenScalar_t
+        !
+        class( Scalar_t ), allocatable :: s
+        !
+    end type GenScalar_t
+    !
     !>
     abstract interface
         !
@@ -33,9 +41,7 @@ module Scalar
             import :: Scalar_t, prec
             !
             class( Scalar_t ), intent( inout ) :: self
-            !
             complex( kind=prec ), allocatable :: v(:, :, :)
-            !
         end function interface_get_v_scalar
         !
         !> No interface subroutine briefing
@@ -45,7 +51,6 @@ module Scalar
             !
             class( Scalar_t ), intent( inout ) :: self
             complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
-            !
         end subroutine interface_set_v_scalar
         !
     end interface

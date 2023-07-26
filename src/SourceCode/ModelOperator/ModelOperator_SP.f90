@@ -221,7 +221,7 @@ contains
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         !
         integer :: i
         class( Scalar_t ), allocatable :: temp_cell_cond
@@ -262,7 +262,8 @@ contains
             !
         enddo
         !
-        call sigma%dPDEmapping( model, self%sigma_c )
+		!> USELESS sigma_c
+        !call sigma%dPDEmapping( model, self%sigma_c )
         !
         deallocate( model )
         !
@@ -275,7 +276,7 @@ contains
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         real( kind=prec ), intent ( in ) :: in_omega
-        class( ModelParameter_t ), intent( in ), optional :: model_param
+        class( ModelParameter_t ), intent( inout ), optional :: model_param
         !
         class( Vector_t ), allocatable :: sig_temp
         complex( kind=prec ), allocatable, dimension(:) :: sig_temp_sv, v_edge_sv

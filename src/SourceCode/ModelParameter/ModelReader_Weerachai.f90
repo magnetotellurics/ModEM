@@ -3,14 +3,11 @@
 !
 module ModelReader_Weerachai
     !
-    use Constants
-    use String
-    use Grid
-    use Grid3D_SG
-    use Grid3D_MR
-    use rScalar3D_SG
-    use ModelParameterCell_SG
     use ModelReader
+    use Utilities
+    use rScalar3D_SG
+    use rScalar3D_MR
+    use ModelParameterCell_SG
     use ForwardControlFile
     !
     type, extends( ModelReader_t ), public :: ModelReader_Weerachai_t
@@ -40,7 +37,8 @@ contains
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         real( kind=prec ) :: ox, oy, oz, rotDeg
         real( kind=prec ), dimension(:, :, :), allocatable :: rho
-        type( rScalar3D_SG_t ) :: ccond
+        complex( kind=prec ), dimension(:, :, :), allocatable :: cond_v
+        class( Scalar_t ), allocatable :: ccond
         real( kind=prec ) :: ALPHA
         character(len=200), dimension(20) :: args
         !
@@ -122,20 +120,31 @@ contains
                     enddo
                 enddo
                 !
-                ccond = rScalar3D_SG_t( grid, CELL_EARTH )
+                select case( grid_format )
+                    !
+                    case( GRID_SG )
+                        allocate( ccond, source = rScalar3D_SG_t( grid, CELL_EARTH ) )
+                    case( GRID_MR )
+                        allocate( ccond, source = rScalar3D_MR_t( grid, CELL_EARTH ) )
+                    case default
+                        call errStop( "readModelReaderWeerachai > Unknow grid_format ["//grid_format//"] for ccond." )
+                    !
+                end select
                 !
                 if( index( paramType, "LOGE" ) > 0 .OR. &
                     index( paramType, "LOG10" ) > 0 ) then
                     !
-                    ccond%v = -rho
+                    cond_v = cmplx( -rho, 0.0, kind=prec )
                     !
-                elseif( index(paramType, "LINEAR") > 0 ) then
+                elseif( index( paramType, "LINEAR" ) > 0 ) then
                     !
-                    ccond%v = ONE/rho
+                    cond_v = cmplx( ONE/rho, 0.0, kind=prec )
                     !
                 endif
                 !
-                deallocate( rho )
+                call ccond%setV( cond_v )
+                !
+                deallocate( rho, cond_v )
                 !
                 if( anisotropic_level == 1 ) then
                     !

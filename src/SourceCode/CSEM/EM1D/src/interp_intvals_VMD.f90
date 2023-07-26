@@ -42,11 +42,11 @@ subroutine interp_intvals_vmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
   integer(kind=int32)   :: recidx   !receiver index
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .true.
+  wellbehaved = .TRUE.
   sz_eq_zr = .false.
   if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
-    sz_eq_zr = .true.
+    sz_eq_zr = .TRUE.
   endif
 
 
@@ -89,7 +89,7 @@ subroutine interp_intvals_vmd_allcomp(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,Ez,Hx
         smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .true.
+          refl_var%refcoef_changed = .TRUE.
           call prepare_refcoef(refl_var,r,vmd,aniso)
 
           ibesord = 1
@@ -171,11 +171,11 @@ subroutine interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
   integer(kind=int32)   :: recidx   !receiver index
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .true.
+  wellbehaved = .TRUE.
   sz_eq_zr = .false.
   if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
-    sz_eq_zr = .true.
+    sz_eq_zr = .TRUE.
   endif
 
 
@@ -216,7 +216,7 @@ subroutine interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
         smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .true.
+          refl_var%refcoef_changed = .TRUE.
           call prepare_refcoef(refl_var,r,vmd,aniso)
 
           ibesord = 1
@@ -262,7 +262,7 @@ subroutine interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
         smallrex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .true.
+          refl_var%refcoef_changed = .TRUE.
           call prepare_refcoef(refl_var,r,vmd,aniso)
 
           ibesord = 1
@@ -307,7 +307,7 @@ subroutine interp_intvals_vmd_Exy(refl_var,src,ifreq,sz,zr,bgdat,Ex,Ey,j_om_mu, 
         smallrey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .true.
+          refl_var%refcoef_changed = .TRUE.
           call prepare_refcoef(refl_var,r,vmd,aniso)
 
           ibesord = 1
@@ -373,11 +373,11 @@ subroutine interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
   integer(kind=int32)   :: recidx   !receiver index
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .true.
+  wellbehaved = .TRUE.
   sz_eq_zr = .false.
   if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
-    sz_eq_zr = .true.
+    sz_eq_zr = .TRUE.
   endif
 
 
@@ -418,7 +418,7 @@ subroutine interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
         smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .true.
+          refl_var%refcoef_changed = .TRUE.
           call prepare_refcoef(refl_var,r,vmd,aniso)
 
           ibesord = 1
@@ -464,7 +464,7 @@ subroutine interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
         smallrhx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .true.
+          refl_var%refcoef_changed = .TRUE.
           call prepare_refcoef(refl_var,r,vmd,aniso)
 
           ibesord = 1
@@ -509,7 +509,7 @@ subroutine interp_intvals_vmd_Hxy(refl_var,src,ifreq,sz,zr,bgdat,Hx,Hy,j_om_mu, 
         smallrhy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .true.
+          refl_var%refcoef_changed = .TRUE.
           call prepare_refcoef(refl_var,r,vmd,aniso)
 
           ibesord = 1
@@ -575,11 +575,11 @@ subroutine interp_intvals_vmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,j_om_mu,ommus
   integer(kind=int32)   :: recidx   !receiver index
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .true.
+  wellbehaved = .TRUE.
   sz_eq_zr = .false.
   if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
-    sz_eq_zr = .true.
+    sz_eq_zr = .TRUE.
   endif
 
 
@@ -619,7 +619,7 @@ subroutine interp_intvals_vmd_Hz(refl_var,src,ifreq,sz,zr,bgdat,Hz,j_om_mu,ommus
         smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
           !reflection coeff. for this radius
-          refl_var%refcoef_changed = .true.
+          refl_var%refcoef_changed = .TRUE.
           call prepare_refcoef(refl_var,r,vmd,aniso)
 
           ibesord = 0

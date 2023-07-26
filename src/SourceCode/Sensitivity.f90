@@ -88,7 +88,7 @@ contains
     subroutine serialJMult( sigma, dsigma, JmHat )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma, dsigma
+        class( ModelParameter_t ), intent( inout ) :: sigma, dsigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: JmHat
         !
         integer :: i_data_tx
@@ -240,7 +240,7 @@ contains
     subroutine serialJMult_T( sigma, all_data, dsigma, i_sol, s_hat )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         integer, intent( in ), optional :: i_sol
@@ -309,7 +309,7 @@ contains
     subroutine JMult_T_Tx( sigma, tx_data, tx_dsigma, i_sol )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         type( DataGroupTx_t ), intent( in ) :: tx_data
         class( ModelParameter_t ), allocatable, intent( inout ) :: tx_dsigma
         integer, intent( in ), optional :: i_sol

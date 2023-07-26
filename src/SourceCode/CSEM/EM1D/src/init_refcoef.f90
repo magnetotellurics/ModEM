@@ -194,7 +194,7 @@ if(refl_var%refcoef_changed) then
 
   end select
 
-  refl_var%refcoef_changed = .true.
+  refl_var%refcoef_changed = .TRUE.
 
 endif
 

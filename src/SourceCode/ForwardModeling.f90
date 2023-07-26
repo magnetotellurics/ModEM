@@ -23,7 +23,7 @@ contains
     subroutine solveAll( sigma )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         !
         class( Transmitter_t ), pointer :: Tx
         integer :: i_tx
@@ -52,7 +52,7 @@ contains
     subroutine solveTx( sigma, Tx )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         class( Transmitter_t ), pointer, intent( inout ) :: Tx
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
@@ -75,7 +75,7 @@ contains
                         !
                     case( "" )
                         !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > MT Source type not provided, using SourceMT_1D_t."
+                        call warning( "solveTx > MT Source type not provided, using SourceMT_1D_t." )
                         !
                         call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
                         !
@@ -196,7 +196,7 @@ contains
     subroutine serialForwardModeling( sigma, all_predicted_data, i_sol )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
         integer, intent( in ), optional :: i_sol
         !

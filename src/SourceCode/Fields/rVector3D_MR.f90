@@ -1,24 +1,6 @@
 !
-!> This file is part of the ModEM modeling and inversion package.
-!>
-!>LICENSING information
-!>
-!> Copyright (C) 2020 ModEM research group.
-!> Contact: http://
-!>
-!> GNU General Public License Usage
-!> This file may be used under the terms of the GNU
-!> General Public License version 3.0 as published by the Free Software
-!> Foundation and appearing in the file LICENSE.GPL included in the
-!> packaging of this file.  Please review the following information to
-!> ensure the GNU General Public License version 3.0 requirements will be
-!> met: http://www.gnu.org/copyleft/gpl.html.
-!>
-!> SUMMARY
-!>
 !> This module specializes the abstract Vector3D_real class for
 !> real vector fields on a multi-resolution staggered grid.
-!>
 !
 module rVector3D_MR
     !
@@ -1465,50 +1447,13 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: rhs
+        class( Field_t ), intent( inout ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
         cvalue = C_ZERO
         !
-        if(( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated )) then
-            stop "Error: dotProd_rVector3D_MR > Input vectors not allocated."
-        endif
-        !
-        if( self%isCompatible( rhs ) ) then
-            !
-            if( self%store_state == rhs%store_state ) then
-                !
-                select type( rhs )
-                    !
-                    class is( rVector3D_MR_t )
-                        !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            cvalue = cvalue + cmplx( sum( self%x * rhs%x ), 0.0, kind=prec )
-                            cvalue = cvalue + cmplx( sum( self%y * rhs%y ), 0.0, kind=prec )
-                            cvalue = cvalue + cmplx( sum( self%z * rhs%z ), 0.0, kind=prec )
-                            !
-                        else if( rhs%store_state .EQ. singleton ) then
-                            !
-                            cvalue = cvalue + cmplx( sum( self%s_v * rhs%s_v ), 0.0, kind=prec )
-                            !
-                        else
-                            stop "Error: dotProd_rVector3D_MR > Unknown rhs store_state!"
-                        endif
-                        !
-                    class default
-                        stop "Error: dotProd_rVector3D_MR: undefined rhs"
-                    !
-                end select
-                !
-            else
-                stop "Error: dotProd_rVector3D_MR > Incompatible store_state"
-            endif
-            !
-        else
-            stop "Error: dotProd_rVector3D_MR > Incompatible rhs"
-        endif
+        call errStop( "dotProd_rVector3D_MR still not implemented" )
         !
     end function dotProd_rVector3D_MR
     !

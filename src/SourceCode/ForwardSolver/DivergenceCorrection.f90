@@ -4,7 +4,6 @@
 Module DivergenceCorrection
     !
     use Solver_PCG
-    use cScalar3D_SG
     !
     type :: DivergenceCorrection_t
         !
@@ -93,7 +92,7 @@ contains
         class( Vector_t ), intent( inout ) :: out_e
         class( Scalar_t ), intent( in ), optional :: phi0
         !
-        class( Scalar_t ), allocatable :: phiSol, phiRHS
+        class( Scalar_t ), allocatable :: phiRHS, phiSol
         logical :: SourceTerm
         !
         SourceTerm = present( phi0 )

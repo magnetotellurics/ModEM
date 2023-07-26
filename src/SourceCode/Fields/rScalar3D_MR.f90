@@ -858,11 +858,11 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: rhs
+        class( Field_t ), intent( inout ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
-        stop "Error: dotProd_rScalar3D_MR not implemented!"
+        call errStop( "dotProd_rScalar3D_MR still not implemented" )
         !
     end function dotProd_rScalar3D_MR
     !

@@ -76,7 +76,7 @@ module cVectorSparse3D_SG
             !
             procedure, public :: reall => reallocate_cVectorSparse3D_SG
             !
-            procedure, private :: deallocate_cVectorSparse3D_SG
+            procedure, private :: deall => deallocate_cVectorSparse3D_SG
             !
     end type cVectorSparse3D_SG_t
     !
@@ -96,7 +96,7 @@ contains
         !
         type( cVectorSparse3D_SG_t ) :: self
         !
-        integer                    :: status
+        integer :: status
         !
         !write( *, * ) "Constructor cVectorSparse3D_SG"
         !
@@ -150,7 +150,7 @@ contains
         self%nCoeff = 0
         self%is_allocated = .FALSE.
         !
-        call self%deallocate_cVectorSparse3D_SG()
+        call self%deall
         !
     end subroutine cVectorSparse3D_SG_dtor
     !
@@ -179,7 +179,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: setAllBoundary_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "setAllBoundary_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine setAllBoundary_cVectorSparse3D_SG
     !
@@ -194,7 +194,7 @@ contains
         logical, intent( in ), optional :: int_only
         logical :: int_only_p
         !
-        stop "Error: setOneBoundary_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "setOneBoundary_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine setOneBoundary_cVectorSparse3D_SG
     !
@@ -206,7 +206,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
         !
-        stop "Error: intBdryIndices_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "intBdryIndices_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine intBdryIndices_cVectorSparse3D_SG
     !
@@ -216,7 +216,7 @@ contains
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: rhs
+        class( Field_t ), intent( inout ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
@@ -225,15 +225,15 @@ contains
         cvalue = C_ZERO
         !
         if( .NOT. self%is_allocated ) then
-            stop "Self not is_allocated yet for dotProdSparse"
+            call errStop( "dotProd_cVectorSparse3D_SG > self not allocated" )
         endif
         !
         if( .NOT. rhs%is_allocated ) then
-            stop "rhs not is_allocated yet for dotProdSparse"
+            call errStop( "dotProd_cVectorSparse3D_SG > rhs not allocated" )
         endif
         !
         if( self%grid_type /= rhs%grid_type ) then
-            stop "dotProdSparse: not compatible usage for dotProdSparse"
+            call errStop( "dotProd_cVectorSparse3D_SG > rhs not compatible" )
         endif
         !
         !> sum over  non-zero terms in sparse vector (conjugate sparse)
@@ -243,6 +243,8 @@ contains
         select type( rhs )
             !
             class is( cVector3D_SG_t )
+                !
+                call rhs%switchStoreState( compound )
                 !
                 do i = 1, self%nCoeff
                     !
@@ -274,14 +276,14 @@ contains
                         endif
                     !
                     else
-                        stop "IJK out of bounds for dotProdSparse"
+                        call errStop( "dotProd_cVectorSparse3D_SG > IJK out of bounds for dotProdSparse" )
                     !
                     endif
                     !
                 enddo
                 !
             class default
-                stop "Error: dotProdCVector3D_SG: undefined rhs"
+                call errStop( "dotProd_cVectorSparse3D_SG > undefined rhs" )
             !
         end select
         !
@@ -511,7 +513,7 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
-        stop "Error: getArray_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "getArray_cVectorSparse3D_SG not implemented yet!" )
         !
     end function getArray_cVectorSparse3D_SG
     !
@@ -523,7 +525,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        stop "Error: setArray_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "setArray_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine setArray_cVectorSparse3D_SG
     !
@@ -542,7 +544,7 @@ contains
         integer, intent( in ) :: zmin, zstep, zmax
         real( kind=prec ), intent ( in ) :: rvalue
         !
-        stop "Error: setVecComponents_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "setVecComponents_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine setVecComponents_cVectorSparse3D_SG
     !
@@ -565,7 +567,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: add_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "add_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine add_cVectorSparse3D_SG
     !
@@ -577,7 +579,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: subValue_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "subValue_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine subValue_cVectorSparse3D_SG
     !
@@ -589,7 +591,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: subField_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "subField_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine subField_cVectorSparse3D_SG
     !
@@ -601,7 +603,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: multByField_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "multByField_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine multByField_cVectorSparse3D_SG
     !
@@ -613,7 +615,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: divByField_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "divByField_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine divByField_cVectorSparse3D_SG
     !
@@ -625,7 +627,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: divByValue_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "divByValue_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine divByValue_cVectorSparse3D_SG
     !
@@ -639,7 +641,7 @@ contains
         !
         class( Vector_t ), allocatable :: diag_mult
         !
-        stop "Error: diagMult_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "diagMult_cVectorSparse3D_SG not implemented yet!" )
         !
     end function diagMult_cVectorSparse3D_SG
     !
@@ -650,7 +652,7 @@ contains
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         !
-        stop "Error: conjugate_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "conjugate_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine conjugate_cVectorSparse3D_SG
     !
@@ -663,7 +665,7 @@ contains
         class( Field_t ), intent( in ) :: rhs
         complex( kind=prec ), intent( in ) :: c1, c2
         !
-        stop "Error: linComb_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "linComb_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine linComb_cVectorSparse3D_SG
     !
@@ -676,7 +678,7 @@ contains
         complex( kind=prec ), intent( in ) :: cvalue
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: multAdd_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "multAdd_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine multAdd_cVectorSparse3D_SG
     !
@@ -690,7 +692,7 @@ contains
         character, intent( in ) :: xyz
         class( Vector_t ), allocatable, intent( inout ) :: interp
         !
-        stop "Error: interpFunc_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "interpFunc_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine interpFunc_cVectorSparse3D_SG
     !
@@ -702,7 +704,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
-        stop "Error: getReal_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "getReal_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine getReal_cVectorSparse3D_SG
     !
@@ -712,7 +714,7 @@ contains
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         integer, intent( in ), optional :: store_state
         !
-        stop "Error: switchStoreState_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "switchStoreState_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine switchStoreState_cVectorSparse3D_SG
     !
@@ -725,7 +727,7 @@ contains
         class( Field_t ), intent( in ) :: rhs
         !
         if( .NOT. rhs%is_allocated ) then
-            stop "Error: copyFrom_cVectorSparse3D_SG > rhs not allocated"
+        call errStop( "copyFrom_cVectorSparse3D_SG > rhs not allocated" )
         endif
         !
         self%grid => rhs%grid
@@ -755,7 +757,7 @@ contains
                 self%c = rhs%c
                 !
             class default
-                stop "Error: copyFrom_cVectorSparse3D_SG > Incompatible rhs"
+                call errStop( "copyFrom_cVectorSparse3D_SG > Incompatible rhs" )
             !
         end select
         !
@@ -770,7 +772,7 @@ contains
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        stop "Error: read_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "read_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine read_cVectorSparse3D_SG
     !
@@ -783,7 +785,7 @@ contains
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        stop "Error: setAllBoundary_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "setAllBoundary_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine write_cVectorSparse3D_SG
     !
@@ -807,7 +809,7 @@ contains
         !
         ! the old baggage is out of the door
         if( .NOT. self%is_allocated ) then
-            stop "Error: reallocate_cVectorSparse3D_SG > Not self%is_allocated"
+            call errStop( "reallocate_cVectorSparse3D_SG > Not self%is_allocated" )
         endif
         !
         tempLC = self
@@ -815,8 +817,8 @@ contains
         if( tempLC%nCoeff .EQ. nCoeff ) then
             ! do nothing
         else
-            call self%deallocate_cVectorSparse3D_SG()
-            self%is_allocated = .true.
+            call self%deall
+            self%is_allocated = .TRUE.
             allocate(self%i(nCoeff),STAT=status)
             self%is_allocated = self%is_allocated .AND. (status .eq. 0)
             allocate(self%j(nCoeff),STAT=status)

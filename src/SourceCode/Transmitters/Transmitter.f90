@@ -211,7 +211,8 @@ module Transmitter
             implicit none
             !
             class( Transmitter_t ), intent( inout ) :: self
-            class( ModelParameter_t ), intent( in ) :: sigma, dsigma
+            class( ModelParameter_t ), intent( inout ) :: sigma
+            class( ModelParameter_t ), intent( in ) :: dsigma
             class( ModelOperator_t ), intent( in ) :: model_operator
             !
             type( SourceInteriorForce_t ) :: source_int_force
@@ -266,7 +267,7 @@ module Transmitter
             implicit none
             !
             class( Transmitter_t ), intent( in ) :: self
-            class( ModelParameter_t ), intent( in ) :: sigma
+            class( ModelParameter_t ), intent( inout ) :: sigma
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
             class( Vector_t ), allocatable, dimension(:) :: eSens

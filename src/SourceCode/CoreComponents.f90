@@ -279,7 +279,7 @@ contains
         implicit none
         !
         class( ModelParameter_t ), allocatable :: model, aux_model
-        type( rScalar3D_SG_t ) :: cell_cond
+        class( Scalar_t ), allocatable :: cell_cond
         !
         ! Verbose
         write( *, * ) "     - Start jobSplitModel"
@@ -300,7 +300,7 @@ contains
         else
             !
             !> Create new isotropic model with target horizontal cond
-            cell_cond = model%getCond(1)
+            allocate( cell_cond, source = model%getCond(1) )
             !
             allocate( aux_model, source = ModelParameterCell_SG_t( model%metric%grid, cell_cond, 1, model%param_type ) )
             !

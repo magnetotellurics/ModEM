@@ -1,6 +1,6 @@
 !
 !> Abstract Base class to define a ModEM Field
-!> store_state: 1 - compound, 2 - singleton
+!>     store_state: 1 - compound, 2 - singleton
 !
 module Field
     !
@@ -63,17 +63,18 @@ module Field
             procedure( interface_field_div_by_value ), deferred, public :: divByValue
             generic :: div => divByField, divByValue
             !
-            !> Miscellaneous
-            !
+            !> Getters & Setters
             procedure( interface_get_sv_field ), deferred, public :: getSV
             procedure( interface_set_sv_field ), deferred, public :: setSV
             !
             procedure( interface_get_array_field ), deferred, public :: getArray
             procedure( interface_set_array_field ), deferred, public :: setArray
+            !
+            !> Miscellaneous
+            procedure( interface_switch_store_state_field ), deferred, public :: switchStoreState
+            !
             procedure( interface_copy_from_field ), deferred, public :: copyFrom
             generic :: assignment(=) => copyFrom
-            !
-            procedure( interface_switch_store_state_field ), deferred, public :: switchStoreState
             !
             !> I/O operations
             procedure( interface_read_field ), deferred, public :: read
@@ -268,7 +269,7 @@ module Field
         function interface_dot_product_field( self, rhs ) result( cvalue )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
-            class( Field_t ), intent( in ) :: rhs
+            class( Field_t ), intent( inout ) :: rhs
             complex( kind=prec ) :: cvalue
         end function interface_dot_product_field
         !
@@ -312,6 +313,7 @@ module Field
 contains
     !
     !> No subroutine briefing
+    !
     subroutine initializeField( self )
         implicit none
         !
@@ -338,6 +340,8 @@ contains
         class( Field_t ), intent( inout ) :: self
         !
         if( allocated( self%ind_interior ) ) deallocate( self%ind_interior )
+        !
+        if( allocated( self%ind_boundaries ) ) deallocate( self%ind_boundaries )
         !
     end subroutine deallocateField
     !

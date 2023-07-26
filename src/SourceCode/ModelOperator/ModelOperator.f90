@@ -56,7 +56,7 @@ module ModelOperator
             import :: ModelOperator_t, ModelParameter_t
             !
             class( ModelOperator_t ), intent( inout ) :: self
-            class( ModelParameter_t ), intent( in ) :: sigma
+            class( ModelParameter_t ), intent( inout ) :: sigma
         end subroutine interface_set_cond_model_operator
         !
         !> No interface subroutine briefing

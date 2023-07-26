@@ -23,7 +23,6 @@ module rVector3D_SG
             procedure, public :: intBdryIndices => intBdryIndices_rVector3D_SG
             !
             !> Dimensioning operations
-            procedure, public :: length => length_rVector3D_SG
             procedure, public :: setVecComponents => setVecComponents_rVector3D_SG
             !
             !> Arithmetic/algebraic unary operations
@@ -408,23 +407,10 @@ contains
     !
     !> No subroutine briefing
     !
-    function length_rVector3D_SG( self ) result( n )
-        implicit none
-        !
-        class( rVector3D_SG_t ), intent( in ) :: self
-        !
-        integer :: n
-        !
-        n = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
-        !
-    end function length_rVector3D_SG
-    !
-    !> No subroutine briefing
-    !
     subroutine setVecComponents_rVector3D_SG( self, xyz, &
-            &                              xmin, xstep, xmax, &
-            &                              ymin, ystep, ymax, &
-            &                              zmin, zstep, zmax, rvalue )
+            &                                 xmin, xstep, xmax, &
+            &                                 ymin, ystep, ymax, &
+            &                                 zmin, zstep, zmax, rvalue )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -520,7 +506,7 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: cell_out
+        class( Scalar_t ), allocatable, intent( out ) :: cell_out
         logical, optional, intent( in ) :: interior_only
         !
         integer :: x_xend, x_yend, x_zend
@@ -539,7 +525,11 @@ contains
         endif
         !
         if( .NOT. cell_out%is_allocated ) then
-            stop "Error: sumEdges_rVector3D_SG: Unallocated cell_out"
+            stop "Error: sumEdge_rVector3D_SG: Unallocated cell_out"
+        else
+            !
+            cell_out = rScalar3D_SG_t( self%grid, CELL )
+            !
         endif
         !
         select type( cell_out )
@@ -596,11 +586,13 @@ contains
         !
     end subroutine sumEdge_rVector3D_SG
     !
+    !> No subroutine briefing
+    !
     subroutine sumEdgeVTI_rVector3D_SG( self, cell_h_out, cell_v_out, interior_only )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: cell_h_out, cell_v_out
+        class( Scalar_t ), allocatable, intent( out ) :: cell_h_out, cell_v_out
         logical, optional, intent( in ) :: interior_only
         !
         complex( kind=prec ), allocatable :: sigma_v(:, :, :)
@@ -621,10 +613,18 @@ contains
         !
         if( .NOT. cell_h_out%is_allocated ) then
             stop "Error: sumEdgeVTI_rVector3D_SG: Unallocated cell_h_out"
+        else
+            !
+            cell_h_out = rScalar3D_SG_t( self%grid, CELL )
+            !
         endif
         !
         if( .NOT. cell_v_out%is_allocated ) then
             stop "Error: sumEdgeVTI_rVector3D_SG: Unallocated cell_v_out"
+        else
+            !
+            cell_v_out = rScalar3D_SG_t( self%grid, CELL )
+            !
         endif
         !
         select type( cell_h_out )
@@ -1255,7 +1255,7 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: rhs
+        class( Field_t ), intent( inout ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
@@ -1267,34 +1267,30 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state == rhs%store_state ) then
+            call self%switchStoreState( rhs%store_state )
+            !
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( rVector3D_SG_t )
                     !
-                    class is( rVector3D_SG_t )
+                    if( rhs%store_state .EQ. compound ) then
                         !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            cvalue = cvalue + cmplx( sum( self%x * rhs%x ), 0.0, kind=prec )
-                            cvalue = cvalue + cmplx( sum( self%y * rhs%y ), 0.0, kind=prec )
-                            cvalue = cvalue + cmplx( sum( self%z * rhs%z ), 0.0, kind=prec )
-                            !
-                        else if( rhs%store_state .EQ. singleton ) then
-                            !
-                            cvalue = cvalue + cmplx( sum( self%s_v * rhs%s_v ), 0.0, kind=prec )
-                            !
-                        else
-                            stop "Error: dotProd_rVector3D_SG > Unknown rhs store_state!"
-                        endif
+                        cvalue = cvalue + cmplx( sum( self%x * rhs%x ), 0.0, kind=prec )
+                        cvalue = cvalue + cmplx( sum( self%y * rhs%y ), 0.0, kind=prec )
+                        cvalue = cvalue + cmplx( sum( self%z * rhs%z ), 0.0, kind=prec )
                         !
-                    class default
-                        stop "Error: dotProd_rVector3D_SG: undefined rhs"
+                    else if( rhs%store_state .EQ. singleton ) then
+                        !
+                        cvalue = cvalue + cmplx( sum( self%s_v * rhs%s_v ), 0.0, kind=prec )
+                        !
+                    else
+                        stop "Error: dotProd_rVector3D_SG > Unknown rhs store_state!"
+                    endif
                     !
-                end select
+                class default
+                    stop "Error: dotProd_rVector3D_SG: undefined rhs"
                 !
-            else
-                stop "Error: dotProd_rVector3D_SG > Incompatible store_state"
-            endif
+            end select
             !
         else
             stop "Error: dotProd_rVector3D_SG > Incompatible rhs"
@@ -1414,210 +1410,201 @@ contains
         real( kind=prec ) :: wx, wy, wz
         logical, dimension(:), allocatable :: tmp
         !
-        select type( grid => self%grid )
+        select case( self%grid_type )
             !
-            class is( Grid3D_SG_t )
+            case( EDGE )
                 !
-                select case( self%grid_type )
+                allocate( interp, source = rVector3D_SG_t( self%grid, EDGE ) )
+                !
+                select case( xyz )
                     !
-                    case( EDGE )
+                    case("x")
                         !
-                        allocate( interp, source = rVector3D_SG_t( grid, EDGE ) )
+                        allocate(xC(size(self%grid%del_x)))
+                        allocate(yC(size(self%grid%dy + 1)))
+                        allocate(zC(size(self%grid%dz + 1)))
                         !
-                        select case( xyz )
-                            !
-                            case("x")
-                                !
-                                allocate(xC(size(grid%del_x)))
-                                allocate(yC(size(grid%dy + 1)))
-                                allocate(zC(size(grid%dz + 1)))
-                                !
-                                xC = CumSum(grid%del_x)
-                                yC = CumSum([0._prec, grid%dy])
-                                zC = CumSum([0._prec, grid%dz])
-                                !
-                            case("y")
-                                !
-                                allocate(xC(size(grid%dx + 1)))
-                                allocate(yC(size(grid%del_y)))
-                                allocate(zC(size(grid%dz)))
-                                !
-                                xC = CumSum([0._prec, grid%dx])
-                                yC = CumSum([grid%del_y])
-                                zC = CumSum([0._prec, grid%dz])
-                                !
-                            case("z")
-                                !
-                                allocate(xC(size(grid%dx + 1)))
-                                allocate(yC(size(grid%dy + 1)))
-                                allocate(zC(size(grid%del_z)))
-                                !
-                                xC = CumSum([0._prec, grid%dx])
-                                yC = CumSum([0._prec, grid%dy])
-                                zC = CumSum([grid%del_z])
-                                !
-                            case default
-                                stop "Error: interpFunc_rVector3D_SG: Unknown xyz"
-                            !
-                        end select
+                        xC = CumSum(self%grid%del_x)
+                        yC = CumSum([0._prec, self%grid%dy])
+                        zC = CumSum([0._prec, self%grid%dz])
                         !
-                    case( FACE )
+                    case("y")
                         !
-                        allocate( interp, source = rVector3D_SG_t( grid, FACE ) )
+                        allocate(xC(size(self%grid%dx + 1)))
+                        allocate(yC(size(self%grid%del_y)))
+                        allocate(zC(size(self%grid%dz)))
                         !
-                        select case( xyz )
-                            !
-                            case( "x" )
-                                !
-                                allocate(xC(size(grid%dx + 1)))
-                                allocate(yC(size(grid%del_y)))
-                                allocate(zC(size(grid%del_z)))
-                                !
-                                xC = CumSum([0._prec, grid%dx])
-                                yC = CumSum([grid%del_y])
-                                zC = CumSum([grid%del_z])
-                                !
-                            case( "y" )
-                                !
-                                allocate(xC(size(grid%del_x)))
-                                allocate(yC(size(grid%dy + 1)))
-                                allocate(zC(size(grid%del_z)))
-                                !
-                                xC = CumSum([grid%del_x])
-                                yC = CumSum([0._prec, grid%dy])
-                                zC = CumSum([grid%del_z])
-                                !
-                            case( "z" )
-                                !
-                                allocate(xC(size(grid%del_x)))
-                                allocate(yC(size(grid%del_y)))
-                                allocate(zC(size(grid%dz + 1)))
-                                !
-                                xC = CumSum([grid%del_x])
-                                yC = CumSum([grid%del_y])
-                                zC = CumSum([0._prec, grid%dz])
-                                !
-                            case default
-                                stop "Error: interpFunc_rVector3D_SG: Unknown xyz"
-                            !
-                        end select
+                        xC = CumSum([0._prec, self%grid%dx])
+                        yC = CumSum([self%grid%del_y])
+                        zC = CumSum([0._prec, self%grid%dz])
+                        !
+                    case("z")
+                        !
+                        allocate(xC(size(self%grid%dx + 1)))
+                        allocate(yC(size(self%grid%dy + 1)))
+                        allocate(zC(size(self%grid%del_z)))
+                        !
+                        xC = CumSum([0._prec, self%grid%dx])
+                        yC = CumSum([0._prec, self%grid%dy])
+                        zC = CumSum([self%grid%del_z])
                         !
                     case default
-                        stop "Error: interpFunc_rVector3D_SG: Unknown grid_type"
+                        stop "Error: interpFunc_rVector3D_SG: Unknown xyz"
                     !
                 end select
                 !
-                xC = xC + grid%ox
-                yC = yC + grid%oy
-                zC = zC - sum(grid%dz(1:grid%nzAir)) - grid%oz
+            case( FACE )
                 !
-                tmp = location(1) > xC
+                allocate( interp, source = rVector3D_SG_t( self%grid, FACE ) )
                 !
-                ix = size( tmp )
-                !
-                do i = size( tmp ), 1, -1 
-                    if(tmp(i)) then
-                        ix = i
-                        exit
-                    endif
-                enddo
-                !
-                tmp = location(2) > yC
-                !
-                iy = size( tmp )
-                !
-                do i = size( tmp ), 1, -1 
-                    if(tmp(i)) then
-                        iy = i
-                        exit
-                    endif
-                enddo
-                !
-                tmp = location(3) > zC
-                !
-                iz = size( tmp )
-                !
-                do i = size( tmp ), 1, -1 
-                    if(tmp(i)) then
-                        iz = i
-                        exit
-                    endif
-                enddo
-                !
-                deallocate( tmp )
-                !
-                !> ????
-                !ix = findloc(location(1) > xC, .TRUE., back = .TRUE., dim = 1)
-                !iy = findloc(location(2) > yC, .TRUE., back = .TRUE., dim = 1)
-                !iz = findloc(location(3) > zC, .TRUE., back = .TRUE., dim = 1)
-                !
-                ! Find weights
-                wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))
-                !
-                deallocate( xC )
-                !
-                wy = (yC(iy + 1) - location(2))/(yC(iy + 1) - yC(iy))
-                !
-                deallocate( yC )
-                !
-                wz = (zC(iz + 1) - location(3))/(zC(iz + 1) - zC(iz))
-                !
-                deallocate( zC )
-                !
-                select type( interp )
+                select case( xyz )
                     !
-                    class is( rVector3D_SG_t )
+                    case( "x" )
                         !
-                        select case(xyz)
-                            !
-                            case("x")
-                                !
-                                interp%x(ix,iy,iz) = wx*wy*wz
-                                interp%x(ix+1,iy,iz) = (1-wx)*wy*wz
-                                interp%x(ix,iy+1,iz) = wx*(1-wy)*wz
-                                interp%x(ix,iy,iz+1) = wx*wy*(1-wz)
-                                interp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                                interp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                                interp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                                interp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                                !
-                            case("y")
-                                !
-                                interp%y(ix,iy,iz) = wx*wy*wz
-                                interp%y(ix+1,iy,iz) = (1-wx)*wy*wz
-                                interp%y(ix,iy+1,iz) = wx*(1-wy)*wz
-                                interp%y(ix,iy,iz+1) = wx*wy*(1-wz)
-                                interp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                                interp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                                interp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                                interp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                                !
-                            case("z")
-                                !
-                                interp%z(ix,iy,iz) = wx*wy*wz
-                                interp%z(ix+1,iy,iz) = (1-wx)*wy*wz
-                                interp%z(ix,iy+1,iz) = wx*(1-wy)*wz
-                                interp%z(ix,iy,iz+1) = wx*wy*(1-wz)
-                                interp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                                interp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                                interp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                                interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                                !
-                            case default
-                                stop "Error: interpFunc_rVector3D_SG: Unknown xyz"
+                        allocate(xC(size(self%grid%dx + 1)))
+                        allocate(yC(size(self%grid%del_y)))
+                        allocate(zC(size(self%grid%del_z)))
                         !
-                        end select !XYZ
+                        xC = CumSum([0._prec, self%grid%dx])
+                        yC = CumSum([self%grid%del_y])
+                        zC = CumSum([self%grid%del_z])
+                        !
+                    case( "y" )
+                        !
+                        allocate(xC(size(self%grid%del_x)))
+                        allocate(yC(size(self%grid%dy + 1)))
+                        allocate(zC(size(self%grid%del_z)))
+                        !
+                        xC = CumSum([self%grid%del_x])
+                        yC = CumSum([0._prec, self%grid%dy])
+                        zC = CumSum([self%grid%del_z])
+                        !
+                    case( "z" )
+                        !
+                        allocate(xC(size(self%grid%del_x)))
+                        allocate(yC(size(self%grid%del_y)))
+                        allocate(zC(size(self%grid%dz + 1)))
+                        !
+                        xC = CumSum([self%grid%del_x])
+                        yC = CumSum([self%grid%del_y])
+                        zC = CumSum([0._prec, self%grid%dz])
+                        !
+                    case default
+                        stop "Error: interpFunc_rVector3D_SG: Unknown xyz"
                     !
-                    class default
-                        stop "Error: interpFunc_rVector3D_SG: undefined interp"
+                end select
+                !
+            case default
+                stop "Error: interpFunc_rVector3D_SG: Unknown grid_type"
+            !
+        end select
+        !
+        xC = xC + self%grid%ox
+        yC = yC + self%grid%oy
+        zC = zC - sum(self%grid%dz(1:self%grid%nzAir)) - self%grid%oz
+        !
+        tmp = location(1) > xC
+        !
+        ix = size( tmp )
+        !
+        do i = size( tmp ), 1, -1 
+            if(tmp(i)) then
+                ix = i
+                exit
+            endif
+        enddo
+        !
+        tmp = location(2) > yC
+        !
+        iy = size( tmp )
+        !
+        do i = size( tmp ), 1, -1 
+            if(tmp(i)) then
+                iy = i
+                exit
+            endif
+        enddo
+        !
+        tmp = location(3) > zC
+        !
+        iz = size( tmp )
+        !
+        do i = size( tmp ), 1, -1 
+            if(tmp(i)) then
+                iz = i
+                exit
+            endif
+        enddo
+        !
+        deallocate( tmp )
+        !
+        !> ????
+        !ix = findloc(location(1) > xC, .TRUE., back = .TRUE., dim = 1)
+        !iy = findloc(location(2) > yC, .TRUE., back = .TRUE., dim = 1)
+        !iz = findloc(location(3) > zC, .TRUE., back = .TRUE., dim = 1)
+        !
+        ! Find weights
+        wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))
+        !
+        deallocate( xC )
+        !
+        wy = (yC(iy + 1) - location(2))/(yC(iy + 1) - yC(iy))
+        !
+        deallocate( yC )
+        !
+        wz = (zC(iz + 1) - location(3))/(zC(iz + 1) - zC(iz))
+        !
+        deallocate( zC )
+        !
+        select type( interp )
+            !
+            class is( rVector3D_SG_t )
+                !
+                select case(xyz)
+                    !
+                    case("x")
+                        !
+                        interp%x(ix,iy,iz) = wx*wy*wz
+                        interp%x(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%x(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%x(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                        !
+                    case("y")
+                        !
+                        interp%y(ix,iy,iz) = wx*wy*wz
+                        interp%y(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%y(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%y(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                        !
+                    case("z")
+                        !
+                        interp%z(ix,iy,iz) = wx*wy*wz
+                        interp%z(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%z(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%z(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                        !
+                    case default
+                        stop "Error: interpFunc_rVector3D_SG: Unknown xyz"
                 !
                 end select !XYZ
             !
             class default
-                stop "Error: interpFunc_rVector3D_SG: undefined grid"
-                !
-        end select !GRID
+                stop "Error: interpFunc_rVector3D_SG: undefined interp"
         !
+        end select !XYZ
+            !
     end subroutine interpFunc_rVector3D_SG
     !
     !> No function briefing

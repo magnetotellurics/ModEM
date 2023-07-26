@@ -53,7 +53,7 @@ module ForwardSolver
             import :: ForwardSolver_t, ModelParameter_t, prec
             !
             class( ForwardSolver_t ), intent( inout ) :: self
-            class( ModelParameter_t ), intent( in ) :: sigma
+            class( ModelParameter_t ), intent( inout ) :: sigma
             real( kind=prec ), intent( in ) :: period
             !
         end subroutine interface_set_frequency_foward_solver

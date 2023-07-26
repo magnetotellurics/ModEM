@@ -694,7 +694,7 @@ subroutine checksourcecomp(src)
   do ipt = 1,npoint
     !stop scanning source components as soon as there is one non-zero value
     if((src%ljx(ipt).ne.0.) .or. (src%ljy(ipt).ne.0.) .or. (src%ljz(ipt).ne.0.)) then
-      src%elsrc = .true.
+      src%elsrc = .TRUE.
       exit
     endif
   enddo
@@ -703,7 +703,7 @@ subroutine checksourcecomp(src)
   src%magsrc = .false.
   do ipt = 1,npoint
     if((src%akx(ipt).ne.0.) .or. (src%aky(ipt).ne.0.) .or. (src%akz(ipt).ne.0.)) then
-      src%magsrc = .true.
+      src%magsrc = .TRUE.
       exit
     endif
   enddo

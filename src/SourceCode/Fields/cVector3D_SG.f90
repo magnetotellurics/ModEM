@@ -22,7 +22,6 @@ module cVector3D_SG
             procedure, public :: intBdryIndices => intBdryIndices_cVector3D_SG
             !
             !> Dimensioning operations
-            procedure, public :: length => length_cVector3D_SG
             procedure, public :: setVecComponents => setVecComponents_cVector3D_SG
             !
             !> Arithmetic/algebraic unary operations
@@ -408,21 +407,6 @@ contains
         !
     end subroutine intBdryIndices_cVector3D_SG
     !
-    !> No subroutine briefing
-    !
-    function length_cVector3D_SG( self ) result( n )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        !
-        integer :: n
-        !
-        n = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
-        !
-    end function length_cVector3D_SG
-    !
-    !> No subroutine briefing
-    !
     subroutine setVecComponents_cVector3D_SG( self, xyz, &
             &                              xmin, xstep, xmax, &
             &                              ymin, ystep, ymax, &
@@ -522,7 +506,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: cell_out
+        class( Scalar_t ), intent( out ) :: cell_out
         logical, optional, intent( in ) :: interior_only
         !
         integer :: x_xend, x_yend, x_zend
@@ -542,6 +526,10 @@ contains
         !
         if( .NOT. cell_out%is_allocated ) then
             stop "Error: sumEdge_cVector3D_SG: Unallocated cell_out"
+        else
+            !
+            cell_out = rScalar3D_SG_t( self%grid, CELL )
+            !
         endif
         !
         select type( cell_out )
@@ -601,7 +589,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: cell_h_out, cell_v_out
+        class( Scalar_t ), intent( out ) :: cell_h_out, cell_v_out
         logical, optional, intent( in ) :: interior_only
         !
         complex( kind=prec ), allocatable :: sigma_v(:, :, :)
@@ -622,10 +610,18 @@ contains
         !
         if( .NOT. cell_h_out%is_allocated ) then
             stop "Error: sumEdgeVTI_cVector3D_SG: Unallocated cell_h_out"
+        else
+            !
+            cell_h_out = rScalar3D_SG_t( self%grid, CELL )
+            !
         endif
         !
         if( .NOT. cell_v_out%is_allocated ) then
             stop "Error: sumEdgeVTI_cVector3D_SG: Unallocated cell_v_out"
+        else
+            !
+            cell_v_out = rScalar3D_SG_t( self%grid, CELL )
+            !
         endif
         !
         select type( cell_h_out )
@@ -1405,7 +1401,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( in ) :: rhs
+        class( Field_t ), intent( inout ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
