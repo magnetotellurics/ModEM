@@ -88,8 +88,7 @@ contains
         implicit none
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
-        class( Vector_t ), intent( inout ) :: out_e
+        class( Vector_t ), intent( inout ) :: in_e, out_e
         class( Scalar_t ), intent( in ), optional :: phi0
         !
         class( Scalar_t ), allocatable :: phiRHS, phiSol

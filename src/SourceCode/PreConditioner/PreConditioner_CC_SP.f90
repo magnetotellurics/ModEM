@@ -79,6 +79,8 @@ contains
         type( spMatCSR_Cmplx ) :: Axx
         type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
         !
+        write( *, * ) "Start setPreConditioner_CC_SP"
+        !
         ! find indexes of x, y, z elements
         !
         ! this generates indexes (in list of interior edges)
@@ -201,33 +203,35 @@ contains
         class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: array_inE, array_outE, array_outE_int
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "LTSolvePreConditioner_CC_SP > in_e not allocated yet" )
         endif
         !
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "LTSolvePreConditioner_CC_SP > out_e not allocated" )
+        endif
+        !
+        array_inE = in_e%getSV()
+        !
+        array_outE = out_e%getSV()
+        array_outE = C_ZERO
+        array_outE_int = array_outE( out_e%ind_interior )
+        !
         if( adjoint ) then
             !
-            allocate( temp_array_outE( self%LH%nRow ) )
-            !
-            call UTsolve_Cmplx( self%LH, in_e%getSV(), temp_array_outE )
+            call UTsolve_Cmplx( self%LH, array_inE( in_e%ind_interior ), array_outE_int )
             !
         else
             !
-            allocate( temp_array_outE( self%L%nRow ) )
-            !
-            call LTsolve_Cmplx( self%L, in_e%getSV(), temp_array_outE )
+            call LTsolve_Cmplx( self%L, array_inE( in_e%ind_interior ), array_outE_int )
             !
         endif
         !
-        if( .NOT. out_e%is_allocated ) then
-            call errStop( "LTSolvePreConditioner_CC_SP > out_e not allocated yet" )
-        endif
+        array_outE( out_e%ind_interior ) = array_outE_int
         !
-        call out_e%setSV( temp_array_outE )
-        !
-        deallocate( temp_array_outE )
+        call out_e%setSV( array_outE )
         !
     end subroutine LTSolvePreConditioner_CC_SP
     !
@@ -242,33 +246,36 @@ contains
         class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
-        complex( kind=prec ), allocatable, dimension(:) :: temp_array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: array_inE, array_outE
+        complex( kind=prec ), allocatable, dimension(:) :: array_outE_int
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "UTSolvePreConditioner_CC_SP > in_e not allocated yet" )
         endif
         !
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "UTSolvePreConditioner_CC_SP > out_e not allocated" )
+        endif
+        !
+        array_inE = in_e%getSV()
+        !
+        array_outE = out_e%getSV()
+        array_outE = C_ZERO
+        array_outE_int = array_outE( out_e%ind_interior )
+        !
         if( adjoint ) then
             !
-            allocate( temp_array_outE( self%UH%nRow ) )
-            !
-            call LTsolve_Cmplx( self%UH, in_e%getSV(), temp_array_outE )
+            call LTsolve_Cmplx( self%UH, array_inE( in_e%ind_interior ), array_outE_int )
             !
         else
             !
-            allocate( temp_array_outE( self%U%nRow ) )
-            !
-            call UTsolve_Cmplx( self%U, in_e%getSV(), temp_array_outE )
+            call UTsolve_Cmplx( self%U, array_inE( in_e%ind_interior ), array_outE_int )
             !
         endif
         !
-        if( .NOT. out_e%is_allocated ) then
-            call errStop( "UTSolvePreConditioner_CC_SP > out_e not allocated yet" )
-        endif
+        array_outE( out_e%ind_interior ) = array_outE_int
         !
-        call out_e%setSV( temp_array_outE )
-        !
-        deallocate( temp_array_outE )
+        call out_e%setSV( array_outE )
         !
     end subroutine UTSolvePreConditioner_CC_SP
     !

@@ -50,7 +50,7 @@ contains
                 allocate( self%preconditioner, source = PreConditioner_DC_SP_t( model_operator ) )
                 !
             class default
-				call errStop( "Solver_PCG_ctor: Unclassified ModelOperator" )
+                call errStop( "Solver_PCG_ctor: Unclassified ModelOperator" )
             !
         end select
         !
@@ -147,16 +147,16 @@ contains
             !
             self%relErr( i + 1 ) = rnorm / bnorm
             !
-            write( *, * ) "PCG iter, self%relErr( i + 1 )", i + 1, self%relErr( i + 1 )
+            !write( *, * ) "PCG iter, self%relErr( i + 1 )", i + 1, self%relErr( i + 1 )
             !
         enddo loop
-        !
-        if( i + 1 .LT. self%max_iters ) then
-            write( *, * ) "                    divCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
-        else
-            write( *, * ) "                    divCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
-        endif
-        !
+        ! !
+        ! if( i + 1 .LT. self%max_iters ) then
+            ! write( *, * ) "                    divCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
+        ! else
+            ! write( *, * ) "                    divCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
+        ! endif
+        ! !
         deallocate( r )
         deallocate( s )
         deallocate( p )

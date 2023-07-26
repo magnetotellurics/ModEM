@@ -69,22 +69,17 @@ contains
         !
         integer :: ix,iy,iz
         !
+        write( *, * ) "Start setPreConditioner_DC_SP"
+        !
         self%omega = omega
         !
         select type( model_operator => self%model_operator )
             !
             class is( ModelOperator_SP_t )
                 !
-                write( *, * ) "DEVELPMENT HOT SPOT > setPreConditioner_DC_SP:"
-                write( *, * ) "model_operator%VDsG_L and model_operator%VDsG_U should be allocated before at divCorSetUp_ModelOperator_SP"
-                !
-                call self%model_operator%divCorSetUp
-                !
                 if( allocated( self%phi ) ) deallocate( self%phi )
                 !
                 allocate( self%phi( size( model_operator%NODEi ) ) )
-                !
-                self%phi = C_ZERO
                 !
             class default
                 call errStop( "setPreConditioner_DC_SP > Unclassified ModelOperator" )
@@ -141,9 +136,7 @@ contains
         endif
         !
         array_inPhi = in_phi%getSV()
-        !
         array_outPhi = out_phi%getSV()
-        array_outPhi = C_ZERO
         !
         select type( model_operator => self%model_operator )
             !

@@ -513,6 +513,8 @@ contains
         !> lets start coding this with little checking -- assume
         !> everything is allocated and correct on entry
         !
+        !write( *, * ) "*A%nCol, *size(x), size(y)", A%nCol, size(x), size(y)
+        !
         if( A%nCol .NE. size(x) ) then
             write( *, * ) "Error: RMATxCVEC > matrix and vector sizes incompatible = ", A%nCol, size(x)
             stop

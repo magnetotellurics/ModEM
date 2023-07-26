@@ -289,6 +289,7 @@ contains
                     call self%setZ( z )
                     !
                 case default
+                    !
                     call errStop( "switchStoreState_Vector > Unknown store_state" )
                     !
             end select

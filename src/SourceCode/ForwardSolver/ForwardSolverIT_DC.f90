@@ -102,7 +102,7 @@ contains
         self%solver%omega = ( 2.0 * PI / period )
         !
         !> Set conductivity for the model operator (again ????)
-        call self%solver%preconditioner%model_operator%setCond( sigma )
+        call self%solver%preconditioner%model_operator%setCond( sigma, self%solver%omega )
         !
         !> Set omega for the divergence_correction´s solver
         self%divergence_correction%solver%omega = self%solver%omega
@@ -110,7 +110,7 @@ contains
         !> Set conductivity for the divergence_correction
         call self%divergence_correction%setCond
         !
-        !> Set preconditioner for this solver´s preconditioner
+        !> Set preconditioner for this solver's preconditioner
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
         call self%initDiagnostics
