@@ -50,7 +50,7 @@ contains
                 allocate( self%preconditioner, source = PreConditioner_CC_SP_t( model_operator ) )
                 !
             class default
-                stop "Solver_QMR_ctor: Unclassified ModelOperator"
+                call errStop( "Solver_QMR_ctor > Unclassified ModelOperator" )
             !
         end select
         !
@@ -83,8 +83,7 @@ contains
         implicit none
         !
         class( Solver_QMR_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: b
-        class( Vector_t ), intent( inout ) :: x
+        class( Vector_t ), intent( inout ) :: b, x
         !
         class( Vector_t ), allocatable :: R, Y, Z, V, W, YT, ZT, VT, WT, P, Q, PT, D, S
         logical :: adjoint, ilu_adjoint
@@ -93,6 +92,14 @@ contains
         complex( kind=prec ) :: bnorm, rnorm
         complex( kind=prec ) :: rhoInv, psiInv
         integer :: iter
+        !
+        if( .NOT. x%is_allocated ) then
+            call errStop( "solveQMR > x not allocated yet" )
+        endif
+        !
+        if( .NOT. b%is_allocated ) then
+            call errStop( "solveQMR > b not allocated yet" )
+        endif
         !
         !> Allocate work Vector objects -- questions as in PCG
         allocate( R, source = x )
@@ -119,7 +126,7 @@ contains
         adjoint = .FALSE.
         !
         !> R is Ax
-        call self%preconditioner%model_operator%Amult( self%omega, x, R, adjoint )
+        call self%preconditioner%model_operator%amult( self%omega, x, R, adjoint )
         !
         !> b - Ax, for initial guess x, that has been input to the routine
         call R%linComb( b, C_MinusOne, C_ONE )
@@ -128,9 +135,9 @@ contains
         bnorm = SQRT( b%dotProd( b ) )
         !
         !> this usually means an inadequate model, in which case Maxwell"s fails
-        !if( ISINF( real( abs( bnorm ) ) ) ) then
-            !stop "Error: solveQMR > b in QMR contains NaNs"
-        !endif
+        if( isnan( real( abs( bnorm ), kind=prec ) ) ) then
+            call errStop( "solveQMR > b in QMR contains NaNs" )
+        endif
         !
         rnorm = SQRT( R%dotProd( R ) )
         !
@@ -155,7 +162,7 @@ contains
         do while( ( self%relErr( iter ) .GT. self%tolerance ) .AND. ( iter .LT. self%max_iters ) )
             !
             !> Verbose
-            !write( *, * ) "QMR iter, self%relErr( iter )", iter, self%relErr( iter )
+            write( *, * ) "QMR iter, self%relErr( iter )", iter, self%relErr( iter )
             !
             if( ( RHO .EQ. C_ZERO ) .OR. ( PSI .EQ. C_ZERO ) ) then
                 !
@@ -180,10 +187,12 @@ contains
             call Z%mult( psiInv )
             !
             DELTA = Z%dotProd( Y )
+            !
             if( DELTA .EQ. C_ZERO ) then
                 !
                 self%failed = .TRUE.
-                stop "Error: solveQMR > QMR FAILS TO CONVERGE : DELTA"
+                !
+                call errStop( "solveQMR > DELTA fails to converge" )
                 !
             endif
             !
@@ -218,13 +227,13 @@ contains
             !
             if( EPSIL .EQ. C_ZERO ) then
                 self%failed = .TRUE.
-                stop "Error: solveQMR > QMR FAILED TO CONVERGE : EPSIL"
+                call errStop( "solveQMR > EPSIL failed to converge" )
             endif
             !
             BETA = EPSIL/DELTA
             if( BETA .EQ. C_ZERO ) then
                 self%failed = .TRUE.
-                stop "Error: solveQMR > QMR FAILED TO CONVERGE : BETA"
+                call errStop( "solveQMR > BETA failed to converge" )
             endif
             !
             VT = PT
@@ -239,7 +248,7 @@ contains
             adjoint = .TRUE.
             !
             call WT%zeros
-            call self%preconditioner%model_operator%Amult( self%omega, Q, WT, adjoint )
+            call self%preconditioner%model_operator%amult( self%omega, Q, WT, adjoint )
             !
             call WT%multAdd( -conjg( BETA ), W ) !>  WT = WT - conjg(BETA) * W
             !
@@ -257,7 +266,7 @@ contains
             !
             if( GAMM .EQ. C_ZERO ) then
                 self%failed = .TRUE.
-                stop "Error: solveQMR > QMR FAILS TO CONVERGE : GAMM"
+                call errStop( "solveQMR > GAMM fails to converge" )
             endif
             !
             ETA = -ETA * RHO1 * GAMM * GAMM / ( BETA * GAMM1 * GAMM1 )
@@ -284,13 +293,13 @@ contains
             self%relErr( iter ) = real( rnorm / bnorm, kind=prec )
             !
         enddo
-        ! !
-        ! if( iter .LT. self%max_iters ) then
-            ! write( *, * ) "                    Solver QMR converged within ", iter, " : ", self%relErr( iter )
-        ! else
-            ! write( *, * ) "                    Solver QMR not converged in ", iter, " : ", self%relErr( iter )
-        ! endif
-        ! !
+        !
+        if( iter .LT. self%max_iters ) then
+            write( *, * ) "                    Solver QMR converged within ", iter, " : ", self%relErr( iter )
+        else
+            write( *, * ) "                    Solver QMR not converged in ", iter, " : ", self%relErr( iter )
+        endif
+        !
         deallocate( R )
         deallocate( Y )
         deallocate( Z )

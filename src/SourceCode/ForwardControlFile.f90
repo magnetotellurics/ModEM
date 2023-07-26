@@ -4,7 +4,7 @@
 !
 module ForwardControlFile
     !
-    use Constants
+    use Utilities
     use String
     use Grid
     use ForwardSolver
@@ -59,7 +59,7 @@ contains
         !
         if( io_stat /= 0 ) then
             !
-            call errStop( "ForwardControlFile_ctor > Cant opening file ["//fname//"]" )
+            call errStop( "ForwardControlFile_ctor > Unable to open file ["//fname//"]" )
             !
         else
             !
@@ -104,8 +104,7 @@ contains
                     elseif( index( line_text, "tolerance_solver" ) > 0 ) then
                         self%tolerance_solver = trim( args(2) )
                     else
-                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unsupported Forward Modeling parameter: ["//trim(line_text)//"]"
-                        stop 
+                        call errStop( "Unsupported Forward Modeling parameter: ["//trim(line_text)//"]" )
                     endif
                     !
                 endif

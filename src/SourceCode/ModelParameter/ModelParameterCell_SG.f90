@@ -318,9 +318,14 @@ contains
         class( Scalar_t ), intent( in ) :: cell_cond
         integer, intent( in ) :: i_cond
         !
+        if( .NOT. cell_cond%is_allocated ) then
+            call errStop( "setOneCond_ModelParameterCell_SG > cell_cond not allocated" )
+        endif
+        !
         if( i_cond .LE. self%anisotropic_level ) then
             !
-            self%cell_cond( i_cond )%s = cell_cond
+            if( allocated( self%cell_cond( i_cond )%s ) ) deallocate( self%cell_cond( i_cond )%s )
+            allocate( self%cell_cond( i_cond )%s, source = cell_cond )
             !
         else
             !
@@ -352,7 +357,7 @@ contains
                 !
             endif
             !
-            self%cell_cond = cell_cond
+            call self%setCond( cell_cond(i)%s, i )
             !
         enddo
         !
@@ -531,8 +536,9 @@ contains
         complex( kind=prec ), allocatable, dimension(:,:,:) :: sigma_cell_v
         integer :: i, k0, k1, k2
         !
-        !> Create and initialize e_vec with zeros
-        call self%metric%createVector( real_t, EDGE, e_vec )
+        if( .NOT. e_vec%is_allocated ) then
+            call errStop( "PDEmapping_ModelParameterCell_SG > e_vec not allocated yet" )
+        endif
         !
         allocate( sigma_cells( self%anisotropic_level ) )
         !
@@ -593,14 +599,13 @@ contains
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: i, k0, k1, k2
         !
-        call errStop( "dPDEmapping_ModelParameterCell_SG > TO IMPLEMENT" )
-        !
         if( .NOT. dsigma%is_allocated ) then
             call errStop( "dPDEmapping_ModelParameterCell_SG > dsigma not allocated" )
         endif
         !
-        !> Create and initialize e_vec with zeros
-        call self%metric%createVector( real_t, EDGE, e_vec )
+        if( .NOT. e_vec%is_allocated ) then
+            call errStop( "dPDEmapping_ModelParameterCell_SG > e_vec not allocated yet" )
+        endif
         !
         call e_vec%zeros
         !

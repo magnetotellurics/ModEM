@@ -246,18 +246,35 @@ contains
         !
         !write( *, "( a30, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", job_info%basic_comp_size, " bytes."
         !
-        select type( main_grid )
+        !> Instantiate model_operator
+        !> Specific type can be chosen via fwd control file
+        select case( model_operator_type )
             !
-            class is( Grid3D_SG_t )
+            case( MODELOP_MF )
                 !
                 allocate( model_operator, source = ModelOperator_MF_SG_t( main_grid ) )
                 !
-                call model_operator%setEquations
+            case( MODELOP_SP )
                 !
-            class default
-                stop "Error: handleBasicComponents > Unclassified main_grid"
-            !
+                allocate( model_operator, source = ModelOperator_SP_t( main_grid ) )
+                !
+            case( MODELOP_SP2 )
+                !
+                call errStop( "handleModelFile > MODELOP_SP2 not implemented" )
+                !
+            case( "" )
+                !
+                call warning( "handleModelFile > model_operator_type not provided, using ModelOperator_MF_SG_t." )
+                !
+                allocate( model_operator, source = ModelOperator_MF_SG_t( main_grid ) )
+                !
+            case default
+                !
+                call errStop( "handleModelFile > Wrong Model Operator type: ["//model_operator_type//"]" )
+                !
         end select
+        !
+        call model_operator%setEquations
         !
     end subroutine handleBasicComponents
     !

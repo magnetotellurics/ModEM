@@ -128,7 +128,7 @@ contains
                 !
             case default
                 !
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m unknown job: [", modem_job, "]"
+                call warning( "Unknown job: ["//modem_job//"]!" )
                 call printHelp
                 stop
             !

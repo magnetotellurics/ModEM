@@ -50,13 +50,13 @@ contains
                 allocate( self%preconditioner, source = PreConditioner_DC_SP_t( model_operator ) )
                 !
             class default
-                stop "Solver_PCG_ctor: Unclassified ModelOperator"
+				call errStop( "Solver_PCG_ctor: Unclassified ModelOperator" )
             !
         end select
         !
-        call self%setDefaults()
+        call self%setDefaults
         !
-        call self%zeroDiagnostics()
+        call self%zeroDiagnostics
         !
     end function Solver_PCG_ctor
     !
@@ -75,8 +75,7 @@ contains
         implicit none
         !
         class( Solver_PCG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: b
-        class( Scalar_t ), allocatable, intent( inout ) :: x
+        class( Scalar_t ), intent( inout ) :: b, x
         !
         !>    these will have to be created in a way to match
         !>     the specific type of the input Scalar_t ...
@@ -85,6 +84,14 @@ contains
         complex( kind=prec ) :: beta, alpha, delta, deltaOld
         complex( kind=prec ) :: bnorm, rnorm
         integer :: i
+        !
+        if( .NOT. x%is_allocated ) then
+            call errStop( "solvePCG > x not allocated yet" )
+        endif
+        !
+        if( .NOT. b%is_allocated ) then
+            call errStop( "solvePCG > b not allocated yet" )
+        endif
         !
         !>  create local cScalar objects -- could we also use modOp%createCScalar?
         allocate( r, source = x )    !> cannot zero x, since it is first guess
@@ -140,16 +147,16 @@ contains
             !
             self%relErr( i + 1 ) = rnorm / bnorm
             !
-            !write( *, * ) "PCG iter, self%relErr( i + 1 )", i + 1, self%relErr( i + 1 )
+            write( *, * ) "PCG iter, self%relErr( i + 1 )", i + 1, self%relErr( i + 1 )
             !
         enddo loop
-        ! !
-        ! if( i + 1 .LT. self%max_iters ) then
-            ! write( *, * ) "                    divCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
-        ! else
-            ! write( *, * ) "                    divCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
-        ! endif
-        ! !
+        !
+        if( i + 1 .LT. self%max_iters ) then
+            write( *, * ) "                    divCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
+        else
+            write( *, * ) "                    divCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
+        endif
+        !
         deallocate( r )
         deallocate( s )
         deallocate( p )

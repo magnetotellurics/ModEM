@@ -18,44 +18,44 @@
 !> 
 !> No Module briefing
 !
-module spOpTopology_SG
+module SpOpTopology_SG
     !
     use spOpTopology
     use Grid
     !
-    type, extends( spOpTopology_t ) :: spOpTopology_SG_t
+    type, extends( spOpTopology_t ) :: SpOpTopology_SG_t
         !
         class( Grid_t ), pointer :: grid
         !
         contains
             !
-            procedure, public :: curl => curlSpOpTopology_SG
+            procedure, public :: curl => curl_SpOpTopology_SG
             !
-            procedure, public :: grad => gradSpOpTopology_SG
+            procedure, public :: grad => grad_SpOpTopology_SG
             !
-    end type spOpTopology_SG_t
+    end type SpOpTopology_SG_t
     !
-    interface spOpTopology_SG_t
-        module procedure spOpTopology_SG_ctor
-    end interface spOpTopology_SG_t
+    interface SpOpTopology_SG_t
+        module procedure SpOpTopology_SG_ctor
+    end interface SpOpTopology_SG_t
     !
 contains
     !
-    function spOpTopology_SG_ctor( grid ) result( self )
+    function SpOpTopology_SG_ctor( grid ) result( self )
         implicit none
         !
         class( Grid_t ), pointer, intent( in ) :: grid
         !
-        type( spOpTopology_SG_t ) :: self
+        type( SpOpTopology_SG_t ) :: self
         !
         self%grid => grid
         !
-    end function spOpTopology_SG_ctor
+    end function SpOpTopology_SG_ctor
     !
-    subroutine curlSpOpTopology_SG( self, T ) 
+    subroutine curl_SpOpTopology_SG( self, T ) 
         implicit none
         !
-        class( spOpTopology_SG_t ), intent( inout ) :: self
+        class( SpOpTopology_SG_t ), intent( inout ) :: self
         type( spMatCSR_Real ), intent( inout ) :: T
         !  
         integer :: nXedge, nYedge, nZedge
@@ -234,12 +234,12 @@ contains
         !
         deallocate( IndVec, I, J, K )
         !
-    end subroutine curlSpOpTopology_SG
+    end subroutine curl_SpOpTopology_SG
 
-    subroutine gradSpOpTopology_SG( self, G )
+    subroutine grad_SpOpTopology_SG( self, G )
         implicit none
         !
-        class( spOpTopology_SG_t ), intent( inout ) :: self
+        class( SpOpTopology_SG_t ), intent( inout ) :: self
         type( spMatCSR_Real ), intent( inout ) :: G
         !
         integer :: nXedge, nYedge, nZedge, nNodes
@@ -349,6 +349,6 @@ contains
         !
         deallocate( IndVec, I, J, K )
         !
-    end subroutine gradSpOpTopology_SG
+    end subroutine grad_SpOpTopology_SG
 
-end module spOpTopology_SG
+end module SpOpTopology_SG

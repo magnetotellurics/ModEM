@@ -155,14 +155,17 @@ contains
         implicit none
         !
         class( PreConditioner_CC_MF_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
-        class( Vector_t ), intent( inout ) :: out_e
+        class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
         integer :: ix, iy, iz
         complex( kind=prec ), allocatable, dimension(:, :, :) :: in_e_x, in_e_y, in_e_z
         complex( kind=prec ), allocatable, dimension(:, :, :) :: out_e_x, out_e_y, out_e_z
         complex( kind=prec ), allocatable, dimension(:, :, :) :: dilu_x, dilu_y, dilu_z
+        !
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "LTSolvePreConditioner_CC_MF > in_e not allocated yet" )
+        endif
         !
         in_e_x = in_e%getX()
         in_e_y = in_e%getY()
@@ -285,8 +288,8 @@ contains
                 endif
                 !
             class default
-                stop "Error: LTSolvePreConditioner_CC_MF > Unclassified ModelOperator"
-        !
+                call errStop( "LTSolvePreConditioner_CC_MF > Unclassified ModelOperator" )
+            !
         end select
         !
     end subroutine LTSolvePreConditioner_CC_MF
@@ -423,7 +426,7 @@ contains
         class( Scalar_t ), intent( inout ) :: in_phi
         class( Scalar_t ), intent( inout ) :: out_phi
         !
-        stop "Error: LUSolvePreConditioner_CC_MF not implemented"
+        call errStop( "LUSolvePreConditioner_CC_MF not implemented" )
         !
     end subroutine LUSolvePreConditioner_CC_MF
     !

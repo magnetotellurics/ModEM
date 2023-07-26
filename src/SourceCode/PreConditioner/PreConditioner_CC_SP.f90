@@ -186,7 +186,7 @@ contains
                 deallocate( Lblk, Ublk )
                 !
             class default
-                stop "Error: LTSolvePreConditioner_CC_SP: Unclassified ModelOperator"
+                call errStop( "LTSolvePreConditioner_CC_SP: Unclassified ModelOperator" )
             !
         end select
         !
@@ -198,27 +198,34 @@ contains
         implicit none
         !
         class( PreConditioner_CC_SP_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
-        class( Vector_t ), intent( inout ) :: out_e
+        class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
         complex( kind=prec ), allocatable, dimension(:) :: temp_array_outE
+        !
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "LTSolvePreConditioner_CC_SP > in_e not allocated yet" )
+        endif
         !
         if( adjoint ) then
             !
             allocate( temp_array_outE( self%LH%nRow ) )
             !
-            call UTsolve_Cmplx( self%LH, in_e%getArray(), temp_array_outE )
+            call UTsolve_Cmplx( self%LH, in_e%getSV(), temp_array_outE )
             !
         else
             !
             allocate( temp_array_outE( self%L%nRow ) )
             !
-            call LTsolve_Cmplx( self%L, in_e%getArray(), temp_array_outE )
+            call LTsolve_Cmplx( self%L, in_e%getSV(), temp_array_outE )
             !
         endif
         !
-        call out_e%setArray( temp_array_outE )
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "LTSolvePreConditioner_CC_SP > out_e not allocated yet" )
+        endif
+        !
+        call out_e%setSV( temp_array_outE )
         !
         deallocate( temp_array_outE )
         !
@@ -232,27 +239,34 @@ contains
         implicit none
         !
         class( PreConditioner_CC_SP_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
-        class( Vector_t ), intent( inout ) :: out_e
+        class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
         complex( kind=prec ), allocatable, dimension(:) :: temp_array_outE
+        !
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "UTSolvePreConditioner_CC_SP > in_e not allocated yet" )
+        endif
         !
         if( adjoint ) then
             !
             allocate( temp_array_outE( self%UH%nRow ) )
             !
-            call LTsolve_Cmplx( self%UH, in_e%getArray(), temp_array_outE )
+            call LTsolve_Cmplx( self%UH, in_e%getSV(), temp_array_outE )
             !
         else
             !
             allocate( temp_array_outE( self%U%nRow ) )
             !
-            call UTsolve_Cmplx( self%U, in_e%getArray(), temp_array_outE )
+            call UTsolve_Cmplx( self%U, in_e%getSV(), temp_array_outE )
             !
         endif
         !
-        call out_e%setArray( temp_array_outE )
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "UTSolvePreConditioner_CC_SP > out_e not allocated yet" )
+        endif
+        !
+        call out_e%setSV( temp_array_outE )
         !
         deallocate( temp_array_outE )
         !
@@ -264,10 +278,9 @@ contains
         implicit none
         !
         class( PreConditioner_CC_SP_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi
-        class( Scalar_t ), intent( inout ) :: out_phi
+        class( Scalar_t ), intent( inout ) :: in_phi, out_phi
         !
-        stop "Error: LUSolvePreConditioner_CC_SP not implemented"
+        call errStop( "LUSolvePreConditioner_CC_SP not implemented" )
         !
     end subroutine LUSolvePreConditioner_CC_SP
     !

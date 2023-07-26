@@ -36,11 +36,11 @@ contains
                 call dsigma%setMetric( model_operator%metric )
                 !
             else
-                stop "Error: jobJMult > Missing Model file!"
+                call errStop( "jobJMult > Missing Model file!" )
             endif
             !
         else
-            stop "Error: jobJMult > Missing Perturbation Model file!"
+            call errStop( "jobJMult > Missing Perturbation Model file!" )
         endif
         !
         if( has_data_file ) then
@@ -48,7 +48,7 @@ contains
             call handleDataFile
             !
         else
-            stop "Error: jobJMult > Missing Data file!"
+            call errStop( "jobJMult > Missing Data file!" )
         endif
         !
 #ifdef MPI
@@ -191,7 +191,7 @@ contains
             call handleModelFile( sigma )
             !
         else
-            stop "Error: jobJMult_T > Missing Model file!"
+            call errStop( "jobJMult_T > Missing Model file!" )
         endif
         !
         if( has_data_file ) then 
@@ -199,7 +199,7 @@ contains
             call handleDataFile
             !
         else
-            stop "Error: jobJMult_T > Missing Data file!"
+            call errStop( "jobJMult_T > Missing Data file!" )
         endif
         !
 #ifdef MPI
@@ -246,9 +246,7 @@ contains
         integer, intent( in ), optional :: i_sol
         class( ModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
         !
-        class( Transmitter_t ), pointer :: Tx
         class( ModelParameter_t ), allocatable :: dsigma_tx
-        class( Scalar_t ), allocatable, dimension(:) :: temp_scalar
         integer :: i_tx, sol_index
         !
         ! Verbose
@@ -268,7 +266,7 @@ contains
             call dsigma%zeros
             !
         else
-            stop "Error: serialJMult_T > sigma not allocated"
+            call errStop( "serialJMult_T > sigma not allocated" )
         endif
         !
         !> Allocate s_hat array

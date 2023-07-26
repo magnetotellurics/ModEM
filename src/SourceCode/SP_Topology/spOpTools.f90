@@ -2834,8 +2834,6 @@ contains
                 call temp_vector%setY( y )
                 call temp_vector%setZ( z )
                 !
-                call temp_vector%switchStoreState( singleton )
-                !
                 s_v = temp_vector%getSV()
                 !
             case( FACE )
@@ -2862,8 +2860,6 @@ contains
                 call temp_vector%setY( y )
                 call temp_vector%setZ( z )
                 !
-                call temp_vector%switchStoreState( singleton )
-                !
                 s_v = temp_vector%getSV()
                 !
             case( NODE )
@@ -2880,8 +2876,6 @@ contains
                 x(:, temp_scalar%ny+1, :) = 1
                 x(:, :, 1) = 1
                 x(:, :, temp_scalar%nz+1) = 1
-                !
-                call temp_scalar%switchStoreState( singleton )
                 !
                 s_v = temp_scalar%getSV()
                 !

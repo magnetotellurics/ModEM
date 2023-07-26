@@ -205,7 +205,8 @@ contains
         call self%switchStoreState( compound )
         !
         select case(self%grid_type)
-            case(EDGE)
+            !
+            case( EDGE )
                 self%x(:, (/1, self%NdX(2)/), :) = real( cvalue, kind=prec )
                 self%x(:, :, (/1, self%NdX(3)/)) = real( cvalue, kind=prec )
                 self%y((/1, self%NdY(1)/), :, :) = real( cvalue, kind=prec )
@@ -213,13 +214,15 @@ contains
                 self%z(:, (/1, self%NdZ(2)/), :) = real( cvalue, kind=prec )
                 self%z((/1, self%NdZ(1)/), :, :) = real( cvalue, kind=prec )
                 !
-            case(FACE)
+            case( FACE )
+                !
                 self%x((/1, self%NdX(1)/), :, :) = real( cvalue, kind=prec )
                 self%y(:, (/1, self%NdY(2)/), :) = real( cvalue, kind=prec )
                 self%z(:, :, (/1, self%NdZ(3)/)) = real( cvalue, kind=prec )
                 !
             case default
                 stop "Error: setAllBoundary_rVector3D_SG > Invalid grid type."
+            !
         end select
         !
     end subroutine setAllBoundary_rVector3D_SG
@@ -480,7 +483,7 @@ contains
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
         !
-        if( .NOT. self%is_allocated) then
+        if( .NOT. self%is_allocated ) then
              stop "Error: zeros_rVector3D_SG > Not allocated."
         endif
         !
@@ -939,7 +942,7 @@ contains
             !
             call self%switchStoreState( rhs%store_state )
             !
-            select type(rhs)
+            select type( rhs )
                 !
                 class is( rVector3D_SG_t )
                     !
@@ -1171,6 +1174,7 @@ contains
             call self%switchStoreState( rhs%store_state )
             !
             select type( diag_mult )
+                !
                 class is( rVector3D_SG_t )
                     !
                     select type( rhs )
@@ -1220,7 +1224,7 @@ contains
             !
             call self%switchStoreState( rhs%store_state )
             !
-            select type(rhs)
+            select type( rhs )
                 !
                 class is( rVector3D_SG_t ) 
                     !
@@ -1261,7 +1265,7 @@ contains
         !
         cvalue = C_ZERO
         !
-        if(( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated )) then
+        if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
             stop "Error: dotProd_rVector3D_SG > Input vectors not allocated."
         endif
         !
@@ -1859,6 +1863,7 @@ contains
         self%ind_boundaries = rhs%ind_boundaries
         !
         select type( rhs )
+            !
             class is( rVector3D_SG_t )
                 !
                 self%NdX = rhs%NdX

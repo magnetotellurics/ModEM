@@ -13,9 +13,9 @@ module ReceiverFullImpedance
             !
             final :: ReceiverFullImpedance_dtor
             !
-            procedure, public :: setLRows => setLRowsFullImpedance
-            !
             procedure, public :: predictedData => predictedDataFullImpedance
+            !
+            procedure, public :: setLRows => setLRowsFullImpedance
             !
             procedure, public :: isEqualRx => isEqualFullImpedance
             !
@@ -79,6 +79,87 @@ contains
         call self%baseDealloc
         !
     end subroutine ReceiverFullImpedance_dtor
+    !
+    !> No subroutine briefing
+     !
+    subroutine predictedDataFullImpedance( self, transmitter, data_group )
+        implicit none
+        !
+        class( ReceiverFullImpedance_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in ) :: transmitter
+        type( DataGroup_t ), intent( out ), optional :: data_group
+        !
+        integer :: i, j, ij
+        complex( kind=prec ) :: comega, det
+        complex( kind=prec ), allocatable :: BB(:,:), EE(:,:)
+        class( Vector_t ), pointer :: tx_e_1, tx_e_2
+        !
+        comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
+        !
+        call transmitter%getSolutionVector( 1, tx_e_1 )
+        !
+        call transmitter%getSolutionVector( 2, tx_e_2 )
+        !
+        allocate( EE(2,2) )
+        EE(1,1) = self%Lex%dotProd( tx_e_1 )
+        EE(2,1) = self%Ley%dotProd( tx_e_1 )
+        EE(1,2) = self%Lex%dotProd( tx_e_2 )
+        EE(2,2) = self%Ley%dotProd( tx_e_2 )
+        !
+        !write( *, * ) "EE"
+        !write( *, * ) EE(1,1), EE(1,2)
+        !write( *, * ) EE(2,1), EE(2,2)
+        !
+        allocate( BB( 2, 2 ) )
+        BB(1,1) = self%Lbx%dotProd( tx_e_1 )
+        BB(2,1) = self%Lby%dotProd( tx_e_1 )
+        BB(1,2) = self%Lbx%dotProd( tx_e_2 )
+        BB(2,2) = self%Lby%dotProd( tx_e_2 )
+        !
+        !write( *, * ) "BB"
+        !write( *, * ) BB(1,1), BB(1,2)
+        !write( *, * ) BB(2,1), BB(2,2)
+        !
+        deallocate( tx_e_1 )
+        deallocate( tx_e_2 )
+        !
+        BB = isign * BB * comega
+        !
+        det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
+        !
+        if( allocated( self%I_BB ) ) deallocate( self%I_BB )
+        allocate( self%I_BB(2,2) )
+        !
+        if( det /= 0 ) then
+            self%I_BB(1,1) =  BB(2,2) / det
+            self%I_BB(2,2) =  BB(1,1) / det
+            self%I_BB(1,2) = -BB(1,2) / det
+            self%I_BB(2,1) = -BB(2,1) / det
+        else
+            call errStop( "predictedDataFullImpedance > Determinant is Zero!" )
+        endif
+        !
+        deallocate( BB )
+        !
+        if( allocated( self%response ) ) deallocate( self%response )
+        allocate( self%response(4) )
+        !
+        do j = 1, 2
+             do i = 1, 2
+                 ij = 2 * ( i-1 ) + j
+                 self%response(ij) = EE(i,1) * self%I_BB(1,j) + EE(i,2) * self%I_BB(2,j)
+             enddo
+        enddo
+        !
+        deallocate( EE )
+        !
+        if( present( data_group ) ) then
+            !
+            call self%savePredictedData( transmitter, data_group )
+            !
+        endif
+        !
+    end subroutine predictedDataFullImpedance
     !
     !> No subroutine briefing
     subroutine setLRowsFullImpedance( self, transmitter )
@@ -148,91 +229,7 @@ contains
         !deallocate( self%I_BB, self%response )
         !
     end subroutine setLRowsFullImpedance
-    !
-    !> No subroutine briefing
-    subroutine predictedDataFullImpedance( self, transmitter, data_group )
-        implicit none
-        !
-        class( ReceiverFullImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
-        type( DataGroup_t ), intent( out ), optional :: data_group
-        !
-        integer :: i, j, ij
-        complex( kind=prec ) :: comega, det
-        complex( kind=prec ), allocatable :: BB(:,:), EE(:,:)
-        class( Vector_t ), pointer :: tx_e_1, tx_e_2
-        !
-        comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
-        !
-        call transmitter%getSolutionVector( 1, tx_e_1 )
-        !
-        call tx_e_1%switchStoreState( compound )
-        !
-        call transmitter%getSolutionVector( 2, tx_e_2 )
-        !
-        call tx_e_2%switchStoreState( compound )
-        !
-        allocate( EE(2,2) )
-        EE(1,1) = self%Lex%dotProd( tx_e_1 )
-        EE(2,1) = self%Ley%dotProd( tx_e_1 )
-        EE(1,2) = self%Lex%dotProd( tx_e_2 )
-        EE(2,2) = self%Ley%dotProd( tx_e_2 )
-        !
-        !write( *, * ) "EE"
-        !write( *, * ) EE(1,1), EE(1,2)
-        !write( *, * ) EE(2,1), EE(2,2)
-        !
-        allocate( BB( 2, 2 ) )
-        BB(1,1) = self%Lbx%dotProd( tx_e_1 )
-        BB(2,1) = self%Lby%dotProd( tx_e_1 )
-        BB(1,2) = self%Lbx%dotProd( tx_e_2 )
-        BB(2,2) = self%Lby%dotProd( tx_e_2 )
-        !
-        !write( *, * ) "BB"
-        !write( *, * ) BB(1,1), BB(1,2)
-        !write( *, * ) BB(2,1), BB(2,2)
-        !
-        deallocate( tx_e_1 )
-        deallocate( tx_e_2 )
-        !
-        BB = isign * BB * comega
-        !
-        det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
-        !
-        if( allocated( self%I_BB ) ) deallocate( self%I_BB )
-        allocate( self%I_BB(2,2) )
-        !
-        if( det /= 0 ) then
-            self%I_BB(1,1) =  BB(2,2) / det
-            self%I_BB(2,2) =  BB(1,1) / det
-            self%I_BB(1,2) = -BB(1,2) / det
-            self%I_BB(2,1) = -BB(2,1) / det
-        else
-            stop "Error: predictedDataFullImpedance > Determinant is Zero!"
-        endif
-        !
-        deallocate( BB )
-        !
-        if( allocated( self%response ) ) deallocate( self%response )
-        allocate( self%response(4) )
-        !
-        do j = 1, 2
-             do i = 1, 2
-                 ij = 2 * ( i-1 ) + j
-                 self%response(ij) = EE(i,1) * self%I_BB(1,j) + EE(i,2) * self%I_BB(2,j)
-             enddo
-        enddo
-        !
-        deallocate( EE )
-        !
-        if( present( data_group ) ) then
-            !
-            call self%savePredictedData( transmitter, data_group )
-            !
-        endif
-        !
-    end subroutine predictedDataFullImpedance
-    !
+     !
     !> No subroutine briefing
     !
     function isEqualFullImpedance( self, other ) result( equal )

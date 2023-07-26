@@ -81,8 +81,7 @@ contains
                         !
                     case default
                         !
-                        write( *, * ) "Wrong MT Source type: [", source_type_mt, "]"
-                        stop
+                        call errStop( "solveTx > Wrong MT Source type: ["//source_type_mt//"]" )
                         !
                 end select
                 !
@@ -101,14 +100,13 @@ contains
                         !
                     case( "" )
                         !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > CSEM Source type not provided, using Dipole1D."
+                        call warning( "solveTx > CSEM Source type not provided, using Dipole1D." )
                         !
                         call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                         !
                     case default
                         !
-                        write( *, * ) "Wrong CSEM Source type: [", source_type_csem, "]"
-                        stop
+                        call errStop( "solveTx > Wrong CSEM Source type: ["//source_type_csem//"]" )
                         !
                 end select
                 !
@@ -267,14 +265,13 @@ contains
                 !
             case( "" )
                 !
-                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m createDistributeForwardSolver > Forward Solver type not provided, using IT_DC."
+                call warning( "createDistributeForwardSolver > Forward Solver type not provided, using IT_DC." )
                 !
                 allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
                 !
             case default
                 !
-                write( *, * ) "Wrong Forward Solver type: [", forward_solver_type, "]"
-                stop
+                call errStop( "createDistributeForwardSolver > Wrong Forward Solver type: ["//forward_solver_type//"]" )
                 !
         end select
         !
@@ -316,8 +313,7 @@ contains
             !
         else
             !
-            write( *, * ) "Error opening file in writeAllESolutionHeader [", file_name, "]!"
-            stop
+            call errStop( "writeAllESolutionHeader > Unable to open file ["//file_name//"]!" )
             !
         endif
         !

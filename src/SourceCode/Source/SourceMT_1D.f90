@@ -3,10 +3,8 @@
 !
 module SourceMT_1D
     !
-    use Constants
-    use cVector3D_SG
     use Source
-    use ModelOperator
+    use cVector3D_SG
     use ModelParameter1D
     use Forward1D
     !
@@ -124,14 +122,14 @@ contains
                     endif
                     !
                 class default
-                    stop "Error: createE_SourceMT_1D: Unclassified Vector"
+                    call errStop( "createE_SourceMT_1D > Unclassified E" )
             end select
             !
         enddo
         !
         deallocate( E1D )
         !
-        call self%createRHS()
+        call self%createRHS
         !
     end subroutine createE_SourceMT_1D
     !

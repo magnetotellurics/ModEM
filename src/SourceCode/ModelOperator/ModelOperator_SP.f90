@@ -4,15 +4,13 @@
 module ModelOperator_SP
     !
     use ModelOperator
-    use spOpTopology_SG
+    use SpOpTopology_SG
     use MetricElements_CSG
     use ModelParameterCell_SG
     !
     type, extends( ModelOperator_t ) :: ModelOperator_SP_t
         !
-        type( spOpTopology_SG_t ) :: topology_sg
-        !
-        class( Vector_t ), allocatable :: sigma_c
+        type( SpOpTopology_SG_t ) :: topology_sg
         !
         integer, allocatable, dimension(:) :: EDGEi, EDGEb
         integer, allocatable, dimension(:) :: NODEi, NODEb
@@ -96,7 +94,7 @@ contains
         !> operator topologies; these sparse matrices are stored
         !> in module spOpTopology
         !
-        self%topology_sg = spOpTopology_SG_t( self%metric%grid )
+        self%topology_sg = SpOpTopology_SG_t( self%metric%grid )
         !
         call self%topology_sg%curl( T )
         !
@@ -227,7 +225,7 @@ contains
         class( Scalar_t ), allocatable :: temp_cell_cond
         class( ModelParameter_t ), allocatable :: model
         class( Vector_t ), allocatable :: sig_temp
-        complex( kind=prec ), allocatable, dimension(:) :: v_edge_sv, sig_temp_sv
+        complex( kind=prec ), allocatable, dimension(:) :: v_edge_sv, sig_temp_sv, cVomegaMuSig
         !
         self%omega = 1.0
         !
@@ -243,11 +241,7 @@ contains
         !
         self%VomegaMuSig = v_edge_sv( self%EDGEi ) * sig_temp_sv( self%EDGEi ) * mu_0 * self%omega
         !
-        !> TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
-        !> set static array for cell conductivities
-        !> this stores conductivity values in a module structure
-        !> that is readily accesible to boundary condition routines
-        !> rvector sigma_c is created if it is not yet allocated
+        cVomegaMuSig = cmplx( self%VomegaMuSig, 0.0, kind=prec )
         !
         allocate( model, source = sigma )
         model = sigma
@@ -256,14 +250,11 @@ contains
             !
             call self%metric%createScalar( real_t, CELL_EARTH, temp_cell_cond )
             !
-            call temp_cell_cond%setArray( cmplx( self%VomegaMuSig, 0.0, kind=prec ) )
+            call temp_cell_cond%setSV( cVomegaMuSig )
             !
             call model%setCond( temp_cell_cond, i )
             !
         enddo
-        !
-		!> USELESS sigma_c
-        !call sigma%dPDEmapping( model, self%sigma_c )
         !
         deallocate( model )
         !
@@ -444,6 +435,8 @@ contains
         !
         call RMATxCVEC( self%CCii, array_inE_int, array_result )
         !
+        array_outE( in_e%ind_interior ) = array_result
+        !
         if( present( p_adjoint ) ) then
             adjoint = p_adjoint
         else
@@ -451,13 +444,10 @@ contains
         endif
         !
         if( adjoint ) then
-            array_result = array_result - ONE_I * ISIGN * self%VomegaMuSig * array_inE_int
+            array_outE = array_outE - ONE_I * ISIGN * self%VomegaMuSig * array_inE
         else
-            array_result = array_result + ONE_I * ISIGN * self%VomegaMuSig * array_inE_int
+            array_outE = array_outE + ONE_I * ISIGN * self%VomegaMuSig * array_inE
         endif
-        !
-        !array_inE = C_ZERO
-        array_outE( in_e%ind_interior ) = array_result
         !
         call out_e%setSV( array_outE )
         !

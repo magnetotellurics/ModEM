@@ -3,6 +3,7 @@
 !
 module Transmitter
     !
+    use Utilities
     use FileUnits
     use ForwardSolver
     use ModelParameter
@@ -280,7 +281,7 @@ module Transmitter
             !write( *, * ) "               - Start PMult_t"
             !
             if( .NOT. allocated( self%e_sens ) ) then
-                stop "Error: PMult_t_Tx > eSens not allocated on the Tx"
+                call errStop( "PMult_t_Tx > eSens not allocated on the Tx" )
             endif
             !
             !> Copy e_sens to a local variable to keep its original value.
@@ -345,7 +346,7 @@ module Transmitter
                 open( ioESolution, action = "write", position = "append", form = "unformatted", iostat = ios )
                 !
                 if( ios /= 0 ) then
-                    stop "Error opening file in solveTransmitterMT: e_solution"
+                    call errStop( "writeESolution > unable to open file" )
                 else
                     !
                     !> write the frequency header - 1 record

@@ -3,8 +3,6 @@
 !
 module CoreComponents
     !
-    use Constants
-    !
     use ForwardControlFile
     use InversionControlFile
     !

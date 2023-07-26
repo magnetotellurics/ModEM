@@ -3,7 +3,7 @@
 !
 module Source
     !
-    use Constants
+    use Utilities
     use ModelOperator
     use ModelParameter
     !
@@ -42,18 +42,16 @@ module Source
     abstract interface
         !
         subroutine interface_create_e_source( self )
-            !
             import :: Source_t
+			!
             class( Source_t ), intent( inout ) :: self
-            !
         end subroutine interface_create_e_source
         !
         !> No interface subroutine briefing
         subroutine interface_create_rhs_source( self )
-            !
             import :: Source_t
+			!
             class( Source_t ), intent( inout ) :: self
-            !
         end subroutine interface_create_rhs_source
         !
     end interface
@@ -73,7 +71,7 @@ module Source
         !
         allocate( self%E, source = E )
         !
-        call self%createRHS()
+        call self%createRHS
         !
     end subroutine setE_Source
     !
@@ -125,5 +123,5 @@ module Source
         deallocate( self%E )
         !
     end subroutine deallocate_Source
-	!
+    !
 end module Source

@@ -104,7 +104,7 @@ contains
                 call self%d%setV( d_v )
                 !
             class default
-                stop "Error: setPreConditioner_DC_MF > Unclassified ModelOperator"
+                call errStop( "setPreConditioner_DC_MF > Unclassified ModelOperator" )
             !
         end select
         !
@@ -120,7 +120,7 @@ contains
         class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
-        stop "Error: LTSolvePreConditioner_DC_MF not implemented yet"
+        call errStop( "LTSolvePreConditioner_DC_MF not implemented yet" )
         !
     end subroutine LTSolvePreConditioner_DC_MF
     !
@@ -133,7 +133,7 @@ contains
         class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
-        stop "Error: UTSolvePreConditioner_DC_MF not implemented yet"
+        call errStop( "UTSolvePreConditioner_DC_MF not implemented yet" )
         !
     end subroutine UTSolvePreConditioner_DC_MF
     !
@@ -145,13 +145,16 @@ contains
         implicit none
         !
         class( PreConditioner_DC_MF_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi
-        class( Scalar_t ), intent( inout ) :: out_phi
+        class( Scalar_t ), intent( inout ) :: in_phi, out_phi
         !
         integer :: ix, iy, iz
         complex( kind=prec ), allocatable, dimension(:, :, :) :: in_phi_v, out_phi_v, d_v
         complex( kind=prec ), allocatable, dimension(:, :, :) :: db1_x, db1_y, db1_z
         complex( kind=prec ), allocatable, dimension(:, :, :) :: db2_x, db2_y, db2_z
+        !
+        if( .NOT. in_phi%is_allocated ) then
+            call errStop( "LUSolvePreConditioner_DC_MF > in_phi not allocated yet" )
+        endif
         !
         in_phi_v = in_phi%getV()
         !
@@ -211,7 +214,7 @@ contains
                 call out_phi%setV( out_phi_v )
                 !
             class default
-                stop "Error: LUSolvePreConditioner_DC_MF > Unclassified ModelOperator"
+                call errStop( "LUSolvePreConditioner_DC_MF > Unclassified ModelOperator" )
         end select
         !
     end subroutine LUSolvePreConditioner_DC_MF

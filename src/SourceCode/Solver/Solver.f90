@@ -3,6 +3,7 @@
 !
 module Solver
     !
+    use Utilities
     use PreConditioner
     !
     !> Solver parameters

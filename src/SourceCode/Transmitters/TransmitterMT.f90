@@ -75,7 +75,7 @@ module TransmitterMT
         integer :: i_pol
         !
         if( .NOT. allocated( self%source ) ) then
-            stop "Error: solveTransmitterMT > source not allocated!"
+            call errStop( "solveTransmitterMT > source not allocated!" )
         endif
         !
         !> First allocate e_sol_0 or e_sens, according to the Source case

@@ -663,7 +663,7 @@ contains
                 model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
                 !
                 do i = 1, model%anisotropic_level
-                    model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond(i) )
+                    model_buffer_size = model_buffer_size + allocateScalarBuffer( model%getCond(i) )
                 enddo
                 !
             class default
@@ -713,7 +713,7 @@ contains
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
                 do i = 1, model%anisotropic_level
-                    call packScalarBuffer( model%cell_cond(i), parent_buffer, parent_buffer_size, index )
+                    call packScalarBuffer( model%getCond(i), parent_buffer, parent_buffer_size, index )
                 enddo
                 !
             class default
@@ -757,7 +757,7 @@ contains
                 !
                 call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
-                allocate( rScalar3D_SG_t :: model%cell_cond( model%anisotropic_level ) )
+                allocate( model%cell_cond( model%anisotropic_level ) )
                 !
                 do i = 1, model%anisotropic_level
                     !

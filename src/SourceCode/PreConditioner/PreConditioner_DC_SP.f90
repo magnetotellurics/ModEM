@@ -87,7 +87,7 @@ contains
                 self%phi = C_ZERO
                 !
             class default
-                stop "Error: setPreConditioner_DC_SP > Unclassified ModelOperator"
+                call errStop( "setPreConditioner_DC_SP > Unclassified ModelOperator" )
             !
         end select
         !
@@ -103,7 +103,7 @@ contains
         class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
-        stop "Error: LTSolvePreConditioner_DC_SP not implemented"
+        call errStop( "LTSolvePreConditioner_DC_SP not implemented" )
         !
     end subroutine LTSolvePreConditioner_DC_SP
     !
@@ -116,7 +116,7 @@ contains
         class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
-        stop "Error: UTSolvePreConditioner_DC_SP not implemented"
+        call errStop( "UTSolvePreConditioner_DC_SP not implemented" )
         !
     end subroutine UTSolvePreConditioner_DC_SP
     !
@@ -128,10 +128,17 @@ contains
         implicit none
         !
         class( PreConditioner_DC_SP_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi
-        class( Scalar_t ), intent( inout ) :: out_phi
+        class( Scalar_t ), intent( inout ) :: in_phi, out_phi
         !
         complex( kind=prec ), allocatable, dimension(:) :: array_inPhi, array_outPhi
+        !
+        if( .NOT. in_phi%is_allocated ) then
+            call errStop( "LUSolvePreConditioner_DC_SP > in_phi not allocated yet" )
+        endif
+        !
+        if( .NOT. out_phi%is_allocated ) then
+            call errStop( "LUSolvePreConditioner_DC_SP > out_phi not allocated yet" )
+        endif
         !
         array_inPhi = in_phi%getSV()
         !
@@ -146,10 +153,10 @@ contains
                 !
                 call UTsolve_Real( model_operator%VDsG_U, self%phi, array_outPhi )
                 !
-                call out_phi%setArray( array_outPhi )
+                call out_phi%setSV( array_outPhi )
                 !
             class default
-                stop "Error: LUSolvePreConditioner_DC_SP > Unclassified ModelOperator"
+                call errStop( "LUSolvePreConditioner_DC_SP > Unclassified ModelOperator" )
             !
         end select
         !

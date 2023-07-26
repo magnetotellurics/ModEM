@@ -73,7 +73,7 @@ contains
     end function updateReceiverArray
     !
     !> No subroutine briefing
-	!
+    !
     function getReceiver( iRx ) result( rx )
         implicit none
         !
