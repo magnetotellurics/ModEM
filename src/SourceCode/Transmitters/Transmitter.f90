@@ -220,12 +220,14 @@ module Transmitter
             !
             class( Vector_t ), allocatable, dimension(:) :: bSrc
             class( Vector_t ), pointer :: solution
-            type( rVector3D_SG_t ) :: map_e_vector
+            class( Vector_t ), allocatable :: map_e_vector
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
             !
             ! Verbose
             !write( *, * ) "               - Start PMult"
+            !
+            call model_operator%metric%createVector( real_t, EDGE, map_e_vector )
             !
             !> Get map_e_vector from dPDEmapping
             call sigma%dPDEmapping( dsigma, map_e_vector )

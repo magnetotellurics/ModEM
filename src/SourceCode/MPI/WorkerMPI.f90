@@ -175,6 +175,8 @@ contains
         !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
         !
+        call Tx%forward_solver%setFrequency( sigma, Tx%period )
+        !
         !> Switch Transmitter's source to SourceInteriorForce from PMult
         call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
         !

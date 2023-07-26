@@ -604,7 +604,7 @@ contains
         endif
         !
         if( .NOT. e_vec%is_allocated ) then
-            call errStop( "dPDEmapping_ModelParameterCell_SG > e_vec not allocated yet" )
+            call errStop( "dPDEmapping_ModelParameterCell_SG > e_vec not allocated" )
         endif
         !
         call e_vec%zeros

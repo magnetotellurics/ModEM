@@ -312,6 +312,7 @@ contains
         out_e_v = out_e%getSV()
         out_e_v_int = out_e_v( out_e%ind_interior )
         !
+        write(*,*) "amult_ModelOperator_SP"
         call RMATxCVEC( self%CCii, in_e_v( in_e%ind_interior ), out_e_v_int )
         !
         if( present( p_adjoint ) ) then
@@ -358,6 +359,7 @@ contains
         out_e_v = out_e%getSV()
         out_e_v_int = out_e_v( out_e%ind_interior )
         !
+        write(*,*) "multAib_ModelOperator_SP"
         call RMATxCVEC( self%CCib, in_e_v( in_e%ind_boundaries ), out_e_v_int )
         !
         out_e_v( in_e%ind_interior ) = out_e_v_int
@@ -376,13 +378,24 @@ contains
         !
         type( spMatCSR_Real ) :: D
         !
-        complex( kind=prec ), allocatable, dimension(:) :: out_phi_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v
+        !
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "amult_ModelOperator_SP > in_e not allocated" )
+        endif
+        !
+        if( .NOT. out_phi%is_allocated ) then
+            call errStop( "amult_ModelOperator_SP > out_phi not allocated" )
+        endif
         !
         call RMATtrans( G, D )
         !
+        in_e_v = in_e%getSV()
+        !
         out_phi_v = out_phi%getSV()
         !
-        call RMATxCVEC( D, in_e%getSV(), out_phi_v )
+        write(*,*) "div_ModelOperator_SP"
+        call RMATxCVEC( D, in_e_v( in_e%ind_interior ), out_phi_v )
         !
         call deall_spMatCSR( D )
         !
@@ -401,11 +414,20 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v, out_phi_v_int
         !
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "divC_ModelOperator_SP > in_e not allocated" )
+        endif
+        !
+        if( .NOT. out_phi%is_allocated ) then
+            call errStop( "divC_ModelOperator_SP > out_phi not allocated" )
+        endif
+        !
         in_e_v = in_e%getSV()
         !
         out_phi_v = out_phi%getSV()
         out_phi_v_int = out_phi_v( out_phi%ind_interior )
         !
+        write(*,*) "divC_ModelOperator_SP"
         call RMATxCVEC( self%VDs, in_e_v( in_e%ind_interior ), out_phi_v_int )
         !
         out_phi_v( out_phi%ind_interior ) = out_phi_v_int
@@ -424,8 +446,17 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: out_phi_v
         !
+        if( .NOT. in_phi%is_allocated ) then
+            call errStop( "divCGrad_ModelOperator_SP > in_phi not allocated" )
+        endif
+        !
+        if( .NOT. out_phi%is_allocated ) then
+            call errStop( "divCGrad_ModelOperator_SP > out_phi not allocated" )
+        endif
+        !
         out_phi_v = out_phi%getSV()
         !
+        write(*,*) "divCGrad_ModelOperator_SP"
         call RMATxCVEC( self%VDsG, in_phi%getSV(), out_phi_v )
         !
         call out_phi%setSV( out_phi_v )
@@ -443,8 +474,17 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: out_e_v
         !
+        if( .NOT. in_phi%is_allocated ) then
+            call errStop( "grad_ModelOperator_SP > in_phi not allocated" )
+        endif
+        !
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "grad_ModelOperator_SP > out_e not allocated" )
+        endif
+        !
         out_e_v = out_e%getSV()
         !
+        write(*,*) "grad_ModelOperator_SP"
         call RMATxCVEC( G, in_phi%getSV(), out_e_v )
         !
         call out_e%setSV( out_e_v )
@@ -452,6 +492,10 @@ contains
     end subroutine grad_ModelOperator_SP
     !
     !> No subroutine briefing
+    !
+    !> Set sparse matrices for curl (T) and grad (G)
+    !> operator topologies; these sparse matrices are stored
+    !> in module spOpTopology
     !
     subroutine create_ModelOperator_SP( self )
         implicit none
@@ -461,10 +505,6 @@ contains
         integer :: nInterior
         !
         self%is_allocated = .FALSE.
-        !
-        !> Set sparse matrices for curl (T) and grad (G)
-        !> operator topologies; these sparse matrices are stored
-        !> in module spOpTopology
         !
         self%topology_sg = SpOpTopology_SG_t( self%metric%grid )
         !
