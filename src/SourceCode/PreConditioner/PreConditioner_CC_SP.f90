@@ -79,7 +79,7 @@ contains
         type( spMatCSR_Cmplx ) :: Axx
         type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
         !
-        write( *, * ) "Start setPreConditioner_CC_SP"
+        write( *, * ) "setPreConditioner_CC_SP"
         !
         ! find indexes of x, y, z elements
         !
@@ -203,7 +203,8 @@ contains
         class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
-        complex( kind=prec ), allocatable, dimension(:) :: array_inE, array_outE, array_outE_int
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
+        complex( kind=prec ), allocatable, dimension(:) :: out_e_v_int
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "LTSolvePreConditioner_CC_SP > in_e not allocated yet" )
@@ -212,26 +213,31 @@ contains
         if( .NOT. out_e%is_allocated ) then
             call errStop( "LTSolvePreConditioner_CC_SP > out_e not allocated" )
         endif
+		!
+		write(*,*) "LTSolvePreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
+		!
+        in_e_v = in_e%getSV()
         !
-        array_inE = in_e%getSV()
-        !
-        array_outE = out_e%getSV()
-        array_outE = C_ZERO
-        array_outE_int = array_outE( out_e%ind_interior )
+        out_e_v = out_e%getSV()
+        out_e_v_int = out_e_v( out_e%ind_interior )
         !
         if( adjoint ) then
             !
-            call UTsolve_Cmplx( self%LH, array_inE( in_e%ind_interior ), array_outE_int )
+            write(*,*) "CC UTsolve_Cmplx: ", self%LH%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
+            !
+            call UTsolve_Cmplx( self%LH, in_e_v( in_e%ind_interior ), out_e_v_int )
             !
         else
             !
-            call LTsolve_Cmplx( self%L, array_inE( in_e%ind_interior ), array_outE_int )
+            write(*,*) "CC LTsolve_Cmplx: ", self%L%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
+            !
+            call LTsolve_Cmplx( self%L, in_e_v( in_e%ind_interior ), out_e_v_int )
             !
         endif
         !
-        array_outE( out_e%ind_interior ) = array_outE_int
+        out_e_v( out_e%ind_interior ) = out_e_v_int
         !
-        call out_e%setSV( array_outE )
+        call out_e%setSV( out_e_v )
         !
     end subroutine LTSolvePreConditioner_CC_SP
     !
@@ -246,9 +252,11 @@ contains
         class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
-        complex( kind=prec ), allocatable, dimension(:) :: array_inE, array_outE
-        complex( kind=prec ), allocatable, dimension(:) :: array_outE_int
-        !
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
+        complex( kind=prec ), allocatable, dimension(:) :: out_e_v_int
+		!
+		write(*,*) "UTSolvePreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
+		!
         if( .NOT. in_e%is_allocated ) then
             call errStop( "UTSolvePreConditioner_CC_SP > in_e not allocated yet" )
         endif
@@ -257,25 +265,26 @@ contains
             call errStop( "UTSolvePreConditioner_CC_SP > out_e not allocated" )
         endif
         !
-        array_inE = in_e%getSV()
+        in_e_v = in_e%getSV()
         !
-        array_outE = out_e%getSV()
-        array_outE = C_ZERO
-        array_outE_int = array_outE( out_e%ind_interior )
+        out_e_v = out_e%getSV()
+        out_e_v_int = out_e_v( out_e%ind_interior )
         !
         if( adjoint ) then
             !
-            call LTsolve_Cmplx( self%UH, array_inE( in_e%ind_interior ), array_outE_int )
+			out_e_v_int = C_ZERO
+			!
+            call LTsolve_Cmplx( self%UH, in_e_v( in_e%ind_interior ), out_e_v_int )
             !
         else
             !
-            call UTsolve_Cmplx( self%U, array_inE( in_e%ind_interior ), array_outE_int )
+            call UTsolve_Cmplx( self%U, in_e_v( in_e%ind_interior ), out_e_v_int )
             !
         endif
         !
-        array_outE( out_e%ind_interior ) = array_outE_int
+        out_e_v( out_e%ind_interior ) = out_e_v_int
         !
-        call out_e%setSV( array_outE )
+        call out_e%setSV( out_e_v )
         !
     end subroutine UTSolvePreConditioner_CC_SP
     !

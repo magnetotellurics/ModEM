@@ -62,6 +62,8 @@ contains
         complex( kind=prec ), allocatable, dimension(:, :, :) :: dilu_x, dilu_y, dilu_z
         complex( kind=prec ), allocatable, dimension(:, :, :) :: sigma_e_x, sigma_e_y, sigma_e_z
         !
+        write( *, * ) "setPreConditioner_CC_MF"
+        !
         dilu_x = self%Dilu%getX()
         dilu_y = self%Dilu%getY()
         dilu_z = self%Dilu%getZ()
@@ -162,7 +164,9 @@ contains
         complex( kind=prec ), allocatable, dimension(:, :, :) :: in_e_x, in_e_y, in_e_z
         complex( kind=prec ), allocatable, dimension(:, :, :) :: out_e_x, out_e_y, out_e_z
         complex( kind=prec ), allocatable, dimension(:, :, :) :: dilu_x, dilu_y, dilu_z
-        !
+		!
+		write(*,*) "LTSolvePreConditioner_CC_MF: ", in_e%length(), out_e%length(), adjoint
+		!
         if( .NOT. in_e%is_allocated ) then
             call errStop( "LTSolvePreConditioner_CC_MF > in_e not allocated yet" )
         endif
@@ -302,15 +306,16 @@ contains
         implicit none
         !
         class( PreConditioner_CC_MF_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
-        class( Vector_t ), intent( inout ) :: out_e
+        class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
         integer :: ix, iy, iz
         complex( kind=prec ), allocatable, dimension(:, :, :) :: in_e_x, in_e_y, in_e_z
         complex( kind=prec ), allocatable, dimension(:, :, :) :: out_e_x, out_e_y, out_e_z
         complex( kind=prec ), allocatable, dimension(:, :, :) :: dilu_x, dilu_y, dilu_z
-        !
+		!
+		write(*,*) "UTSolvePreConditioner_CC_MF: ", in_e%length(), out_e%length(), adjoint
+		!
         in_e_x = in_e%getX()
         in_e_y = in_e%getY()
         in_e_z = in_e%getZ()

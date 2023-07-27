@@ -50,8 +50,8 @@ module Vector
         !
         function interface_get_axis_vector( self, comp_lbl ) result( comp )
             import :: Vector_t, prec
+            class( Vector_t ), intent( inout ) :: self
             character, intent( in ) :: comp_lbl
-            class( Vector_t ), intent( in ) :: self
             complex( kind=prec ), allocatable :: comp(:, :, :)
         end function interface_get_axis_vector
         !
@@ -76,15 +76,15 @@ module Vector
         subroutine interface_sum_edge_vector( self, cell_out, interior_only )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( out ) :: cell_out
-            logical, optional, intent( in ) :: interior_only
+            class( Scalar_t ), allocatable, intent( out ) :: cell_out
+            logical, intent( in ), optional :: interior_only
         end subroutine interface_sum_edge_vector
         !
         !> No interface subroutine briefing
         subroutine interface_sum_edge_vti_vector( self, cell_h_out, cell_v_out, interior_only )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( out ) :: cell_h_out, cell_v_out
+            class( Scalar_t ), allocatable, intent( out ) :: cell_h_out, cell_v_out
             logical, optional, intent( in ) :: interior_only
         end subroutine interface_sum_edge_vti_vector
         !
@@ -93,7 +93,7 @@ module Vector
         subroutine interface_avg_cells_vector( self, cell_in, ptype )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( in ) :: cell_in
+            class( Scalar_t ), intent( inout ) :: cell_in
             character(*), intent( in ), optional :: ptype
         end subroutine interface_avg_cells_vector
         !
@@ -109,7 +109,7 @@ module Vector
         !> No interface subroutine briefing
         subroutine interface_get_real_vector( self, r_vector )
             import :: Vector_t
-            class( Vector_t ), intent( in ) :: self
+            class( Vector_t ), intent( inout ) :: self
             class( Vector_t ), allocatable, intent( out ) :: r_vector
         end subroutine interface_get_real_vector
         !

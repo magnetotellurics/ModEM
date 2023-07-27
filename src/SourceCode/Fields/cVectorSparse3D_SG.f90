@@ -701,7 +701,7 @@ contains
     subroutine getReal_cVectorSparse3D_SG( self, r_vector )
         implicit none
         !
-        class( cVectorSparse3D_SG_t ), intent( in ) :: self
+        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
         class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
         call errStop( "getReal_cVectorSparse3D_SG not implemented yet!" )

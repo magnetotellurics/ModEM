@@ -74,7 +74,7 @@ contains
         !
         integer :: nzAir
         !
-        write( *, * ) "Constructor ModelParameterCell_SG_ctor_one_cond"
+        !write( *, * ) "Constructor ModelParameterCell_SG_ctor_one_cond"
         !
         call self%baseInit
         !
@@ -121,7 +121,7 @@ contains
         !
         integer :: i, nzAir
         !
-        write( *, * ) "Constructor ModelParameterCell_SG_ctor_all_conds"
+        !write( *, * ) "Constructor ModelParameterCell_SG_ctor_all_conds"
         !
         call self%baseInit
         !
@@ -664,50 +664,57 @@ contains
         class( Vector_t ), intent( in ) :: e_vec
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
-        class( Scalar_t ), allocatable :: dsigma_cond
+        class( Scalar_t ), allocatable :: sigma_cell, dsigma_cond
         class( Vector_t ), allocatable :: e_vec_interior
-        type( rScalar3D_SG_t ), allocatable, dimension(:) :: sigma_cell
+        type( GenScalar_t ), allocatable, dimension(:) :: sigma_cells
         complex( kind=prec ), allocatable, dimension(:, :, :) :: self_cond_v, dsigma_cond_v, sigma_cell_v
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: i, k0, k1, k2
         !
-        call errStop( "dPDEmapping_T_ModelParameterCell_SG > TO IMPLEMENT" )
+        if( .NOT. e_vec%is_allocated ) then
+            call errStop( "dPDEmapping_T_ModelParameterCell_SG > e_vec not allocated" )
+        endif
         !
-        allocate( sigma_cell( self%anisotropic_level ) )
-        !
+        !> e_vec
         call e_vec%interior( e_vec_interior )
         !
         call e_vec_interior%div( self%metric%v_edge )
         !
         call e_vec_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
         !
-        k0 = self%metric%grid%NzAir
-        k1 = k0 + 1
-        k2 = self%metric%grid%Nz
+        !> sigma_cells
+        allocate( sigma_cells( self%anisotropic_level ) )
         !
-        do i = 1, self%anisotropic_level
-            sigma_cell(i) = rScalar3D_SG_t( self%metric%grid, CELL )
-        enddo
+        !do i = 1, self%anisotropic_level
+            !
+            !call self%metric%createScalar( real_t, CELL, sigma_cells(i)%s )
+            !
+        !enddo
         !
         !> Call specific sumEdges based on anisotropic_level
         if( self%anisotropic_level == 1 ) then
             !
-            call e_vec_interior%sumEdges( sigma_cell(1), .TRUE. )
+            call e_vec_interior%sumEdges( sigma_cells(1)%s, .TRUE. )
             !
         elseif( self%anisotropic_level == 2 ) then
             !
-            call e_vec_interior%sumEdges( sigma_cell(1), sigma_cell(2), .TRUE. )
+            call e_vec_interior%sumEdges( sigma_cells(1)%s, sigma_cells(2)%s, .TRUE. )
             !
         else
-        !
-        call errStop( "dPDEmapping_T_ModelParameterCell_SG > unsupported anisotropy level" )
+            call errStop( "dPDEmapping_T_ModelParameterCell_SG > unsupported anisotropy level" )
         endif
         !
         deallocate( e_vec_interior )
         !
+        k0 = self%metric%grid%NzAir
+        k1 = k0 + 1
+        k2 = self%metric%grid%Nz
+        !
         allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, self%cell_cond, self%param_type ) )
         !
         do i = 1, self%anisotropic_level
+            !
+            allocate( dsigma_cond, source = dsigma%getCond(i) )
             !
             call dsigma_cond%zeros
             !
@@ -717,15 +724,21 @@ contains
             !
             dsigma_cond_v = self%sigMap( real( self_cond_v, kind=prec ), JOB )
             !
-            call sigma_cell(i)%mult( self%metric%v_cell )
+            call sigma_cells(i)%s%mult( self%metric%v_cell )
             !
-            sigma_cell_v = sigma_cell(i)%getV()
+            allocate( sigma_cell, source = sigma_cells(i)%s )
+            !
+            sigma_cell_v = sigma_cell%getV()
+            !
+            deallocate( sigma_cell )
             !
             dsigma_cond_v = dsigma_cond_v * sigma_cell_v( :, :, k1:k2 )
             !
             call dsigma_cond%setV( dsigma_cond_v )
             !
             call dsigma%setCond( dsigma_cond, i )
+            !
+            deallocate( dsigma_cond )
             !
         enddo
         !

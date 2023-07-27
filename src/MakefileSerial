@@ -238,7 +238,7 @@ $(OBJDIR)/PreConditioner_DC_MF.o:SourceCode/PreConditioner/PreConditioner_DC_MF.
 $(OBJDIR)/PreConditioner_DC_SP.o:SourceCode/PreConditioner/PreConditioner_DC_SP.f90 $(OBJDIR)/PreConditioner.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/ModelOperator_SP.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/PreConditioner/PreConditioner_DC_SP.f90 -o $(OBJDIR)/PreConditioner_DC_SP.o
 
-$(OBJDIR)/Solver_PCG.o:SourceCode/Solver/Solver_PCG.f90 $(OBJDIR)/Solver.o $(OBJDIR)/PreConditioner_DC_MF.o $(OBJDIR)/PreConditioner_DC_SP.o 
+$(OBJDIR)/Solver_PCG.o:SourceCode/Solver/Solver_PCG.f90 $(OBJDIR)/Solver.o $(OBJDIR)/ModelOperator_MF_SG.o $(OBJDIR)/ModelOperator_SP.o $(OBJDIR)/PreConditioner_DC_MF.o $(OBJDIR)/PreConditioner_DC_SP.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Solver/Solver_PCG.f90 -o $(OBJDIR)/Solver_PCG.o
 
 $(OBJDIR)/DivergenceCorrection.o:SourceCode/ForwardSolver/DivergenceCorrection.f90 $(OBJDIR)/Solver_PCG.o 
@@ -250,7 +250,7 @@ $(OBJDIR)/PreConditioner_CC_MF.o:SourceCode/PreConditioner/PreConditioner_CC_MF.
 $(OBJDIR)/PreConditioner_CC_SP.o:SourceCode/PreConditioner/PreConditioner_CC_SP.f90 $(OBJDIR)/PreConditioner.o $(OBJDIR)/ModelOperator_SP.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/PreConditioner/PreConditioner_CC_SP.f90 -o $(OBJDIR)/PreConditioner_CC_SP.o
 
-$(OBJDIR)/Solver_QMR.o:SourceCode/Solver/Solver_QMR.f90 $(OBJDIR)/Solver.o $(OBJDIR)/PreConditioner_CC_MF.o $(OBJDIR)/PreConditioner_CC_SP.o 
+$(OBJDIR)/Solver_QMR.o:SourceCode/Solver/Solver_QMR.f90 $(OBJDIR)/Solver.o $(OBJDIR)/ModelOperator_MF_SG.o $(OBJDIR)/ModelOperator_SP.o $(OBJDIR)/PreConditioner_CC_MF.o $(OBJDIR)/PreConditioner_CC_SP.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Solver/Solver_QMR.f90 -o $(OBJDIR)/Solver_QMR.o
 
 $(OBJDIR)/ForwardSolverIT_DC.o:SourceCode/ForwardSolver/ForwardSolverIT_DC.f90 $(OBJDIR)/ForwardSolver.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/Solver_QMR.o 

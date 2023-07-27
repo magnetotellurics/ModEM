@@ -17,19 +17,19 @@ module ForwardSolverIT_DC
         !
         contains
             !
-            procedure, public :: setFrequency => setFrequencyForwardSolverIT_DC
+            procedure, public :: setFrequency => setFrequency_ForwardSolverIT_DC
             !
-            procedure, public :: setIterControl => setIterControlForwardSolverIT_DC
+            procedure, public :: setIterControl => setIterControl_ForwardSolverIT_DC
             !
-            procedure, public :: initDiagnostics => initDiagnosticsForwardSolverIT_DC
+            procedure, public :: initDiagnostics => initDiagnostics_ForwardSolverIT_DC
             !
-            procedure, public :: zeroDiagnostics => zeroDiagnosticsForwardSolverIT_DC
+            procedure, public :: zeroDiagnostics => zeroDiagnostics_ForwardSolverIT_DC
             !
-            procedure, public :: createESolution => createESolutionForwardSolverIT_DC
+            procedure, public :: createESolution => createESolution_ForwardSolverIT_DC
             !
-            procedure, public :: setIterDefaults => setIterDefaultsForwardSolverIT_DC
+            procedure, public :: setIterDefaults => setIterDefaults_ForwardSolverIT_DC
             !
-            procedure, public :: copyFrom => copyFromForwardSolverIT_DC
+            procedure, public :: copyFrom => copyFrom_ForwardSolverIT_DC
             !
     end type ForwardSolverIT_DC_t
     !
@@ -89,9 +89,10 @@ contains
         !
     end function ForwardSolverIT_DC_ctor
     !
-    !> Procedure setFrequencyForwardSolverIT_DC
+    !> Procedure setFrequency_ForwardSolverIT_DC
     !> Set omega for this ForwardSolver (Called on the main transmitter loop at main program)
-    subroutine setFrequencyForwardSolverIT_DC( self, sigma, period )
+    !
+    subroutine setFrequency_ForwardSolverIT_DC( self, sigma, period )
         implicit none
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
@@ -104,21 +105,21 @@ contains
         !> Set conductivity for the model operator (again ????)
         call self%solver%preconditioner%model_operator%setCond( sigma, self%solver%omega )
         !
+        !> Set preconditioner for this solver's preconditioner
+        call self%solver%preconditioner%setPreconditioner( self%solver%omega )
+        !
         !> Set omega for the divergence_correction´s solver
         self%divergence_correction%solver%omega = self%solver%omega
         !
         !> Set conductivity for the divergence_correction
         call self%divergence_correction%setCond
         !
-        !> Set preconditioner for this solver's preconditioner
-        call self%solver%preconditioner%setPreconditioner( self%solver%omega )
-        !
         call self%initDiagnostics
         !
-    end subroutine setFrequencyForwardSolverIT_DC
+    end subroutine setFrequency_ForwardSolverIT_DC
     !
     !> No subroutine briefing
-    subroutine setIterControlForwardSolverIT_DC( self )
+    subroutine setIterControl_ForwardSolverIT_DC( self )
         implicit none
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
@@ -129,10 +130,10 @@ contains
         !
         self%max_iter_total = self%solver%max_iters * self%max_div_cor
         !
-    end subroutine setIterControlForwardSolverIT_DC
+    end subroutine setIterControl_ForwardSolverIT_DC
     !
     !> No subroutine briefing
-    subroutine setIterDefaultsForwardSolverIT_DC( self )
+    subroutine setIterDefaults_ForwardSolverIT_DC( self )
         implicit none
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
@@ -141,10 +142,10 @@ contains
         self%max_divcor_iters = max_divcor_iters
         self%tol_div_cor = tolerance_divcor
         !
-    end subroutine setIterDefaultsForwardSolverIT_DC
+    end subroutine setIterDefaults_ForwardSolverIT_DC
     !
     !> No subroutine briefing
-    subroutine initDiagnosticsForwardSolverIT_DC( self )
+    subroutine initDiagnostics_ForwardSolverIT_DC( self )
         implicit none
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
@@ -157,10 +158,10 @@ contains
             allocate( self%relResVec( self%max_iter_total ) )
         endif
         !
-    end subroutine initDiagnosticsForwardSolverIT_DC
+    end subroutine initDiagnostics_ForwardSolverIT_DC
     !
     !> No subroutine briefing
-    subroutine zeroDiagnosticsForwardSolverIT_DC( self )
+    subroutine zeroDiagnostics_ForwardSolverIT_DC( self )
         implicit none
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
@@ -169,11 +170,11 @@ contains
         !
         call self%solver%zeroDiagnostics
         !
-    end subroutine zeroDiagnosticsForwardSolverIT_DC
+    end subroutine zeroDiagnostics_ForwardSolverIT_DC
     !
     !> No subroutine briefing
     !
-    subroutine createESolutionForwardSolverIT_DC( self, pol, source, e_solution )
+    subroutine createESolution_ForwardSolverIT_DC( self, pol, source, e_solution )
         implicit none
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
@@ -198,9 +199,9 @@ contains
         call temp_e_solution%zeros
         !
         if( source%non_zero_source ) then
-            !
-            call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phi0 )
-            !
+			!
+			call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phi0 )
+			!
             call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol ), phi0 )
             !
         endif
@@ -212,7 +213,7 @@ contains
                 class is( Solver_QMR_t )
                     call solver%solve( source%rhs( pol ), temp_e_solution )
                 class default
-                    call errStop( "createESolutionForwardSolverIT_DC > Unknown solver type." )
+                    call errStop( "createESolution_ForwardSolverIT_DC > Unknown solver type." )
                 !
             end select
             !
@@ -292,10 +293,10 @@ contains
         !
         deallocate( temp_e_solution )
         !
-    end subroutine createESolutionForwardSolverIT_DC
+    end subroutine createESolution_ForwardSolverIT_DC
     !
     !> No subroutine briefing
-    subroutine copyFromForwardSolverIT_DC( self, rhs )
+    subroutine copyFrom_ForwardSolverIT_DC( self, rhs )
         implicit none
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
@@ -330,10 +331,10 @@ contains
                 self%divergence_correction = rhs%divergence_correction
                 !
             class default
-               call errStop( "copyFromForwardSolverIT_DC > Incompatible input." )
+               call errStop( "copyFrom_ForwardSolverIT_DC > Incompatible input." )
             !
         end select
         !
-    end subroutine copyFromForwardSolverIT_DC
+    end subroutine copyFrom_ForwardSolverIT_DC
     !
 end Module ForwardSolverIT_DC

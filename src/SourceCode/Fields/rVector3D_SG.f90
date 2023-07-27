@@ -710,7 +710,7 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: cell_in
+        class( Scalar_t ), intent( inout ) :: cell_in
         character(*), intent( in ), optional :: ptype
         !
         character(10) :: grid_type
@@ -1616,7 +1616,7 @@ contains
     function getAxis_rVector3D_SG( self, comp_lbl ) result( comp )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( in ) :: self
+        class( rVector3D_SG_t ), intent( inout ) :: self
         character, intent( in ) :: comp_lbl
         !
         complex( kind=prec ), allocatable :: comp(:, :, :)
@@ -1638,7 +1638,7 @@ contains
     subroutine getReal_rVector3D_SG( self, r_vector )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( in ) :: self
+        class( rVector3D_SG_t ), intent( inout ) :: self
         class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
         allocate( r_vector, source = rVector3D_SG_t( self%grid, self%grid_type ) )

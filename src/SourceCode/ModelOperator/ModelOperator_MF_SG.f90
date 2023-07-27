@@ -70,7 +70,7 @@ contains
         !
         type( ModelOperator_MF_SG_t ) :: self
         !
-        !write( *, * ) "Constructor ModelOperator_MF_SG"
+        write( *, * ) "Constructor ModelOperator_MF_SG"
         !
         call self%baseInit
         !
@@ -87,7 +87,7 @@ contains
         !
         type( ModelOperator_MF_SG_t ), intent( inout ) :: self
         !
-        !write( *, * ) "Destructor ModelOperator_MF_SG_t"
+        write( *, * ) "Destructor ModelOperator_MF_SG_t"
         !
         call self%baseDealloc()
         !
@@ -101,6 +101,8 @@ contains
         class( ModelOperator_MF_SG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz 
+        !
+        write(*,*) "setEquations_ModelOperator_MF_SG"
         !
         do iy = 2, self%metric%grid%ny
             self%xXY(iy, 2) = -1.0 / (self%metric%grid%del_y(iy) * self%metric%grid%dy(iy))
@@ -201,6 +203,12 @@ contains
         class( ModelParameter_t ), intent( inout ) :: sigma
         real( kind=prec ), intent( in ), optional :: omega
         !
+		if( present( omega ) ) then
+			write(*,*) "setCond_ModelOperator_MF_SG :", omega
+		else
+			write(*,*) "setCond_ModelOperator_MF_SG (no omega )"
+		endif
+        !
         call sigma%PDEmapping( self%sigma_e )
         !
     end subroutine setCond_ModelOperator_MF_SG
@@ -213,6 +221,8 @@ contains
         !
         integer :: ix, iy, iz
         !
+		write( *, * ) "divCorSetUp_ModelOperator_MF_SG"
+		!
         do iz = 2, self%metric%grid%nz
             do iy = 2, self%metric%grid%ny
                 do ix = 2, self%metric%grid%nx
@@ -307,6 +317,8 @@ contains
         integer :: ix, iy, iz
         complex( kind=prec ) :: cvalue
         logical :: adjoint
+        !
+        write(*,*) "amult_ModelOperator_MF_SG: ", in_e%length(), out_e%length(), p_adjoint
         !
         if( present( p_adjoint ) ) then
             adjoint = p_adjoint
@@ -408,6 +420,8 @@ contains
         !
         real( kind=prec ) :: omega
         !
+        write(*,*) "multAib_ModelOperator_MF_SG: ", in_e%length(), out_e%length()
+        !
         if(.NOT. out_e%is_allocated) then
             call errStop( "multAib_ModelOperator_MF_SG > out_e not allocated" )
         endif
@@ -428,6 +442,8 @@ contains
         class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
+        !
+        write(*,*) "div_ModelOperator_MF_SG: ", in_e%length(), out_phi%length()
         !
         select type( out_phi )
             !
@@ -478,6 +494,8 @@ contains
         class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
+        !
+        write(*,*) "divC_ModelOperator_MF_SG: ", in_e%length(), out_phi%length()
         !
         select type( out_phi )
             !
@@ -554,10 +572,11 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi
-        class( Scalar_t ), intent( inout ) :: out_phi
+        class( Scalar_t ), intent( inout ) :: in_phi, out_phi
         !
         integer :: ix, iy, iz
+        !
+        write(*,*) "divCGrad_ModelOperator_MF_SG: ", in_phi%length(), out_phi%length()
         !
         select type( out_phi )
             !
@@ -612,6 +631,8 @@ contains
         class( Vector_t ), intent( inout ) :: out_e
         !
         integer :: ix, iy, iz
+        !
+        write(*,*) "grad_ModelOperator_MF_SG: ", in_phi%length(), out_e%length()
         !
         select type( out_e )
             !

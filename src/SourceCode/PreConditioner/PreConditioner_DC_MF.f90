@@ -15,9 +15,9 @@ module PreConditioner_DC_MF
         contains
             !
             procedure, public :: setPreConditioner => setPreConditioner_DC_MF
-            procedure, public :: LTSolve => LTSolvePreConditioner_DC_MF
-            procedure, public :: UTSolve => UTSolvePreConditioner_DC_MF
-            procedure, public :: LUSolve => LUSolvePreConditioner_DC_MF
+            procedure, public :: LTSolve => LTSolve_PreConditioner_DC_MF
+            procedure, public :: UTSolve => UTSolve_PreConditioner_DC_MF
+            procedure, public :: LUSolve => LUSolve_PreConditioner_DC_MF
             !
     end type PreConditioner_DC_MF_t
     !
@@ -57,9 +57,9 @@ contains
         real( kind=prec ), intent( in ) :: omega
         !
         integer :: ix,iy,iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: db1_x, db1_y, db1_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: db2_x, db2_y, db2_z
         complex( kind=prec ), allocatable, dimension(:, :, :) :: d_v, c_v
+        !
+        write( *, * ) "setPreConditioner_DC_MF"
         !
         d_v = self%d%getV()
         !
@@ -76,26 +76,19 @@ contains
             !
             class is( ModelOperator_MF_SG_t )
                 !
-                db1_x = model_operator%db1%getX()
-                db1_y = model_operator%db1%getY()
-                db1_z = model_operator%db1%getZ()
-                !
-                db2_x = model_operator%db2%getX()
-                db2_y = model_operator%db2%getY()
-                db2_z = model_operator%db2%getZ()
-                !
                 c_v = model_operator%c%getV()
                 !
                 do iz = 2, model_operator%metric%grid%nz
                     do iy = 2, model_operator%metric%grid%ny
                         do ix = 2, model_operator%metric%grid%nx
                             d_v(ix, iy, iz) = c_v(ix, iy, iz) - &
-                            db1_x(ix,iy,iz)*db2_x(ix-1,iy,iz) * &
+                            model_operator%db1%x(ix,iy,iz)*model_operator%db2%x(ix-1,iy,iz) * &
                             d_v(ix-1,iy,iz)- &
-                            db1_y(ix,iy,iz)*db2_y(ix,iy-1,iz) * &
+                            model_operator%db1%y(ix,iy,iz)*model_operator%db2%y(ix,iy-1,iz) * &
                             d_v(ix,iy-1,iz)- &
-                            db1_z(ix,iy,iz)*db2_z(ix,iy,iz-1) * &
+                            model_operator%db1%z(ix,iy,iz)*model_operator%db2%z(ix,iy,iz-1) * &
                             d_v(ix,iy,iz-1)
+                            !
                             d_v(ix, iy, iz) = 1.0/ d_v(ix, iy, iz)
                         enddo
                     enddo
@@ -112,36 +105,34 @@ contains
     !
     !> LTsolve and UTsolve are in abstract class and must be defined -- but not used for DC which
     !>        this object will be used -- so just dummies here
-    subroutine LTSolvePreConditioner_DC_MF( self, in_e, out_e, adjoint )
+    subroutine LTSolve_PreConditioner_DC_MF( self, in_e, out_e, adjoint )
         implicit none
         !
         class( PreConditioner_DC_MF_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
-        class( Vector_t ), intent( inout ) :: out_e
+        class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
-        call errStop( "LTSolvePreConditioner_DC_MF not implemented yet" )
+        call errStop( "LTSolve_PreConditioner_DC_MF not implemented yet" )
         !
-    end subroutine LTSolvePreConditioner_DC_MF
+    end subroutine LTSolve_PreConditioner_DC_MF
     !
     !> No subroutine briefing
-    subroutine UTSolvePreConditioner_DC_MF( self, in_e, out_e, adjoint )
+    subroutine UTSolve_PreConditioner_DC_MF( self, in_e, out_e, adjoint )
         implicit none
         !
         class( PreConditioner_DC_MF_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
-        class( Vector_t ), intent( inout ) :: out_e
+        class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
-        call errStop( "UTSolvePreConditioner_DC_MF not implemented yet" )
+        call errStop( "UTSolve_PreConditioner_DC_MF not implemented yet" )
         !
-    end subroutine UTSolvePreConditioner_DC_MF
+    end subroutine UTSolve_PreConditioner_DC_MF
     !
-    !> Procedure LUSolvePreConditioner_DC_MF
+    !> Procedure LUSolve_PreConditioner_DC_MF
     !> apply pre-conditioner, LU solve
     !
     !> No subroutine briefing
-    subroutine LUSolvePreConditioner_DC_MF( self, in_phi, out_phi )
+    subroutine LUSolve_PreConditioner_DC_MF( self, in_phi, out_phi )
         implicit none
         !
         class( PreConditioner_DC_MF_t ), intent( inout ) :: self
@@ -149,20 +140,20 @@ contains
         !
         integer :: ix, iy, iz
         complex( kind=prec ), allocatable, dimension(:, :, :) :: in_phi_v, out_phi_v, d_v
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: db1_x, db1_y, db1_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: db2_x, db2_y, db2_z
-        !
+		!
+		write(*,*) "LUSolve_PreConditioner_DC_MF: ", in_phi%length(), out_phi%length()
+		!
         if( .NOT. in_phi%is_allocated ) then
-            call errStop( "LUSolvePreConditioner_DC_MF > in_phi not allocated yet" )
+            call errStop( "LUSolve_PreConditioner_DC_MF > in_phi not allocated yet" )
+        endif
+        !
+        if( .NOT. out_phi%is_allocated ) then
+            call errStop( "LUSolve_PreConditioner_DC_MF > out_phi not allocated yet" )
         endif
         !
         in_phi_v = in_phi%getV()
         !
         d_v = self%d%getV()
-        !
-        if( .NOT. out_phi%is_allocated ) then
-            call errStop( "LUSolvePreConditioner_DC_MF > out_phi not allocated yet" )
-        endif
         !
         call out_phi%zeros
         !
@@ -173,29 +164,23 @@ contains
             !
             class is( ModelOperator_MF_SG_t )
                 !
-                db1_x = model_operator%db1%getX()
-                db1_y = model_operator%db1%getY()
-                db1_z = model_operator%db1%getZ()
-                !
-                db2_x = model_operator%db2%getX()
-                db2_y = model_operator%db2%getY()
-                db2_z = model_operator%db2%getZ()
-                !
                 !> forward substitution (Solve lower triangular system)
                 !> the coefficients are only for the interior nodes
                 do iz = 2, in_phi%nz
                     do iy = 2, in_phi%ny
                         do ix = 2, in_phi%nx
                             out_phi_v(ix, iy, iz) = in_phi_v(ix, iy, iz) &
-                            - out_phi_v(ix-1,iy,iz)*db1_x(ix,iy,iz)&
+                            - out_phi_v(ix-1,iy,iz)*model_operator%db1%x(ix,iy,iz)&
                             *d_v(ix-1,iy,iz) &
-                            - out_phi_v(ix,iy-1,iz)*db1_y(ix,iy,iz)&
+                            - out_phi_v(ix,iy-1,iz)*model_operator%db1%y(ix,iy,iz)&
                             *d_v(ix,iy-1,iz) &
-                            - out_phi_v(ix,iy,iz-1)*db1_z(ix,iy,iz)&
+                            - out_phi_v(ix,iy,iz-1)*model_operator%db1%z(ix,iy,iz)&
                             *d_v(ix,iy,iz-1)
                         enddo
                     enddo
                 enddo
+                !
+                write(*,*) "LTsolve_Real: ", size( d_v ), size( in_phi_v ), size( out_phi_v )
                 !
                 !> backward substitution (Solve upper triangular system)
                 !> the coefficients are only for the interior nodes
@@ -203,20 +188,22 @@ contains
                     do iy = in_phi%ny,2,-1
                         do ix = in_phi%nx,2,-1
                             out_phi_v(ix, iy, iz) = (out_phi_v(ix, iy, iz) &
-                            - out_phi_v(ix+1, iy, iz)*db2_x(ix, iy, iz) &
-                            - out_phi_v(ix, iy+1, iz)*db2_y(ix, iy, iz) &
-                            - out_phi_v(ix, iy, iz+1)*db2_z(ix, iy, iz)) &
+                            - out_phi_v(ix+1, iy, iz)*model_operator%db2%x(ix, iy, iz) &
+                            - out_phi_v(ix, iy+1, iz)*model_operator%db2%y(ix, iy, iz) &
+                            - out_phi_v(ix, iy, iz+1)*model_operator%db2%z(ix, iy, iz)) &
                             *d_v(ix, iy, iz)
                         enddo
                     enddo
                 enddo
                 !
+                write(*,*) "UTsolve_Real: ", size( d_v ), size( in_phi_v ), size( out_phi_v )
+                !
                 call out_phi%setV( out_phi_v )
                 !
             class default
-                call errStop( "LUSolvePreConditioner_DC_MF > Unclassified ModelOperator" )
+                call errStop( "LUSolve_PreConditioner_DC_MF > Unclassified ModelOperator" )
         end select
         !
-    end subroutine LUSolvePreConditioner_DC_MF
+    end subroutine LUSolve_PreConditioner_DC_MF
     !
 end module PreConditioner_DC_MF

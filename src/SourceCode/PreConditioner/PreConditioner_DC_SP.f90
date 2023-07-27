@@ -69,7 +69,7 @@ contains
         !
         integer :: ix,iy,iz
         !
-        write( *, * ) "Start setPreConditioner_DC_SP"
+        write( *, * ) "setPreConditioner_DC_SP"
         !
         self%omega = omega
         !
@@ -125,8 +125,10 @@ contains
         class( PreConditioner_DC_SP_t ), intent( inout ) :: self
         class( Scalar_t ), intent( inout ) :: in_phi, out_phi
         !
-        complex( kind=prec ), allocatable, dimension(:) :: array_inPhi, array_outPhi
-        !
+        complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_phi_v
+		!
+		write(*,*) "LUSolvePreConditioner_DC_SP: ", in_phi%length(), out_phi%length()
+		!
         if( .NOT. in_phi%is_allocated ) then
             call errStop( "LUSolvePreConditioner_DC_SP > in_phi not allocated yet" )
         endif
@@ -135,18 +137,23 @@ contains
             call errStop( "LUSolvePreConditioner_DC_SP > out_phi not allocated yet" )
         endif
         !
-        array_inPhi = in_phi%getSV()
-        array_outPhi = out_phi%getSV()
+        in_phi_v = in_phi%getSV()
+        !
+        out_phi_v = out_phi%getSV()
         !
         select type( model_operator => self%model_operator )
             !
             class is( ModelOperator_SP_t )
                 !
-                call LTsolve_Real( model_operator%VDsG_L, array_inPhi, self%phi )
+                write(*,*) "LTsolve_Real: ", model_operator%VDsG_L%nCol, size( in_phi_v ), size( self%phi )
                 !
-                call UTsolve_Real( model_operator%VDsG_U, self%phi, array_outPhi )
+                call LTsolve_Real( model_operator%VDsG_L, in_phi_v, self%phi )
                 !
-                call out_phi%setSV( array_outPhi )
+                write(*,*) "UTsolve_Real: ", model_operator%VDsG_U%nCol, size( self%phi ), size( out_phi_v )
+                !
+                call UTsolve_Real( model_operator%VDsG_U, self%phi, out_phi_v )
+                !
+                call out_phi%setSV( out_phi_v )
                 !
             class default
                 call errStop( "LUSolvePreConditioner_DC_SP > Unclassified ModelOperator" )

@@ -4,6 +4,8 @@
 module Solver_QMR
     !
     use Solver
+    use ModelOperator_MF_SG
+    use ModelOperator_SP
     use PreConditioner_CC_MF
     use PreConditioner_CC_SP
     !
@@ -161,9 +163,6 @@ contains
         !> and the iterations are less than maxIt
         do while( ( self%relErr( iter ) .GT. self%tolerance ) .AND. ( iter .LT. self%max_iters ) )
             !
-            !> Verbose
-            write( *, * ) "QMR iter, self%relErr( iter )", iter, self%relErr( iter )
-            !
             if( ( RHO .EQ. C_ZERO ) .OR. ( PSI .EQ. C_ZERO ) ) then
                 !
                 self%failed = .TRUE.
@@ -288,6 +287,9 @@ contains
             !
             rnorm = SQRT( R%dotProd( R ) )
             !
+            !> Verbose
+            write( *, "( a46, i6, a3, es12.3 )" ) "QMR iter, self%relErr( iter ):", iter, " : ", self%relErr( iter )
+            !
             iter = iter + 1
             !
             self%relErr( iter ) = real( rnorm / bnorm, kind=prec )
@@ -295,9 +297,9 @@ contains
         enddo
         !
         if( iter .LT. self%max_iters ) then
-            write( *, * ) "                    Solver QMR converged within ", iter, " : ", self%relErr( iter )
+            write( *, "( a46, i6, a3, es12.3 )" ) "->Solver QMR converged within ", iter, " : ", self%relErr( iter )
         else
-            write( *, * ) "                    Solver QMR not converged in ", iter, " : ", self%relErr( iter )
+            write( *, "( a46, i6, a3, es12.3 )" ) "->Solver QMR not converged in ", self%max_iters, " : ", self%relErr( self%max_iters )
         endif
         !
         deallocate( R )

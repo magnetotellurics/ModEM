@@ -286,6 +286,10 @@ module Transmitter
                 call errStop( "PMult_t_Tx > eSens not allocated on the Tx" )
             endif
             !
+            if( .NOT. sigma%is_allocated ) then
+                call errStop( "PMult_t_Tx > sigma not allocated" )
+            endif
+            !
             !> Copy e_sens to a local variable to keep its original value.
             allocate( eSens, source = self%e_sens )
             !

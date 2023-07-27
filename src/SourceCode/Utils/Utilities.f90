@@ -29,7 +29,6 @@ contains
         !
         character(*), intent( in ) :: msg
         write( *, * ) achar(27)//"[31m# Error:"//achar(27)//"[0m "//trim( msg )
-        write( *, *) trim( msg )
         !
 !#ifdef MPI
         !

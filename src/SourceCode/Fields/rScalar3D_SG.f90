@@ -299,8 +299,6 @@ contains
             call errStop( "intBdryIndices_rScalar3D_SG > Not allocated. Exiting." )
         endif
         !
-        call self%switchStoreState( compound )
-        !
         select case( self%grid_type )
             !
             case( NODE )

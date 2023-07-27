@@ -1557,7 +1557,7 @@ contains
     function getAxis_rVector3D_MR( self, comp_lbl ) result( comp )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( rVector3D_MR_t ), intent( inout ) :: self
         character, intent( in ) :: comp_lbl
         !
         complex( kind=prec ), allocatable :: comp(:, :, :)
@@ -1571,7 +1571,7 @@ contains
     subroutine getReal_rVector3D_MR( self, r_vector )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( rVector3D_MR_t ), intent( inout ) :: self
         class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
         allocate( r_vector, source = rVector3D_MR_t( self%grid, self%grid_type ) )

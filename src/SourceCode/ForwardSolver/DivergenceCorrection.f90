@@ -13,11 +13,11 @@ Module DivergenceCorrection
         !
         contains
             !
-            procedure, public :: setCond => setCondDivergenceCorrection
+            procedure, public :: setCond => setCond_DivergenceCorrection
             !
-            procedure, public :: rhsDivCor => rhsDivCorDivergenceCorrection
+            procedure, public :: rhsDivCor => rhsDivCor_DivergenceCorrection
             !
-            procedure, public :: divCorr => divCorrDivergenceCorrection
+            procedure, public :: divCorr => divCorr_DivergenceCorrection
             !
     end type DivergenceCorrection_t
     !
@@ -33,6 +33,7 @@ contains
         implicit none
         !
         class( ModelOperator_t ), intent( in ) :: model_operator
+        !
         type( DivergenceCorrection_t ) :: self
         !
         !write( *, * ) "Constructor DivergenceCorrection_t"
@@ -42,14 +43,14 @@ contains
         !> Specific Solver PCG
         self%solver = Solver_PCG_t( model_operator )
         !
-        call self%setCond
+        !call self%setCond
         !
     end function DivergenceCorrection_ctor
     !
-    !> Procedure setCondDivergenceCorrection
+    !> Procedure setCond_DivergenceCorrection
     !> some extra things that need to be done for divergence correction, whenever
     !>      conductivity (model parameter) changes
-    subroutine setCondDivergenceCorrection( self )
+    subroutine setCond_DivergenceCorrection( self )
         implicit none
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
@@ -59,19 +60,24 @@ contains
         !>    set preconditioner
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
-    end subroutine setCondDivergenceCorrection
+    end subroutine setCond_DivergenceCorrection
     !
     !> No subroutine briefing
-    subroutine rhsDivCorDivergenceCorrection( self, omega, source_e, phi0 )
+    subroutine rhsDivCor_DivergenceCorrection( self, omega, source_e, phi0 )
         implicit none
         !
         class( DivergenceCorrection_t ), intent( in ) :: self
         real( kind=prec ), intent( in ) :: omega
         class( Vector_t ), intent( inout ) :: source_e
-        class( Scalar_t ), intent( inout ) :: phi0
+        class( Scalar_t ), allocatable, intent( inout ) :: phi0
         !
-        complex( kind=prec ) :: i_omega_mu
-        complex( kind=prec ) :: c_factor
+        complex( kind=prec ) :: i_omega_mu, c_factor
+        !
+        if( .NOT. source_e%is_allocated ) then
+            call errStop( "rhsDivCor_DivergenceCorrection > source_e not allocated" )
+        endif
+        !
+        !self%solver%omega = omega
         !
         call self%solver%preconditioner%model_operator%Div( source_e, phi0 )
         !
@@ -81,10 +87,10 @@ contains
         !
         call phi0%mult( c_factor )
         !
-    end subroutine rhsDivCorDivergenceCorrection
+    end subroutine rhsDivCor_DivergenceCorrection
     !
     !> No subroutine briefing
-    subroutine divCorrDivergenceCorrection( self, in_e, out_e, phi0 )
+    subroutine divCorr_DivergenceCorrection( self, in_e, out_e, phi0 )
         implicit none
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
@@ -93,6 +99,14 @@ contains
         !
         class( Scalar_t ), allocatable :: phiRHS, phiSol
         logical :: SourceTerm
+        !
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "divCorr_DivergenceCorrection > in_e not allocated" )
+        endif
+        !
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "divCorr_DivergenceCorrection > out_e not allocated" )
+        endif
         !
         SourceTerm = present( phi0 )
         !
@@ -155,6 +169,6 @@ contains
         !
         deallocate( phiRHS )
         !
-    end subroutine divCorrDivergenceCorrection
+    end subroutine divCorr_DivergenceCorrection
     !
 end module DivergenceCorrection
