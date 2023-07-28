@@ -1968,7 +1968,7 @@ contains
     !> Solve system Lx = b for complex vector x, lower triangular L
     !> here real or cmplx refers to L; x is always complex
     !
-    subroutine LTsolve_Real(L, b, x)
+    subroutine LTsolve_Real( L, b, x )
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: L

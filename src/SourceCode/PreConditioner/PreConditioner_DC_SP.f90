@@ -94,8 +94,7 @@ contains
         implicit none
         !
         class( PreConditioner_DC_SP_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
-        class( Vector_t ), intent( inout ) :: out_e
+        class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
         call errStop( "LTSolvePreConditioner_DC_SP not implemented" )
@@ -107,8 +106,7 @@ contains
         implicit none
         !
         class( PreConditioner_DC_SP_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
-        class( Vector_t ), intent( inout ) :: out_e
+        class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
         call errStop( "UTSolvePreConditioner_DC_SP not implemented" )
@@ -126,9 +124,9 @@ contains
         class( Scalar_t ), intent( inout ) :: in_phi, out_phi
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_phi_v
-		!
-		write(*,*) "LUSolvePreConditioner_DC_SP: ", in_phi%length(), out_phi%length()
-		!
+        !
+        write(*,*) "LUSolvePreConditioner_DC_SP: ", in_phi%length(), out_phi%length()
+        !
         if( .NOT. in_phi%is_allocated ) then
             call errStop( "LUSolvePreConditioner_DC_SP > in_phi not allocated yet" )
         endif
