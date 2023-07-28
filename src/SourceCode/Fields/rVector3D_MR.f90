@@ -991,7 +991,7 @@ contains
     subroutine setVecComponents_rVector3D_MR( self, xyz, &
             &                              xmin, xstep, xmax, &
             &                              ymin, ystep, ymax, &
-            &                              zmin, zstep, zmax, rvalue )
+            &                              zmin, zstep, zmax, cvalue )
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
@@ -999,7 +999,7 @@ contains
         integer, intent( in ) :: xmin, xstep, xmax
         integer, intent( in ) :: ymin, ystep, ymax
         integer, intent( in ) :: zmin, zstep, zmax
-        real( kind=prec ), intent ( in ) :: rvalue
+        complex( kind=prec ), intent ( in ) :: cvalue
         !
         integer :: x1, x2
         integer :: y1, y2
@@ -1022,7 +1022,7 @@ contains
                 if(zmin == 0) z1 = self%NdX(3)
                 if(zmax <= 0) z2 = self%NdX(3) + zmax
                 !
-                self%x(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
+                self%x(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case("y")
                 if(xmin == 0) x1 = self%NdY(1)
@@ -1034,7 +1034,7 @@ contains
                 if(zmin == 0) z1 = self%NdY(3)
                 if(zmax <= 0) z2 = self%NdY(3) + zmax
                 !
-                self%y(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
+                self%y(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case("z")
                 if(xmin == 0) x1 = self%NdZ(1)
@@ -1046,7 +1046,7 @@ contains
                 if(zmin == 0) z1 = self%NdZ(3)
                 if(zmax <= 0) z2 = self%NdZ(3) + zmax
                 !
-                self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
+                self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case default
                 stop "Error: setVecComponents_rVector3D_MR > Invalid xyz argument."

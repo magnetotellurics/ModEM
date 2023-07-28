@@ -50,14 +50,14 @@ contains
     !> Procedure setCond_DivergenceCorrection
     !> some extra things that need to be done for divergence correction, whenever
     !>      conductivity (model parameter) changes
-    subroutine setCond_DivergenceCorrection( self )
+    subroutine setCond_DivergenceCorrection( self, omega )
         implicit none
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
+        real( kind=prec ), intent( in ) :: omega
         !
-        !>    set DivCorr arrays in model operator ... 
-        call self%solver%preconditioner%model_operator%divCorSetUp
-        !>    set preconditioner
+        self%solver%omega = omega
+        !
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
     end subroutine setCond_DivergenceCorrection

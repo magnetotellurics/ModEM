@@ -66,7 +66,7 @@ contains
     subroutine setDefaults_PCG( self )
         implicit none
         !
-        class( Solver_PCG_t ), intent(inout) :: self
+        class( Solver_PCG_t ), intent( inout ) :: self
         !
         call self%setParameters( max_divcor_iters, tolerance_divcor )
         !

@@ -109,10 +109,10 @@ contains
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
         !> Set omega for the divergence_correction´s solver
-        self%divergence_correction%solver%omega = self%solver%omega
+        !self%divergence_correction%solver%omega = self%solver%omega
         !
         !> Set conductivity for the divergence_correction
-        call self%divergence_correction%setCond
+        call self%divergence_correction%setCond( self%solver%omega )
         !
         call self%initDiagnostics
         !
@@ -199,9 +199,9 @@ contains
         call temp_e_solution%zeros
         !
         if( source%non_zero_source ) then
-			!
-			call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phi0 )
-			!
+            !
+            call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phi0 )
+            !
             call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol ), phi0 )
             !
         endif

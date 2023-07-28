@@ -196,20 +196,22 @@ contains
     end subroutine setEquations_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine setCond_ModelOperator_MF_SG( self, sigma, omega )
+    subroutine setCond_ModelOperator_MF_SG( self, sigma, omega_in )
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( inout ) :: sigma
-        real( kind=prec ), intent( in ), optional :: omega
+        real( kind=prec ), intent( in ), optional :: omega_in
         !
-		if( present( omega ) ) then
-			write(*,*) "setCond_ModelOperator_MF_SG :", omega
-		else
-			write(*,*) "setCond_ModelOperator_MF_SG (no omega )"
-		endif
+        if( present( omega_in ) ) then
+            write(*,*) "setCond_ModelOperator_MF_SG :", omega_in, "(useless here)"
+        else
+            write(*,*) "setCond_ModelOperator_MF_SG (no omega)"
+        endif
         !
         call sigma%PDEmapping( self%sigma_e )
+        !
+        call self%divCorSetUp
         !
     end subroutine setCond_ModelOperator_MF_SG
     !
@@ -221,8 +223,8 @@ contains
         !
         integer :: ix, iy, iz
         !
-		write( *, * ) "divCorSetUp_ModelOperator_MF_SG"
-		!
+        write( *, * ) "divCorSetUp_ModelOperator_MF_SG"
+        !
         do iz = 2, self%metric%grid%nz
             do iy = 2, self%metric%grid%ny
                 do ix = 2, self%metric%grid%nx

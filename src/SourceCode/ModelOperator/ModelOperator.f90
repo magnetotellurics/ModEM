@@ -58,12 +58,12 @@ module ModelOperator
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_set_cond_model_operator( self, sigma, omega ) 
+        subroutine interface_set_cond_model_operator( self, sigma, omega_in ) 
             import :: ModelOperator_t, ModelParameter_t, prec
             !
             class( ModelOperator_t ), intent( inout ) :: self
             class( ModelParameter_t ), intent( inout ) :: sigma
-            real( kind=prec ), intent( in ), optional :: omega
+            real( kind=prec ), intent( in ), optional :: omega_in
         end subroutine interface_set_cond_model_operator
         !
         !> No interface subroutine briefing

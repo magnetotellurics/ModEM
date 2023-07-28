@@ -1,0 +1,304 @@
+!
+!> Derived class to define a PreConditioner_CC_SP
+!
+module PreConditioner_CC_SP
+    !
+    use PreConditioner
+    use ModelOperator_SP
+    !
+    type, extends( PreConditioner_t ) :: PreConditioner_CC_SP_t
+        !
+        !> upper and lower triangular
+        type( spMatCSR_Cmplx ) :: L, U
+        !
+        type( spMatCSR_Cmplx ) :: LH, UH
+        !
+        contains
+            !
+            final :: PreConditioner_CC_SP_dtor
+            !
+            procedure, public :: setPreConditioner => setPreConditioner_CC_SP !> This needs to be called by Solver    object
+            !
+            procedure, public :: LTSolve => LTSolve_PreConditioner_CC_SP !> These are left (M1) and right (M2)
+            procedure, public :: UTSolve => UTSolve_PreConditioner_CC_SP !> preconditioning matrices for curl-curl equation.
+            procedure, public :: LUSolve => LUSolve_PreConditioner_CC_SP !> preconditoner for symmetric divCGrad operator
+            !
+    end type PreConditioner_CC_SP_t
+    !
+    interface PreConditioner_CC_SP_t
+        module procedure PreConditioner_CC_SP_ctor
+    end interface PreConditioner_CC_SP_t
+    !
+contains
+    !
+    !> No subroutine briefing
+    !
+    function PreConditioner_CC_SP_ctor( model_operator ) result( self ) 
+        implicit none
+        !
+        class( ModelOperator_t ), target, intent( in ) :: model_operator
+        type( PreConditioner_CC_SP_t ) :: self
+        !
+        !write( *, * ) "Constructor PreConditioner_CC_SP_t"
+        !
+        self%omega = R_ZERO
+        !
+        self%model_operator => model_operator
+        !
+    end function PreConditioner_CC_SP_ctor
+    !
+    !> PreConditioner_DC_SP destructor
+    subroutine PreConditioner_CC_SP_dtor( self )
+        implicit none
+        !
+        type( PreConditioner_CC_SP_t ), intent( inout ) :: self
+        !
+        !write( *, * ) "Destructor PreConditioner_CC_SP_t"
+        !
+        call deall_spMatCSR( self%L )
+        call deall_spMatCSR( self%U )
+        call deall_spMatCSR( self%LH )
+        call deall_spMatCSR( self%UH )
+        !
+    end subroutine PreConditioner_CC_SP_dtor
+    !
+    !> Block DILU preconditioner for CC operator, should be
+    !> comparable to what is implemented for matrix-free version
+    !
+    subroutine setPreConditioner_CC_SP( self, omega )
+        implicit none
+        !
+        class( PreConditioner_CC_SP_t ), intent( inout ) :: self
+        real( kind=prec ), intent( in ) :: omega
+        !
+        integer, allocatable, dimension(:) :: ix, iy, iz
+        real( kind=prec ), allocatable, dimension(:) :: d
+        integer :: nx, ny, na, nz
+        integer :: nEdge, nEdgeT, n, j
+        type( spMatCSR_real ) :: CCxx
+        type( spMatCSR_Cmplx ) :: Axx
+        type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
+        !
+        write( *, * ) "setPreConditioner_CC_SP : ", omega
+        !
+        ! find indexes of x, y, z elements
+        !
+        ! this generates indexes (in list of interior edges)
+        ! for x, y, z edges
+        nEdgeT = 0
+        !
+        call setlimitsSP( XEDGE, self%model_operator%metric%grid, nx, ny, nz )
+        !
+        nEdge = nx * ( ny - 2 ) * ( nz - 2 )
+        !
+        allocate( ix( nEdge ) )
+        !
+        ix = (/ (j, j=nEdgeT+1, nEdgeT+nEdge) /)
+        !
+        nEdgeT = nEdgeT + nEdge
+        !
+        call setlimitsSP( YEDGE, self%model_operator%metric%grid, nx, ny, nz )
+        !
+        nEdge = ( nx - 2 ) * ny * ( nz - 2 )
+        !
+        allocate( iy( nEdge ) )
+        !
+        iy = (/ (j, j=nEdgeT+1, nEdgeT+nEdge) /)
+        !
+        nEdgeT = nEdgeT+nEdge
+        !
+        call setlimitsSP( ZEDGE, self%model_operator%metric%grid, nx, ny, nz )
+        !
+        nEdge = ( nx - 2 ) * ( ny - 2 ) * nz
+        !
+        allocate( iz( nEdge ) )
+        !
+        iz = (/ (j, j=nEdgeT+1, nEdgeT+nEdge) /)
+        !
+        ! Construct sub-matrices for x, y, z components
+        allocate( Lblk(3) )
+        allocate( Ublk(3) )
+        !
+        !> Instantiate the ModelOperator object
+        select type( model_operator => self%model_operator )
+            !
+            class is( ModelOperator_SP_t )
+                !
+                call SubMatrix_Real( model_operator%CCii, ix, ix, CCxx )
+                !
+                n = size(ix)
+                !
+                allocate( d(n) )
+                !
+                d = model_operator%VomegaMuSig(ix)
+                !
+                call CSR_R2Cdiag( CCxx, d, Axx )
+                !
+                call dilu_Cmplx( Axx, Lblk(1), Ublk(1) )
+                !
+                deallocate(d)
+                !
+                call SubMatrix_Real( model_operator%CCii, iy, iy, CCxx )
+                !
+                n = size(iy)
+                !
+                allocate( d(n) )
+                !
+                d = model_operator%VomegaMuSig(iy)
+                !
+                call CSR_R2Cdiag( CCxx, d, Axx )
+                !
+                call dilu_Cmplx( Axx, Lblk(2), Ublk(2) )
+                !
+                deallocate(d)
+                !
+                call SubMatrix_Real( model_operator%CCii, iz, iz, CCxx )
+                !
+                n = size(iz)
+                !
+                allocate( d(n) )
+                !
+                d = model_operator%VomegaMuSig(iz)
+                !
+                call CSR_R2Cdiag( CCxx, d, Axx )
+                !
+                call dilu_Cmplx( Axx, Lblk(3), Ublk(3) )
+                !
+                deallocate(d)
+                !
+                ! Could merge into a single LT and UT matrix, or solve systems individually
+                call BlkDiag_Cmplx( Lblk, self%L )
+                !
+                call BlkDiag_Cmplx( Ublk, self%U )
+                !
+                call CMATtrans( self%L, self%LH )
+                call CMATtrans( self%U, self%UH )
+                !
+                deallocate( ix, iy, iz )
+                !
+                call deall_spMatCSR( CCxx )
+                !
+                call deall_spMatCSR( Axx )
+                !
+                do j = 1, 3
+                    call deall_spMatCSR( Lblk(j) )
+                    call deall_spMatCSR( Ublk(j) )
+                enddo
+                !
+                deallocate( Lblk, Ublk )
+                !
+            class default
+                call errStop( "LTSolve_PreConditioner_CC_SP: Unclassified ModelOperator" )
+            !
+        end select
+        !
+    end subroutine setPreConditioner_CC_SP
+    !
+    !> Implement the sparse matrix solve for curl-curl operator
+    !
+    subroutine LTSolve_PreConditioner_CC_SP( self, in_e, out_e, adjoint )
+        implicit none
+        !
+        class( PreConditioner_CC_SP_t ), intent( inout ) :: self
+        class( Vector_t ), intent( inout ) :: in_e, out_e
+        logical, intent( in ) :: adjoint
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
+        complex( kind=prec ), allocatable, dimension(:) :: out_e_v_int
+        !
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "LTSolve_PreConditioner_CC_SP > in_e not allocated yet" )
+        endif
+        !
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "LTSolve_PreConditioner_CC_SP > out_e not allocated" )
+        endif
+		!
+		write(*,*) "LTSolve_PreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
+		!
+        in_e_v = in_e%getSV()
+        !
+        out_e_v = out_e%getSV()
+        out_e_v_int = out_e_v( out_e%ind_interior )
+        !
+        if( adjoint ) then
+            !
+            write(*,*) "CC UTsolve_Cmplx: ", self%LH%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
+            !
+            call UTsolve_Cmplx( self%LH, in_e_v( in_e%ind_interior ), out_e_v_int )
+            !
+        else
+            !
+            write(*,*) "CC LTsolve_Cmplx: ", self%L%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
+            !
+            call LTsolve_Cmplx( self%L, in_e_v( in_e%ind_interior ), out_e_v_int )
+            !
+        endif
+        !
+        out_e_v( out_e%ind_interior ) = out_e_v_int
+        !
+        call out_e%setSV( out_e_v )
+        !
+    end subroutine LTSolve_PreConditioner_CC_SP
+    !
+    !> Procedure UTSolve_PreConditioner_CC_SP
+    !> Purpose: to solve the upper triangular system (or it"s adjoint);
+    !> for the d-ilu pre-condtioner
+    !
+    subroutine UTSolve_PreConditioner_CC_SP( self, in_e, out_e, adjoint )
+        implicit none
+        !
+        class( PreConditioner_CC_SP_t ), intent( inout ) :: self
+        class( Vector_t ), intent( inout ) :: in_e, out_e
+        logical, intent( in ) :: adjoint
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
+        complex( kind=prec ), allocatable, dimension(:) :: out_e_v_int
+		!
+		write(*,*) "UTSolve_PreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
+		!
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "UTSolve_PreConditioner_CC_SP > in_e not allocated yet" )
+        endif
+        !
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "UTSolve_PreConditioner_CC_SP > out_e not allocated" )
+        endif
+        !
+        in_e_v = in_e%getSV()
+        !
+        out_e_v = out_e%getSV()
+        out_e_v_int = out_e_v( out_e%ind_interior )
+        !
+        if( adjoint ) then
+            !
+			out_e_v_int = C_ZERO
+			!
+            call LTsolve_Cmplx( self%UH, in_e_v( in_e%ind_interior ), out_e_v_int )
+            !
+        else
+            !
+            call UTsolve_Cmplx( self%U, in_e_v( in_e%ind_interior ), out_e_v_int )
+            !
+        endif
+        !
+        out_e_v( out_e%ind_interior ) = out_e_v_int
+        !
+        call out_e%setSV( out_e_v )
+        !
+    end subroutine UTSolve_PreConditioner_CC_SP
+    !
+    !> Procedure LUSolve_PreConditioner_CC_SP
+    !> this is dummy routine required by abstract preconditioner class
+    subroutine LUSolve_PreConditioner_CC_SP( self, in_phi, out_phi )
+        implicit none
+        !
+        class( PreConditioner_CC_SP_t ), intent( inout ) :: self
+        class( Scalar_t ), intent( inout ) :: in_phi, out_phi
+        !
+        call errStop( "LUSolve_PreConditioner_CC_SP not implemented" )
+        !
+    end subroutine LUSolve_PreConditioner_CC_SP
+    !
+end module PreConditioner_CC_SP
+

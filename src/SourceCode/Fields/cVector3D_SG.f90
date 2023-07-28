@@ -115,7 +115,7 @@ contains
         self%grid_type = trim( grid_type )
         self%is_allocated = .FALSE.
         !
-        if(self%grid_type == EDGE) then
+        if( self%grid_type == EDGE ) then
             !
             allocate(self%x(self%nx, self%ny + 1, self%nz + 1), STAT = status)
             self%is_allocated = status.EQ.0

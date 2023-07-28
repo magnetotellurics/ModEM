@@ -221,7 +221,7 @@ contains
             adjoint = .FALSE.
             !
             call PT%zeros
-            call self%preconditioner%model_operator%Amult( self%omega, P, PT, adjoint )
+            call self%preconditioner%model_operator%amult( self%omega, P, PT, adjoint )
             EPSIL = Q%dotProd( PT )
             !
             if( EPSIL .EQ. C_ZERO ) then

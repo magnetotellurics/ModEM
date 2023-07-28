@@ -52,6 +52,8 @@ module ModelOperator_SP
             procedure :: create => create_ModelOperator_SP 
             procedure :: dealloc => deallocate_ModelOperator_SP
             !
+            procedure, public :: updateOmegaMuSig
+            !
             !> Miscellaneous
             procedure, public :: print => print_ModelOperator_SP
             !
@@ -148,43 +150,32 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setCond_ModelOperator_SP( self, sigma, omega )
+    subroutine setCond_ModelOperator_SP( self, sigma, omega_in )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( inout ) :: sigma
-        real( kind=prec ), intent( in ), optional :: omega
+        real( kind=prec ), intent( in ), optional :: omega_in
         !
         integer :: i
         class( Scalar_t ), allocatable :: temp_cell_cond
         class( Vector_t ), allocatable :: sig_temp
         complex( kind=prec ), allocatable, dimension(:) :: v_edge_sv, sig_temp_sv
+        real( kind=prec ) :: omega
         !
-		if( present( omega ) ) then
-			write(*,*) "setCond_ModelOperator_SP :", omega
-		else
-			write(*,*) "setCond_ModelOperator_SP (no omega )"
-		endif
-        !
-        if( present( omega ) ) then
-            self%omega = omega
+        if( present( omega_in ) ) then
+            write(*,*) "setCond_ModelOperator_SP :", omega_in
+            !
+            omega = omega_in
         else
-            self%omega = 1.0
+            write(*,*) "setCond_ModelOperator_SP (no omega, using 1.0)"
+            !
+            omega = 1.0
         endif
         !
-        !> Sigma
-        call self%metric%createVector( real_t, EDGE, sig_temp )
+        call self%updateOmegaMuSig( omega, sigma )
         !
-        call sigma%PDEmapping( sig_temp )
-        !
-        sig_temp_sv = sig_temp%getSV()
-        !
-        !> vEdge
-        v_edge_sv = self%metric%v_edge%getSV()
-        !
-        self%VomegaMuSig = MU_0 * self%omega * sig_temp_sv( self%EDGEi ) * v_edge_sv( self%EDGEi )
-        !
-        !call self%divCorSetUp
+        call self%divCorSetUp
         !
     end subroutine setCond_ModelOperator_SP
     !
@@ -489,18 +480,57 @@ contains
         endif
         !
         out_e_v = out_e%getSV()
-		out_e_v = C_ZERO
-		out_e_v_int = out_e_v( out_e%ind_interior )
+        out_e_v_int = out_e_v( out_e%ind_interior )
         !
         write(*,*) "grad_ModelOperator_SP: ", G%nCol, size( in_phi%getSV() ), size( out_e_v_int )
         !
         call RMATxCVEC( G, in_phi%getSV(), out_e_v_int )
         !
-		out_e_v( out_e%ind_interior ) = out_e_v_int
-		!
+        out_e_v( out_e%ind_interior ) = out_e_v_int
+        !
         call out_e%setSV( out_e_v )
         !
     end subroutine grad_ModelOperator_SP
+    !
+    !
+    !
+    subroutine updateOmegaMuSig( self, omega, model )
+        implicit none
+        !
+        class( ModelOperator_SP_t ), intent( inout ) :: self
+        real( kind=prec ), intent( in ) :: omega
+        class( ModelParameter_t ), intent( inout ), optional :: model
+        !
+        class( Vector_t ), allocatable:: sig_temp
+        complex( kind=prec ), allocatable, dimension(:) :: sig_vec_v, v_edge_sv
+
+        if( present( model ) ) then
+            !
+            call self%metric%createVector( real_t, EDGE, sig_temp )
+            !
+            call model%PDEmapping( sig_temp )
+            !
+            sig_vec_v = sig_temp%getSV()
+            !
+            deallocate( sig_temp )
+            !
+            v_edge_sv = self%metric%v_edge%getSV()
+            !
+            self%VomegaMuSig = MU_0 * omega * sig_vec_v( self%EDGEi ) * v_edge_sv( self%EDGEi )
+            !
+        else
+            !
+            if( omega .GT. 0 ) then
+                self%VomegaMuSig = self%VomegaMuSig / omega
+            endif
+            !
+            self%VomegaMuSig = self%VomegaMuSig * omega
+            !
+        endif
+        !
+        self%omega = omega
+        !
+    end subroutine updateOmegaMuSig
     !
     !> No subroutine briefing
     !
