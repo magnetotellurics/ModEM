@@ -79,7 +79,7 @@ contains
         type( spMatCSR_Cmplx ) :: Axx
         type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
         !
-        write( *, * ) "setPreConditioner_CC_SP"
+        !write( *, * ) "setPreConditioner_CC_SP"
         !
         ! find indexes of x, y, z elements
         !
@@ -213,23 +213,32 @@ contains
         if( .NOT. out_e%is_allocated ) then
             call errStop( "LTSolvePreConditioner_CC_SP > out_e not allocated" )
         endif
-		!
-		write(*,*) "LTSolvePreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
-		!
-        in_e_v = in_e%getSV()
         !
-        out_e_v = out_e%getSV()
+        !write(*,*) "LTSolvePreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
+        !
+        in_e_v = in_e%getArray()
+        !
+        if( .NOT. adjoint ) then
+            !
+            !>     for adjoint to the division by volume elements last
+            !call out_e%div( self%model_operator%metric%v_edge )
+            !
+        endif
+        !
+        out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%ind_interior )
         !
         if( adjoint ) then
             !
-            write(*,*) "CC UTsolve_Cmplx: ", self%LH%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
+            !write(*,*) "CC UTsolve_Cmplx: ", self%LH%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
             !
             call UTsolve_Cmplx( self%LH, in_e_v( in_e%ind_interior ), out_e_v_int )
             !
         else
             !
-            write(*,*) "CC LTsolve_Cmplx: ", self%L%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
+            out_e_v_int = C_ZERO
+            !
+            !write(*,*) "CC LTsolve_Cmplx: ", self%L%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
             !
             call LTsolve_Cmplx( self%L, in_e_v( in_e%ind_interior ), out_e_v_int )
             !
@@ -237,7 +246,14 @@ contains
         !
         out_e_v( out_e%ind_interior ) = out_e_v_int
         !
-        call out_e%setSV( out_e_v )
+        call out_e%setArray( out_e_v )
+        !
+        if( adjoint ) then
+            !
+            !>     for adjoint to the division by volume elements last
+            !call out_e%div( self%model_operator%metric%v_edge )
+            !
+        endif
         !
     end subroutine LTSolvePreConditioner_CC_SP
     !
@@ -254,9 +270,9 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
         complex( kind=prec ), allocatable, dimension(:) :: out_e_v_int
-		!
-		write(*,*) "UTSolvePreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
-		!
+        !
+        !write(*,*) "UTSolvePreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
+        !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "UTSolvePreConditioner_CC_SP > in_e not allocated yet" )
         endif
@@ -265,15 +281,15 @@ contains
             call errStop( "UTSolvePreConditioner_CC_SP > out_e not allocated" )
         endif
         !
-        in_e_v = in_e%getSV()
+        in_e_v = in_e%getArray()
         !
-        out_e_v = out_e%getSV()
+        out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%ind_interior )
         !
         if( adjoint ) then
             !
-			out_e_v_int = C_ZERO
-			!
+            out_e_v_int = C_ZERO
+            !
             call LTsolve_Cmplx( self%UH, in_e_v( in_e%ind_interior ), out_e_v_int )
             !
         else
@@ -284,7 +300,7 @@ contains
         !
         out_e_v( out_e%ind_interior ) = out_e_v_int
         !
-        call out_e%setSV( out_e_v )
+        call out_e%setArray( out_e_v )
         !
     end subroutine UTSolvePreConditioner_CC_SP
     !

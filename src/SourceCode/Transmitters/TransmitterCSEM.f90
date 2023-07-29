@@ -115,14 +115,14 @@ contains
         class( TransmitterCSEM_t ), intent( inout ) :: self
         !
         if( .NOT. allocated( self%source ) ) then
-            stop "Error: solveTransmitterCSEM > source not allocated!"
+            call errStop( "solveTransmitterCSEM > source not allocated!" )
         endif
         !
         !> First allocate e_sol_0, e_sol_1 or e_sens, according to the Source case
         if( self%source%calc_sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
-            allocate( cVector3D_SG_t :: self%e_sens(1) )
+            allocate( self%e_sens(1) )
             !
         else
             !
@@ -130,12 +130,12 @@ contains
             if( self%i_sol == 0 ) then
                 !
                 if( allocated( self%e_sol_0 ) ) deallocate( self%e_sol_0 )
-                allocate( cVector3D_SG_t :: self%e_sol_0(1) )
+                allocate( self%e_sol_0(1) )
                 !
             else
                 !
                 if( allocated( self%e_sol_1 ) ) deallocate( self%e_sol_1 )
-                allocate( cVector3D_SG_t :: self%e_sol_1(1) )
+                allocate( self%e_sol_1(1) )
                 !
             endif
             !
@@ -147,10 +147,10 @@ contains
             !
             write( *, "( a43, es10.2)" ) "- Solving CSEM e_sens for period=", self%period
             !
-            call self%forward_solver%createESolution( 1, self%source, self%e_sens(1) )
+            call self%forward_solver%createESolution( 1, self%source, self%e_sens(1)%v )
             !
             !> TALK WITH GARY AND NASER
-            call self%e_sens(1)%mult( C_MinusONE )
+            call self%e_sens(1)%v%mult( C_MinusONE )
             !
         else
             !
@@ -158,17 +158,17 @@ contains
                 !
                 write( *, "( a44, es10.2)" ) "- Solving CSEM e_sol_0 for period=", self%period
                 !
-                call self%forward_solver%createESolution( 1, self%source, self%e_sol_0(1) )
+                call self%forward_solver%createESolution( 1, self%source, self%e_sol_0(1)%v )
                 !
-                call self%e_sol_0(1)%add( E_p )
+                call self%e_sol_0(1)%v%add( E_p )
                 !
             else
                 !
                 write( *, "( a44, es10.2)" ) "- Solving CSEM e_sol_1 for period=", self%period
                 !
-                call self%forward_solver%createESolution( 1, self%source, self%e_sol_1(1) )
+                call self%forward_solver%createESolution( 1, self%source, self%e_sol_1(1)%v )
                 !
-                call self%e_sol_1(1)%add( E_p )
+                call self%e_sol_1(1)%v%add( E_p )
                 !
             endif
             !

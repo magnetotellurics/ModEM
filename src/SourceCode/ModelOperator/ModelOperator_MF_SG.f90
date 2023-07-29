@@ -32,7 +32,6 @@ module ModelOperator_MF_SG
             procedure, public :: setEquations => setEquations_ModelOperator_MF_SG
             procedure, public :: setCond => setCond_ModelOperator_MF_SG
             !
-            !procedure, public :: divCorInit => divCorInit_ModelOperator_MF_SG
             procedure, public :: divCorSetUp => divCorSetUp_ModelOperator_MF_SG
             !
             !> Operations
@@ -101,8 +100,6 @@ contains
         class( ModelOperator_MF_SG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz 
-        !
-        write(*,*) "setEquations_ModelOperator_MF_SG"
         !
         do iy = 2, self%metric%grid%ny
             self%xXY(iy, 2) = -1.0 / (self%metric%grid%del_y(iy) * self%metric%grid%dy(iy))
@@ -200,7 +197,7 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( inout ) :: sigma
+        class( ModelParameter_t ), intent( in ) :: sigma
         real( kind=prec ), intent( in ), optional :: omega_in
         !
         if( present( omega_in ) ) then
@@ -222,8 +219,6 @@ contains
         class( ModelOperator_MF_SG_t ), intent(inout) :: self
         !
         integer :: ix, iy, iz
-        !
-        write( *, * ) "divCorSetUp_ModelOperator_MF_SG"
         !
         do iz = 2, self%metric%grid%nz
             do iy = 2, self%metric%grid%ny
@@ -312,15 +307,13 @@ contains
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
-        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( in ) :: in_e
         class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ), optional :: p_adjoint
         !
         integer :: ix, iy, iz
         complex( kind=prec ) :: cvalue
         logical :: adjoint
-        !
-        write(*,*) "amult_ModelOperator_MF_SG: ", in_e%length(), out_e%length(), p_adjoint
         !
         if( present( p_adjoint ) ) then
             adjoint = p_adjoint
@@ -417,12 +410,10 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( in ) :: in_e
         class( Vector_t ), intent( inout ) :: out_e
         !
         real( kind=prec ) :: omega
-        !
-        write(*,*) "multAib_ModelOperator_MF_SG: ", in_e%length(), out_e%length()
         !
         if(.NOT. out_e%is_allocated) then
             call errStop( "multAib_ModelOperator_MF_SG > out_e not allocated" )
@@ -440,12 +431,10 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( in ) :: in_e
         class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
-        !
-        write(*,*) "div_ModelOperator_MF_SG: ", in_e%length(), out_phi%length()
         !
         select type( out_phi )
             !
@@ -492,12 +481,10 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( in ) :: in_e
         class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
-        !
-        write(*,*) "divC_ModelOperator_MF_SG: ", in_e%length(), out_phi%length()
         !
         select type( out_phi )
             !
@@ -574,11 +561,10 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi, out_phi
+        class( Scalar_t ), intent( in ) :: in_phi
+        class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
-        !
-        write(*,*) "divCGrad_ModelOperator_MF_SG: ", in_phi%length(), out_phi%length()
         !
         select type( out_phi )
             !
@@ -629,12 +615,10 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi
+        class( Scalar_t ), intent( in ) :: in_phi
         class( Vector_t ), intent( inout ) :: out_e
         !
         integer :: ix, iy, iz
-        !
-        write(*,*) "grad_ModelOperator_MF_SG: ", in_phi%length(), out_e%length()
         !
         select type( out_e )
             !

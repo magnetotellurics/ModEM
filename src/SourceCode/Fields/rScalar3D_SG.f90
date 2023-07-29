@@ -727,18 +727,22 @@ contains
     function dotProd_rScalar3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
-        class( rScalar3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( rScalar3D_SG_t ), intent( in ) :: self
+        class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
+        !
+        type( rScalar3D_SG_t ) :: copy
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "dotProd_rScalar3D_SG > self not allocated." )
         endif
         !
-        if( self%isCompatible( rhs ) ) then
+        copy = self
+        !
+        if( copy%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
+            call copy%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -746,11 +750,11 @@ contains
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        cvalue = cmplx( sum( self%v * rhs%v ), 0.0, kind=prec )
+                        cvalue = cmplx( sum( copy%v * rhs%v ), 0.0, kind=prec )
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        cvalue = cmplx( sum( self%s_v * rhs%s_v ), 0.0, kind=prec )
+                        cvalue = cmplx( sum( copy%s_v * rhs%s_v ), 0.0, kind=prec )
                         !
                     else
                         call errStop( "dotProd_rScalar3D_SG > Unknown rhs store_state!" )
@@ -841,7 +845,7 @@ contains
     function getV_rScalar3D_SG( self ) result( v )
         implicit none
         !
-        class( rScalar3D_SG_t ), intent( inout ) :: self
+        class( rScalar3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: v(:, :, :)
         !
@@ -849,9 +853,13 @@ contains
             call errStop( "getV_rScalar3D_SG > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
-        !
-        v = cmplx( self%v, 0.0, kind=prec )
+        if( .NOT. allocated( self%v ) ) then
+            call errStop( "getV_rScalar3D_SG > self%v not allocated." )
+        else
+            !
+            v = cmplx( self%v, 0.0, kind=prec )
+            !
+        endif
         !
     end function getV_rScalar3D_SG
     !
@@ -867,7 +875,11 @@ contains
             call errStop( "setV_rScalar3D_SG > self not allocated." )
         endif
         !
-        self%store_state = compound
+        if( .NOT. allocated( v ) ) then
+            call errStop( "setV_rScalar3D_SG > v not allocated." )
+        endif
+        !
+        call self%switchStoreState( compound )
         !
         if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
@@ -880,7 +892,7 @@ contains
     function getSV_rScalar3D_SG( self ) result( s_v )
         implicit none
         !
-        class( rScalar3D_SG_t ), intent( inout ) :: self
+        class( rScalar3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: s_v(:)
         !
@@ -888,9 +900,13 @@ contains
             call errStop( "getSV_rScalar3D_SG > self not allocated." )
         endif
         !
-        call self%switchStoreState( singleton )
-        !
-        s_v = cmplx( self%s_v, 0.0, kind=prec )
+        if( .NOT. allocated( self%s_v ) ) then
+            call errStop( "getSV_rScalar3D_SG > self%s_v not allocated." )
+        else
+            !
+            s_v = cmplx( self%s_v, 0.0, kind=prec )
+            !
+        endif
         !
     end function getSV_rScalar3D_SG
     !
@@ -906,7 +922,11 @@ contains
             call errStop( "setSV_rScalar3D_SG > self not allocated." )
         endif
         !
-        self%store_state = singleton
+        if( .NOT. allocated( s_v ) ) then
+            call errStop( "setSV_rScalar3D_SG > s_v not allocated." )
+        endif
+        !
+        call self%switchStoreState( singleton )
         !
         if( allocated( self%v ) ) deallocate( self%v )
         !
@@ -955,9 +975,13 @@ contains
         !
         if( self%store_state .EQ. compound ) then
             !
+            if( allocated( self%s_v ) ) deallocate( self%s_v )
+            !
             self%v = reshape( real( array, kind=prec ), (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
             !
         elseif( self%store_state .EQ. singleton ) then
+            !
+            if( allocated( self%v ) ) deallocate( self%v )
             !
             self%s_v = array
             !

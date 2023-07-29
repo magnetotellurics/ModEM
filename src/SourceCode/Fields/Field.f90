@@ -71,8 +71,6 @@ module Field
             procedure( interface_set_array_field ), deferred, public :: setArray
             !
             !> Miscellaneous
-            procedure( interface_switch_store_state_field ), deferred, public :: switchStoreState
-            !
             procedure( interface_copy_from_field ), deferred, public :: copyFrom
             generic :: assignment(=) => copyFrom
             !
@@ -84,6 +82,9 @@ module Field
             !> Field procedures
             procedure, public :: baseInit => initializeField
             procedure, public :: baseDealloc => deallocateField
+            !
+            procedure, public :: switchStoreState => switchStoreState_Field
+            !
             procedure, public :: isCompatible => isCompatibleField
             !
             procedure, public :: setIndexArrays => setIndexArraysField
@@ -149,7 +150,7 @@ module Field
         function interface_get_sv_field( self ) result( s_v )
             import :: Field_t, prec
             !
-            class( Field_t ), intent( inout ) :: self
+            class( Field_t ), intent( in ) :: self
             !
             complex( kind=prec ), allocatable :: s_v(:)
             !
@@ -268,17 +269,10 @@ module Field
         !> No interface function briefing
         function interface_dot_product_field( self, rhs ) result( cvalue )
             import :: Field_t, prec
-            class( Field_t ), intent( inout ) :: self
-            class( Field_t ), intent( inout ) :: rhs
+            class( Field_t ), intent( in ) :: self
+            class( Field_t ), intent( in ) :: rhs
             complex( kind=prec ) :: cvalue
         end function interface_dot_product_field
-        !
-        !> No interface subroutine briefing
-        subroutine interface_switch_store_state_field( self, store_state )
-            import :: Field_t
-            class( Field_t ), intent( inout ) :: self
-            integer, intent( in ), optional :: store_state
-        end subroutine interface_switch_store_state_field
         !
         !> No interface subroutine briefing
         subroutine interface_copy_from_field( self, rhs )
@@ -347,6 +341,45 @@ contains
     !
     !> No subroutine briefing
     !
+    subroutine switchStoreState_Field( self, store_state )
+        implicit none
+        !
+        class( Field_t ), intent( inout ) :: self
+        integer, intent( in ) :: store_state
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: field_array
+        !
+        if( self%store_state /= store_state ) then
+            !
+            field_array = self%getArray()
+            !
+            select case( self%store_state )
+                !
+                case( compound )
+                    !
+                    self%store_state = singleton
+                    !
+                case( singleton )
+                    !
+                    self%store_state = compound
+                    !
+                case default
+                    call errStop( "switchStoreState_Field > store_state should be 'singleton' or 'compound'" )
+                !
+            end select
+            !
+            call self%setArray( field_array )
+            !
+        else
+            !
+            aux_counter = aux_counter + 1
+            !
+        endif
+        !
+    end subroutine switchStoreState_Field
+    !
+    !> No subroutine briefing
+    !
     function isCompatibleField( self, rhs ) result( is_compatible )
         implicit none
         !
@@ -387,7 +420,7 @@ contains
         !
         call aux_field%setAllBoundary( C_ONE )
         !
-        c_array = aux_field%getSV()
+        c_array = aux_field%getArray()
         !
         int_size = 0
         bdry_size = 0

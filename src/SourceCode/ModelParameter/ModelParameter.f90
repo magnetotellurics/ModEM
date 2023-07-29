@@ -189,7 +189,7 @@ module ModelParameter
         !> No interface subroutine briefing
         subroutine interface_pdemapping_model_parameter( self, e_vec )
             import :: ModelParameter_t, Vector_t
-            class( ModelParameter_t ), intent( inout ) :: self
+            class( ModelParameter_t ), intent( in ) :: self
             class( Vector_t ), intent( inout ) :: e_vec
         end subroutine interface_pdemapping_model_parameter
         !

@@ -1446,8 +1446,8 @@ contains
     function dotProd_rVector3D_MR( self, rhs ) result( cvalue )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( rVector3D_MR_t ), intent( in ) :: self
+        class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
@@ -1571,7 +1571,7 @@ contains
     subroutine getReal_rVector3D_MR( self, r_vector )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( rVector3D_MR_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
         allocate( r_vector, source = rVector3D_MR_t( self%grid, self%grid_type ) )
@@ -1585,7 +1585,7 @@ contains
     function getX_rVector3D_MR( self ) result( x )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( rVector3D_MR_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: x(:, :, :)
         !
@@ -1610,7 +1610,7 @@ contains
     function getY_rVector3D_MR( self ) result( y )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( rVector3D_MR_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: y(:, :, :)
         !
@@ -1635,7 +1635,7 @@ contains
     function getZ_rVector3D_MR( self ) result( z )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( rVector3D_MR_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: z(:, :, :)
         !
@@ -1660,7 +1660,7 @@ contains
     function getSV_rVector3D_MR( self ) result( s_v )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( rVector3D_MR_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: s_v(:)
         !

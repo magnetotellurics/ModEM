@@ -155,7 +155,7 @@ contains
                     !> NECESSARY FOR FULL VECTOR LROWS ????
                     call lrows%conjugate
                     !
-                    lrows_x_esens = lrows_x_esens + Tx%e_sens( i_pol )%dotProd( lrows )
+                    lrows_x_esens = lrows_x_esens + Tx%e_sens( i_pol )%v%dotProd( lrows )
                     !
                     deallocate( lrows )
                     !

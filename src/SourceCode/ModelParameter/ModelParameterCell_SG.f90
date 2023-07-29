@@ -528,7 +528,7 @@ contains
     subroutine PDEmapping_ModelParameterCell_SG( self, e_vec )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( inout ) :: e_vec
         !
         type( GenScalar_t ), allocatable, dimension(:) :: sigma_cells

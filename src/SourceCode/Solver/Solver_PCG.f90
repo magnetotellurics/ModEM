@@ -77,7 +77,8 @@ contains
         implicit none
         !
         class( Solver_PCG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: b, x
+        class( Scalar_t ), intent( in ) :: b
+        class( Scalar_t ), intent( inout ) :: x
         !
         !>    these will have to be created in a way to match
         !>     the specific type of the input Scalar_t ...
@@ -85,7 +86,6 @@ contains
         class ( Scalar_t ), allocatable :: r, s, p, q
         complex( kind=prec ) :: beta, alpha, delta, deltaOld
         complex( kind=prec ) :: bnorm, rnorm
-        integer :: iter
         !
         if( .NOT. x%is_allocated ) then
             call errStop( "solvePCG > x not allocated yet" )
@@ -115,16 +115,16 @@ contains
         bnorm = SQRT( b%dotProd(b) )
         rnorm = SQRT( r%dotProd(r) )
         !
-        iter = 1
+        self%iter = 1
         !
-        self%relErr( iter ) = rnorm / bnorm
+        self%relErr( self%iter ) = rnorm / bnorm
         !
-        loop: do while ( ( self%relErr( iter ) .GT. self%tolerance ).AND.( iter .LT. self%max_iters ) )
+        loop: do while ( ( self%relErr( self%iter ) .GT. self%tolerance ).AND.( self%iter .LT. self%max_iters ) )
             !
             call self%preconditioner%LUsolve( r, s )
             !
             delta = r%dotProd(s)
-            if( iter .EQ. 1 ) then
+            if( self%iter .EQ. 1 ) then
                 beta = C_ZERO
             else
                 beta = delta / deltaOld
@@ -145,18 +145,18 @@ contains
             !
             rnorm = SQRT( r%dotProd(r) )
             !
-            write( *, "( a46, i6, a3, es12.3 )" ) "PCG iter, self%relErr( iter ):", iter, " : ", self%relErr( iter )
+            !write( *, "( a46, i6, a3, es12.3 )" ) "PCG self%iter, self%relErr( self%iter ):", self%iter, " : ", self%relErr( self%iter )
             !
-            iter = iter + 1
+            self%iter = self%iter + 1
             !
-            self%relErr( iter ) = rnorm / bnorm
+            self%relErr( self%iter ) = rnorm / bnorm
             !
         enddo loop
         !
-        if( iter .LT. self%max_iters ) then
-            write( *, "( a46, i6, a3, es12.3 )" ) "->divCor PCG converged within ", iter, " : ", self%relErr( iter )
+        if( self%iter .LT. self%max_iters ) then
+            write( *, "( a46, i6, a7, es12.3 )" ) "->divCor PCG converged within ", self%iter, ": err= ", self%relErr( self%iter )
         else
-            write( *, "( a46, i6, a3, es12.3 )" ) "->divCor PCG not converged in ", self%max_iters, " : ", self%relErr( self%max_iters )
+            write( *, "( a46, i6, a7, es12.3 )" ) "->divCor PCG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
         endif
         !
         deallocate( r )
@@ -164,7 +164,7 @@ contains
         deallocate( p )
         deallocate( q )
         !
-        self%n_iter = iter
+        self%n_iter = self%iter
         !
     end subroutine solvePCG !> PCG
     !

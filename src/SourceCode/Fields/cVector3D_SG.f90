@@ -3,7 +3,6 @@
 !
 module cVector3D_SG
     !
-    use Vector
     use rVector3D_SG
     !
     type, extends( Vector_t ) :: cVector3D_SG_t
@@ -978,7 +977,7 @@ contains
                         self%s_v = self%s_v + rhs%s_v
                         !
                     else
-                        call errStop( "add_cVector3D_SG > Unknown rVector3D_SG_t rhs store_state!" )
+                        call errStop( "add_cVector3D_SG > Unknown cVector3D_SG_t rhs store_state!" )
                     endif
                     !
                 class is( cScalar3D_SG_t )
@@ -1143,7 +1142,7 @@ contains
                         self%s_v = self%s_v - rhs%s_v
                         !
                     else
-                        call errStop( "subField_cVector3D_SG > Unknown rVector3D_SG_t rhs store_state!" )
+                        call errStop( "subField_cVector3D_SG > Unknown cVector3D_SG_t rhs store_state!" )
                     endif
                     !
                 class is( cScalar3D_SG_t )
@@ -1284,7 +1283,7 @@ contains
                         self%s_v = self%s_v * rhs%s_v
                         !
                     else
-                        call errStop( "multByField_cVector3D_SG > Unknown rVector3D_SG_t rhs store_state!" )
+                        call errStop( "multByField_cVector3D_SG > Unknown cVector3D_SG_t rhs store_state!" )
                     endif
                     !
                 class is( rScalar3D_SG_t )
@@ -1387,7 +1386,7 @@ contains
                                 diag_mult%s_v = self%s_v * rhs%s_v
                                 !
                             else
-                                call errStop( "diagMult_cVector3D_SG > Unknown rVector3D_SG_t rhs store_state!" )
+                                call errStop( "diagMult_cVector3D_SG > Unknown cVector3D_SG_t rhs store_state!" )
                             endif
                             !
                         class default
@@ -1455,20 +1454,24 @@ contains
     function dotProd_cVector3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( cVector3D_SG_t ), intent( in ) :: self
+        class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
-        cvalue = C_ZERO
+        type( cVector3D_SG_t ) :: copy
         !
         if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
             call errStop( "dotProd_cVector3D_SG > Input vectors not allocated." )
         endif
         !
-        if( self%isCompatible( rhs ) ) then
+        cvalue = C_ZERO
+        !
+        copy = self
+        !
+        if( copy%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
+            call copy%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1476,13 +1479,13 @@ contains
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        cvalue = cvalue + sum( conjg( self%x ) * rhs%x )
-                        cvalue = cvalue + sum( conjg( self%y ) * rhs%y )
-                        cvalue = cvalue + sum( conjg( self%z ) * rhs%z )
+                        cvalue = cvalue + sum( conjg( copy%x ) * rhs%x )
+                        cvalue = cvalue + sum( conjg( copy%y ) * rhs%y )
+                        cvalue = cvalue + sum( conjg( copy%z ) * rhs%z )
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        cvalue = cvalue + sum( conjg( self%s_v ) * rhs%s_v )
+                        cvalue = cvalue + sum( conjg( copy%s_v ) * rhs%s_v )
                         !
                     else
                         call errStop( "dotProd_cVector3D_SG > Unknown rhs store_state!" )
@@ -1574,7 +1577,7 @@ contains
                         self%s_v = self%s_v / rhs%s_v
                         !
                     else
-                        call errStop( "divByField_cVector3D_SG > Unknown rVector3D_SG_t rhs store_state!" )
+                        call errStop( "divByField_cVector3D_SG > Unknown cVector3D_SG_t rhs store_state!" )
                     endif
                     !
                 class is( rScalar3D_SG_t )
@@ -1869,49 +1872,39 @@ contains
     subroutine getReal_cVector3D_SG( self, r_vector )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( cVector3D_SG_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
-        if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "getReal_cVector3D_SG > Self not allocated." )
-        endif
+        allocate( r_vector, source = self )
         !
-        call self%switchStoreState( compound )
-        !
-        allocate( r_vector, source = rVector3D_SG_t( self%grid, self%grid_type ) )
-        !
-        select type( r_vector )
-            !
-            class is( rVector3D_SG_t )
-                !
-                r_vector%x = real( self%x, kind=prec )
-                r_vector%y = real( self%y, kind=prec )
-                r_vector%z = real( self%z, kind=prec )
-                !
-            class default
-                !
-                call errStop( "getReal_cVector3D_SG > Undefined r_vector" )
-                !
-        end select
+        call r_vector%copyFrom( self )
         !
     end subroutine getReal_cVector3D_SG
     !
-    !> No interface function briefing
+    !> No function briefing
     !
     function getX_cVector3D_SG( self ) result( x )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( cVector3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: x(:, :, :)
         !
-        call self%switchStoreState( compound )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getX_cVector3D_SG > self not allocated." )
+        endif
         !
-        x = self%x
+        if( .NOT. allocated( self%x ) ) then
+            call errStop( "getX_cVector3D_SG > self%x not allocated." )
+        else
+            !
+            x = self%x
+            !
+        endif
         !
     end function getX_cVector3D_SG
     !
-    !> No interface subroutine briefing
+    !> No subroutine briefing
     !
     subroutine setX_cVector3D_SG( self, x )
         implicit none
@@ -1919,7 +1912,15 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), allocatable, intent( in ) :: x(:, :, :)
         !
-        self%store_state = compound
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setX_cVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( x ) ) then
+            call errStop( "setX_cVector3D_SG > x not allocated." )
+        endif
+        !
+        call self%switchStoreState( compound )
         !
         if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
@@ -1927,22 +1928,30 @@ contains
         !
     end subroutine setX_cVector3D_SG
     !
-    !> No interface function briefing
+    !> No function briefing
     !
     function getY_cVector3D_SG( self ) result( y )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( cVector3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: y(:, :, :)
         !
-        call self%switchStoreState( compound )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getY_cVector3D_SG > self not allocated." )
+        endif
         !
-        y = self%y
+        if( .NOT. allocated( self%y ) ) then
+            call errStop( "getY_cVector3D_SG > self%y not allocated." )
+        else
+            !
+            y = self%y
+            !
+        endif
         !
     end function getY_cVector3D_SG
     !
-    !> No interface subroutine briefing
+    !> No subroutine briefing
     !
     subroutine setY_cVector3D_SG( self, y )
         implicit none
@@ -1950,7 +1959,15 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), allocatable, intent( in ) :: y(:, :, :)
         !
-        self%store_state = compound
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setY_cVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( y ) ) then
+            call errStop( "setY_cVector3D_SG > y not allocated." )
+        endif
+        !
+        call self%switchStoreState( compound )
         !
         if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
@@ -1958,22 +1975,30 @@ contains
         !
     end subroutine setY_cVector3D_SG
     !
-    !> No interface function briefing
+    !> No function briefing
     !
     function getZ_cVector3D_SG( self ) result( z )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( cVector3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: z(:, :, :)
         !
-        call self%switchStoreState( compound )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getZ_cVector3D_SG > self not allocated." )
+        endif
         !
-        z = self%z
+        if( .NOT. allocated( self%z ) ) then
+            call errStop( "getZ_cVector3D_SG > self%z not allocated." )
+        else
+            !
+            z = self%z
+            !
+        endif
         !
     end function getZ_cVector3D_SG
     !
-    !> No interface subroutine briefing
+    !> No subroutine briefing
     !
     subroutine setZ_cVector3D_SG( self, z )
         implicit none
@@ -1981,7 +2006,15 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), allocatable, intent( in ) :: z(:, :, :)
         !
-        self%store_state = compound
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setZ_cVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( z ) ) then
+            call errStop( "setZ_cVector3D_SG > z not allocated." )
+        endif
+        !
+        call self%switchStoreState( compound )
         !
         if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
@@ -1994,13 +2027,21 @@ contains
     function getSV_cVector3D_SG( self ) result( s_v )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( cVector3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: s_v(:)
         !
-        call self%switchStoreState( singleton )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getSV_cVector3D_SG > self not allocated." )
+        endif
         !
-        s_v = self%s_v
+        if( .NOT. allocated( self%s_v ) ) then
+            call errStop( "getSV_cVector3D_SG > self%s_v not allocated." )
+        else
+            !
+            s_v = self%s_v
+            !
+        endif
         !
     end function getSV_cVector3D_SG
     !
@@ -2012,7 +2053,15 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
         !
-        self%store_state = singleton
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setSV_cVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( s_v ) ) then
+            call errStop( "setSV_cVector3D_SG > s_v not allocated." )
+        endif
+        !
+        call self%switchStoreState( singleton )
         !
         if( allocated( self%x ) ) deallocate( self%x )
         if( allocated( self%y ) ) deallocate( self%y )
@@ -2069,6 +2118,8 @@ contains
         !
         if( self%store_state .EQ. compound ) then
             !
+            if( allocated( self%s_v ) ) deallocate( self%s_v )
+            !
             !> Ex
             i1 = 1; i2 = self%Nxyz(1)
             !
@@ -2083,6 +2134,10 @@ contains
             self%z = reshape(array(i1:i2), self%NdZ)
             !
         else if( self%store_state .EQ. singleton ) then
+            !
+            if( allocated( self%x ) ) deallocate( self%x )
+            if( allocated( self%y ) ) deallocate( self%y )
+            if( allocated( self%z ) ) deallocate( self%z )
             !
             self%s_v = array
             !
@@ -2235,7 +2290,7 @@ contains
         character(80) :: fname, isbinary
         !
         if( .NOT. self%is_allocated) then
-            stop "Error: write_cVector3D_SG > Not allocated."
+            call errStop( "write_cVector3D_SG > Not allocated." )
         endif
         !
         call self%switchStoreState( compound )
@@ -2249,14 +2304,10 @@ contains
             !> Check that the file is unformatted if binary, formatted if ascii.
             if((index(isbinary, "yes") > 0.OR.index(isbinary, "YES") > 0) &
                   .AND.   .NOT. binary) then
-                write( *, * ) "Error: write_cVector3D_SG > Unable to write_cVector3D_SG vector to unformatted file. ", &
-                        trim(fname), "."
-                stop
+                call errStop( "write_cVector3D_SG > Unable to write file ["//trim(fname)//"]." )
             else if((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
                   .AND.binary) then
-                write( *, * ) "Error: write_cVector3D_SG > Unable to write_cVector3D_SG vector to formatted file. ", &
-                        trim(fname), "."
-                stop
+                call errStop( "write_cVector3D_SG > Unable to write bin file ["//trim(fname)//"]." )
             endif
             !
             write(funit) self%nx, self%ny, self%nz, self%grid_type
@@ -2265,7 +2316,7 @@ contains
             write(funit) self%z
             !
         else
-            stop "Error: write_cVector3D_SG > unable to open file"
+            call errStop( "write_cVector3D_SG > unable to open file" )
         endif
         !
     end subroutine write_cVector3D_SG

@@ -135,38 +135,31 @@ contains
         type( DataGroup_t ), intent( out ), optional :: data_group
         !
         complex( kind=prec ) :: comega, Ex_res, Ey_res, tempZ
-        class( Vector_t ), pointer :: tx_e_1
+        class( Vector_t ), allocatable :: tx_e_1
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         call transmitter%getSolutionVector( 1, tx_e_1 )
         !
-        select type( tx_e_1 )
+        if( allocated( self%response ) ) deallocate( self%response )
+        allocate( self%response(2) )
+        !
+        Ex_res = self%Lex%dotProd( tx_e_1 )
+        Ey_res = self%Ley%dotProd( tx_e_1 )
+        !
+        deallocate( tx_e_1 )
+        !
+        tempZ = ( ( ( cos( D2R * self%azimuth ) ) * Ex_res ) + &
+                  ( ( sin( D2R * self%azimuth ) ) * Ey_res ) )
+        !
+        self%response(1) = log10( abs( tempZ ) )
+        self%response(2) = atan2( isign * aimag( tempZ ), real( tempZ, kind=prec ) ) * R2D
+        !
+        if( present( data_group ) ) then
             !
-            class is( cVector3D_SG_t )
-                !
-                if( allocated( self%response ) ) deallocate( self%response )
-                allocate( self%response(2) )
-                !
-                Ex_res = self%Lex%dotProd( tx_e_1 )
-                Ey_res = self%Ley%dotProd( tx_e_1 )
-                !
-                tempZ = ( ( ( cos( D2R * self%azimuth ) ) * Ex_res ) + &
-                          ( ( sin( D2R * self%azimuth ) ) * Ey_res ) )
-                !
-                self%response(1) = log10( abs( tempZ ) )
-                self%response(2) = atan2( isign * aimag( tempZ ), real( tempZ, kind=prec ) ) * R2D
-                !
-                if( present( data_group ) ) then
-                    !
-                    call self%savePredictedData( transmitter, data_group )
-                    !
-                endif
-                !
-            class default
-                stop "predictedDataExyAmpliPhase: Unclassified tx_e_1"
+            call self%savePredictedData( transmitter, data_group )
             !
-        end select
+        endif
         !
     end subroutine predictedDataExyAmpliPhase
     !

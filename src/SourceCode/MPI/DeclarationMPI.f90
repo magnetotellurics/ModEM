@@ -196,7 +196,7 @@ contains
         ! 15 Integers
         call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( max_solver_iters, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( max_divcor_calls, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( max_solver_calls, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( max_divcor_iters, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( model_operator_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( model_method ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
@@ -258,7 +258,7 @@ contains
         ! 15 Integers
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, model_n_air_layer, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_solver_iters, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_divcor_calls, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_solver_calls, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_divcor_iters, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_model_operator_type, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_model_method, 1, MPI_INTEGER, main_comm, ierr )

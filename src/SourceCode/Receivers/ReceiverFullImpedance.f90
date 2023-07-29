@@ -92,13 +92,12 @@ contains
         integer :: i, j, ij
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), EE(:,:)
-        class( Vector_t ), pointer :: tx_e_1, tx_e_2
-        !
-        comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
+        class( Vector_t ), allocatable :: tx_e_1, tx_e_2
         !
         call transmitter%getSolutionVector( 1, tx_e_1 )
-        !
         call transmitter%getSolutionVector( 2, tx_e_2 )
+        !
+        comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         allocate( EE(2,2) )
         EE(1,1) = self%Lex%dotProd( tx_e_1 )
@@ -116,12 +115,11 @@ contains
         BB(1,2) = self%Lbx%dotProd( tx_e_2 )
         BB(2,2) = self%Lby%dotProd( tx_e_2 )
         !
+        deallocate( tx_e_1, tx_e_2 )
+        !
         !write( *, * ) "BB"
         !write( *, * ) BB(1,1), BB(1,2)
         !write( *, * ) BB(2,1), BB(2,2)
-        !
-        deallocate( tx_e_1 )
-        deallocate( tx_e_2 )
         !
         BB = isign * BB * comega
         !

@@ -22,13 +22,16 @@ module ModelOperator
         contains 
             !
             !> Abstract Interfaces
+            !
+            !> Setup
             procedure( interface_set_equations_model_operator ), deferred, public :: setEquations
             procedure( interface_set_cond_model_operator ), deferred, public :: setCond
             !
+            procedure( interface_divcor_setup_model_operator ), deferred, public :: divCorSetUp
+            !
+            !> Operations
             procedure( interface_amult_model_operator ), deferred, public :: amult
             procedure( interface_multaib_model_operator ), deferred, public :: multAib
-            !
-            procedure( interface_divcor_setup_model_operator ), deferred, public :: divCorSetUp
             !
             procedure( interface_div_model_operator ), deferred, public :: div
             procedure( interface_divc_model_operator ), deferred, public :: divC
@@ -36,6 +39,7 @@ module ModelOperator
             !
             procedure( interface_grad_model_operator ), deferred, public :: grad
             !
+            !> Miscellaneous
             procedure( interface_print_model_operator ), deferred, public :: print
             !
             !> Base procedures
@@ -54,6 +58,7 @@ module ModelOperator
             import :: ModelOperator_t
             !
             class( ModelOperator_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_equations_model_operator
         !
         !> No interface subroutine briefing
@@ -62,9 +67,19 @@ module ModelOperator
             import :: ModelOperator_t, ModelParameter_t, prec
             !
             class( ModelOperator_t ), intent( inout ) :: self
-            class( ModelParameter_t ), intent( inout ) :: sigma
+            class( ModelParameter_t ), intent( in ) :: sigma
             real( kind=prec ), intent( in ), optional :: omega_in
+            !
         end subroutine interface_set_cond_model_operator
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_divcor_setup_model_operator( self )
+            import :: ModelOperator_t
+            !
+            class( ModelOperator_t ), intent( inout ) :: self
+            !
+        end subroutine interface_divcor_setup_model_operator
         !
         !> No interface subroutine briefing
         !
@@ -73,9 +88,10 @@ module ModelOperator
             !
             class( ModelOperator_t ), intent( in ) :: self
             real( kind=prec ), intent( in ), optional :: omega
-            class( Vector_t ), intent( inout ) :: in_e
+            class( Vector_t ), intent( in ) :: in_e
             class( Vector_t ), intent( inout ) :: out_e
             logical, intent( in ), optional :: p_adjoint
+            !
         end subroutine interface_amult_model_operator
         !
         !> No interface subroutine briefing
@@ -84,46 +100,10 @@ module ModelOperator
             import :: ModelOperator_t, Vector_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Vector_t ), intent( inout ) :: in_e
+            class( Vector_t ), intent( in ) :: in_e
             class( Vector_t ), intent( inout ) :: out_e
+            !
         end subroutine interface_multaib_model_operator
-        !
-        !> No interface subroutine briefing
-        !
-        subroutine interface_divcor_setup_model_operator( self )
-            import :: ModelOperator_t
-            class( ModelOperator_t ), intent( inout ) :: self
-        end subroutine interface_divcor_setup_model_operator
-        !
-        !> No interface subroutine briefing
-        !
-        subroutine interface_divc_grad_model_operator( self, in_phi, out_phi )
-            import :: ModelOperator_t, Scalar_t
-            !
-            class( ModelOperator_t ), intent( in ) :: self
-            class( Scalar_t ), intent( inout ) :: in_phi
-            class( Scalar_t ), intent( inout ) :: out_phi
-        end subroutine interface_divc_grad_model_operator
-        !
-        !> No interface subroutine briefing
-        !
-        subroutine interface_divc_model_operator( self, in_e, out_phi )
-            import :: ModelOperator_t, Vector_t, Scalar_t
-            !
-            class( ModelOperator_t ), intent( in ) :: self
-            class( Vector_t ), intent( inout ) :: in_e
-            class( Scalar_t ), intent( inout ) :: out_phi
-        end subroutine interface_divc_model_operator
-        !
-        !> No interface subroutine briefing
-        !
-        subroutine interface_grad_model_operator( self, in_phi, out_e )
-            import :: ModelOperator_t, Scalar_t, Vector_t
-            !
-            class( ModelOperator_t ), intent( in ) :: self
-            class( Scalar_t ), intent( inout ) :: in_phi
-            class( Vector_t ), intent( inout ) :: out_e
-        end subroutine interface_grad_model_operator
         !
         !> No interface subroutine briefing
         !
@@ -131,9 +111,43 @@ module ModelOperator
             import :: ModelOperator_t, Vector_t, Scalar_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            class( Vector_t ), intent( inout ) :: in_e
+            class( Vector_t ), intent( in ) :: in_e
             class( Scalar_t ), intent( inout ) :: out_phi
+            !
         end subroutine interface_div_model_operator
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_divc_model_operator( self, in_e, out_phi )
+            import :: ModelOperator_t, Vector_t, Scalar_t
+            !
+            class( ModelOperator_t ), intent( in ) :: self
+            class( Vector_t ), intent( in) :: in_e
+            class( Scalar_t ), intent( inout ) :: out_phi
+            !
+        end subroutine interface_divc_model_operator
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_divc_grad_model_operator( self, in_phi, out_phi )
+            import :: ModelOperator_t, Scalar_t
+            !
+            class( ModelOperator_t ), intent( in ) :: self
+            class( Scalar_t ), intent( in ) :: in_phi
+            class( Scalar_t ), intent( inout ) :: out_phi
+            !
+        end subroutine interface_divc_grad_model_operator
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_grad_model_operator( self, in_phi, out_e )
+            import :: ModelOperator_t, Scalar_t, Vector_t
+            !
+            class( ModelOperator_t ), intent( in ) :: self
+            class( Scalar_t ), intent( in ) :: in_phi
+            class( Vector_t ), intent( inout ) :: out_e
+            !
+        end subroutine interface_grad_model_operator
         !
         !> No interface subroutine briefing
         !
@@ -141,6 +155,7 @@ module ModelOperator
             import :: ModelOperator_t
             !
             class( ModelOperator_t ), intent( in ) :: self
+            !
         end subroutine interface_print_model_operator
         !
     end interface
@@ -177,7 +192,8 @@ contains
         implicit none
         !
         class( ModelOperator_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: in_e, out_e
+        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), allocatable, intent( out ) :: out_e
         !
         integer :: ix, iy, iz
         complex( kind=prec ), allocatable, dimension(:, :, :) :: in_e_x, in_e_y, in_e_z
@@ -187,15 +203,14 @@ contains
             call errStop( "multCurlT_ModelOperator > in_e not allocated" )
         endif
         !
-        if( .NOT. out_e%is_allocated ) then
-            call errStop( "multCurlT_ModelOperator > out_e not allocated" )
-        endif
+        call self%metric%createVector( complex_t, EDGE, out_e )
+        call out_e%zeros
         !
         out_e_x = out_e%getX()
         out_e_y = out_e%getY()
         out_e_z = out_e%getZ()
         !
-        call in_e%div( self%Metric%face_area )
+        call in_e%div( self%metric%face_area )
         !
         in_e_x = in_e%getX()
         in_e_y = in_e%getY()
@@ -233,8 +248,6 @@ contains
         call out_e%setZ( out_e_z )
         !
         call out_e%mult( self%metric%edge_length )
-        !
-        call out_e%switchStoreState( singleton )
         !
     end subroutine multCurlT_ModelOperator
     !

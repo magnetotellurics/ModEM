@@ -69,7 +69,7 @@ contains
         !
         integer :: ix,iy,iz
         !
-        write( *, * ) "setPreConditioner_DC_SP"
+        !write( *, * ) "setPreConditioner_DC_SP"
         !
         self%omega = omega
         !
@@ -125,7 +125,7 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_phi_v
         !
-        write(*,*) "LUSolvePreConditioner_DC_SP: ", in_phi%length(), out_phi%length()
+        !write(*,*) "LUSolvePreConditioner_DC_SP: ", in_phi%length(), out_phi%length()
         !
         if( .NOT. in_phi%is_allocated ) then
             call errStop( "LUSolvePreConditioner_DC_SP > in_phi not allocated yet" )
@@ -135,23 +135,23 @@ contains
             call errStop( "LUSolvePreConditioner_DC_SP > out_phi not allocated yet" )
         endif
         !
-        in_phi_v = in_phi%getSV()
+        in_phi_v = in_phi%getArray()
         !
-        out_phi_v = out_phi%getSV()
+        out_phi_v = out_phi%getArray()
         !
         select type( model_operator => self%model_operator )
             !
             class is( ModelOperator_SP_t )
                 !
-                write(*,*) "LTsolve_Real: ", model_operator%VDsG_L%nCol, size( in_phi_v ), size( self%phi )
+                !write(*,*) "LTsolve_Real: ", model_operator%VDsG_L%nCol, size( in_phi_v ), size( self%phi )
                 !
                 call LTsolve_Real( model_operator%VDsG_L, in_phi_v, self%phi )
                 !
-                write(*,*) "UTsolve_Real: ", model_operator%VDsG_U%nCol, size( self%phi ), size( out_phi_v )
+                !write(*,*) "UTsolve_Real: ", model_operator%VDsG_U%nCol, size( self%phi ), size( out_phi_v )
                 !
                 call UTsolve_Real( model_operator%VDsG_U, self%phi, out_phi_v )
                 !
-                call out_phi%setSV( out_phi_v )
+                call out_phi%setArray( out_phi_v )
                 !
             class default
                 call errStop( "LUSolvePreConditioner_DC_SP > Unclassified ModelOperator" )

@@ -247,9 +247,9 @@ contains
                     call self%Lbz%fromFullVector( temp_full_vec )
                     !
             end select
-            !
+                    !
             deallocate( e_h, temp_full_vec )
-            !
+                    !
         enddo
         !
     end subroutine evaluationFunction_Receiver

@@ -62,6 +62,7 @@ contains
             do i = asize, 1, -(1)
                 deallocate( self%EHxy(i)%str )
             enddo
+            !
             deallocate( self%EHxy )
             !
         endif
@@ -162,44 +163,35 @@ contains
         type( DataGroup_t ), intent( out ), optional :: data_group
         !
         complex( kind=prec ) :: comega
-        class( Vector_t ), pointer :: tx_e_1
+        class( Vector_t ), allocatable :: tx_e_1
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
-		!
-		call transmitter%getSolutionVector( 1, tx_e_1 )
-		!
-        select type( tx_e_1 )
-            !
-            class is( cVector3D_SG_t )
-                !
-                if( allocated( self%response ) ) deallocate( self%response )
-                allocate( self%response(1) )
-                !
-                select case( self%EHxy(1)%str )
-                    case( "Ex" )
-                        self%response(1) = self%Lex%dotProd( tx_e_1 )
-                    case( "Ey" )
-                        self%response(1) = self%Ley%dotProd( tx_e_1 )
-                    case( "Bx" )
-                        self%response(1) = isign * self%Lbx%dotProd( tx_e_1 ) * comega
-                    case( "By" )
-                        self%response(1) = isign * self%Lbx%dotProd( tx_e_1 ) * comega
-                    case( "Bz" )
-                        self%response(1) = isign * self%Lbx%dotProd( tx_e_1 ) * comega
-                end select
-                !
-                if( present( data_group ) ) then
-                    !
-                    call self%savePredictedData( transmitter, data_group )
-                    !
-                endif
-                !
-                deallocate( tx_e_1 )
-                !
-            class default
-                stop "evaluationFunctionRx: Unclassified temp_full_vec_ey"
-            !
+        !
+        call transmitter%getSolutionVector( 1, tx_e_1 )
+        !
+        if( allocated( self%response ) ) deallocate( self%response )
+        allocate( self%response(1) )
+        !
+        select case( self%EHxy(1)%str )
+            case( "Ex" )
+                self%response(1) = self%Lex%dotProd( tx_e_1 )
+            case( "Ey" )
+                self%response(1) = self%Ley%dotProd( tx_e_1 )
+            case( "Bx" )
+                self%response(1) = isign * self%Lbx%dotProd( tx_e_1 ) * comega
+            case( "By" )
+                self%response(1) = isign * self%Lbx%dotProd( tx_e_1 ) * comega
+            case( "Bz" )
+                self%response(1) = isign * self%Lbx%dotProd( tx_e_1 ) * comega
         end select
+        !
+        deallocate( tx_e_1 )
+        !
+        if( present( data_group ) ) then
+            !
+            call self%savePredictedData( transmitter, data_group )
+            !
+        endif
         !
     end subroutine predictedDataSingleField
     !

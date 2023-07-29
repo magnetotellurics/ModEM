@@ -3,13 +3,12 @@
 !
 module ForwardSolverIT_DC
     !
-    use ForwardSolver
+    use ForwardSolverIT
     use DivergenceCorrection
-    use Solver_QMR
     !
-    type, extends( ForwardSolver_t ) :: ForwardSolverIT_DC_t
+    type, extends( ForwardSolverIT_t ) :: ForwardSolverIT_DC_t
         !
-        integer :: n_divcor, max_div_cor, max_divcor_iters
+        integer :: n_divcor, max_divcor_iters
         !
         real( kind=prec ) :: tol_div_cor
         !
@@ -69,8 +68,6 @@ contains
         !
         self%n_divcor = 0
         !
-        self%max_div_cor = 0
-        !
         self%max_divcor_iters = 0
         !
         self%tol_div_cor = R_ZERO
@@ -79,7 +76,7 @@ contains
         call self%setIterDefaults
         !
         !> Set max number of all forward solver iterations
-        self%max_iter_total = self%max_div_cor * self%solver%max_iters
+        self%max_iter_total = self%max_solver_calls * self%solver%max_iters
         !
         call self%setIterControl
         !
@@ -108,9 +105,6 @@ contains
         !> Set preconditioner for this solver's preconditioner
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
-        !> Set omega for the divergence_correction´s solver
-        !self%divergence_correction%solver%omega = self%solver%omega
-        !
         !> Set conductivity for the divergence_correction
         call self%divergence_correction%setCond( self%solver%omega )
         !
@@ -126,9 +120,9 @@ contains
         !
         self%tolerance = self%solver%tolerance
         !
-        self%max_div_cor = self%max_iter_total / self%solver%max_iters
+        self%max_solver_calls = self%max_iter_total / self%solver%max_iters
         !
-        self%max_iter_total = self%solver%max_iters * self%max_div_cor
+        self%max_iter_total = self%solver%max_iters * self%max_solver_calls
         !
     end subroutine setIterControl_ForwardSolverIT_DC
     !
@@ -138,7 +132,7 @@ contains
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
         !
-        self%max_div_cor = max_divcor_calls
+        self%max_solver_calls = max_solver_calls
         self%max_divcor_iters = max_divcor_iters
         self%tol_div_cor = tolerance_divcor
         !
@@ -179,10 +173,10 @@ contains
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
         integer, intent( in ) :: pol
-        class( Source_t ), intent( inout ) :: source
-        class( Vector_t ), intent( inout ) :: e_solution
+        class( Source_t ), intent( in ) :: source
+        class( Vector_t ), allocatable, intent( out ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_vec, temp_e_solution
+        class( Vector_t ), allocatable :: temp_vec
         class( Scalar_t ), allocatable :: phi0
         integer :: iter
         !
@@ -193,15 +187,14 @@ contains
         self%n_divcor = 0
         self%n_iter_actual = 0
         !
-        !> Create temp_e_solution Vector
-        call self%solver%preconditioner%model_operator%metric%createVector( complex_t, EDGE, temp_e_solution )
+        !> Create e_solution Vector
+        call self%solver%preconditioner%model_operator%metric%createVector( complex_t, EDGE, e_solution )
         !
-        call temp_e_solution%zeros
+        call e_solution%zeros
         !
         if( source%non_zero_source ) then
             !
-            call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phi0 )
-            !
+            !> Create phi0
             call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol ), phi0 )
             !
         endif
@@ -211,7 +204,7 @@ contains
             select type( solver => self%solver )
                 !
                 class is( Solver_QMR_t )
-                    call solver%solve( source%rhs( pol ), temp_e_solution )
+                    call solver%solve( source%rhs( pol ), e_solution )
                 class default
                     call errStop( "createESolution_ForwardSolverIT_DC > Unknown solver type." )
                 !
@@ -221,13 +214,9 @@ contains
             !
             self%solver%failed = self%solver%failed .OR. self%failed
             !
-            !write( *, * ) "n_iter_actual+iter,     iter,     solver%relErr(iter)"
-            !
             do iter = 1, self%solver%n_iter
                 !
                 self%relResVec( self%n_iter_actual + iter ) = self%solver%relErr( iter )
-                !
-                !write( *, * ) self%n_iter_actual + iter, iter, self%solver%relErr( iter )
                 !
             enddo
             !
@@ -237,18 +226,18 @@ contains
             !
             if( .NOT. self%solver%converged )  then
                 !
-                if( self%n_divcor < self%max_div_cor ) then
+                if( self%n_divcor < self%max_solver_calls ) then
                     !
                     !> USING THIS TEMPORARY VARIABLE IMPROVES THE EXECUTION TIME CONSIDERABLY...
-                    allocate( temp_vec, source = temp_e_solution )
+                    allocate( temp_vec, source = e_solution )
                     !
                     if( source%non_zero_source ) then
                         !
-                        call self%divergence_correction%divCorr( temp_vec, temp_e_solution, phi0 )
+                        call self%divergence_correction%divCorr( temp_vec, e_solution, phi0 )
                         !
                     else
                         !
-                        call self%divergence_correction%divCorr( temp_vec, temp_e_solution )
+                        call self%divergence_correction%divCorr( temp_vec, e_solution )
                         !
                     endif
                     !
@@ -271,7 +260,7 @@ contains
         !> Just for the serialJMult_T SourceInteriorForce case
         if( source%for_transpose ) then
             !
-            call temp_e_solution%mult( self%solver%preconditioner%model_operator%metric%v_edge )
+            call e_solution%mult( self%solver%preconditioner%model_operator%metric%v_edge )
             !
         endif
         !
@@ -285,13 +274,9 @@ contains
             !
         endif
         !
-        call temp_e_solution%add( temp_vec )
+        call e_solution%add( temp_vec )
         !
         deallocate( temp_vec )
-        !
-        e_solution = temp_e_solution
-        !
-        deallocate( temp_e_solution )
         !
     end subroutine createESolution_ForwardSolverIT_DC
     !
@@ -322,7 +307,7 @@ contains
                 !
                 self%n_divcor = rhs%n_divcor
                 !
-                self%max_div_cor = rhs%max_div_cor
+                self%max_solver_calls = rhs%max_solver_calls
                 !
                 self%max_divcor_iters = rhs%max_divcor_iters
                 !

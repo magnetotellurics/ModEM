@@ -442,7 +442,7 @@ contains
         !
         if( n_dtx == 1 ) then
             deallocate( data_tx_array(1)%data )
-        else
+        elseif( n_dtx .GT. 0 ) then
             do i = n_dtx, 1, -(1)
                 deallocate( data_tx_array(i)%data )
             enddo

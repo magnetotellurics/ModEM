@@ -10,6 +10,9 @@ module Constants
     !> Program Version
     character( len=5 ), parameter :: VERSION = "1.0.1"
     !
+    !>
+    integer :: aux_counter = 0
+    !
     !> TYPE
     integer, parameter :: real_t = 1
     integer, parameter :: complex_t = 2

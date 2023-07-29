@@ -2836,7 +2836,7 @@ contains
                 call temp_vector%setY( y )
                 call temp_vector%setZ( z )
                 !
-                s_v = temp_vector%getSV()
+                s_v = temp_vector%getArray()
                 !
             case( FACE )
                 !
@@ -2862,7 +2862,7 @@ contains
                 call temp_vector%setY( y )
                 call temp_vector%setZ( z )
                 !
-                s_v = temp_vector%getSV()
+                s_v = temp_vector%getArray()
                 !
             case( NODE )
                 !
@@ -2879,7 +2879,7 @@ contains
                 x(:, :, 1) = 1
                 x(:, :, temp_scalar%nz+1) = 1
                 !
-                s_v = temp_scalar%getSV()
+                s_v = temp_scalar%getArray()
                 !
             case default
                 call errStop( "boundaryIndexSP > Invalid grid type ["//grid_type//"]" )

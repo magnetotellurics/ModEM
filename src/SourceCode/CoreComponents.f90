@@ -533,7 +533,7 @@ contains
         !
         ! Solver parameters
         max_solver_iters = 80
-        max_divcor_calls = 20
+        max_solver_calls = 20
         max_divcor_iters = 100
         tolerance_divcor = 1E-5
         tolerance_solver = 1E-7
@@ -659,6 +659,7 @@ contains
         if( allocated( inversion_type ) ) deallocate( inversion_type )
         if( allocated( joint_type ) ) deallocate( joint_type )
         !
+        if( allocated( grid_format ) ) deallocate( grid_format )
         if( allocated( model_operator_type ) ) deallocate( model_operator_type )
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type_mt ) ) deallocate( source_type_mt )
@@ -792,12 +793,12 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A35)" ) "max_solver_iters [80]          : 80"
-            write( ioFwdTmp, "(A35)" ) "max_divcor_calls [20]          : 20"
+            write( ioFwdTmp, "(A35)" ) "max_solver_calls [20]          : 20"
             write( ioFwdTmp, "(A36)" ) "max_divcor_iters [100]         : 100"
             write( ioFwdTmp, "(A37)" ) "tolerance_solver [1E-7]        : 1E-7"
             write( ioFwdTmp, "(A37)" ) "tolerance_divcor [1E-5]        : 1E-5"
-            write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A1)" ) "#"
             !
             close( ioFwdTmp )
@@ -849,6 +850,6 @@ contains
         endif
         !
     end subroutine printInversionControlFileTemplate
-	!
+    !
 end module CoreComponents
 !

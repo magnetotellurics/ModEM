@@ -68,8 +68,8 @@ contains
         !
         class( DivergenceCorrection_t ), intent( in ) :: self
         real( kind=prec ), intent( in ) :: omega
-        class( Vector_t ), intent( inout ) :: source_e
-        class( Scalar_t ), allocatable, intent( inout ) :: phi0
+        class( Vector_t ), intent( in ) :: source_e
+        class( Scalar_t ), allocatable, intent( out ) :: phi0
         !
         complex( kind=prec ) :: i_omega_mu, c_factor
         !
@@ -78,6 +78,8 @@ contains
         endif
         !
         !self%solver%omega = omega
+        !
+        call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phi0 )
         !
         call self%solver%preconditioner%model_operator%Div( source_e, phi0 )
         !
@@ -94,7 +96,8 @@ contains
         implicit none
         !
         class( DivergenceCorrection_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e, out_e
+        class( Vector_t ), intent( in ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         class( Scalar_t ), intent( in ), optional :: phi0
         !
         class( Scalar_t ), allocatable :: phiRHS, phiSol
@@ -113,7 +116,7 @@ contains
         call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phiRHS )
         !
         !> compute divergence of currents for input electric field
-        call self%solver%preconditioner%model_operator%DivC( in_e, phiRHS )
+        call self%solver%preconditioner%model_operator%divC( in_e, phiRHS )
         !
         !>  If source term is present, subtract from divergence of currents
         !>  probably OK to use function here -- but could replace with subroutine
@@ -165,7 +168,7 @@ contains
         !> compute the size of current Divergence after
         self%divJ(2) = sqrt( phiRHS%dotProd( phiRHS ) )
         !
-        !write( *, * ) "                    DivJ: ", self%divJ(1), " => ", self%divJ(2)
+        write( *, * ) "                    DivJ: ", self%divJ(1), " => ", self%divJ(2)
         !
         deallocate( phiRHS )
         !

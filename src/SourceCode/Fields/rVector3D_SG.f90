@@ -1378,20 +1378,24 @@ contains
     function dotProd_rVector3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( rVector3D_SG_t ), intent( in ) :: self
+        class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
-        cvalue = C_ZERO
+        type( rVector3D_SG_t ) :: copy
         !
         if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
             call errStop( "dotProd_rVector3D_SG > Input vectors not allocated." )
         endif
         !
-        if( self%isCompatible( rhs ) ) then
+        cvalue = C_ZERO
+        !
+        copy = self
+        !
+        if( copy%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
+            call copy%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1399,13 +1403,13 @@ contains
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        cvalue = cvalue + sum( self%x * rhs%x )
-                        cvalue = cvalue + sum( self%y * rhs%y )
-                        cvalue = cvalue + sum( self%z * rhs%z )
+                        cvalue = cvalue + sum( copy%x * rhs%x )
+                        cvalue = cvalue + sum( copy%y * rhs%y )
+                        cvalue = cvalue + sum( copy%z * rhs%z )
                         !
                     else if( rhs%store_state .EQ. singleton ) then
                         !
-                        cvalue = cvalue + sum( self%s_v * rhs%s_v )
+                        cvalue = cvalue + sum( copy%s_v * rhs%s_v )
                         !
                     else
                         call errStop( "dotProd_rVector3D_SG > Unknown rhs store_state!" )
@@ -1776,31 +1780,39 @@ contains
     subroutine getReal_rVector3D_SG( self, r_vector )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( inout ) :: self
+        class( rVector3D_SG_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
-        allocate( r_vector, source = rVector3D_SG_t( self%grid, self%grid_type ) )
+        allocate( r_vector, source = self )
         !
         call r_vector%copyFrom( self )
         !
     end subroutine getReal_rVector3D_SG
     !
-    !> No interface function briefing
+    !> No function briefing
     !
     function getX_rVector3D_SG( self ) result( x )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( inout ) :: self
+        class( rVector3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: x(:, :, :)
         !
-        call self%switchStoreState( compound )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getX_rVector3D_SG > self not allocated." )
+        endif
         !
-        x = self%x
+        if( .NOT. allocated( self%x ) ) then
+            call errStop( "getX_rVector3D_SG > self%x not allocated." )
+        else
+            !
+            x = cmplx( self%x, 0.0, kind=prec )
+            !
+        endif
         !
     end function getX_rVector3D_SG
     !
-    !> No interface subroutine briefing
+    !> No subroutine briefing
     !
     subroutine setX_rVector3D_SG( self, x )
         implicit none
@@ -1808,30 +1820,46 @@ contains
         class( rVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), allocatable, intent( in ) :: x(:, :, :)
         !
-        self%store_state = compound
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setX_rVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( x ) ) then
+            call errStop( "setX_rVector3D_SG > x not allocated." )
+        endif
+        !
+        call self%switchStoreState( compound )
         !
         if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
-        self%x = x
+        self%x = real( x, kind=prec )
         !
     end subroutine setX_rVector3D_SG
     !
-    !> No interface function briefing
+    !> No function briefing
     !
     function getY_rVector3D_SG( self ) result( y )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( inout ) :: self
+        class( rVector3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: y(:, :, :)
         !
-        call self%switchStoreState( compound )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getY_rVector3D_SG > self not allocated." )
+        endif
         !
-        y = self%y
+        if( .NOT. allocated( self%y ) ) then
+            call errStop( "getY_rVector3D_SG > self%y not allocated." )
+        else
+            !
+            y = cmplx( self%y, 0.0, kind=prec )
+            !
+        endif
         !
     end function getY_rVector3D_SG
     !
-    !> No interface subroutine briefing
+    !> No subroutine briefing
     !
     subroutine setY_rVector3D_SG( self, y )
         implicit none
@@ -1839,30 +1867,46 @@ contains
         class( rVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), allocatable, intent( in ) :: y(:, :, :)
         !
-        self%store_state = compound
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setY_rVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( y ) ) then
+            call errStop( "setY_rVector3D_SG > y not allocated." )
+        endif
+        !
+        call self%switchStoreState( compound )
         !
         if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
-        self%y = y
+        self%y = real( y, kind=prec )
         !
     end subroutine setY_rVector3D_SG
     !
-    !> No interface function briefing
+    !> No function briefing
     !
     function getZ_rVector3D_SG( self ) result( z )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( inout ) :: self
+        class( rVector3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: z(:, :, :)
         !
-        call self%switchStoreState( compound )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getZ_rVector3D_SG > self not allocated." )
+        endif
         !
-        z = self%z
+        if( .NOT. allocated( self%z ) ) then
+            call errStop( "getZ_rVector3D_SG > self%z not allocated." )
+        else
+            !
+            z = cmplx( self%z, 0.0, kind=prec )
+            !
+        endif
         !
     end function getZ_rVector3D_SG
     !
-    !> No interface subroutine briefing
+    !> No subroutine briefing
     !
     subroutine setZ_rVector3D_SG( self, z )
         implicit none
@@ -1870,11 +1914,19 @@ contains
         class( rVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), allocatable, intent( in ) :: z(:, :, :)
         !
-        self%store_state = compound
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setZ_rVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( z ) ) then
+            call errStop( "setZ_rVector3D_SG > z not allocated." )
+        endif
+        !
+        call self%switchStoreState( compound )
         !
         if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
-        self%z = z
+        self%z = real( z, kind=prec )
         !
     end subroutine setZ_rVector3D_SG
     !
@@ -1883,13 +1935,21 @@ contains
     function getSV_rVector3D_SG( self ) result( s_v )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( inout ) :: self
+        class( rVector3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: s_v(:)
         !
-        call self%switchStoreState( singleton )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getSV_rVector3D_SG > self not allocated." )
+        endif
         !
-        s_v = self%s_v
+        if( .NOT. allocated( self%s_v ) ) then
+            call errStop( "getSV_rVector3D_SG > self%s_v not allocated." )
+        else
+            !
+            s_v = cmplx( self%s_v, 0.0, kind=prec )
+            !
+        endif
         !
     end function getSV_rVector3D_SG
     !
@@ -1901,17 +1961,25 @@ contains
         class( rVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
         !
-        self%store_state = singleton
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setSV_rVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( s_v ) ) then
+            call errStop( "setSV_rVector3D_SG > s_v not allocated." )
+        endif
+        !
+        call self%switchStoreState( singleton )
         !
         if( allocated( self%x ) ) deallocate( self%x )
         if( allocated( self%y ) ) deallocate( self%y )
         if( allocated( self%z ) ) deallocate( self%z )
         !
-        self%s_v = s_v
+        self%s_v = real( s_v, kind=prec )
         !
     end subroutine setSV_rVector3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
     !
     function getArray_rVector3D_SG( self ) result( array )
         implicit none
@@ -1958,6 +2026,8 @@ contains
         !
         if( self%store_state .EQ. compound ) then
             !
+            if( allocated( self%s_v ) ) deallocate( self%s_v )
+            !
             !> Ex
             i1 = 1; i2 = self%Nxyz(1)
             !
@@ -1972,6 +2042,10 @@ contains
             self%z = reshape(array(i1:i2), self%NdZ)
             !
         else if( self%store_state .EQ. singleton ) then
+            !
+            if( allocated( self%x ) ) deallocate( self%x )
+            if( allocated( self%y ) ) deallocate( self%y )
+            if( allocated( self%z ) ) deallocate( self%z )
             !
             self%s_v = array
             !

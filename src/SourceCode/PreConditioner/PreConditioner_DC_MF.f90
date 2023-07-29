@@ -59,7 +59,7 @@ contains
         integer :: ix,iy,iz
         complex( kind=prec ), allocatable, dimension(:, :, :) :: d_v, c_v
         !
-        write( *, * ) "setPreConditioner_DC_MF"
+        !write( *, * ) "setPreConditioner_DC_MF"
         !
         d_v = self%d%getV()
         !
@@ -140,9 +140,9 @@ contains
         !
         integer :: ix, iy, iz
         complex( kind=prec ), allocatable, dimension(:, :, :) :: in_phi_v, out_phi_v, d_v
-		!
-		write(*,*) "LUSolve_PreConditioner_DC_MF: ", in_phi%length(), out_phi%length()
-		!
+        !
+        !write(*,*) "LUSolve_PreConditioner_DC_MF: ", in_phi%length(), out_phi%length()
+        !
         if( .NOT. in_phi%is_allocated ) then
             call errStop( "LUSolve_PreConditioner_DC_MF > in_phi not allocated yet" )
         endif
@@ -180,7 +180,7 @@ contains
                     enddo
                 enddo
                 !
-                write(*,*) "LTsolve_Real: ", size( d_v ), size( in_phi_v ), size( out_phi_v )
+                !write(*,*) "LTsolve_Real: ", size( d_v ), size( in_phi_v ), size( out_phi_v )
                 !
                 !> backward substitution (Solve upper triangular system)
                 !> the coefficients are only for the interior nodes
@@ -196,7 +196,7 @@ contains
                     enddo
                 enddo
                 !
-                write(*,*) "UTsolve_Real: ", size( d_v ), size( in_phi_v ), size( out_phi_v )
+                !write(*,*) "UTsolve_Real: ", size( d_v ), size( in_phi_v ), size( out_phi_v )
                 !
                 call out_phi%setV( out_phi_v )
                 !

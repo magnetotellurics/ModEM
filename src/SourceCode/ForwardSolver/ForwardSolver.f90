@@ -89,8 +89,8 @@ module ForwardSolver
             !
             class( ForwardSolver_t ), intent( inout ) :: self
             integer, intent( in ) :: pol
-            class( Source_t ), intent( inout ) :: source
-            class( Vector_t ), intent( inout ) :: e_solution
+            class( Source_t ), intent( in ) :: source
+            class( Vector_t ), allocatable, intent( out ) :: e_solution
             !
         end subroutine interface_create_e_solution_foward_solver
         !

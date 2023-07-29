@@ -215,8 +215,8 @@ contains
     function dotProd_cVectorSparse3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( cVectorSparse3D_SG_t ), intent( in ) :: self
+        class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
@@ -243,8 +243,6 @@ contains
         select type( rhs )
             !
             class is( cVector3D_SG_t )
-                !
-                call rhs%switchStoreState( compound )
                 !
                 do i = 1, self%nCoeff
                     !
@@ -484,7 +482,7 @@ contains
     function getSV_cVectorSparse3D_SG( self ) result( s_v )
         implicit none
         !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        class( cVectorSparse3D_SG_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable :: s_v(:)
         !
@@ -701,7 +699,7 @@ contains
     subroutine getReal_cVectorSparse3D_SG( self, r_vector )
         implicit none
         !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        class( cVectorSparse3D_SG_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
         call errStop( "getReal_cVectorSparse3D_SG not implemented yet!" )
@@ -712,7 +710,7 @@ contains
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        integer, intent( in ), optional :: store_state
+        integer, intent( in ) :: store_state
         !
         call errStop( "switchStoreState_cVectorSparse3D_SG not implemented yet!" )
         !

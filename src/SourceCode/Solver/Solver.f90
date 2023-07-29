@@ -7,7 +7,7 @@ module Solver
     use PreConditioner
     !
     !> Solver parameters
-    integer :: max_solver_iters, max_divcor_calls, max_divcor_iters
+    integer :: max_solver_iters, max_solver_calls, max_divcor_iters
     !
     real( kind=prec ) :: tolerance_divcor, tolerance_solver
     !
@@ -19,7 +19,7 @@ module Solver
     !> Solver Base Type
     type, abstract :: Solver_t
         !
-        integer :: max_iters, n_iter
+        integer :: iter, n_iter, max_iters
         real( kind=prec ) :: omega, tolerance
         real( kind=prec ), allocatable :: relErr(:) !> relative error at each iteration
         !

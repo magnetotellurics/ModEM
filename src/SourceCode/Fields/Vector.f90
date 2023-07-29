@@ -7,6 +7,7 @@ module Vector
     !
     type, abstract, extends( Field_t ) :: Vector_t
         !
+        integer :: counter = 0
         integer, dimension(3) :: NdX, NdY, NdZ, Nxyz
         !
     contains
@@ -39,9 +40,14 @@ module Vector
         !
         procedure, public :: length => length_Vector
         !
-        procedure, public :: switchStoreState => switchStoreState_Vector
-        !
     end type Vector_t
+    !
+    !> Allocatable Vector element for Old Fortran polymorphic Arrays!!!
+    type, public :: GenVector_t
+        !
+        class( Vector_t ), allocatable :: v
+        !
+    end type GenVector_t
     !
     !>
     abstract interface
@@ -109,7 +115,7 @@ module Vector
         !> No interface subroutine briefing
         subroutine interface_get_real_vector( self, r_vector )
             import :: Vector_t
-            class( Vector_t ), intent( inout ) :: self
+            class( Vector_t ), intent( in ) :: self
             class( Vector_t ), allocatable, intent( out ) :: r_vector
         end subroutine interface_get_real_vector
         !
@@ -117,7 +123,7 @@ module Vector
         !
         function interface_get_x_vector( self ) result( x )
             import :: Vector_t, prec
-            class( Vector_t ), intent( inout ) :: self
+            class( Vector_t ), intent( in ) :: self
             complex( kind=prec ), allocatable :: x(:, :, :)
         end function interface_get_x_vector
         !
@@ -133,7 +139,7 @@ module Vector
         !
         function interface_get_y_vector( self ) result( y )
             import :: Vector_t, prec
-            class( Vector_t ), intent( inout ) :: self
+            class( Vector_t ), intent( in ) :: self
             complex( kind=prec ), allocatable :: y(:, :, :)
         end function interface_get_y_vector
         !
@@ -149,7 +155,7 @@ module Vector
         !
         function interface_get_z_vector( self ) result( z )
             import :: Vector_t, prec
-            class( Vector_t ), intent( inout ) :: self
+            class( Vector_t ), intent( in ) :: self
             complex( kind=prec ), allocatable :: z(:, :, :)
         end function interface_get_z_vector
         !
@@ -215,87 +221,5 @@ contains
         n = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
         !
     end function length_Vector
-    !
-    !> No subroutine briefing
-    !
-    subroutine switchStoreState_Vector( self, store_state )
-        implicit none
-        !
-        class( Vector_t ), intent( inout ) :: self
-        integer, intent( in ), optional :: store_state
-        !
-        integer i1, i2
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
-        complex( kind=prec ), allocatable, dimension(:) :: s_v
-        !
-        !> If input state is present...
-        if( present( store_state ) ) then
-            !
-            !> ... and is different of the actual Scalar state: flip it!
-            if( self%store_state /= store_state ) then
-                call self%switchStoreState
-            endif
-            !
-        else
-            !
-            select case( self%store_state )
-                !
-                case( compound )
-                    !
-                    allocate( s_v( self%length() ) )
-                    !
-                    s_v = (/reshape( self%getX(), (/self%Nxyz(1), 1/) ), &
-                            reshape( self%getY(), (/self%Nxyz(2), 1/) ), &
-                            reshape( self%getZ(), (/self%Nxyz(3), 1/) )/)
-                    !
-                    call self%setSV( s_v )
-                    !
-                case( singleton )
-                    !
-                    if( self%grid_type == EDGE ) then
-                        !
-                        allocate( x( self%nx, self%ny + 1, self%nz + 1 ) )
-                        allocate( y( self%nx + 1, self%ny, self%nz + 1 ) )
-                        allocate( z( self%nx + 1, self%ny + 1, self%nz ) )
-                        !
-                    else if( self%grid_type == FACE ) then
-                        !
-                        allocate( x( self%nx + 1, self%ny, self%nz ) )
-                        allocate( y( self%nx, self%ny + 1, self%nz ) )
-                        allocate( z( self%nx, self%ny, self%nz + 1 ) )
-                        !
-                    else
-                        call errStop( "switchStoreState_Vector > Only EDGE or FACE types allowed." )
-                    endif
-                    !
-                    s_v = self%getSV()
-                    !
-                    ! Ex
-                    i1 = 1; i2 = self%Nxyz(1)
-                    x = reshape( s_v( i1 : i2 ), self%NdX )
-                    !
-                    call self%setX( x )
-                    !
-                    ! Ey
-                    i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
-                    y = reshape( s_v( i1 : i2 ), self%NdY )
-                    !
-                    call self%setY( y )
-                    !
-                    ! Ez
-                    i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
-                    z = reshape( s_v( i1 : i2 ), self%NdZ )
-                    !
-                    call self%setZ( z )
-                    !
-                case default
-                    !
-                    call errStop( "switchStoreState_Vector > Unknown store_state" )
-                    !
-            end select
-            !
-        endif
-        !
-    end subroutine switchStoreState_Vector
     !
 end module Vector

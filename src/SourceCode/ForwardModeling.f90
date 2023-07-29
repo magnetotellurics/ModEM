@@ -171,7 +171,7 @@ contains
         !
 #else
         !
-        call createDistributeForwardSolver()
+        call createDistributeForwardSolver
         !
         call serialForwardModeling( sigma, all_predicted_data )
         !
@@ -259,10 +259,14 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case( forward_solver_type )
             !
+            case( FWD_IT )
+                !
+                allocate( forward_solver, source = ForwardSolverIT_t( model_operator, QMR ) )
+                !
             case( FWD_IT_DC )
                 !
                 allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
-                !
+            !
             case( "" )
                 !
                 call warning( "createDistributeForwardSolver > Forward Solver type not provided, using IT_DC." )
