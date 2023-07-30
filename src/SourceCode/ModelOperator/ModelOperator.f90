@@ -68,7 +68,7 @@ module ModelOperator
             !
             class( ModelOperator_t ), intent( inout ) :: self
             class( ModelParameter_t ), intent( in ) :: sigma
-            real( kind=prec ), intent( in ), optional :: omega_in
+            real( kind=prec ), intent( in ) :: omega_in
             !
         end subroutine interface_set_cond_model_operator
         !

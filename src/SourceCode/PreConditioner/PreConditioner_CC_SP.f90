@@ -204,7 +204,7 @@ contains
         logical, intent( in ) :: adjoint
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
-        complex( kind=prec ), allocatable, dimension(:) :: out_e_v_int
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "LTSolvePreConditioner_CC_SP > in_e not allocated yet" )
@@ -217,13 +217,7 @@ contains
         !write(*,*) "LTSolvePreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
         !
         in_e_v = in_e%getArray()
-        !
-        if( .NOT. adjoint ) then
-            !
-            !>     for adjoint to the division by volume elements last
-            !call out_e%div( self%model_operator%metric%v_edge )
-            !
-        endif
+        in_e_v_int = in_e_v( in_e%ind_interior )
         !
         out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%ind_interior )
@@ -232,7 +226,7 @@ contains
             !
             !write(*,*) "CC UTsolve_Cmplx: ", self%LH%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
             !
-            call UTsolve_Cmplx( self%LH, in_e_v( in_e%ind_interior ), out_e_v_int )
+            call UTsolve_Cmplx( self%LH, in_e_v_int, out_e_v_int )
             !
         else
             !
@@ -240,20 +234,13 @@ contains
             !
             !write(*,*) "CC LTsolve_Cmplx: ", self%L%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
             !
-            call LTsolve_Cmplx( self%L, in_e_v( in_e%ind_interior ), out_e_v_int )
+            call LTsolve_Cmplx( self%L, in_e_v_int, out_e_v_int )
             !
         endif
         !
         out_e_v( out_e%ind_interior ) = out_e_v_int
         !
         call out_e%setArray( out_e_v )
-        !
-        if( adjoint ) then
-            !
-            !>     for adjoint to the division by volume elements last
-            !call out_e%div( self%model_operator%metric%v_edge )
-            !
-        endif
         !
     end subroutine LTSolvePreConditioner_CC_SP
     !
@@ -269,7 +256,7 @@ contains
         logical, intent( in ) :: adjoint
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
-        complex( kind=prec ), allocatable, dimension(:) :: out_e_v_int
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
         !
         !write(*,*) "UTSolvePreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
         !
@@ -282,19 +269,18 @@ contains
         endif
         !
         in_e_v = in_e%getArray()
+        in_e_v_int = in_e_v( in_e%ind_interior )
         !
         out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%ind_interior )
         !
         if( adjoint ) then
             !
-            out_e_v_int = C_ZERO
-            !
-            call LTsolve_Cmplx( self%UH, in_e_v( in_e%ind_interior ), out_e_v_int )
+            call LTsolve_Cmplx( self%UH, in_e_v_int, out_e_v_int )
             !
         else
             !
-            call UTsolve_Cmplx( self%U, in_e_v( in_e%ind_interior ), out_e_v_int )
+            call UTsolve_Cmplx( self%U, in_e_v_int, out_e_v_int )
             !
         endif
         !

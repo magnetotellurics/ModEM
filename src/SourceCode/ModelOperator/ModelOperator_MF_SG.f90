@@ -198,17 +198,11 @@ contains
         !
         class( ModelOperator_MF_SG_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( in ) :: sigma
-        real( kind=prec ), intent( in ), optional :: omega_in
+        real( kind=prec ), intent( in ) :: omega_in
         !
-        if( present( omega_in ) ) then
-            write(*,*) "setCond_ModelOperator_MF_SG :", omega_in, "(useless here)"
-        else
-            write(*,*) "setCond_ModelOperator_MF_SG (no omega)"
-        endif
+        write(*,*) "setCond_ModelOperator_MF_SG"
         !
         call sigma%PDEmapping( self%sigma_e )
-        !
-        call self%divCorSetUp
         !
     end subroutine setCond_ModelOperator_MF_SG
     !

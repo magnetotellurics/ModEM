@@ -105,6 +105,9 @@ contains
         !> Set preconditioner for this solver's preconditioner
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
+        !> Set conductivity for the model operator (again ????)
+        call self%solver%preconditioner%model_operator%divCorSetUp
+        !
         !> Set conductivity for the divergence_correction
         call self%divergence_correction%setCond( self%solver%omega )
         !

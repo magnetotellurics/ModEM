@@ -158,7 +158,7 @@ contains
         call out_e%linComb( in_e, C_MinusOne, C_ONE )
         !
         !> divergence of the corrected output electrical field
-        call self%solver%preconditioner%model_operator%DivC( out_e, phiRHS )
+        call self%solver%preconditioner%model_operator%divC( out_e, phiRHS )
         !
         !>  If source term is present, subtract from divergence of currents
         if( SourceTerm ) then

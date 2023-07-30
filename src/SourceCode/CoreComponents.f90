@@ -161,8 +161,6 @@ contains
         !
         call sigma0%setMetric( model_operator%metric )
         !
-        call model_operator%setCond( sigma0 )
-        !
     end subroutine handleModelFile
     !
     !> Read Perturbation Model File: instantiate pmodel with ModelReader
