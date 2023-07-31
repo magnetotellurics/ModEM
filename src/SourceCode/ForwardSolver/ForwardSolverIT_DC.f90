@@ -213,10 +213,6 @@ contains
                 !
             end select
             !
-            self%solver%converged = self%solver%n_iter .LT. self%solver%max_iters
-            !
-            self%solver%failed = self%solver%failed .OR. self%failed
-            !
             do iter = 1, self%solver%n_iter
                 !
                 self%relResVec( self%n_iter_actual + iter ) = self%solver%relErr( iter )
@@ -225,6 +221,14 @@ contains
             !
             self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
             !
+            self%failed = self%n_iter_actual .GE. self%max_iter_total
+            !
+            self%solver%failed = self%solver%failed .OR. self%failed
+            !
+			if( self%solver%failed ) then
+				call errStop( "createESolution_ForwardSolverIT_DC > Solver Failed" )
+			endif
+			!
             self%n_divcor = self%n_divcor + 1
             !
             if( .NOT. self%solver%converged )  then

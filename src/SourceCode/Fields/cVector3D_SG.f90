@@ -2166,18 +2166,6 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-        if( allocated( rhs%ind_interior ) ) then
-            self%ind_interior = rhs%ind_interior
-        else
-            call errStop( "copyFrom_cVector3D_SG > rhs self%ind_interior not allocated" )
-        endif
-        !
-        if( allocated( rhs%ind_boundaries ) ) then
-            self%ind_boundaries = rhs%ind_boundaries
-        else
-            call errStop( "copyFrom_cVector3D_SG > rhs self%ind_interior not allocated" )
-        endif
-        !
         select type( rhs )
             !
             class is( cVector3D_SG_t )
@@ -2207,12 +2195,14 @@ contains
                     call errStop( "copyFrom_cVector3D_SG > Unknown store_state!" )
                 endif
                 !
+                self%is_allocated = .TRUE.
+                !
+                call self%setIndexArrays
+                !
             class default
                 call errStop( "copyFrom_cVector3D_SG > Different type of rhs" )
             !
         end select
-        !
-        self%is_allocated = .TRUE.
         !
     end subroutine copyFrom_cVector3D_SG
     !

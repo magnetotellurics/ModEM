@@ -13,13 +13,13 @@ module ReceiverExyAmpliPhase
             !
             final :: ReceiverExyAmpliPhase_dtor
             !
-            procedure, public :: setLRows => setLRowsExyAmpliPhase
+            procedure, public :: predictedData => predictedData_ExyAmpliPhase
             !
-            procedure, public :: predictedData => predictedDataExyAmpliPhase
+            procedure, public :: setLRows => setLRows_ExyAmpliPhase
             !
-            procedure, public :: isEqualRx => isEqualExyAmpliPhase
+            procedure, public :: isEqualRx => isEqual_ExyAmpliPhase
             !
-            procedure, public :: print => printReceiverExyAmpliPhase
+            procedure, public :: print => print_ExyAmpliPhase
             !
     end type ReceiverExyAmpliPhase_t
     !
@@ -102,32 +102,8 @@ contains
     end subroutine ReceiverExyAmpliPhase_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsExyAmpliPhase( self, transmitter )
-        implicit none
-        !
-        class( ReceiverExyAmpliPhase_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
-        !
-        complex( kind=prec ) :: comega
-        !
-        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
-        !
-        !> It's not needed for the LRows calculation itself
-        !> but it's called here to maintain the general encapsulation of the program
-        !> And also to debug the predicted data
-        call self%predictedData( transmitter )
-        !
-        !> Allocate LRows matrix [ npol = 1, n_comp = 1 ]
-        if( allocated( self%lrows ) ) deallocate( self%lrows )
-        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
-        !
-        self%lrows( 1, 1 ) = self%Lex%getFullVector()
-        self%lrows( 1, 2 ) = self%Ley%getFullVector()
-        !
-    end subroutine setLRowsExyAmpliPhase
     !
-    !> No subroutine briefing
-    subroutine predictedDataExyAmpliPhase( self, transmitter, data_group )
+    subroutine predictedData_ExyAmpliPhase( self, transmitter, data_group )
         implicit none
         !
         class( ReceiverExyAmpliPhase_t ), intent( inout ) :: self
@@ -161,11 +137,37 @@ contains
             !
         endif
         !
-    end subroutine predictedDataExyAmpliPhase
+    end subroutine predictedData_ExyAmpliPhase
     !
     !> No subroutine briefing
     !
-    function isEqualExyAmpliPhase( self, other ) result( equal )
+    subroutine setLRows_ExyAmpliPhase( self, transmitter )
+        implicit none
+        !
+        class( ReceiverExyAmpliPhase_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in ) :: transmitter
+        !
+        complex( kind=prec ) :: comega
+        !
+        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
+        !
+        !> It's not needed for the LRows calculation itself
+        !> but it's called here to maintain the general encapsulation of the program
+        !> And also to debug the predicted data
+        call self%predictedData( transmitter )
+        !
+        !> Allocate LRows matrix [ npol = 1, n_comp = 1 ]
+        if( allocated( self%lrows ) ) deallocate( self%lrows )
+        allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
+        !
+        allocate( self%lrows( 1, 1 )%v, source = self%Lex%getFullVector() )
+        allocate( self%lrows( 1, 2 )%v, source = self%Ley%getFullVector() )
+        !
+    end subroutine setLRows_ExyAmpliPhase
+    !
+    !> No subroutine briefing
+    !
+    function isEqual_ExyAmpliPhase( self, other ) result( equal )
         implicit none
         !
         class( ReceiverExyAmpliPhase_t ), intent( in ) :: self
@@ -192,16 +194,16 @@ contains
             !
         end select
         !
-    end function isEqualExyAmpliPhase
+    end function isEqual_ExyAmpliPhase
     !
     !> No subroutine briefing
-    subroutine printReceiverExyAmpliPhase( self )
+    subroutine print_ExyAmpliPhase( self )
         implicit none
         !
         class( ReceiverExyAmpliPhase_t ), intent( in ) :: self
         !
         write( *, * ) "Print ReceiverExyAmpliPhase_t: ", self%i_rx
         !
-    end subroutine printReceiverExyAmpliPhase
+    end subroutine print_ExyAmpliPhase
     !
 end module ReceiverExyAmpliPhase

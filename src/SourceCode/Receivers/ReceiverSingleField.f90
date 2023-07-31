@@ -13,13 +13,13 @@ module ReceiverSingleField
             !
             final :: ReceiverSingleField_dtor
             !
-            procedure, public :: setLRows => setLRowsSingleField
+            procedure, public :: predictedData => predictedData_SingleField
             !
-            procedure, public :: predictedData => predictedDataSingleField
+            procedure, public :: setLRows => setLRows_SingleField
             !
-            procedure, public :: isEqualRx => isEqualSingleField
+            procedure, public :: isEqualRx => isEqual_SingleField
             !
-            procedure, public :: print => printReceiverSingleField
+            procedure, public :: print => print_SingleField
             !
     end type ReceiverSingleField_t
     !
@@ -122,7 +122,7 @@ contains
     end subroutine ReceiverSingleField_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsSingleField( self, transmitter )
+    subroutine setLRows_SingleField( self, transmitter )
         implicit none
         !
         class( ReceiverSingleField_t ), intent( inout ) :: self
@@ -139,23 +139,30 @@ contains
         !
         !> Allocate LRows matrix [ npol = 1, n_comp = 1 ]
         if( allocated( self%lrows ) ) deallocate( self%lrows )
-        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
+        allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
         !
-        if( self%azimuth == 1.0 ) self%lrows( 1, 1 ) = self%Lex%getFullVector()
-        if( self%azimuth == 2.0 ) self%lrows( 1, 1 ) = self%Ley%getFullVector()
-        !
-        if( self%azimuth == 3.0 ) self%lrows( 1, 1 ) = self%Lbx%getFullVector()
-        if( self%azimuth == 4.0 ) self%lrows( 1, 1 ) = self%Lby%getFullVector()
-        if( self%azimuth == 5.0 ) self%lrows( 1, 1 ) = self%Lbz%getFullVector()
-        !
-        if( self%azimuth == 3.0 .OR. self%azimuth == 4.0 .OR. self%azimuth == 5.0 ) then
-            call self%lrows( 1, 1 )%mult( isign * comega )
+        if( self%azimuth == 1.0 ) then
+            allocate( self%lrows( 1, 1 )%v, source = self%Lex%getFullVector() )
+        elseif( self%azimuth == 2.0 ) then
+            allocate( self%lrows( 1, 1 )%v, source = self%Ley%getFullVector() )
+        elseif( self%azimuth == 3.0 ) then
+            allocate( self%lrows( 1, 1 )%v, source = self%Lbx%getFullVector() )
+        elseif( self%azimuth == 4.0 ) then
+            allocate( self%lrows( 1, 1 )%v, source = self%Lby%getFullVector() )
+        elseif( self%azimuth == 5.0 ) then
+            allocate( self%lrows( 1, 1 )%v, source = self%Lbz%getFullVector() )
+        else
+            call errStop( "setLRows_SingleField > Unknow azimuth" )
         endif
         !
-    end subroutine setLRowsSingleField
+        if( self%azimuth == 3.0 .OR. self%azimuth == 4.0 .OR. self%azimuth == 5.0 ) then
+            call self%lrows( 1, 1 )%v%mult( isign * comega )
+        endif
+        !
+    end subroutine setLRows_SingleField
     !
     !> No subroutine briefing
-    subroutine predictedDataSingleField( self, transmitter, data_group )
+    subroutine predictedData_SingleField( self, transmitter, data_group )
         implicit none
         !
         class( ReceiverSingleField_t ), intent( inout ) :: self
@@ -193,11 +200,11 @@ contains
             !
         endif
         !
-    end subroutine predictedDataSingleField
+    end subroutine predictedData_SingleField
     !
     !> No subroutine briefing
     !
-    function isEqualSingleField( self, other ) result( equal )
+    function isEqual_SingleField( self, other ) result( equal )
         implicit none
         !
         class( ReceiverSingleField_t ), intent( in ) :: self
@@ -223,16 +230,16 @@ contains
             !
         end select
         !
-    end function isEqualSingleField
+    end function isEqual_SingleField
     !
     !> No subroutine briefing
-    subroutine printReceiverSingleField( self )
+    subroutine print_SingleField( self )
         implicit none
         !
         class( ReceiverSingleField_t ), intent( in ) :: self
         !
         write( *, * ) "Print ReceiverSingleField_t: ", self%i_rx
         !
-    end subroutine printReceiverSingleField
+    end subroutine print_SingleField
     !
 end module ReceiverSingleField

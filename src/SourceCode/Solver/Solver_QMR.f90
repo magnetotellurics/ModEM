@@ -296,7 +296,9 @@ contains
             !
         enddo
         !
-        if( self%iter .LT. self%max_iters ) then
+        self%converged = self%iter .LT. self%max_iters
+        !
+        if( self%converged ) then
             write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR converged within ", self%iter, ": err= ", self%relErr( self%iter )
         else
             write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )

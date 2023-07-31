@@ -8,6 +8,7 @@ module Sensitivity
     !> Public module routines
     public :: jobJMult, serialJMult, JMult_Tx
     public :: jobJMult_T, serialJMult_T, JMult_T_Tx
+    public :: allocateLRows
     !
 contains
     !
@@ -140,6 +141,11 @@ contains
             !> Pointer to the data's Receiver
             Rx => getReceiver( JmHat_tx%data( i_data )%i_rx )
             !
+            !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
+            if( .NOT. allocated( Rx%lrows ) ) then
+                call allocateLRows( Tx, Rx )
+            endif
+            !
             call Rx%setLRows( Tx )
             !
             !> Loop over components
@@ -150,7 +156,7 @@ contains
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
                     !
-                    allocate( lrows, source = Rx%lrows( i_pol, i_comp ) )
+                    allocate( lrows, source = Rx%lrows( i_pol, i_comp )%v )
                     !
                     !> NECESSARY FOR FULL VECTOR LROWS ????
                     call lrows%conjugate
@@ -353,6 +359,11 @@ contains
             !> Pointer to the data's Receiver
             Rx => getReceiver( tx_data%data( i_data )%i_rx )
             !
+            !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
+            if( .NOT. allocated( Rx%lrows ) ) then
+                call allocateLRows( Tx, Rx )
+            endif
+            !
             call Rx%setLRows( Tx )
             !
             !> Loop over the data components
@@ -370,7 +381,7 @@ contains
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
                     !
-                    allocate( lrows, source = Rx%lrows( i_pol, i_comp ) )
+                    allocate( lrows, source = Rx%lrows( i_pol, i_comp )%v )
                     !
                     call lrows%mult( tx_data_cvalue )
                     !
@@ -407,5 +418,27 @@ contains
         !
     end subroutine JMult_T_Tx
     !
+    subroutine allocateLRows( Tx, Rx )
+        implicit none
+        !
+        class( Transmitter_t ), intent( in ) :: Tx
+        class( Receiver_t ), intent( inout ) :: Rx
+        !
+        integer :: i_pol, i_comp
+        !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
+        if( .NOT. allocated( Rx%lrows ) ) then
+            !
+            allocate( Rx%lrows( Tx%n_pol, Rx%n_comp ) )
+            !
+            do i_comp = 1, Rx%n_comp
+                do i_pol = 1, Tx%n_pol
+                    call model_operator%metric%createVector( complex_t, EDGE, Rx%lrows( i_pol, i_comp )%v )
+                enddo
+            enddo
+            !
+        endif
+        !
+    end subroutine allocateLRows
+        !
 end module Sensitivity
 !

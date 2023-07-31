@@ -432,8 +432,10 @@ contains
             endif
         enddo
         !
+        if( allocated( self%ind_boundaries ) ) deallocate( self%ind_boundaries )
         allocate( self%ind_boundaries( bdry_size ) )
         !
+        if( allocated( self%ind_interior ) ) deallocate( self%ind_interior )
         allocate( self%ind_interior( int_size ) )
         !
         j = 1

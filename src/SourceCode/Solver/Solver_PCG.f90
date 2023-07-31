@@ -153,6 +153,8 @@ contains
             !
         enddo loop
         !
+        self%converged = self%iter .LT. self%max_iters
+        !
         if( self%iter .LT. self%max_iters ) then
             write( *, "( a46, i6, a7, es12.3 )" ) "->divCor PCG converged within ", self%iter, ": err= ", self%relErr( self%iter )
         else

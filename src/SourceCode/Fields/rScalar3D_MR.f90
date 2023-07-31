@@ -1043,18 +1043,6 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-        if( allocated( rhs%ind_interior ) ) then
-            self%ind_interior = rhs%ind_interior
-        else
-            call errStop( "copyFrom_rScalar3D_MR > rhs%ind_interior not allocated" )
-        endif
-        !
-        if( allocated( rhs%ind_boundaries ) ) then
-            self%ind_boundaries = rhs%ind_boundaries
-        else
-            call errStop( "copyFrom_rScalar3D_MR > rhs%ind_boundaries not allocated" )
-        endif
-        !
         select type( rhs )
             !
             class is( rScalar3D_MR_t )
@@ -1085,6 +1073,8 @@ contains
                 end do
                 !
                 self%is_allocated = .TRUE.
+                !
+                call self%setIndexArrays
                 !
             class default
                 stop "Error: copyFrom_rScalar3D_MR > Unclassified rhs"

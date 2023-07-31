@@ -294,8 +294,6 @@ contains
         !
         call sigma%setMetric( model_operator%metric )
         !
-        call model_operator%setCond( sigma )
-        !
     end subroutine handleSigmaModel
     !
     !> Receive dsigma model from master process and set its metric
@@ -325,6 +323,10 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case( forward_solver_type )
             !
+            case( FWD_IT )
+                !
+                allocate( forward_solver, source = ForwardSolverIT_t( model_operator, QMR ) )
+                !
             case( FWD_IT_DC )
                 !
                 allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
@@ -337,8 +339,7 @@ contains
                 !
             case default
                 !
-                write( *, * ) "Error: Wrong Forward Solver type: [", forward_solver_type, "]"
-                stop
+                call errStop( "setTxForwardSolver > Wrong Forward Solver type: ["//forward_solver_type//"]." )
                 !
         end select
         !

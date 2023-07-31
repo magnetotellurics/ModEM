@@ -13,13 +13,13 @@ module ReceiverFullVerticalMagnetic
             !
             final :: ReceiverFullVerticalMagnetic_dtor
             !
-            procedure, public :: setLRows => setLRowsFullVerticalMagnetic
+            procedure, public :: predictedData => predictedData_FullVerticalMagnetic
             !
-            procedure, public :: predictedData => predictedDataFullVerticalMagnetic
+            procedure, public :: setLRows => setLRows_FullVerticalMagnetic
             !
-            procedure, public :: isEqualRx => isEqualFullVerticalMagnetic
+            procedure, public :: isEqualRx => isEqual_FullVerticalMagnetic
             !
-            procedure, public :: print => printReceiverFullVerticalMagnetic
+            procedure, public :: print => print_FullVerticalMagnetic
             !
     end type ReceiverFullVerticalMagnetic_t
     !
@@ -98,21 +98,21 @@ contains
     end subroutine ReceiverFullVerticalMagnetic_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsFullVerticalMagnetic( self, transmitter )
+    subroutine setLRows_FullVerticalMagnetic( self, transmitter )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
         class( Transmitter_t ), intent( in ) :: transmitter
         !
-        call errStop( "setLRowsFullVerticalMagnetic to be implemented" )
+        call errStop( "setLRows_FullVerticalMagnetic to be implemented" )
         !
-        if( allocated( self%lrows ) ) deallocate( self%lrows )
-        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
+        !if( allocated( self%lrows ) ) deallocate( self%lrows )
+        !allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
         !
-    end subroutine setLRowsFullVerticalMagnetic
+    end subroutine setLRows_FullVerticalMagnetic
     !
     !> No subroutine briefing
-    subroutine predictedDataFullVerticalMagnetic( self, transmitter, data_group )
+    subroutine predictedData_FullVerticalMagnetic( self, transmitter, data_group )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
@@ -151,7 +151,7 @@ contains
             I_BB(1,2) = -BB(1,2) / det
             I_BB(2,1) = -BB(2,1) / det
         else
-            call errStop( "predictedDataFullVerticalMagnetic > Determinant is Zero!" )
+            call errStop( "predictedData_FullVerticalMagnetic > Determinant is Zero!" )
         endif
         !
         allocate( self%response(2) )
@@ -168,11 +168,11 @@ contains
             !
         endif
         !
-    end subroutine predictedDataFullVerticalMagnetic
+    end subroutine predictedData_FullVerticalMagnetic
     !
     !> No subroutine briefing
     !
-    function isEqualFullVerticalMagnetic( self, other ) result( equal )
+    function isEqual_FullVerticalMagnetic( self, other ) result( equal )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
@@ -198,16 +198,16 @@ contains
             !
         end select
         !
-    end function isEqualFullVerticalMagnetic
+    end function isEqual_FullVerticalMagnetic
     !
     !> No subroutine briefing
-    subroutine printReceiverFullVerticalMagnetic( self )
+    subroutine print_FullVerticalMagnetic( self )
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( in ) :: self
         !
         write( *, * ) "Print ReceiverFullVerticalMagnetic_t: ", self%i_rx
         !
-    end subroutine printReceiverFullVerticalMagnetic
+    end subroutine print_FullVerticalMagnetic
     !
 end module ReceiverFullVerticalMagnetic

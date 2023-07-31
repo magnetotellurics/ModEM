@@ -13,13 +13,13 @@ module ReceiverOffDiagonalImpedance
             !
             final :: ReceiverOffDiagonalImpedance_dtor
             !
-            procedure, public :: setLRows => setLRowsOffDiagonalImpedance
+            procedure, public :: predictedData => predictedData_OffDiagonalImpedance
             !
-            procedure, public :: predictedData => predictedDataOffDiagonalImpedance
+            procedure, public :: setLRows => setLRows_OffDiagonalImpedance
             !
-            procedure, public :: isEqualRx => isEqualOffDiagonalImpedance
+            procedure, public :: isEqualRx => isEqual_OffDiagonalImpedance
             !
-            procedure, public :: print => printReceiverOffDiagonalImpedance
+            procedure, public :: print => print_OffDiagonalImpedance
             !
     end type ReceiverOffDiagonalImpedance_t
     !
@@ -84,21 +84,7 @@ contains
     end subroutine ReceiverOffDiagonalImpedance_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsOffDiagonalImpedance( self, transmitter )
-        implicit none
-        !
-        class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
-        !
-        call errStop( "setLRowsOffDiagonalImpedance to be implemented" )
-        !
-        !if( allocated( self%lrows ) ) deallocate( self%lrows )
-        !allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
-        !
-    end subroutine setLRowsOffDiagonalImpedance
-    !
-    !> No subroutine briefing
-    subroutine predictedDataOffDiagonalImpedance( self, transmitter, data_group )
+    subroutine predictedData_OffDiagonalImpedance( self, transmitter, data_group )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
@@ -143,7 +129,7 @@ contains
             I_BB(1,2) = -BB(1,2) / det
             I_BB(2,1) = -BB(2,1) / det
         else
-            call errStop( "predictedDataOffDiagonalImpedance > Determinant is Zero!" )
+            call errStop( "predictedData_OffDiagonalImpedance > Determinant is Zero!" )
         endif
         !
         deallocate( BB )
@@ -162,11 +148,26 @@ contains
             !
         endif
         !
-    end subroutine predictedDataOffDiagonalImpedance
+    end subroutine predictedData_OffDiagonalImpedance
     !
     !> No subroutine briefing
     !
-    function isEqualOffDiagonalImpedance( self, other ) result( equal )
+    subroutine setLRows_OffDiagonalImpedance( self, transmitter )
+        implicit none
+        !
+        class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in ) :: transmitter
+        !
+        call errStop( "setLRows_OffDiagonalImpedance to be implemented" )
+        !
+        !if( allocated( self%lrows ) ) deallocate( self%lrows )
+        !allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
+        !
+    end subroutine setLRows_OffDiagonalImpedance
+    !
+    !> No subroutine briefing
+    !
+    function isEqual_OffDiagonalImpedance( self, other ) result( equal )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( in ) :: self
@@ -192,16 +193,16 @@ contains
             !
         end select
         !
-    end function isEqualOffDiagonalImpedance
+    end function isEqual_OffDiagonalImpedance
     !
     !> No subroutine briefing
-    subroutine printReceiverOffDiagonalImpedance( self )
+    subroutine print_OffDiagonalImpedance( self )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( in ) :: self
         !
         write( *, * ) "Print ReceiverOffDiagonalImpedance_t: ", self%i_rx
         !
-    end subroutine printReceiverOffDiagonalImpedance
+    end subroutine print_OffDiagonalImpedance
     !
 end module ReceiverOffDiagonalImpedance

@@ -733,13 +733,6 @@ contains
         self%nx = rhs%nx
         self%ny = rhs%ny
         self%nz = rhs%nz
-        self%is_allocated = .TRUE.
-        !
-        if( allocated( rhs%ind_interior ) ) &
-        self%ind_interior = rhs%ind_interior
-        !
-        if( allocated( rhs%ind_boundaries ) ) &
-        self%ind_boundaries = rhs%ind_boundaries
         !
         select type( rhs )
             !
@@ -753,6 +746,8 @@ contains
                 self%xyz = rhs%xyz
                 !
                 self%c = rhs%c
+                !
+                self%is_allocated = .TRUE.
                 !
             class default
                 call errStop( "copyFrom_cVectorSparse3D_SG > Incompatible rhs" )

@@ -996,11 +996,7 @@ contains
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
-        ! !
-        ! if( .NOT. self%is_allocated ) then
-            ! call errStop( "copyFrom_iScalar3D_SG > self not allocated." )
-        ! endif
-        ! !
+        !
         if( .NOT. rhs%is_allocated ) then
             call errStop( "copyFrom_iScalar3D_SG > rhs not allocated" )
         endif
@@ -1037,12 +1033,14 @@ contains
                     call errStop( "copyFrom_iScalar3D_SG > Unknown store_state!" )
                 endif
                 !
+                self%is_allocated = .TRUE.
+                !
+                call self%setIndexArrays
+                !
             class default
                     call errStop( "copyFrom_iScalar3D_SG > Unclassified rhs" )
             !
         end select
-        !
-        self%is_allocated = .TRUE.
         !
     end subroutine copyFrom_iScalar3D_SG
     !
