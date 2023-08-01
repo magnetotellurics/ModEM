@@ -5,10 +5,6 @@ module SourceCSEM
     !
     use Source
     use dipole1d
-    use cVector3D_SG
-    use rVector3D_SG
-    use rScalar3D_SG
-    use Grid3D_SG
     !
     character(:), allocatable :: source_type_csem
     character( len=15 ), parameter :: SRC_CSEM_EM1D = "SourceCSEM_EM1D"
@@ -51,18 +47,18 @@ module SourceCSEM
         implicit none
         !
         class( SourceCSEM_t ), intent( in) :: self
-        type( rVector3D_SG_t ), intent( out ) :: cond_anomaly
+        class( Vector_t ), allocatable, intent( out ) :: cond_anomaly
         integer, intent( in ) :: ani_level
         !
-        type( rScalar3D_SG_t ) :: sigma_cell
+        class( Scalar_t ), allocatable :: sigma_cell
         complex( kind=prec ), allocatable :: v(:, :, :)
         class( ModelParameter_t ), allocatable :: aModel
         real( kind=prec ) :: wt, temp_sigma_1d
         integer :: nzAir, nzEarth, i, j, k
-        type( rVector3D_SG_t ) :: cond_nomaly
+        class( Vector_t ), allocatable :: cond_nomaly
         !
         !>
-        sigma_cell = self%sigma%getCond( ani_level )
+        allocate( sigma_cell, source = self%sigma%getCond( ani_level ) )
         !
         nzAir = sigma_cell%grid%nzAir
         !
@@ -114,23 +110,23 @@ module SourceCSEM
             !
         elseif( trim( get_1D_from ) == "At_Tx_Position" ) then
             !
-            stop "Error: setTemp_SourceCSEM_Dipole1D > At_Tx_Position not implemented yet"
+            call errStop( "setTemp_SourceCSEM_Dipole1D > At_Tx_Position not implemented yet" )
             !
-        elseif( trim(get_1d_from) == "Geometric_mean_around_Tx" ) then
+        elseif( trim( get_1d_from ) == "Geometric_mean_around_Tx" ) then
             !
-            stop "Error: setTemp_SourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet"
+            call errStop( "setTemp_SourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet" )
             !
-        elseif( trim(get_1d_from) == "Full_Geometric_mean" ) then
+        elseif( trim( get_1d_from ) == "Full_Geometric_mean" ) then
             !
-            stop "Error: setTemp_SourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet"
+            call errStop( "setTemp_SourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet" )
             !
         elseif( trim( get_1d_from ) == "Fixed_Value" ) then
             !
-            stop "Error: setTemp_SourceCSEM_Dipole1D > Fixed_Value not implemented yet"
+            call errStop( "setTemp_SourceCSEM_Dipole1D > Fixed_Value not implemented yet" )
             !
         else
             !
-            stop "Error: setTemp_SourceCSEM_Dipole1D > Unknown get_1d_from"
+            call errStop( "setTemp_SourceCSEM_Dipole1D > Unknown get_1d_from" )
             !
         endif
         !
@@ -157,14 +153,15 @@ module SourceCSEM
         !> Create ModelParam from 1D: aModel
         !> with sigma_cell conductivity in the proper anisotropic direction
         allocate( aModel, source = self%sigma )
+        aModel = self%sigma
         call aModel%setCond( sigma_cell, ani_level )
         call aModel%setType( self%sigma%param_type )
         !
-        cond_nomaly = rVector3D_SG_t( self%sigma%metric%grid, EDGE )
+        call self%sigma%metric%createVector( real_t, EDGE, cond_nomaly )
         call aModel%PDEmapping( cond_nomaly )
         !
         !> Map sigma to cond_edges vector
-        cond_anomaly = rVector3D_SG_t( self%sigma%metric%grid, EDGE )
+        call self%sigma%metric%createVector( real_t, EDGE, cond_anomaly )
         call self%sigma%PDEmapping( cond_anomaly )
         !
         !cond_anomaly = cond_anomaly - cond_nomaly

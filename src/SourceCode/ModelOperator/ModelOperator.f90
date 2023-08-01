@@ -50,6 +50,9 @@ module ModelOperator
             !
     end type ModelOperator_t
     !
+    !> Public Global Generic ModelOperator object
+    class( ModelOperator_t ), allocatable :: model_operator
+    !
     abstract interface
         !
         !> No interface subroutine briefing

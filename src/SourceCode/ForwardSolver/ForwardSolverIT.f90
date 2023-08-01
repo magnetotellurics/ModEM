@@ -22,8 +22,6 @@ module ForwardSolverIT
             !
             procedure, public :: createESolution => createESolution_ForwardSolverIT
             !
-            procedure, public :: setIterDefaults => setIterDefaults_ForwardSolverIT
-            !
             procedure, public :: copyFrom => copyFrom_ForwardSolverIT
             !
     end type ForwardSolverIT_t
@@ -62,12 +60,6 @@ contains
             !
         end select
         !
-        !> Set default values for this ForwardSolver
-        call self%setIterDefaults
-        !
-        !> Set max number of all forward solver iterations
-        self%max_iter_total = self%max_solver_calls * self%solver%max_iters
-        !
         call self%setIterControl
         !
         call self%initDiagnostics
@@ -103,23 +95,13 @@ contains
         !
         class( ForwardSolverIT_t ), intent( inout ) :: self
         !
-        self%tolerance = self%solver%tolerance
+        self%max_solver_calls = max_solver_calls
         !
-        self%max_solver_calls = self%max_iter_total / self%solver%max_iters
+        self%tolerance = self%solver%tolerance
         !
         self%max_iter_total = self%solver%max_iters * self%max_solver_calls
         !
     end subroutine setIterControl_ForwardSolverIT
-    !
-    !> No subroutine briefing
-    subroutine setIterDefaults_ForwardSolverIT( self )
-        implicit none
-        !
-        class( ForwardSolverIT_t ), intent( inout ) :: self
-        !
-        self%max_solver_calls = max_solver_calls
-        !
-    end subroutine setIterDefaults_ForwardSolverIT
     !
     !> No subroutine briefing
     subroutine initDiagnostics_ForwardSolverIT( self )
@@ -179,7 +161,7 @@ contains
             select type( solver => self%solver )
                 !
                 class is( Solver_QMR_t )
-                    call solver%solve( source%rhs( pol ), e_solution )
+                    call solver%solve( source%rhs( pol )%v, e_solution )
                 class default
                     call errStop( "createESolution_ForwardSolverIT > Unknown solver type." )
                 !
@@ -214,11 +196,11 @@ contains
         !
         if( source%non_zero_bc ) then
             !
-            call source%rhs( pol )%boundary( temp_vec )
+            call source%rhs( pol )%v%boundary( temp_vec )
             !
         else
             !
-            call source%E( pol )%boundary( temp_vec )
+            call source%E( pol )%v%boundary( temp_vec )
             !
         endif
         !

@@ -26,8 +26,6 @@ module ForwardSolverIT_DC
             !
             procedure, public :: createESolution => createESolution_ForwardSolverIT_DC
             !
-            procedure, public :: setIterDefaults => setIterDefaults_ForwardSolverIT_DC
-            !
             procedure, public :: copyFrom => copyFrom_ForwardSolverIT_DC
             !
     end type ForwardSolverIT_DC_t
@@ -65,18 +63,6 @@ contains
                 call errStop( "ForwardSolverIT_DC_ctor > Unknown solver" )
             !
         end select
-        !
-        self%n_divcor = 0
-        !
-        self%max_divcor_iters = 0
-        !
-        self%tol_div_cor = R_ZERO
-        !
-        !> Set default values for this ForwardSolver
-        call self%setIterDefaults
-        !
-        !> Set max number of all forward solver iterations
-        self%max_iter_total = self%max_solver_calls * self%solver%max_iters
         !
         call self%setIterControl
         !
@@ -121,25 +107,19 @@ contains
         !
         class( ForwardSolverIT_DC_t ), intent( inout ) :: self
         !
-        self%tolerance = self%solver%tolerance
+        self%n_divcor = 0
         !
-        self%max_solver_calls = self%max_iter_total / self%solver%max_iters
+        self%max_solver_calls = max_solver_calls
+        !
+        self%max_divcor_iters = max_divcor_iters
+        !
+        self%tol_div_cor = tolerance_divcor
+        !
+        self%tolerance = self%solver%tolerance
         !
         self%max_iter_total = self%solver%max_iters * self%max_solver_calls
         !
     end subroutine setIterControl_ForwardSolverIT_DC
-    !
-    !> No subroutine briefing
-    subroutine setIterDefaults_ForwardSolverIT_DC( self )
-        implicit none
-        !
-        class( ForwardSolverIT_DC_t ), intent( inout ) :: self
-        !
-        self%max_solver_calls = max_solver_calls
-        self%max_divcor_iters = max_divcor_iters
-        self%tol_div_cor = tolerance_divcor
-        !
-    end subroutine setIterDefaults_ForwardSolverIT_DC
     !
     !> No subroutine briefing
     subroutine initDiagnostics_ForwardSolverIT_DC( self )
@@ -198,7 +178,7 @@ contains
         if( source%non_zero_source ) then
             !
             !> Create phi0
-            call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol ), phi0 )
+            call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol )%v, phi0 )
             !
         endif
         !
@@ -207,28 +187,28 @@ contains
             select type( solver => self%solver )
                 !
                 class is( Solver_QMR_t )
-                    call solver%solve( source%rhs( pol ), e_solution )
+                    call solver%solve( source%rhs( pol )%v, e_solution )
                 class default
-                    call errStop( "createESolution_ForwardSolverIT_DC > Unknown solver type." )
+                    stop "Error: getESolutionForwardSolverIT_DC > Unknown solver type."
                 !
             end select
+            !
+            self%solver%converged = self%solver%n_iter .LT. self%solver%max_iters
+            !
+            self%solver%failed = self%solver%failed .OR. self%failed
+            !
+            !write( *, * ) "n_iter_actual+iter,     iter,     solver%relErr(iter)"
             !
             do iter = 1, self%solver%n_iter
                 !
                 self%relResVec( self%n_iter_actual + iter ) = self%solver%relErr( iter )
                 !
+                !write( *, * ) self%n_iter_actual + iter, iter, self%solver%relErr( iter )
+                !
             enddo
             !
             self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
             !
-            self%failed = self%n_iter_actual .GE. self%max_iter_total
-            !
-            self%solver%failed = self%solver%failed .OR. self%failed
-            !
-			if( self%solver%failed ) then
-				call errStop( "createESolution_ForwardSolverIT_DC > Solver Failed" )
-			endif
-			!
             self%n_divcor = self%n_divcor + 1
             !
             if( .NOT. self%solver%converged )  then
@@ -273,11 +253,11 @@ contains
         !
         if( source%non_zero_bc ) then
             !
-            call source%rhs( pol )%boundary( temp_vec )
+            call source%rhs( pol )%v%boundary( temp_vec )
             !
         else
             !
-            call source%E( pol )%boundary( temp_vec )
+            call source%E( pol )%v%boundary( temp_vec )
             !
         endif
         !

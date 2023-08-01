@@ -88,7 +88,7 @@ contains
         !  
         integer :: i
         !
-        write( *, * ) "Constructor Grid3D_MR_t"
+        !write( *, * ) "Constructor Grid3D_MR_t"
         !
         call self%baseInit
         !

@@ -30,6 +30,9 @@ module ForwardControlFile
             !
     end type ForwardControlFile_t
     !
+    !> Public Global ForwardControlFile object
+    type( ForwardControlFile_t ), allocatable :: fwd_control_file
+    !
     interface ForwardControlFile_t
         module procedure ForwardControlFile_ctor
     end interface ForwardControlFile_t

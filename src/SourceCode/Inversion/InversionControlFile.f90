@@ -1,10 +1,6 @@
-!>*************
-!>
-!> Class to read a control file
-!> And set Inversion parameters
-!>
-!>*************
-!>
+!
+!> Class to read a control file and set Inversion parameters
+!
 module InversionControlFile
     !
     use Constants
@@ -32,6 +28,9 @@ module InversionControlFile
             final :: InversionControlFile_dtor
             !
     end type InversionControlFile_t
+    !
+    !> Public Global InversionControlFile object
+    type( InversionControlFile_t ), allocatable :: inv_control_file
     !
     interface InversionControlFile_t
         module procedure InversionControlFile_ctor

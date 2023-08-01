@@ -159,8 +159,6 @@ contains
         class( Vector_t ), allocatable:: sig_temp
         complex( kind=prec ), allocatable, dimension(:) :: sig_vec_v, v_edge_v
         !
-        write( *, * ) "setCond_ModelOperator_SP"
-        !
         call self%metric%createVector( real_t, EDGE, sig_temp )
         !
         call sigma%PDEmapping( sig_temp )
@@ -189,8 +187,6 @@ contains
         real( kind=prec ), allocatable, dimension(:) :: d, aux_vec
         integer, allocatable, dimension(:) :: allNodes
         integer :: i, m
-        !
-        !write(*,*) "divCorInit_ModelOperator_SP"
         !
         !> set indexes for interior and boundary nodes
         call boundaryIndexSP( NODE, self%metric, self%NODEb, self%NODEi )
@@ -248,8 +244,6 @@ contains
         integer, allocatable, dimension(:) :: allNodes
         integer :: n, i
         !
-        !write(*,*) "divCorSetUp_ModelOperator_SP"
-        !
         !> Construct VDs .. multiply VDiv by Conductivity on edges; can use VomegaMuSig
         n = self%VDiv%nCol
         !
@@ -301,8 +295,6 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
         complex( kind=prec ), allocatable, dimension(:) :: out_e_v_int
         !
-        !write( *, * ) "amult_ModelOperator_SP"
-        !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "amult_ModelOperator_SP > in_e not allocated" )
         endif
@@ -352,8 +344,6 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
         complex( kind=prec ), allocatable, dimension(:) :: out_e_v_int
         !
-        !write( *, * ) "multAib_ModelOperator_SP"
-        !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "multAib_ModelOperator_SP > in_e not allocated" )
         endif
@@ -388,8 +378,6 @@ contains
         type( spMatCSR_Real ) :: D
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v
-        !
-        !write( *, * ) "div_ModelOperator_SP"
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "div_ModelOperator_SP > in_e not allocated" )
@@ -426,8 +414,6 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v
         !
-        !write( *, * ) "divC_ModelOperator_SP"
-        !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "divC_ModelOperator_SP > in_e not allocated" )
         endif
@@ -460,8 +446,6 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_phi_v
         !
-        !write( *, * ) "divCGrad_ModelOperator_SP"
-        !
         if( .NOT. in_phi%is_allocated ) then
             call errStop( "divCGrad_ModelOperator_SP > in_phi not allocated" )
         endif
@@ -493,8 +477,6 @@ contains
         class( Vector_t ), intent( inout ) :: out_e
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_e_v, out_e_v_int
-        !
-        !write( *, * ) "grad_ModelOperator_SP"
         !
         if( .NOT. in_phi%is_allocated ) then
             call errStop( "grad_ModelOperator_SP > in_phi not allocated" )

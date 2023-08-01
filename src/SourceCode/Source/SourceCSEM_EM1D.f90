@@ -13,7 +13,7 @@ module SourceCSEM_EM1D
         !
         integer :: i_tx
         !
-        type( rVector3D_SG_t ) :: cond_anomaly_h, cond_anomaly_v
+        class( Vector_t ), allocatable :: cond_anomaly_h, cond_anomaly_v
         !
         !> (S/m) Layer conductivities in the both directions used in VTI
         real( kind=prec ), dimension(:), allocatable, private :: sig1D_h, sig1D_v
@@ -103,6 +103,7 @@ contains
         !
         integer :: ifreq, icur, comm
         complex( kind=prec ) :: i_omega_mu
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
         !> Verbose...
         write( *, * ) "          - Extract CSEM Source from EM1D"
@@ -128,30 +129,22 @@ contains
         !
         i_omega_mu = cmplx( 0., real( -1.0d0 * isign * mu_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
         !
+        !>
+        allocate( self%E( 1 ) )
+        !
         !> Construct E from E_p
-        allocate( self%E(1), source = E_p )
+        allocate( self%E(1)%v, source = E_p )
         !
-        select type( E => self%E(1) )
-            !
-            class is( cVector3D_SG_t )
-                !
-                select type( E_P )
-                    !
-                    class is( cVector3D_SG_t )
-                        !
-                        E%x = self%cond_anomaly_h%getAxis("x") * E_P%x
-                        E%y = self%cond_anomaly_h%getAxis("y") * E_P%y
-                        E%z = self%cond_anomaly_v%getAxis("z") * E_P%z
-                        !
-                    class default
-                        stop "createE_SourceCSEM_EM1D > Unclassified E_P"
-                end select
-                !
-            class default
-                stop "createE_SourceCSEM_EM1D > Unclassified E"
-        end select
+        x = self%cond_anomaly_h%getAxis("x") * E_P%getX()
+        call self%E(1)%v%setX( x )
         !
-        call self%E(1)%mult( i_omega_mu )
+        y = self%cond_anomaly_h%getAxis("y") * E_P%getY()
+        call self%E(1)%v%setY( y )
+        !
+        z = self%cond_anomaly_v%getAxis("z") * E_P%getZ()
+        call self%E(1)%v%setZ( z )
+        !
+        call self%E(1)%v%mult( i_omega_mu )
         !
         deallocate( freqdat%omega )
         deallocate( bgdat%sigv, bgdat%sigh )
@@ -180,51 +173,57 @@ contains
         type( backgrounddata ), intent( in ) :: bgdat
         !
         integer ix, iy, iz, counter
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
         if( allocated( E_p ) ) deallocate( E_p )
         allocate( E_p, source = cVector3D_SG_t( grid, EDGE ) )
         !
         !> Fill e_vector (cVector3D_SG) from E2D (Esoln2DTM_t)
-        select type( E_P )
-            !
-            class is( cVector3D_SG_t )
-                !
-                counter = 1
-                !> E-field corresponding to these nodes is Ex
-                do iz = 1,grid%Nz+1    !Edge Z
-                    do iy = 1,grid%Ny+1     !Edge Y
-                        do ix = 1,grid%Nx       !Center X
-                            E_p%x(ix,iy,iz) = bgdat%Ex(counter)
-                            counter = counter + 1
-                        enddo
-                    enddo
+        !
+        x = E_p%getX()
+        !
+        counter = 1
+        !> E-field corresponding to these nodes is Ex
+        do iz = 1,grid%Nz+1    !Edge Z
+            do iy = 1,grid%Ny+1     !Edge Y
+                do ix = 1,grid%Nx       !Center X
+                    x(ix,iy,iz) = bgdat%Ex(counter)
+                    counter = counter + 1
                 enddo
-                !
-                counter = 1
-                !> E-field corresponing to these nodes is Ey
-                do iz = 1, grid%Nz+1    !Edge Z
-                    do iy = 1, grid%Ny      !Center y
-                        do ix = 1, grid%Nx+1    !Edge x
-                            E_p%y(ix,iy,iz) = bgdat%Ey(counter)
-                            counter = counter + 1
-                        enddo
-                    enddo
+            enddo
+        enddo
+        !
+        call E_p%setX( x )
+        !
+        y = E_p%getY()
+        !
+        counter = 1
+        !> E-field corresponing to these nodes is Ey
+        do iz = 1, grid%Nz+1    !Edge Z
+            do iy = 1, grid%Ny      !Center y
+                do ix = 1, grid%Nx+1    !Edge x
+                    y(ix,iy,iz) = bgdat%Ey(counter)
+                    counter = counter + 1
                 enddo
-                !
-                counter = 1
-                !> E-field corresponing to these nodes is Ez
-                do iz = 1,grid%Nz !Center Z
-                    do iy = 1,grid%Ny+1 !Edge y
-                        do ix = 1,grid%Nx+1 !Edge x
-                            E_p%z(ix,iy,iz) = bgdat%Ez(counter)
-                            counter = counter + 1
-                        enddo
-                    enddo
+            enddo
+        enddo
+        !
+        call E_p%setY( y )
+        !
+        z = E_p%getZ()
+        !
+        counter = 1
+        !> E-field corresponing to these nodes is Ez
+        do iz = 1,grid%Nz !Center Z
+            do iy = 1,grid%Ny+1 !Edge y
+                do ix = 1,grid%Nx+1 !Edge x
+                    z(ix,iy,iz) = bgdat%Ez(counter)
+                    counter = counter + 1
                 enddo
-                !
-            class default
-                stop "create_Ep_from_EM1D > Unclassified E_P"
-        end select
+            enddo
+        enddo
+        !
+        call E_p%setZ( z )
         !
     end subroutine create_Ep_from_EM1D
     !
@@ -235,12 +234,12 @@ contains
         !
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
         !
-        if( allocated( self%rhs ) ) deallocate( self%rhs )
-        allocate( cVector3D_SG_t :: self%rhs(1) )
+        !if( allocated( self%rhs ) ) deallocate( self%rhs )
+        allocate( self%rhs(1) )
         !
-        self%rhs(1) = self%E(1)
+        allocate( self%rhs(1)%v, source = self%E(1)%v )
         !
-        call self%rhs(1)%mult( self%model_operator%metric%v_edge )
+        call self%rhs(1)%v%mult( self%model_operator%metric%v_edge )
         !
     end subroutine createRHS_SourceCSEM_EM1D
     !
@@ -280,7 +279,7 @@ contains
             self%sig1D_v = sig1D
             !
         else
-            stop "Error: set1DModel_SourceCSEM_EM1D > Anisotropy with level above 2 not yet supported"
+            call errStop( "set1DModel_SourceCSEM_EM1D > Anisotropy with level above 2 not yet supported" )
         endif
         !
     end subroutine set1DModel_SourceCSEM_EM1D
@@ -458,7 +457,7 @@ contains
                 src%cur( 1, 1 ) = C_ONE
                 !
             class default
-                stop "Error: createSourceData > Not a CSEM Transmitter"
+                call errStop( "createSourceData > Not a CSEM Transmitter" )
             !
         end select
         !

@@ -69,7 +69,7 @@ contains
         !
         type( ModelOperator_MF_SG_t ) :: self
         !
-        write( *, * ) "Constructor ModelOperator_MF_SG"
+        !write( *, * ) "Constructor ModelOperator_MF_SG"
         !
         call self%baseInit
         !
@@ -86,7 +86,7 @@ contains
         !
         type( ModelOperator_MF_SG_t ), intent( inout ) :: self
         !
-        write( *, * ) "Destructor ModelOperator_MF_SG_t"
+        !write( *, * ) "Destructor ModelOperator_MF_SG_t"
         !
         call self%baseDealloc()
         !
@@ -199,8 +199,6 @@ contains
         class( ModelOperator_MF_SG_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( in ) :: sigma
         real( kind=prec ), intent( in ) :: omega_in
-        !
-        write(*,*) "setCond_ModelOperator_MF_SG"
         !
         call sigma%PDEmapping( self%sigma_e )
         !

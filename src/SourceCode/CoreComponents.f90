@@ -32,18 +32,6 @@ module CoreComponents
     !
     use DataFileStandard
     !
-    !> Classes
-    type( ForwardControlFile_t ), allocatable :: fwd_control_file
-    type( InversionControlFile_t ), allocatable :: inv_control_file
-    !
-    class( Grid_t ), allocatable, target :: main_grid
-    !
-    class( ModelOperator_t ), allocatable :: model_operator
-    !
-    class( ForwardSolver_t ), allocatable, target :: forward_solver
-    !
-    class( ModelCovariance_t ), allocatable :: model_cov
-    !
     !> Program Control Variables
     character(8) :: str_date
     character(6) :: str_time

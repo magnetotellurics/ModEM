@@ -57,6 +57,9 @@ module ModelCovariance
             !
     end type
     !
+    !> Public Global ModelCovariance object
+    class( ModelCovariance_t ), allocatable :: model_cov
+    !
     interface ModelCovariance_t
          module procedure ModelCovariance_ctor
     end interface ModelCovariance_t

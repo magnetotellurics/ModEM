@@ -127,7 +127,7 @@ contains
         type( DataGroupTx_t ), intent( inout ) :: JmHat_tx
         !
         class( Vector_t ), allocatable :: lrows
-        complex( kind=prec ) :: lrows_x_esens
+        complex( kind=prec ) :: sum_esens_dot_lrows
         integer :: i_data, i_comp, i_pol
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
@@ -151,7 +151,7 @@ contains
             !> Loop over components
             do i_comp = 1, JmHat_tx%data( i_data )%n_comp
                 !
-                lrows_x_esens = C_ZERO
+                sum_esens_dot_lrows = C_ZERO
                 !
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
@@ -161,13 +161,13 @@ contains
                     !> NECESSARY FOR FULL VECTOR LROWS ????
                     call lrows%conjugate
                     !
-                    lrows_x_esens = lrows_x_esens + Tx%e_sens( i_pol )%v%dotProd( lrows )
+                    sum_esens_dot_lrows = sum_esens_dot_lrows + Tx%e_sens( i_pol )%v%dotProd( lrows )
                     !
                     deallocate( lrows )
                     !
                 enddo
                 !
-                call JmHat_tx%data( i_data )%set( i_comp, -real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
+                call JmHat_tx%data( i_data )%set( i_comp, -real( sum_esens_dot_lrows, kind=prec ), real( aimag( sum_esens_dot_lrows ), kind=prec ) )
                 !
                 !write( *, * ) "serialJMult Z: ", JmHat_tx%data( i_data )%reals( i_comp ), JmHat_tx%data( i_data )%imaginaries( i_comp )
                 !
@@ -319,7 +319,7 @@ contains
         integer, intent( in ), optional :: i_sol
         !
         class( Vector_t ), allocatable :: lrows
-        class( Vector_t ), allocatable, dimension(:) :: bSrc
+        class( GenVector_t ), allocatable, dimension(:) :: bSrc
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
         type( DataGroup_t ) :: data_group
@@ -342,12 +342,12 @@ contains
         Tx%i_sol = sol_index
         !
         !> Initialize bSrc( n_pol ) with zeros
-        allocate( cVector3D_SG_t :: bSrc( Tx%n_pol ) )
+        allocate( bSrc( Tx%n_pol ) )
         !
         do i_pol = 1, Tx%n_pol
             !
-            bSrc( i_pol ) = cVector3D_SG_t( tx_dsigma%metric%grid, EDGE )
-            call bSrc( i_pol )%zeros
+            call sigma%metric%createVector( complex_t, EDGE, bSrc( i_pol )%v )
+            call bSrc( i_pol )%v%zeros
             !
         enddo
         !
@@ -385,7 +385,7 @@ contains
                     !
                     call lrows%mult( tx_data_cvalue )
                     !
-                    call bSrc( i_pol )%add( lrows )
+                    call bSrc( i_pol )%v%add( lrows )
                     !
                     deallocate( lrows )
                     !
@@ -398,7 +398,7 @@ contains
         !> NECESSARY FOR FULL VECTOR LROWS ????
         do i_pol = 1, Tx%n_pol
             !
-            call bSrc( i_pol )%mult( C_MinusOne )
+            call bSrc( i_pol )%v%mult( C_MinusOne )
             !
         enddo
         !

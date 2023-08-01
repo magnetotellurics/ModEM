@@ -131,6 +131,7 @@ contains
                     !
                 end select
                 !
+
                 if( index( paramType, "LOGE" ) > 0 .OR. &
                     index( paramType, "LOG10" ) > 0 ) then
                     !
@@ -163,6 +164,8 @@ contains
                     endif
                     !
                 endif
+                !
+                deallocate( ccond )
                 !
             end do
             !

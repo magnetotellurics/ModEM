@@ -152,15 +152,15 @@ contains
             self%relErr( self%iter ) = rnorm / bnorm
             !
         enddo loop
-        !
-        self%converged = self%iter .LT. self%max_iters
-        !
-        if( self%iter .LT. self%max_iters ) then
-            write( *, "( a46, i6, a7, es12.3 )" ) "->divCor PCG converged within ", self%iter, ": err= ", self%relErr( self%iter )
-        else
-            write( *, "( a46, i6, a7, es12.3 )" ) "->divCor PCG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
-        endif
-        !
+        ! !
+        ! self%converged = self%iter .LT. self%max_iters
+        ! !
+        ! if( self%iter .LT. self%max_iters ) then
+            ! write( *, "( a46, i6, a7, es12.3 )" ) "->divCor PCG converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        ! else
+            ! write( *, "( a46, i6, a7, es12.3 )" ) "->divCor PCG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        ! endif
+        ! !
         deallocate( r )
         deallocate( s )
         deallocate( p )

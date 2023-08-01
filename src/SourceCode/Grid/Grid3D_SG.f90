@@ -48,7 +48,7 @@ contains
         !
         type( Grid3D_SG_t ) :: self
         !
-        write( *, * ) "Constructor Grid3D_SG_t"
+        !write( *, * ) "Constructor Grid3D_SG_t"
         !
         call self%baseInit
         !

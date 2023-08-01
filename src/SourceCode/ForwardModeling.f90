@@ -71,7 +71,7 @@ contains
                         !
                     case( SRC_MT_2D )
                         !
-                        call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
+                        !call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
                         !
                     case( "" )
                         !

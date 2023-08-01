@@ -46,6 +46,9 @@ module ForwardSolver
             !
     end type ForwardSolver_t
     !
+    !> Public Global Generic ForwardSolver object
+    class( ForwardSolver_t ), allocatable, target :: forward_solver
+    !
     abstract interface
         !
         !> No interface subroutine briefing
