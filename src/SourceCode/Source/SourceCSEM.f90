@@ -51,7 +51,7 @@ module SourceCSEM
         integer, intent( in ) :: ani_level
         !
         class( Scalar_t ), allocatable :: sigma_cell
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        complex( kind=prec ), allocatable :: v(:,:,:)
         class( ModelParameter_t ), allocatable :: aModel
         real( kind=prec ) :: wt, temp_sigma_1d
         integer :: nzAir, nzEarth, i, j, k

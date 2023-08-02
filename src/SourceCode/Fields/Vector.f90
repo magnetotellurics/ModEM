@@ -58,7 +58,7 @@ module Vector
             import :: Vector_t, prec
             class( Vector_t ), intent( inout ) :: self
             character, intent( in ) :: comp_lbl
-            complex( kind=prec ), allocatable :: comp(:, :, :)
+            complex( kind=prec ), allocatable :: comp(:,:,:)
         end function interface_get_axis_vector
         !
         function interface_diag_mult_vector( self, rhs ) result( diag_mult )
@@ -124,7 +124,7 @@ module Vector
         function interface_get_x_vector( self ) result( x )
             import :: Vector_t, prec
             class( Vector_t ), intent( in ) :: self
-            complex( kind=prec ), allocatable :: x(:, :, :)
+            complex( kind=prec ), allocatable :: x(:,:,:)
         end function interface_get_x_vector
         !
         !> No interface subroutine briefing
@@ -132,7 +132,7 @@ module Vector
         subroutine interface_set_x_vector( self, x )
             import :: Vector_t, prec
             class( Vector_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable, intent( in ) :: x(:, :, :)
+            complex( kind=prec ), allocatable, intent( in ) :: x(:,:,:)
         end subroutine interface_set_x_vector
         !
         !> No interface function briefing
@@ -140,7 +140,7 @@ module Vector
         function interface_get_y_vector( self ) result( y )
             import :: Vector_t, prec
             class( Vector_t ), intent( in ) :: self
-            complex( kind=prec ), allocatable :: y(:, :, :)
+            complex( kind=prec ), allocatable :: y(:,:,:)
         end function interface_get_y_vector
         !
         !> No interface subroutine briefing
@@ -148,7 +148,7 @@ module Vector
         subroutine interface_set_y_vector( self, y )
             import :: Vector_t, prec
             class( Vector_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable, intent( in ) :: y(:, :, :)
+            complex( kind=prec ), allocatable, intent( in ) :: y(:,:,:)
         end subroutine interface_set_y_vector
         !
         !> No interface function briefing
@@ -156,7 +156,7 @@ module Vector
         function interface_get_z_vector( self ) result( z )
             import :: Vector_t, prec
             class( Vector_t ), intent( in ) :: self
-            complex( kind=prec ), allocatable :: z(:, :, :)
+            complex( kind=prec ), allocatable :: z(:,:,:)
         end function interface_get_z_vector
         !
         !> No interface subroutine briefing
@@ -164,7 +164,7 @@ module Vector
         subroutine interface_set_z_vector( self, z )
             import :: Vector_t, prec
             class( Vector_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable, intent( in ) :: z(:, :, :)
+            complex( kind=prec ), allocatable, intent( in ) :: z(:,:,:)
         end subroutine interface_set_z_vector
         !
     end interface

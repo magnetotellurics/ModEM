@@ -7,7 +7,7 @@ module cVector3D_SG
     !
     type, extends( Vector_t ) :: cVector3D_SG_t
         !
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: x, y, z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
         complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
@@ -615,7 +615,7 @@ contains
         class( Scalar_t ), allocatable, intent( out ) :: cell_h_out, cell_v_out
         logical, optional, intent( in ) :: interior_only
         !
-        complex( kind=prec ), allocatable :: sigma_v(:, :, :)
+        complex( kind=prec ), allocatable :: sigma_v(:,:,:)
         integer :: x_xend, x_yend, x_zend
         integer :: y_xend, y_yend, y_zend
         integer :: z_xend, z_yend, z_zend
@@ -639,74 +639,57 @@ contains
         !
         allocate( cell_v_out, source = rScalar3D_SG_t( self%grid, CELL ) )
         !
-        select type( cell_h_out )
+        select case( self%grid_type )
             !
-            class is( cScalar3D_SG_t )
+            case( EDGE )
                 !
-                select type( cell_v_out )
-                    !
-                    class is( cScalar3D_SG_t )
-                        !
-                        select case( self%grid_type )
-                            !
-                            case( EDGE )
-                                !
-                                x_xend = size( self%x, 1 )
-                                x_yend = size( self%x, 2 )
-                                x_zend = size( self%x, 3 )
-                                !
-                                y_xend = size( self%y, 1 )
-                                y_yend = size( self%y, 2 )
-                                y_zend = size( self%y, 3 )
-                                !
-                                z_xend = size( self%z, 1 )
-                                z_yend = size( self%z, 2 )
-                                z_zend = size( self%z, 3 )
-                                !
-                                sigma_v = self%x(:,1:x_yend-1,1:x_zend-1) + &
-                                self%x(:,2:x_yend,1:x_zend-1)       + &
-                                self%x(:,1:x_yend-1,2:x_zend)       + &
-                                self%x(:,2:x_yend,2:x_zend)         + &
-                                self%y(1:y_xend-1,:,1:y_zend-1)     + &
-                                self%y(2:y_xend,:,1:y_zend-1)       + &
-                                self%y(1:y_xend-1,:,2:y_zend)       + &
-                                self%y(2:y_xend,:,2:y_zend)
-                                !
-                                call cell_h_out%setV( sigma_v )
-                                !
-                                sigma_v = self%z(1:z_xend-1,1:z_yend-1,:)     + &
-                                self%z(2:z_xend,1:z_yend-1,:)       + &
-                                self%z(1:z_xend-1,2:z_yend,:)       + &
-                                self%z(2:z_xend,2:z_yend,:)
-                                !
-                                call cell_v_out%setV( sigma_v )
-                                !
-                            case( FACE )
-                                !
-                                x_xend = size( self%x, 1 )
-                                y_xend = size( self%y, 1 )
-                                z_xend = size( self%z, 1 )
-                                !
-                                sigma_v = self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
-                                          self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:)
-                                !
-                                call cell_h_out%setV( sigma_v )
-                                !
-                                sigma_v = self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
-                                !
-                                call cell_v_out%setV( sigma_v )
-                                !
-                            case default
-                                call errStop( "sumEdgeVTI_cVector3D_SG: undefined self%grid_type" )
-                            !
-                        end select
-                        !
-                    class default
-                        call errStop( "sumEdgeVTI_cVector3D_SG: Unclassified cell_v_out" )
-                end select
+                x_xend = size( self%x, 1 )
+                x_yend = size( self%x, 2 )
+                x_zend = size( self%x, 3 )
                 !
-            class default
-                call errStop( "sumEdgeVTI_cVector3D_SG: Unclassified cell_h_out" )
+                y_xend = size( self%y, 1 )
+                y_yend = size( self%y, 2 )
+                y_zend = size( self%y, 3 )
+                !
+                z_xend = size( self%z, 1 )
+                z_yend = size( self%z, 2 )
+                z_zend = size( self%z, 3 )
+                !
+                sigma_v = self%x(:,1:x_yend-1,1:x_zend-1) + &
+                self%x(:,2:x_yend,1:x_zend-1)       + &
+                self%x(:,1:x_yend-1,2:x_zend)       + &
+                self%x(:,2:x_yend,2:x_zend)         + &
+                self%y(1:y_xend-1,:,1:y_zend-1)     + &
+                self%y(2:y_xend,:,1:y_zend-1)       + &
+                self%y(1:y_xend-1,:,2:y_zend)       + &
+                self%y(2:y_xend,:,2:y_zend)
+                !
+                call cell_h_out%setV( sigma_v )
+                !
+                sigma_v = self%z(1:z_xend-1,1:z_yend-1,:)     + &
+                self%z(2:z_xend,1:z_yend-1,:)       + &
+                self%z(1:z_xend-1,2:z_yend,:)       + &
+                self%z(2:z_xend,2:z_yend,:)
+                !
+                call cell_v_out%setV( sigma_v )
+                !
+            case( FACE )
+                !
+                x_xend = size( self%x, 1 )
+                y_xend = size( self%y, 1 )
+                z_xend = size( self%z, 1 )
+                !
+                sigma_v = self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
+                          self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:)
+                !
+                call cell_h_out%setV( sigma_v )
+                !
+                sigma_v = self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
+                !
+                call cell_v_out%setV( sigma_v )
+                !
+            case default
+                call errStop( "sumEdgeVTI_cVector3D_SG: undefined self%grid_type" )
             !
         end select
         !
@@ -721,7 +704,7 @@ contains
         class( Scalar_t ), intent( inout ) :: cell_in
         character(*), intent( in ), optional :: ptype
         !
-        complex( kind=prec ), allocatable :: cell_in_v(:, :, :)
+        complex( kind=prec ), allocatable :: cell_in_v(:,:,:)
         character(10) :: grid_type
         integer :: xend, yend, zend
         integer :: v_xend, v_yend, v_zend
@@ -814,7 +797,7 @@ contains
         class( Scalar_t ), intent( inout ) :: cell_h_in, cell_v_in
         character(*), intent( in ), optional :: ptype
         !
-        complex( kind=prec ), allocatable :: v_h(:, :, :), v_v(:, :, :)
+        complex( kind=prec ), allocatable :: v_h(:,:,:), v_v(:,:,:)
         character(10) :: grid_type
         integer :: xend, yend, zend
         integer :: v_xend, v_yend, v_zend
@@ -1847,7 +1830,7 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         character, intent( in ) :: comp_lbl
         !
-        complex( kind=prec ), allocatable :: comp(:, :, :)
+        complex( kind=prec ), allocatable :: comp(:,:,:)
         !
         if( ( .NOT. self%is_allocated ) ) then
             call errStop( "interpFunc_cVector3D_SG > Self not allocated." )
@@ -1888,7 +1871,7 @@ contains
         !
         class( cVector3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: x(:, :, :)
+        complex( kind=prec ), allocatable :: x(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getX_cVector3D_SG > self not allocated." )
@@ -1910,7 +1893,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: x(:, :, :)
+        complex( kind=prec ), allocatable, intent( in ) :: x(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setX_cVector3D_SG > self not allocated." )
@@ -1935,7 +1918,7 @@ contains
         !
         class( cVector3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: y(:, :, :)
+        complex( kind=prec ), allocatable :: y(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getY_cVector3D_SG > self not allocated." )
@@ -1957,7 +1940,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: y(:, :, :)
+        complex( kind=prec ), allocatable, intent( in ) :: y(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setY_cVector3D_SG > self not allocated." )
@@ -1982,7 +1965,7 @@ contains
         !
         class( cVector3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: z(:, :, :)
+        complex( kind=prec ), allocatable :: z(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getZ_cVector3D_SG > self not allocated." )
@@ -2004,7 +1987,7 @@ contains
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: z(:, :, :)
+        complex( kind=prec ), allocatable, intent( in ) :: z(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setZ_cVector3D_SG > self not allocated." )

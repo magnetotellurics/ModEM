@@ -658,7 +658,7 @@ contains
         !
         select type( model )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
                 !
@@ -708,7 +708,7 @@ contains
         !
         select type( model )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
@@ -738,7 +738,7 @@ contains
         param_type_size = 0
         !
         if( allocated( model ) ) deallocate( model )
-        allocate( ModelParameterCell_SG_t :: model )
+        allocate( ModelParameterCell_t :: model )
         !
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%anisotropic_level, 1, MPI_INTEGER, main_comm, ierr )
         !
@@ -753,7 +753,7 @@ contains
         !
         select type( model )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !

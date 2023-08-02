@@ -168,7 +168,6 @@ contains
                 !
                 ! Could merge into a single LT and UT matrix, or solve systems individually
                 call BlkDiag_Cmplx( Lblk, self%L )
-                !
                 call BlkDiag_Cmplx( Ublk, self%U )
                 !
                 call CMATtrans( self%L, self%LH )
@@ -177,7 +176,6 @@ contains
                 deallocate( ix, iy, iz )
                 !
                 call deall_spMatCSR( CCxx )
-                !
                 call deall_spMatCSR( Axx )
                 !
                 do j = 1, 3
@@ -224,7 +222,7 @@ contains
         !
         if( adjoint ) then
             !
-            !write(*,*) "CC UTsolve_Cmplx: ", self%LH%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
+            !write(*,*) "UTsolve_Cmplx: ", self%LH%nCol, self%LH%nRow, size( in_e_v_int ), size( out_e_v_int )
             !
             call UTsolve_Cmplx( self%LH, in_e_v_int, out_e_v_int )
             !
@@ -232,7 +230,7 @@ contains
             !
             out_e_v_int = C_ZERO
             !
-            !write(*,*) "CC LTsolve_Cmplx: ", self%L%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
+            !write(*,*) "LTsolve_Cmplx: ", self%L%nCol, self%L%nRow, size( in_e_v_int ), size( out_e_v_int )
             !
             call LTsolve_Cmplx( self%L, in_e_v_int, out_e_v_int )
             !
@@ -258,8 +256,6 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
         !
-        !write(*,*) "UTSolvePreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
-        !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "UTSolvePreConditioner_CC_SP > in_e not allocated yet" )
         endif
@@ -276,9 +272,13 @@ contains
         !
         if( adjoint ) then
             !
+            !write(*,*) "LTsolve_Cmplx: ", self%UH%nCol, self%UH%nRow, size( in_e_v_int ), size( out_e_v_int )
+            !
             call LTsolve_Cmplx( self%UH, in_e_v_int, out_e_v_int )
             !
         else
+            !
+            !write(*,*) "UTsolve_Cmplx: ", self%U%nCol, self%U%nRow, size( in_e_v_int ), size( out_e_v_int )
             !
             call UTsolve_Cmplx( self%U, in_e_v_int, out_e_v_int )
             !

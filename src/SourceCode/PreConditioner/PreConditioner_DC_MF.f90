@@ -57,7 +57,7 @@ contains
         real( kind=prec ), intent( in ) :: omega
         !
         integer :: ix,iy,iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: d_v, c_v
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: d_v, c_v
         !
         !write( *, * ) "setPreConditioner_DC_MF"
         !
@@ -139,7 +139,7 @@ contains
         class( Scalar_t ), intent( inout ) :: in_phi, out_phi
         !
         integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: in_phi_v, out_phi_v, d_v
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: in_phi_v, out_phi_v, d_v
         !
         !write(*,*) "LUSolve_PreConditioner_DC_MF: ", in_phi%length(), out_phi%length()
         !

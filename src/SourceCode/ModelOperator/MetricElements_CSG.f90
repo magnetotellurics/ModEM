@@ -103,7 +103,7 @@ contains
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: x, y, z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
         x = self%edge_length%getX()
         y = self%edge_length%getY()
@@ -142,7 +142,7 @@ contains
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: x, y, z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
         x = self%dual_edge_length%getX()
         y = self%dual_edge_length%getY()
@@ -180,7 +180,7 @@ contains
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: x, y, z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
         x = self%face_area%getX()
         y = self%face_area%getY()
@@ -233,7 +233,7 @@ contains
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: x, y, z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
         x = self%dual_face_area%getX()
         y = self%dual_face_area%getY()
@@ -281,7 +281,7 @@ contains
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: i, j, k
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        complex( kind=prec ), allocatable :: v(:,:,:)
         !
         v = self%v_node%getV()
         !
@@ -309,7 +309,7 @@ contains
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: i, j, k
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        complex( kind=prec ), allocatable :: v(:,:,:)
         !
         v = self%v_cell%getV()
         !

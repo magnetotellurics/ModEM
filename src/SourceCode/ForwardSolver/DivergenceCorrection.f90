@@ -81,7 +81,7 @@ contains
         !
         call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phi0 )
         !
-        call self%solver%preconditioner%model_operator%Div( source_e, phi0 )
+        call self%solver%preconditioner%model_operator%div( source_e, phi0 )
         !
         i_omega_mu = cmplx( 0., real( 1.0d0 * isign * mu_0 * omega, kind=prec ), kind=prec )
         !

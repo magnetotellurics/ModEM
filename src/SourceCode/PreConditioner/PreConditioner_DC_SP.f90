@@ -143,11 +143,11 @@ contains
             !
             class is( ModelOperator_SP_t )
                 !
-                !write(*,*) "LTsolve_Real: ", model_operator%VDsG_L%nCol, size( in_phi_v ), size( self%phi )
+                !write(*,*) "LTsolve_Real: ", model_operator%VDsG_L%nCol, model_operator%VDsG_L%nRow, size( in_phi_v ), size( self%phi )
                 !
                 call LTsolve_Real( model_operator%VDsG_L, in_phi_v, self%phi )
                 !
-                !write(*,*) "UTsolve_Real: ", model_operator%VDsG_U%nCol, size( self%phi ), size( out_phi_v )
+                !write(*,*) "UTsolve_Real: ", model_operator%VDsG_U%nCol, model_operator%VDsG_U%nRow, size( self%phi ), size( out_phi_v )
                 !
                 call UTsolve_Real( model_operator%VDsG_U, self%phi, out_phi_v )
                 !

@@ -9,7 +9,7 @@ module CoreComponents
     use ModelOperator_MF_SG
     use ModelOperator_SP
     !
-    use ModelParameterCell_SG
+    use ModelParameterCell
     !
     use ModelCovariance
     !
@@ -286,7 +286,7 @@ contains
             !> Create new isotropic model with target horizontal cond
             allocate( cell_cond, source = model%getCond(1) )
             !
-            allocate( aux_model, source = ModelParameterCell_SG_t( model%metric%grid, cell_cond, 1, model%param_type ) )
+            allocate( aux_model, source = ModelParameterCell_t( model%metric%grid, cell_cond, 1, model%param_type ) )
             !
             call aux_model%setMetric( model_operator%metric )
             !

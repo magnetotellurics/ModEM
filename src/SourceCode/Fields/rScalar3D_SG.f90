@@ -7,7 +7,7 @@ module rScalar3D_SG
     !
     type, extends( Scalar_t ) :: rScalar3D_SG_t
         !
-        real( kind=prec ), allocatable, dimension(:, :, :) :: v
+        real( kind=prec ), allocatable, dimension(:,:,:) :: v
         !
         real( kind=prec ), allocatable, dimension(:) :: s_v
         !
@@ -847,7 +847,7 @@ contains
         !
         class( rScalar3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        complex( kind=prec ), allocatable :: v(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getV_rScalar3D_SG > self not allocated." )
@@ -869,7 +869,7 @@ contains
         implicit none
         !
         class( rScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
+        complex( kind=prec ), allocatable, intent( in ) :: v(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setV_rScalar3D_SG > self not allocated." )

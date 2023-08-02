@@ -39,7 +39,7 @@ module Scalar
             import :: Scalar_t, prec
             !
             class( Scalar_t ), intent( in ) :: self
-            complex( kind=prec ), allocatable :: v(:, :, :)
+            complex( kind=prec ), allocatable :: v(:,:,:)
         end function interface_get_v_scalar
         !
         !> No interface subroutine briefing
@@ -48,7 +48,7 @@ module Scalar
             import :: Scalar_t, prec
             !
             class( Scalar_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
+            complex( kind=prec ), allocatable, intent( in ) :: v(:,:,:)
         end subroutine interface_set_v_scalar
         !
     end interface

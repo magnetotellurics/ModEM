@@ -199,8 +199,8 @@ contains
         class( Vector_t ), allocatable, intent( out ) :: out_e
         !
         integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: in_e_x, in_e_y, in_e_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: out_e_x, out_e_y, out_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: in_e_x, in_e_y, in_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: out_e_x, out_e_y, out_e_z
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "multCurlT_ModelOperator > in_e not allocated" )

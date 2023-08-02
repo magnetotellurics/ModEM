@@ -59,8 +59,8 @@ contains
         !
         integer :: status, ix, iy, iz
         complex( kind=prec ) :: c_factor
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: dilu_x, dilu_y, dilu_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: sigma_e_x, sigma_e_y, sigma_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: dilu_x, dilu_y, dilu_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: sigma_e_x, sigma_e_y, sigma_e_z
         !
         !write( *, * ) "setPreConditioner_CC_MF"
         !
@@ -161,9 +161,9 @@ contains
         logical, intent( in ) :: adjoint
         !
         integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: in_e_x, in_e_y, in_e_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: out_e_x, out_e_y, out_e_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: dilu_x, dilu_y, dilu_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: in_e_x, in_e_y, in_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: out_e_x, out_e_y, out_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: dilu_x, dilu_y, dilu_z
         !
         !write(*,*) "LTSolvePreConditioner_CC_MF: ", in_e%length(), out_e%length(), adjoint
         !
@@ -310,9 +310,9 @@ contains
         logical, intent( in ) :: adjoint
         !
         integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: in_e_x, in_e_y, in_e_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: out_e_x, out_e_y, out_e_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: dilu_x, dilu_y, dilu_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: in_e_x, in_e_y, in_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: out_e_x, out_e_y, out_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: dilu_x, dilu_y, dilu_z
         !
         !write(*,*) "UTSolvePreConditioner_CC_MF: ", in_e%length(), out_e%length(), adjoint
         !

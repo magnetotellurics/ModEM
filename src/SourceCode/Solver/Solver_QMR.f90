@@ -288,22 +288,22 @@ contains
             rnorm = SQRT( R%dotProd( R ) )
             !
             !> Verbose
-            !write( *, "( a46, i6, a3, es12.3 )" ) "QMR self%iter, self%relErr( self%iter ):", self%iter, " : ", self%relErr( self%iter )
+            write( *, "( a46, i6, a3, es12.3 )" ) "QMR self%iter, self%relErr( self%iter ):", self%iter, " : ", self%relErr( self%iter )
             !
             self%iter = self%iter + 1
             !
             self%relErr( self%iter ) = real( rnorm / bnorm, kind=prec )
             !
         enddo
-        ! !
-        ! self%converged = self%iter .LT. self%max_iters
-        ! !
-        ! if( self%converged ) then
-            ! write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR converged within ", self%iter, ": err= ", self%relErr( self%iter )
-        ! else
-            ! write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
-        ! endif
-        ! !
+        !
+        !self%converged = self%iter .LT. self%max_iters
+        !
+        if( self%iter .LT. self%max_iters ) then
+            write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        else
+            write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        endif
+        !
         deallocate( R )
         deallocate( Y )
         deallocate( Z )

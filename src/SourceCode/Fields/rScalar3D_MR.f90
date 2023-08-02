@@ -897,7 +897,7 @@ contains
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        complex( kind=prec ), allocatable :: v(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getV_rScalar3D_MR > self not allocated." )
@@ -919,7 +919,7 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
+        complex( kind=prec ), allocatable, intent( in ) :: v(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setV_rScalar3D_MR > self not allocated." )

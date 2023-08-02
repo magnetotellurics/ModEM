@@ -6,7 +6,7 @@ module ModelOperator_SP
     use ModelOperator
     use SpOpTopology_SG
     use MetricElements_CSG
-    use ModelParameterCell_SG
+    use ModelParameterCell
     !
     type, extends( ModelOperator_t ) :: ModelOperator_SP_t
         !
@@ -15,7 +15,7 @@ module ModelOperator_SP
         integer, allocatable, dimension(:) :: EDGEi, EDGEb
         integer, allocatable, dimension(:) :: NODEi, NODEb
         !
-        type( spMatCSR_Real ) :: CCii, CCib
+        type( spMatCSR_Real ) :: Gd, CCii, CCib
         !
         real( kind=prec ) :: omega
         !
@@ -110,8 +110,6 @@ contains
         integer :: m, n, nz
         real( kind=prec ), allocatable, dimension(:) :: Dtemp
         integer :: fid
-        !
-        !write( *, * ) "setEquations_ModelOperator_SP"
         !
         m = T%nRow
         n = T%nCol
@@ -223,9 +221,13 @@ contains
         enddo
         !
         call DIAGxRMAT( d, G, Temp )
-        call subMatrix_Real( Temp, self%EDGEi, allNodes, G )
+        call subMatrix_Real( Temp, self%EDGEi, allNodes, self%Gd )
         call deall_spMatCSR( Temp )
         !
+		!write(*,*) "G  :", G%nCol, G%nRow
+		!write(*,*) "Gd :", self%Gd%nCol, self%Gd%nRow
+		!stop
+		!
         deallocate( allNodes, d )
         !
     end subroutine divCorInit_ModelOperator_SP
@@ -256,13 +258,13 @@ contains
         call RMATxDIAG( self%VDiv, d, self%VDs )
         !
         !>Construct VDsG: symmetric operator for divergence correction solver
-        allocate( allNodes( G%nRow ) )
+        allocate( allNodes( self%Gd%nRow ) )
         !
-        do i = 1, G%nRow
+        do i = 1, self%Gd%nRow
             allNodes( i ) = i
         enddo
         !
-        call subMatrix_Real( G, allNodes, self%NODEi, temp_matrix )
+        call subMatrix_Real( self%Gd, allNodes, self%NODEi, temp_matrix )
         !
         call RMATxRMAT( self%VDs, temp_matrix, self%VDsG )
         !
@@ -308,6 +310,8 @@ contains
         out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%ind_interior )
         !
+        write(*,*) "amult_ModelOperator_SP: ", self%CCii%nCol, self%CCii%nRow, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int ), adjoint
+        !
         call RMATxCVEC( self%CCii, in_e_v( in_e%ind_interior ), out_e_v_int )
         !
         if( present( p_adjoint ) ) then
@@ -321,8 +325,6 @@ contains
         else
             out_e_v_int = out_e_v_int + ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%ind_interior )
         endif
-        !
-        !write(*,*) "amult_ModelOperator_SP: ", self%CCii%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int ), adjoint
         !
         out_e_v( in_e%ind_interior ) = out_e_v_int
         !
@@ -357,7 +359,7 @@ contains
         out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%ind_interior )
         !
-        !write(*,*) "multAib_ModelOperator_SP: ", self%CCib%nCol, size( in_e_v( in_e%ind_boundaries ) ), size( out_e_v_int )
+        write(*,*) "multAib_ModelOperator_SP: ", self%CCib%nCol, self%CCib%nRow, size( in_e_v( in_e%ind_boundaries ) ), size( out_e_v_int )
         !
         call RMATxCVEC( self%CCib, in_e_v( in_e%ind_boundaries ), out_e_v_int )
         !
@@ -387,13 +389,13 @@ contains
             call errStop( "div_ModelOperator_SP > out_phi not allocated" )
         endif
         !
-        call RMATtrans( G, D )
+        call RMATtrans( self%Gd, D )
         !
         in_e_v = in_e%getArray()
         !
         out_phi_v = out_phi%getArray()
         !
-        !write(*,*) "div_ModelOperator_SP: ", D%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_phi_v )
+        write(*,*) "div_ModelOperator_SP: ", D%nCol, D%nRow, size( in_e_v( in_e%ind_interior ) ), size( out_phi_v )
         !
         call RMATxCVEC( D, in_e_v( in_e%ind_interior ), out_phi_v )
         !
@@ -427,7 +429,7 @@ contains
         out_phi_v = out_phi%getArray()
         out_phi_v = C_ZERO
         !
-        !write(*,*) "divC_ModelOperator_SP: ", self%VDs%nCol, size( in_e_v( in_e%ind_interior ) ), size( out_phi_v )
+        write(*,*) "divC_ModelOperator_SP: ", self%VDs%nCol, self%VDs%nRow, size( in_e_v( in_e%ind_interior ) ), size( out_phi_v )
         !
         call RMATxCVEC( self%VDs, in_e_v( in_e%ind_interior ), out_phi_v )
         !
@@ -444,6 +446,7 @@ contains
         class( Scalar_t ), intent( in ) :: in_phi
         class( Scalar_t ), intent( inout ) :: out_phi
         !
+        class( Scalar_t ), allocatable :: in_phi_copy
         complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_phi_v
         !
         if( .NOT. in_phi%is_allocated ) then
@@ -454,12 +457,16 @@ contains
             call errStop( "divCGrad_ModelOperator_SP > out_phi not allocated" )
         endif
         !
-        in_phi_v = in_phi%getArray()
+        allocate( in_phi_copy, source = in_phi )
+        !
+        call in_phi_copy%setAllBoundary( C_ZERO )
+        in_phi_v = in_phi_copy%getArray()
+        !
+        deallocate( in_phi_copy )
         !
         out_phi_v = out_phi%getArray()
-        out_phi_v = C_ZERO
         !
-        !write(*,*) "divCGrad_ModelOperator_SP: ", self%VDsG%nCol, size( in_phi%getArray() ), size( out_phi_v )
+        write(*,*) "divCGrad_ModelOperator_SP: ", self%VDsG%nCol, self%VDsG%nRow, size( in_phi_v ), size( out_phi_v )
         !
         call RMATxCVEC( self%VDsG, in_phi_v, out_phi_v )
         !
@@ -476,6 +483,7 @@ contains
         class( Scalar_t ), intent( in ) :: in_phi
         class( Vector_t ), intent( inout ) :: out_e
         !
+        class( Scalar_t ), allocatable :: in_phi_copy
         complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_e_v, out_e_v_int
         !
         if( .NOT. in_phi%is_allocated ) then
@@ -486,14 +494,22 @@ contains
             call errStop( "grad_ModelOperator_SP > out_e not allocated" )
         endif
         !
-        in_phi_v = in_phi%getArray()
+        allocate( in_phi_copy, source = in_phi )
+        !
+        call in_phi_copy%setAllBoundary( C_ZERO )
+        in_phi_v = in_phi_copy%getArray()
+        !
+        deallocate( in_phi_copy )
         !
         out_e_v = out_e%getArray()
-        out_e_v = C_ZERO
         !
-        !write(*,*) "grad_ModelOperator_SP: ", G%nCol, size( in_phi%getArray() ), size( out_e_v )
+        out_e_v_int = out_e_v( out_e%ind_interior )
         !
-        call RMATxCVEC( G, in_phi_v, out_e_v )
+        write(*,*) "grad_ModelOperator_SP: ", self%Gd%nCol, self%Gd%nRow, size( in_phi_v ), size( out_e_v_int )
+        !
+        call RMATxCVEC( self%Gd, in_phi_v, out_e_v_int )
+        !
+        out_e_v( out_e%ind_interior ) = out_e_v_int
         !
         call out_e%setArray( out_e_v )
         !
@@ -559,6 +575,7 @@ contains
         call deall_spMatCSR( T )
         call deall_spMatCSR( G )
         !
+        call deall_spMatCSR( self%Gd )
         call deall_spMatCSR( self%VDiv )
         call deall_spMatCSR( self%VDsG )
         call deall_spMatCSR( self%VDs )

@@ -278,7 +278,7 @@ contains
         !> Allocate s_hat array
         if( present( s_hat ) ) then
             !
-            allocate( ModelParameterCell_SG_t :: s_hat( size( transmitters ) ) )
+            allocate( ModelParameterCell_t :: s_hat( size( transmitters ) ) )
             !
         endif
         !

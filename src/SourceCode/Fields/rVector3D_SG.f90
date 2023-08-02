@@ -9,7 +9,7 @@ module rVector3D_SG
     !
     type, extends( Vector_t ) :: rVector3D_SG_t
         !
-        real( kind=prec ), allocatable, dimension(:, :, :) :: x, y, z
+        real( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
         real( kind=prec ), allocatable, dimension(:) :: s_v
         !
@@ -607,7 +607,7 @@ contains
                 end select
                 !
             class default
-                call errStop( "sumEdge_rVector3D_SG: Unclassified cell_out" )
+                call errStop( "sumEdge_rVector3D_SG > Undefined cell_out" )
             !
         end select
         !
@@ -620,7 +620,7 @@ contains
         class( Scalar_t ), allocatable, intent( out ) :: cell_h_out, cell_v_out
         logical, optional, intent( in ) :: interior_only
         !
-        complex( kind=prec ), allocatable :: sigma_v(:, :, :)
+        complex( kind=prec ), allocatable :: sigma_v(:,:,:)
         integer :: x_xend, x_yend, x_zend
         integer :: y_xend, y_yend, y_zend
         integer :: z_xend, z_yend, z_zend
@@ -646,11 +646,11 @@ contains
         !
         select type( cell_h_out )
             !
-            class is( cScalar3D_SG_t )
+            class is( rScalar3D_SG_t )
                 !
                 select type( cell_v_out )
                     !
-                    class is( cScalar3D_SG_t )
+                    class is( rScalar3D_SG_t )
                         !
                         select case( self%grid_type )
                             !
@@ -707,11 +707,12 @@ contains
                         end select
                         !
                     class default
-                        call errStop( "sumEdgeVTI_rVector3D_SG: Unclassified cell_v_out" )
+                        call errStop( "sumEdgeVTI_rVector3D_SG > Undefined cell_v_out" )
+                    !
                 end select
                 !
             class default
-                call errStop( "sumEdgeVTI_rVector3D_SG: Unclassified cell_h_out" )
+                call errStop( "sumEdgeVTI_rVector3D_SG > Undefined cell_h_out" )
             !
         end select
         !
@@ -726,7 +727,7 @@ contains
         class( Scalar_t ), intent( inout ) :: cell_in
         character(*), intent( in ), optional :: ptype
         !
-        complex( kind=prec ), allocatable :: cell_in_v(:, :, :)
+        complex( kind=prec ), allocatable :: cell_in_v(:,:,:)
         character(10) :: grid_type
         integer :: xend, yend, zend
         integer :: v_xend, v_yend, v_zend
@@ -819,7 +820,7 @@ contains
         class( Scalar_t ), intent( inout ) :: cell_h_in, cell_v_in
         character(*), intent( in ), optional :: ptype
         !
-        complex( kind=prec ), allocatable :: v_h(:, :, :), v_v(:, :, :)
+        complex( kind=prec ), allocatable :: v_h(:,:,:), v_v(:,:,:)
         character(10) :: grid_type
         integer :: xend, yend, zend
         integer :: v_xend, v_yend, v_zend
@@ -935,60 +936,34 @@ contains
             !
             call self%switchStoreState( rhs%store_state )
             !
-            select type( rhs )
+            if( rhs%store_state .EQ. compound ) then
                 !
-                class is( rVector3D_SG_t )
+                select type( rhs )
                     !
-                    if( rhs%store_state .EQ. compound ) then
+                    class is( Vector_t )
                         !
-                        self%x = self%x + rhs%x
-                        self%y = self%y + rhs%y
-                        self%z = self%z + rhs%z
+                        self%x = self%x + rhs%getX()
+                        self%y = self%y + rhs%getY()
+                        self%z = self%z + rhs%getZ()
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    class is( Scalar_t )
                         !
-                        self%s_v = self%s_v + rhs%s_v
+                        self%x = self%x + rhs%getV()
+                        self%y = self%y + rhs%getV()
+                        self%z = self%z + rhs%getV()
                         !
-                    else
-                        call errStop( "add_rVector3D_SG > Unknown rVector3D_SG_t rhs store_state!" )
-                    endif
-                    !
-                class is( cScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
+                    class default
+                        call errStop( "add_rVector3D_SG > Undefined rhs" )
                         !
-                        self%x = self%x + rhs%v
-                        self%y = self%y + rhs%v
-                        self%z = self%z + rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%s_v = self%s_v + rhs%s_v
-                        !
-                    else
-                        call errStop( "add_rVector3D_SG > Unknown cScalar3D_SG_t rhs store_state!" )
-                    endif
-                    !
-                class is( rScalar3D_SG_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%x = self%x + rhs%v
-                        self%y = self%y + rhs%v
-                        self%z = self%z + rhs%v
-                        !
-                    else if( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%s_v = self%s_v + rhs%s_v
-                        !
-                    else
-                        call errStop( "add_rVector3D_SG > Unknown rScalar3D_SG_t rhs store_state!" )
-                    endif
-                    !
-                class default
-                    call errStop( "add_rVector3D_SG > Undefined rhs" )
+                end select
                 !
-            end select
+            elseif( rhs%store_state .EQ. singleton ) then
+                !
+                self%s_v = self%s_v + rhs%getSV()
+                !
+            else
+                call errStop( "add_rVector3D_SG > Unknow store_state." )
+            endif
             !
         else
             call errStop( "add_rVector3D_SG > Incompatible inputs." )
@@ -1013,27 +988,34 @@ contains
             !
             call self%switchStoreState( rhs%store_state )
             !
-            select type( rhs )
+            if( rhs%store_state .EQ. compound ) then
                 !
-                class is( rVector3D_SG_t )
+                select type( rhs )
                     !
-                    if( rhs%store_state .EQ. compound ) then
+                    class is( Vector_t )
                         !
-                        self%x = c1 * self%x + c2 * rhs%x
-                        self%y = c1 * self%y + c2 * rhs%y
-                        self%z = c1 * self%z + c2 * rhs%z
+                        self%x = c1 * self%x + c2 * rhs%getX()
+                        self%y = c1 * self%y + c2 * rhs%getY()
+                        self%z = c1 * self%z + c2 * rhs%getZ()
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    class is( Scalar_t )
                         !
-                        self%s_v = c1 * self%s_v + c2 * rhs%s_v
+                        self%x = c1 * self%x + c2 * rhs%getV()
+                        self%y = c1 * self%y + c2 * rhs%getV()
+                        self%z = c1 * self%z + c2 * rhs%getV()
                         !
-                    else
-                        call errStop( "linComb_rVector3D_SG > Unknown rhs store_state!" )
-                    endif
-                    !
-                class default
-                    call errStop( "linComb_rVector3D_SG > rhs undefined." )
-            end select
+                    class default
+                        call errStop( "linComb_rVector3D_SG > Undefined rhs" )
+                        !
+                end select
+                !
+            elseif( rhs%store_state .EQ. singleton ) then
+                !
+                self%s_v = c1 * self%s_v + c2 * rhs%getSV()
+                !
+            else
+                call errStop( "linComb_rVector3D_SG > Unknow store_state." )
+            endif
             !
         else
             call errStop( "linComb_rVector3D_SG > Incompatible inputs." )
@@ -1756,7 +1738,7 @@ contains
         class( rVector3D_SG_t ), intent( inout ) :: self
         character, intent( in ) :: comp_lbl
         !
-        complex( kind=prec ), allocatable :: comp(:, :, :)
+        complex( kind=prec ), allocatable :: comp(:,:,:)
         !
         if( ( .NOT. self%is_allocated ) ) then
             call errStop( "interpFunc_rVector3D_SG > Self not allocated." )
@@ -1797,7 +1779,7 @@ contains
         !
         class( rVector3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: x(:, :, :)
+        complex( kind=prec ), allocatable :: x(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getX_rVector3D_SG > self not allocated." )
@@ -1819,7 +1801,7 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: x(:, :, :)
+        complex( kind=prec ), allocatable, intent( in ) :: x(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setX_rVector3D_SG > self not allocated." )
@@ -1844,7 +1826,7 @@ contains
         !
         class( rVector3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: y(:, :, :)
+        complex( kind=prec ), allocatable :: y(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getY_rVector3D_SG > self not allocated." )
@@ -1866,7 +1848,7 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: y(:, :, :)
+        complex( kind=prec ), allocatable, intent( in ) :: y(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setY_rVector3D_SG > self not allocated." )
@@ -1891,7 +1873,7 @@ contains
         !
         class( rVector3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: z(:, :, :)
+        complex( kind=prec ), allocatable :: z(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getZ_rVector3D_SG > self not allocated." )
@@ -1913,7 +1895,7 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: z(:, :, :)
+        complex( kind=prec ), allocatable, intent( in ) :: z(:,:,:)
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setZ_rVector3D_SG > self not allocated." )

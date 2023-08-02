@@ -595,7 +595,7 @@ contains
         integer, intent( in ) :: nx, ny, nz
         logical, intent( in ) :: transp
         !
-        real( kind=prec ), dimension(:, :, :), allocatable :: m_out
+        real( kind=prec ), dimension(:,:,:), allocatable :: m_out
         integer :: i, i1, i2, n_in
         !
         n_in = size( m_in )

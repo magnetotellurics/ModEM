@@ -619,7 +619,7 @@ contains
         real( kind=prec ), pointer, dimension(:) :: tempe
         type( rVector3D_SG_t ) :: templ_r
         real( kind=prec ), pointer, dimension(:) :: templ, temple
-        real( kind=prec ), allocatable, dimension(:, :, :) :: lengthx, lengthy
+        real( kind=prec ), allocatable, dimension(:,:,:) :: lengthx, lengthy
         integer :: sx1, sx2, sx3, sy1, sy2, sy3, s1, s2
         integer :: Cs, i1, i2
         !
@@ -1560,7 +1560,7 @@ contains
         class( rVector3D_MR_t ), intent( inout ) :: self
         character, intent( in ) :: comp_lbl
         !
-        complex( kind=prec ), allocatable :: comp(:, :, :)
+        complex( kind=prec ), allocatable :: comp(:,:,:)
         !
         stop "Error: getAxis_rVector3D_MR still not implemented"
         !
@@ -1587,7 +1587,7 @@ contains
         !
         class( rVector3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: x(:, :, :)
+        complex( kind=prec ), allocatable :: x(:,:,:)
         !
         x = self%x
         !
@@ -1599,7 +1599,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: x(:, :, :)
+        complex( kind=prec ), allocatable, intent( in ) :: x(:,:,:)
         !
         self%x = x
         !
@@ -1612,7 +1612,7 @@ contains
         !
         class( rVector3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: y(:, :, :)
+        complex( kind=prec ), allocatable :: y(:,:,:)
         !
         y = self%y
         !
@@ -1624,7 +1624,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: y(:, :, :)
+        complex( kind=prec ), allocatable, intent( in ) :: y(:,:,:)
         !
         self%y = y
         !
@@ -1637,7 +1637,7 @@ contains
         !
         class( rVector3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: z(:, :, :)
+        complex( kind=prec ), allocatable :: z(:,:,:)
         !
         z = self%z
         !
@@ -1649,7 +1649,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: z(:, :, :)
+        complex( kind=prec ), allocatable, intent( in ) :: z(:,:,:)
         !
         self%z = z
         !

@@ -7,7 +7,7 @@ module ModelReader_Weerachai
     use Utilities
     use rScalar3D_SG
     use rScalar3D_MR
-    use ModelParameterCell_SG
+    use ModelParameterCell
     use ForwardControlFile
     !
     type, extends( ModelReader_t ), public :: ModelReader_Weerachai_t
@@ -36,8 +36,8 @@ contains
         integer :: nx, ny, nzEarth, nzAir, someIndex, i, ii, j, k, ioPrm, io_stat, p_nargs, anisotropic_level
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         real( kind=prec ) :: ox, oy, oz, rotDeg
-        real( kind=prec ), dimension(:, :, :), allocatable :: rho
-        complex( kind=prec ), dimension(:, :, :), allocatable :: cond_v
+        real( kind=prec ), dimension(:,:,:), allocatable :: rho
+        complex( kind=prec ), dimension(:,:,:), allocatable :: cond_v
         class( Scalar_t ), allocatable :: ccond
         real( kind=prec ) :: ALPHA
         character(len=200), dimension(20) :: args
@@ -149,7 +149,7 @@ contains
                 !
                 if( anisotropic_level == 1 ) then
                     !
-                    allocate( model, source = ModelParameterCell_SG_t( grid, ccond, 1, paramType ) )
+                    allocate( model, source = ModelParameterCell_t( grid, ccond, 1, paramType ) )
                     !
                 else
                     !
@@ -159,7 +159,7 @@ contains
                         !
                     else
                         !
-                        allocate( model, source = ModelParameterCell_SG_t( grid, ccond, 2, paramType ) )
+                        allocate( model, source = ModelParameterCell_t( grid, ccond, 2, paramType ) )
                         !
                     endif
                     !

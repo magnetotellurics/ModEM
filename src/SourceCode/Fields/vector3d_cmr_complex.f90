@@ -1207,7 +1207,7 @@ contains
     type(rvector) :: templ_r
     real (kind=prec), pointer, dimension(:) :: templ
     complex (kind=prec), pointer, dimension(:) :: temple
-    complex (kind=prec), allocatable, dimension(:, :, :) :: lengthx, lengthy
+    complex (kind=prec), allocatable, dimension(:,:,:) :: lengthx, lengthy
     integer :: sx1, sx2, sx3, sy1, sy2, sy3, s1, s2
     integer :: Cs, i1, i2
 
@@ -1372,7 +1372,7 @@ contains
     integer, intent(in) :: nx, ny, nz
     logical, intent(in) :: transp
     ! Local variables
-    real (kind=prec), dimension(:, :, :), allocatable :: m_out
+    real (kind=prec), dimension(:,:,:), allocatable :: m_out
     integer :: i, i1, i2, n_in
     !
     !***********************
