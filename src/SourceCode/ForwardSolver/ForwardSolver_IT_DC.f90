@@ -140,8 +140,7 @@ contains
                 !
             enddo
             !
-            self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
-            !
+            !> Apply Divergence Correction if not converged
             if( .NOT. self%solver%converged )  then
                 !
                 !> !!!! Use temp_vec here improves the execution time considerably.
@@ -161,8 +160,7 @@ contains
                 !
             endif
             !
-            self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
-            !
+            !> Check Stop Conditions
             if( self%solver%converged .OR. ( self%iter .GE. self%max_solver_calls ) ) then
                 exit
             endif
