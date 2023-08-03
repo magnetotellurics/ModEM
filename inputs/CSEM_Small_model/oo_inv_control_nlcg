@@ -1,0 +1,17 @@
+##############################################
+# ModEM Inversion Control File Template       
+#     Here are all supported parameters       
+#     Comment or remove to use default values 
+##############################################
+#
+inversion_type [DCG|NLCG]       : NLCG
+joint_type [Unweighted|TxBased] : Unweighted
+max_inv_iters [100]             : 500
+max_grad_iters [20]             : 20
+error_tol [1E-3]                : 1E-3
+rms_tol [1.05]                  : 1.05
+lambda [1.]                     : 1.
+lambda_tol [1.0e-4]             : 1.0e-8
+lambda_div [10.]                : 10.
+startdm [20.]                   : 50.
+#
