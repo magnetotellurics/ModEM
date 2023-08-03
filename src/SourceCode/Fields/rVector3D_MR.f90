@@ -1115,7 +1115,7 @@ contains
                         self%y = self%y + rhs%y
                         self%z = self%z + rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v + rhs%s_v
                         !
@@ -1157,7 +1157,7 @@ contains
                         self%y = c1 * self%y + c2 * rhs%y
                         self%z = c1 * self%z + c2 * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = c1 * self%s_v + c2 * rhs%s_v
                         !
@@ -1188,7 +1188,7 @@ contains
             self%y = self%y - cvalue
             self%z = self%z - cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%s_v = self%s_v - cvalue
             !
@@ -1220,7 +1220,7 @@ contains
                         self%y = self%y - rhs%y
                         self%z = self%z - rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v - rhs%s_v
                         !
@@ -1253,7 +1253,7 @@ contains
             self%y = self%y * rvalue
             self%z = self%z * rvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%s_v = self%s_v * rvalue
             !
@@ -1277,7 +1277,7 @@ contains
             self%y = self%y * cvalue
             self%z = self%z * cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%s_v = self%s_v * cvalue
             !
@@ -1309,7 +1309,7 @@ contains
                         self%y = self%y * rhs%y
                         self%z = self%z * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v * rhs%s_v
                         !
@@ -1325,7 +1325,7 @@ contains
                         self%y = self%y * rhs%v
                         self%z = self%z * rhs%v
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v * rhs%s_v
                         !
@@ -1350,7 +1350,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in ) :: rhs
+        class( Field_t ), intent( in ) :: rhs
         !
         class( Vector_t ), allocatable :: diag_mult
         !
@@ -1375,7 +1375,7 @@ contains
                                 diag_mult%y = self%y * rhs%y
                                 diag_mult%z = self%z * rhs%z
                                 !
-                            else if( rhs%store_state .EQ. singleton ) then
+                            elseif( rhs%store_state .EQ. singleton ) then
                                 !
                                 diag_mult%s_v = self%s_v * rhs%s_v
                                 !
@@ -1422,7 +1422,7 @@ contains
                         self%y = self%y + cvalue * rhs%y
                         self%z = self%z + cvalue * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v + cvalue * rhs%s_v
                         !
@@ -1471,7 +1471,7 @@ contains
             self%y = self%y / cvalue
             self%z = self%z / cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%s_v = self%s_v / cvalue
             !
@@ -1503,7 +1503,7 @@ contains
                         self%y = self%y / rhs%y
                         self%z = self%z / rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v / rhs%s_v
                         !
@@ -1519,7 +1519,7 @@ contains
                         self%y = self%y / rhs%v
                         self%z = self%z / rhs%v
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v / rhs%s_v
                         !
@@ -1786,7 +1786,7 @@ contains
                     self%y = rhs%y
                     self%z = rhs%z
                     !
-                else if( rhs%store_state .EQ. singleton ) then
+                elseif( rhs%store_state .EQ. singleton ) then
                     !
                     self%s_v = rhs%s_v
                     !
@@ -1836,7 +1836,7 @@ contains
                 write( *, * ) "Error: read_rVector3D_MR > Unable to read_rVector3D_MR vector from unformatted file. ", &
                         trim(fname), "."
                 stop
-            else if((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
+            elseif((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
                   .AND.binary) then
                 write( *, * ) "Error: read_rVector3D_MR > Unable to read_rVector3D_MR vector from formatted file ", &
                         trim(fname), "."
@@ -1849,11 +1849,11 @@ contains
                 write( *, * ) "Error: read_rVector3D_MR > Vector must be allocated before read_rVector3D_MRing from ", &
                         trim(fname), "."
                 stop
-            else if(self%grid_type.NE.grid_type) then
+            elseif(self%grid_type.NE.grid_type) then
                 write( *, * ) "Error: read_rVector3D_MR > Vector must be of type ", grid_type, &
                         &            "           before read_rVector3D_MRing from ", trim (fname), "."
                 stop
-            else if((self%nx.NE.Nx).OR. &
+            elseif((self%nx.NE.Nx).OR. &
                   (self%ny.NE.Ny).OR.(self%nz.NE.Nz)) then
                 write( *, * ) "Error: read_rVector3D_MR > Wrong size of vector on input from ", trim (fname), "."
                 stop
@@ -1899,7 +1899,7 @@ contains
                 write( *, * ) "Error: write_rVector3D_MR > Unable to write_rVector3D_MR vector to unformatted file. ", &
                         trim(fname), "."
                 stop
-            else if((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
+            elseif((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
                   .AND.binary) then
                 write( *, * ) "Error: write_rVector3D_MR > Unable to write_rVector3D_MR vector to formatted file. ", &
                         trim(fname), "."

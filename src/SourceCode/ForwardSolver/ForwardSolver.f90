@@ -11,8 +11,8 @@ module ForwardSolver
     !
     character(:), allocatable :: forward_solver_type
     character( len=21 ), parameter :: FWD_FILE = "ForwardSolverFromFile"
-    character( len=15 ), parameter :: FWD_IT = "ForwardSolverIT"
-    character( len=18 ), parameter :: FWD_IT_DC = "ForwardSolverIT_DC"
+    character( len=16 ), parameter :: FWD_IT = "ForwardSolver_IT"
+    character( len=19 ), parameter :: FWD_IT_DC = "ForwardSolver_IT_DC"
     !
     type, abstract :: ForwardSolver_t
         !
@@ -23,8 +23,6 @@ module ForwardSolver
         real( kind=prec ) :: tolerance, relResFinal
         !
         real( kind=prec ), allocatable, dimension(:) :: relResVec
-        !
-        logical :: failed
         !
         contains
             !
@@ -121,8 +119,6 @@ contains
         self%tolerance = R_ZERO
         !
         self%relResFinal = R_ZERO
-        !
-        self%failed = .FALSE.
         !
     end subroutine initializeForwardSolver
     !

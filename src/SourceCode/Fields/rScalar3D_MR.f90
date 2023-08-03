@@ -1060,7 +1060,7 @@ contains
                     !
                     self%v = rhs%v
                     !
-                else if( rhs%store_state .EQ. singleton ) then
+                elseif( rhs%store_state .EQ. singleton ) then
                     !
                     self%s_v = rhs%s_v
                     !

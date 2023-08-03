@@ -27,10 +27,10 @@ get_1d_from [Fixed|Geometric_mean|Mean_around_Tx|Tx_Position] : Geometric_mean
 #
 # <Solver parameters>
 #
-max_solver_iters [80]          : 20
+max_solver_iters [80]          : 40
 max_solver_calls [20]          : 20
 max_divcor_iters [100]         : 50
-tolerance_solver [1E-7]        : 1E-13
+tolerance_solver [1E-7]        : 1E-7
 tolerance_divcor [1E-5]        : 1E-5
 forward_solver_type [IT|IT_DC] : IT_DC
 #

@@ -1,48 +1,50 @@
 !
-!> Derived class to define a iterative ForwardSolver using divergence correction
+!> Derived class to define a iterative ForwardSolver
 !
-module ForwardSolverIT
+module ForwardSolver_IT
     !
     use ForwardSolver
     use Solver_QMR
     !
-    type, extends( ForwardSolver_t ) :: ForwardSolverIT_t
+    type, extends( ForwardSolver_t ) :: ForwardSolver_IT_t
+        !
+        integer :: iter
         !
         integer :: max_solver_calls
         !
         contains
             !
-            procedure, public :: setFrequency => setFrequency_ForwardSolverIT
+            procedure, public :: setFrequency => setFrequency_ForwardSolver_IT
             !
-            procedure, public :: setIterControl => setIterControl_ForwardSolverIT
+            procedure, public :: setIterControl => setIterControl_ForwardSolver_IT
             !
-            procedure, public :: initDiagnostics => initDiagnostics_ForwardSolverIT
+            procedure, public :: initDiagnostics => initDiagnostics_ForwardSolver_IT
             !
-            procedure, public :: zeroDiagnostics => zeroDiagnostics_ForwardSolverIT
+            procedure, public :: zeroDiagnostics => zeroDiagnostics_ForwardSolver_IT
             !
-            procedure, public :: createESolution => createESolution_ForwardSolverIT
+            procedure, public :: createESolution => createESolution_ForwardSolver_IT
             !
-            procedure, public :: copyFrom => copyFrom_ForwardSolverIT
+            procedure, public :: copyFrom => copyFrom_ForwardSolver_IT
             !
-    end type ForwardSolverIT_t
+    end type ForwardSolver_IT_t
     !
-    interface ForwardSolverIT_t
-        module procedure ForwardSolverIT_ctor
-    end interface ForwardSolverIT_t
+    interface ForwardSolver_IT_t
+        module procedure ForwardSolver_IT_ctor
+    end interface ForwardSolver_IT_t
     !
 contains
     !
     !> No subroutine briefing
     !
-    function ForwardSolverIT_ctor( model_operator, solver_type ) result( self )
+    function ForwardSolver_IT_ctor( model_operator, solver_type ) result( self )
         implicit none
         !
         class( ModelOperator_t ), intent( in ) :: model_operator
         character(*), intent( in ) :: solver_type
         !
-        type( ForwardSolverIT_t ) :: self
+        type( ForwardSolver_IT_t ) :: self
         !
-        write( *, * ) "Constructor ForwardSolverIT_t"
+        !write( *, * ) "Constructor ForwardSolver_IT_t"
         !
         call self%baseInit
         !
@@ -54,9 +56,9 @@ contains
                 allocate( self%solver, source = Solver_QMR_t( model_operator ) )
                 !
             case( BiCG )
-                call errStop( "ForwardSolverIT_ctor > Not yet coded for Bi-Conjugate Gradients" )
+                call errStop( "ForwardSolver_IT_ctor > Not yet coded for Bi-Conjugate Gradients" )
             case default
-                call errStop( "ForwardSolverIT_ctor > Unknown solver" )
+                call errStop( "ForwardSolver_IT_ctor > Unknown solver" )
             !
         end select
         !
@@ -64,15 +66,15 @@ contains
         !
         call self%initDiagnostics
         !
-    end function ForwardSolverIT_ctor
+    end function ForwardSolver_IT_ctor
     !
-    !> Procedure setFrequency_ForwardSolverIT
+    !> Procedure setFrequency_ForwardSolver_IT
     !> Set omega for this ForwardSolver (Called on the main transmitter loop at main program)
     !
-    subroutine setFrequency_ForwardSolverIT( self, sigma, period )
+    subroutine setFrequency_ForwardSolver_IT( self, sigma, period )
         implicit none
         !
-        class( ForwardSolverIT_t ), intent( inout ) :: self
+        class( ForwardSolver_IT_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( inout ) :: sigma
         real( kind=prec ), intent( in ) :: period
         !
@@ -85,15 +87,18 @@ contains
         !> Set preconditioner for this solver's preconditioner
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
+        !> Set conductivity for the model operator (again ????)
+        call self%solver%preconditioner%model_operator%divCorSetUp
+        !
         call self%initDiagnostics
         !
-    end subroutine setFrequency_ForwardSolverIT
+    end subroutine setFrequency_ForwardSolver_IT
     !
     !> No subroutine briefing
-    subroutine setIterControl_ForwardSolverIT( self )
+    subroutine setIterControl_ForwardSolver_IT( self )
         implicit none
         !
-        class( ForwardSolverIT_t ), intent( inout ) :: self
+        class( ForwardSolver_IT_t ), intent( inout ) :: self
         !
         self%max_solver_calls = max_solver_calls
         !
@@ -101,13 +106,13 @@ contains
         !
         self%max_iter_total = self%solver%max_iters * self%max_solver_calls
         !
-    end subroutine setIterControl_ForwardSolverIT
+    end subroutine setIterControl_ForwardSolver_IT
     !
     !> No subroutine briefing
-    subroutine initDiagnostics_ForwardSolverIT( self )
+    subroutine initDiagnostics_ForwardSolver_IT( self )
         implicit none
         !
-        class( ForwardSolverIT_t ), intent( inout ) :: self
+        class( ForwardSolver_IT_t ), intent( inout ) :: self
         !
         self%n_iter_actual = 0
         !
@@ -117,75 +122,77 @@ contains
             allocate( self%relResVec( self%max_iter_total ) )
         endif
         !
-    end subroutine initDiagnostics_ForwardSolverIT
+    end subroutine initDiagnostics_ForwardSolver_IT
     !
     !> No subroutine briefing
-    subroutine zeroDiagnostics_ForwardSolverIT( self )
+    subroutine zeroDiagnostics_ForwardSolver_IT( self )
         implicit none
         !
-        class( ForwardSolverIT_t ), intent( inout ) :: self
+        class( ForwardSolver_IT_t ), intent( inout ) :: self
         !
         self%relResVec = R_ZERO
         !
         call self%solver%zeroDiagnostics
         !
-    end subroutine zeroDiagnostics_ForwardSolverIT
+    end subroutine zeroDiagnostics_ForwardSolver_IT
     !
     !> No subroutine briefing
     !
-    subroutine createESolution_ForwardSolverIT( self, pol, source, e_solution )
+    subroutine createESolution_ForwardSolver_IT( self, pol, source, e_solution )
         implicit none
         !
-        class( ForwardSolverIT_t ), intent( inout ) :: self
+        class( ForwardSolver_IT_t ), intent( inout ) :: self
         integer, intent( in ) :: pol
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), allocatable, intent( out ) :: e_solution
         !
         class( Vector_t ), allocatable :: temp_vec
-        !
-        integer :: iter
-        !
-        call self%solver%zeroDiagnostics
-        !
-        self%solver%converged = .FALSE.
-        self%solver%failed = .FALSE.
-        self%n_iter_actual = 0
+        integer :: i
         !
         !> Create e_solution Vector
         call self%solver%preconditioner%model_operator%metric%createVector( complex_t, EDGE, e_solution )
         !
-        call e_solution%zeros
+        !> Inicialize FWD Solver
+        self%iter = 1
         !
-        loop: do while ( ( .NOT. self%solver%converged ) .AND. ( .NOT. self%solver%failed ) )
+        self%n_iter_actual = 0
+        !
+        call self%solver%zeroDiagnostics
+        !
+        fwd_solver_loop: do
             !
             select type( solver => self%solver )
                 !
                 class is( Solver_QMR_t )
                     call solver%solve( source%rhs( pol )%v, e_solution )
                 class default
-                    call errStop( "createESolution_ForwardSolverIT > Unknown solver type." )
+                    call errStop( "getESolutionForwardSolver_IT > Unknown solver type." )
                 !
             end select
             !
-            do iter = 1, self%solver%n_iter
+            do i = 1, self%solver%n_iter
                 !
-                self%relResVec( self%n_iter_actual + iter ) = self%solver%relErr( iter )
+                self%relResVec( self%n_iter_actual + i ) = self%solver%relErr(i)
                 !
             enddo
             !
             self%n_iter_actual = self%n_iter_actual + self%solver%n_iter
             !
-            self%failed = self%n_iter_actual .GE. self%max_iter_total
-            !
-            self%solver%failed = self%solver%failed .OR. self%failed
-            !
-            if( self%solver%failed ) then
-                call errStop( "createESolution_ForwardSolverIT > Solver Failed" )
+            if( self%solver%converged .OR. ( self%iter .GE. self%max_solver_calls ) ) then
+                exit
             endif
             !
-        enddo loop
+            self%iter = self%iter + 1
+            !
+        enddo fwd_solver_loop
         !
         self%relResFinal = self%relResVec( self%n_iter_actual )
+        !
+        if( self%solver%converged ) then
+            write( *, "( a38, i6, a7, es12.3 )" ) "->IT converged within ", self%n_iter_actual, ": err= ", self%relResFinal
+        else
+            call warning( "createESolution_ForwardSolver_IT failed to converge!" )
+        endif
         !
         !> Just for the serialJMult_T SourceInteriorForce case
         if( source%for_transpose ) then
@@ -208,13 +215,13 @@ contains
         !
         deallocate( temp_vec )
         !
-    end subroutine createESolution_ForwardSolverIT
+    end subroutine createESolution_ForwardSolver_IT
     !
     !> No subroutine briefing
-    subroutine copyFrom_ForwardSolverIT( self, rhs )
+    subroutine copyFrom_ForwardSolver_IT( self, rhs )
         implicit none
         !
-        class( ForwardSolverIT_t ), intent( inout ) :: self
+        class( ForwardSolver_IT_t ), intent( inout ) :: self
         class( ForwardSolver_t ), intent( in ) :: rhs
         !
         self%solver = rhs%solver
@@ -229,19 +236,19 @@ contains
         !
         self%relResVec = rhs%relResVec
         !
-        self%failed = rhs%failed
-        !
         select type( rhs )
             !
-            class is( ForwardSolverIT_t )
+            class is( ForwardSolver_IT_t )
+                !
+                self%iter = rhs%iter
                 !
                 self%max_solver_calls = rhs%max_solver_calls
                 !
             class default
-               call errStop( "copyFrom_ForwardSolverIT > Incompatible input." )
+               call errStop( "copyFrom_ForwardSolver_IT > Incompatible input." )
             !
         end select
         !
-    end subroutine copyFrom_ForwardSolverIT
+    end subroutine copyFrom_ForwardSolver_IT
     !
-end Module ForwardSolverIT
+end Module ForwardSolver_IT

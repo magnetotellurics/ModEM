@@ -62,9 +62,9 @@ module Vector
         end function interface_get_axis_vector
         !
         function interface_diag_mult_vector( self, rhs ) result( diag_mult )
-            import :: Vector_t
+            import :: Vector_t, Field_t
             class( Vector_t ), intent( inout ) :: self
-            class( Vector_t ), intent( in ) :: rhs
+            class( Field_t ), intent( in ) :: rhs
             class( Vector_t ), allocatable :: diag_mult
         end function interface_diag_mult_vector
         !
@@ -99,7 +99,7 @@ module Vector
         subroutine interface_avg_cells_vector( self, cell_in, ptype )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( inout ) :: cell_in
+            class( Scalar_t ), intent( in ) :: cell_in
             character(*), intent( in ), optional :: ptype
         end subroutine interface_avg_cells_vector
         !
@@ -108,7 +108,7 @@ module Vector
         subroutine interface_avg_cells_vti_vector( self, cell_h_in, cell_v_in, ptype )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( inout ) :: cell_h_in, cell_v_in
+            class( Scalar_t ), intent( in ) :: cell_h_in, cell_v_in
             character(*), intent( in ), optional :: ptype
         end subroutine interface_avg_cells_vti_vector
         !

@@ -13,7 +13,7 @@ module CoreComponents
     !
     use ModelCovariance
     !
-    use ForwardSolverIT_DC
+    use ForwardSolver_IT_DC
     !
     use SourceMT_1D
     use SourceMT_2D

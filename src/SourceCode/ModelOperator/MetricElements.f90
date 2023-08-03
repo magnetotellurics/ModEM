@@ -3,9 +3,10 @@
 !
 module MetricElements
     !
+    use iScalar3D_SG
+    use cScalar3D_SG
     use rScalar3D_MR
     use cVector3D_SG
-    use iScalar3D_SG
     use rVector3D_MR
     !
     type, abstract :: MetricElements_t

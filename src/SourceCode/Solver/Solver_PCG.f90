@@ -119,7 +119,8 @@ contains
         !
         self%relErr( self%iter ) = rnorm / bnorm
         !
-        loop: do while ( ( self%relErr( self%iter ) .GT. self%tolerance ).AND.( self%iter .LT. self%max_iters ) )
+        !> Main solver loop
+        solver_loop: do
             !
             call self%preconditioner%LUsolve( r, s )
             !
@@ -151,16 +152,21 @@ contains
             !
             self%relErr( self%iter ) = rnorm / bnorm
             !
-        enddo loop
+            !> Stop Conditions
+            if( ( self%relErr( self%iter ) .LE. self%tolerance ) .OR. ( self%iter .GE. self%max_iters ) ) then
+                exit
+            endif
+            !
+        enddo solver_loop
         !
-        !self%converged = self%iter .LT. self%max_iters
-        !
-        if( self%iter .LT. self%max_iters ) then
-            write( *, "( a46, i6, a7, es12.3 )" ) "->divCor PCG converged within ", self%iter, ": err= ", self%relErr( self%iter )
-        else
-            write( *, "( a46, i6, a7, es12.3 )" ) "->divCor PCG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
-        endif
-        !
+        self%converged = self%relErr( self%iter ) .LE. self%tolerance
+        ! !
+        ! if( self%converged ) then
+            ! write( *, "( a46, i6, a7, es12.3 )" ) "->divCor PCG converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        ! else
+            ! write( *, "( a46, i6, a7, es12.3 )" ) "->divCor PCG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        ! endif
+        ! !
         deallocate( r )
         deallocate( s )
         deallocate( p )

@@ -351,7 +351,7 @@ contains
                 !
                 call errStop( "setAllCond_ModelParameterCell > cell_cond has no V" )
                 !
-            else if( .NOT. self%cell_cond(i)%s%is_allocated )then
+            elseif( .NOT. self%cell_cond(i)%s%is_allocated )then
                 !
                 call errStop( "setAllCond_ModelParameterCell > self has no V" )
                 !
@@ -905,6 +905,7 @@ contains
                 !
                 !> Convert (horizontal) conductivity to resistivity
                 self_cond_v = self%cell_cond(ii)%s%getV()
+				!
                 if( index( self%param_type,"LOGE" ) > 0 .OR. index( self%param_type,"LOG10" ) > 0 ) then
                     self_cond_v = -self_cond_v
                 elseif( index(self%param_type,"LINEAR" ) > 0 ) then
@@ -942,10 +943,7 @@ contains
             close( ioModelParam )
             !
         else
-            !
-            write( *, * ) "Error opening file in write_ModelParameterCell [", file_name, "]!"
-            stop
-            !
+            call errStop( "write_ModelParameterCell > Error opening file ["//file_name//"]!" )
         endif
         !
     end subroutine write_ModelParameterCell

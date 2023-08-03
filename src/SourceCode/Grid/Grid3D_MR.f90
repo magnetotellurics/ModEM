@@ -215,7 +215,7 @@ contains
             ! Whole sub-grid in the air
             self%sub_grids(k)%oz = sum(self%dz(i2 + 1 : self%nzAir))
             !
-        else if(i1 > self%nzAir + 1) then
+        elseif(i1 > self%nzAir + 1) then
             self%sub_grids(k)%oz = -1.0*&
             sum(self%dz(self%nzAir + 1 : i1 - 1))
         else

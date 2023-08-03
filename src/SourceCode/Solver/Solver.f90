@@ -23,7 +23,7 @@ module Solver
         real( kind=prec ) :: omega, tolerance
         real( kind=prec ), allocatable :: relErr(:) !> relative error at each iteration
         !
-        logical :: failed, converged
+        logical :: converged
         !
         class( PreConditioner_t ), allocatable :: preconditioner
         !
@@ -91,7 +91,6 @@ contains
         self%omega = R_ZERO
         self%tolerance = R_ZERO
         !
-        self%failed = .FALSE.
         self%converged = .FALSE.
         !
     end subroutine initializeSolver

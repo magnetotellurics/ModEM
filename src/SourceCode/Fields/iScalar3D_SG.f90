@@ -288,7 +288,7 @@ contains
         integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
         !
         integer :: nVecT, nBdry, nb, ni, i
-        complex( kind=prec ), allocatable :: temp(:)
+        real( kind=prec ), allocatable :: temp(:)
         type( iScalar3D_SG_t ) :: phi
         !
         if( self%is_allocated ) then
@@ -320,7 +320,7 @@ contains
         nVecT = size( phi%v )
         nBdry = 0
         do i = 1, nVecT
-             nBdry = nBdry + nint( real( temp(i), kind=prec ) )
+             nBdry = nBdry + nint( temp(i) )
         enddo
         !
         if( allocated(ind_i)) deallocate(ind_i)
@@ -332,7 +332,7 @@ contains
         nb = 0
         ni = 0
         do i = 1, nVecT
-             if( nint( real( temp(i), kind=prec ) ) .EQ. 1) then
+             if( nint( temp(i) ) .EQ. 1) then
                 nb = nb+1
                 ind_b(nb) = i
              else
@@ -383,7 +383,7 @@ contains
         if( zmin == 0) z1 = self%NdV(3)
         if( zmax <= 0) z2 = self%NdV(3) + zmax
         !
-        self%v(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
+        self%v( x1:x2:xstep, y1:y2:ystep, z1:z2:zstep ) = rvalue
         !
     end subroutine setVecComponents_iScalar3D_SG
     !
@@ -441,26 +441,26 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
-            !
             select type( rhs )
                 !
-                class is( iScalar3D_SG_t )
+                class is( Scalar_t )
+                    !
+                    call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = self%v + rhs%v
+                        self%v = self%v + rhs%getV()
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = self%s_v + rhs%s_v
+                        self%s_v = self%s_v + rhs%getSV()
                         !
                     else
                         call errStop( "add_iScalar3D_SG > Unknown rhs store_state!" )
                     endif
                     !
                 class default
-                    call errStop( "add_iScalar3D_SG: undefined rhs" )
+                    call errStop( "add_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
             end select
             !
@@ -486,28 +486,29 @@ contains
         !>  linear combination, in place: self = c1*self+c2*rhs
         if( self%isCompatible(rhs)) then
             !
-            call self%switchStoreState( rhs%store_state )
-            !
             select type( rhs )
                 !
-                class is( iScalar3D_SG_t )
+                class is( Scalar_t )
+                    !
+                    call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = c1 * self%v + c2 * rhs%v
+                        self%v = c1 * self%v + c2 * rhs%getV()
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = c1 * self%s_v + c2 * rhs%s_v
+                        self%s_v = c1 * self%s_v + c2 * rhs%getSV()
                         !
                     else
                         call errStop( "linComb_iScalar3D_SG > Unknown rhs store_state!" )
                     endif
                     !
                 class default
-                    call errStop( "linComb_iScalar3D_SG: undefined rhs" )
+                    call errStop( "linComb_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
             end select
+            !
         else
             call errStop( "linComb_iScalar3D_SG > Incompatible rhs" )
         endif
@@ -554,26 +555,26 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
-            !
             select type( rhs )
                 !
-                class is( iScalar3D_SG_t )
+                class is( Scalar_t )
+                    !
+                    call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = self%v - rhs%v
+                        self%v = self%v - rhs%getV()
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = self%s_v - rhs%s_v
+                        self%s_v = self%s_v - rhs%getSV()
                         !
                     else
                         call errStop( "subField_iScalar3D_SG > Unknown rhs store_state!" )
                     endif
                     !
                 class default
-                    call errStop( "subField_iScalar3D_SG: undefined rhs" )
+                    call errStop( "subField_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
             end select
             !
@@ -649,26 +650,26 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
-            !
             select type( rhs )
                 !
-                class is( iScalar3D_SG_t )
+                class is( Scalar_t )
+                    !
+                    call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = self%v * rhs%v
+                        self%v = self%v * rhs%getV()
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = self%s_v * rhs%s_v
+                        self%s_v = self%s_v * rhs%getSV()
                         !
                     else
                         call errStop( "multByField_iScalar3D_SG > Unknown rhs store_state!" )
                     endif
                     !
                 class default
-                    call errStop( "multByField_iScalar3D_SG > undefined rhs" )
+                    call errStop( "multByField_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
             end select
             !
@@ -693,27 +694,27 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
-            !
             select type( rhs )
                 !
-                class is( iScalar3D_SG_t ) 
+                class is( Scalar_t )
+                    !
+                    call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = self%v + cvalue * rhs%v
+                        self%v = self%v + cvalue * rhs%getV()
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = self%s_v + cvalue * rhs%s_v
+                        self%s_v = self%s_v + cvalue * rhs%getSV()
                         !
                     else
                         call errStop( "multAdd_iScalar3D_SG > Unknown rhs store_state!" )
                     endif
                     !
                 class default
-                    call errStop( "multAdd_iScalar3D_SG > rhs undefined." )
-                    !
+                    call errStop( "multAdd_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
+                !
             end select
             !
         else
@@ -742,26 +743,26 @@ contains
         !
         if( copy%isCompatible( rhs ) ) then
             !
-            call copy%switchStoreState( rhs%store_state )
-            !
             select type( rhs )
                 !
-                class is( iScalar3D_SG_t )
+                class is( Scalar_t )
+                    !
+                    call copy%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        cvalue = cmplx( sum( copy%v * rhs%v ), 0.0, kind=prec )
+                        cvalue = sum( copy%v * rhs%getV() )
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        cvalue = cmplx( sum( copy%s_v * rhs%s_v ), 0.0, kind=prec )
+                        cvalue = sum( copy%s_v * rhs%getSV() )
                         !
                     else
                         call errStop( "dotProd_iScalar3D_SG > Unknown rhs store_state!" )
                     endif
                     !
                 class default
-                    call errStop( "dotProd_iScalar3D_SG > undefined rhs" )
+                    call errStop( "dotProd_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
             end select
             !
@@ -811,26 +812,26 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
-            !
             select type( rhs )
                 !
-                class is( iScalar3D_SG_t )
+                class is( Scalar_t )
+                    !
+                    call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = self%v / rhs%v
+                        self%v = self%v / rhs%getV()
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = self%s_v / rhs%s_v
+                        self%s_v = self%s_v / rhs%getSV()
                         !
                     else
                         call errStop( "divByField_iScalar3D_SG > Unknown rhs store_state!" )
                     endif
                     !
                 class default
-                    call errStop( "divByField_iScalar3D_SG > undefined rhs" )
+                    call errStop( "divByField_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
             end select
             !
@@ -853,8 +854,8 @@ contains
             call errStop( "getV_iScalar3D_SG > self not allocated." )
         endif
         !
-        if( .NOT. allocated( v ) ) then
-            call errStop( "getV_iScalar3D_SG > v not allocated." )
+        if( .NOT. allocated( self%v ) ) then
+            call errStop( "getV_iScalar3D_SG > self%v not allocated." )
         else
             !
             v = cmplx( self%v, 0.0, kind=prec )
@@ -1098,21 +1099,19 @@ contains
                  if( istat /= 0) exit
                  !
                  if( (k1 < 0) .OR. (k2 > Nz)) then
-                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m iScalar3D_SG::read_iScalar3D_SG: "
-                        write( *, * ) "      While reading the ", i, "th block."
-                        stop
+                        write( *, * ) "While reading the ", i, "th block."
+                        call errStop( "read_iScalar3D_SG." )
                  elseif( k1 > k2) then
-                        write( *, * ) "Warning: iScalar3D_SG::read_iScalar3D_SG: "
-                        write( *, * ) "                Block ", i, " will be ignored."
+                        write( *, * ) "Block ", i, " will be ignored."
+                        call errStop( "read_iScalar3D_SG." )
                  endif
                  !
                  do j = Nx, 1, -1
                         read(funit, *, iostat = istat) temp
                         
                         if( istat /= 0) then
-                             write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m iScalar3D_SG::read_iScalar3D_SG: "
-                             write( *, * ) "            While reading the ", j, "th row in ", i,"th block."
-                             stop
+                             write( *, * ) "While reading the ", j, "th row in ", i,"th block."
+                             call errStop( "read_iScalar3D_SG." )
                         endif
                         
                         do k = k1, k2
@@ -1129,7 +1128,7 @@ contains
             deallocate( temp )
             !
         else
-            stop "Error: read_iScalar3D_SG: unable to open file"
+            call errStop( "read_iScalar3D_SG: unable to open file" )
         endif
         !
     end subroutine read_iScalar3D_SG
@@ -1169,16 +1168,10 @@ contains
             !
             if( (index(isbinary, "yes") > 0 .OR. index(isbinary, "YES") > 0) &
                      .AND. .NOT. binary) then             
-                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m write_iScalar3D_SG > Unable to write vector to unformatted file ", &
-                            trim(fname), "."
-                 !
-                 stop
+                 call errStop( "write_iScalar3D_SG > Unable to write vector to unformatted file ["//trim(fname)//"]." )
             elseif( (index(isbinary,"no") > 0 .OR. index(isbinary,"NO") > 0) &
                      .AND.binary) then
-                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m write_iScalar3D_SG > Unable to write vector to formatted file ", &
-                            trim(fname), "."
-                 !
-                 stop
+                 call errStop( "write_iScalar3D_SG > Unable to write vector to formatted file ["//trim(fname)//"]." )
             endif
             !
             if( binary) then

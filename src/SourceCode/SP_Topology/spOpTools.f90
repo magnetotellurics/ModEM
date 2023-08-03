@@ -1783,7 +1783,7 @@ contains
         colT =(/(j, j=1, A%nCol) /)
         if(A%nrow .LT. np) then
             stop "Error: splitRMAT > number of process is larger than number of rows!"
-        else if(np.EQ.1) then
+        elseif(np.EQ.1) then
             !write( *, * ) "only one process, returning the original Matrix"
             m = A%nRow
             n = A%nCol
@@ -1848,7 +1848,7 @@ contains
         colT =(/(j, j=1, A%nCol) /)
         if(A%nrow .LT. np) then
             stop "Error: splitCMAT > number of processes is larger than number of rows!"
-        else if(np.EQ.1) then
+        elseif(np.EQ.1) then
             !write( *, * ) "only one process, returning the original Matrix"
             m = A%nRow
             n = A%nCol
@@ -2102,7 +2102,7 @@ contains
         !   this index should correspond to positions where
         !   columns and values are stored in L
         ii = j - A%row(i) + L%row(i)
-        else if(i.LT.A%col(j)) then
+        elseif(i.LT.A%col(j)) then
         !    these are indicies into A matrix storage
         nij = nij+1
         ij(nij) = j
@@ -2173,7 +2173,7 @@ contains
         do j = A%row(i), A%row(i+1)-1
         if(A%col(j).eq.i) then
         d(i) = d(i) + A%val(j)
-        else if(A%col(j).LT.i) then
+        elseif(A%col(j).LT.i) then
         d(i) = d(i) - A%val(j)*A%val(j)*d(A%col(j))
         endif
         enddo
@@ -2222,7 +2222,7 @@ contains
         do j = A%row(i), A%row(i+1)-1
         if(A%col(j).eq.i) then
         d(i) = d(i) + A%val(j)
-        else if(A%col(j).LT.i) then
+        elseif(A%col(j).LT.i) then
         d(i) = d(i) - A%val(j)*A%val(j)*d(A%col(j))
         endif
         enddo
@@ -2273,7 +2273,7 @@ contains
         do j = L%row(i), L%row(i+1)-1 !loop through columns
         if(L%col(j).eq.i) then ! diagonal
         d(i) = d(i) + L%val(j) 
-        else if(L%col(j).LT.i) then ! take the L and U side
+        elseif(L%col(j).LT.i) then ! take the L and U side
         d(i) = d(i) - L%val(j)*UT%val(j)*d(L%col(j))
         endif
         enddo
@@ -2339,7 +2339,7 @@ contains
                 if(Atmp%col(j).eq.i) then !diagonal
                     d(i) = Atmp%val(j) ! store previous diagonal elements
                     exit ! exit as we reached the last element in L
-                else if(Atmp%col(j).LT.i) then
+                elseif(Atmp%col(j).LT.i) then
                     !
                     if(d(Atmp%col(j)).eq.C_ZERO) then
                         write( *, * ) "Error: ilu0_Cmplx > zero pivoting in ILU0 "
@@ -2413,7 +2413,7 @@ contains
         if(Atmp%col(j).eq.i) then !diagonal
         d(i) = Atmp%val(j) ! store previous diagonal elements
         exit ! exit as we reached the last element in L
-        else if(Atmp%col(j).LT.i) then
+        elseif(Atmp%col(j).LT.i) then
         if(d(Atmp%col(j)).eq.0.0) then
         stop "Error: ilu0_Real > zero pivoting in ILU0 "
         endif 

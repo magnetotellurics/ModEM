@@ -124,7 +124,6 @@ contains
         allocate( D, source = R )
         allocate( S, source = R )
         !
-        self%failed = .FALSE.
         adjoint = .FALSE.
         !
         !> R is Ax
@@ -161,14 +160,10 @@ contains
         !
         !> the do loop goes on while the relative error is greater than the tolerance
         !> and the iterations are less than maxIt
-        do while( ( self%relErr( self%iter ) .GT. self%tolerance ) .AND. ( self%iter .LT. self%max_iters ) )
+        solver_loop: do
             !
             if( ( RHO .EQ. C_ZERO ) .OR. ( PSI .EQ. C_ZERO ) ) then
-                !
-                self%failed = .TRUE.
-                !
                 call errStop( "solveQMR > Failed to converge" )
-                !
             endif
             !
             rhoInv = ( 1 / RHO )
@@ -188,8 +183,6 @@ contains
             DELTA = Z%dotProd( Y )
             !
             if( DELTA .EQ. C_ZERO ) then
-                !
-                self%failed = .TRUE.
                 !
                 call errStop( "solveQMR > DELTA fails to converge" )
                 !
@@ -225,13 +218,12 @@ contains
             EPSIL = Q%dotProd( PT )
             !
             if( EPSIL .EQ. C_ZERO ) then
-                self%failed = .TRUE.
                 call errStop( "solveQMR > EPSIL failed to converge" )
             endif
             !
             BETA = EPSIL/DELTA
+            !
             if( BETA .EQ. C_ZERO ) then
-                self%failed = .TRUE.
                 call errStop( "solveQMR > BETA failed to converge" )
             endif
             !
@@ -264,7 +256,6 @@ contains
             GAMM = C_ONE / SQRT( C_ONE + THET * THET )
             !
             if( GAMM .EQ. C_ZERO ) then
-                self%failed = .TRUE.
                 call errStop( "solveQMR > GAMM fails to converge" )
             endif
             !
@@ -294,16 +285,21 @@ contains
             !
             self%relErr( self%iter ) = real( rnorm / bnorm, kind=prec )
             !
-        enddo
+            !> Stop Conditions
+            if( ( self%relErr( self%iter ) .LE. self%tolerance ) .OR. ( self%iter .GE. self%max_iters ) ) then
+                exit
+            endif
+            !
+        enddo solver_loop
         !
-        !self%converged = self%iter .LT. self%max_iters
-        !
-        if( self%iter .LT. self%max_iters ) then
-            write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR converged within ", self%iter, ": err= ", self%relErr( self%iter )
-        else
-            write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
-        endif
-        !
+        self%converged = self%relErr( self%iter ) .LE. self%tolerance
+        ! !
+        ! if( self%converged ) then
+            ! write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        ! else
+            ! write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        ! endif
+        ! !
         deallocate( R )
         deallocate( Y )
         deallocate( Z )

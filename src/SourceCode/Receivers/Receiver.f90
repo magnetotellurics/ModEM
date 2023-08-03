@@ -171,13 +171,13 @@ contains
         ! !
         ! if( allocated( self%lrows ) ) then
             ! !
-			! asize = size( self%EHxy )
+            ! asize = size( self%EHxy )
             ! do i_comp = asize, 1, -(1)
                 ! if( allocated( self%lrows( i_pol, i_comp )%v ) ) deallocate( self%lrows( i_pol, i_comp )%v )
             ! enddo
-			! !
+            ! !
             ! deallocate( self%EHxy )
-			! !
+            ! !
         ! endif
         ! !
     ! end subroutine deallocateLRows
@@ -267,9 +267,9 @@ contains
                     call self%Lbz%fromFullVector( temp_full_vec )
                     !
             end select
-                    !
+            !
             deallocate( e_h, temp_full_vec )
-                    !
+            !
         enddo
         !
     end subroutine evaluationFunction_Receiver

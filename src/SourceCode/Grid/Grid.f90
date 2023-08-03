@@ -577,7 +577,7 @@ contains
                 airLayers%dz(1) = airLayers%minTopDz
             endif
 
-        else if(index(airLayers%method, "fixed height") > 0) then 
+        elseif(index(airLayers%method, "fixed height") > 0) then 
             !
             !> ON IMPLEMENTATION
             z1_log = log10( self%Dz( self%NzAir + 1 ) )

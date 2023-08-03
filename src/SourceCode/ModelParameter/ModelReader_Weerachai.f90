@@ -96,7 +96,11 @@ contains
                 case( GRID_MR )
                     allocate( grid, source = Grid3D_MR_t( nx, ny, nzAir, nzEarth, dx, dy, dz, layers ) )
                 case default
-                    call errStop( "readModelReaderWeerachai > Unknow grid_format ["//grid_format//"]." )
+					!
+					call warning( "readModelReaderWeerachai > grid_format not provided, using Grid3D_SG_t." )
+					!
+					allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
+					!
             end select
             !
             !> Consider isotope at first
@@ -120,14 +124,14 @@ contains
                     enddo
                 enddo
                 !
-                select case( grid_format )
+                select type( grid )
                     !
-                    case( GRID_SG )
+                    class is( Grid3D_SG_t )
                         allocate( ccond, source = rScalar3D_SG_t( grid, CELL_EARTH ) )
-                    case( GRID_MR )
+                    class is( Grid3D_MR_t )
                         allocate( ccond, source = rScalar3D_MR_t( grid, CELL_EARTH ) )
-                    case default
-                        call errStop( "readModelReaderWeerachai > Unknow grid_format ["//grid_format//"] for ccond." )
+                    class default
+                        call errStop( "readModelReaderWeerachai > Unknow grid" )
                     !
                 end select
                 !
