@@ -537,6 +537,8 @@ contains
                             enddo
                         enddo
                         !
+                        call out_phi%mult( self%metric%v_node )
+                        !
                     class default
                         call errStop( "divC_ModelOperator_MF_SG > in_e type unknown" )
                 end select

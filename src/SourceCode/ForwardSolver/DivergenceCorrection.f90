@@ -99,7 +99,7 @@ contains
         class( Vector_t ), intent( inout ) :: e_solution
         class( Scalar_t ), intent( in ), optional :: phi0
         !
-        class( Vector_t ), allocatable :: temp_e, e_solution_int
+        class( Vector_t ), allocatable :: temp_e
         class( Scalar_t ), allocatable :: phiRHS, phiSol
         logical :: SourceTerm
         !
@@ -107,15 +107,12 @@ contains
             call errStop( "divCorr_DivergenceCorrection > e_solution not allocated" )
         endif
         !
-        !allocate( temp_e, source = e_solution )
-        call e_solution%interior( e_solution_int )
-        !
         SourceTerm = present( phi0 )
         !
         call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phiRHS )
         !
         !> compute divergence of currents for input electric field
-        call self%solver%preconditioner%model_operator%divC( e_solution_int, phiRHS )
+        call self%solver%preconditioner%model_operator%divC( e_solution, phiRHS )
         !
         !>  If source term is present, subtract from divergence of currents
         !>  probably OK to use function here -- but could replace with subroutine
@@ -129,7 +126,7 @@ contains
         !
         !> point-wise multiplication with volume weights centered on corner nodes
         !
-        call phiRHS%mult( self%solver%preconditioner%model_operator%metric%v_node )
+        !call phiRHS%mult( self%solver%preconditioner%model_operator%metric%v_node )
         !
         call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phiSol )
         !
@@ -146,6 +143,7 @@ contains
         !endif
         !
         allocate( temp_e, source = e_solution )
+		call temp_e%zeros
         !
         !> compute gradient of phiSol (Divergence correction for temp_e)
         call self%solver%preconditioner%model_operator%grad( phiSol, temp_e )
@@ -156,10 +154,14 @@ contains
         !>    e_solution = temp_e - e_solution
         !
         !call e_solution%linComb( temp_e, C_MinusOne, C_ONE )
-        call e_solution_int%sub( temp_e )
+        call e_solution%sub( temp_e )
+		!
+		call phiRHS%zeros
         !
         !> divergence of the corrected output electrical field
-        call self%solver%preconditioner%model_operator%divC( e_solution_int, phiRHS )
+        call self%solver%preconditioner%model_operator%divC( e_solution, phiRHS )
+        !
+        !call phiRHS%mult( self%solver%preconditioner%model_operator%metric%v_node )
         !
         !>  If source term is present, subtract from divergence of currents
         if( SourceTerm ) then
@@ -175,106 +177,4 @@ contains
         !
     end subroutine divCorr_DivergenceCorrection
     !
-    ! !> No subroutine briefing
-    ! subroutine divCorr_DivergenceCorrection( self, e_solution, phi0 )
-        ! implicit none
-        ! !
-        ! class( DivergenceCorrection_t ), intent( inout ) :: self
-        ! class( Vector_t ), intent( inout ) :: e_solution
-        ! class( Scalar_t ), intent( in ), optional :: phi0
-        ! !
-        ! class( Scalar_t ), allocatable :: phiRHS, phiSol
-        ! class( Scalar_t ), allocatable :: phiRHS_int, phiSol_int
-        ! class( Vector_t ), allocatable :: e_solution_int, out_aux
-        ! logical :: SourceTerm
-        ! !
-        ! if( .NOT. e_solution%is_allocated ) then
-            ! call errStop( "divCorr_DivergenceCorrection > e_solution not allocated" )
-        ! endif
-        ! !
-        ! SourceTerm = present( phi0 )
-        ! !
-        ! call e_solution%interior( e_solution_int )
-        ! !
-        ! call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phiRHS )
-        ! !
-        ! !> compute divergence of currents for input electric field
-        ! call self%solver%preconditioner%model_operator%divC( e_solution_int, phiRHS )
-        ! !
-        ! call phiRHS%interior( phiRHS_int )
-        ! !
-        ! !>  If source term is present, subtract from divergence of currents
-        ! !>  probably OK to use function here -- but could replace with subroutine
-        ! if( SourceTerm ) then
-            ! call phiRHS_int%multAdd( C_MinusOne, phi0 )
-        ! endif
-        ! !
-        ! !> compute the size of current Divergence before (using dot product)
-        ! !>    this will be part of diagnostics
-        ! !
-        ! self%divJ(1) = sqrt( phiRHS_int%dotProd( phiRHS_int ) )
-        ! !
-        ! !deallocate( phiRHS_int )
-        ! !
-        ! !> point-wise multiplication with volume weights centered on corner nodes
-        ! !
-        ! call phiRHS_int%mult( self%solver%preconditioner%model_operator%metric%v_node )
-        ! !
-        ! call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phiSol )
-        ! !
-        ! !>    solve system of equations -- solver will have to know about
-        ! !>     (a) the equations to solve -- the divergence correction operator
-        ! !>     is modOp%divCGrad
-        ! !>     (b) preconditioner: object, and preconditioner matrix
-        ! !
-        ! call self%solver%solve( phiRHS_int, phiSol )
-        ! !
-        ! call phiSol%interior( phiSol_int )
-        ! !
-        ! deallocate( phiSol )
-        ! !
-        ! !>    have to decide how to manage output
-        ! !if(output_level > 2) then
-        ! !write (*,*) "finished divergence correction:", size( self%solver%relErr ), self%solver%n_inv_iter
-        ! !write (*,"(i8, es20.6)") self%solver%n_inv_iter, self%solver%relErr( self%solver%n_inv_iter )
-        ! !endif
-        ! !
-        ! !> compute gradient of phiSol (Divergence correction for e_solution_int)
-        ! call self%solver%preconditioner%model_operator%grad( phiSol_int, e_solution_int )
-        ! !
-        ! !> subtract Divergence correction from e_temp
-        ! !>    e_solution = e_solution - e_solution_int
-        ! !
-        ! !>
-        ! call e_solution%linComb( e_solution_int, C_MinusOne, C_ONE )
-        ! !call e_solution_int%sub( e_solution )
-        ! !
-        ! !e_solution = e_solution_int
-        ! !
-        ! call phiRHS%zeros()
-        ! !
-        ! !> divergence of the corrected output electrical field
-        ! call self%solver%preconditioner%model_operator%divC( e_solution, phiRHS )
-        ! !
-        ! !>  If source term is present, subtract from divergence of currents
-        ! if( SourceTerm ) then
-            ! call phiRHS_int%multAdd( C_MinusOne, phi0 )
-        ! endif
-        ! !
-        ! deallocate( phiRHS_int )
-        ! !
-        ! !> compute the size of current Divergence after
-        ! !
-        ! call phiRHS%interior( phiRHS_int )
-        ! !
-        ! deallocate( phiRHS )
-        ! !
-        ! self%divJ(2) = sqrt( phiRHS_int%dotProd( phiRHS_int ) )
-        ! !
-        ! deallocate( phiRHS_int )
-        ! !
-        ! write( *, * ) "                    DivJ: ", self%divJ(1), " => ", self%divJ(2)
-        ! !
-    ! end subroutine divCorr_DivergenceCorrection
-    ! !
 end module DivergenceCorrection

@@ -202,11 +202,17 @@ contains
         !> select out interior nodes, edges
         call subMatrix_Real( Temp2, self%NODEi, self%EDGEi, self%VDiv )
         !
-        aux_vec = real( 1. / self%metric%v_node%getArray(), kind=prec )
+        aux_vec = real( self%metric%v_node%getArray(), kind=prec )
         !
-        aux_vec_int = aux_vec( self%metric%v_node%ind_interior )
+        !> Divide VDiv by v_node to construct D
+        aux_vec_int = 1. / aux_vec( self%metric%v_node%ind_interior )
         !
         call DIAGxRMAT( aux_vec_int, self%VDiv, self%D )
+        !
+        !> Multiple back VDiv by v_node (used later to construct VDs in divCorSetUp)
+        aux_vec_int = aux_vec( self%metric%v_node%ind_interior )
+        !
+        call DIAGxRMAT( aux_vec_int, self%VDiv, self%VDiv )
         !
         call deall_spMatCSR( Temp2 )
         !
@@ -429,7 +435,7 @@ contains
         out_phi_v = out_phi%getArray()
         out_phi_v_int = out_phi_v( out_phi%ind_interior )
         !
-        !write(*,*) "divC_ModelOperator_SP: ", self%VDs%nCol, self%VDs%nRow, size( in_e_v( in_e%ind_interior ) ), size( out_phi_v_int )
+        write(*,*) "divC_ModelOperator_SP: ", self%VDs%nCol, self%VDs%nRow, size( in_e_v( in_e%ind_interior ) ), size( out_phi_v_int )
         !
         call RMATxCVEC( self%VDs, in_e_v( in_e%ind_interior ), out_phi_v_int )
         !
