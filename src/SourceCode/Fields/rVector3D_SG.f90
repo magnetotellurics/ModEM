@@ -74,8 +74,7 @@ module rVector3D_SG
             procedure, public :: getSV => getSV_rVector3D_SG
             procedure, public :: setSV => setSV_rVector3D_SG
             !
-            procedure, public :: getArray => getArray_rVector3D_SG
-            procedure, public :: setArray => setArray_rVector3D_SG
+            procedure, public :: deallOtherState => deallOtherState_rVector3D_SG
             !
             procedure, public :: copyFrom => copyFrom_rVector3D_SG
             !
@@ -1682,7 +1681,7 @@ contains
         !
         class( rVector3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: x(:,:,:)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getX_rVector3D_SG > self not allocated." )
@@ -1704,15 +1703,15 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: x(:,:,:)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: x
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setX_rVector3D_SG > self not allocated." )
         endif
         !
-        if( .NOT. allocated( x ) ) then
-            call errStop( "setX_rVector3D_SG > x not allocated." )
-        endif
+        !if( .NOT. allocated( x ) ) then
+            !call errStop( "setX_rVector3D_SG > x not allocated." )
+        !endif
         !
         call self%switchStoreState( compound )
         !
@@ -1729,7 +1728,7 @@ contains
         !
         class( rVector3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: y(:,:,:)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: y
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getY_rVector3D_SG > self not allocated." )
@@ -1751,15 +1750,15 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: y(:,:,:)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: y
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setY_rVector3D_SG > self not allocated." )
         endif
         !
-        if( .NOT. allocated( y ) ) then
-            call errStop( "setY_rVector3D_SG > y not allocated." )
-        endif
+        !if( .NOT. allocated( y ) ) then
+            !call errStop( "setY_rVector3D_SG > y not allocated." )
+        !endif
         !
         call self%switchStoreState( compound )
         !
@@ -1776,7 +1775,7 @@ contains
         !
         class( rVector3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: z(:,:,:)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: z
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getZ_rVector3D_SG > self not allocated." )
@@ -1798,15 +1797,15 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: z(:,:,:)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: z
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setZ_rVector3D_SG > self not allocated." )
         endif
         !
-        if( .NOT. allocated( z ) ) then
-            call errStop( "setZ_rVector3D_SG > z not allocated." )
-        endif
+        !if( .NOT. allocated( z ) ) then
+            !call errStop( "setZ_rVector3D_SG > z not allocated." )
+        !endif
         !
         call self%switchStoreState( compound )
         !
@@ -1823,7 +1822,7 @@ contains
         !
         class( rVector3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: s_v(:)
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getSV_rVector3D_SG > self not allocated." )
@@ -1845,15 +1844,15 @@ contains
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        complex( kind=prec ), dimension(:), intent( in ) :: s_v
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setSV_rVector3D_SG > self not allocated." )
         endif
         !
-        if( .NOT. allocated( s_v ) ) then
-            call errStop( "setSV_rVector3D_SG > s_v not allocated." )
-        endif
+        !if( .NOT. allocated( s_v ) ) then
+            !call errStop( "setSV_rVector3D_SG > s_v not allocated." )
+        !endif
         !
         call self%switchStoreState( singleton )
         !
@@ -1867,65 +1866,18 @@ contains
     !
     !> No subroutine briefing
     !
-    function getArray_rVector3D_SG( self ) result( array )
-        implicit none
-        !
-        class( rVector3D_SG_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:) :: array
-        !
-        if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "getArray_rVector3D_SG > Self not allocated." )
-        endif
-        !
-        if( self%store_state .EQ. compound ) then
-            !
-            allocate( array( self%length() ) )
-            !
-            array = (/reshape(self%x, (/self%Nxyz(1), 1/)), &
-                      reshape(self%y, (/self%Nxyz(2), 1/)), &
-                      reshape(self%z, (/self%Nxyz(3), 1/))/)
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            array = self%s_v
-            !
-        else
-            call errStop( "getArray_rVector3D_SG > Unknown store_state!" )
-        endif
-        !
-    end function getArray_rVector3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setArray_rVector3D_SG( self, array )
+    subroutine deallOtherState_rVector3D_SG( self )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:), intent( in ) :: array
-        !
-        integer :: i1, i2
         !
         if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "setArray_rVector3D_SG > Self not allocated." )
+            call errStop( "deallOtherState_rVector3D_SG > Self not allocated." )
         endif
         !
         if( self%store_state .EQ. compound ) then
             !
             if( allocated( self%s_v ) ) deallocate( self%s_v )
-            !
-            !> Ex
-            i1 = 1; i2 = self%Nxyz(1)
-            !
-            self%x = reshape( array(i1:i2), self%NdX )
-            !> Ey
-            i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
-            !
-            self%y = reshape( array(i1:i2), self%NdY )
-            !> Ez
-            i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
-            !
-            self%z = reshape(array(i1:i2), self%NdZ)
             !
         elseif( self%store_state .EQ. singleton ) then
             !
@@ -1933,13 +1885,11 @@ contains
             if( allocated( self%y ) ) deallocate( self%y )
             if( allocated( self%z ) ) deallocate( self%z )
             !
-            self%s_v = array
-            !
         else
-            call errStop( "setArray_rVector3D_SG > Unknown store_state!" )
+            call errStop( "deallOtherState_rVector3D_SG > Unknown store_state!" )
         endif
         !
-    end subroutine setArray_rVector3D_SG
+    end subroutine deallOtherState_rVector3D_SG
     !
     !> No subroutine briefing
     !

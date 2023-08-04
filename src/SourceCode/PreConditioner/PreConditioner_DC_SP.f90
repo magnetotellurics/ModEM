@@ -123,7 +123,7 @@ contains
         class( PreConditioner_DC_SP_t ), intent( inout ) :: self
         class( Scalar_t ), intent( inout ) :: in_phi, out_phi
         !
-        complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_phi_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_phi_v, out_phi_v_int
         !
         !write(*,*) "LUSolvePreConditioner_DC_SP: ", in_phi%length(), out_phi%length()
         !
@@ -138,18 +138,21 @@ contains
         in_phi_v = in_phi%getArray()
         !
         out_phi_v = out_phi%getArray()
+        out_phi_v_int = out_phi_v( out_phi%ind_interior )
         !
         select type( model_operator => self%model_operator )
             !
             class is( ModelOperator_SP_t )
                 !
-                !write(*,*) "LTsolve_Real: ", model_operator%VDsG_L%nCol, model_operator%VDsG_L%nRow, size( in_phi_v ), size( self%phi )
+                !write(*,*) "LTsolve_Real: ", model_operator%VDsG_L%nCol, model_operator%VDsG_L%nRow, size( in_phi_v( in_phi%ind_interior ) ), size( self%phi )
                 !
-                call LTsolve_Real( model_operator%VDsG_L, in_phi_v, self%phi )
+                call LTsolve_Real( model_operator%VDsG_L, in_phi_v( in_phi%ind_interior ), self%phi )
                 !
-                !write(*,*) "UTsolve_Real: ", model_operator%VDsG_U%nCol, model_operator%VDsG_U%nRow, size( self%phi ), size( out_phi_v )
+                !write(*,*) "UTsolve_Real: ", model_operator%VDsG_U%nCol, model_operator%VDsG_U%nRow, size( self%phi ), size( out_phi_v_int )
                 !
-                call UTsolve_Real( model_operator%VDsG_U, self%phi, out_phi_v )
+                call UTsolve_Real( model_operator%VDsG_U, self%phi, out_phi_v_int )
+                !
+                out_phi_v( out_phi%ind_interior ) = out_phi_v_int
                 !
                 call out_phi%setArray( out_phi_v )
                 !

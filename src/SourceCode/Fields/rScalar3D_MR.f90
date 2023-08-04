@@ -304,17 +304,17 @@ contains
             endif
         end do
         !
-        if (allocated (self%ind_boundaries)) then
-            deallocate (self%ind_boundaries)
+        if (allocated (self%ind_boundary)) then
+            deallocate (self%ind_boundary)
         endif
         !
-        allocate (self%ind_boundaries(n_boundaries)) 
+        allocate (self%ind_boundary(n_boundaries)) 
         !
         i = 0
         do k = 1, n_active
             if (v_2(k) == 1) then
                 i = i + 1
-                self%ind_boundaries(i) = k
+                self%ind_boundary(i) = k
             endif
         end do
         !
@@ -658,13 +658,13 @@ contains
         integer :: m, n
         !
         m = size( self%ind_interior )
-        n = size( self%ind_boundaries )
+        n = size( self%ind_boundary )
         !
         allocate( ind_i(m) )
         allocate( ind_b(n) )
         !
         ind_i = self%ind_interior
-        ind_b = self%ind_boundaries
+        ind_b = self%ind_boundary
         !
     end subroutine intBdryIndices_rScalar3D_MR
     !
@@ -897,7 +897,7 @@ contains
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: v(:,:,:)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getV_rScalar3D_MR > self not allocated." )
@@ -919,15 +919,15 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: v(:,:,:)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: v
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setV_rScalar3D_MR > self not allocated." )
         endif
         !
-        if( .NOT. allocated( v ) ) then
-            call errStop( "setV_rScalar3D_MR > v not allocated." )
-        endif
+        !if( .NOT. allocated( v ) ) then
+            !call errStop( "setV_rScalar3D_MR > v not allocated." )
+        !endif
         !
         call self%switchStoreState( compound )
         !
@@ -944,7 +944,7 @@ contains
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: s_v(:)
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getSV_rScalar3D_MR > self not allocated." )
@@ -966,15 +966,15 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        complex( kind=prec ), dimension(:), intent( in ) :: s_v
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setSV_rScalar3D_MR > self not allocated." )
         endif
         !
-        if( .NOT. allocated( s_v ) ) then
-            call errStop( "setSV_rScalar3D_MR > s_v not allocated." )
-        endif
+        !if( .NOT. allocated( s_v ) ) then
+            !call errStop( "setSV_rScalar3D_MR > s_v not allocated." )
+        !endif
         !
         call self%switchStoreState( singleton )
         !

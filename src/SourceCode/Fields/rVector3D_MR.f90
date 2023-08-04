@@ -123,7 +123,7 @@ contains
         !
         self%ind_active = E_in%ind_active
         self%ind_interior = E_in%ind_interior
-        self%ind_boundaries = E_in%ind_boundaries
+        self%ind_boundary = E_in%ind_boundary
         !
         select type( grid => E_in%grid )
             !
@@ -321,16 +321,16 @@ contains
             end if
         end do
         !
-        if (allocated (self%ind_boundaries)) then
-            deallocate (self%ind_boundaries)
+        if (allocated (self%ind_boundary)) then
+            deallocate (self%ind_boundary)
         end if
-        allocate (self%ind_boundaries(n_boundaries)) 
+        allocate (self%ind_boundary(n_boundaries)) 
         !
         i = 0
         do k = 1, n_active
             if (v_2(k) == 1) then
                 i = i + 1
-                self%ind_boundaries(i) = k
+                self%ind_boundary(i) = k
             end if
         end do
         !
@@ -963,13 +963,13 @@ contains
         integer :: m, n
         !
         m = size( self%ind_interior )
-        n = size( self%ind_boundaries )
+        n = size( self%ind_boundary )
         !
         allocate( ind_i(m) )
         allocate( ind_b(n) )
         !
         ind_i = self%ind_interior
-        ind_b = self%ind_boundaries
+        ind_b = self%ind_boundary
         !
     end subroutine intBdryIndices_rVector3D_MR
     !
@@ -1587,7 +1587,7 @@ contains
         !
         class( rVector3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: x(:,:,:)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x
         !
         x = self%x
         !
@@ -1599,7 +1599,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: x(:,:,:)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: x
         !
         self%x = x
         !
@@ -1612,7 +1612,7 @@ contains
         !
         class( rVector3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: y(:,:,:)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: y
         !
         y = self%y
         !
@@ -1624,7 +1624,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: y(:,:,:)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: y
         !
         self%y = y
         !
@@ -1637,7 +1637,7 @@ contains
         !
         class( rVector3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: z(:,:,:)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: z
         !
         z = self%z
         !
@@ -1649,7 +1649,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: z(:,:,:)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: z
         !
         self%z = z
         !
@@ -1662,7 +1662,7 @@ contains
         !
         class( rVector3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: s_v(:)
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
         call errStop( "getSV_rVector3D_MR not implemented!" )
         !
@@ -1674,7 +1674,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        complex( kind=prec ), dimension(:), intent( in ) :: s_v
         !
         call errStop( "setSV_rVector3D_MR not implemented!" )
         !
@@ -1759,10 +1759,10 @@ contains
             call errStop( "copyFrom_rVector3D_MR > rhs%ind_interior not allocated" )
         endif
         !
-        if( allocated( rhs%ind_boundaries ) ) then
-            self%ind_boundaries = rhs%ind_boundaries
+        if( allocated( rhs%ind_boundary ) ) then
+            self%ind_boundary = rhs%ind_boundary
         else
-            call errStop( "copyFrom_rVector3D_MR > rhs%ind_boundaries not allocated" )
+            call errStop( "copyFrom_rVector3D_MR > rhs%ind_boundary not allocated" )
         endif
         !
         select type( rhs )

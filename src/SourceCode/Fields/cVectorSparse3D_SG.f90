@@ -60,6 +60,8 @@ module cVectorSparse3D_SG
             procedure, public :: getSV => getSV_cVectorSparse3D_SG
             procedure, public :: setSV => setSV_cVectorSparse3D_SG
             !
+            procedure, public :: deallOtherState => deallOtherState_cVectorSparse3D_SG
+            !
             procedure, public :: getArray => getArray_cVectorSparse3D_SG
             procedure, public :: setArray => setArray_cVectorSparse3D_SG
             procedure, public :: switchStoreState => switchStoreState_cVectorSparse3D_SG
@@ -484,7 +486,7 @@ contains
         !
         class( cVectorSparse3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: s_v(:)
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
         call errStop( "getSV_cVectorSparse3D_SG not implemented!" )
         !
@@ -496,11 +498,26 @@ contains
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        complex( kind=prec ), dimension(:), intent( in ) :: s_v
         !
         call errStop( "setSV_cVectorSparse3D_SG not implemented!" )
         !
     end subroutine setSV_cVectorSparse3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine deallOtherState_cVectorSparse3D_SG( self )
+        implicit none
+        !
+        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        !
+        if( ( .NOT. self%is_allocated ) ) then
+            call errStop( "deallOtherState_cVectorSparse3D_SG > Self not allocated." )
+        endif
+        !
+        call errStop( "deallOtherState_cVectorSparse3D_SG not implemented!" )
+        !
+    end subroutine deallOtherState_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !

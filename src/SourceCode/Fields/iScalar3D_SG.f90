@@ -54,8 +54,7 @@ module iScalar3D_SG
             procedure, public :: getSV => getSV_iScalar3D_SG
             procedure, public :: setSV => setSV_iScalar3D_SG
             !
-            procedure, public :: getArray => getArray_iScalar3D_SG
-            procedure, public :: setArray => setArray_iScalar3D_SG
+            procedure, public :: deallOtherState => deallOtherState_iScalar3D_SG
             !
             !> Miscellaneous
             procedure, public :: copyFrom => copyFrom_iScalar3D_SG
@@ -848,7 +847,7 @@ contains
         !
         class( iScalar3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: v(:,:,:)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "getV_iScalar3D_SG > self not allocated." )
@@ -870,15 +869,15 @@ contains
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: v(:,:,:)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: v
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setV_iScalar3D_SG > self not allocated." )
         endif
         !
-        if( .NOT. allocated( v ) ) then
-            call errStop( "setV_iScalar3D_SG > v not allocated." )
-        endif
+        !if( .NOT. allocated( v ) ) then
+            !call errStop( "setV_iScalar3D_SG > v not allocated." )
+        !endif
         !
         call self%switchStoreState( compound )
         !
@@ -917,15 +916,15 @@ contains
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        complex( kind=prec ), dimension(:), intent( in ) :: s_v
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setSV_iScalar3D_SG > self not allocated." )
         endif
         !
-        if( .NOT. allocated( s_v ) ) then
-            call errStop( "setSV_iScalar3D_SG > s_v not allocated." )
-        endif
+        !if( .NOT. allocated( s_v ) ) then
+            !call errStop( "setSV_iScalar3D_SG > s_v not allocated." )
+        !endif
         !
         call self%switchStoreState( singleton )
         !
@@ -935,60 +934,28 @@ contains
     !
     !> No subroutine briefing
     !
-    function getArray_iScalar3D_SG( self ) result( array )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( in ) :: self
-        complex( kind=prec ), allocatable, dimension(:) :: array
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "getArray_iScalar3D_SG > self not allocated." )
-        endif
-        !
-        if( self%store_state .EQ. compound ) then
-            !
-            allocate( array( self%length() ) )
-            array = (/reshape( cmplx( self%v, 0.0, kind=prec ), (/self%Nxyz, 1/))/)
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            array = self%s_v
-            !
-        else
-            call errStop( "getArray_iScalar3D_SG > Unknown store_state!" )
-        endif
-        !
-    end function getArray_iScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setArray_iScalar3D_SG( self, array )
+    subroutine deallOtherState_iScalar3D_SG( self )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setArray_iScalar3D_SG > self not allocated." )
+        if( ( .NOT. self%is_allocated ) ) then
+            call errStop( "deallOtherState_iScalar3D_SG > Self not allocated." )
         endif
         !
         if( self%store_state .EQ. compound ) then
             !
             if( allocated( self%s_v ) ) deallocate( self%s_v )
             !
-            self%v = reshape( real( array, kind=prec ), (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
-            !
         elseif( self%store_state .EQ. singleton ) then
             !
             if( allocated( self%v ) ) deallocate( self%v )
             !
-            self%s_v = array
-            !
         else
-            call errStop( "setArray_iScalar3D_SG > Unknown store_state!" )
+            call errStop( "deallOtherState_iScalar3D_SG > Unknown store_state!" )
         endif
         !
-    end subroutine setArray_iScalar3D_SG
+    end subroutine deallOtherState_iScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -1012,8 +979,8 @@ contains
         if( allocated( rhs%ind_interior ) ) &
         self%ind_interior = rhs%ind_interior
         !
-        if( allocated( rhs%ind_boundaries ) ) &
-        self%ind_boundaries = rhs%ind_boundaries
+        if( allocated( rhs%ind_boundary ) ) &
+        self%ind_boundary = rhs%ind_boundary
         !
         select type( rhs )
             !

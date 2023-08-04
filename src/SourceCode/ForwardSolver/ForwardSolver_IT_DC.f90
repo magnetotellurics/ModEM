@@ -101,7 +101,7 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), allocatable, intent( out ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_vec
+        class( Vector_t ), allocatable :: boundary
         class( Scalar_t ), allocatable :: phi0
         integer :: i
         !
@@ -138,25 +138,22 @@ contains
                 !
                 self%relResVec( self%n_iter_actual + i ) = self%solver%relErr(i)
                 !
+                self%relResFinal = self%solver%relErr(i)
+                !
             enddo
             !
-            !> Apply Divergence Correction if not converged
+            !> Apply Divergence Correction if solver not converged
             if( .NOT. self%solver%converged )  then
-                !
-                !> !!!! Use temp_vec here improves the execution time considerably.
-                allocate( temp_vec, source = e_solution )
                 !
                 if( source%non_zero_source ) then
                     !
-                    call self%divergence_correction%divCorr( temp_vec, e_solution, phi0 )
+                    call self%divergence_correction%divCorr( e_solution, phi0 )
                     !
                 else
                     !
-                    call self%divergence_correction%divCorr( temp_vec, e_solution )
+                    call self%divergence_correction%divCorr( e_solution )
                     !
                 endif
-                !
-                deallocate( temp_vec )
                 !
             endif
             !
@@ -169,10 +166,8 @@ contains
             !
         enddo fwd_solver_loop
         !
-        self%relResFinal = self%relResVec( self%n_iter_actual )
-        !
         if( self%solver%converged ) then
-            write( *, "( a38, i6, a7, es12.3 )" ) "->IT converged within ", self%n_iter_actual, ": err= ", self%relResFinal
+            write( *, "( a38, i6, a7, es12.3 )" ) "->IT_DC converged within ", self%iter, ": err= ", self%relResFinal
         else
             call warning( "createESolution_ForwardSolver_IT_DC failed to converge!" )
         endif
@@ -188,17 +183,17 @@ contains
         !
         if( source%non_zero_bc ) then
             !
-            call source%rhs( pol )%v%boundary( temp_vec )
+            call source%rhs( pol )%v%boundary( boundary )
             !
         else
             !
-            call source%E( pol )%v%boundary( temp_vec )
+            call source%E( pol )%v%boundary( boundary )
             !
         endif
         !
-        call e_solution%add( temp_vec )
+        call e_solution%add( boundary )
         !
-        deallocate( temp_vec )
+        deallocate( boundary )
         !
     end subroutine createESolution_ForwardSolver_IT_DC
     !

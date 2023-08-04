@@ -279,7 +279,7 @@ contains
             rnorm = SQRT( R%dotProd( R ) )
             !
             !> Verbose
-            write( *, "( a46, i6, a3, es12.3 )" ) "QMR self%iter, self%relErr( self%iter ):", self%iter, " : ", self%relErr( self%iter )
+            write( *, "( a26, i6, a3, es12.3 )" ) "QMR iter: ", self%iter, " : ", self%relErr( self%iter )
             !
             self%iter = self%iter + 1
             !
@@ -293,13 +293,13 @@ contains
         enddo solver_loop
         !
         self%converged = self%relErr( self%iter ) .LE. self%tolerance
-        ! !
-        ! if( self%converged ) then
-            ! write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR converged within ", self%iter, ": err= ", self%relErr( self%iter )
-        ! else
-            ! write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
-        ! endif
-        ! !
+        !
+        if( self%converged ) then
+            write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        else
+            write( *, "( a46, i6, a7, es12.3 )" ) "->Solver QMR not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        endif
+        !
         deallocate( R )
         deallocate( Y )
         deallocate( Z )

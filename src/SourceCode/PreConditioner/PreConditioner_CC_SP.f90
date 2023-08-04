@@ -201,8 +201,7 @@ contains
         class( Vector_t ), intent( inout ) :: in_e, out_e
         logical, intent( in ) :: adjoint
         !
-        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
-        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v, out_e_v_int
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "LTSolvePreConditioner_CC_SP > in_e not allocated yet" )
@@ -212,27 +211,24 @@ contains
             call errStop( "LTSolvePreConditioner_CC_SP > out_e not allocated" )
         endif
         !
-        !write(*,*) "LTSolvePreConditioner_CC_SP: ", in_e%length(), out_e%length(), adjoint
-        !
         in_e_v = in_e%getArray()
-        in_e_v_int = in_e_v( in_e%ind_interior )
         !
         out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%ind_interior )
         !
         if( adjoint ) then
             !
-            !write(*,*) "UTsolve_Cmplx: ", self%LH%nCol, self%LH%nRow, size( in_e_v_int ), size( out_e_v_int )
+            !write(*,*) "UTsolve_Cmplx: ", self%LH%nCol, self%LH%nRow, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
             !
-            call UTsolve_Cmplx( self%LH, in_e_v_int, out_e_v_int )
+            call UTsolve_Cmplx( self%LH, in_e_v( in_e%ind_interior ), out_e_v_int )
             !
         else
             !
             out_e_v_int = C_ZERO
             !
-            !write(*,*) "LTsolve_Cmplx: ", self%L%nCol, self%L%nRow, size( in_e_v_int ), size( out_e_v_int )
+            !write(*,*) "LTsolve_Cmplx: ", self%L%nCol, self%L%nRow, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
             !
-            call LTsolve_Cmplx( self%L, in_e_v_int, out_e_v_int )
+            call LTsolve_Cmplx( self%L, in_e_v( in_e%ind_interior ), out_e_v_int )
             !
         endif
         !

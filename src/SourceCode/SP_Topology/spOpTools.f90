@@ -2879,6 +2879,8 @@ contains
                 x(:, :, 1) = 1
                 x(:, :, temp_scalar%nz+1) = 1
                 !
+                call temp_scalar%setV( x )
+                !
                 s_v = temp_scalar%getArray()
                 !
             case default

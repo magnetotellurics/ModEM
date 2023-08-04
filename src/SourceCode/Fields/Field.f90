@@ -19,8 +19,7 @@ module Field
         !
         integer :: nx, ny, nz, store_state
         !
-        integer, dimension(:), allocatable :: ind_interior
-        integer, dimension(:), allocatable :: ind_boundaries
+        integer, dimension(:), allocatable :: ind_interior, ind_boundary
         !
         logical :: is_allocated
         !
@@ -73,6 +72,8 @@ module Field
             !> Miscellaneous
             procedure( interface_copy_from_field ), deferred, public :: copyFrom
             generic :: assignment(=) => copyFrom
+            !
+            procedure( interface_deallocate_other_state_field ), deferred, public :: deallOtherState
             !
             !> I/O operations
             procedure( interface_read_field ), deferred, public :: read
@@ -152,7 +153,7 @@ module Field
             !
             class( Field_t ), intent( in ) :: self
             !
-            complex( kind=prec ), allocatable :: s_v(:)
+            complex( kind=prec ), allocatable, dimension(:) :: s_v
             !
         end function interface_get_sv_field
         !
@@ -162,7 +163,7 @@ module Field
             import :: Field_t, prec
             !
             class( Field_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+            complex( kind=prec ), dimension(:), intent( in ) :: s_v
             !
         end subroutine interface_set_sv_field
         !
@@ -281,6 +282,12 @@ module Field
             class( Field_t ), intent( in ) :: rhs
         end subroutine interface_copy_from_field
         !
+        !> No interface subroutine briefing
+        subroutine interface_deallocate_other_state_field( self )
+            import :: Field_t
+            class( Field_t ), intent( inout ) :: self
+        end subroutine interface_deallocate_other_state_field
+        !
         !> No interface function briefing
         function interface_is_compatible_field( self, rhs ) result( is_compatible )
             import :: Field_t
@@ -335,7 +342,7 @@ contains
         !
         if( allocated( self%ind_interior ) ) deallocate( self%ind_interior )
         !
-        if( allocated( self%ind_boundaries ) ) deallocate( self%ind_boundaries )
+        if( allocated( self%ind_boundary ) ) deallocate( self%ind_boundary )
         !
     end subroutine deallocateField
     !
@@ -399,7 +406,7 @@ contains
         !
     end function isCompatibleField
     !
-    !> Defines the index arrays: ind_interior and ind_boundaries.
+    !> Defines the index arrays: ind_interior and ind_boundary.
     !>     Create copy with zeros and value boundaries with C_ONE.
     !>     Take two sizes and allocate the two arrays.
     !>     Fills the two arrays with their proper indices.
@@ -432,8 +439,8 @@ contains
             endif
         enddo
         !
-        if( allocated( self%ind_boundaries ) ) deallocate( self%ind_boundaries )
-        allocate( self%ind_boundaries( bdry_size ) )
+        if( allocated( self%ind_boundary ) ) deallocate( self%ind_boundary )
+        allocate( self%ind_boundary( bdry_size ) )
         !
         if( allocated( self%ind_interior ) ) deallocate( self%ind_interior )
         allocate( self%ind_interior( int_size ) )
@@ -442,7 +449,7 @@ contains
         k = 1
         do i = 1, size( c_array )
             if( c_array(i) == C_ONE ) then
-                self%ind_boundaries(j) = i
+                self%ind_boundary(j) = i
                 j = j + 1
             else
                 self%ind_interior(k) = i
