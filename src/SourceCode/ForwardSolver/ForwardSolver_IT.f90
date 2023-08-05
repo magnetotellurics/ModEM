@@ -190,7 +190,7 @@ contains
         self%relResFinal = self%relResVec( self%n_iter_actual )
         !
         if( self%solver%converged ) then
-            write( *, "( a38, i6, a7, es12.3 )" ) "->IT converged within ", self%n_iter_actual, ": err= ", self%relResFinal
+            write( *, "( a46, i6, a7, es12.3 )" ) "IT converged within ", self%n_iter_actual, ": err= ", self%relResFinal
         else
             call warning( "createESolution_ForwardSolver_IT failed to converge!" )
         endif

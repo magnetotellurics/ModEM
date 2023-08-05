@@ -223,7 +223,7 @@ contains
         allocate( d( G%nRow ) )
         !
         !> edge_length
-        aux_vec = real( self%metric%edge_length%getArray(), kind=prec )
+        aux_vec = self%metric%edge_length%getArray()
         !
         do i = 1, G%nRow
             d(i) = 1. / aux_vec(i)
@@ -268,7 +268,7 @@ contains
         !
         call RMATxDIAG( self%VDiv, d, self%VDs )
         !
-        !>Construct VDsG: symmetric operator for divergence correction solver
+        !> Construct VDsG: symmetric operator for divergence correction solver
         allocate( allNodes( self%Gd%nRow ) )
         !
         do i = 1, self%Gd%nRow
@@ -440,7 +440,7 @@ contains
         out_phi_v = out_phi%getArray()
         out_phi_v_int = out_phi_v( out_phi%ind_interior )
         !
-        write(*,*) "divC_ModelOperator_SP: ", self%VDs%nCol, self%VDs%nRow, size( in_e_v_int ), size( out_phi_v_int )
+        !write(*,*) "divC_ModelOperator_SP: ", self%VDs%nCol, self%VDs%nRow, size( in_e_v_int ), size( out_phi_v_int )
         !
         call RMATxCVEC( self%VDs, in_e_v_int, out_phi_v_int )
         !
@@ -511,9 +511,9 @@ contains
         out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%ind_interior )
         !
-        write(*,*) "grad_ModelOperator_SP: ", self%Gd%nCol, self%Gd%nRow, size( in_phi_v ), size( out_e_v_int )
+        !write(*,*) "grad_ModelOperator_SP: ", self%Gd%nCol, self%Gd%nRow, size( in_phi_v ), size( out_e_v_int )
         !
-        call RMATxCVEC( self%Gd, in_phi_v, out_e_v )
+        call RMATxCVEC( self%Gd, in_phi_v, out_e_v_int )
         !
         out_e_v( out_e%ind_interior ) = out_e_v_int
         !

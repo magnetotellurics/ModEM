@@ -813,9 +813,6 @@ contains
         !
         integer :: i, j, j1, j2, k, n, m, nz, nnz, nzero
         !
-        write(*,*) "DIAGxRMAT vec, nrow: ", size(D), &
-                                  A%nRow
-        !
         if( A%nRow .NE. size(D) ) then
             call errStop( "DIAGxRMAT > matrix sizes incompatible" )
         endif

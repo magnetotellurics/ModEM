@@ -146,7 +146,7 @@ contains
             !
             rnorm = SQRT( r%dotProd(r) )
             !
-            write( *, "( a36, i6, a3, es12.3 )" ) "PCG iter: ", self%iter, " : ", self%relErr( self%iter )
+            !write( *, "( a36, i6, a3, es12.3 )" ) "PCG iter: ", self%iter, " : ", self%relErr( self%iter )
             !
             self%iter = self%iter + 1
             !

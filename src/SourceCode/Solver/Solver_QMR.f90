@@ -279,7 +279,7 @@ contains
             rnorm = SQRT( R%dotProd( R ) )
             !
             !> Verbose
-            write( *, "( a36, i6, a3, es12.3 )" ) "QMR iter: ", self%iter, " : ", self%relErr( self%iter )
+            !write( *, "( a36, i6, a3, es12.3 )" ) "QMR iter: ", self%iter, " : ", self%relErr( self%iter )
             !
             self%iter = self%iter + 1
             !

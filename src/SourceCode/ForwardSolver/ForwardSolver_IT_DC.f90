@@ -167,7 +167,7 @@ contains
         enddo fwd_solver_loop
         !
         if( self%solver%converged ) then
-            write( *, "( a38, i6, a7, es12.3 )" ) "->IT_DC converged within ", self%iter, ": err= ", self%relResFinal
+            write( *, "( a49, i6, a7, es12.3 )" ) "IT_DC converged within ", self%iter, ": err= ", self%relResFinal
         else
             call warning( "createESolution_ForwardSolver_IT_DC failed to converge!" )
         endif
