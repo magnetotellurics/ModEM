@@ -813,9 +813,13 @@ contains
         !
         integer :: i, j, j1, j2, k, n, m, nz, nnz, nzero
         !
-        if(A%nRow.NE.size(D)) then
-        stop "Error: DIAGxRMAT > matrix sizes incompatible"
+        write(*,*) "DIAGxRMAT vec, nrow: ", size(D), &
+                                  A%nRow
+        !
+        if( A%nRow .NE. size(D) ) then
+            call errStop( "DIAGxRMAT > matrix sizes incompatible" )
         endif
+        !
         m = A%nRow
         n = A%nCol
         nz = A%row(A%nRow+1)-1

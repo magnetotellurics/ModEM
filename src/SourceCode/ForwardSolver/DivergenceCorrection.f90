@@ -143,7 +143,7 @@ contains
         !endif
         !
         allocate( temp_e, source = e_solution )
-		call temp_e%zeros
+        call temp_e%zeros
         !
         !> compute gradient of phiSol (Divergence correction for temp_e)
         call self%solver%preconditioner%model_operator%grad( phiSol, temp_e )
@@ -155,8 +155,8 @@ contains
         !
         !call e_solution%linComb( temp_e, C_MinusOne, C_ONE )
         call e_solution%sub( temp_e )
-		!
-		call phiRHS%zeros
+        !
+        !call phiRHS%zeros
         !
         !> divergence of the corrected output electrical field
         call self%solver%preconditioner%model_operator%divC( e_solution, phiRHS )
@@ -171,7 +171,7 @@ contains
         !> compute the size of current Divergence after
         self%divJ(2) = sqrt( phiRHS%dotProd( phiRHS ) )
         !
-        write( *, * ) "                    DivJ: ", self%divJ(1), " => ", self%divJ(2)
+        write( *, "( a23, es12.3, a4, es12.3 )" ) "DivJ: ", self%divJ(1), " => ", self%divJ(2)
         !
         deallocate( phiRHS )
         !
