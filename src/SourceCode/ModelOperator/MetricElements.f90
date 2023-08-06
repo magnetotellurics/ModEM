@@ -41,92 +41,60 @@ module MetricElements
     !
     abstract interface
         !
-        !> No function briefing
-        function interface_get_scalar_metric_elements( self, grid_type, model_operator_type ) result( scalar )
-            import :: MetricElements_t, Scalar_t
-            class( MetricElements_t ), intent( in ) :: self
-            character( len=4 ), intent( in ), optional :: grid_type
-            character( len=10 ), intent( in ), optional :: model_operator_type
-            class( Scalar_t ), allocatable :: scalar
-        end function interface_get_scalar_metric_elements
-        !
-        !> No function briefing
-        function interface_get_vector_metric_elements( self, grid_type, model_operator_type ) result( vector )
-            import :: MetricElements_t, Vector_t
-            class( MetricElements_t ), intent( in ) :: self
-            character( len=4 ), intent( in ), optional :: grid_type
-            character( len=10 ), intent( in ), optional :: model_operator_type
-            class( Vector_t ), allocatable :: vector
-        end function interface_get_vector_metric_elements
-        !
-        !> No function briefing
-        function interface_create_scalar_metric_elements( self, grid_type, model_operator_type ) result( scalar )
-            import :: MetricElements_t, Scalar_t
-            class( MetricElements_t ), intent( in ) :: self
-            character( len=4 ), intent( in ), optional :: grid_type
-            character( len=10 ), intent( in ), optional :: model_operator_type
-            class( Scalar_t ), allocatable :: scalar
-        end function interface_create_scalar_metric_elements
-        !
-        !> No function briefing
-        function interface_create_vector_metric_elements( self, grid_type, model_operator_type ) result( vector )
-            import :: MetricElements_t, Vector_t
-            class( MetricElements_t ), intent( in ) :: self
-            character( len=4 ), intent( in ), optional :: grid_type
-            character( len=10 ), intent( in ), optional :: model_operator_type
-            class( Vector_t ), allocatable :: vector
-        end function interface_create_vector_metric_elements
-        !
-        !> No function briefing
-        function interface_create_field_metric_elements( self, v_type, grid_type, model_operator_type ) result( field )
-            import :: MetricElements_t, Field_t
-            class( MetricElements_t ), intent( in ) :: self
-            character( len=6 ), intent( in ), optional :: v_type
-            character( len=4 ), intent( in ), optional :: grid_type
-            character( len=10 ), intent( in ), optional :: model_operator_type
-            class( Field_t ), allocatable :: field
-        end function interface_create_field_metric_elements
-        !
         !> No interface subroutine briefing
         subroutine interface_set_edge_length_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_edge_length_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_face_area_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_face_area_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_dual_edge_length_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_dual_edge_length_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_dual_face_area_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_dual_face_area_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_cell_volume_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_cell_volume_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_edge_volume_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_edge_volume_metric_elements
         !
         !> No interface subroutine briefing
         subroutine interface_set_node_volume_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_node_volume_metric_elements
         !
     end interface
@@ -134,6 +102,7 @@ module MetricElements
 contains
     !
     !> No subroutine briefing
+    !
     subroutine setMetricElements( self )
         implicit none
         !
@@ -151,6 +120,7 @@ contains
     end subroutine setMetricElements
     !
     !> No subroutine briefing
+    !
     subroutine deallocate_MetricElements( self )
         implicit none
         !

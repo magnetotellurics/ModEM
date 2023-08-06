@@ -6,7 +6,7 @@ module Utilities
     integer :: warning_counter = 0
     !
     public :: clean, minNode, maxNode
-    public :: errStop, warning
+    public :: errStop, warning, writeWarning
     public :: QSort
     !
     !> Variables required for storing the date and time in SECONDS. If used
@@ -49,17 +49,42 @@ contains
         !
         warning_counter = warning_counter + 1
         !
+        call writeWarning( msg )
+        !
     end subroutine warning
+    !
+    subroutine writeWarning( msg )
+        implicit none
+        !
+        character(*), intent( in ) :: msg
+        !
+        integer :: ios
+        !
+        open( unit = ioWarning, &
+        file = "Warnings.log", &
+        status = "unknown", position = "append", iostat = ios )
+        !
+        if( ios == 0 ) then
+            !
+            write( ioWarning, * ) warning_counter
+            write( ioWarning, * ) "    -"//trim( msg )
+            write( ioWarning, * )
+            !
+        else
+            call errStop( "writeWarning > cant open [Warnings.log]" )
+        endif
+        !
+    end subroutine writeWarning
     !
     !> Timer utilities: set timer
     !
-    subroutine reset_time(timer)
+    subroutine reset_time( timer )
         implicit none
         !
         type(timer_t), intent( inout ) :: timer
         ! utility variable
         integer, dimension(8) :: tarray
-
+        !
         ! Restart the(portable) clock
         call date_and_time(values=tarray)
         timer%stime = tarray(5)*3600 + tarray(6)*60 + tarray(7) + 0.001*tarray(8)
@@ -121,7 +146,7 @@ contains
     !> ensure that the grid read from a file does not depend on system precision.
     !> A.K.
     !
-    function nearest_meter(x) result( clean )
+    function nearest_meter( x ) result( clean )
         implicit none
         !
         real( kind=prec ), intent( in ) :: x
@@ -222,7 +247,7 @@ contains
     !> Return the position of str2 in str1.  Ignores case.
     !> Return 0 if str2 not found in str1
     !
-    integer function findstr(str1, str2)
+    integer function findstr( str1, str2 )
         implicit none
         !
         character*(*) str1, str2
@@ -426,7 +451,7 @@ contains
     !> Remove backslash(\) characters. Double backslashes(\\) are replaced
     !> by a single backslash.
     !
-    subroutine removebksl(str)
+    subroutine removebksl( str )
         implicit none
         !
         character(len=*):: str
@@ -461,7 +486,7 @@ contains
     !
     !> Return .TRUE. if ch is a letter and .FALSE. otherwise
     !
-    function is_letter(ch) result(res)
+    function is_letter( ch ) result( res )
         implicit none
         !
         character :: ch
@@ -478,7 +503,7 @@ contains
     !
     !> Return .TRUE. if ch is a digit(0, 1, ..., 9) and .FALSE. otherwise
     !
-    function is_digit(ch) result(res)
+    function is_digit( ch ) result( res )
         implicit none
         !
         character :: ch
@@ -585,7 +610,7 @@ contains
         !
         integer :: first, last, i, j, it, nA
         !
-        if(size(a).NE.size(ia)) then
+        if( size(a) .NE. size(ia) ) then
             stop "Error: QSort > array and array index is not of same size in QSort!"
         endif
         !
@@ -602,7 +627,7 @@ contains
         !
         if( first .GT. last ) then 
             stop "Error: QSort > first index is larger than the last in QSort!"
-        elseif(first .EQ. last) then !only one element, no need to sort now
+        elseif( first .EQ. last ) then !only one element, no need to sort now
             !     write(6, *) "no need to sort, only one element left"
             return
         endif

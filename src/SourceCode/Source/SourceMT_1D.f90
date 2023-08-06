@@ -4,7 +4,6 @@
 module SourceMT_1D
     !
     use Source
-    use cVector3D_SG
     use ModelParameter1D
     use Forward1D
     !
@@ -29,6 +28,7 @@ module SourceMT_1D
 contains
     !
     !> SourceMT_1D constructor
+	!
     function SourceMT_1D_ctor( model_operator, sigma, period ) result( self )
         implicit none
         !
@@ -54,6 +54,7 @@ contains
     !
     !> Deconstructor routine:
     !>     Call the base routine baseDealloc().
+	!
     subroutine SourceMT_1D_dtor( self )
         implicit none
         !
@@ -65,7 +66,8 @@ contains
         !
     end subroutine SourceMT_1D_dtor
     !
-    !> Set self%E from forward modeling 1D
+    !> Set self%E from Forward Modeling 1D
+	!
     subroutine createE_SourceMT_1D( self )
         implicit none
         !
@@ -90,14 +92,13 @@ contains
         !> Solve 1D and store the result in E1D structure
         call forward_1D%solve( E1D )
         !
-        !> 
         allocate( self%E( 2 ) )
         !
         do pol = 1, 2
             !
             call self%sigma%metric%createVector( complex_t, EDGE, self%E( pol )%v )
             !
-            !> Fill e_vector (cVector3D_SG) from E1D (Esoln1DTM_t)
+            !> Fill e_vector (Vector_t) from E1D (Esoln1DTM_t)
             !>     Note that Ez components are all left set to 9
             !
             y = self%E( pol )%v%getY()
@@ -134,7 +135,8 @@ contains
         !
     end subroutine createE_SourceMT_1D
     !
-    !> Set RHS from self%E
+    !> Build the proper Source RHS from its E
+    !
     subroutine createRHS_SourceMT_1D( self )
         implicit none
         !
@@ -144,7 +146,6 @@ contains
         !
         integer :: pol
         !
-        !if( allocated( self%rhs ) ) deallocate( self%rhs )
         allocate( self%rhs( 2 ) )
         !
         do pol = 1, 2
@@ -164,3 +165,4 @@ contains
     end subroutine createRHS_SourceMT_1D
     !
 end module SourceMT_1D
+!

@@ -1,12 +1,12 @@
 !
-!> Derived class to define a ModelOperator_SP
+!> Derived class to define a ModelOperator
+!> with basic operations for Sparse Matrices
 !
 module ModelOperator_SP
     !
     use ModelOperator
     use SpOpTopology_SG
     use MetricElements_CSG
-    use ModelParameterCell
     !
     type, extends( ModelOperator_t ) :: ModelOperator_SP_t
         !
@@ -17,15 +17,15 @@ module ModelOperator_SP
         !
         type( spMatCSR_Real ) :: D, Gd, CCii, CCib
         !
+        type( spMatCSR_Real ) :: VDiv ! div : edges->nodes (interior only)
+        type( spMatCSR_Real ) :: VDsG ! operator for div correction
+        type( spMatCSR_Real ) :: Ds  ! divergence of current operator
+        !
+        type( spMatCSR_Real ) :: VDsG_L, VDsG_U
+        !
         real( kind=prec ) :: omega
         !
         real( kind=prec ), allocatable, dimension(:) :: VomegaMuSig
-        !
-        type( spMatCSR_Real ) :: VDiv ! div : edges->nodes (interior only)
-        type( spMatCSR_Real ) :: VDsG ! operator for div correction
-        type( spMatCSR_Real ) :: VDs  ! divergence of current operator
-        !
-        type( spMatCSR_Real ) :: VDsG_L, VDsG_U
         !
         contains
             !
@@ -251,14 +251,14 @@ contains
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         !
-        type( spMatCSR_Real ) :: matrix
+        type( spMatCSR_Real ) :: matrix, VDs
         complex( kind=prec ), allocatable, dimension(:) :: v_edge_v
         real( kind=prec ), allocatable, dimension(:) :: d
         integer, allocatable, dimension(:) :: allNodes
         integer :: n, i
         !
-        !> Construct VDs .. multiply VDiv by Conductivity on edges; can use VomegaMuSig
-        n = self%VDiv%nCol
+        !> Ds -> multiply D by Conductivity on edges using VomegaMuSig
+        n = self%D%nCol
         !
         d = ( self%VomegaMuSig / ( mu_0 * self%omega ) )
         !
@@ -266,7 +266,10 @@ contains
         !
         d = ( d / v_edge_v( self%EDGEi ) )
         !
-        call RMATxDIAG( self%VDiv, d, self%VDs )
+        call RMATxDIAG( self%D, d, self%Ds )
+        !
+        !> VDs -> multiply self%VDiv by Conductivity on edges using VomegaMuSig
+        call RMATxDIAG( self%VDiv, d, VDs )
         !
         !> Construct VDsG: symmetric operator for divergence correction solver
         allocate( allNodes( self%Gd%nRow ) )
@@ -277,12 +280,13 @@ contains
         !
         call subMatrix_Real( self%Gd, allNodes, self%NODEi, matrix )
         !
-        call RMATxRMAT( self%VDs, matrix, self%VDsG )
+        call RMATxRMAT( VDs, matrix, self%VDsG )
         !
-        ! Setup preconditioner
-        call Dilu_Real( self%VDsG, self%VDsG_L, self%VDsG_U )
-        !
+        call deall_spMatCSR( VDs )
         call deall_spMatCSR( matrix )
+        !
+        ! Setup preconditioner matrices: self%VDsG_L and self%VDsG_U
+        call Dilu_Real( self%VDsG, self%VDsG_L, self%VDsG_U )
         !
         deallocate( allNodes )
         !
@@ -292,16 +296,15 @@ contains
     !> for interior elements
     !> assume output y is already allocated
     !
-    subroutine amult_ModelOperator_SP( self, omega, in_e, out_e, p_adjoint )
+    subroutine amult_ModelOperator_SP( self, omega, in_e, out_e, adjoint )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
         class( Vector_t ), intent( in ) :: in_e
         class( Vector_t ), intent( inout ) :: out_e
-        logical, intent( in ), optional :: p_adjoint
+        logical, intent( in ) :: adjoint
         !
-        logical :: adjoint
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
         !
@@ -323,11 +326,11 @@ contains
         !
         call RMATxCVEC( self%CCii, in_e_v_int, out_e_v_int )
         !
-        if( present( p_adjoint ) ) then
-            adjoint = p_adjoint
-        else
-            adjoint = .FALSE.
-        endif
+        !if( present( p_adjoint ) ) then
+            !adjoint = p_adjoint
+        !else
+            !adjoint = .FALSE.
+        !endif
         !
         if( adjoint ) then
             out_e_v_int = out_e_v_int - ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%ind_interior )
@@ -388,7 +391,7 @@ contains
         class( Scalar_t ), intent( inout ) :: out_phi
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v
-        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_phi_v_int
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_phi_int
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "div_ModelOperator_SP > in_e not allocated" )
@@ -402,15 +405,15 @@ contains
         in_e_v_int = in_e_v( in_e%ind_interior )
         !
         out_phi_v = out_phi%getArray()
-        out_phi_v_int = out_phi_v( out_phi%ind_interior )
+        out_phi_int = out_phi_v( out_phi%ind_interior )
         !
-        !write(*,*) "div_ModelOperator_SP: ", self%D%nCol, self%D%nRow, size( in_e_v_int ), size( out_phi_v_int )
+        !write(*,*) "div_ModelOperator_SP: ", self%D%nCol, self%D%nRow, size( in_e_v_int ), size( out_phi_int )
         !
-        call RMATxCVEC( self%D, in_e_v_int, out_phi_v_int )
+        call RMATxCVEC( self%D, in_e_v_int, out_phi_int )
         !
-        out_phi_v( out_phi%ind_interior ) = out_phi_v_int
-        !
-        call out_phi%setArray( out_phi_v_int )
+		out_phi_v( out_phi%ind_interior ) = out_phi_int
+		!
+        call out_phi%setArray( out_phi_v )
         !
     end subroutine div_ModelOperator_SP
     !
@@ -442,7 +445,7 @@ contains
         !
         !write(*,*) "divC_ModelOperator_SP: ", self%VDs%nCol, self%VDs%nRow, size( in_e_v_int ), size( out_phi_v_int )
         !
-        call RMATxCVEC( self%VDs, in_e_v_int, out_phi_v_int )
+        call RMATxCVEC( self%Ds, in_e_v_int, out_phi_v_int )
         !
         out_phi_v( out_phi%ind_interior ) = out_phi_v_int
         !
@@ -585,7 +588,7 @@ contains
         call deall_spMatCSR( self%D )
         call deall_spMatCSR( self%VDiv )
         call deall_spMatCSR( self%VDsG )
-        call deall_spMatCSR( self%VDs )
+        call deall_spMatCSR( self%Ds )
         call deall_spMatCSR( self%VDsG_L )
         call deall_spMatCSR( self%VDsG_U )
         !

@@ -1,5 +1,5 @@
 !
-!> Abstract Base class to define a ModelOperator
+!> Abstract base class to define a ModelOperator
 !
 module ModelOperator
     !
@@ -86,14 +86,14 @@ module ModelOperator
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_amult_model_operator( self, omega, in_e, out_e, p_adjoint )
+        subroutine interface_amult_model_operator( self, omega, in_e, out_e, adjoint )
             import :: ModelOperator_t, prec, Vector_t
             !
             class( ModelOperator_t ), intent( in ) :: self
             real( kind=prec ), intent( in ), optional :: omega
             class( Vector_t ), intent( in ) :: in_e
             class( Vector_t ), intent( inout ) :: out_e
-            logical, intent( in ), optional :: p_adjoint
+            logical, intent( in ) :: adjoint
             !
         end subroutine interface_amult_model_operator
         !

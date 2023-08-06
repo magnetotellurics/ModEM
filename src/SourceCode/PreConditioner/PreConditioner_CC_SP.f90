@@ -1,5 +1,6 @@
 !
-!> Derived class to define a PreConditioner_CC_SP
+!> Derived class to define a Curl-Curl PreConditioner
+!> Using Sparse Matrices System
 !
 module PreConditioner_CC_SP
     !
@@ -48,6 +49,7 @@ contains
     end function PreConditioner_CC_SP_ctor
     !
     !> PreConditioner_DC_SP destructor
+    !
     subroutine PreConditioner_CC_SP_dtor( self )
         implicit none
         !
@@ -79,12 +81,9 @@ contains
         type( spMatCSR_Cmplx ) :: Axx
         type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
         !
-        !write( *, * ) "setPreConditioner_CC_SP"
-        !
-        ! find indexes of x, y, z elements
-        !
-        ! this generates indexes (in list of interior edges)
-        ! for x, y, z edges
+        !> find indexes of x, y, z elements
+        !> this generates indexes (in list of interior edges)
+        !> for x, y, z edges
         nEdgeT = 0
         !
         call setlimitsSP( XEDGE, self%model_operator%metric%grid, nx, ny, nz )
@@ -198,7 +197,8 @@ contains
         implicit none
         !
         class( PreConditioner_CC_SP_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e, out_e
+        class( Vector_t ), intent( in ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v, out_e_v_int
@@ -218,15 +218,11 @@ contains
         !
         if( adjoint ) then
             !
-            !write(*,*) "UTsolve_Cmplx: ", self%LH%nCol, self%LH%nRow, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
-            !
             call UTsolve_Cmplx( self%LH, in_e_v( in_e%ind_interior ), out_e_v_int )
             !
         else
             !
             out_e_v_int = C_ZERO
-            !
-            !write(*,*) "LTsolve_Cmplx: ", self%L%nCol, self%L%nRow, size( in_e_v( in_e%ind_interior ) ), size( out_e_v_int )
             !
             call LTsolve_Cmplx( self%L, in_e_v( in_e%ind_interior ), out_e_v_int )
             !
@@ -246,7 +242,8 @@ contains
         implicit none
         !
         class( PreConditioner_CC_SP_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e, out_e
+        class( Vector_t ), intent( in ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
@@ -268,13 +265,9 @@ contains
         !
         if( adjoint ) then
             !
-            !write(*,*) "LTsolve_Cmplx: ", self%UH%nCol, self%UH%nRow, size( in_e_v_int ), size( out_e_v_int )
-            !
             call LTsolve_Cmplx( self%UH, in_e_v_int, out_e_v_int )
             !
         else
-            !
-            !write(*,*) "UTsolve_Cmplx: ", self%U%nCol, self%U%nRow, size( in_e_v_int ), size( out_e_v_int )
             !
             call UTsolve_Cmplx( self%U, in_e_v_int, out_e_v_int )
             !
@@ -288,11 +281,13 @@ contains
     !
     !> Procedure LUSolvePreConditioner_CC_SP
     !> this is dummy routine required by abstract preconditioner class
+    !
     subroutine LUSolvePreConditioner_CC_SP( self, in_phi, out_phi )
         implicit none
         !
         class( PreConditioner_CC_SP_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi, out_phi
+        class( Scalar_t ), intent( in ) :: in_phi
+        class( Scalar_t ), intent( inout ) :: out_phi
         !
         call errStop( "LUSolvePreConditioner_CC_SP not implemented" )
         !

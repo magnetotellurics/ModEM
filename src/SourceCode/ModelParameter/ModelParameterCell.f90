@@ -685,12 +685,6 @@ contains
         !> sigma_cells
         allocate( sigma_cells( self%anisotropic_level ) )
         !
-        !do i = 1, self%anisotropic_level
-            !
-            !call self%metric%createScalar( real_t, CELL, sigma_cells(i)%s )
-            !
-        !enddo
-        !
         !> Call specific sumEdges based on anisotropic_level
         if( self%anisotropic_level == 1 ) then
             !

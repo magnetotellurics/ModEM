@@ -1,13 +1,10 @@
 !
 !> Derived class to define a SourceInteriorForce
+!> Based on a pre-determined Eletric Field (E)
 !
 module SourceInteriorForce
     !
-    use Constants
     use Source
-    use ModelOperator
-    use ModelParameter1D
-    use Forward1D
     !
     type, extends( Source_t ) :: SourceInteriorForce_t
         !
@@ -28,6 +25,7 @@ module SourceInteriorForce
 contains
     !
     !> SourceInteriorForce constructor
+    !
     function SourceInteriorForce_ctor( model_operator, sigma, period, for_transpose ) result( self )
         implicit none
         !
@@ -64,7 +62,9 @@ contains
         !
     end function SourceInteriorForce_ctor
     !
-    !> Set self%E from Forward Modeling 1D
+    !> Dummy subroutine
+    !> not to be implemented for this Source type
+    !
     subroutine createE_SourceInteriorForce( self )
         implicit none
         !
@@ -74,7 +74,8 @@ contains
         !
     end subroutine createE_SourceInteriorForce
     !
-    !> Set RHS from self%E
+    !> Build the proper Source RHS from its E
+    !
     subroutine createRHS_SourceInteriorForce( self )
         implicit none
         !
@@ -89,11 +90,11 @@ contains
             !
             if( self%for_transpose ) then
                 !
-                !> E = E / DIV
+                !> E = E / V_E
                 call self%E( pol )%v%div( self%model_operator%metric%v_edge )
                 !
             else
-                !> RHS = E * V_E
+                !> RHS = RHS * V_E
                 call self%rhs( pol )%v%mult( self%model_operator%metric%v_edge )
                 !
             endif

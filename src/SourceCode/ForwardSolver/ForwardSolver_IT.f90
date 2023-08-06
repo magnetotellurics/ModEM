@@ -88,7 +88,7 @@ contains
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
         !> Set conductivity for the model operator (again ????)
-        call self%solver%preconditioner%model_operator%divCorSetUp
+        !call self%solver%preconditioner%model_operator%divCorSetUp
         !
         call self%initDiagnostics
         !
@@ -253,3 +253,4 @@ contains
     end subroutine copyFrom_ForwardSolver_IT
     !
 end Module ForwardSolver_IT
+!

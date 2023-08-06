@@ -49,7 +49,8 @@ contains
     !
     !> Procedure setCond_DivergenceCorrection
     !> some extra things that need to be done for divergence correction, whenever
-    !>      conductivity (model parameter) changes
+    !> conductivity (model parameter) changes
+	!
     subroutine setCond_DivergenceCorrection( self, omega )
         implicit none
         !
@@ -63,6 +64,7 @@ contains
     end subroutine setCond_DivergenceCorrection
     !
     !> No subroutine briefing
+	!
     subroutine rhsDivCor_DivergenceCorrection( self, omega, source_e, phi0 )
         implicit none
         !
@@ -124,15 +126,17 @@ contains
         !>    this will be part of diagnostics
         self%divJ(1) = sqrt( phiRHS%dotProd( phiRHS ) )
         !
+        !> point-wise multiplication with volume weights centered on corner nodes
+		call phiRHS%mult( self%solver%preconditioner%model_operator%metric%v_node )
+		!
         call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phiSol )
         !
-        !>    solve system of equations -- solver will have to know about
-        !>     (a) the equations to solve -- the divergence correction operator
-        !>     is modOp%divCGrad
+        !> solve system of equations -- solver will have to know about
+        !>     (a) the equations to solve -- the Divergence Correction operator is modOp%divCGrad
         !>     (b) preconditioner: object, and preconditioner matrix
         call self%solver%solve( phiRHS, phiSol )
         !
-        !> Temporary Solution - Must be zeroed!
+        !> Temporary Solution - Must be zeroed!????
         allocate( temp_e, source = e_solution )
         call temp_e%zeros
         !
@@ -164,3 +168,4 @@ contains
     end subroutine divCorr_DivergenceCorrection
     !
 end module DivergenceCorrection
+!

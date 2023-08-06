@@ -1,7 +1,6 @@
 !
-!> Derived class to define a PreConditioner_DC_MF
-!>
-!> This is for preconditioning the divergence correction equations
+!> Derived class to define a Divergence Correction PreConditioner
+!> Using Matrix Free System
 !
 module PreConditioner_DC_MF
     !
@@ -47,9 +46,10 @@ contains
         !
     end function PreConditioner_DC_MF_ctor
     !
-    !> SetPreConditioner -- could be an abstract routine, but in the CC case
-    !>        we pass omega as a parameter, and that is not relevant here -- but since
+    !> setPreConditioner: could be an abstract routine, but in the CC case
+    !>     we pass omega as a parameter, and that is not relevant here -- but since
     !>     omega is a property of that class could set, and not pass into this procedure explicitly
+    !
     subroutine setPreConditioner_DC_MF( self, omega )
         implicit none
         !
@@ -104,12 +104,14 @@ contains
     end subroutine setPreConditioner_DC_MF
     !
     !> LTsolve and UTsolve are in abstract class and must be defined -- but not used for DC which
-    !>        this object will be used -- so just dummies here
+    !>     this object will be used -- so just dummies here
+    !
     subroutine LTSolve_PreConditioner_DC_MF( self, in_e, out_e, adjoint )
         implicit none
         !
         class( PreConditioner_DC_MF_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e, out_e
+        class( Vector_t ), intent( in ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
         call errStop( "LTSolve_PreConditioner_DC_MF not implemented yet" )
@@ -117,11 +119,13 @@ contains
     end subroutine LTSolve_PreConditioner_DC_MF
     !
     !> No subroutine briefing
+    !
     subroutine UTSolve_PreConditioner_DC_MF( self, in_e, out_e, adjoint )
         implicit none
         !
         class( PreConditioner_DC_MF_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e, out_e
+        class( Vector_t ), intent( in ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
         call errStop( "UTSolve_PreConditioner_DC_MF not implemented yet" )
@@ -132,16 +136,16 @@ contains
     !> apply pre-conditioner, LU solve
     !
     !> No subroutine briefing
+    !
     subroutine LUSolve_PreConditioner_DC_MF( self, in_phi, out_phi )
         implicit none
         !
         class( PreConditioner_DC_MF_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi, out_phi
+        class( Scalar_t ), intent( in ) :: in_phi
+        class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
         complex( kind=prec ), allocatable, dimension(:,:,:) :: in_phi_v, out_phi_v, d_v
-        !
-        !write(*,*) "LUSolve_PreConditioner_DC_MF: ", in_phi%length(), out_phi%length()
         !
         if( .NOT. in_phi%is_allocated ) then
             call errStop( "LUSolve_PreConditioner_DC_MF > in_phi not allocated yet" )
@@ -180,8 +184,6 @@ contains
                     enddo
                 enddo
                 !
-                !write(*,*) "LTsolve_Real: ", size( d_v ), size( in_phi_v ), size( out_phi_v )
-                !
                 !> backward substitution (Solve upper triangular system)
                 !> the coefficients are only for the interior nodes
                 do iz = in_phi%nz,2,-1
@@ -195,8 +197,6 @@ contains
                         enddo
                     enddo
                 enddo
-                !
-                !write(*,*) "UTsolve_Real: ", size( d_v ), size( in_phi_v ), size( out_phi_v )
                 !
                 call out_phi%setV( out_phi_v )
                 !

@@ -1,5 +1,5 @@
 !
-!> Derived class to define a iterative ForwardSolver using divergence correction
+!> Derived class to define a iterative ForwardSolver using Divergence Correction
 !
 module ForwardSolver_IT_DC
     !
@@ -81,7 +81,7 @@ contains
         !> Set preconditioner for this solver's preconditioner
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
-        !> Set conductivity for the model operator (again ????)
+        !> Set conductivity for the model operator
         call self%solver%preconditioner%model_operator%divCorSetUp
         !
         !> Set conductivity for the divergence_correction
@@ -174,7 +174,6 @@ contains
         !
         if( source%non_zero_source ) deallocate( phi0 )
         !
-        !> Just for the serialJMult_T SourceInteriorForce case
         if( source%for_transpose ) then
             !
             call e_solution%mult( self%solver%preconditioner%model_operator%metric%v_edge )
@@ -234,3 +233,4 @@ contains
     end subroutine copyFrom_ForwardSolver_IT_DC
     !
 end Module ForwardSolver_IT_DC
+!

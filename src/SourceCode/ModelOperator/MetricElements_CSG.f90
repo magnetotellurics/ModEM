@@ -59,7 +59,7 @@ contains
         !
         call self%alloc
         !
-        !>    if were going to allocate storage for all, just set all now!
+        !> if were going to allocate storage for all, just set all now!
         call self%setMetricElements
         !
     end function MetricElements_CSG_Ctor
@@ -227,9 +227,10 @@ contains
     !> on interior and boundary edges.
     !> Note: dual edge lengths are already defined
     !> in grid, use these to compute dual-grid face areas.
+    !
     subroutine setDualFaceArea( self )
         implicit none
-      !
+        !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
@@ -275,6 +276,7 @@ contains
     end subroutine setDualFaceArea
     !
     !> setNodeVolume
+    !
     subroutine setNodeVolume( self )
         implicit none
         !
@@ -303,6 +305,7 @@ contains
     !> CellVolume
     !> Creates volume elements for grid cells
     !> and stores them as real scalars with grid_type=CELL.
+    !
     subroutine setCellVolume( self )
         implicit none
         !
@@ -329,19 +332,21 @@ contains
     !> Creates volume elements centered around the edges of
     !> the grid, and stores them as real vectors with
     !> grid_type = EDGE.
+    !
+    !> v_edge = edge_length*dual_face_area --- simplest implementation
+    !> is just to create these (but they might already be created--
+    !>     let's assume they are--the way metric element objects are created
+    !>      this is always true
+    !call self%setEdgeLength()
+    !call self%setDualFaceArea()
+    !
     subroutine setEdgeVolume( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
-        !> v_edge = edge_length*dual_face_area --- simplest implementation
-        !> is just to create these (but they might already be created--
-        !>     let's assume they are--the way metric element objects are created
-        !>      this is always true
-        !call self%setEdgeLength()
-        !call self%setDualFaceArea()
-        !
         self%v_edge = self%edge_length
+        !
         call self%v_edge%mult( self%dual_face_area )
         !
     end subroutine setEdgeVolume

@@ -1,5 +1,6 @@
 !
-!> Derived class to define a ModelOperator_MF_SG
+!> Derived class to define a ModelOperator
+!> with basic operations for Matrix Free System, using Standard Grid
 !
 module ModelOperator_MF_SG
     !
@@ -18,9 +19,7 @@ module ModelOperator_MF_SG
         real( kind=prec ), allocatable, dimension(:,:) :: zX, zY
         real( kind=prec ), allocatable, dimension(:,:) :: zZO
         !
-        type( rVector3D_SG_t ) :: sigma_e
-        !
-        type( rVector3D_SG_t ) :: db1, db2
+        type( rVector3D_SG_t ) :: sigma_e, db1, db2
         !
         type( rScalar3D_SG_t ) :: c
         !
@@ -294,24 +293,19 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine amult_ModelOperator_MF_SG( self, omega, in_e, out_e, p_adjoint )
+    subroutine amult_ModelOperator_MF_SG( self, omega, in_e, out_e, adjoint )
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
         class( Vector_t ), intent( in ) :: in_e
         class( Vector_t ), intent( inout ) :: out_e
-        logical, intent( in ), optional :: p_adjoint
+        logical, intent( in ) :: adjoint
         !
         integer :: ix, iy, iz
         complex( kind=prec ) :: cvalue
-        logical :: adjoint
         !
-        if( present( p_adjoint ) ) then
-            adjoint = p_adjoint
-        else
-            adjoint = .FALSE.
-        endif
+        !write(*,*) "amult_ModelOperator_MF_SG: ", adjoint
         !
         if( adjoint ) then
             cvalue = -ONE_I * omega * isign * mu_0
@@ -413,7 +407,7 @@ contains
         !
         omega = R_ZERO
         !
-        call self%amult( omega, in_e, out_e ) 
+        call self%amult( omega, in_e, out_e, .FALSE. ) 
         !
     end subroutine multAib_ModelOperator_MF_SG
     !
@@ -536,8 +530,6 @@ contains
                                 enddo
                             enddo
                         enddo
-                        !
-                        call out_phi%mult( self%metric%v_node )
                         !
                     class default
                         call errStop( "divC_ModelOperator_MF_SG > in_e type unknown" )
