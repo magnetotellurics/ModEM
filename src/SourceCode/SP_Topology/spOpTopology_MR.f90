@@ -224,9 +224,9 @@ module spOpTopology_MR
         integer :: n
         !
         v = rVector3D_MR_t (self%grid, EDGE)
-        n = size (v%ind_boundaries)
+        n = size (v%ind_boundary)
         allocate (eb(n))
-        eb = v%ind_boundaries
+        eb = v%ind_boundary
         !
     end subroutine Get_edge_bdry_idx_
     !
@@ -264,9 +264,9 @@ module spOpTopology_MR
         !***********************
         !
         v = rScalar3D_MR_t (self%grid, NODE)
-        n = size (v%ind_boundaries)
+        n = size (v%ind_boundary)
         allocate (nb(n))
-        nb = v%ind_boundaries
+        nb = v%ind_boundary
 
     end subroutine Get_node_bdry_idx_
     !

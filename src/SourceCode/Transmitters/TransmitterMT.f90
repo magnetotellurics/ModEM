@@ -82,7 +82,7 @@ module TransmitterMT
         if( self%source%calc_sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
-            allocate( cVector3D_SG_t :: self%e_sens(2) )
+            allocate( self%e_sens(2) )
             !
         else
             !
@@ -90,12 +90,12 @@ module TransmitterMT
             if( self%i_sol == 0 ) then
                 !
                 if( allocated( self%e_sol_0 ) ) deallocate( self%e_sol_0 )
-                allocate( cVector3D_SG_t :: self%e_sol_0(2) )
+                allocate( self%e_sol_0(2) )
                 !
             else
                 !
                 if( allocated( self%e_sol_1 ) ) deallocate( self%e_sol_1 )
-                allocate( cVector3D_SG_t :: self%e_sol_1(2) )
+                allocate( self%e_sol_1(2) )
                 !
             endif
             !
@@ -108,23 +108,23 @@ module TransmitterMT
             !> Verbose
             if( self%source%calc_sens ) then
                 !
-                write( *, "( a44, es10.2, a6, i2 )" ) "- Solving MT e_sens Tx for period=", self%period, ", pol=", i_pol
+                write( *, "( a47, es10.2, a6, i2 )" ) "- Solving MT e_sens for period=", self%period, ", pol=", i_pol
                 !
-                call self%forward_solver%createESolution( i_pol, self%source, self%e_sens( i_pol ) )
+                call self%forward_solver%createESolution( i_pol, self%source, self%e_sens( i_pol )%v )
                 !
             else
                 !
                 if( self%i_sol == 0 ) then
                     !
-                    write( *, "( a42, es10.2, a6, i2 )" ) "- Solving MT e_sol_0 for period=", self%period, ", pol=", i_pol
+                    write( *, "( a48, es10.2, a6, i2 )" ) "- Solving MT e_sol_0 for period=", self%period, ", pol=", i_pol
                     !
-                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_0( i_pol ) )
+                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_0( i_pol )%v )
                     !
                 else
                     !
-                    write( *, "( a42, es10.2, a6, i2 )" ) "- Solving MT e_sol_1 for period=", self%period, ", pol=", i_pol
+                    write( *, "( a48, es10.2, a6, i2 )" ) "- Solving MT e_sol_1 for period=", self%period, ", pol=", i_pol
                     !
-                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_1( i_pol ) )
+                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_1( i_pol )%v )
                     !
                 endif
                 !

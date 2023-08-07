@@ -19,13 +19,18 @@ module Scalar
             procedure( interface_set_v_scalar ), deferred, public :: setV
             !
             !> Scalar Routines
+            !
             procedure, public :: length => length_Scalar
             !
-            procedure, public :: switchStoreState => switchStoreState_Scalar
+            procedure, public :: boundary => boundary_Scalar
+            procedure, public :: interior => interior_Scalar
+            !
+            procedure, public :: getArray => getArray_Scalar
+            procedure, public :: setArray => setArray_Scalar
             !
     end type Scalar_t
     !
-    !> Allocatable Scalar element for Old Fortran polymorphism on Arrays!!!
+    !> Allocatable Scalar element for Old Fortran polymorphic Arrays!!!
     type, public :: GenScalar_t
         !
         class( Scalar_t ), allocatable :: s
@@ -40,8 +45,8 @@ module Scalar
         function interface_get_v_scalar( self ) result( v )
             import :: Scalar_t, prec
             !
-            class( Scalar_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable :: v(:, :, :)
+            class( Scalar_t ), intent( in ) :: self
+            complex( kind=prec ), allocatable :: v(:,:,:)
         end function interface_get_v_scalar
         !
         !> No interface subroutine briefing
@@ -50,7 +55,7 @@ module Scalar
             import :: Scalar_t, prec
             !
             class( Scalar_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
+            complex( kind=prec ), dimension(:,:,:), intent( in ) :: v
         end subroutine interface_set_v_scalar
         !
     end interface
@@ -72,69 +77,101 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine switchStoreState_Scalar( self, store_state )
+    subroutine boundary_Scalar( self, boundary )
+        implicit none
+        !
+        class( Scalar_t ), intent( in ) :: self
+        class( Scalar_t ), allocatable, intent( inout ) :: boundary
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: c_array
+        !
+        allocate( boundary, source = self )
+        !
+        c_array = boundary%getArray()
+        !
+        c_array( self%ind_interior ) = C_ZERO
+        !
+        call boundary%setArray( c_array )
+        !
+    end subroutine boundary_Scalar
+    !
+    !> No subroutine briefing
+    !
+    subroutine interior_Scalar( self, interior )
+        implicit none
+        !
+        class( Scalar_t ), intent( in ) :: self
+        class( Scalar_t ), allocatable, intent( inout ) :: interior
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: c_array
+        !
+        allocate( interior, source = self )
+        !
+        c_array = interior%getArray()
+        !
+        c_array( self%ind_boundary ) = C_ZERO
+        !
+        call interior%setArray( c_array )
+        !
+    end subroutine interior_Scalar
+    !
+    !> No subroutine briefing
+    !
+    function getArray_Scalar( self ) result( array )
+        implicit none
+        !
+        class( Scalar_t ), intent( in ) :: self
+        complex( kind=prec ), allocatable, dimension(:) :: array
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getArray_Scalar > self not allocated." )
+        endif
+        !
+        if( self%store_state .EQ. compound ) then
+            !
+            allocate( array( self%length() ) )
+            array = (/reshape( self%getV(), (/self%Nxyz, 1/))/)
+            !
+        elseif( self%store_state .EQ. singleton ) then
+            !
+            array = self%getSV()
+            !
+        else
+            call errStop( "getArray_Scalar > Unknown store_state!" )
+        endif
+        !
+    end function getArray_Scalar
+    !
+    !> No subroutine briefing
+    !
+    subroutine setArray_Scalar( self, array )
         implicit none
         !
         class( Scalar_t ), intent( inout ) :: self
-        integer, intent( in ), optional :: store_state
+        complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        integer :: nzAir
         complex( kind=prec ), allocatable, dimension(:,:,:) :: v
-        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
-        !> If input state is present...
-        if( present( store_state ) ) then
-            !
-            !> ... and is different of the actual Scalar state: flip it!
-            if( self%store_state /= store_state ) then
-                call self%switchStoreState
-            endif
-            !
-        else
-            !
-            select case( self%store_state )
-                !
-                case( compound )
-                    !
-                    allocate( s_v( self%length() ) )
-                    !
-                    s_v = (/reshape( self%getV(), (/self%Nxyz, 1/))/)
-                    !
-                    call self%setSV( s_v )
-                    !
-                case( singleton )
-                    !
-                    if( self%grid_type == NODE ) then
-                        !
-                        allocate( v( self%nx + 1, self%ny + 1, self%nz + 1 ) )
-                        !
-                    elseif( self%grid_type == CELL ) then
-                        !
-                        allocate( v( self%nx, self%ny, self%nz ) )
-                        !
-                    elseif( self%grid_type == CELL_EARTH ) then
-                        !
-                        call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
-                        !
-                        allocate( v( self%nx, self%ny, self%nz - nzAir ) )
-                        !
-                    else
-                         call errStop( "switchStoreState_Scalar > unrecognized grid_type: ["//self%grid_type//"]" )
-                    endif
-                    !
-                    s_v = self%getSV()
-                    !
-                    v = reshape( s_v, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
-                    !
-                    call self%setV( v )
-                    !
-                case default
-                    call errStop( "switchStoreState_Scalar > store_state should be 'singleton' or 'compound'" )
-                !
-            end select
-            !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setArray_Scalar > self not allocated." )
         endif
         !
-    end subroutine switchStoreState_Scalar
+        call self%deallOtherState
+        !
+        if( self%store_state .EQ. compound ) then
+            !
+            v = reshape( array, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
+            !
+            call self%setV( v )
+            !
+        elseif( self%store_state .EQ. singleton ) then
+            !
+            call self%setSV( array )
+            !
+        else
+            call errStop( "setArray_Scalar > Unknown store_state!" )
+        endif
+        !
+    end subroutine setArray_Scalar
     !
 end module Scalar

@@ -123,7 +123,7 @@ contains
         !
         self%ind_active = E_in%ind_active
         self%ind_interior = E_in%ind_interior
-        self%ind_boundaries = E_in%ind_boundaries
+        self%ind_boundary = E_in%ind_boundary
         !
         select type( grid => E_in%grid )
             !
@@ -321,16 +321,16 @@ contains
             end if
         end do
         !
-        if (allocated (self%ind_boundaries)) then
-            deallocate (self%ind_boundaries)
+        if (allocated (self%ind_boundary)) then
+            deallocate (self%ind_boundary)
         end if
-        allocate (self%ind_boundaries(n_boundaries)) 
+        allocate (self%ind_boundary(n_boundaries)) 
         !
         i = 0
         do k = 1, n_active
             if (v_2(k) == 1) then
                 i = i + 1
-                self%ind_boundaries(i) = k
+                self%ind_boundary(i) = k
             end if
         end do
         !
@@ -619,7 +619,7 @@ contains
         real( kind=prec ), pointer, dimension(:) :: tempe
         type( rVector3D_SG_t ) :: templ_r
         real( kind=prec ), pointer, dimension(:) :: templ, temple
-        real( kind=prec ), allocatable, dimension(:, :, :) :: lengthx, lengthy
+        real( kind=prec ), allocatable, dimension(:,:,:) :: lengthx, lengthy
         integer :: sx1, sx2, sx3, sy1, sy2, sy3, s1, s2
         integer :: Cs, i1, i2
         !
@@ -963,13 +963,13 @@ contains
         integer :: m, n
         !
         m = size( self%ind_interior )
-        n = size( self%ind_boundaries )
+        n = size( self%ind_boundary )
         !
         allocate( ind_i(m) )
         allocate( ind_b(n) )
         !
         ind_i = self%ind_interior
-        ind_b = self%ind_boundaries
+        ind_b = self%ind_boundary
         !
     end subroutine intBdryIndices_rVector3D_MR
     !
@@ -991,7 +991,7 @@ contains
     subroutine setVecComponents_rVector3D_MR( self, xyz, &
             &                              xmin, xstep, xmax, &
             &                              ymin, ystep, ymax, &
-            &                              zmin, zstep, zmax, rvalue )
+            &                              zmin, zstep, zmax, cvalue )
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
@@ -999,7 +999,7 @@ contains
         integer, intent( in ) :: xmin, xstep, xmax
         integer, intent( in ) :: ymin, ystep, ymax
         integer, intent( in ) :: zmin, zstep, zmax
-        real( kind=prec ), intent ( in ) :: rvalue
+        complex( kind=prec ), intent ( in ) :: cvalue
         !
         integer :: x1, x2
         integer :: y1, y2
@@ -1022,7 +1022,7 @@ contains
                 if(zmin == 0) z1 = self%NdX(3)
                 if(zmax <= 0) z2 = self%NdX(3) + zmax
                 !
-                self%x(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
+                self%x(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case("y")
                 if(xmin == 0) x1 = self%NdY(1)
@@ -1034,7 +1034,7 @@ contains
                 if(zmin == 0) z1 = self%NdY(3)
                 if(zmax <= 0) z2 = self%NdY(3) + zmax
                 !
-                self%y(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
+                self%y(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case("z")
                 if(xmin == 0) x1 = self%NdZ(1)
@@ -1046,7 +1046,7 @@ contains
                 if(zmin == 0) z1 = self%NdZ(3)
                 if(zmax <= 0) z2 = self%NdZ(3) + zmax
                 !
-                self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
+                self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case default
                 stop "Error: setVecComponents_rVector3D_MR > Invalid xyz argument."
@@ -1115,7 +1115,7 @@ contains
                         self%y = self%y + rhs%y
                         self%z = self%z + rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v + rhs%s_v
                         !
@@ -1157,7 +1157,7 @@ contains
                         self%y = c1 * self%y + c2 * rhs%y
                         self%z = c1 * self%z + c2 * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = c1 * self%s_v + c2 * rhs%s_v
                         !
@@ -1188,7 +1188,7 @@ contains
             self%y = self%y - cvalue
             self%z = self%z - cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%s_v = self%s_v - cvalue
             !
@@ -1220,7 +1220,7 @@ contains
                         self%y = self%y - rhs%y
                         self%z = self%z - rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v - rhs%s_v
                         !
@@ -1253,7 +1253,7 @@ contains
             self%y = self%y * rvalue
             self%z = self%z * rvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%s_v = self%s_v * rvalue
             !
@@ -1277,7 +1277,7 @@ contains
             self%y = self%y * cvalue
             self%z = self%z * cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%s_v = self%s_v * cvalue
             !
@@ -1309,7 +1309,7 @@ contains
                         self%y = self%y * rhs%y
                         self%z = self%z * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v * rhs%s_v
                         !
@@ -1325,7 +1325,7 @@ contains
                         self%y = self%y * rhs%v
                         self%z = self%z * rhs%v
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v * rhs%s_v
                         !
@@ -1350,7 +1350,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in ) :: rhs
+        class( Field_t ), intent( in ) :: rhs
         !
         class( Vector_t ), allocatable :: diag_mult
         !
@@ -1375,7 +1375,7 @@ contains
                                 diag_mult%y = self%y * rhs%y
                                 diag_mult%z = self%z * rhs%z
                                 !
-                            else if( rhs%store_state .EQ. singleton ) then
+                            elseif( rhs%store_state .EQ. singleton ) then
                                 !
                                 diag_mult%s_v = self%s_v * rhs%s_v
                                 !
@@ -1422,7 +1422,7 @@ contains
                         self%y = self%y + cvalue * rhs%y
                         self%z = self%z + cvalue * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v + cvalue * rhs%s_v
                         !
@@ -1446,8 +1446,8 @@ contains
     function dotProd_rVector3D_MR( self, rhs ) result( cvalue )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( rVector3D_MR_t ), intent( in ) :: self
+        class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
@@ -1471,7 +1471,7 @@ contains
             self%y = self%y / cvalue
             self%z = self%z / cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
             self%s_v = self%s_v / cvalue
             !
@@ -1503,7 +1503,7 @@ contains
                         self%y = self%y / rhs%y
                         self%z = self%z / rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v / rhs%s_v
                         !
@@ -1519,7 +1519,7 @@ contains
                         self%y = self%y / rhs%v
                         self%z = self%z / rhs%v
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
                         self%s_v = self%s_v / rhs%s_v
                         !
@@ -1557,10 +1557,10 @@ contains
     function getAxis_rVector3D_MR( self, comp_lbl ) result( comp )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( rVector3D_MR_t ), intent( inout ) :: self
         character, intent( in ) :: comp_lbl
         !
-        complex( kind=prec ), allocatable :: comp(:, :, :)
+        complex( kind=prec ), allocatable :: comp(:,:,:)
         !
         stop "Error: getAxis_rVector3D_MR still not implemented"
         !
@@ -1585,9 +1585,9 @@ contains
     function getX_rVector3D_MR( self ) result( x )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( rVector3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: x(:, :, :)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x
         !
         x = self%x
         !
@@ -1599,7 +1599,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: x(:, :, :)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: x
         !
         self%x = x
         !
@@ -1610,9 +1610,9 @@ contains
     function getY_rVector3D_MR( self ) result( y )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( rVector3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: y(:, :, :)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: y
         !
         y = self%y
         !
@@ -1624,7 +1624,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: y(:, :, :)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: y
         !
         self%y = y
         !
@@ -1635,9 +1635,9 @@ contains
     function getZ_rVector3D_MR( self ) result( z )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( rVector3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: z(:, :, :)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: z
         !
         z = self%z
         !
@@ -1649,7 +1649,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: z(:, :, :)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: z
         !
         self%z = z
         !
@@ -1660,9 +1660,9 @@ contains
     function getSV_rVector3D_MR( self ) result( s_v )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( rVector3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: s_v(:)
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
         call errStop( "getSV_rVector3D_MR not implemented!" )
         !
@@ -1674,7 +1674,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        complex( kind=prec ), dimension(:), intent( in ) :: s_v
         !
         call errStop( "setSV_rVector3D_MR not implemented!" )
         !
@@ -1759,10 +1759,10 @@ contains
             call errStop( "copyFrom_rVector3D_MR > rhs%ind_interior not allocated" )
         endif
         !
-        if( allocated( rhs%ind_boundaries ) ) then
-            self%ind_boundaries = rhs%ind_boundaries
+        if( allocated( rhs%ind_boundary ) ) then
+            self%ind_boundary = rhs%ind_boundary
         else
-            call errStop( "copyFrom_rVector3D_MR > rhs%ind_boundaries not allocated" )
+            call errStop( "copyFrom_rVector3D_MR > rhs%ind_boundary not allocated" )
         endif
         !
         select type( rhs )
@@ -1786,7 +1786,7 @@ contains
                     self%y = rhs%y
                     self%z = rhs%z
                     !
-                else if( rhs%store_state .EQ. singleton ) then
+                elseif( rhs%store_state .EQ. singleton ) then
                     !
                     self%s_v = rhs%s_v
                     !
@@ -1836,7 +1836,7 @@ contains
                 write( *, * ) "Error: read_rVector3D_MR > Unable to read_rVector3D_MR vector from unformatted file. ", &
                         trim(fname), "."
                 stop
-            else if((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
+            elseif((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
                   .AND.binary) then
                 write( *, * ) "Error: read_rVector3D_MR > Unable to read_rVector3D_MR vector from formatted file ", &
                         trim(fname), "."
@@ -1849,11 +1849,11 @@ contains
                 write( *, * ) "Error: read_rVector3D_MR > Vector must be allocated before read_rVector3D_MRing from ", &
                         trim(fname), "."
                 stop
-            else if(self%grid_type.NE.grid_type) then
+            elseif(self%grid_type.NE.grid_type) then
                 write( *, * ) "Error: read_rVector3D_MR > Vector must be of type ", grid_type, &
                         &            "           before read_rVector3D_MRing from ", trim (fname), "."
                 stop
-            else if((self%nx.NE.Nx).OR. &
+            elseif((self%nx.NE.Nx).OR. &
                   (self%ny.NE.Ny).OR.(self%nz.NE.Nz)) then
                 write( *, * ) "Error: read_rVector3D_MR > Wrong size of vector on input from ", trim (fname), "."
                 stop
@@ -1899,7 +1899,7 @@ contains
                 write( *, * ) "Error: write_rVector3D_MR > Unable to write_rVector3D_MR vector to unformatted file. ", &
                         trim(fname), "."
                 stop
-            else if((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
+            elseif((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
                   .AND.binary) then
                 write( *, * ) "Error: write_rVector3D_MR > Unable to write_rVector3D_MR vector to formatted file. ", &
                         trim(fname), "."

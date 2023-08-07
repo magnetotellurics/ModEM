@@ -34,4 +34,6 @@ module FileUnits
     !
     integer, parameter :: ioPlot = 14
     !
+    integer, parameter :: ioWarning = 15
+    !
 end module FileUnits

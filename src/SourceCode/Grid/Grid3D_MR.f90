@@ -88,7 +88,7 @@ contains
         !  
         integer :: i
         !
-        write( *, * ) "Constructor Grid3D_MR_t"
+        !write( *, * ) "Constructor Grid3D_MR_t"
         !
         call self%baseInit
         !
@@ -215,7 +215,7 @@ contains
             ! Whole sub-grid in the air
             self%sub_grids(k)%oz = sum(self%dz(i2 + 1 : self%nzAir))
             !
-        else if(i1 > self%nzAir + 1) then
+        elseif(i1 > self%nzAir + 1) then
             self%sub_grids(k)%oz = -1.0*&
             sum(self%dz(self%nzAir + 1 : i1 - 1))
         else
@@ -595,7 +595,7 @@ contains
         integer, intent( in ) :: nx, ny, nz
         logical, intent( in ) :: transp
         !
-        real( kind=prec ), dimension(:, :, :), allocatable :: m_out
+        real( kind=prec ), dimension(:,:,:), allocatable :: m_out
         integer :: i, i1, i2, n_in
         !
         n_in = size( m_in )

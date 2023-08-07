@@ -73,7 +73,7 @@ module rScalar3D_MR
             !
             procedure, public :: getArray => getArray_rScalar3D_MR
             procedure, public :: setArray => setArray_rScalar3D_MR
-            procedure, public :: switchStoreState => switchStoreState_rScalar3D_MR
+            !
             procedure, public :: copyFrom => copyFrom_rScalar3D_MR
             !
             !> I/O operations
@@ -304,17 +304,17 @@ contains
             endif
         end do
         !
-        if (allocated (self%ind_boundaries)) then
-            deallocate (self%ind_boundaries)
+        if (allocated (self%ind_boundary)) then
+            deallocate (self%ind_boundary)
         endif
         !
-        allocate (self%ind_boundaries(n_boundaries)) 
+        allocate (self%ind_boundary(n_boundaries)) 
         !
         i = 0
         do k = 1, n_active
             if (v_2(k) == 1) then
                 i = i + 1
-                self%ind_boundaries(i) = k
+                self%ind_boundary(i) = k
             endif
         end do
         !
@@ -658,13 +658,13 @@ contains
         integer :: m, n
         !
         m = size( self%ind_interior )
-        n = size( self%ind_boundaries )
+        n = size( self%ind_boundary )
         !
         allocate( ind_i(m) )
         allocate( ind_b(n) )
         !
         ind_i = self%ind_interior
-        ind_b = self%ind_boundaries
+        ind_b = self%ind_boundary
         !
     end subroutine intBdryIndices_rScalar3D_MR
     !
@@ -857,8 +857,8 @@ contains
     function dotProd_rScalar3D_MR( self, rhs ) result( cvalue )
         implicit none
         !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( rScalar3D_MR_t ), intent( in ) :: self
+        class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
@@ -886,7 +886,7 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: divByField_rScalar3D_MR not implemented!"
+        call errStop( "divByField_rScalar3D_MR not implemented!" )
         !
     end subroutine divByField_rScalar3D_MR
     !
@@ -895,11 +895,21 @@ contains
     function getV_rScalar3D_MR( self ) result( v )
         implicit none
         !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
+        class( rScalar3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
         !
-        call errStop( "getV_rScalar3D_MR not implemented!" )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getV_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( v ) ) then
+            call errStop( "getV_rScalar3D_MR > v not allocated." )
+        else
+            !
+            v = cmplx( self%v, 0.0, kind=prec )
+            !
+        endif
         !
     end function getV_rScalar3D_MR
     !
@@ -909,9 +919,21 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: v
         !
-        call errStop( "setV_rScalar3D_MR not implemented!" )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setV_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        !if( .NOT. allocated( v ) ) then
+            !call errStop( "setV_rScalar3D_MR > v not allocated." )
+        !endif
+        !
+        call self%switchStoreState( compound )
+        !
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
+        !
+        self%v = real( v, kind=prec )
         !
     end subroutine setV_rScalar3D_MR
     !
@@ -920,11 +942,21 @@ contains
     function getSV_rScalar3D_MR( self ) result( s_v )
         implicit none
         !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
+        class( rScalar3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: s_v(:)
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
-        call errStop( "getSV_rScalar3D_MR not implemented!" )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getSV_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( self%s_v ) ) then
+            call errStop( "getSV_rScalar3D_MR > self%s_v not allocated." )
+        else
+            !
+            s_v = cmplx( self%s_v, 0.0, kind=prec )
+            !
+        endif
         !
     end function getSV_rScalar3D_MR
     !
@@ -934,9 +966,21 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        complex( kind=prec ), dimension(:), intent( in ) :: s_v
         !
-        call errStop( "setSV_rScalar3D_MR not implemented!" )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setSV_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        !if( .NOT. allocated( s_v ) ) then
+            !call errStop( "setSV_rScalar3D_MR > s_v not allocated." )
+        !endif
+        !
+        call self%switchStoreState( singleton )
+        !
+        if( allocated( self%v ) ) deallocate( self%v )
+        !
+        self%s_v = s_v
         !
     end subroutine setSV_rScalar3D_MR
     !
@@ -980,20 +1024,6 @@ contains
         !
     end subroutine setArray_rScalar3D_MR
     !
-    !> No subroutine briefing
-    !
-    subroutine switchStoreState_rScalar3D_MR( self, store_state )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        integer, intent( in ), optional :: store_state
-        !
-        call errStop( "switchStoreState_rScalar3D_MR not implemented!" )
-        !
-    end subroutine switchStoreState_rScalar3D_MR
-    !
-    !> No subroutine briefing
-    !
     subroutine copyFrom_rScalar3D_MR( self, rhs )
         implicit none
         !
@@ -1013,18 +1043,6 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-        if( allocated( rhs%ind_interior ) ) then
-            self%ind_interior = rhs%ind_interior
-        else
-            call errStop( "copyFrom_rScalar3D_MR > rhs%ind_interior not allocated" )
-        endif
-        !
-        if( allocated( rhs%ind_boundaries ) ) then
-            self%ind_boundaries = rhs%ind_boundaries
-        else
-            call errStop( "copyFrom_rScalar3D_MR > rhs%ind_boundaries not allocated" )
-        endif
-        !
         select type( rhs )
             !
             class is( rScalar3D_MR_t )
@@ -1042,7 +1060,7 @@ contains
                     !
                     self%v = rhs%v
                     !
-                else if( rhs%store_state .EQ. singleton ) then
+                elseif( rhs%store_state .EQ. singleton ) then
                     !
                     self%s_v = rhs%s_v
                     !
@@ -1055,6 +1073,8 @@ contains
                 end do
                 !
                 self%is_allocated = .TRUE.
+                !
+                call self%setIndexArrays
                 !
             class default
                 stop "Error: copyFrom_rScalar3D_MR > Unclassified rhs"

@@ -1,8 +1,6 @@
 !
-!> Derived class to define a PreConditioner_CC_MF
-!>
-!> This specific version will only be used with matrix-free,
-!> which is only implemented for CSG.
+!> Derived class to define a Curl-Curl PreConditioner
+!> Using Matrix Free System
 !
 module PreConditioner_CC_MF
     !
@@ -59,8 +57,8 @@ contains
         !
         integer :: status, ix, iy, iz
         complex( kind=prec ) :: c_factor
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: dilu_x, dilu_y, dilu_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: sigma_e_x, sigma_e_y, sigma_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: dilu_x, dilu_y, dilu_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: sigma_e_x, sigma_e_y, sigma_e_z
         !
         dilu_x = self%Dilu%getX()
         dilu_y = self%Dilu%getY()
@@ -155,13 +153,14 @@ contains
         implicit none
         !
         class( PreConditioner_CC_MF_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e, out_e
+        class( Vector_t ), intent( in ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
         integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: in_e_x, in_e_y, in_e_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: out_e_x, out_e_y, out_e_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: dilu_x, dilu_y, dilu_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: in_e_x, in_e_y, in_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: out_e_x, out_e_y, out_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: dilu_x, dilu_y, dilu_z
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "LTSolvePreConditioner_CC_MF > in_e not allocated yet" )
@@ -236,8 +235,8 @@ contains
                     !
                 else
                     !> adjoint = .TRUE. -- reverse mapping in to out
-                    !>     need to make sure that out_e is zero on boundaries initially -- this is not
-                    !>        done explicitly in ModEM stable!
+                    !>    need to make sure that out_e is zero on boundaries initially -- this is not
+                    !>    done explicitly in ModEM stable!
                     call out_e%zeros
                     !
                     out_e_x = out_e%getX()
@@ -302,14 +301,14 @@ contains
         implicit none
         !
         class( PreConditioner_CC_MF_t ), intent( inout ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( in ) :: in_e
         class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
         integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: in_e_x, in_e_y, in_e_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: out_e_x, out_e_y, out_e_z
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: dilu_x, dilu_y, dilu_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: in_e_x, in_e_y, in_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: out_e_x, out_e_y, out_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: dilu_x, dilu_y, dilu_z
         !
         in_e_x = in_e%getX()
         in_e_y = in_e%getY()
@@ -319,7 +318,7 @@ contains
         dilu_y = self%Dilu%getY()
         dilu_z = self%Dilu%getZ()
         !
-        !>    to be safe, zero out outR
+        !> to be safe, zero out outR
         call out_e%zeros
         !
         out_e_x = out_e%getX()
@@ -419,11 +418,12 @@ contains
     !
     !> Procedure LUSolvePreConditioner_CC_MF
     !> this is dummy routine required by abstract preconditioner class
+    !
     subroutine LUSolvePreConditioner_CC_MF( self, in_phi, out_phi )
         implicit none
         !
         class( PreConditioner_CC_MF_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi
+        class( Scalar_t ), intent( in ) :: in_phi
         class( Scalar_t ), intent( inout ) :: out_phi
         !
         call errStop( "LUSolvePreConditioner_CC_MF not implemented" )

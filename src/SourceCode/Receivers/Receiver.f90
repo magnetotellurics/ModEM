@@ -24,7 +24,7 @@ module Receiver
         !
         type( cVectorSparse3D_SG_t ) :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
-        class( Vector_t ), allocatable, dimension(:,:) :: lrows
+        type( GenVector_t ), allocatable, dimension(:,:) :: lrows
         !
         type( String_t ), allocatable, dimension(:) :: EHxy, comp_names
         !
@@ -161,7 +161,27 @@ contains
         if( allocated( self%lrows ) ) deallocate( self%lrows )
         !
     end subroutine deallocate_Receiver
-    !
+    ! !
+    ! !> No subroutine briefing
+    ! subroutine deallocateLRows( transmitter )
+        ! implicit none
+        ! !
+        ! class( Transmitter_t ), intent( in ) :: transmitter
+        ! integer :: i_pol, i_comp, nrx, irx
+        ! !
+        ! if( allocated( self%lrows ) ) then
+            ! !
+            ! asize = size( self%EHxy )
+            ! do i_comp = asize, 1, -(1)
+                ! if( allocated( self%lrows( i_pol, i_comp )%v ) ) deallocate( self%lrows( i_pol, i_comp )%v )
+            ! enddo
+            ! !
+            ! deallocate( self%EHxy )
+            ! !
+        ! endif
+        ! !
+    ! end subroutine deallocateLRows
+    ! !
     !> No subroutine briefing
     subroutine evaluationFunction_Receiver( self, model_operator )
         implicit none

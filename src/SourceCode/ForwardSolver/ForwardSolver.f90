@@ -11,8 +11,8 @@ module ForwardSolver
     !
     character(:), allocatable :: forward_solver_type
     character( len=21 ), parameter :: FWD_FILE = "ForwardSolverFromFile"
-    character( len=15 ), parameter :: FWD_IT = "ForwardSolverIT"
-    character( len=18 ), parameter :: FWD_IT_DC = "ForwardSolverIT_DC"
+    character( len=16 ), parameter :: FWD_IT = "ForwardSolver_IT"
+    character( len=19 ), parameter :: FWD_IT_DC = "ForwardSolver_IT_DC"
     !
     type, abstract :: ForwardSolver_t
         !
@@ -23,8 +23,6 @@ module ForwardSolver
         real( kind=prec ) :: tolerance, relResFinal
         !
         real( kind=prec ), allocatable, dimension(:) :: relResVec
-        !
-        logical :: failed
         !
         contains
             !
@@ -45,6 +43,9 @@ module ForwardSolver
             generic :: assignment(=) => copyFrom
             !
     end type ForwardSolver_t
+    !
+    !> Public Global Generic ForwardSolver object
+    class( ForwardSolver_t ), allocatable, target :: forward_solver
     !
     abstract interface
         !
@@ -89,8 +90,8 @@ module ForwardSolver
             !
             class( ForwardSolver_t ), intent( inout ) :: self
             integer, intent( in ) :: pol
-            class( Source_t ), intent( inout ) :: source
-            class( Vector_t ), intent( inout ) :: e_solution
+            class( Source_t ), intent( in ) :: source
+            class( Vector_t ), allocatable, intent( out ) :: e_solution
             !
         end subroutine interface_create_e_solution_foward_solver
         !
@@ -118,8 +119,6 @@ contains
         self%tolerance = R_ZERO
         !
         self%relResFinal = R_ZERO
-        !
-        self%failed = .FALSE.
         !
     end subroutine initializeForwardSolver
     !

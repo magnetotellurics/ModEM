@@ -21,7 +21,7 @@ module ForwardControlFile
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
         !> Solver parameters
-        character(:), allocatable :: max_solver_iters, max_divcor_calls, max_divcor_iters
+        character(:), allocatable :: max_solver_iters, max_solver_calls, max_divcor_iters
         character(:), allocatable :: tolerance_divcor, tolerance_solver
         !
         contains
@@ -29,6 +29,9 @@ module ForwardControlFile
             final :: ForwardControlFile_dtor
             !
     end type ForwardControlFile_t
+    !
+    !> Public Global ForwardControlFile object
+    type( ForwardControlFile_t ), allocatable :: fwd_control_file
     !
     interface ForwardControlFile_t
         module procedure ForwardControlFile_ctor
@@ -95,8 +98,8 @@ contains
                         self%model_max_height = trim( args(2) )
                     elseif( index( line_text, "max_solver_iters" ) > 0 ) then
                         self%max_solver_iters = trim( args(2) )
-                    elseif( index( line_text, "max_divcor_calls" ) > 0 ) then
-                        self%max_divcor_calls = trim( args(2) )
+                    elseif( index( line_text, "max_solver_calls" ) > 0 ) then
+                        self%max_solver_calls = trim( args(2) )
                     elseif( index( line_text, "max_divcor_iters" ) > 0 ) then
                         self%max_divcor_iters = trim( args(2) )
                     elseif( index( line_text, "tolerance_divcor" ) > 0 ) then
@@ -284,12 +287,12 @@ contains
                 !
             endif
             !
-            ! Solver max_divcor_calls
-            if( allocated( self%max_divcor_calls ) ) then
+            ! Solver max_solver_calls
+            if( allocated( self%max_solver_calls ) ) then
                 !
-                read( self%max_divcor_calls, "(I8)" ) max_divcor_calls
+                read( self%max_solver_calls, "(I8)" ) max_solver_calls
                 !
-                write( *, "( A30, I20)" ) "          Max Divcor Calls = ", max_divcor_calls
+                write( *, "( A30, I20)" ) "          Max Divcor Calls = ", max_solver_calls
                 !
             endif
             !
@@ -349,7 +352,7 @@ contains
         !
         if( allocated( self%max_solver_iters ) ) deallocate( self%max_solver_iters )
         !
-        if( allocated( self%max_divcor_calls ) ) deallocate( self%max_divcor_calls )
+        if( allocated( self%max_solver_calls ) ) deallocate( self%max_solver_calls )
         if( allocated( self%max_divcor_iters ) ) deallocate( self%max_divcor_iters )
         if( allocated( self%tolerance_divcor ) ) deallocate( self%tolerance_divcor )
         if( allocated( self%tolerance_solver ) ) deallocate( self%tolerance_solver )

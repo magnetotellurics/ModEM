@@ -1,12 +1,12 @@
 !
-!> Derived class to define a ModelOperator_SP
+!> Derived class to define a ModelOperator
+!> with basic operations for Sparse Matrices
 !
 module ModelOperator_SP
     !
     use ModelOperator
     use SpOpTopology_SG
     use MetricElements_CSG
-    use ModelParameterCell_SG
     !
     type, extends( ModelOperator_t ) :: ModelOperator_SP_t
         !
@@ -15,17 +15,17 @@ module ModelOperator_SP
         integer, allocatable, dimension(:) :: EDGEi, EDGEb
         integer, allocatable, dimension(:) :: NODEi, NODEb
         !
-        type( spMatCSR_Real ) :: CC, CCii, CCib
+        type( spMatCSR_Real ) :: D, Gd, CCii, CCib
+        !
+        type( spMatCSR_Real ) :: VDiv ! div : edges->nodes (interior only)
+        type( spMatCSR_Real ) :: VDsG ! operator for div correction
+        type( spMatCSR_Real ) :: Ds  ! divergence of current operator
+        !
+        type( spMatCSR_Real ) :: VDsG_L, VDsG_U
         !
         real( kind=prec ) :: omega
         !
         real( kind=prec ), allocatable, dimension(:) :: VomegaMuSig
-        !
-        type( spMatCSR_Real ) :: VDiv ! div : edges->nodes (interior only)
-        type( spMatCSR_Real ) :: VDsG ! operator for div correction
-        type( spMatCSR_Real ) :: VDs  ! divergence of current operator
-        !
-        type( spMatCSR_Real ) :: VDsG_L, VDsG_U
         !
         contains
             !
@@ -106,7 +106,7 @@ contains
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         !
-        type( spMatCSR_Real ) :: Temp, Ttrans
+        type( spMatCSR_Real ) :: matrix_1, Ttrans, CC
         integer :: m, n, nz
         real( kind=prec ), allocatable, dimension(:) :: Dtemp
         integer :: fid
@@ -115,28 +115,31 @@ contains
         n = T%nCol
         nz = T%row( T%nRow + 1 ) - 1
         !
-        call create_spMatCSR( m, n, nz, Temp )
+        call create_spMatCSR( m, n, nz, matrix_1 )
         call create_spMatCSR( n, m, nz, Ttrans )
-        call create_spMatCSR( m, n, nz, self%CC )
+        call create_spMatCSR( m, n, nz, CC )
         !
-        call RMATxDIAG( T, real( self%metric%edge_length%getSV(), kind=prec ), Temp )
+        call RMATxDIAG( T, real( self%metric%edge_length%getArray(), kind=prec ), matrix_1 )
         !
-        Dtemp = ( self%metric%dual_edge_length%getSV() / self%metric%face_area%getSV() )
+        Dtemp = ( self%metric%dual_edge_length%getArray() / self%metric%face_area%getArray() )
         !
-        call DIAGxRMAT( Dtemp, Temp, self%CC )
+        call DIAGxRMAT( Dtemp, matrix_1, CC )
         !
         call RMATtrans( T, Ttrans )
         !
-        call RMATxRMAT( Ttrans, self%CC, Temp )
+        call RMATxRMAT( Ttrans, CC, matrix_1 )
         !
-        call DIAGxRMAT( real( self%metric%edge_length%getSV(), kind=prec ), Temp, self%CC )
+        Dtemp = self%metric%edge_length%getArray()
         !
-        call subMatrix_Real( self%CC, self%EDGEi, self%EDGEi, self%CCii )
+        call DIAGxRMAT( Dtemp, matrix_1, CC )
         !
-        call subMatrix_Real( self%CC, self%EDGEi, self%EDGEb, self%CCib )
+        call subMatrix_Real( CC, self%EDGEi, self%EDGEi, self%CCii )
         !
-        call deall_spMatCSR( Temp )
+        call subMatrix_Real( CC, self%EDGEi, self%EDGEb, self%CCib )
+        !
+        call deall_spMatCSR( matrix_1 )
         call deall_spMatCSR( Ttrans )
+        call deall_spMatCSR( CC )
         !
         self%eqset = .TRUE.
         !
@@ -146,37 +149,29 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setCond_ModelOperator_SP( self, sigma, omega )
+    subroutine setCond_ModelOperator_SP( self, sigma, omega_in )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( inout ) :: sigma
-        real( kind=prec ), intent( in ), optional :: omega
+        class( ModelParameter_t ), intent( in ) :: sigma
+        real( kind=prec ), intent( in ) :: omega_in
         !
-        integer :: i
-        class( Scalar_t ), allocatable :: temp_cell_cond
-        class( Vector_t ), allocatable :: sig_temp
-        complex( kind=prec ), allocatable, dimension(:) :: v_edge_sv, sig_temp_sv
+        class( Vector_t ), allocatable:: sig_temp
+        complex( kind=prec ), allocatable, dimension(:) :: sig_vec_v, v_edge_v
         !
-        if( present( omega ) ) then
-            self%omega = omega
-        else
-            self%omega = 1.0
-        endif
-        !
-        !> Sigma
         call self%metric%createVector( real_t, EDGE, sig_temp )
         !
         call sigma%PDEmapping( sig_temp )
         !
-        sig_temp_sv = sig_temp%getSV()
+        sig_vec_v = sig_temp%getArray()
         !
-        !> vEdge
-        v_edge_sv = self%metric%v_edge%getSV()
+        deallocate( sig_temp )
         !
-        self%VomegaMuSig = MU_0 * self%omega * sig_temp_sv( self%EDGEi ) * v_edge_sv( self%EDGEi )
+        v_edge_v = self%metric%v_edge%getArray()
         !
-        !call self%divCorSetUp
+        self%VomegaMuSig = MU_0 * omega_in * sig_vec_v( self%EDGEi ) * v_edge_v( self%EDGEi )
+        !
+        self%omega = omega_in
         !
     end subroutine setCond_ModelOperator_SP
     !
@@ -188,34 +183,47 @@ contains
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         !
-        type( spMatCSR_Real ) :: Temp, Temp2
-        real( kind=prec ), allocatable, dimension(:) :: d, aux_vec
+        type( spMatCSR_Real ) :: matrix_1, matrix_2
+        real( kind=prec ), allocatable, dimension(:) :: d, aux_vec, aux_vec_int
         integer, allocatable, dimension(:) :: allNodes
         integer :: i, m
+        !
+        !> #Part 1. Construction of VDiv (pre-Vds matrix) and D (div operator)
         !
         !> set indexes for interior and boundary nodes
         call boundaryIndexSP( NODE, self%metric, self%NODEb, self%NODEi )
         !
-        !> (1) first construct VDiv operator transpose of topology
-        call RMATtrans( G, Temp )
+        !> matrix_1 -> transpose of topology G
+        call RMATtrans( G, matrix_1 )
         !
-        !> pre-multiply by dual face area
-        aux_vec = real( self%metric%dual_face_area%getSV(), kind=prec )
+        !> matrix_2 -> Multiply matrix_1 by dual face area
+        aux_vec = self%metric%dual_face_area%getArray()
         !
-        call RMATxDIAG( Temp, aux_vec, Temp2 )
+        call RMATxDIAG( matrix_1, aux_vec, matrix_2 )
         !
-        call deall_spMatCSR( Temp )
+        call deall_spMatCSR( matrix_1 )
         !
-        !> select out interior nodes, edges
-        call subMatrix_Real( Temp2, self%NODEi, self%EDGEi, self%VDiv )
+        !> Select matrix_2 interior nodes, edges to create VDiv
+        call subMatrix_Real( matrix_2, self%NODEi, self%EDGEi, self%VDiv )
         !
-        call deall_spMatCSR( Temp2 )
+        call deall_spMatCSR( matrix_2 )
         !
-        !> (2) next turn G into actual gradient (not just topology,
+        !> v_node
+        aux_vec = self%metric%v_node%getArray()
+        !
+        !> self%D -> Divide self%VDiv by v_node interior
+        aux_vec_int = ( 1. / aux_vec( self%metric%v_node%ind_interior ) )
+        !
+        call DIAGxRMAT( aux_vec_int, self%VDiv, self%D )
+        !
+        !> #Part 2. Construction of self%Gd (grad operator)
+        !
+        !> turn G into actual gradient (not just topology,
         !> all nodes-> interior edges (not clear this is what we want!)
         allocate( d( G%nRow ) )
         !
-        aux_vec = real( self%metric%edge_length%getSV(), kind=prec )
+        !> edge_length
+        aux_vec = self%metric%edge_length%getArray()
         !
         do i = 1, G%nRow
             d(i) = 1. / aux_vec(i)
@@ -227,9 +235,9 @@ contains
             allNodes(i) = i
         enddo
         !
-        call DIAGxRMAT( d, G, Temp )
-        call subMatrix_Real( Temp, self%EDGEi, allNodes, G )
-        call deall_spMatCSR( Temp )
+        call DIAGxRMAT( d, G, matrix_1 )
+        call subMatrix_Real( matrix_1, self%EDGEi, allNodes, self%Gd )
+        call deall_spMatCSR( matrix_1 )
         !
         deallocate( allNodes, d )
         !
@@ -243,41 +251,42 @@ contains
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         !
-        type( spMatCSR_Real ) :: temp_matrix
-        complex( kind=prec ), allocatable, dimension(:) :: v_edge_sv
+        type( spMatCSR_Real ) :: matrix, VDs
+        complex( kind=prec ), allocatable, dimension(:) :: v_edge_v
         real( kind=prec ), allocatable, dimension(:) :: d
         integer, allocatable, dimension(:) :: allNodes
         integer :: n, i
         !
-        !> Construct VDs .. multiply VDiv by Conductivity on edges; can use VomegaMuSig
-        n = self%VDiv%nCol
+        !> Ds -> multiply D by Conductivity on edges using VomegaMuSig
+        n = self%D%nCol
         !
         d = ( self%VomegaMuSig / ( mu_0 * self%omega ) )
         !
-        v_edge_sv = self%metric%v_edge%getSV()
+        v_edge_v = self%metric%v_edge%getArray()
         !
-        d = ( d / v_edge_sv( self%EDGEi ) )
+        d = ( d / v_edge_v( self%EDGEi ) )
         !
-        call RMATxDIAG( self%VDiv, d, self%VDs )
+        call RMATxDIAG( self%D, d, self%Ds )
         !
-        !>Construct VDsG: symmetric operator for divergence correction solver
-        allocate( allNodes( G%nRow ) )
+        !> VDs -> multiply self%VDiv by Conductivity on edges using VomegaMuSig
+        call RMATxDIAG( self%VDiv, d, VDs )
         !
-        do i = 1, G%nRow
+        !> Construct VDsG: symmetric operator for divergence correction solver
+        allocate( allNodes( self%Gd%nRow ) )
+        !
+        do i = 1, self%Gd%nRow
             allNodes( i ) = i
         enddo
         !
-        call subMatrix_Real( G, allNodes, self%NODEi, temp_matrix )
+        call subMatrix_Real( self%Gd, allNodes, self%NODEi, matrix )
         !
-        call RMATxRMAT( self%VDs, temp_matrix, self%VDsG )
+        call RMATxRMAT( VDs, matrix, self%VDsG )
         !
-        ! Setup preconditioner
+        call deall_spMatCSR( VDs )
+        call deall_spMatCSR( matrix )
+        !
+        ! Setup preconditioner matrices: self%VDsG_L and self%VDsG_U
         call Dilu_Real( self%VDsG, self%VDsG_L, self%VDsG_U )
-        !
-        !call CholInc_real(VDsG,VDsG_L)
-        !call RMATtrans(VDsG_L,VDsG_U)
-        !
-        call deall_spMatCSR( temp_matrix )
         !
         deallocate( allNodes )
         !
@@ -287,17 +296,17 @@ contains
     !> for interior elements
     !> assume output y is already allocated
     !
-    subroutine amult_ModelOperator_SP( self, omega, in_e, out_e, p_adjoint )
+    subroutine amult_ModelOperator_SP( self, omega, in_e, out_e, adjoint )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
-        class( Vector_t ), intent( inout ) :: in_e, out_e
-        logical, intent( in ), optional :: p_adjoint
+        class( Vector_t ), intent( in ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
+        logical, intent( in ) :: adjoint
         !
-        logical :: adjoint
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
-        complex( kind=prec ), allocatable, dimension(:) :: out_e_v_int
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "amult_ModelOperator_SP > in_e not allocated" )
@@ -307,18 +316,21 @@ contains
             call errStop( "amult_ModelOperator_SP > out_e not allocated" )
         endif
         !
-        in_e_v = in_e%getSV()
+        in_e_v = in_e%getArray()
+        in_e_v_int = in_e_v( in_e%ind_interior )
         !
-        out_e_v = out_e%getSV()
+        out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%ind_interior )
         !
-        call RMATxCVEC( self%CCii, in_e_v( in_e%ind_interior ), out_e_v_int )
+        !write(*,*) "amult_ModelOperator_SP: ", self%CCii%nCol, self%CCii%nRow, size( in_e_v_int ), size( out_e_v_int ), adjoint
         !
-        if( present( p_adjoint ) ) then
-            adjoint = p_adjoint
-        else
-            adjoint = .FALSE.
-        endif
+        call RMATxCVEC( self%CCii, in_e_v_int, out_e_v_int )
+        !
+        !if( present( p_adjoint ) ) then
+            !adjoint = p_adjoint
+        !else
+            !adjoint = .FALSE.
+        !endif
         !
         if( adjoint ) then
             out_e_v_int = out_e_v_int - ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%ind_interior )
@@ -328,7 +340,7 @@ contains
         !
         out_e_v( in_e%ind_interior ) = out_e_v_int
         !
-        call out_e%setSV( out_e_v )
+        call out_e%setArray( out_e_v )
         !
     end subroutine amult_ModelOperator_SP
     !
@@ -340,29 +352,33 @@ contains
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: in_e, out_e
+        class( Vector_t ), intent( in ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
-        complex( kind=prec ), allocatable, dimension(:) :: out_e_v_int
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_bry, out_e_v_int
         !
         if( .NOT. in_e%is_allocated ) then
-            call errStop( "amult_ModelOperator_SP > in_e not allocated" )
+            call errStop( "multAib_ModelOperator_SP > in_e not allocated" )
         endif
         !
         if( .NOT. out_e%is_allocated ) then
-            call errStop( "amult_ModelOperator_SP > out_e not allocated" )
+            call errStop( "multAib_ModelOperator_SP > out_e not allocated" )
         endif
         !
-        in_e_v = in_e%getSV()
+        in_e_v = in_e%getArray()
+        in_e_v_bry = in_e_v( in_e%ind_boundary )
         !
-        out_e_v = out_e%getSV()
+        out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%ind_interior )
         !
-        call RMATxCVEC( self%CCib, in_e_v( in_e%ind_boundaries ), out_e_v_int )
+        !write(*,*) "multAib_ModelOperator_SP: ", self%CCib%nCol, self%CCib%nRow, size( in_e_v_bry ), size( out_e_v_int )
         !
-        out_e_v( in_e%ind_interior ) = out_e_v_int
+        call RMATxCVEC( self%CCib, in_e_v_bry, out_e_v_int )
         !
-        call out_e%setSV( out_e_v )
+        out_e_v( out_e%ind_interior ) = out_e_v_int
+        !
+        call out_e%setArray( out_e_v )
         !
     end subroutine multAib_ModelOperator_SP
     !
@@ -371,22 +387,33 @@ contains
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( in ) :: in_e
         class( Scalar_t ), intent( inout ) :: out_phi
         !
-        type( spMatCSR_Real ) :: D
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_phi_int
         !
-        complex( kind=prec ), allocatable, dimension(:) :: out_phi_v
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "div_ModelOperator_SP > in_e not allocated" )
+        endif
         !
-        call RMATtrans( G, D )
+        if( .NOT. out_phi%is_allocated ) then
+            call errStop( "div_ModelOperator_SP > out_phi not allocated" )
+        endif
         !
-        out_phi_v = out_phi%getSV()
+        in_e_v = in_e%getArray()
+        in_e_v_int = in_e_v( in_e%ind_interior )
         !
-        call RMATxCVEC( D, in_e%getSV(), out_phi_v )
+        out_phi_v = out_phi%getArray()
+        out_phi_int = out_phi_v( out_phi%ind_interior )
         !
-        call deall_spMatCSR( D )
+        !write(*,*) "div_ModelOperator_SP: ", self%D%nCol, self%D%nRow, size( in_e_v_int ), size( out_phi_int )
         !
-        call out_phi%setSV( out_phi_v )
+        call RMATxCVEC( self%D, in_e_v_int, out_phi_int )
+        !
+		out_phi_v( out_phi%ind_interior ) = out_phi_int
+		!
+        call out_phi%setArray( out_phi_v )
         !
     end subroutine div_ModelOperator_SP
     !
@@ -396,21 +423,33 @@ contains
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( in ) :: in_e
         class( Scalar_t ), intent( inout ) :: out_phi
         !
-        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v, out_phi_v_int
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_phi_v_int
         !
-        in_e_v = in_e%getSV()
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "divC_ModelOperator_SP > in_e not allocated" )
+        endif
         !
-        out_phi_v = out_phi%getSV()
+        if( .NOT. out_phi%is_allocated ) then
+            call errStop( "divC_ModelOperator_SP > out_phi not allocated" )
+        endif
+        !
+        in_e_v = in_e%getArray()
+        in_e_v_int = in_e_v( in_e%ind_interior )
+        !
+        out_phi_v = out_phi%getArray()
         out_phi_v_int = out_phi_v( out_phi%ind_interior )
         !
-        call RMATxCVEC( self%VDs, in_e_v( in_e%ind_interior ), out_phi_v_int )
+        !write(*,*) "divC_ModelOperator_SP: ", self%VDs%nCol, self%VDs%nRow, size( in_e_v_int ), size( out_phi_v_int )
+        !
+        call RMATxCVEC( self%Ds, in_e_v_int, out_phi_v_int )
         !
         out_phi_v( out_phi%ind_interior ) = out_phi_v_int
         !
-        call out_phi%setSV( out_phi_v )
+        call out_phi%setArray( out_phi_v )
         !
     end subroutine divC_ModelOperator_SP
     !
@@ -420,15 +459,33 @@ contains
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi, out_phi
+        class( Scalar_t ), intent( in ) :: in_phi
+        class( Scalar_t ), intent( inout ) :: out_phi
         !
-        complex( kind=prec ), allocatable, dimension(:) :: out_phi_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_phi_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_phi_v_int, out_phi_v_int
         !
-        out_phi_v = out_phi%getSV()
+        if( .NOT. in_phi%is_allocated ) then
+            call errStop( "divCGrad_ModelOperator_SP > in_phi not allocated" )
+        endif
         !
-        call RMATxCVEC( self%VDsG, in_phi%getSV(), out_phi_v )
+        if( .NOT. out_phi%is_allocated ) then
+            call errStop( "divCGrad_ModelOperator_SP > out_phi not allocated" )
+        endif
         !
-        call out_phi%setSV( out_phi_v )
+        in_phi_v = in_phi%getArray()
+        in_phi_v_int = in_phi_v( in_phi%ind_interior )
+        !
+        out_phi_v = out_phi%getArray()
+        out_phi_v_int = out_phi_v( out_phi%ind_interior )
+        !
+        !write(*,*) "divCGrad_ModelOperator_SP: ", self%VDsG%nCol, self%VDsG%nRow, size( in_phi_v_int ), size( out_phi_v_int )
+        !
+        call RMATxCVEC( self%VDsG, in_phi_v_int, out_phi_v_int )
+        !
+        out_phi_v( out_phi%ind_interior ) = out_phi_v_int
+        !
+        call out_phi%setArray( out_phi_v )
         !
     end subroutine divCGrad_ModelOperator_SP
     !
@@ -438,20 +495,45 @@ contains
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi
+        class( Scalar_t ), intent( in ) :: in_phi
         class( Vector_t ), intent( inout ) :: out_e
         !
-        complex( kind=prec ), allocatable, dimension(:) :: out_e_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_e_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_phi_v_int, out_e_v_int
         !
-        out_e_v = out_e%getSV()
+        if( .NOT. in_phi%is_allocated ) then
+            call errStop( "grad_ModelOperator_SP > in_phi not allocated" )
+        endif
         !
-        call RMATxCVEC( G, in_phi%getSV(), out_e_v )
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "grad_ModelOperator_SP > out_e not allocated" )
+        endif
         !
-        call out_e%setSV( out_e_v )
+        in_phi_v = in_phi%getArray()
+        !
+        out_e_v = out_e%getArray()
+        out_e_v_int = out_e_v( out_e%ind_interior )
+        !
+        !write(*,*) "grad_ModelOperator_SP: ", self%Gd%nCol, self%Gd%nRow, size( in_phi_v ), size( out_e_v_int )
+        !
+        call RMATxCVEC( self%Gd, in_phi_v, out_e_v_int )
+        !
+        out_e_v( out_e%ind_interior ) = out_e_v_int
+        !
+        call out_e%setArray( out_e_v )
         !
     end subroutine grad_ModelOperator_SP
     !
     !> No subroutine briefing
+    !
+    !> Set sparse matrices for curl (T) and grad (G)
+    !> operator topologies; these sparse matrices are stored
+    !> in module spOpTopology
+    !
+    !> Find indexes (in vector of all) of boundary and interior edges
+    !> allocate for diagonal part of curl-curl operator
+    !> (maybe this should just be for interior edges)
+    !> here for all edges
     !
     subroutine create_ModelOperator_SP( self )
         implicit none
@@ -461,10 +543,6 @@ contains
         integer :: nInterior
         !
         self%is_allocated = .FALSE.
-        !
-        !> Set sparse matrices for curl (T) and grad (G)
-        !> operator topologies; these sparse matrices are stored
-        !> in module spOpTopology
         !
         self%topology_sg = SpOpTopology_SG_t( self%metric%grid )
         !
@@ -476,10 +554,6 @@ contains
         !
         nInterior = size( self%EDGEi )
         !
-        !> Find indexes (in vector of all) of boundary and interior edges
-        !> allocate for diagonal part of curl-curl operator
-        !> (maybe this should just be for interior edges)
-        !> here for all edges
         allocate( self%VomegaMuSig( nInterior ) )
         !
         !> set a default omega
@@ -500,7 +574,6 @@ contains
         deallocate( self%EDGEi, self%EDGEb )
         deallocate( self%NODEi, self%NODEb )
         !
-        call deall_spMatCSR( self%CC )
         call deall_spMatCSR( self%CCii )
         call deall_spMatCSR( self%CCib )
         !
@@ -511,9 +584,11 @@ contains
         call deall_spMatCSR( T )
         call deall_spMatCSR( G )
         !
+        call deall_spMatCSR( self%Gd )
+        call deall_spMatCSR( self%D )
         call deall_spMatCSR( self%VDiv )
         call deall_spMatCSR( self%VDsG )
-        call deall_spMatCSR( self%VDs )
+        call deall_spMatCSR( self%Ds )
         call deall_spMatCSR( self%VDsG_L )
         call deall_spMatCSR( self%VDsG_U )
         !

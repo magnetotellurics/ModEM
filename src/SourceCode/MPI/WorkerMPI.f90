@@ -175,6 +175,8 @@ contains
         !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
         !
+        call Tx%forward_solver%setFrequency( sigma, Tx%period )
+        !
         !> Switch Transmitter's source to SourceInteriorForce from PMult
         call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
         !
@@ -292,8 +294,6 @@ contains
         !
         call sigma%setMetric( model_operator%metric )
         !
-        call model_operator%setCond( sigma )
-        !
     end subroutine handleSigmaModel
     !
     !> Receive dsigma model from master process and set its metric
@@ -323,20 +323,23 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case( forward_solver_type )
             !
+            case( FWD_IT )
+                !
+                allocate( forward_solver, source = ForwardSolver_IT_t( model_operator, QMR ) )
+                !
             case( FWD_IT_DC )
                 !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, QMR ) )
                 !
             case( "" )
                 !
                 call warning( "setTxForwardSolver > Forward Solver type not provided, using IT_DC." )
                 !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, QMR ) )
                 !
             case default
                 !
-                write( *, * ) "Error: Wrong Forward Solver type: [", forward_solver_type, "]"
-                stop
+                call errStop( "setTxForwardSolver > Wrong Forward Solver type: ["//forward_solver_type//"]." )
                 !
         end select
         !

@@ -9,11 +9,11 @@ module CoreComponents
     use ModelOperator_MF_SG
     use ModelOperator_SP
     !
-    use ModelParameterCell_SG
+    use ModelParameterCell
     !
     use ModelCovariance
     !
-    use ForwardSolverIT_DC
+    use ForwardSolver_IT_DC
     !
     use SourceMT_1D
     use SourceMT_2D
@@ -31,18 +31,6 @@ module CoreComponents
     use ModelReader_Weerachai
     !
     use DataFileStandard
-    !
-    !> Classes
-    type( ForwardControlFile_t ), allocatable :: fwd_control_file
-    type( InversionControlFile_t ), allocatable :: inv_control_file
-    !
-    class( Grid_t ), allocatable, target :: main_grid
-    !
-    class( ModelOperator_t ), allocatable :: model_operator
-    !
-    class( ForwardSolver_t ), allocatable, target :: forward_solver
-    !
-    class( ModelCovariance_t ), allocatable :: model_cov
     !
     !> Program Control Variables
     character(8) :: str_date
@@ -160,8 +148,6 @@ contains
         call model_operator%setEquations
         !
         call sigma0%setMetric( model_operator%metric )
-        !
-        call model_operator%setCond( sigma0 )
         !
     end subroutine handleModelFile
     !
@@ -300,7 +286,7 @@ contains
             !> Create new isotropic model with target horizontal cond
             allocate( cell_cond, source = model%getCond(1) )
             !
-            allocate( aux_model, source = ModelParameterCell_SG_t( model%metric%grid, cell_cond, 1, model%param_type ) )
+            allocate( aux_model, source = ModelParameterCell_t( model%metric%grid, cell_cond, 1, model%param_type ) )
             !
             call aux_model%setMetric( model_operator%metric )
             !
@@ -533,7 +519,7 @@ contains
         !
         ! Solver parameters
         max_solver_iters = 80
-        max_divcor_calls = 20
+        max_solver_calls = 20
         max_divcor_iters = 100
         tolerance_divcor = 1E-5
         tolerance_solver = 1E-7
@@ -659,6 +645,7 @@ contains
         if( allocated( inversion_type ) ) deallocate( inversion_type )
         if( allocated( joint_type ) ) deallocate( joint_type )
         !
+        if( allocated( grid_format ) ) deallocate( grid_format )
         if( allocated( model_operator_type ) ) deallocate( model_operator_type )
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type_mt ) ) deallocate( source_type_mt )
@@ -792,12 +779,12 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A35)" ) "max_solver_iters [80]          : 80"
-            write( ioFwdTmp, "(A35)" ) "max_divcor_calls [20]          : 20"
+            write( ioFwdTmp, "(A35)" ) "max_solver_calls [20]          : 20"
             write( ioFwdTmp, "(A36)" ) "max_divcor_iters [100]         : 100"
             write( ioFwdTmp, "(A37)" ) "tolerance_solver [1E-7]        : 1E-7"
             write( ioFwdTmp, "(A37)" ) "tolerance_divcor [1E-5]        : 1E-5"
-            write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A1)" ) "#"
             !
             close( ioFwdTmp )
@@ -849,6 +836,6 @@ contains
         endif
         !
     end subroutine printInversionControlFileTemplate
-	!
+    !
 end module CoreComponents
 !

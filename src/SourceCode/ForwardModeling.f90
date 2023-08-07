@@ -71,7 +71,7 @@ contains
                         !
                     case( SRC_MT_2D )
                         !
-                        call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
+                        !call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
                         !
                     case( "" )
                         !
@@ -171,7 +171,7 @@ contains
         !
 #else
         !
-        call createDistributeForwardSolver()
+        call createDistributeForwardSolver
         !
         call serialForwardModeling( sigma, all_predicted_data )
         !
@@ -259,15 +259,19 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case( forward_solver_type )
             !
+            case( FWD_IT )
+                !
+                allocate( forward_solver, source = ForwardSolver_IT_t( model_operator, QMR ) )
+                !
             case( FWD_IT_DC )
                 !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
-                !
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, QMR ) )
+            !
             case( "" )
                 !
                 call warning( "createDistributeForwardSolver > Forward Solver type not provided, using IT_DC." )
                 !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, QMR ) )
                 !
             case default
                 !

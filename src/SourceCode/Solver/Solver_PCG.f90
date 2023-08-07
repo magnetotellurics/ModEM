@@ -4,6 +4,8 @@
 module Solver_PCG
     !
     use Solver
+    use ModelOperator_MF_SG
+    use ModelOperator_SP
     use PreConditioner_DC_MF
     use PreConditioner_DC_SP
     !
@@ -64,7 +66,7 @@ contains
     subroutine setDefaults_PCG( self )
         implicit none
         !
-        class( Solver_PCG_t ), intent(inout) :: self
+        class( Solver_PCG_t ), intent( inout ) :: self
         !
         call self%setParameters( max_divcor_iters, tolerance_divcor )
         !
@@ -75,7 +77,8 @@ contains
         implicit none
         !
         class( Solver_PCG_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( inout ) :: b, x
+        class( Scalar_t ), intent( in ) :: b
+        class( Scalar_t ), intent( inout ) :: x
         !
         !>    these will have to be created in a way to match
         !>     the specific type of the input Scalar_t ...
@@ -83,7 +86,6 @@ contains
         class ( Scalar_t ), allocatable :: r, s, p, q
         complex( kind=prec ) :: beta, alpha, delta, deltaOld
         complex( kind=prec ) :: bnorm, rnorm
-        integer :: i
         !
         if( .NOT. x%is_allocated ) then
             call errStop( "solvePCG > x not allocated yet" )
@@ -113,16 +115,17 @@ contains
         bnorm = SQRT( b%dotProd(b) )
         rnorm = SQRT( r%dotProd(r) )
         !
-        self%relErr(1) = rnorm/bnorm
+        self%iter = 1
         !
-        i = 0
+        self%relErr( self%iter ) = rnorm / bnorm
         !
-        loop: do while ( ( self%relErr( i + 1 ) .GT. self%tolerance ).AND.( i + 1 .LT. self%max_iters ) )
+        !> Main solver loop
+        solver_loop: do
             !
             call self%preconditioner%LUsolve( r, s )
             !
             delta = r%dotProd(s)
-            if( i .EQ. 0 ) then
+            if( self%iter .EQ. 1 ) then
                 beta = C_ZERO
             else
                 beta = delta / deltaOld
@@ -141,28 +144,35 @@ contains
             !
             deltaOld = delta
             !
-            i = i + 1
-            !
             rnorm = SQRT( r%dotProd(r) )
             !
-            self%relErr( i + 1 ) = rnorm / bnorm
+            !write( *, "( a36, i6, a3, es12.3 )" ) "PCG iter: ", self%iter, " : ", self%relErr( self%iter )
             !
-            !write( *, * ) "PCG iter, self%relErr( i + 1 )", i + 1, self%relErr( i + 1 )
+            self%iter = self%iter + 1
             !
-        enddo loop
-        ! !
-        ! if( i + 1 .LT. self%max_iters ) then
-            ! write( *, * ) "                    divCorr PCG converged within ", i + 1, " : ", self%relErr( i + 1 )
-        ! else
-            ! write( *, * ) "                    divCorr PCG not converged in ", i + 1, " : ", self%relErr( i + 1 )
-        ! endif
-        ! !
+            self%relErr( self%iter ) = rnorm / bnorm
+            !
+            !> Stop Conditions
+            if( ( self%relErr( self%iter ) .LE. self%tolerance ) .OR. ( self%iter .GE. self%max_iters ) ) then
+                exit
+            endif
+            !
+        enddo solver_loop
+        !
+        self%converged = self%relErr( self%iter ) .LE. self%tolerance
+        !
+        if( self%converged ) then
+            write( *, "( a51, i6, a7, es12.3 )" ) "->divCor PCG converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        else
+            write( *, "( a51, i6, a7, es12.3 )" ) "->divCor PCG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        endif
+        !
         deallocate( r )
         deallocate( s )
         deallocate( p )
         deallocate( q )
         !
-        self%n_iter = i
+        self%n_iter = self%iter
         !
     end subroutine solvePCG !> PCG
     !

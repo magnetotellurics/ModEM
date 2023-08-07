@@ -13,13 +13,13 @@ module ReceiverExyAmpliPhase
             !
             final :: ReceiverExyAmpliPhase_dtor
             !
-            procedure, public :: setLRows => setLRowsExyAmpliPhase
+            procedure, public :: predictedData => predictedData_ExyAmpliPhase
             !
-            procedure, public :: predictedData => predictedDataExyAmpliPhase
+            procedure, public :: setLRows => setLRows_ExyAmpliPhase
             !
-            procedure, public :: isEqualRx => isEqualExyAmpliPhase
+            procedure, public :: isEqualRx => isEqual_ExyAmpliPhase
             !
-            procedure, public :: print => printReceiverExyAmpliPhase
+            procedure, public :: print => print_ExyAmpliPhase
             !
     end type ReceiverExyAmpliPhase_t
     !
@@ -102,7 +102,46 @@ contains
     end subroutine ReceiverExyAmpliPhase_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsExyAmpliPhase( self, transmitter )
+    !
+    subroutine predictedData_ExyAmpliPhase( self, transmitter, data_group )
+        implicit none
+        !
+        class( ReceiverExyAmpliPhase_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in ) :: transmitter
+        type( DataGroup_t ), intent( out ), optional :: data_group
+        !
+        complex( kind=prec ) :: comega, Ex_res, Ey_res, tempZ
+        class( Vector_t ), allocatable :: tx_e_1
+        !
+        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
+        !
+        call transmitter%getSolutionVector( 1, tx_e_1 )
+        !
+        if( allocated( self%response ) ) deallocate( self%response )
+        allocate( self%response(2) )
+        !
+        Ex_res = self%Lex%dotProd( tx_e_1 )
+        Ey_res = self%Ley%dotProd( tx_e_1 )
+        !
+        deallocate( tx_e_1 )
+        !
+        tempZ = ( ( ( cos( D2R * self%azimuth ) ) * Ex_res ) + &
+                  ( ( sin( D2R * self%azimuth ) ) * Ey_res ) )
+        !
+        self%response(1) = log10( abs( tempZ ) )
+        self%response(2) = atan2( isign * aimag( tempZ ), real( tempZ, kind=prec ) ) * R2D
+        !
+        if( present( data_group ) ) then
+            !
+            call self%savePredictedData( transmitter, data_group )
+            !
+        endif
+        !
+    end subroutine predictedData_ExyAmpliPhase
+    !
+    !> No subroutine briefing
+    !
+    subroutine setLRows_ExyAmpliPhase( self, transmitter )
         implicit none
         !
         class( ReceiverExyAmpliPhase_t ), intent( inout ) :: self
@@ -119,60 +158,16 @@ contains
         !
         !> Allocate LRows matrix [ npol = 1, n_comp = 1 ]
         if( allocated( self%lrows ) ) deallocate( self%lrows )
-        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
+        allocate( self%lrows( transmitter%n_pol, self%n_comp ) )
         !
-        self%lrows( 1, 1 ) = self%Lex%getFullVector()
-        self%lrows( 1, 2 ) = self%Ley%getFullVector()
+        allocate( self%lrows( 1, 1 )%v, source = self%Lex%getFullVector() )
+        allocate( self%lrows( 1, 2 )%v, source = self%Ley%getFullVector() )
         !
-    end subroutine setLRowsExyAmpliPhase
-    !
-    !> No subroutine briefing
-    subroutine predictedDataExyAmpliPhase( self, transmitter, data_group )
-        implicit none
-        !
-        class( ReceiverExyAmpliPhase_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
-        type( DataGroup_t ), intent( out ), optional :: data_group
-        !
-        complex( kind=prec ) :: comega, Ex_res, Ey_res, tempZ
-        class( Vector_t ), pointer :: tx_e_1
-        !
-        comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
-        !
-        call transmitter%getSolutionVector( 1, tx_e_1 )
-        !
-        select type( tx_e_1 )
-            !
-            class is( cVector3D_SG_t )
-                !
-                if( allocated( self%response ) ) deallocate( self%response )
-                allocate( self%response(2) )
-                !
-                Ex_res = self%Lex%dotProd( tx_e_1 )
-                Ey_res = self%Ley%dotProd( tx_e_1 )
-                !
-                tempZ = ( ( ( cos( D2R * self%azimuth ) ) * Ex_res ) + &
-                          ( ( sin( D2R * self%azimuth ) ) * Ey_res ) )
-                !
-                self%response(1) = log10( abs( tempZ ) )
-                self%response(2) = atan2( isign * aimag( tempZ ), real( tempZ, kind=prec ) ) * R2D
-                !
-                if( present( data_group ) ) then
-                    !
-                    call self%savePredictedData( transmitter, data_group )
-                    !
-                endif
-                !
-            class default
-                stop "predictedDataExyAmpliPhase: Unclassified tx_e_1"
-            !
-        end select
-        !
-    end subroutine predictedDataExyAmpliPhase
+    end subroutine setLRows_ExyAmpliPhase
     !
     !> No subroutine briefing
     !
-    function isEqualExyAmpliPhase( self, other ) result( equal )
+    function isEqual_ExyAmpliPhase( self, other ) result( equal )
         implicit none
         !
         class( ReceiverExyAmpliPhase_t ), intent( in ) :: self
@@ -199,16 +194,16 @@ contains
             !
         end select
         !
-    end function isEqualExyAmpliPhase
+    end function isEqual_ExyAmpliPhase
     !
     !> No subroutine briefing
-    subroutine printReceiverExyAmpliPhase( self )
+    subroutine print_ExyAmpliPhase( self )
         implicit none
         !
         class( ReceiverExyAmpliPhase_t ), intent( in ) :: self
         !
         write( *, * ) "Print ReceiverExyAmpliPhase_t: ", self%i_rx
         !
-    end subroutine printReceiverExyAmpliPhase
+    end subroutine print_ExyAmpliPhase
     !
 end module ReceiverExyAmpliPhase

@@ -1,5 +1,6 @@
 !
-!> Derived class to define a ModelOperator_MF_SG
+!> Derived class to define a ModelOperator
+!> with basic operations for Matrix Free System, using Standard Grid
 !
 module ModelOperator_MF_SG
     !
@@ -18,9 +19,7 @@ module ModelOperator_MF_SG
         real( kind=prec ), allocatable, dimension(:,:) :: zX, zY
         real( kind=prec ), allocatable, dimension(:,:) :: zZO
         !
-        type( rVector3D_SG_t ) :: sigma_e
-        !
-        type( rVector3D_SG_t ) :: db1, db2
+        type( rVector3D_SG_t ) :: sigma_e, db1, db2
         !
         type( rScalar3D_SG_t ) :: c
         !
@@ -32,7 +31,6 @@ module ModelOperator_MF_SG
             procedure, public :: setEquations => setEquations_ModelOperator_MF_SG
             procedure, public :: setCond => setCond_ModelOperator_MF_SG
             !
-            !procedure, public :: divCorInit => divCorInit_ModelOperator_MF_SG
             procedure, public :: divCorSetUp => divCorSetUp_ModelOperator_MF_SG
             !
             !> Operations
@@ -194,12 +192,12 @@ contains
     end subroutine setEquations_ModelOperator_MF_SG
     !
     !> No subroutine briefing
-    subroutine setCond_ModelOperator_MF_SG( self, sigma, omega )
+    subroutine setCond_ModelOperator_MF_SG( self, sigma, omega_in )
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( inout ) :: sigma
-        real( kind=prec ), intent( in ), optional :: omega
+        class( ModelParameter_t ), intent( in ) :: sigma
+        real( kind=prec ), intent( in ) :: omega_in
         !
         call sigma%PDEmapping( self%sigma_e )
         !
@@ -295,24 +293,19 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine amult_ModelOperator_MF_SG( self, omega, in_e, out_e, p_adjoint )
+    subroutine amult_ModelOperator_MF_SG( self, omega, in_e, out_e, adjoint )
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
         real( kind=prec ), intent( in ), optional :: omega
-        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( in ) :: in_e
         class( Vector_t ), intent( inout ) :: out_e
-        logical, intent( in ), optional :: p_adjoint
+        logical, intent( in ) :: adjoint
         !
         integer :: ix, iy, iz
         complex( kind=prec ) :: cvalue
-        logical :: adjoint
         !
-        if( present( p_adjoint ) ) then
-            adjoint = p_adjoint
-        else
-            adjoint = .FALSE.
-        endif
+        !write(*,*) "amult_ModelOperator_MF_SG: ", adjoint
         !
         if( adjoint ) then
             cvalue = -ONE_I * omega * isign * mu_0
@@ -403,7 +396,7 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( in ) :: in_e
         class( Vector_t ), intent( inout ) :: out_e
         !
         real( kind=prec ) :: omega
@@ -414,7 +407,7 @@ contains
         !
         omega = R_ZERO
         !
-        call self%amult( omega, in_e, out_e ) 
+        call self%amult( omega, in_e, out_e, .FALSE. ) 
         !
     end subroutine multAib_ModelOperator_MF_SG
     !
@@ -424,7 +417,7 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( in ) :: in_e
         class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
@@ -474,7 +467,7 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
+        class( Vector_t ), intent( in ) :: in_e
         class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
@@ -554,7 +547,7 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi
+        class( Scalar_t ), intent( in ) :: in_phi
         class( Scalar_t ), intent( inout ) :: out_phi
         !
         integer :: ix, iy, iz
@@ -608,7 +601,7 @@ contains
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        class( Scalar_t ), intent( inout ) :: in_phi
+        class( Scalar_t ), intent( in ) :: in_phi
         class( Vector_t ), intent( inout ) :: out_e
         !
         integer :: ix, iy, iz

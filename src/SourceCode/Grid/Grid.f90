@@ -94,6 +94,9 @@ module Grid
             !
     end type Grid_t
     !
+    !> Public Global Generic Grid object
+    class( Grid_t ), allocatable, target :: main_grid
+    !
     !> Details needed to unambiguosly compute and/or store the air layers;
     !> method options are: mirror; fixed height; read from file
     !> for backwards compatibility, all of the defaults are set to what
@@ -574,7 +577,7 @@ contains
                 airLayers%dz(1) = airLayers%minTopDz
             endif
 
-        else if(index(airLayers%method, "fixed height") > 0) then 
+        elseif(index(airLayers%method, "fixed height") > 0) then 
             !
             !> ON IMPLEMENTATION
             z1_log = log10( self%Dz( self%NzAir + 1 ) )

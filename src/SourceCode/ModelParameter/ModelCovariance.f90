@@ -7,7 +7,7 @@
 module ModelCovariance
     !
     use Constants
-    use ModelParameterCell_SG
+    use ModelParameterCell
     use cVectorSparse3D_SG
     use rScalar3D_SG
     use iScalar3D_SG
@@ -56,6 +56,9 @@ module ModelCovariance
             procedure, public :: Scaling
             !
     end type
+    !
+    !> Public Global ModelCovariance object
+    class( ModelCovariance_t ), allocatable :: model_cov
     !
     interface ModelCovariance_t
          module procedure ModelCovariance_ctor
@@ -149,8 +152,8 @@ contains
         !
         integer :: i
         class( Scalar_t ), allocatable :: target_cond, temp_cond
-        real( kind=prec ), allocatable, dimension(:, :, :) :: target_cond_v, temp_cond_v
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: ccond_v
+        real( kind=prec ), allocatable, dimension(:,:,:) :: target_cond_v, temp_cond_v
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: ccond_v
         !
         if( .NOT. target_model%is_allocated ) then
             call errStop( "multBy_Cm > target_model not allocated!" )
@@ -164,6 +167,8 @@ contains
             !
             target_cond_v = real( target_cond%getV(), kind=prec )
             !
+            deallocate( target_cond )
+            !
             temp_cond_v = real( temp_cond%getV(), kind=prec )
             !
             call self%RecursiveAR( target_cond_v, temp_cond_v, 2 )
@@ -174,9 +179,9 @@ contains
             !
             call target_model%setCond( temp_cond, i )
             !
+            deallocate( temp_cond )
+            !
         enddo
-        !
-        deallocate( target_cond, temp_cond )
         !
     end subroutine multBy_Cm
     !
@@ -195,8 +200,8 @@ contains
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
         class( Scalar_t ), allocatable :: mhat_cond, dsigma_cond
-        real( kind=prec ), allocatable, dimension(:, :, :) :: mhat_cond_v, dsigma_cond_v
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: ccond_v
+        real( kind=prec ), allocatable, dimension(:,:,:) :: mhat_cond_v, dsigma_cond_v
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: ccond_v
         integer :: i
         !
         if( .NOT. mhat%is_allocated ) then
@@ -215,6 +220,8 @@ contains
             !
             mhat_cond_v = mhat_cond%getV()
             !
+            deallocate( mhat_cond )
+            !
             dsigma_cond_v = dsigma_cond%getV()
             !
             call self%RecursiveAR( mhat_cond_v, dsigma_cond_v, self%N )
@@ -223,9 +230,9 @@ contains
             !
             call dsigma%setCond( dsigma_cond, i )
             !
+            deallocate( dsigma_cond )
+            !
         enddo
-        !
-        deallocate( mhat_cond, dsigma_cond )
         !
     end subroutine multBy_CmSqrt
     !
@@ -245,8 +252,8 @@ contains
         class( ModelParameter_t ), allocatable :: mhat
         !
         class( Scalar_t ), allocatable :: dsigma_cond, mhat_cond
-        real( kind=prec ), allocatable, dimension(:, :, :) :: mhat_cond_v, dsigma_cond_v
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: ccond_v
+        real( kind=prec ), allocatable, dimension(:,:,:) :: mhat_cond_v, dsigma_cond_v
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: ccond_v
         integer :: i
         !
         if( allocated( mhat ) ) deallocate( mhat )

@@ -7,6 +7,7 @@ module Vector
     !
     type, abstract, extends( Field_t ) :: Vector_t
         !
+        integer :: counter = 0
         integer, dimension(3) :: NdX, NdY, NdZ, Nxyz
         !
     contains
@@ -34,14 +35,22 @@ module Vector
         procedure( interface_get_z_vector ), deferred, public :: getZ
         procedure( interface_set_z_vector ), deferred, public :: setZ
         !
+        procedure, public :: length => length_Vector
+        !
         procedure, public :: boundary => boundary_Vector
         procedure, public :: interior => interior_Vector
         !
-        procedure, public :: length => length_Vector
-        !
-        procedure, public :: switchStoreState => switchStoreState_Vector
+        procedure, public :: getArray => getArray_Vector
+        procedure, public :: setArray => setArray_Vector
         !
     end type Vector_t
+    !
+    !> Allocatable Vector element for Old Fortran polymorphic Arrays!!!
+    type, public :: GenVector_t
+        !
+        class( Vector_t ), allocatable :: v
+        !
+    end type GenVector_t
     !
     !>
     abstract interface
@@ -50,15 +59,15 @@ module Vector
         !
         function interface_get_axis_vector( self, comp_lbl ) result( comp )
             import :: Vector_t, prec
+            class( Vector_t ), intent( inout ) :: self
             character, intent( in ) :: comp_lbl
-            class( Vector_t ), intent( in ) :: self
-            complex( kind=prec ), allocatable :: comp(:, :, :)
+            complex( kind=prec ), allocatable :: comp(:,:,:)
         end function interface_get_axis_vector
         !
         function interface_diag_mult_vector( self, rhs ) result( diag_mult )
-            import :: Vector_t
+            import :: Vector_t, Field_t
             class( Vector_t ), intent( inout ) :: self
-            class( Vector_t ), intent( in ) :: rhs
+            class( Field_t ), intent( in ) :: rhs
             class( Vector_t ), allocatable :: diag_mult
         end function interface_diag_mult_vector
         !
@@ -76,15 +85,15 @@ module Vector
         subroutine interface_sum_edge_vector( self, cell_out, interior_only )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( out ) :: cell_out
-            logical, optional, intent( in ) :: interior_only
+            class( Scalar_t ), allocatable, intent( out ) :: cell_out
+            logical, intent( in ), optional :: interior_only
         end subroutine interface_sum_edge_vector
         !
         !> No interface subroutine briefing
         subroutine interface_sum_edge_vti_vector( self, cell_h_out, cell_v_out, interior_only )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( out ) :: cell_h_out, cell_v_out
+            class( Scalar_t ), allocatable, intent( out ) :: cell_h_out, cell_v_out
             logical, optional, intent( in ) :: interior_only
         end subroutine interface_sum_edge_vti_vector
         !
@@ -102,7 +111,7 @@ module Vector
         subroutine interface_avg_cells_vti_vector( self, cell_h_in, cell_v_in, ptype )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( inout ) :: cell_h_in, cell_v_in
+            class( Scalar_t ), intent( in ) :: cell_h_in, cell_v_in
             character(*), intent( in ), optional :: ptype
         end subroutine interface_avg_cells_vti_vector
         !
@@ -117,48 +126,63 @@ module Vector
         !
         function interface_get_x_vector( self ) result( x )
             import :: Vector_t, prec
-            class( Vector_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable :: x(:, :, :)
+            !
+            class( Vector_t ), intent( in ) :: self
+            !
+            complex( kind=prec ), allocatable, dimension(:,:,:) :: x
+            !
         end function interface_get_x_vector
         !
         !> No interface subroutine briefing
         !
         subroutine interface_set_x_vector( self, x )
             import :: Vector_t, prec
+            !
             class( Vector_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable, intent( in ) :: x(:, :, :)
+            complex( kind=prec ), dimension(:,:,:), intent( in ) :: x
+            !
         end subroutine interface_set_x_vector
         !
         !> No interface function briefing
         !
         function interface_get_y_vector( self ) result( y )
             import :: Vector_t, prec
-            class( Vector_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable :: y(:, :, :)
+            !
+            class( Vector_t ), intent( in ) :: self
+            !
+            complex( kind=prec ), allocatable, dimension(:,:,:) :: y
+            !
         end function interface_get_y_vector
         !
         !> No interface subroutine briefing
         !
         subroutine interface_set_y_vector( self, y )
             import :: Vector_t, prec
+            !
             class( Vector_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable, intent( in ) :: y(:, :, :)
+            complex( kind=prec ), dimension(:,:,:), intent( in ) :: y
+            !
         end subroutine interface_set_y_vector
         !
         !> No interface function briefing
         !
         function interface_get_z_vector( self ) result( z )
             import :: Vector_t, prec
-            class( Vector_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable :: z(:, :, :)
+            !
+            class( Vector_t ), intent( in ) :: self
+            !
+            complex( kind=prec ), allocatable, dimension(:,:,:) :: z
+            !
         end function interface_get_z_vector
         !
         !> No interface subroutine briefing
         !
         subroutine interface_set_z_vector( self, z )
             import :: Vector_t, prec
+            !
             class( Vector_t ), intent( inout ) :: self
-            complex( kind=prec ), allocatable, intent( in ) :: z(:, :, :)
+            complex( kind=prec ), dimension(:,:,:), intent( in ) :: z
+            !
         end subroutine interface_set_z_vector
         !
     end interface
@@ -166,6 +190,20 @@ module Vector
 contains
     !
     !> No subroutine briefing
+    !
+    function length_Vector( self ) result( n )
+        implicit none
+        !
+        class( Vector_t ), intent( in ) :: self
+        !
+        integer :: n
+        !
+        n = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
+        !
+    end function length_Vector
+    !
+    !> No subroutine briefing
+    !
     subroutine boundary_Vector( self, boundary )
         implicit none
         !
@@ -185,6 +223,7 @@ contains
     end subroutine boundary_Vector
     !
     !> No subroutine briefing
+    !
     subroutine interior_Vector( self, interior )
         implicit none
         !
@@ -197,7 +236,7 @@ contains
         !
         c_array = interior%getArray()
         !
-        c_array( self%ind_boundaries ) = C_ZERO
+        c_array( self%ind_boundary ) = C_ZERO
         !
         call interior%setArray( c_array )
         !
@@ -205,97 +244,80 @@ contains
     !
     !> No subroutine briefing
     !
-    function length_Vector( self ) result( n )
+    function getArray_Vector( self ) result( array )
         implicit none
         !
         class( Vector_t ), intent( in ) :: self
         !
-        integer :: n
+        complex( kind=prec ), allocatable, dimension(:) :: array
         !
-        n = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
+        if( ( .NOT. self%is_allocated ) ) then
+            call errStop( "getArray_Vector > Self not allocated." )
+        endif
         !
-    end function length_Vector
+        if( self%store_state .EQ. compound ) then
+            !
+            allocate( array( self%length() ) )
+            !
+            array = (/reshape(self%getX(), (/self%Nxyz(1), 1/)), &
+                      reshape(self%getY(), (/self%Nxyz(2), 1/)), &
+                      reshape(self%getZ(), (/self%Nxyz(3), 1/))/)
+            !
+        elseif( self%store_state .EQ. singleton ) then
+            !
+            array = self%getSV()
+            !
+        else
+            call errStop( "getArray_Vector > Unknown store_state!" )
+        endif
+        !
+    end function getArray_Vector
     !
     !> No subroutine briefing
     !
-    subroutine switchStoreState_Vector( self, store_state )
+    subroutine setArray_Vector( self, array )
         implicit none
         !
         class( Vector_t ), intent( inout ) :: self
-        integer, intent( in ), optional :: store_state
+        complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        integer i1, i2
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
-        complex( kind=prec ), allocatable, dimension(:) :: s_v
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
+        integer :: i1, i2
         !
-        !> If input state is present...
-        if( present( store_state ) ) then
-            !
-            !> ... and is different of the actual Scalar state: flip it!
-            if( self%store_state /= store_state ) then
-                call self%switchStoreState
-            endif
-            !
-        else
-            !
-            select case( self%store_state )
-                !
-                case( compound )
-                    !
-                    allocate( s_v( self%length() ) )
-                    !
-                    s_v = (/reshape( self%getX(), (/self%Nxyz(1), 1/) ), &
-                            reshape( self%getY(), (/self%Nxyz(2), 1/) ), &
-                            reshape( self%getZ(), (/self%Nxyz(3), 1/) )/)
-                    !
-                    call self%setSV( s_v )
-                    !
-                case( singleton )
-                    !
-                    if( self%grid_type == EDGE ) then
-                        !
-                        allocate( x( self%nx, self%ny + 1, self%nz + 1 ) )
-                        allocate( y( self%nx + 1, self%ny, self%nz + 1 ) )
-                        allocate( z( self%nx + 1, self%ny + 1, self%nz ) )
-                        !
-                    else if( self%grid_type == FACE ) then
-                        !
-                        allocate( x( self%nx + 1, self%ny, self%nz ) )
-                        allocate( y( self%nx, self%ny + 1, self%nz ) )
-                        allocate( z( self%nx, self%ny, self%nz + 1 ) )
-                        !
-                    else
-                        call errStop( "switchStoreState_Vector > Only EDGE or FACE types allowed." )
-                    endif
-                    !
-                    s_v = self%getSV()
-                    !
-                    ! Ex
-                    i1 = 1; i2 = self%Nxyz(1)
-                    x = reshape( s_v( i1 : i2 ), self%NdX )
-                    !
-                    call self%setX( x )
-                    !
-                    ! Ey
-                    i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
-                    y = reshape( s_v( i1 : i2 ), self%NdY )
-                    !
-                    call self%setY( y )
-                    !
-                    ! Ez
-                    i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
-                    z = reshape( s_v( i1 : i2 ), self%NdZ )
-                    !
-                    call self%setZ( z )
-                    !
-                case default
-                    !
-                    call errStop( "switchStoreState_Vector > Unknown store_state" )
-                    !
-            end select
-            !
+        if( ( .NOT. self%is_allocated ) ) then
+            call errStop( "setArray_Vector > Self not allocated." )
         endif
         !
-    end subroutine switchStoreState_Vector
+        call self%deallOtherState
+        !
+        if( self%store_state .EQ. compound ) then
+            !
+            !> Ex
+            i1 = 1; i2 = self%Nxyz(1)
+            !
+            v = reshape( array(i1:i2), self%NdX )
+            call self%setX( v )
+            !
+            !> Ey
+            i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
+            !
+            v = reshape( array(i1:i2), self%NdY )
+            call self%setY( v )
+            !
+            !> Ez
+            i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
+            !
+            v = reshape(array(i1:i2), self%NdZ)
+            call self%setZ( v )
+            !
+        elseif( self%store_state .EQ. singleton ) then
+            !
+            call self%setSV( array )
+            !
+        else
+            call errStop( "setArray_Vector > Unknown store_state!" )
+        endif
+        !
+    end subroutine setArray_Vector
     !
 end module Vector

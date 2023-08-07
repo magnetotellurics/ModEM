@@ -67,7 +67,7 @@ module Vector3d_cmr_complex
      ! List of all active (interior + boundary) indices
      integer, dimension (:), allocatable :: ind_active
      integer, dimension (:), allocatable :: ind_interior
-     integer, dimension (:), allocatable :: ind_boundaries
+     integer, dimension (:), allocatable :: ind_boundary
 
    contains
 
@@ -188,7 +188,7 @@ contains
     
     E%ind_active = E_in%ind_active
     E%ind_interior = E_in%ind_interior
-    E%ind_boundaries = E_in%ind_boundaries
+    E%ind_boundary = E_in%ind_boundary
     
     do i = 1, E_in%grid_ptr%ngrids
        E%sub_vectors(i) = E_in%sub_vectors(i)
@@ -511,13 +511,13 @@ contains
        end if
     end do
 
-    allocate (self%ind_boundaries(n_boundaries)) 
+    allocate (self%ind_boundary(n_boundaries)) 
 
     i = 0
     do k = 1, n_active
        if (real(v_2(k)) == 1) then
           i = i + 1
-          self%ind_boundaries(i) = k             
+          self%ind_boundary(i) = k             
        end if
     end do
     !
@@ -538,13 +538,13 @@ contains
     !***********************
     !
     m = size (self%ind_interior)
-    n = size (self%ind_boundaries)
+    n = size (self%ind_boundary)
 
     allocate (ind_i(m))
     allocate (ind_b(n))
 
     ind_i = self%ind_interior
-    ind_b = self%ind_boundaries
+    ind_b = self%ind_boundary
   end subroutine Get_int_bdry_indices_
 
   !
@@ -1207,7 +1207,7 @@ contains
     type(rvector) :: templ_r
     real (kind=prec), pointer, dimension(:) :: templ
     complex (kind=prec), pointer, dimension(:) :: temple
-    complex (kind=prec), allocatable, dimension(:, :, :) :: lengthx, lengthy
+    complex (kind=prec), allocatable, dimension(:,:,:) :: lengthx, lengthy
     integer :: sx1, sx2, sx3, sy1, sy2, sy3, s1, s2
     integer :: Cs, i1, i2
 
@@ -1372,7 +1372,7 @@ contains
     integer, intent(in) :: nx, ny, nz
     logical, intent(in) :: transp
     ! Local variables
-    real (kind=prec), dimension(:, :, :), allocatable :: m_out
+    real (kind=prec), dimension(:,:,:), allocatable :: m_out
     integer :: i, i1, i2, n_in
     !
     !***********************

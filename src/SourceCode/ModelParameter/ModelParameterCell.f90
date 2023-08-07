@@ -4,13 +4,13 @@
 !> in Earth cells only -- as coded this is specific
 !> to usual CSG.
 !
-module ModelParameterCell_SG
+module ModelParameterCell
     !
     use ModelParameter
     use FileUnits
     use Grid3D_SG
     !
-    type, extends( ModelParameter_t ) :: ModelParameterCell_SG_t
+    type, extends( ModelParameter_t ) :: ModelParameterCell_t
         !
         class( Grid_t ), allocatable :: param_grid
         !
@@ -18,51 +18,51 @@ module ModelParameterCell_SG
         !
         contains
             !
-            final :: ModelParameterCell_SG_dtor
+            final :: ModelParameterCell_dtor
             !
-            procedure, public :: getOneCond => getOneCond_ModelParameterCell_SG
-            procedure, public :: getAllCond => getAllCond_ModelParameterCell_SG
+            procedure, public :: getOneCond => getOneCond_ModelParameterCell
+            procedure, public :: getAllCond => getAllCond_ModelParameterCell
             !
-            procedure, public :: setOneCond => setOneCond_ModelParameterCell_SG
-            procedure, public :: setAllCond => setAllCond_ModelParameterCell_SG
+            procedure, public :: setOneCond => setOneCond_ModelParameterCell
+            procedure, public :: setAllCond => setAllCond_ModelParameterCell
             !
-            procedure, public :: zeros => zeros_ModelParameterCell_SG
+            procedure, public :: zeros => zeros_ModelParameterCell
             !
-            procedure, public :: copyFrom => copyFrom_ModelParameterCell_SG
+            procedure, public :: copyFrom => copyFrom_ModelParameterCell
             !
-            procedure, public :: countModel => countModel_ModelParameterCell_SG
+            procedure, public :: countModel => countModel_ModelParameterCell
             !
-            procedure, public :: dotProd => dotProd_ModelParameterCell_SG
+            procedure, public :: dotProd => dotProd_ModelParameterCell
             !
-            procedure, public :: linComb => linComb_ModelParameterCell_SG
+            procedure, public :: linComb => linComb_ModelParameterCell
             !
-            procedure, public :: PDEmapping => PDEmapping_ModelParameterCell_SG
-            procedure, public :: dPDEmapping => dPDEmapping_ModelParameterCell_SG
-            procedure, public :: dPDEmapping_T => dPDEmapping_T_ModelParameterCell_SG
+            procedure, public :: PDEmapping => PDEmapping_ModelParameterCell
+            procedure, public :: dPDEmapping => dPDEmapping_ModelParameterCell
+            procedure, public :: dPDEmapping_T => dPDEmapping_T_ModelParameterCell
             !
-            procedure, public :: slice1D => slice1D_ModelParameterCell_SG
-            procedure, public :: slice2D => slice2D_ModelParameterCell_SG
+            procedure, public :: slice1D => slice1D_ModelParameterCell
+            procedure, public :: slice2D => slice2D_ModelParameterCell
             !
-            procedure, public :: avgModel1D => avgModel1D_ModelParameterCell_SG
+            procedure, public :: avgModel1D => avgModel1D_ModelParameterCell
             !
-            procedure, public :: setType => setType_ModelParameterCell_SG
+            procedure, public :: setType => setType_ModelParameterCell
             !
-            procedure, public :: write => write_ModelParameterCell_SG
+            procedure, public :: write => write_ModelParameterCell
             !
-            procedure, public :: print => print_ModelParameterCell_SG
+            procedure, public :: print => print_ModelParameterCell
             !
-    end type ModelParameterCell_SG_t
+    end type ModelParameterCell_t
     !
-    interface ModelParameterCell_SG_t
-         module procedure ModelParameterCell_SG_ctor_one_cond
-         module procedure ModelParameterCell_SG_ctor_all_conds
-    end interface ModelParameterCell_SG_t
+    interface ModelParameterCell_t
+         module procedure ModelParameterCell_ctor_one_cond
+         module procedure ModelParameterCell_ctor_all_conds
+    end interface ModelParameterCell_t
     !
 contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_SG_ctor_one_cond( grid, cell_cond, anisotropic_level, param_type ) result( self )
+    function ModelParameterCell_ctor_one_cond( grid, cell_cond, anisotropic_level, param_type ) result( self )
         implicit none
         !
         class( Grid_t ), intent( in ) :: grid
@@ -70,11 +70,11 @@ contains
         integer, intent( in ) :: anisotropic_level
         character(:), allocatable, optional, intent( in ) :: param_type
         !
-        type( ModelParameterCell_SG_t ) :: self
+        type( ModelParameterCell_t ) :: self
         !
         integer :: nzAir
         !
-        write( *, * ) "Constructor ModelParameterCell_SG_ctor_one_cond"
+        !write( *, * ) "Constructor ModelParameterCell_ctor_one_cond"
         !
         call self%baseInit
         !
@@ -106,22 +106,22 @@ contains
         !
         self%is_allocated = .TRUE.
         !
-    end function ModelParameterCell_SG_ctor_one_cond
+    end function ModelParameterCell_ctor_one_cond
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_SG_ctor_all_conds( grid, cell_cond, param_type ) result( self )
+    function ModelParameterCell_ctor_all_conds( grid, cell_cond, param_type ) result( self )
         implicit none
         !
         class( Grid_t ), intent( in ) :: grid
         type( GenScalar_t ), allocatable, dimension(:), intent( in ) :: cell_cond
         character(:), allocatable, optional, intent( in ) :: param_type
         !
-        type( ModelParameterCell_SG_t ) :: self
+        type( ModelParameterCell_t ) :: self
         !
         integer :: i, nzAir
         !
-        write( *, * ) "Constructor ModelParameterCell_SG_ctor_all_conds"
+        !write( *, * ) "Constructor ModelParameterCell_ctor_all_conds"
         !
         call self%baseInit
         !
@@ -152,29 +152,29 @@ contains
         !
         self%is_allocated = .TRUE.
         !
-    end function ModelParameterCell_SG_ctor_all_conds
+    end function ModelParameterCell_ctor_all_conds
     !
     !> No subroutine briefing
-    subroutine ModelParameterCell_SG_dtor( self )
+    subroutine ModelParameterCell_dtor( self )
         implicit none
         !
-        type( ModelParameterCell_SG_t ), intent( inout ) :: self
+        type( ModelParameterCell_t ), intent( inout ) :: self
         !
-        !write( *, * ) "Destructor ModelParameterCell_SG"
+        !write( *, * ) "Destructor ModelParameterCell"
         !
         if( allocated( self%param_grid ) ) deallocate( self%param_grid )
         !
         !> CRASHING ????
         if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
         !
-    end subroutine ModelParameterCell_SG_dtor
+    end subroutine ModelParameterCell_dtor
     !
     !> No subroutine briefing
     !
-    function slice1D_ModelParameterCell_SG( self, ix, iy ) result( model_param_1D )
+    function slice1D_ModelParameterCell( self, ix, iy ) result( model_param_1D )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         integer, intent( in ) :: ix, iy
         !
         type( ModelParameter1D_t ) ::  model_param_1D 
@@ -194,14 +194,14 @@ contains
         !
         deallocate( cond_slice )
         !
-    end function slice1D_ModelParameterCell_SG
+    end function slice1D_ModelParameterCell
     !
     !> No subroutine briefing
     !
-    function avgModel1D_ModelParameterCell_SG( self ) result( model_param_1D )
+    function avgModel1D_ModelParameterCell( self ) result( model_param_1D )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         !
         type( ModelParameter1D_t ) ::  model_param_1D 
         !
@@ -236,14 +236,14 @@ contains
         !
         deallocate( cond_slice )
         !
-    end function avgModel1D_ModelParameterCell_SG
+    end function avgModel1D_ModelParameterCell
     !
     !> No subroutine briefing
     !
-    function slice2D_ModelParameterCell_SG( self, axis, j ) result( m2D )
+    function slice2D_ModelParameterCell( self, axis, j ) result( m2D )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         integer, intent( in ) :: axis, j
         !
         type( ModelParameter2D_t ) :: m2D 
@@ -267,59 +267,59 @@ contains
         elseif( axis == 3 ) then
             cond_slice = self%sigMap( real( self_cond_v(:,:,j), kind=prec ) )
         else
-            call errStop( "slice2D_ModelParameterCell_SG > wrong axis" )
+            call errStop( "slice2D_ModelParameterCell > wrong axis" )
         endif
         !
         call m2D%setConductivity( cond_slice, self%air_cond, param_type, self%mKey )
         !
         deallocate( cond_slice )
         !
-    end function slice2D_ModelParameterCell_SG
+    end function slice2D_ModelParameterCell
     !
     !> No function briefing
     !
-    function getOneCond_ModelParameterCell_SG( self, i_cond ) result( cell_cond )
+    function getOneCond_ModelParameterCell( self, i_cond ) result( cell_cond )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        class( ModelParameterCell_t ), intent( in ) :: self
         integer, intent( in ) :: i_cond
         !
         class( Scalar_t ), allocatable :: cell_cond
         !
         if( i_cond .GT. self%anisotropic_level ) then
             !
-            call errStop( "getOneCond_ModelParameterCell_SG > conductivity level too high" )
+            call errStop( "getOneCond_ModelParameterCell > conductivity level too high" )
             !
         endif
         !
         allocate( cell_cond, source = self%cell_cond( i_cond )%s )
         !
-    end function getOneCond_ModelParameterCell_SG
+    end function getOneCond_ModelParameterCell
     !
     !> No function briefing
     !
-    function getAllCond_ModelParameterCell_SG( self ) result( cell_cond )
+    function getAllCond_ModelParameterCell( self ) result( cell_cond )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        class( ModelParameterCell_t ), intent( in ) :: self
         !
         type( GenScalar_t ), allocatable, dimension(:) :: cell_cond
         !
         cell_cond = self%cell_cond
         !
-    end function getAllCond_ModelParameterCell_SG
+    end function getAllCond_ModelParameterCell
     !
     !> No interface subroutine briefing
     !
-    subroutine setOneCond_ModelParameterCell_SG( self, cell_cond, i_cond )
+    subroutine setOneCond_ModelParameterCell( self, cell_cond, i_cond )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         class( Scalar_t ), intent( in ) :: cell_cond
         integer, intent( in ) :: i_cond
         !
         if( .NOT. cell_cond%is_allocated ) then
-            call errStop( "setOneCond_ModelParameterCell_SG > cell_cond not allocated" )
+            call errStop( "setOneCond_ModelParameterCell > cell_cond not allocated" )
         endif
         !
         if( i_cond .LE. self%anisotropic_level ) then
@@ -329,18 +329,18 @@ contains
             !
         else
             !
-            call errStop( "setOneCond_ModelParameterCell_SG > Unsupport general anisotropy yet" )
+            call errStop( "setOneCond_ModelParameterCell > Unsupport general anisotropy yet" )
             !
         endif
         !
-    end subroutine setOneCond_ModelParameterCell_SG
+    end subroutine setOneCond_ModelParameterCell
     !
     !> No interface subroutine briefing
     !
-    subroutine setAllCond_ModelParameterCell_SG( self, cell_cond )
+    subroutine setAllCond_ModelParameterCell( self, cell_cond )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         type( GenScalar_t ), allocatable, dimension(:), intent( in ) :: cell_cond
         !
         integer :: i
@@ -349,11 +349,11 @@ contains
             !
             if( .NOT. cell_cond(i)%s%is_allocated ) then
                 !
-                call errStop( "setAllCond_ModelParameterCell_SG > cell_cond has no V" )
+                call errStop( "setAllCond_ModelParameterCell > cell_cond has no V" )
                 !
-            else if( .NOT. self%cell_cond(i)%s%is_allocated )then
+            elseif( .NOT. self%cell_cond(i)%s%is_allocated )then
                 !
-                call errStop( "setAllCond_ModelParameterCell_SG > self has no V" )
+                call errStop( "setAllCond_ModelParameterCell > self has no V" )
                 !
             endif
             !
@@ -361,13 +361,13 @@ contains
             !
         enddo
         !
-    end subroutine setAllCond_ModelParameterCell_SG
+    end subroutine setAllCond_ModelParameterCell
     !
     !> No subroutine briefing
-    subroutine zeros_ModelParameterCell_SG( self )
+    subroutine zeros_ModelParameterCell( self )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         !
         integer :: i
         !
@@ -377,22 +377,22 @@ contains
             !
         enddo
         !
-    end subroutine zeros_ModelParameterCell_SG
+    end subroutine zeros_ModelParameterCell
     !
     !> No subroutine briefing
-    subroutine copyFrom_ModelParameterCell_SG( self, rhs )
+    subroutine copyFrom_ModelParameterCell( self, rhs )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( in ) :: rhs
         !
         if( .NOT. rhs%is_allocated ) then
-            call errStop( "copyFrom_ModelParameterCell_SG > rhs not allocated." )
+            call errStop( "copyFrom_ModelParameterCell > rhs not allocated." )
         endif
         !
         select type( rhs )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 self%metric => rhs%metric
                 !
@@ -413,17 +413,17 @@ contains
                 self%sigMap_ptr => rhs%sigMap_ptr
                 !
             class default
-                call errStop( "copyFrom_ModelParameterCell_SG > Unclassified rhs." )
+                call errStop( "copyFrom_ModelParameterCell > Unclassified rhs." )
             !
         end select
         !
-    end subroutine copyFrom_ModelParameterCell_SG
+    end subroutine copyFrom_ModelParameterCell
     !
     !> ????
-    function countModel_ModelParameterCell_SG( self ) result( counter )
+    function countModel_ModelParameterCell( self ) result( counter )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        class( ModelParameterCell_t ), intent( in ) :: self
         !
         integer :: i, counter, nx, ny, nz, nzAir, nz_earth
         !
@@ -432,7 +432,7 @@ contains
         do i = 1, self%anisotropic_level
             !
             if( .NOT. self%cell_cond(i)%s%is_allocated ) then
-                write( *, * ) "Error: countModel_ModelParameterCell_SG > cell_cond (", i, ") not allocated!"
+                write( *, * ) "Error: countModel_ModelParameterCell > cell_cond (", i, ") not allocated!"
                 stop
             endif
             !
@@ -443,22 +443,22 @@ contains
             !
         enddo
         !
-    end function countModel_ModelParameterCell_SG
+    end function countModel_ModelParameterCell
     !
     !>
-    subroutine linComb_ModelParameterCell_SG( self, a1, a2, rhs )
+    subroutine linComb_ModelParameterCell( self, a1, a2, rhs )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: a1, a2
         class( ModelParameter_t ), intent( inout ) :: rhs
         !
         integer :: i
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        complex( kind=prec ), allocatable :: v(:,:,:)
         !
         select type( rhs )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 do i = 1, self%anisotropic_level
                     !
@@ -469,28 +469,28 @@ contains
                         call self%cell_cond(i)%s%setV( v )
                         !
                     else
-                        write( *, * ) "Error: linComb_ModelParameterCell_SG > Incompatible rhs cell_cond (", i, ")!"
+                        write( *, * ) "Error: linComb_ModelParameterCell > Incompatible rhs cell_cond (", i, ")!"
                         stop
                     endif
                     !
                 enddo
                 !
             class default
-                call errStop( "linComb_ModelParameterCell_SG > undefined rhs" )
+                call errStop( "linComb_ModelParameterCell > undefined rhs" )
             !
         end select
         !
         !> ????
         !self%air_cond = rhs%air_cond
         !
-    end subroutine linComb_ModelParameterCell_SG
+    end subroutine linComb_ModelParameterCell
     !
     !> No subroutine briefing
     !
-    function dotProd_ModelParameterCell_SG( self, rhs ) result( rvalue )
+    function dotProd_ModelParameterCell( self, rhs ) result( rvalue )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( inout ) :: rhs
         !
         real( kind=prec ) :: rvalue
@@ -501,7 +501,7 @@ contains
         !
         select type( rhs )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 do i = 1, self%anisotropic_level
                     !
@@ -510,25 +510,25 @@ contains
                         rvalue = rvalue + sum( self%cell_cond(i)%s%getV() * rhs%cell_cond(i)%s%getV() )
                         !
                     else
-                        write( *, * ) "Error: dotProd_ModelParameterCell_SG > Incompatible rhs cell_cond (", i, ")!"
+                        write( *, * ) "Error: dotProd_ModelParameterCell > Incompatible rhs cell_cond (", i, ")!"
                         stop
                     endif
                     !
                 enddo
                 !
             class default
-                call errStop( "dotProd_ModelParameterCell_SG > Unclassified rhs" )
+                call errStop( "dotProd_ModelParameterCell > Unclassified rhs" )
             !
         end select
         !
-    end function dotProd_ModelParameterCell_SG
+    end function dotProd_ModelParameterCell
     !
     !> Map the entire model cells into a single edge Vector_t (e_vec).
     !
-    subroutine PDEmapping_ModelParameterCell_SG( self, e_vec )
+    subroutine PDEmapping_ModelParameterCell( self, e_vec )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( inout ) :: e_vec
         !
         type( GenScalar_t ), allocatable, dimension(:) :: sigma_cells
@@ -537,7 +537,7 @@ contains
         integer :: i, k0, k1, k2
         !
         if( .NOT. e_vec%is_allocated ) then
-            call errStop( "PDEmapping_ModelParameterCell_SG > e_vec not allocated yet" )
+            call errStop( "PDEmapping_ModelParameterCell > e_vec not allocated yet" )
         endif
         !
         allocate( sigma_cells( self%anisotropic_level ) )
@@ -577,19 +577,19 @@ contains
             call e_vec%avgCells( sigma_cells(1)%s, sigma_cells(2)%s )
             !
         else
-            call errStop( "PDEmapping_ModelParameterCell_SG > unsupported anisotropy level" )
+            call errStop( "PDEmapping_ModelParameterCell > unsupported anisotropy level" )
         endif
         !
         call e_vec%div( self%metric%v_edge )
         !
-    end subroutine PDEmapping_ModelParameterCell_SG
+    end subroutine PDEmapping_ModelParameterCell
     !
     !> Map the perturbation between two models onto a single Vector_t (e_vec).
     !
-    subroutine dPDEmapping_ModelParameterCell_SG( self, dsigma, e_vec )
+    subroutine dPDEmapping_ModelParameterCell( self, dsigma, e_vec )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( in ) :: dsigma
         class( Vector_t ), allocatable, intent( inout ) :: e_vec
         !
@@ -600,11 +600,11 @@ contains
         integer :: i, k0, k1, k2
         !
         if( .NOT. dsigma%is_allocated ) then
-            call errStop( "dPDEmapping_ModelParameterCell_SG > dsigma not allocated" )
+            call errStop( "dPDEmapping_ModelParameterCell > dsigma not allocated" )
         endif
         !
         if( .NOT. e_vec%is_allocated ) then
-            call errStop( "dPDEmapping_ModelParameterCell_SG > e_vec not allocated yet" )
+            call errStop( "dPDEmapping_ModelParameterCell > e_vec not allocated" )
         endif
         !
         call e_vec%zeros
@@ -630,6 +630,8 @@ contains
             !
             sigma_cell_v( :, :, k1:k2 ) = sigma_cell_v( :, :, k1:k2 ) * dsigma_cond%getV()
             !
+            deallocate( dsigma_cond )
+            !
             call sigma_cell%setV( sigma_cell_v )
             !
             call sigma_cell%mult( self%metric%v_cell )
@@ -648,66 +650,67 @@ contains
             call e_vec%avgCells( sigma_cells(1)%s, sigma_cells(2)%s )
             !
         else
-            call errStop( "dPDEmapping_ModelParameterCell_SG > unsupported anisotropy level" )
+            call errStop( "dPDEmapping_ModelParameterCell > unsupported anisotropy level" )
         endif
         !
         call e_vec%div( self%metric%v_edge )
         !
-    end subroutine dPDEmapping_ModelParameterCell_SG
+    end subroutine dPDEmapping_ModelParameterCell
     !
     !> Transpose the perturbation represented in a Vector_t (e_vec), to a new dsigma model.
     !
-    subroutine dPDEmapping_T_ModelParameterCell_SG( self, e_vec, dsigma )
+    subroutine dPDEmapping_T_ModelParameterCell( self, e_vec, dsigma )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         class( Vector_t ), intent( in ) :: e_vec
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         !
-        class( Scalar_t ), allocatable :: dsigma_cond
+        class( Scalar_t ), allocatable :: sigma_cell, dsigma_cond
         class( Vector_t ), allocatable :: e_vec_interior
-        type( rScalar3D_SG_t ), allocatable, dimension(:) :: sigma_cell
-        complex( kind=prec ), allocatable, dimension(:, :, :) :: self_cond_v, dsigma_cond_v, sigma_cell_v
+        type( GenScalar_t ), allocatable, dimension(:) :: sigma_cells
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: self_cond_v, dsigma_cond_v, sigma_cell_v
         character( len=5 ), parameter :: JOB = "DERIV"
         integer :: i, k0, k1, k2
         !
-        call errStop( "dPDEmapping_T_ModelParameterCell_SG > TO IMPLEMENT" )
+        if( .NOT. e_vec%is_allocated ) then
+            call errStop( "dPDEmapping_T_ModelParameterCell > e_vec not allocated" )
+        endif
         !
-        allocate( sigma_cell( self%anisotropic_level ) )
-        !
+        !> e_vec
         call e_vec%interior( e_vec_interior )
         !
         call e_vec_interior%div( self%metric%v_edge )
         !
         call e_vec_interior%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
         !
-        k0 = self%metric%grid%NzAir
-        k1 = k0 + 1
-        k2 = self%metric%grid%Nz
-        !
-        do i = 1, self%anisotropic_level
-            sigma_cell(i) = rScalar3D_SG_t( self%metric%grid, CELL )
-        enddo
+        !> sigma_cells
+        allocate( sigma_cells( self%anisotropic_level ) )
         !
         !> Call specific sumEdges based on anisotropic_level
         if( self%anisotropic_level == 1 ) then
             !
-            call e_vec_interior%sumEdges( sigma_cell(1), .TRUE. )
+            call e_vec_interior%sumEdges( sigma_cells(1)%s, .TRUE. )
             !
         elseif( self%anisotropic_level == 2 ) then
             !
-            call e_vec_interior%sumEdges( sigma_cell(1), sigma_cell(2), .TRUE. )
+            call e_vec_interior%sumEdges( sigma_cells(1)%s, sigma_cells(2)%s, .TRUE. )
             !
         else
-        !
-        call errStop( "dPDEmapping_T_ModelParameterCell_SG > unsupported anisotropy level" )
+            call errStop( "dPDEmapping_T_ModelParameterCell > unsupported anisotropy level" )
         endif
         !
         deallocate( e_vec_interior )
         !
-        allocate( dsigma, source = ModelParameterCell_SG_t( self%param_grid, self%cell_cond, self%param_type ) )
+        k0 = self%metric%grid%NzAir
+        k1 = k0 + 1
+        k2 = self%metric%grid%Nz
+        !
+        allocate( dsigma, source = ModelParameterCell_t( self%param_grid, self%cell_cond, self%param_type ) )
         !
         do i = 1, self%anisotropic_level
+            !
+            allocate( dsigma_cond, source = dsigma%getCond(i) )
             !
             call dsigma_cond%zeros
             !
@@ -717,9 +720,13 @@ contains
             !
             dsigma_cond_v = self%sigMap( real( self_cond_v, kind=prec ), JOB )
             !
-            call sigma_cell(i)%mult( self%metric%v_cell )
+            call sigma_cells(i)%s%mult( self%metric%v_cell )
             !
-            sigma_cell_v = sigma_cell(i)%getV()
+            allocate( sigma_cell, source = sigma_cells(i)%s )
+            !
+            sigma_cell_v = sigma_cell%getV()
+            !
+            deallocate( sigma_cell )
             !
             dsigma_cond_v = dsigma_cond_v * sigma_cell_v( :, :, k1:k2 )
             !
@@ -727,16 +734,18 @@ contains
             !
             call dsigma%setCond( dsigma_cond, i )
             !
+            deallocate( dsigma_cond )
+            !
         enddo
         !
-    end subroutine dPDEmapping_T_ModelParameterCell_SG
+    end subroutine dPDEmapping_T_ModelParameterCell
     !
     !> No subroutine briefing
     !
-    subroutine setType_ModelParameterCell_SG( self, param_type )
+    subroutine setType_ModelParameterCell( self, param_type )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         character(:), allocatable, intent( in ) :: param_type
         !
         integer :: i
@@ -744,7 +753,7 @@ contains
         complex( kind=prec ), allocatable, dimension(:,:,:) :: self_cond_cv
         !
         if( .NOT. self%is_allocated ) then
-                call errStop( "setType_ModelParameterCell_SG > Self not allocated." )
+                call errStop( "setType_ModelParameterCell > Self not allocated." )
         endif
         !
         do i = 1, self%anisotropic_level
@@ -788,7 +797,7 @@ contains
                 self_cond_v = self_cond_v * log(10.)
                 !
             else
-                call errStop( "setType_ModelParameterCell_SG > Unknown param_type." )
+                call errStop( "setType_ModelParameterCell > Unknown param_type." )
             endif
             !
             self_cond_cv = cmplx( self_cond_v, 0.0, kind=prec )
@@ -799,18 +808,18 @@ contains
         !
         self%param_type = param_type 
         !
-    end subroutine setType_ModelParameterCell_SG
+    end subroutine setType_ModelParameterCell
     !
     !> No subroutine briefing
     !
-    subroutine print_ModelParameterCell_SG( self )
+    subroutine print_ModelParameterCell( self )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         !
         integer :: i
         !
-        write( *, * ) "ModelParameterCell_SG_t:", self%mKey, self%air_cond, self%param_type, &
+        write( *, * ) "ModelParameterCell_t:", self%mKey, self%air_cond, self%param_type, &
         self%is_allocated, self%param_grid%nx, self%param_grid%ny, self%param_grid%nz, self%param_grid%nzAir
         !
         do i = 1, self%anisotropic_level
@@ -819,16 +828,16 @@ contains
             !
         enddo
         !
-    end subroutine print_ModelParameterCell_SG
+    end subroutine print_ModelParameterCell
     !
     !> opens cfile on unit ioModelParam, writes out object of
     !> type modelParam in Weerachai Siripunvaraporn"s format,
     !> closes file.
     !
-    subroutine write_ModelParameterCell_SG( self, file_name, comment )
+    subroutine write_ModelParameterCell( self, file_name, comment )
         implicit none
         !
-        class( ModelParameterCell_SG_t ), intent( inout ) :: self
+        class( ModelParameterCell_t ), intent( inout ) :: self
         character(*), intent( in ) :: file_name
         character(*), intent( in ), optional :: comment
         !
@@ -892,6 +901,7 @@ contains
                 !
                 !> Convert (horizontal) conductivity to resistivity
                 self_cond_v = self%cell_cond(ii)%s%getV()
+                !
                 if( index( self%param_type,"LOGE" ) > 0 .OR. index( self%param_type,"LOG10" ) > 0 ) then
                     self_cond_v = -self_cond_v
                 elseif( index(self%param_type,"LINEAR" ) > 0 ) then
@@ -929,12 +939,9 @@ contains
             close( ioModelParam )
             !
         else
-            !
-            write( *, * ) "Error opening file in write_ModelParameterCell_SG [", file_name, "]!"
-            stop
-            !
+            call errStop( "write_ModelParameterCell > Error opening file ["//file_name//"]!" )
         endif
         !
-    end subroutine write_ModelParameterCell_SG
+    end subroutine write_ModelParameterCell
     !
-end Module ModelParameterCell_SG
+end Module ModelParameterCell

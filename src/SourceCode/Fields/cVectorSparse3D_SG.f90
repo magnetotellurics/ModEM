@@ -60,6 +60,8 @@ module cVectorSparse3D_SG
             procedure, public :: getSV => getSV_cVectorSparse3D_SG
             procedure, public :: setSV => setSV_cVectorSparse3D_SG
             !
+            procedure, public :: deallOtherState => deallOtherState_cVectorSparse3D_SG
+            !
             procedure, public :: getArray => getArray_cVectorSparse3D_SG
             procedure, public :: setArray => setArray_cVectorSparse3D_SG
             procedure, public :: switchStoreState => switchStoreState_cVectorSparse3D_SG
@@ -215,8 +217,8 @@ contains
     function dotProd_cVectorSparse3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        class( Field_t ), intent( inout ) :: rhs
+        class( cVectorSparse3D_SG_t ), intent( in ) :: self
+        class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
         !
@@ -243,8 +245,6 @@ contains
         select type( rhs )
             !
             class is( cVector3D_SG_t )
-                !
-                call rhs%switchStoreState( compound )
                 !
                 do i = 1, self%nCoeff
                     !
@@ -484,9 +484,9 @@ contains
     function getSV_cVectorSparse3D_SG( self ) result( s_v )
         implicit none
         !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        class( cVectorSparse3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: s_v(:)
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
         call errStop( "getSV_cVectorSparse3D_SG not implemented!" )
         !
@@ -498,11 +498,26 @@ contains
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: s_v(:)
+        complex( kind=prec ), dimension(:), intent( in ) :: s_v
         !
         call errStop( "setSV_cVectorSparse3D_SG not implemented!" )
         !
     end subroutine setSV_cVectorSparse3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine deallOtherState_cVectorSparse3D_SG( self )
+        implicit none
+        !
+        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        !
+        if( ( .NOT. self%is_allocated ) ) then
+            call errStop( "deallOtherState_cVectorSparse3D_SG > Self not allocated." )
+        endif
+        !
+        call errStop( "deallOtherState_cVectorSparse3D_SG not implemented!" )
+        !
+    end subroutine deallOtherState_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
@@ -712,7 +727,7 @@ contains
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        integer, intent( in ), optional :: store_state
+        integer, intent( in ) :: store_state
         !
         call errStop( "switchStoreState_cVectorSparse3D_SG not implemented yet!" )
         !
@@ -735,13 +750,6 @@ contains
         self%nx = rhs%nx
         self%ny = rhs%ny
         self%nz = rhs%nz
-        self%is_allocated = .TRUE.
-        !
-        if( allocated( rhs%ind_interior ) ) &
-        self%ind_interior = rhs%ind_interior
-        !
-        if( allocated( rhs%ind_boundaries ) ) &
-        self%ind_boundaries = rhs%ind_boundaries
         !
         select type( rhs )
             !
@@ -755,6 +763,8 @@ contains
                 self%xyz = rhs%xyz
                 !
                 self%c = rhs%c
+                !
+                self%is_allocated = .TRUE.
                 !
             class default
                 call errStop( "copyFrom_cVectorSparse3D_SG > Incompatible rhs" )

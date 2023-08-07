@@ -196,7 +196,7 @@ contains
         ! 15 Integers
         call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( max_solver_iters, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( max_divcor_calls, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( max_solver_calls, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( max_divcor_iters, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( model_operator_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( model_method ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
@@ -258,7 +258,7 @@ contains
         ! 15 Integers
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, model_n_air_layer, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_solver_iters, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_divcor_calls, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_solver_calls, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_divcor_iters, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_model_operator_type, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_model_method, 1, MPI_INTEGER, main_comm, ierr )
@@ -658,7 +658,7 @@ contains
         !
         select type( model )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
                 !
@@ -708,7 +708,7 @@ contains
         !
         select type( model )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
@@ -738,7 +738,7 @@ contains
         param_type_size = 0
         !
         if( allocated( model ) ) deallocate( model )
-        allocate( ModelParameterCell_SG_t :: model )
+        allocate( ModelParameterCell_t :: model )
         !
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%anisotropic_level, 1, MPI_INTEGER, main_comm, ierr )
         !
@@ -753,7 +753,7 @@ contains
         !
         select type( model )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
