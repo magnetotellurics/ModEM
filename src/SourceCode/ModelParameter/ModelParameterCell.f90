@@ -630,6 +630,8 @@ contains
             !
             sigma_cell_v( :, :, k1:k2 ) = sigma_cell_v( :, :, k1:k2 ) * dsigma_cond%getV()
             !
+            deallocate( dsigma_cond )
+            !
             call sigma_cell%setV( sigma_cell_v )
             !
             call sigma_cell%mult( self%metric%v_cell )
@@ -899,7 +901,7 @@ contains
                 !
                 !> Convert (horizontal) conductivity to resistivity
                 self_cond_v = self%cell_cond(ii)%s%getV()
-				!
+                !
                 if( index( self%param_type,"LOGE" ) > 0 .OR. index( self%param_type,"LOG10" ) > 0 ) then
                     self_cond_v = -self_cond_v
                 elseif( index(self%param_type,"LINEAR" ) > 0 ) then

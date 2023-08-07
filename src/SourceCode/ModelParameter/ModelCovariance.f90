@@ -167,6 +167,8 @@ contains
             !
             target_cond_v = real( target_cond%getV(), kind=prec )
             !
+            deallocate( target_cond )
+            !
             temp_cond_v = real( temp_cond%getV(), kind=prec )
             !
             call self%RecursiveAR( target_cond_v, temp_cond_v, 2 )
@@ -177,9 +179,9 @@ contains
             !
             call target_model%setCond( temp_cond, i )
             !
+            deallocate( temp_cond )
+            !
         enddo
-        !
-        deallocate( target_cond, temp_cond )
         !
     end subroutine multBy_Cm
     !
