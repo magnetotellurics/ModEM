@@ -184,8 +184,6 @@ contains
         xmin = x
         self%relErr(1) = real( rnormin / bnorm )
         !
-        write(*,*) 'initial residual: ', self%relErr(1)
-        !
         self%converged = .FALSE.
         imin = 1
         RHO = C_ONE
@@ -205,8 +203,6 @@ contains
                 !
                 call errStop( "solve_Solver_BICG > RHO .EQ. 0.0" )
                 !
-                exit
-                !
             endif
             !
             if( self%iter .EQ. 2 ) then
@@ -218,8 +214,6 @@ contains
                 if( BETA .EQ. 0.0 ) then
                     !
                     call errStop( "solve_Solver_BICG > BETA .EQ. 0.0" )
-                    !
-                    exit
                     !
                 endif
                 !
@@ -251,8 +245,6 @@ contains
                 !
                 call errStop( "solve_Solver_BICG > RTV .EQ. 0.0" )
                 !
-                exit
-                !
             endif
             !
             ALPHA = RHO / RTV
@@ -261,7 +253,6 @@ contains
                 !
                 call errStop( "solve_Solver_BICG > ALPHA .EQ. 0.0" )
                 !
-                exit
             endif
             !
             !> xhalf = x + ALPHA*PH ! the first half of iteration
@@ -318,7 +309,6 @@ contains
                 !
                 call errStop( "solve_Solver_BICG > TT .eq. 0.0" )
                 !
-                exit
             endif
             !
             OMEGA = T%dotProd(S) / TT
@@ -327,7 +317,6 @@ contains
                 !
                 call errStop( "solve_Solver_BICG > OMEGA .eq. 0.0" )
                 !
-                exit
             endif
             !
             !> x = xhalf + OMEGA * SH  ! the second half (shadow) of iteration
