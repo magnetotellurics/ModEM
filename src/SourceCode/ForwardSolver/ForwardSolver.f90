@@ -7,24 +7,22 @@ module ForwardSolver
     use Vector
     use Source
     use ModelParameter
-    use Solver
+    use Solver_CC
     !
     character(:), allocatable :: forward_solver_type
     character( len=21 ), parameter :: FWD_FILE = "ForwardSolverFromFile"
-    character( len=15 ), parameter :: FWD_IT = "ForwardSolverIT"
-    character( len=18 ), parameter :: FWD_IT_DC = "ForwardSolverIT_DC"
+    character( len=16 ), parameter :: FWD_IT = "ForwardSolver_IT"
+    character( len=19 ), parameter :: FWD_IT_DC = "ForwardSolver_IT_DC"
     !
     type, abstract :: ForwardSolver_t
         !
-        class( Solver_t ), allocatable :: solver
+        class( Solver_CC_t ), allocatable :: solver
         !
         integer :: max_iter_total, n_iter_actual
         !
         real( kind=prec ) :: tolerance, relResFinal
         !
         real( kind=prec ), allocatable, dimension(:) :: relResVec
-        !
-        logical :: failed
         !
         contains
             !
@@ -40,11 +38,14 @@ module ForwardSolver
             procedure( interface_zero_diag_foward_solver ), deferred, public :: zeroDiagnostics
             !
             procedure( interface_create_e_solution_foward_solver ), deferred, public :: createESolution
-			!
+            !
             procedure( interface_copy_from_foward_solver ), deferred, public :: copyFrom
             generic :: assignment(=) => copyFrom
             !
     end type ForwardSolver_t
+    !
+    !> Public Global Generic ForwardSolver object
+    class( ForwardSolver_t ), allocatable, target :: forward_solver
     !
     abstract interface
         !
@@ -53,7 +54,7 @@ module ForwardSolver
             import :: ForwardSolver_t, ModelParameter_t, prec
             !
             class( ForwardSolver_t ), intent( inout ) :: self
-            class( ModelParameter_t ), intent( in ) :: sigma
+            class( ModelParameter_t ), intent( inout ) :: sigma
             real( kind=prec ), intent( in ) :: period
             !
         end subroutine interface_set_frequency_foward_solver
@@ -90,7 +91,7 @@ module ForwardSolver
             class( ForwardSolver_t ), intent( inout ) :: self
             integer, intent( in ) :: pol
             class( Source_t ), intent( in ) :: source
-            class( Vector_t ), intent( inout ) :: e_solution
+            class( Vector_t ), allocatable, intent( out ) :: e_solution
             !
         end subroutine interface_create_e_solution_foward_solver
         !
@@ -118,8 +119,6 @@ contains
         self%tolerance = R_ZERO
         !
         self%relResFinal = R_ZERO
-        !
-        self%failed = .FALSE.
         !
     end subroutine initializeForwardSolver
     !

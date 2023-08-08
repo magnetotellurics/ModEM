@@ -27,7 +27,7 @@
 !
 module spOpTopology_MR
     !
-    use spOpTopology_SG
+    use SpOpTopology_SG
     !
     use rVector3D_MR
     use rScalar3D_MR
@@ -98,7 +98,7 @@ module spOpTopology_MR
         !
         type(spMatCSR_Real), pointer, dimension(:) :: T2_array
         type(spMatCSR_Real) :: T1, T2, Ctmp
-        type(spOpTopology_SG_t) :: TOp1
+        type(SpOpTopology_SG_t) :: TOp1
         type(rVector3D_MR_t) :: vecC
         integer, allocatable :: col(:)
         integer :: k
@@ -108,7 +108,7 @@ module spOpTopology_MR
         allocate (T2_array(self%grid%n_grids))
         !
         do k = 1, self%grid%n_grids
-        TOp1 = spOpTopology_SG_t (self%grid%sub_grids(k))
+        TOp1 = SpOpTopology_SG_t (self%grid%sub_grids(k))
         call Top1%curl(T2_array(k))
         end do
         !
@@ -160,7 +160,7 @@ module spOpTopology_MR
         !
         type(spMatCSR_Real ), pointer :: G2_array(:)
         type(spMatCSR_Real ) :: G1, G2, Gtmp
-        type( spOpTopology_SG_t ) :: TOp1
+        type( SpOpTopology_SG_t ) :: TOp1
         type( rVector3D_MR_t ) :: vecC
         integer, allocatable :: col(:)
         integer :: k
@@ -170,7 +170,7 @@ module spOpTopology_MR
         allocate (G2_array(self%grid%n_grids))
         !
         do k = 1, self%grid%n_grids
-            TOp1 = spOpTopology_SG_t (self%grid%sub_grids(k))
+            TOp1 = SpOpTopology_SG_t (self%grid%sub_grids(k))
             call Top1%grad(G2_array(k))
         end do
         !
@@ -224,9 +224,9 @@ module spOpTopology_MR
         integer :: n
         !
         v = rVector3D_MR_t (self%grid, EDGE)
-        n = size (v%ind_boundaries)
+        n = size (v%ind_boundary)
         allocate (eb(n))
-        eb = v%ind_boundaries
+        eb = v%ind_boundary
         !
     end subroutine Get_edge_bdry_idx_
     !
@@ -264,9 +264,9 @@ module spOpTopology_MR
         !***********************
         !
         v = rScalar3D_MR_t (self%grid, NODE)
-        n = size (v%ind_boundaries)
+        n = size (v%ind_boundary)
         allocate (nb(n))
-        nb = v%ind_boundaries
+        nb = v%ind_boundary
 
     end subroutine Get_node_bdry_idx_
     !

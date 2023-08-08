@@ -7,7 +7,7 @@
 module ModelCovariance
     !
     use Constants
-    use ModelParameterCell_SG
+    use ModelParameterCell
     use cVectorSparse3D_SG
     use rScalar3D_SG
     use iScalar3D_SG
@@ -56,6 +56,9 @@ module ModelCovariance
             procedure, public :: Scaling
             !
     end type
+    !
+    !> Public Global ModelCovariance object
+    class( ModelCovariance_t ), allocatable :: model_cov
     !
     interface ModelCovariance_t
          module procedure ModelCovariance_ctor
@@ -148,23 +151,37 @@ contains
         class( ModelParameter_t ), allocatable, intent( inout ) :: target_model
         !
         integer :: i
-        type( rScalar3D_SG_t ), allocatable, dimension(:) :: target_cell_cond, temp_cell_cond
+        class( Scalar_t ), allocatable :: target_cond, temp_cond
+        real( kind=prec ), allocatable, dimension(:,:,:) :: target_cond_v, temp_cond_v
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: ccond_v
         !
         if( .NOT. target_model%is_allocated ) then
             call errStop( "multBy_Cm > target_model not allocated!" )
         endif
         !
-        target_cell_cond = target_model%getCond()
-        !
-        temp_cell_cond = target_cell_cond
-        !
-        do i = 1, size( target_cell_cond )
+        do i = 1, size( target_model%getCond() )
             !
-            call self%RecursiveAR( target_cell_cond(i)%v, temp_cell_cond(i)%v, 2 )
+            allocate( target_cond, source = target_model%getCond(i) )
+            !
+            allocate( temp_cond, source = target_cond )
+            !
+            target_cond_v = real( target_cond%getV(), kind=prec )
+            !
+            deallocate( target_cond )
+            !
+            temp_cond_v = real( temp_cond%getV(), kind=prec )
+            !
+            call self%RecursiveAR( target_cond_v, temp_cond_v, 2 )
+            !
+            ccond_v = cmplx( temp_cond_v, 0.0, kind=prec )
+            !
+            call temp_cond%setV( ccond_v )
+            !
+            call target_model%setCond( temp_cond, i )
+            !
+            deallocate( temp_cond )
             !
         enddo
-        !
-        call target_model%setCond( temp_cell_cond )
         !
     end subroutine multBy_Cm
     !
@@ -182,7 +199,9 @@ contains
         class( ModelParameter_t ), intent( in ) :: mhat
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
-        type( rScalar3D_SG_t ), allocatable, dimension(:) :: mhat_cell_cond, dsigma_cell_cond
+        class( Scalar_t ), allocatable :: mhat_cond, dsigma_cond
+        real( kind=prec ), allocatable, dimension(:,:,:) :: mhat_cond_v, dsigma_cond_v
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: ccond_v
         integer :: i
         !
         if( .NOT. mhat%is_allocated ) then
@@ -193,17 +212,27 @@ contains
         allocate( dsigma, source = mhat )
         dsigma = mhat
         !
-        mhat_cell_cond = mhat%getCond()
-        !
-        dsigma_cell_cond = mhat_cell_cond
-        !
-        do i = 1, size( mhat_cell_cond )
+        do i = 1, size( mhat%getCond() )
             !
-            call self%RecursiveAR( mhat_cell_cond(i)%v, dsigma_cell_cond(i)%v, self%N )
+            allocate( mhat_cond, source = mhat%getCond(i) )
+            !
+            allocate( dsigma_cond, source = mhat_cond )
+            !
+            mhat_cond_v = mhat_cond%getV()
+            !
+            deallocate( mhat_cond )
+            !
+            dsigma_cond_v = dsigma_cond%getV()
+            !
+            call self%RecursiveAR( mhat_cond_v, dsigma_cond_v, self%N )
+            !
+            ccond_v = cmplx( dsigma_cond_v, 0.0, kind=prec )
+            !
+            call dsigma%setCond( dsigma_cond, i )
+            !
+            deallocate( dsigma_cond )
             !
         enddo
-        !
-        call dsigma%setCond( dsigma_cell_cond )
         !
     end subroutine multBy_CmSqrt
     !
@@ -214,40 +243,42 @@ contains
     !> the modelParam module. Before this routine can be called,
     !> it has to be initialized by calling create_CmSqrt(m).
     !
-    function multBy_CmSqrtInv( self, dm ) result ( mhat )
+    function multBy_CmSqrtInv( self, dsigma ) result( mhat )
         implicit none
         !
         class( ModelCovariance_t ), intent( in ) :: self
-        class( ModelParameter_t ), allocatable, intent( in ) :: dm
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+        !
         class( ModelParameter_t ), allocatable :: mhat
         !
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        class( Scalar_t ), allocatable :: dsigma_cond, mhat_cond
+        real( kind=prec ), allocatable, dimension(:,:,:) :: mhat_cond_v, dsigma_cond_v
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: ccond_v
+        integer :: i
         !
-        mhat = dm
+        if( allocated( mhat ) ) deallocate( mhat )
+        allocate( mhat, source = dsigma )
+        mhat = dsigma
         !
-        select type( mhat )
+        do i = 1, size( dsigma%getCond() )
             !
-            class is( ModelParameterCell_SG_t )
-                !
-                select type( dm )
-                    !
-                    class is( ModelParameterCell_SG_t )
-                        !
-                        v = mhat%cell_cond(1)%getV()
-                        !
-                        call self%RecursiveARInv( dm%cell_cond(1)%getV(), v, self%N )
-                        !
-                        call mhat%cell_cond(1)%setV( v )
-                        !
-                    class default
-                        call errStop( "multBy_CmSqrtInv > Unclassified dm" )
-                    !
-                end select
-                !
-            class default
-                call errStop( "multBy_CmSqrtInv > Unclassified mhat" )
+            allocate( dsigma_cond, source = dsigma%getCond(i) )
             !
-        end select
+            dsigma_cond_v = dsigma_cond%getV()
+            !
+            allocate( mhat_cond, source = mhat%getCond(i) )
+            !
+            mhat_cond_v = mhat_cond%getV()
+            !
+            call self%RecursiveARInv( dsigma_cond_v, mhat_cond_v, self%N )
+            !
+            ccond_v = cmplx( mhat_cond_v, 0.0, kind=prec )
+            !
+            call mhat_cond%setV( ccond_v )
+            !
+            call mhat%setCond( mhat_cond, i )
+            !
+        enddo
         !
     end function multBy_CmSqrtInv
     !
@@ -555,8 +586,8 @@ contains
         implicit none
         !
         class( ModelCovariance_t ), intent( in ) :: self
-        complex( kind=prec ), intent( in ) :: w(:,:,:)
-        complex( kind=prec ), intent( out ) :: v(:,:,:)
+        real( kind=prec ), intent( in ) :: w(:,:,:)
+        real( kind=prec ), intent( out ) :: v(:,:,:)
         integer, intent( in ) :: n
         !
         integer :: Nx, Ny, NzEarth, i, j, k, iSmooth, istat

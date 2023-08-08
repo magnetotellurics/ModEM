@@ -62,16 +62,16 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
 
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .true.
+  wellbehaved = .TRUE.
   sz_eq_zr = .false.
   if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
     wellbehaved(4:5) = .false.
-    sz_eq_zr = .true.
+    sz_eq_zr = .TRUE.
   endif
 
   if(present(funcdHxwirev)) then
-    with_dvert = .true.
+    with_dvert = .TRUE.
     if(sz_eq_zr) then
       wellbehaved(8:9) = .false.
     endif
@@ -131,7 +131,7 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
           smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -211,7 +211,7 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
           smallr1: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -269,7 +269,7 @@ subroutine interp_intvals_wire_allcomp(refl_var,bgdat,fld,src,sz,zr,omeps_recv,o
             smallr1v: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .true.
+              refl_var%refcoef_changed = .TRUE.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -443,16 +443,16 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
 
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .true.
+  wellbehaved = .TRUE.
   sz_eq_zr = .false.
   if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
     wellbehaved(4:5) = .false.
-    sz_eq_zr = .true.
+    sz_eq_zr = .TRUE.
   endif
 
   if(present(func2Exwirev)) then
-    with_dvert = .true.
+    with_dvert = .TRUE.
     if(sz_eq_zr) then
       wellbehaved(8:9) = .false.
     endif
@@ -508,7 +508,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -561,7 +561,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           smallrex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -613,7 +613,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           smallrey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -675,7 +675,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           smallr1: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -702,7 +702,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
             smallr1v: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .true.
+              refl_var%refcoef_changed = .TRUE.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -758,7 +758,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           smallr1ex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -784,7 +784,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
             smallr1vex: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .true.
+              refl_var%refcoef_changed = .TRUE.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -838,7 +838,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
           smallr1ey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -864,7 +864,7 @@ subroutine interp_intvals_wire_Exy(refl_var,bgdat,fld,src,sz,zr, func1Exwire,fun
             smallr1vey: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .true.
+              refl_var%refcoef_changed = .TRUE.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -954,16 +954,16 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
 
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .true.
+  wellbehaved = .TRUE.
   sz_eq_zr = .false.
   if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
     wellbehaved(4:5) = .false.
-    sz_eq_zr = .true.
+    sz_eq_zr = .TRUE.
   endif
 
   if(present(funcD0TMv)) then
-    with_dvert = .true.
+    with_dvert = .TRUE.
     if(sz_eq_zr) then
       wellbehaved(8:9) = .false.
     endif
@@ -1029,7 +1029,7 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
           smallr1: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1062,7 +1062,7 @@ subroutine interp_intvals_wire_Ez(refl_var,bgdat,fld,src,sz,zr,omeps_recv, funcD
             smallr1v: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .true.
+              refl_var%refcoef_changed = .TRUE.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -1214,16 +1214,16 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
 
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .true.
+  wellbehaved = .TRUE.
   sz_eq_zr = .false.
   if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
     wellbehaved(4:5) = .false.
-    sz_eq_zr = .true.
+    sz_eq_zr = .TRUE.
   endif
 
   if(present(funcdHxwirev)) then
-    with_dvert = .true.
+    with_dvert = .TRUE.
     if(sz_eq_zr) then
       wellbehaved(8:9) = .false.
     endif
@@ -1276,7 +1276,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1325,7 +1325,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           smallrhx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1374,7 +1374,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           smallrhy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1435,7 +1435,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           smallr1: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1463,7 +1463,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
             smallr1v: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .true.
+              refl_var%refcoef_changed = .TRUE.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -1516,7 +1516,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           smallr1hx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1543,7 +1543,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
             smallr1vhx: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .true.
+              refl_var%refcoef_changed = .TRUE.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -1596,7 +1596,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
           smallr1hy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius
@@ -1623,7 +1623,7 @@ subroutine interp_intvals_wire_Hxy(refl_var,bgdat,fld,src,sz,zr, funcD0TE,funcdH
             smallr1vhy: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
               !reflection coeff. for this radius
-              refl_var%refcoef_changed = .true.
+              refl_var%refcoef_changed = .TRUE.
               call prepare_refcoef(refl_var,r,0,aniso)
 
               !evaluate all integrals just for this radius
@@ -1698,12 +1698,12 @@ subroutine interp_intvals_wire_Hz(refl_var,bgdat,fld,src,sz,zr,ommu, funcAz1TE,i
   integer(kind=int32)   :: ielemall,ielem       !wire element counters
 
   !indicators for fast Hankel transform or adaptive integration
-  wellbehaved = .true.
+  wellbehaved = .TRUE.
   sz_eq_zr = .false.
   if(sz.eq.zr) then
     wellbehaved(1:2) = .false.
     wellbehaved(4:5) = .false.
-    sz_eq_zr = .true.
+    sz_eq_zr = .TRUE.
   endif
 
   !loop over wires
@@ -1747,7 +1747,7 @@ subroutine interp_intvals_wire_Hz(refl_var,bgdat,fld,src,sz,zr,ommu, funcAz1TE,i
           smallr: if(r.lt.rsplmin) then !r is but smaller than threshold radius for spline interpolation
 
             !reflection coeff. for this radius
-            refl_var%refcoef_changed = .true.
+            refl_var%refcoef_changed = .TRUE.
             call prepare_refcoef(refl_var,r,0,aniso)
 
             !evaluate all integrals just for this radius

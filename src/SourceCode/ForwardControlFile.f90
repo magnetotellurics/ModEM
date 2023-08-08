@@ -4,7 +4,7 @@
 !
 module ForwardControlFile
     !
-    use Constants
+    use Utilities
     use String
     use Grid
     use ForwardSolver
@@ -16,12 +16,12 @@ module ForwardControlFile
         !> FWD Components parameters
         character(:), allocatable :: model_operator_type
         !
-        character(:), allocatable :: grid_reader_type, grid_type, forward_solver_type
+        character(:), allocatable :: grid_reader_type, grid_format, solver_type, forward_solver_type
         character(:), allocatable :: source_type_mt, source_type_csem, get_1d_from
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
         !> Solver parameters
-        character(:), allocatable :: max_solver_iters, max_divcor_calls, max_divcor_iters
+        character(:), allocatable :: max_solver_iters, max_solver_calls, max_divcor_iters
         character(:), allocatable :: tolerance_divcor, tolerance_solver
         !
         contains
@@ -29,6 +29,9 @@ module ForwardControlFile
             final :: ForwardControlFile_dtor
             !
     end type ForwardControlFile_t
+    !
+    !> Public Global ForwardControlFile object
+    type( ForwardControlFile_t ), allocatable :: fwd_control_file
     !
     interface ForwardControlFile_t
         module procedure ForwardControlFile_ctor
@@ -57,9 +60,14 @@ contains
         !
         open( unit = funit, file = fname, iostat = io_stat, status = "old" )
         !
-        if( io_stat == 0 ) then
+        if( io_stat /= 0 ) then
+            !
+            call errStop( "ForwardControlFile_ctor > Unable to open file ["//fname//"]" )
+            !
+        else
             !
             do
+                !
                 read( funit, "(a)", END = 10 ) full_line_text
                 line_text = adjustl( full_line_text )
                 line_text = trim( line_text )
@@ -70,12 +78,14 @@ contains
                     !
                     if( index( line_text, "grid_reader" ) > 0 ) then
                         self%grid_reader_type = trim( args(2) )
-                    elseif( index( line_text, "grid_type" ) > 0 ) then
-                        self%grid_type = trim( args(2) )
+                    elseif( index( line_text, "grid_format" ) > 0 ) then
+                        self%grid_format = trim( args(2) )
                     elseif( index( line_text, "model_operator_type" ) > 0 ) then
                         self%model_operator_type = trim( args(2) )
                     elseif( index( line_text, "forward_solver_type" ) > 0 ) then
                         self%forward_solver_type = trim( args(2) )
+                    elseif( index( line_text, "solver_type" ) > 0 ) then
+                        self%solver_type = trim( args(2) )
                     elseif( index( line_text, "source_type_mt" ) > 0 ) then
                         self%source_type_mt = trim( args(2) )
                     elseif( index( line_text, "source_type_csem" ) > 0 ) then
@@ -90,8 +100,8 @@ contains
                         self%model_max_height = trim( args(2) )
                     elseif( index( line_text, "max_solver_iters" ) > 0 ) then
                         self%max_solver_iters = trim( args(2) )
-                    elseif( index( line_text, "max_divcor_calls" ) > 0 ) then
-                        self%max_divcor_calls = trim( args(2) )
+                    elseif( index( line_text, "max_solver_calls" ) > 0 ) then
+                        self%max_solver_calls = trim( args(2) )
                     elseif( index( line_text, "max_divcor_iters" ) > 0 ) then
                         self%max_divcor_iters = trim( args(2) )
                     elseif( index( line_text, "tolerance_divcor" ) > 0 ) then
@@ -99,8 +109,7 @@ contains
                     elseif( index( line_text, "tolerance_solver" ) > 0 ) then
                         self%tolerance_solver = trim( args(2) )
                     else
-                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unsupported Forward Modeling parameter: ["//trim(line_text)//"]"
-                        stop 
+                        call errStop( "Unsupported Forward Modeling parameter: ["//trim(line_text)//"]" )
                     endif
                     !
                 endif
@@ -129,19 +138,19 @@ contains
             endif
             !
             ! Grid type
-            if( allocated( self%grid_type ) ) then
+            if( allocated( self%grid_format ) ) then
                 !
-                select case( self%grid_type )
+                select case( self%grid_format )
                     case( "SG" )
-                        grid_type = GRID_SG
+                        grid_format = GRID_SG
                     case( "MR" )
-                        grid_type = GRID_MR
+                        grid_format = GRID_MR
                     case default
                         !
-                        call errStop( "ForwardControlFile_ctor > Wrong grid_type control, use [SG|MR]" )
+                        call errStop( "ForwardControlFile_ctor > Wrong grid_format control, use [SG|MR]" )
                 end select
                 !
-                write( *, "( A30, A20)" ) "          Grid Type = ", grid_type
+                write( *, "( A30, A20)" ) "          Grid Type = ", grid_format
                 !
             endif
             !
@@ -150,6 +159,25 @@ contains
                 !
                 ! TO BE IMPLEMENTED
                 write( *, "( A30, A20)" ) "          Grid Reader = ", self%grid_reader_type
+                !
+            endif
+            !
+            ! Forward solver
+            if( allocated( self%solver_type ) ) then
+                !
+                select case( self%solver_type )
+                    !
+                    case( "QMR" )
+                        solver_type = SLV_QMR
+                    case( "BICG" )
+                        solver_type = SLV_BICG
+                    case default
+                        !
+                        call errStop( "ForwardControlFile_ctor > Wrong solver control, use [QMR|BICG]" )
+                    !
+                end select
+                !
+                write( *, "( A30, A20)" ) "          Solver = ", solver_type
                 !
             endif
             !
@@ -280,12 +308,12 @@ contains
                 !
             endif
             !
-            ! Solver max_divcor_calls
-            if( allocated( self%max_divcor_calls ) ) then
+            ! Solver max_solver_calls
+            if( allocated( self%max_solver_calls ) ) then
                 !
-                read( self%max_divcor_calls, "(I8)" ) max_divcor_calls
+                read( self%max_solver_calls, "(I8)" ) max_solver_calls
                 !
-                write( *, "( A30, I20)" ) "          Max Divcor Calls = ", max_divcor_calls
+                write( *, "( A30, I20)" ) "          Max Divcor Calls = ", max_solver_calls
                 !
             endif
             !
@@ -316,9 +344,6 @@ contains
                 !
             endif
             !
-        else
-            !
-            call errStop( "ForwardControlFile_ctor > Cant opening file ["//fname//"]" )
         endif
         !
     end function ForwardControlFile_ctor
@@ -335,7 +360,7 @@ contains
         if( allocated( self%model_operator_type ) ) deallocate( self%model_operator_type )
         !
         if( allocated( self%grid_reader_type ) ) deallocate( self%grid_reader_type )
-        if( allocated( self%grid_type ) ) deallocate( self%grid_type )
+        if( allocated( self%grid_format ) ) deallocate( self%grid_format )
         !
         if( allocated( self%forward_solver_type ) ) deallocate( self%forward_solver_type )
         !
@@ -348,7 +373,7 @@ contains
         !
         if( allocated( self%max_solver_iters ) ) deallocate( self%max_solver_iters )
         !
-        if( allocated( self%max_divcor_calls ) ) deallocate( self%max_divcor_calls )
+        if( allocated( self%max_solver_calls ) ) deallocate( self%max_solver_calls )
         if( allocated( self%max_divcor_iters ) ) deallocate( self%max_divcor_iters )
         if( allocated( self%tolerance_divcor ) ) deallocate( self%tolerance_divcor )
         if( allocated( self%tolerance_solver ) ) deallocate( self%tolerance_solver )

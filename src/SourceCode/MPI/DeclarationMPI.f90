@@ -128,23 +128,24 @@ contains
         !
         integer :: basic_comp_size
         !
-        integer :: i, last_size, nbytes(11)
+        integer :: i, last_size, nbytes(12)
         !
         basic_comp_size = 1
         !
         write( *, "(A45)" ) "Component's memory in bytes:"
         !
-        call MPI_PACK_SIZE( 15, MPI_INTEGER, main_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 16, MPI_INTEGER, main_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, main_comm, nbytes(2), ierr )
         call MPI_PACK_SIZE( len( model_operator_type ), MPI_CHARACTER, main_comm, nbytes(3), ierr )
         call MPI_PACK_SIZE( len( model_method ), MPI_CHARACTER, main_comm, nbytes(4), ierr )
         call MPI_PACK_SIZE( len( source_type_mt ), MPI_CHARACTER, main_comm, nbytes(5), ierr )
         call MPI_PACK_SIZE( len( source_type_csem ), MPI_CHARACTER, main_comm, nbytes(6), ierr )
         call MPI_PACK_SIZE( len( get_1d_from ), MPI_CHARACTER, main_comm, nbytes(7), ierr )
-        call MPI_PACK_SIZE( len( forward_solver_type ), MPI_CHARACTER, main_comm, nbytes(8), ierr )
-        call MPI_PACK_SIZE( len( inversion_type ), MPI_CHARACTER, main_comm, nbytes(9), ierr )
-        call MPI_PACK_SIZE( len( joint_type ), MPI_CHARACTER, main_comm, nbytes(10), ierr )
-        call MPI_PACK_SIZE( len( e_solution_file_name ), MPI_CHARACTER, main_comm, nbytes(11), ierr )
+        call MPI_PACK_SIZE( len( solver_type ), MPI_CHARACTER, main_comm, nbytes(8), ierr )
+        call MPI_PACK_SIZE( len( forward_solver_type ), MPI_CHARACTER, main_comm, nbytes(9), ierr )
+        call MPI_PACK_SIZE( len( inversion_type ), MPI_CHARACTER, main_comm, nbytes(10), ierr )
+        call MPI_PACK_SIZE( len( joint_type ), MPI_CHARACTER, main_comm, nbytes(11), ierr )
+        call MPI_PACK_SIZE( len( e_solution_file_name ), MPI_CHARACTER, main_comm, nbytes(12), ierr )
         !
         basic_comp_size = basic_comp_size + allocateGridBuffer( main_grid, .TRUE. )
         !
@@ -196,14 +197,15 @@ contains
         ! 15 Integers
         call MPI_PACK( model_n_air_layer, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( max_solver_iters, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( max_divcor_calls, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( max_solver_calls, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( max_divcor_iters, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( model_operator_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( model_method ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( source_type_mt ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( source_type_csem ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( get_1d_from ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( len( solver_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+		call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( inversion_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( joint_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( e_solution_file_name ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
@@ -222,6 +224,7 @@ contains
         call MPI_PACK( source_type_mt, len( source_type_mt ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( source_type_csem, len( source_type_csem ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( get_1d_from, len( get_1d_from ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( solver_type, len( solver_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( forward_solver_type, len( forward_solver_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( inversion_type, len( inversion_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( joint_type, len( joint_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
@@ -250,7 +253,7 @@ contains
         !
         integer :: i, index, tx_id, n_transmitters, n_receivers
         integer :: n_model_operator_type, n_model_method, n_source_type_mt, n_source_type_csem
-        integer :: n_get_1d_from, n_forward_solver_type, n_inversion_type
+        integer :: n_get_1d_from, n_solver_type, n_forward_solver_type, n_inversion_type
         integer :: n_joint_type, n_e_solution_file_name
         !
         index = 1
@@ -258,13 +261,14 @@ contains
         ! 15 Integers
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, model_n_air_layer, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_solver_iters, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_divcor_calls, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_solver_calls, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_divcor_iters, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_model_operator_type, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_model_method, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_source_type_mt, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_source_type_csem, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_get_1d_from, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_solver_type, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_forward_solver_type, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_inversion_type, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_joint_type, 1, MPI_INTEGER, main_comm, ierr )
@@ -293,6 +297,9 @@ contains
         !
         allocate( character( n_get_1d_from ) :: get_1d_from )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, get_1d_from, n_get_1d_from, MPI_CHARACTER, main_comm, ierr )
+        !
+        allocate( character( n_solver_type ) :: solver_type )
+        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, solver_type, n_solver_type, MPI_CHARACTER, main_comm, ierr )
         !
         allocate( character( n_forward_solver_type ) :: forward_solver_type )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, forward_solver_type, n_forward_solver_type, MPI_CHARACTER, main_comm, ierr )
@@ -658,12 +665,12 @@ contains
         !
         select type( model )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
                 !
                 do i = 1, model%anisotropic_level
-                    model_buffer_size = model_buffer_size + allocateScalarBuffer( model%cell_cond(i) )
+                    model_buffer_size = model_buffer_size + allocateScalarBuffer( model%getCond(i) )
                 enddo
                 !
             class default
@@ -708,12 +715,12 @@ contains
         !
         select type( model )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
                 do i = 1, model%anisotropic_level
-                    call packScalarBuffer( model%cell_cond(i), parent_buffer, parent_buffer_size, index )
+                    call packScalarBuffer( model%getCond(i), parent_buffer, parent_buffer_size, index )
                 enddo
                 !
             class default
@@ -738,7 +745,7 @@ contains
         param_type_size = 0
         !
         if( allocated( model ) ) deallocate( model )
-        allocate( ModelParameterCell_SG_t :: model )
+        allocate( ModelParameterCell_t :: model )
         !
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%anisotropic_level, 1, MPI_INTEGER, main_comm, ierr )
         !
@@ -753,11 +760,11 @@ contains
         !
         select type( model )
             !
-            class is( ModelParameterCell_SG_t )
+            class is( ModelParameterCell_t )
                 !
                 call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
-                allocate( rScalar3D_SG_t :: model%cell_cond( model%anisotropic_level ) )
+                allocate( model%cell_cond( model%anisotropic_level ) )
                 !
                 do i = 1, model%anisotropic_level
                     !

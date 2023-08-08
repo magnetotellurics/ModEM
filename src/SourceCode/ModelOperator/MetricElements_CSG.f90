@@ -1,5 +1,5 @@
 !
-!> Derived class to define a ModelOperator_MF
+!> Derived class to define a ModelOperator_MF_SG
 !>
 !> This computes and stores Metric Elements for finite volume calculations
 !> Based on Matlab development, code is take from ModEM module GridCalc.
@@ -27,15 +27,15 @@ module MetricElements_CSG
         !
         final :: MetricElements_CSG_dtor
         !
-        procedure, public :: SetEdgelength
-        procedure, public :: SetFaceArea
-        procedure, public :: SetDualEdgelength
-        procedure, public :: SetDualFaceArea
-        procedure, public :: SetCellVolume
-        procedure, public :: SetEdgeVolume
-        procedure, public :: SetNodeVolume
+        procedure, public :: setEdgeLength
+        procedure, public :: setFaceArea
+        procedure, public :: setDualEdgeLength
+        procedure, public :: setDualFaceArea
+        procedure, public :: setCellVolume
+        procedure, public :: setEdgeVolume
+        procedure, public :: setNodeVolume
         !
-        procedure, public :: allocate => allocateMetricElements_CSG
+        procedure, public :: alloc => allocateMetricElements_CSG
         !
     end type MetricElements_CSG_t
     !
@@ -50,17 +50,17 @@ contains
     function MetricElements_CSG_ctor( grid ) result( self )
         implicit none
         !
-        class( Grid3D_SG_t ), target, intent( in ) :: grid
+        class( Grid_t ), target, intent( in ) :: grid
         type( MetricElements_CSG_t ) :: self
         !
         !write( *, * ) "Constructor MetricElements_CSG_t"
         !
         self%grid => grid
         !
-        call self%allocate()
+        call self%alloc
         !
-        !>    if were going to allocate storage for all, just set all now!
-        call self%setMetricElements()
+        !> if were going to allocate storage for all, just set all now!
+        call self%setMetricElements
         !
     end function MetricElements_CSG_Ctor
     !
@@ -82,244 +82,272 @@ contains
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
-        allocate( self%Edgelength, source = rVector3D_SG_t( self%grid, EDGE ) )
-        allocate( self%FaceArea, source = rVector3D_SG_t( self%grid, FACE ) )
-        allocate( self%DualEdgelength, source = rVector3D_SG_t( self%grid, FACE ) )
-        allocate( self%DualFaceArea, source = rVector3D_SG_t( self%grid, EDGE ) )
-        allocate( self%Vedge, source = rVector3D_SG_t( self%grid, EDGE ) )
+        call self%createVector( real_t, EDGE, self%edge_length )
+        call self%createVector( real_t, FACE, self%dual_edge_length )
+        call self%createVector( real_t, FACE, self%face_area )
+        call self%createVector( real_t, EDGE, self%dual_face_area )
         !
-        allocate( self%VNode, source = rScalar3D_SG_t( self%grid, NODE ) )
-        allocate( self%Vcell, source = rScalar3D_SG_t( self%grid, CELL ) )
+        call self%createVector( real_t, EDGE, self%v_edge )
+        !
+        call self%createScalar( real_t, NODE, self%v_node )
+        call self%createScalar( real_t, CELL, self%v_cell )
         !
     end subroutine allocateMetricElements_CSG
     !
-    !> SetEdgelength
+    !> setEdgeLength
     !> Creates line elements defined on edges of the primary grid.
     !> Edge length elements are defined on interior and boundary edges.
-    subroutine SetEdgelength( self )
+    subroutine setEdgeLength( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
-        select type( edge_length => self%Edgelength )
-            !
-            class is( rVector3D_SG_t )
-                !
-                !> x-component edge length elements
-                do ix = 1, self%grid%nx
-                    edge_length%x(ix, :, :) = self%grid%dx(ix)
-                enddo
-                !
-                !> y-component edge length elements
-                do iy = 1, self%grid%ny
-                    edge_length%y(:, iy, :) = self%grid%dy(iy)
-                enddo
-                !
-                !> z-component edge length elements
-                do iz = 1, self%grid%nz
-                    edge_length%z(:, :, iz) = self%grid%dz(iz)
-                enddo
-                !
-            !
-        end select
+        x = self%edge_length%getX()
+        y = self%edge_length%getY()
+        z = self%edge_length%getZ()
         !
-    end subroutine SetEdgelength
+        !> x-component edge length elements
+        do ix = 1, self%grid%nx
+            x(ix, :, :) = self%grid%dx(ix)
+        enddo
+        !
+        call self%edge_length%setX( x )
+        !
+        !> y-component edge length elements
+        do iy = 1, self%grid%ny
+            y(:, iy, :) = self%grid%dy(iy)
+        enddo
+        !
+        call self%edge_length%setY( y )
+        !
+        !> z-component edge length elements
+        do iz = 1, self%grid%nz
+            z(:, :, iz) = self%grid%dz(iz)
+        enddo
+        !
+        call self%edge_length%setZ( z )
+        !
+    end subroutine setEdgeLength
     !
-    !> SetDualEdgelength
+    !> setDualEdgeLength
     !> Creates line elements defined on edges of the dual grid.
     !> Edge length elements are defined on interior and boundary faces.
     !> Note that dual edge lengths are already defined in grid.
-    subroutine SetDualEdgelength( self )
+    subroutine setDualEdgeLength( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
-        select type( dual_edge_length => self%DualEdgelength )
-            !
-            class is( rVector3D_SG_t )
-                !
-                !> x-component edge length elements
-                do ix = 1, self%grid%nx+1
-                    dual_edge_length%x(ix, :, :) = self%grid%del_x(ix)
-                enddo
-                !
-                !> y-component edge length elements
-                do iy = 1, self%grid%ny+1
-                    dual_edge_length%y(:, iy, :) = self%grid%del_y(iy)
-                enddo
-                !
-                !> z-component edge length elements
-                do iz = 1, self%grid%nz+1
-                    dual_edge_length%z(:, :, iz) = self%grid%del_z(iz)
-                enddo
-                !
-        end select
+        x = self%dual_edge_length%getX()
+        y = self%dual_edge_length%getY()
+        z = self%dual_edge_length%getZ()
         !
-    end subroutine SetDualEdgelength
+        !> x-component edge length elements
+        do ix = 1, self%grid%nx+1
+            x(ix, :, :) = self%grid%del_x(ix)
+        enddo
+        !
+        call self%dual_edge_length%setX( x )
+        !
+        !> y-component edge length elements
+        do iy = 1, self%grid%ny+1
+            y(:, iy, :) = self%grid%del_y(iy)
+        enddo
+        !
+        call self%dual_edge_length%setY( y )
+        !
+        !> z-component edge length elements
+        do iz = 1, self%grid%nz+1
+            z(:, :, iz) = self%grid%del_z(iz)
+        enddo
+        !
+        call self%dual_edge_length%setZ( z )
+        !
+    end subroutine setDualEdgeLength
     !
-    !> SetFaceArea
+    !> setFaceArea
     !> Computes surface area elements on faces of the primary grid.
     !> Face surface area elements are defined on interior and boundary faces.
-    subroutine SetFaceArea( self )
+    subroutine setFaceArea( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
-        select type( face_area => self%FaceArea )
-            class is( rVector3D_SG_t )
-               !
-               !> x-components
-               do ix = 1, self%grid%nx + 1
-                   do iy = 1, self%grid%ny
-                      do iz = 1, self%grid%nz
-                          face_area%x(ix, iy, iz) = self%grid%dy(iy) * self%grid%dz(iz)
-                      enddo
-                   enddo
-               enddo
-               !
-               !> y-components
-               do ix = 1, self%grid%nx
-                   do iy = 1, self%grid%ny + 1
-                      do iz = 1,self%grid%nz
-                          face_area%y(ix, iy, iz) = self%grid%dx(ix) * self%grid%dz(iz)
-                      enddo
-                   enddo
-               enddo
-               !
-               !> z-components
-               do ix = 1, self%grid%nx
-                   do iy = 1, self%grid%ny
-                      do iz = 1, self%grid%nz + 1
-                          face_area%z(ix, iy, iz) = self%grid%dx(ix) * self%grid%dy(iy)
-                      enddo
-                   enddo
-               enddo
-               !
-        end select
+        x = self%face_area%getX()
+        y = self%face_area%getY()
+        z = self%face_area%getZ()
         !
-    end subroutine SetFaceArea
+        !> x-components
+        do ix = 1, self%grid%nx + 1
+            do iy = 1, self%grid%ny
+                do iz = 1, self%grid%nz
+                    x(ix, iy, iz) = self%grid%dy(iy) * self%grid%dz(iz)
+                enddo
+            enddo
+        enddo
+        !
+        call self%face_area%setX( x )
+        !
+        !> y-components
+        do ix = 1, self%grid%nx
+            do iy = 1, self%grid%ny + 1
+                do iz = 1,self%grid%nz
+                    y(ix, iy, iz) = self%grid%dx(ix) * self%grid%dz(iz)
+                enddo
+            enddo
+        enddo
+        !
+        call self%face_area%setY( y )
+        !
+        !> z-components
+        do ix = 1, self%grid%nx
+            do iy = 1, self%grid%ny
+                do iz = 1, self%grid%nz + 1
+                    z(ix, iy, iz) = self%grid%dx(ix) * self%grid%dy(iy)
+                enddo
+            enddo
+        enddo
+        !
+        call self%face_area%setZ( z )
+        !
+    end subroutine setFaceArea
     !
-    !> SetDualFaceArea
+    !> setDualFaceArea
     !> Computes surface area elements on faces of the dual grid.
     !> Dual Face surface area elements are defined
     !> on interior and boundary edges.
     !> Note: dual edge lengths are already defined
     !> in grid, use these to compute dual-grid face areas.
-    subroutine SetDualFaceArea( self )
+    !
+    subroutine setDualFaceArea( self )
         implicit none
-      !
+        !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: ix, iy, iz
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
-        select type( dual_face_area => self%DualFaceArea )
-            class is( rVector3D_SG_t )
-               !
-               !> x-components
-               do ix = 1, self%grid%nx
-                   do iy = 1, self%grid%ny+1
-                      do iz = 1, self%grid%nz+1
-                          dual_face_area%x(ix, iy, iz) = self%grid%del_y(iy) * self%grid%del_z(iz)
-                      enddo
-                   enddo
-               enddo
-               !
-               !> y-components
-               do ix = 1,self%grid%nx + 1
-                   do iy = 1,self%grid%ny
-                      do iz = 1,self%grid%nz + 1
-                          dual_face_area%y(ix, iy, iz) = self%grid%del_x(ix) * self%grid%del_z(iz)
-                      enddo
-                   enddo
-               enddo
-               !
-               !> z-components
-               do ix = 1, self%grid%nx + 1
-                   do iy = 1, self%grid%ny + 1
-                      do iz = 1, self%grid%nz
-                          dual_face_area%z(ix, iy, iz) = self%grid%del_x(ix) * self%grid%del_y(iy)
-                      enddo
-                   enddo
-               enddo
-               !
-        end select
+        x = self%dual_face_area%getX()
+        y = self%dual_face_area%getY()
+        z = self%dual_face_area%getZ()
         !
-    end subroutine SetDualFaceArea
+        !> x-components
+        do ix = 1, self%grid%nx
+            do iy = 1, self%grid%ny+1
+                do iz = 1, self%grid%nz+1
+                    x(ix, iy, iz) = self%grid%del_y(iy) * self%grid%del_z(iz)
+                enddo
+            enddo
+        enddo
+        !
+        call self%dual_face_area%setX( x )
+        !
+        !> y-components
+        do ix = 1,self%grid%nx + 1
+            do iy = 1,self%grid%ny
+                do iz = 1,self%grid%nz + 1
+                    y(ix, iy, iz) = self%grid%del_x(ix) * self%grid%del_z(iz)
+                enddo
+            enddo
+        enddo
+        !
+        call self%dual_face_area%setY( y )
+        !
+        !> z-components
+        do ix = 1, self%grid%nx + 1
+            do iy = 1, self%grid%ny + 1
+                do iz = 1, self%grid%nz
+                    z(ix, iy, iz) = self%grid%del_x(ix) * self%grid%del_y(iy)
+                enddo
+            enddo
+        enddo
+        !
+        call self%dual_face_area%setZ( z )
+        !
+    end subroutine setDualFaceArea
     !
-    !> SetNodeVolume
-    subroutine SetNodeVolume( self )
+    !> setNodeVolume
+    !
+    subroutine setNodeVolume( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: i, j, k
+        complex( kind=prec ), allocatable :: v(:,:,:)
         !
-        select type( vnode => self%Vnode )
-            class is( rScalar3D_SG_t )
-               !
-               do i = 1, self%grid%nx + 1
-                   do j = 1, self%grid%ny + 1
-                      do k = 1, self%grid%nz + 1
-                          !> note that we are multiplying
-                          !> using the distances with corner of a cell as a center
-                          vnode%v(i, j, k) = self%grid%del_x(i) * self%grid%del_y(j) * self%grid%del_z(k)
-                      enddo
-                   enddo
-               enddo
-               !
-        end select
+        v = self%v_node%getV()
         !
-    end subroutine SetNodeVolume
+        do i = 1, self%grid%nx + 1
+            do j = 1, self%grid%ny + 1
+                do k = 1, self%grid%nz + 1
+                    !> note that we are multiplying
+                    !> using the distances with corner of a cell as a center
+                    v(i, j, k) = self%grid%del_x(i) * self%grid%del_y(j) * self%grid%del_z(k)
+                    !
+                enddo
+            enddo
+        enddo
+        !
+        call self%v_node%setV( v )
+        !
+    end subroutine setNodeVolume
     !
     !> CellVolume
     !> Creates volume elements for grid cells
-    !> and stores them as real scalars with gridType=CELL.
-    subroutine SetCellVolume( self )
+    !> and stores them as real scalars with grid_type=CELL.
+    !
+    subroutine setCellVolume( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
         !
         integer :: i, j, k
+        complex( kind=prec ), allocatable :: v(:,:,:)
         !
-        select type( vcell => self%Vcell )
-            class is( rScalar3D_SG_t )
-               !
-               do i = 1, self%grid%nx 
-                   do j = 1, self%grid%ny
-                      do k = 1, self%grid%nz
-                          vcell%v(i, j, k) = self%grid%dx(i) * self%grid%dy(j) * self%grid%dz(k)
-                      enddo
-                   enddo
-               enddo
-               !
-        end select
+        v = self%v_cell%getV()
         !
-    end subroutine SetCellVolume
+        do i = 1, self%grid%nx 
+            do j = 1, self%grid%ny
+                do k = 1, self%grid%nz
+                    v(i, j, k) = self%grid%dx(i) * self%grid%dy(j) * self%grid%dz(k)
+                enddo
+            enddo
+        enddo
+        !
+        call self%v_cell%setV( v )
+        !
+    end subroutine setCellVolume
     !
-    !> SetEdgeVolume
+    !> setEdgeVolume
     !> Creates volume elements centered around the edges of
     !> the grid, and stores them as real vectors with
-    !> gridType = EDGE.
-    subroutine SetEdgeVolume( self )
+    !> grid_type = EDGE.
+    !
+    !> v_edge = edge_length*dual_face_area --- simplest implementation
+    !> is just to create these (but they might already be created--
+    !>     let's assume they are--the way metric element objects are created
+    !>      this is always true
+    !call self%setEdgeLength()
+    !call self%setDualFaceArea()
+    !
+    subroutine setEdgeVolume( self )
         implicit none
         !
         class( MetricElements_CSG_t ), intent( inout ) :: self
-
-        !> Vedge = Edgelength*DualFaceArea --- simplest implementation
-        !> is just to create these (but they might already be created--
-        !>     let's assume they are--the way metric element objects are created
-        !>      this is always true
-        !call self%setEdgelength()
-        !call self%setDualFaceArea()
         !
-        self%Vedge = self%Edgelength
-        call self%Vedge%mult( self%DualFaceArea )
+        self%v_edge = self%edge_length
+        !
+        call self%v_edge%mult( self%dual_face_area )
         !
     end subroutine setEdgeVolume
     !

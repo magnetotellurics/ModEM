@@ -79,7 +79,7 @@ contains
         int_time = int( t_finish - t_start )
         !
         write( *, * )
-        write( *, * ) "Finish ModEM-OO: ", getLiteralTime( int_time )
+        write( *, * ) "Finish ModEM-OO: ", getLiteralTime( int_time ), aux_counter
         !
         if( warning_counter .GT. 0 ) then
             !
@@ -128,7 +128,7 @@ contains
                 !
             case default
                 !
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m unknown job: [", modem_job, "]"
+                call warning( "Unknown job: ["//modem_job//"]!" )
                 call printHelp
                 stop
             !

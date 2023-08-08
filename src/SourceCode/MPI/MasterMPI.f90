@@ -34,7 +34,7 @@ contains
             call broadcastSigma( sigma )
             !
         else
-            stop "Error: masterSolveAll > sigma not allocated"
+            call errStop( "masterSolveAll > sigma not allocated" )
         endif
         !
         !> Initialize MPI control variables
@@ -112,7 +112,7 @@ contains
             call broadcastSigma( sigma )
             !
         else
-            stop "Error: masterForwardModelling > sigma not allocated"
+            call errStop( "masterForwardModelling > sigma not allocated" )
         endif
         !
         if( allocated( all_predicted_data ) ) deallocate( all_predicted_data )
@@ -196,7 +196,7 @@ contains
             call broadcastSigma( sigma )
             !
         else
-            stop "Error: masterJMult > sigma not allocated"
+            call errStop( "masterJMult > sigma not allocated" )
         endif
         !
         !> Send dSigma to all workers
@@ -205,7 +205,7 @@ contains
             call broadcastDSigma( dsigma )
             !
         else
-            stop "Error: masterJMult > sigma not allocated"
+            call errStop( "masterJMult > sigma not allocated" )
         endif
         !
         if( allocated( JmHat ) ) deallocate( JmHat )
@@ -306,7 +306,7 @@ contains
             call dsigma%zeros
             !
         else
-            stop "Error: masterJMult_T > sigma not allocated"
+            call errStop( "masterJMult_T > sigma not allocated" )
         endif
         !
         !> Initialize MPI control variables
@@ -335,7 +335,7 @@ contains
         !
         !> Allocate s_hat array
         if( present( s_hat ) ) then
-            allocate( ModelParameterCell_SG_t :: s_hat( size( transmitters ) ) )
+            allocate( ModelParameterCell_t :: s_hat( size( transmitters ) ) )
         endif
         !
         !> Send 1 transmitter to first available worker

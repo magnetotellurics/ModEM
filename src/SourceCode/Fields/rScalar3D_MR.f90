@@ -68,9 +68,12 @@ module rScalar3D_MR
             procedure, public :: getV => getV_rScalar3D_MR
             procedure, public :: setV => setV_rScalar3D_MR
             !
+            procedure, public :: getSV => getSV_rScalar3D_MR
+            procedure, public :: setSV => setSV_rScalar3D_MR
+            !
             procedure, public :: getArray => getArray_rScalar3D_MR
             procedure, public :: setArray => setArray_rScalar3D_MR
-            procedure, public :: switchStoreState => switchStoreState_rScalar3D_MR
+            !
             procedure, public :: copyFrom => copyFrom_rScalar3D_MR
             !
             !> I/O operations
@@ -153,7 +156,7 @@ contains
                 self%is_allocated = self%is_allocated .AND. ( status .EQ. 0 )
                 !
                 do i = 1, grid%n_grids
-                    self%sub_scalars(i) = rScalar3D_MR_t( grid%sub_grids(i), grid_type )
+                    self%sub_scalars(i) = rScalar3D_MR_t( grid%sub_grids(i), self%grid_type )
                 end do
                 !
                 call self%setIndexArrays
@@ -179,7 +182,7 @@ contains
         integer :: n_full, n_active, n_interior, n_boundaries
         real( kind=prec ), dimension(:), allocatable :: v_1, v_2
         !
-        if ( .NOT. present( xy_in ) ) then
+        if( .NOT. present( xy_in ) ) then
             xy = .FALSE.
         else
             xy = xy_in
@@ -251,12 +254,12 @@ contains
         !
         n_active = 0
         do k = 1, n_full
-            if (v_1(k) >= 0) then
+            if(v_1(k) >= 0) then
                 n_active = n_active + 1
             endif
         end do
         !
-        if (allocated (self%ind_active)) then
+        if(allocated (self%ind_active)) then
             deallocate (self%ind_active)
         endif
         !
@@ -264,7 +267,7 @@ contains
         !
         i = 0
         do k = 1, n_full
-            if (v_1(k) >= 0) then
+            if(v_1(k) >= 0) then
                 i = i + 1
                 self%ind_active(i) = k
             endif
@@ -272,7 +275,7 @@ contains
         !
         n_interior = 0
         do k = 1, n_full
-            if (v_1(k) == 0) then
+            if(v_1(k) == 0) then
                 n_interior = n_interior + 1
             endif
         end do
@@ -296,22 +299,22 @@ contains
         !!
         n_boundaries = 0
         do k = 1, n_active
-            if (v_2(k) == 1) then
+            if(v_2(k) == 1) then
                 n_boundaries = n_boundaries + 1
             endif
         end do
         !
-        if (allocated (self%ind_boundaries)) then
-            deallocate (self%ind_boundaries)
+        if(allocated (self%ind_boundary)) then
+            deallocate (self%ind_boundary)
         endif
         !
-        allocate (self%ind_boundaries(n_boundaries)) 
+        allocate (self%ind_boundary(n_boundaries)) 
         !
         i = 0
         do k = 1, n_active
-            if (v_2(k) == 1) then
+            if(v_2(k) == 1) then
                 i = i + 1
-                self%ind_boundaries(i) = k
+                self%ind_boundary(i) = k
             endif
         end do
         !
@@ -428,14 +431,14 @@ contains
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) n_I = n_I + 1
+            if(v(k) == c) n_I = n_I + 1
         end do
         !
         allocate (I(n_I))
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) then
+            if(v(k) == c) then
                 n_I = n_I + 1
                 I(n_I) = k
             endif
@@ -461,14 +464,14 @@ contains
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) n_I = n_I + 1
+            if(v(k) == c) n_I = n_I + 1
         end do
         !
         allocate (I(n_I))
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) then
+            if(v(k) == c) then
                 n_I = n_I + 1
                 I(n_I) = k
             endif
@@ -541,7 +544,7 @@ contains
         call self%baseDealloc
         !
         if( allocated( self%v ) ) deallocate( self%v )
-        if( allocated( self%sv ) ) deallocate( self%sv )
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
         self%nx = 0
         self%ny = 0
@@ -576,9 +579,7 @@ contains
         !
         logical :: int_only_p
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( .NOT. present (int_only)) then
              int_only_p = .FALSE.
@@ -657,13 +658,13 @@ contains
         integer :: m, n
         !
         m = size( self%ind_interior )
-        n = size( self%ind_boundaries )
+        n = size( self%ind_boundary )
         !
         allocate( ind_i(m) )
         allocate( ind_b(n) )
         !
         ind_i = self%ind_interior
-        ind_b = self%ind_boundaries
+        ind_b = self%ind_boundary
         !
     end subroutine intBdryIndices_rScalar3D_MR
     !
@@ -699,9 +700,7 @@ contains
         integer :: y1, y2
         integer :: z1, z2
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         x1 = xmin; x2 = xmax
         y1 = ymin; y2 = ymax
@@ -863,7 +862,7 @@ contains
         !
         complex( kind=prec ) :: cvalue
         !
-        stop "Error: dotProd_rScalar3D_MR not implemented!"
+        call errStop( "dotProd_rScalar3D_MR still not implemented" )
         !
     end function dotProd_rScalar3D_MR
     !
@@ -887,7 +886,7 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: divByField_rScalar3D_MR not implemented!"
+        call errStop( "divByField_rScalar3D_MR not implemented!" )
         !
     end subroutine divByField_rScalar3D_MR
     !
@@ -898,9 +897,19 @@ contains
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
         !
-        stop "Error: getVRScalar3D_SG not implemented!"
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getV_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( v ) ) then
+            call errStop( "getV_rScalar3D_MR > v not allocated." )
+        else
+            !
+            v = cmplx( self%v, 0.0, kind=prec )
+            !
+        endif
         !
     end function getV_rScalar3D_MR
     !
@@ -910,11 +919,70 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: v
         !
-        stop "Error: setV_rScalar3D_MR not implemented!"
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setV_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        !if( .NOT. allocated( v ) ) then
+            !call errStop( "setV_rScalar3D_MR > v not allocated." )
+        !endif
+        !
+        call self%switchStoreState( compound )
+        !
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
+        !
+        self%v = real( v, kind=prec )
         !
     end subroutine setV_rScalar3D_MR
+    !
+    !> No function briefing
+    !
+    function getSV_rScalar3D_MR( self ) result( s_v )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( in ) :: self
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getSV_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        if( .NOT. allocated( self%s_v ) ) then
+            call errStop( "getSV_rScalar3D_MR > self%s_v not allocated." )
+        else
+            !
+            s_v = cmplx( self%s_v, 0.0, kind=prec )
+            !
+        endif
+        !
+    end function getSV_rScalar3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine setSV_rScalar3D_MR( self, s_v )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), dimension(:), intent( in ) :: s_v
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setSV_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        !if( .NOT. allocated( s_v ) ) then
+            !call errStop( "setSV_rScalar3D_MR > s_v not allocated." )
+        !endif
+        !
+        call self%switchStoreState( singleton )
+        !
+        if( allocated( self%v ) ) deallocate( self%v )
+        !
+        self%s_v = s_v
+        !
+    end subroutine setSV_rScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -956,64 +1024,6 @@ contains
         !
     end subroutine setArray_rScalar3D_MR
     !
-    !> No subroutine briefing
-    !
-    subroutine switchStoreState_rScalar3D_MR( self )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        !
-        integer :: nzAir
-        !
-        select case( self%store_state )
-            !
-            case( compound )
-                !
-                allocate( self%sv( self%length() ) )
-                !
-                self%sv = (/reshape( self%v, (/self%Nxyz, 1/))/)
-                !
-                deallocate( self%v )
-                !
-                self%store_state = singleton
-                !
-            case( singleton )
-                !
-                if( self%grid_type == NODE ) then
-                    !
-                    allocate( self%v( self%nx + 1, self%ny + 1, self%nz + 1 ) )
-                    !
-                else if( self%grid_type == CELL ) then
-                    !
-                    allocate( self%v( self%nx, self%ny, self%nz ) )
-                    !
-                else if( self%grid_type == CELL_EARTH ) then
-                    !
-                    call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
-                    !
-                    allocate( self%v( self%nx, self%ny, self%nz - nzAir ) )
-                    !
-                else
-                     write( *, * ) "Error: switchStoreState_rScalar3D_MR > unrecognized grid type: [", self%grid_type, "]"
-                     stop
-                endif
-                !
-                self%v = reshape( self%sv, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
-                !
-                deallocate( self%sv )
-                !
-                self%store_state = compound
-                !
-            case default
-                write( *, * ) "Error: switchStoreState_rScalar3D_MR > Unknown store_state :[", self%store_state, "]"
-                stop
-            !
-        end select
-        !
-    end subroutine switchStoreState_rScalar3D_MR
-    !
-    !> No subroutine briefing
-    !
     subroutine copyFrom_rScalar3D_MR( self, rhs )
         implicit none
         !
@@ -1023,7 +1033,7 @@ contains
         integer :: i
         !
         if( .NOT. rhs%is_allocated ) then
-            stop "Error: copyFrom_rScalar3D_MR > rhs not allocated"
+            call errStop( "copyFrom_rScalar3D_MR > rhs not allocated" )
         endif
         !
         self%grid => rhs%grid
@@ -1033,18 +1043,15 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-        if( allocated( rhs%ind_interior ) ) &
-        self%ind_interior = rhs%ind_interior
-        !
-        if( allocated( rhs%ind_boundaries ) ) &
-        self%ind_boundaries = rhs%ind_boundaries
-        !
-        if( allocated( rhs%ind_active ) ) &
-        self%ind_active = rhs%ind_active
-        !
         select type( rhs )
             !
             class is( rScalar3D_MR_t )
+                !
+                if( allocated( rhs%ind_active ) ) then
+                    self%ind_active = rhs%ind_active
+                else
+                    call errStop( "copyFrom_rScalar3D_MR > rhs%ind_active not allocated" )
+                endif
                 !
                 self%NdV = rhs%NdV
                 self%Nxyz = rhs%Nxyz
@@ -1053,9 +1060,9 @@ contains
                     !
                     self%v = rhs%v
                     !
-                else if( rhs%store_state .EQ. singleton ) then
+                elseif( rhs%store_state .EQ. singleton ) then
                     !
-                    self%sv = rhs%sv
+                    self%s_v = rhs%s_v
                     !
                 else
                     stop "Error: copyFrom_rScalar3D_MR > Unknown store_state!"
@@ -1066,6 +1073,8 @@ contains
                 end do
                 !
                 self%is_allocated = .TRUE.
+                !
+                call self%setIndexArrays
                 !
             class default
                 stop "Error: copyFrom_rScalar3D_MR > Unclassified rhs"
@@ -1112,9 +1121,7 @@ contains
         !
         integer :: ix, iy, iz,funit
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit

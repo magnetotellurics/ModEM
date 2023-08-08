@@ -130,8 +130,7 @@ contains
         !
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
-        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: sigma, dsigma
         !
         !> flavor is a string that specifies the algorithm to use
         character(80) :: flavor = "Cubic"
@@ -450,7 +449,7 @@ contains
         !
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( in ) :: sigma, mHat
+        class( ModelParameter_t ), allocatable, intent( inout ) :: sigma, mHat
         real( kind=prec ), intent( inout ) :: F, m_norm
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
         integer, intent( inout ) :: i_sol
@@ -531,8 +530,7 @@ contains
         !
         class( InversionNLCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( in ) :: sigma, mHat
-        class( ModelParameter_t ), allocatable, intent( inout ) :: grad
+        class( ModelParameter_t ), allocatable, intent( inout ) :: sigma, mHat, grad
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: dHat
         integer, intent( in ) :: i_sol
         !
@@ -592,7 +590,7 @@ contains
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
-        class( ModelParameter_t ), allocatable, intent( in ) :: mHat
+        class( ModelParameter_t ), allocatable, intent( inout ) :: mHat
         real( kind=prec ), intent( inout ) :: F
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
         !
@@ -675,8 +673,7 @@ contains
         !
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( in ) :: sigma, h    ! search direction
-        class( ModelParameter_t ), allocatable, intent( inout ) :: mHat
+        class( ModelParameter_t ), allocatable, intent( inout ) :: sigma, h, mHat
         real( kind=prec ), intent( inout ) :: f
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
         integer, intent( out ) :: niter
@@ -1195,7 +1192,7 @@ contains
         !
         class( InversionNLCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
-        class( ModelParameter_t ), intent( in ) :: dsigma, mHat
+        class( ModelParameter_t ), intent( inout ) :: dsigma, mHat
         !
         character(100) :: out_file_name
         character(3) :: char3

@@ -3,22 +3,17 @@
 !
 module CoreComponents
     !
-    use Constants
-    !
     use ForwardControlFile
     use InversionControlFile
     !
-    use Grid3D_SG
-    !
-    use ModelOperator_MF
+    use ModelOperator_MF_SG
     use ModelOperator_SP
     !
-    use ModelParameterCell_SG
-    !use ModelParameterCell_SG_VTI
+    use ModelParameterCell
     !
     use ModelCovariance
     !
-    use ForwardSolverIT_DC
+    use ForwardSolver_IT_DC
     !
     use SourceMT_1D
     use SourceMT_2D
@@ -36,18 +31,6 @@ module CoreComponents
     use ModelReader_Weerachai
     !
     use DataFileStandard
-    !
-    !> Classes
-    type( ForwardControlFile_t ), allocatable :: fwd_control_file
-    type( InversionControlFile_t ), allocatable :: inv_control_file
-    !
-    class( Grid_t ), allocatable, target :: main_grid
-    !
-    class( ModelOperator_t ), allocatable :: model_operator
-    !
-    class( ForwardSolver_t ), allocatable, target :: forward_solver
-    !
-    class( ModelCovariance_t ), allocatable :: model_cov
     !
     !> Program Control Variables
     character(8) :: str_date
@@ -111,72 +94,60 @@ contains
         !
         !> Initialize main_grid and sigma0 with ModelReader
         !> Only ModelReader_Weerachai by now ????
-        call model_reader%Read( model_file_name, main_grid, sigma0 ) 
+        call model_reader%read( model_file_name, main_grid, sigma0 ) 
         !
-        !> Instantiate the ModelOperator object according to the main_grid type
-        select type( main_grid )
+        call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+        !
+        call main_grid%updateAirLayers( air_layer%nz, air_layer%dz )
+        !
+        ! Verbose
+        write( *, "( a39 )" ) "Model Air Layers [i, dz(i)]:"
+        !
+        do i = air_layer%nz, 1, -(1)
+            write( *, "( i20, f20.3 )" ) i, air_layer%dz(i)
+        enddo
+        !
+        write( *, * ) "          Air layers from the method [", trim( air_layer%method ), "]"
+        !
+        write( *, "( a39, f12.3, a4 )" ) "Top of the air layers is at ", ( sum( air_layer%Dz ) / 1000. ), " km."
+        !
+        write( *, "( a33, f12.3 )" ) "Air layers Max Height ", air_layer%maxHeight
+        !
+        write( *, "( a23, i6, a2, i6, a2, i6, a1 )" ) "dim(x,y,z):(", main_grid%nx, ", ", main_grid%ny, ", ", main_grid%nz, ")"
+        !
+        write( *, "( a30, f16.3, a2, f16.3, a2, f16.3, a4, f16.3 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+        !
+        !> Instantiate model_operator
+        !> Specific type can be chosen via fwd control file
+        select case( model_operator_type )
             !
-            class is( Grid3D_SG_t )
+            case( MODELOP_MF )
                 !
-                call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+                allocate( model_operator, source = ModelOperator_MF_SG_t( main_grid ) )
                 !
-                call main_grid%updateAirLayers( air_layer%nz, air_layer%dz )
+            case( MODELOP_SP )
                 !
-                ! Verbose
-                write( *, "( a39 )" ) "Model Air Layers [i, dz(i)]:"
+                allocate( model_operator, source = ModelOperator_SP_t( main_grid ) )
                 !
-                do i = air_layer%nz, 1, -(1)
-                    write( *, "( i20, f20.3 )" ) i, air_layer%dz(i)
-                enddo
+            case( MODELOP_SP2 )
                 !
-                write( *, * ) "          Air layers from the method [", trim( air_layer%method ), "]"
+                call errStop( "handleModelFile > MODELOP_SP2 not implemented" )
                 !
-                write( *, "( a39, f12.3, a4 )" ) "Top of the air layers is at ", ( sum( air_layer%Dz ) / 1000. ), " km."
+            case( "" )
                 !
-                write( *, "( a33, f12.3 )" ) "Air layers Max Height ", air_layer%maxHeight
+                call warning( "handleModelFile > model_operator_type not provided, using ModelOperator_MF_SG_t." )
                 !
-                write( *, "( a23, i6, a2, i6, a2, i6, a1 )" ) "dim(x,y,z):(", main_grid%nx, ", ", main_grid%ny, ", ", main_grid%nz, ")"
+                allocate( model_operator, source = ModelOperator_MF_SG_t( main_grid ) )
                 !
-                write( *, "( a30, f16.3, a2, f16.3, a2, f16.3, a4, f16.3 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+            case default
                 !
-                !> Instantiate model_operator
-                !> Specific type can be chosen via fwd control file
-                select case( model_operator_type )
-                    !
-                    case( MODELOP_MF )
-                        !
-                        allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
-                        !
-                    case( MODELOP_SP )
-                        !
-                        allocate( model_operator, source = ModelOperator_SP_t( main_grid ) )
-                        !
-                    case( MODELOP_SP2 )
-                        !
-                        call errStop( "handleModelFile > MODELOP_SP2 not implemented" )
-                        !
-                    case( "" )
-                        !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m handleModelFile > model_operator_type not provided, using ModelOperator_MF_t."
-                        !
-                        allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
-                        !
-                    case default
-                        !
-                        call errStop( "handleModelFile > Wrong Model Operator type: ["//model_operator_type//"]" )
-                        !
-                end select
-                !
-                call model_operator%setEquations
-                !
-                call sigma0%setMetric( model_operator%metric )
-                !
-                call model_operator%setCond( sigma0 )
-                !
-            class default
-                call errStop( "handleModelFile > Unclassified main_grid" )
+                call errStop( "handleModelFile > Wrong Model Operator type: ["//model_operator_type//"]" )
                 !
         end select
+        !
+        call model_operator%setEquations
+        !
+        call sigma0%setMetric( model_operator%metric )
         !
     end subroutine handleModelFile
     !
@@ -292,7 +263,7 @@ contains
         implicit none
         !
         class( ModelParameter_t ), allocatable :: model, aux_model
-        type( rScalar3D_SG_t ) :: cell_cond
+        class( Scalar_t ), allocatable :: cell_cond
         !
         ! Verbose
         write( *, * ) "     - Start jobSplitModel"
@@ -313,9 +284,9 @@ contains
         else
             !
             !> Create new isotropic model with target horizontal cond
-            cell_cond = model%getCond(1)
+            allocate( cell_cond, source = model%getCond(1) )
             !
-            allocate( aux_model, source = ModelParameterCell_SG_t( model%metric%grid, cell_cond, 1, model%param_type ) )
+            allocate( aux_model, source = ModelParameterCell_t( model%metric%grid, cell_cond, 1, model%param_type ) )
             !
             call aux_model%setMetric( model_operator%metric )
             !
@@ -548,7 +519,7 @@ contains
         !
         ! Solver parameters
         max_solver_iters = 80
-        max_divcor_calls = 20
+        max_solver_calls = 20
         max_divcor_iters = 100
         tolerance_divcor = 1E-5
         tolerance_solver = 1E-7
@@ -557,6 +528,7 @@ contains
         inversion_type = NLCG
         !
         ! Forward Modeling Parameters
+        solver_type = ""
         forward_solver_type = FWD_IT_DC
         model_operator_type = MODELOP_MF
         !
@@ -591,7 +563,7 @@ contains
                     !
                 case default
                     !
-                    stop "Error: jobInversion > Undefined inversion_type"
+                    call errStop( "jobInversion > Undefined inversion_type" )
                     !
             end select
             !
@@ -674,7 +646,9 @@ contains
         if( allocated( inversion_type ) ) deallocate( inversion_type )
         if( allocated( joint_type ) ) deallocate( joint_type )
         !
+        if( allocated( grid_format ) ) deallocate( grid_format )
         if( allocated( model_operator_type ) ) deallocate( model_operator_type )
+        if( allocated( solver_type ) ) deallocate( solver_type )
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type_mt ) ) deallocate( source_type_mt )
         if( allocated( source_type_csem ) ) deallocate( source_type_csem )
@@ -791,7 +765,7 @@ contains
             write( ioFwdTmp, "(A19)" ) "# <Grid parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A33)" ) "#grid_header [ModEM|HDF5] : ModEM"
-            write( ioFwdTmp, "(A30)" ) "#grid_type [SG|MR]        : SG"
+            write( ioFwdTmp, "(A30)" ) "grid_format [SG|MR]       : SG"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A20)" ) "# <Model parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
@@ -807,19 +781,20 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A36)" ) "solver_type [QMR|BICG]      : QMR"
+            write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A35)" ) "max_solver_iters [80]          : 80"
-            write( ioFwdTmp, "(A35)" ) "max_divcor_calls [20]          : 20"
+            write( ioFwdTmp, "(A35)" ) "max_solver_calls [20]          : 20"
             write( ioFwdTmp, "(A36)" ) "max_divcor_iters [100]         : 100"
             write( ioFwdTmp, "(A37)" ) "tolerance_solver [1E-7]        : 1E-7"
             write( ioFwdTmp, "(A37)" ) "tolerance_divcor [1E-5]        : 1E-5"
-            write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A1)" ) "#"
             !
             close( ioFwdTmp )
             !
         else
             !
-            stop "Error: printInversionControlFileTemplate > opening [fwd_ctrl_template.txt]"
+            call errStop( "printInversionControlFileTemplate > opening [fwd_ctrl_template.txt]" )
             !
         endif
         !
@@ -859,7 +834,7 @@ contains
             !
         else
             !
-            stop "Error: printInversionControlFileTemplate > opening [inv_ctrl_template.txt]"
+            call errStop( "printInversionControlFileTemplate > opening [inv_ctrl_template.txt]" )
             !
         endif
         !

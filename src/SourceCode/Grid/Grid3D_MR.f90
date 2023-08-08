@@ -3,7 +3,7 @@
 !>
 !> LICENSING information
 !
-!> Copyright (C) 2020 ModEM research group.
+!> Copyright(C) 2020 ModEM research group.
 !> Contact: http://
 !>
 !> GNU General Public License Usage
@@ -20,8 +20,7 @@
 !
 module Grid3D_MR
     !
-    use Constants
-    use FileUnits
+    use Utilities
     use Grid3D_SG
     !
     type, extends( Grid_t ) :: Grid3D_MR_t
@@ -61,8 +60,6 @@ module Grid3D_MR
             !
             procedure, public :: setup => setup_Grid3D_MR
             !
-            procedure, public :: setCellSizes => setCellSizes_Grid3D_MR
-            !
             procedure, public :: slice1D => slice1D_Grid3D_MR
             procedure, public :: slice2D => slice2D_Grid3D_MR
             !
@@ -73,38 +70,33 @@ module Grid3D_MR
     public :: repMat
     !
     interface Grid3D_MR_t
-        module procedure Grid3D_MR_t_ctor_empty
-        module procedure Grid3D_MR_t_ctor_grid
+        module procedure Grid3D_MR_t_ctor
     end interface Grid3D_MR_t
     !
 contains
     !
-    !> No function briefing
-    !
-    function Grid3D_MR_t_ctor_empty() result( self )
-        implicit none
-        !
-        type( Grid3D_MR_t ) :: self
-        !  
-        self%is_initialized = .FALSE.
-        !
-        self%n_grids = 0
-        !
-    end function Grid3D_MR_t_ctor_empty
-    !
     !> Creates and initialize a MR Grid from a standard Grid.
     !
-    function Grid3D_MR_t_ctor_grid( grid, layers ) result( self )
+    function Grid3D_MR_t_ctor( nx, ny, nzAir, nzEarth, dx, dy, dz, layers ) result( self )
         implicit none
         !
-        class( Grid_t ), target, intent( in ) :: grid
+        integer, intent( in ) :: nx, ny, nzAir, nzEarth
+        real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
         integer, allocatable, dimension(:), intent( in ) :: layers
         !
         type( Grid3D_MR_t ) :: self
         !  
         integer :: i
         !
-        self%n_grids = size( layers )
+        !write( *, * ) "Constructor Grid3D_MR_t"
+        !
+        call self%baseInit
+        !
+        call self%create( nx, ny, nzAir, nzEarth )
+        !
+        call self%setCellSizes( dx, dy, dz )
+        !
+        self%n_grids = size( layers ) / 2
         !
         self%cs = layers
         !
@@ -132,7 +124,7 @@ contains
                 !
             enddo
             !
-            call self%setup()
+            call self%setup
             !
             self%is_initialized = .TRUE.
             !
@@ -140,27 +132,26 @@ contains
             self%is_initialized = .FALSE.
         endif
         !
-    end function Grid3D_MR_t_ctor_grid
+    end function Grid3D_MR_t_ctor
     !
     !> No subroutine briefing
     !
-    subroutine setup_Grid3D_MR( self )
+    subroutine setup_Grid3D_MR( self, origin )
         implicit none
         !
-        class( Grid3D_MR_t ), intent ( inout ) :: self
+        class( Grid3D_MR_t ), intent( inout ) :: self
+        real( kind=prec ), intent( in ), optional :: origin(3)
         !
         integer :: i, i1, i2, last
         real( kind=prec ) :: ddz_interface
-        integer :: ngrids
-        !
-        ngrids = self%n_grids
         !
         ! Check if coarseness parameters are consistent with
-        if( sum (self%coarseness(:, 2)) /= size(self%dz) ) then
-            stop "Error: setup_Grid3D_MR > Inconsistent grid coarseness parameter!"
-        endif
+        write(*,*) size( self%coarseness(:, 2) ), sum( self%coarseness(:, 2) ), size( self%dz ), self%nz
+        !if( sum( self%coarseness(:, 2) ) /= size( self%dz ) ) then
+            !call errStop( "setup_Grid3D_MR > Inconsistent grid coarseness parameter!" )
+        !endif
         !
-        do i = 1, ngrids
+        do i = 1, self%n_grids
             !
             i1 = sum( self%coarseness( 1 : i, 2 ) ) - self%coarseness( i, 2 ) + 1
             i2 = sum( self%coarseness( 1 : i, 2 ) )
@@ -170,13 +161,13 @@ contains
         enddo
         !
         ! Correct dual edge lengths at interfaces in each subgrid
-        do i = 2, ngrids
+        do i = 2, self%n_grids
             !
-            last = size(self%sub_grids(i - 1)%dz)  
-            ddz_interface = (self%sub_grids(i - 1)%dz(last) + &
+            last = size( self%sub_grids(i - 1)%dz )
+            ddz_interface =(self%sub_grids(i - 1)%dz(last) + &
             self%sub_grids(i)%dz(1)) / 2
             !
-            last = size(self%sub_grids(i - 1)%del_z)
+            last = size( self%sub_grids(i - 1)%del_z)
             self%sub_grids(i - 1)%del_z(last) = ddz_interface
             self%sub_grids(i)%del_z(1) = ddz_interface
             !
@@ -189,7 +180,7 @@ contains
     subroutine setSubGrid( self, k, i1, i2 )
         implicit none
         !
-        class( Grid3D_MR_t ), intent ( inout ) :: self
+        class( Grid3D_MR_t ), intent( inout ) :: self
         integer, intent( in ) :: k, i1, i2
         !
         integer :: cs
@@ -200,21 +191,20 @@ contains
         !
         cs = 2 ** self%coarseness( k, 1 )
         !
-        call redimension_cells(cs, self%dx, dx)
-        call redimension_cells(cs, self%dy, dy)
+        call redimension_cells( cs, self%dx, dx )
+        call redimension_cells( cs, self%dy, dy )
         dz = self%Dz(i1:i2)
         !
-        self%coarseness(k, 3) = i1
-        self%coarseness(k, 4) = i2
+        self%coarseness( k, 3 ) = i1
+        self%coarseness( k, 4 ) = i2
         !
-        nx = size (dx)
-        ny = size (dy)
+        nx = size( dx )
+        ny = size( dy )
         !
-        nz_air = min (max (0, self%nzAir - i1 + 1), &
-        &        self%coarseness(k, 2))
-        nz_earth = size (Dz) - nz_air
+        nz_air = min( max( 0, self%nzAir - i1 + 1 ), self%coarseness( k, 2 ) )
+        nz_earth = size(Dz) - nz_air
         !
-        call self%sub_grids(k)%Create (nx, ny, nz_air, nz_earth)
+        call self%sub_grids(k)%Create(nx, ny, nz_air, nz_earth)
         !
         self%sub_grids(k)%dx = Dx
         self%sub_grids(k)%dy = Dy
@@ -223,16 +213,16 @@ contains
         ! Origin correction for spherical grid
         if(i1 < nz_air) then
             ! Whole sub-grid in the air
-            self%sub_grids(k)%oz = sum (self%dz(i2 + 1 : self%nzAir))
+            self%sub_grids(k)%oz = sum(self%dz(i2 + 1 : self%nzAir))
             !
-        else if(i1 > self%nzAir + 1) then
+        elseif(i1 > self%nzAir + 1) then
             self%sub_grids(k)%oz = -1.0*&
-            sum (self%dz(self%nzAir + 1 : i1 - 1))
+            sum(self%dz(self%nzAir + 1 : i1 - 1))
         else
             self%sub_grids(k)%oz = 0.0
         endif
         !
-        call self%sub_grids(k)%setup()
+        call self%sub_grids(k)%setup
         !
         contains
             !
@@ -246,12 +236,12 @@ contains
                 integer :: n, iout, k, count
                 real( kind=prec ), allocatable :: tmp(:)
                 !
-                n = size (D_in)
-                allocate (tmp(n))
+                n = size(D_in)
+                allocate(tmp(n))
                 !
                 do iout = 1, n
                     tmp(iout) = 0.0
-                    do k = iout, iout - (cs_in - 1), -1
+                    do k = iout, iout -(cs_in - 1), -1
                         if(k < 1) exit
                         tmp(iout) = tmp(iout) + D_in(k)
                     enddo
@@ -330,7 +320,7 @@ contains
     !
     !> No function briefing
     !
-    function numberOfNodes_Grid3D_MR (self) result(n)
+    function numberOfNodes_Grid3D_MR(self) result(n)
         implicit none
         !
         class( Grid3D_MR_t ), intent( in ) :: self
@@ -354,16 +344,16 @@ contains
         !
         integer :: n
         !
-        stop "Error: numberOfCells_Grid3D_MR not implemented"
+        call errStop( "numberOfCells_Grid3D_MR not implemented" )
         !
     end function numberOfCells_Grid3D_MR
     !
     !> Based on matlab method of same name in class TGrid3d
     !> IndVec is the index within the list of nodes of a fixed type
     !> e.g., among the list of y-Faces.   An offset needs to be
-    !> added to get index in list of all faces (for example).
+    !> added to get index in list of all faces(for example).
     !
-    subroutine gridIndex_Grid3D_MR ( self, node_type, ind_vec, i, j, k )
+    subroutine gridIndex_Grid3D_MR( self, node_type, ind_vec, i, j, k )
         implicit none
         !
         class( Grid3D_MR_t ), intent( in ) :: self
@@ -388,9 +378,9 @@ contains
     !> Based on matlab method of same name in class TGrid3d
     !> returned array IndVec gives numbering of nodes within
     !> the list for node_type; need to add an offset for position
-    !> in full list of all faces or edges (not nodes and cells).
+    !> in full list of all faces or edges(not nodes and cells).
     !
-    subroutine vectorIndex_Grid3D_MR ( self, node_type, i, j, k, ind_vec )
+    subroutine vectorIndex_Grid3D_MR( self, node_type, i, j, k, ind_vec )
         implicit none
         !
         class( Grid3D_MR_t ), intent( in ) :: self
@@ -492,7 +482,7 @@ contains
                 case( CELL )
                     n_active(iGrid) = self%n_active_cell( iGrid )
                 case default
-                    stop "Error: nActive_Grid3D_MR > Unknown grid_type"
+                    call errStop( "nActive_Grid3D_MR > Unknown grid_type" )
                 !
             end select
             !
@@ -514,7 +504,7 @@ contains
         !self%Nactive = 0
         !
         do iGrid = 1, self%n_grids
-            !  this sets limits (in vertical) of active faces, edges, nodes
+            !  this sets limits(in vertical) of active faces, edges, nodes
             !  First set total--active + inactive for sub-grid
             !
             call self%sub_grids( iGrid )%numberOfEdges( nX, nY, nZ )
@@ -561,7 +551,7 @@ contains
         integer, intent( in ) :: iGrid
         !
         self%n_active_edge(1,iGrid) = self%n_active_edge(1,iGrid) -  &
-        self%sub_grids(iGrid)%nx * (self%sub_grids(iGrid)%ny+1)
+        self%sub_grids(iGrid)%nx *(self%sub_grids(iGrid)%ny+1)
         !
         self%n_active_edge(2,iGrid) = self%n_active_edge(2,iGrid) -  &
         (self%sub_grids(iGrid)%nx+1) * self%sub_grids(iGrid)%ny
@@ -570,21 +560,9 @@ contains
         self%sub_grids(iGrid)%nx * self%sub_grids(iGrid)%ny
         !
         self%n_active_node(iGrid) = self%n_active_node(iGrid) -  &
-        (self%sub_grids(iGrid)%ny+1) * (self%sub_grids(iGrid)%nx+1)
+        (self%sub_grids(iGrid)%ny+1) *(self%sub_grids(iGrid)%nx+1)
         !
     end subroutine reduceActive_Grid3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine setCellSizes_Grid3D_MR( self, dx, dy, dz )
-        implicit none
-        !
-        class( Grid3D_MR_t ), intent( inout ) :: self
-        real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
-        !
-        stop "Error: setCellSizes_Grid3D_MR not implemented!"
-        !
-    end subroutine setCellSizes_Grid3D_MR
     !
     !> No function briefing
     !
@@ -594,7 +572,7 @@ contains
         class( Grid3D_MR_t ), intent( in ) :: self
         type( Grid1D_t ) :: g1D
         !
-        stop "Error: slice1D_Grid3D_MR not implemented!"
+        g1D = Grid1D_t( self%nzAir, self%nzEarth, self%dz )
         !
     end function slice1D_Grid3D_MR
     !
@@ -606,7 +584,7 @@ contains
         class( Grid3D_MR_t ), intent( in ) :: self
         type( Grid2D_t ) :: g2D
         !
-        stop "Error: slice2D_Grid3D_MR not implemented!"
+        call errStop( "slice2D_Grid3D_MR not implemented!" )
         !
     end function slice2D_Grid3D_MR
     !
@@ -617,7 +595,7 @@ contains
         integer, intent( in ) :: nx, ny, nz
         logical, intent( in ) :: transp
         !
-        real( kind=prec ), dimension(:, :, :), allocatable :: m_out
+        real( kind=prec ), dimension(:,:,:), allocatable :: m_out
         integer :: i, i1, i2, n_in
         !
         n_in = size( m_in )

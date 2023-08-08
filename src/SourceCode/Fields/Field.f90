@@ -1,10 +1,10 @@
 !
 !> Abstract Base class to define a ModEM Field
-!> store_state: 1 - compound, 2 - singleton
+!>     store_state: 1 - compound, 2 - singleton
 !
 module Field
     !
-    use Constants
+    use Utilities
     use Grid
     !
     !> Field Store States
@@ -19,8 +19,7 @@ module Field
         !
         integer :: nx, ny, nz, store_state
         !
-        integer, dimension(:), allocatable :: ind_interior
-        integer, dimension(:), allocatable :: ind_boundaries
+        integer, dimension(:), allocatable :: ind_interior, ind_boundary
         !
         logical :: is_allocated
         !
@@ -63,12 +62,18 @@ module Field
             procedure( interface_field_div_by_value ), deferred, public :: divByValue
             generic :: div => divByField, divByValue
             !
-            !> Miscellaneous
+            !> Getters & Setters
+            procedure( interface_get_sv_field ), deferred, public :: getSV
+            procedure( interface_set_sv_field ), deferred, public :: setSV
+            !
             procedure( interface_get_array_field ), deferred, public :: getArray
             procedure( interface_set_array_field ), deferred, public :: setArray
-            procedure( interface_switch_store_state_field ), deferred, public :: switchStoreState
+            !
+            !> Miscellaneous
             procedure( interface_copy_from_field ), deferred, public :: copyFrom
             generic :: assignment(=) => copyFrom
+            !
+            procedure( interface_deallocate_other_state_field ), deferred, public :: deallOtherState
             !
             !> I/O operations
             procedure( interface_read_field ), deferred, public :: read
@@ -78,6 +83,9 @@ module Field
             !> Field procedures
             procedure, public :: baseInit => initializeField
             procedure, public :: baseDealloc => deallocateField
+            !
+            procedure, public :: switchStoreState => switchStoreState_Field
+            !
             procedure, public :: isCompatible => isCompatibleField
             !
             procedure, public :: setIndexArrays => setIndexArraysField
@@ -137,6 +145,27 @@ module Field
             class( Field_t ), intent( in ) :: self
             integer :: field_length
         end function interface_length_field
+        !
+        !> No interface function briefing
+        !
+        function interface_get_sv_field( self ) result( s_v )
+            import :: Field_t, prec
+            !
+            class( Field_t ), intent( in ) :: self
+            !
+            complex( kind=prec ), allocatable, dimension(:) :: s_v
+            !
+        end function interface_get_sv_field
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_set_sv_field( self, s_v )
+            import :: Field_t, prec
+            !
+            class( Field_t ), intent( inout ) :: self
+            complex( kind=prec ), dimension(:), intent( in ) :: s_v
+            !
+        end subroutine interface_set_sv_field
         !
         !> No interface function briefing
         function interface_get_array_field( self ) result( array )
@@ -247,17 +276,17 @@ module Field
         end function interface_dot_product_field
         !
         !> No interface subroutine briefing
-        subroutine interface_switch_store_state_field( self )
-            import :: Field_t
-            class( Field_t ), intent( inout ) :: self
-        end subroutine interface_switch_store_state_field
-        !
-        !> No interface subroutine briefing
         subroutine interface_copy_from_field( self, rhs )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
             class( Field_t ), intent( in ) :: rhs
         end subroutine interface_copy_from_field
+        !
+        !> No interface subroutine briefing
+        subroutine interface_deallocate_other_state_field( self )
+            import :: Field_t
+            class( Field_t ), intent( inout ) :: self
+        end subroutine interface_deallocate_other_state_field
         !
         !> No interface function briefing
         function interface_is_compatible_field( self, rhs ) result( is_compatible )
@@ -285,6 +314,7 @@ module Field
 contains
     !
     !> No subroutine briefing
+    !
     subroutine initializeField( self )
         implicit none
         !
@@ -312,7 +342,48 @@ contains
         !
         if( allocated( self%ind_interior ) ) deallocate( self%ind_interior )
         !
+        if( allocated( self%ind_boundary ) ) deallocate( self%ind_boundary )
+        !
     end subroutine deallocateField
+    !
+    !> No subroutine briefing
+    !
+    subroutine switchStoreState_Field( self, store_state )
+        implicit none
+        !
+        class( Field_t ), intent( inout ) :: self
+        integer, intent( in ) :: store_state
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: field_array
+        !
+        if( self%store_state /= store_state ) then
+            !
+            field_array = self%getArray()
+            !
+            select case( self%store_state )
+                !
+                case( compound )
+                    !
+                    self%store_state = singleton
+                    !
+                case( singleton )
+                    !
+                    self%store_state = compound
+                    !
+                case default
+                    call errStop( "switchStoreState_Field > store_state should be 'singleton' or 'compound'" )
+                !
+            end select
+            !
+            call self%setArray( field_array )
+            !
+        else
+            !
+            aux_counter = aux_counter + 1
+            !
+        endif
+        !
+    end subroutine switchStoreState_Field
     !
     !> No subroutine briefing
     !
@@ -335,22 +406,24 @@ contains
         !
     end function isCompatibleField
     !
-    !> Defines the index arrays: ind_interior and ind_boundaries.
+    !> Defines the index arrays: ind_interior and ind_boundary.
     !>     Create copy with zeros and value boundaries with C_ONE.
     !>     Take two sizes and allocate the two arrays.
     !>     Fills the two arrays with their proper indices.
     !
-    subroutine setIndexArraysField( self )
+    subroutine setIndexArraysField( self, xy_in )
         implicit none
         !
         class( Field_t ), intent( inout ) :: self
+        logical, intent( in ), optional :: xy_in
         !
         integer :: i, j, k, int_size, bdry_size
         class( Field_t ), allocatable :: aux_field
         complex( kind=prec ), dimension(:), allocatable :: c_array
         !
         allocate( aux_field, source = self )
-        call aux_field%zeros()
+        !
+        call aux_field%zeros
         !
         call aux_field%setAllBoundary( C_ONE )
         !
@@ -366,15 +439,17 @@ contains
             endif
         enddo
         !
-        allocate( self%ind_boundaries( bdry_size ) )
+        if( allocated( self%ind_boundary ) ) deallocate( self%ind_boundary )
+        allocate( self%ind_boundary( bdry_size ) )
         !
+        if( allocated( self%ind_interior ) ) deallocate( self%ind_interior )
         allocate( self%ind_interior( int_size ) )
         !
         j = 1
         k = 1
         do i = 1, size( c_array )
             if( c_array(i) == C_ONE ) then
-                self%ind_boundaries(j) = i
+                self%ind_boundary(j) = i
                 j = j + 1
             else
                 self%ind_interior(k) = i

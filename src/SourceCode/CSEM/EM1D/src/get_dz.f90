@@ -237,7 +237,7 @@ subroutine prepare_recdepth(zr,omeps_recv,refl_var,  zr_in,nrecperz,izrec,sz,zbo
   omeps_recv = omega * epsv(ilayrec)
 
   !precompute interface refl. and transm. coeff.
-   refl_var%refcoef_changed = .true.
+   refl_var%refcoef_changed = .TRUE.
    call prepare_refcoef(refl_var,refl_var%rmax,srctype,aniso)
    refl_var%refcoef_changed = .false.
 

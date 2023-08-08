@@ -23,7 +23,7 @@ contains
     subroutine solveAll( sigma )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         !
         class( Transmitter_t ), pointer :: Tx
         integer :: i_tx
@@ -52,7 +52,7 @@ contains
     subroutine solveTx( sigma, Tx )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         class( Transmitter_t ), pointer, intent( inout ) :: Tx
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
@@ -71,18 +71,17 @@ contains
                         !
                     case( SRC_MT_2D )
                         !
-                        call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
+                        !call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
                         !
                     case( "" )
                         !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > MT Source type not provided, using SourceMT_1D_t."
+                        call warning( "solveTx > MT Source type not provided, using SourceMT_1D_t." )
                         !
                         call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
                         !
                     case default
                         !
-                        write( *, * ) "Wrong MT Source type: [", source_type_mt, "]"
-                        stop
+                        call errStop( "solveTx > Wrong MT Source type: ["//source_type_mt//"]" )
                         !
                 end select
                 !
@@ -101,19 +100,18 @@ contains
                         !
                     case( "" )
                         !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > CSEM Source type not provided, using Dipole1D."
+                        call warning( "solveTx > CSEM Source type not provided, using Dipole1D." )
                         !
                         call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                         !
                     case default
                         !
-                        write( *, * ) "Wrong CSEM Source type: [", source_type_csem, "]"
-                        stop
+                        call errStop( "solveTx > Wrong CSEM Source type: ["//source_type_csem//"]" )
                         !
                 end select
                 !
             class default
-                stop "Error: solveTx > Unclassified Transmitter"
+                call errStop( "solveTx > Unclassified Transmitter" )
             !
         end select
         !
@@ -144,7 +142,7 @@ contains
             call handleModelFile( sigma )
         !
         else
-            stop "Error: jobForwardModeling > Missing Model file!"
+            call errStop( "jobForwardModeling > Missing Model file!" )
         endif
         !
         if( has_data_file ) then
@@ -152,7 +150,7 @@ contains
             call handleDataFile()
         !
         else
-            stop "Error: jobForwardModeling > Missing Data file!"
+            call errStop( "jobForwardModeling > Missing Data file!" )
         endif
         !
         !>
@@ -173,7 +171,7 @@ contains
         !
 #else
         !
-        call createDistributeForwardSolver()
+        call createDistributeForwardSolver
         !
         call serialForwardModeling( sigma, all_predicted_data )
         !
@@ -196,7 +194,7 @@ contains
     subroutine serialForwardModeling( sigma, all_predicted_data, i_sol )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
         integer, intent( in ), optional :: i_sol
         !
@@ -261,20 +259,23 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case( forward_solver_type )
             !
+            case( FWD_IT )
+                !
+                allocate( forward_solver, source = ForwardSolver_IT_t( model_operator, solver_type ) )
+                !
             case( FWD_IT_DC )
                 !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
                 !
             case( "" )
                 !
-                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m createDistributeForwardSolver > Forward Solver type not provided, using IT_DC."
+                call warning( "createDistributeForwardSolver > Forward Solver type not provided, using IT_DC." )
                 !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
                 !
             case default
                 !
-                write( *, * ) "Wrong Forward Solver type: [", forward_solver_type, "]"
-                stop
+                call errStop( "createDistributeForwardSolver > Wrong Forward Solver type: ["//forward_solver_type//"]" )
                 !
         end select
         !
@@ -316,8 +317,7 @@ contains
             !
         else
             !
-            write( *, * ) "Error opening file in writeAllESolutionHeader [", file_name, "]!"
-            stop
+            call errStop( "writeAllESolutionHeader > Unable to open file ["//file_name//"]!" )
             !
         endif
         !

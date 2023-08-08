@@ -4,13 +4,12 @@
 module SourceCSEM_Dipole1D
     !
     use SourceCSEM
-    use ModelParameterCell_SG
     !
     type, extends( SourceCSEM_t ) :: SourceCSEM_Dipole1D_t
         !
         real( kind=prec ) :: azimuth, dip, moment
         !
-        type( rVector3D_SG_t ) :: cond_anomaly
+        class( Vector_t ), allocatable :: cond_anomaly
         !
         contains
             !
@@ -127,13 +126,16 @@ contains
         !
         deallocate( zlay1D )
         !
-        allocate( self%E(1), source = E_p )
+        !>
+        allocate( self%E( 1 ) )
         !
-        call self%E(1)%mult( self%cond_anomaly )
+        allocate( self%E(1)%v, source = E_p )
+        !
+        call self%E(1)%v%mult( self%cond_anomaly )
         !
         i_omega_mu = cmplx( 0., real( -1.0d0 * isign * mu_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
         !
-        call self%E(1)%mult( i_omega_mu )
+        call self%E(1)%v%mult( i_omega_mu )
         !
         call self%createRHS
         !
@@ -233,49 +235,53 @@ contains
         class( Grid_t ), intent( in ) :: grid
         !
         integer ix, iy, iz, counter
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
-        if( allocated( E_p ) ) deallocate( E_p )
-        allocate( cVector3D_SG_t :: E_p )
+        call self%sigma%metric%createVector( complex_t, EDGE, E_p )
         !
-        E_p = cVector3D_SG_t( grid, EDGE )
+        x = E_p%getX()
         !
-        select type( E_p )
-            !
-            class is( cVector3D_SG_t )
-                !
-                counter = 1
-                !
-                !> e_field-field corresponding to these nodes is Ex
-                do iz = 1,grid%Nz+1 !Edge Z
-                    do iy = 1,grid%Ny+1 !Edge Y
-                        do ix = 1,grid%Nx !Center X
-                            E_p%x(ix,iy,iz) = ex1D(counter)
-                            counter = counter + 1
-                        enddo
-                    enddo
+        counter = 1
+        !
+        !> e_field-field corresponding to these nodes is Ex
+        do iz = 1,grid%Nz+1 !Edge Z
+            do iy = 1,grid%Ny+1 !Edge Y
+                do ix = 1,grid%Nx !Center X
+                    x(ix,iy,iz) = ex1D(counter)
+                    counter = counter + 1
                 enddo
-                !
-                !> e_field-field corresponding to these nodes is Ey
-                do iz = 1,grid%Nz+1 !Edge Z
-                    do iy = 1,grid%Ny !Center y
-                        do ix = 1,grid%Nx+1 !Edge x
-                            E_p%y(ix,iy,iz) = ey1D(counter)
-                            counter = counter + 1
-                        enddo
-                    enddo
+            enddo
+        enddo
+        !
+        call E_p%setX( x )
+        !
+        y = E_p%getY()
+        !
+        !> e_field-field corresponding to these nodes is Ey
+        do iz = 1,grid%Nz+1 !Edge Z
+            do iy = 1,grid%Ny !Center y
+                do ix = 1,grid%Nx+1 !Edge x
+                    y(ix,iy,iz) = ey1D(counter)
+                    counter = counter + 1
                 enddo
-                !
-                !> e_field-field corresponding to these nodes is Ez
-                do iz = 1,grid%Nz !Center Z
-                    do iy = 1,grid%Ny+1 !Edge y
-                        do ix = 1,grid%Nx+1 !Edge x
-                            E_p%z(ix,iy,iz) = jz1D(counter)
-                            counter = counter + 1
-                        enddo
-                    enddo
+            enddo
+        enddo
+        !
+        call E_p%setY( y )
+        !
+        z = E_p%getZ()
+        !
+        !> e_field-field corresponding to these nodes is Ez
+        do iz = 1,grid%Nz !Center Z
+            do iy = 1,grid%Ny+1 !Edge y
+                do ix = 1,grid%Nx+1 !Edge x
+                    z(ix,iy,iz) = jz1D(counter)
+                    counter = counter + 1
                 enddo
-                !
-        end select
+            enddo
+        enddo
+        !
+        call E_p%setZ( z )
         !
         deallocate( x1D, y1D, z1D )
         deallocate( ex1D, ey1D, jz1D )
@@ -290,12 +296,12 @@ contains
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
         !
-        if( allocated( self%rhs ) ) deallocate( self%rhs )
-        allocate( cVector3D_SG_t :: self%rhs(1) )
+        !if( allocated( self%rhs ) ) deallocate( self%rhs )
+        allocate( self%rhs(1) )
         !
-        self%rhs(1) = self%E(1)
+        allocate( self%rhs(1)%v, source = self%E(1)%v )
         !
-        call self%rhs(1)%mult( self%model_operator%metric%Vedge )
+        call self%rhs(1)%v%mult( self%model_operator%metric%v_edge )
         !
     end subroutine createRHS_SourceCSEM_Dipole1D
     !

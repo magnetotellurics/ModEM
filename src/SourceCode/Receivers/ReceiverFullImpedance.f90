@@ -13,9 +13,9 @@ module ReceiverFullImpedance
             !
             final :: ReceiverFullImpedance_dtor
             !
-            procedure, public :: setLRows => setLRowsFullImpedance
-            !
             procedure, public :: predictedData => predictedDataFullImpedance
+            !
+            procedure, public :: setLRows => setLRowsFullImpedance
             !
             procedure, public :: isEqualRx => isEqualFullImpedance
             !
@@ -81,75 +81,7 @@ contains
     end subroutine ReceiverFullImpedance_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsFullImpedance( self, transmitter )
-        implicit none
-        !
-        class( ReceiverFullImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
-        !
-        type( cVector3D_SG_t ) :: Le, full_lex, full_ley, full_lbx, full_lby
-        integer :: Ei, row, pol, comp
-        complex( kind=prec ) :: comega
-        !
-        comega = isign * cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
-        !
-        !> Call the predicted data routine to calculate responses
-        call self%predictedData( transmitter )
-        !
-        !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
-        if( allocated( self%lrows ) ) deallocate( self%lrows )
-        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
-        !
-        !> Convert Le and Lb to Full Vectors (In the future they will be Sparse)
-        full_lex = self%Lex%getFullVector()
-        full_ley = self%Ley%getFullVector()
-        !
-        full_lbx = self%Lbx%getFullVector()
-        full_lby = self%Lby%getFullVector()
-        !
-        !> 
-        !> Lrows{j,ki} = Hinv(j,i) * ( lE - Z(k,1) * 1/omega * Rx.Lhx - Z(k,2) * 1/omega * Rx.Lhy )
-        !>
-        !
-        !> Loop over Ex and Ey
-        do Ei = 1, 2
-            !
-            if( Ei == 1 ) then
-                Le = full_lex
-            else
-                Le = full_ley
-            endif
-            !
-            !> ????
-            call Le%multAdd( -self%response( 2 * (Ei-1) + 1 ) * comega, full_lbx )    ! 1 & 3
-            !
-            call Le%multAdd( -self%response( 2 * Ei ) * comega, full_lby )            ! 2 & 4
-            !
-            !> Loop over two impedance rows
-            do row = 1, 2
-                !
-                !> comp = 1, 3, 2, 4
-                comp = 2 * (Ei-1) + row
-                !
-                !> Loop over two polarizations
-                do pol = 1, 2
-                    !
-                    self%lrows( pol, comp ) = Le
-                    !
-                    !> ????
-                    call self%lrows( pol, comp )%mult( -self%I_BB( pol, row ) )
-                    !
-                enddo
-                !
-            enddo
-            !
-        enddo
-        !
-        !deallocate( self%I_BB, self%response )
-        !
-    end subroutine setLRowsFullImpedance
-    !
-    !> No subroutine briefing
+     !
     subroutine predictedDataFullImpedance( self, transmitter, data_group )
         implicit none
         !
@@ -160,13 +92,12 @@ contains
         integer :: i, j, ij
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), EE(:,:)
-        class( Vector_t ), pointer :: tx_e_1, tx_e_2
-        !
-        comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
+        class( Vector_t ), allocatable :: tx_e_1, tx_e_2
         !
         call transmitter%getSolutionVector( 1, tx_e_1 )
-        !
         call transmitter%getSolutionVector( 2, tx_e_2 )
+        !
+        comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         allocate( EE(2,2) )
         EE(1,1) = self%Lex%dotProd( tx_e_1 )
@@ -184,12 +115,11 @@ contains
         BB(1,2) = self%Lbx%dotProd( tx_e_2 )
         BB(2,2) = self%Lby%dotProd( tx_e_2 )
         !
+        deallocate( tx_e_1, tx_e_2 )
+        !
         !write( *, * ) "BB"
         !write( *, * ) BB(1,1), BB(1,2)
         !write( *, * ) BB(2,1), BB(2,2)
-        !
-        deallocate( tx_e_1 )
-        deallocate( tx_e_2 )
         !
         BB = isign * BB * comega
         !
@@ -204,7 +134,7 @@ contains
             self%I_BB(1,2) = -BB(1,2) / det
             self%I_BB(2,1) = -BB(2,1) / det
         else
-            stop "Error: predictedDataFullImpedance > Determinant is Zero!"
+            call errStop( "predictedDataFullImpedance > Determinant is Zero!" )
         endif
         !
         deallocate( BB )
@@ -229,6 +159,75 @@ contains
         !
     end subroutine predictedDataFullImpedance
     !
+    !> No subroutine briefing
+    subroutine setLRowsFullImpedance( self, transmitter )
+        implicit none
+        !
+        class( ReceiverFullImpedance_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in ) :: transmitter
+        !
+        class( Vector_t ), allocatable :: Le, full_lex, full_ley, full_lbx, full_lby
+        integer :: Ei, row, pol, comp
+        complex( kind=prec ) :: comega
+        !
+        comega = isign * cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
+        !
+        !> Call the predicted data routine to calculate responses
+        call self%predictedData( transmitter )
+        !
+        !> Convert Le and Lb to Full Vectors (In the future they will be Sparse)
+        allocate( full_lex, source = self%Lex%getFullVector() )
+        allocate( full_ley, source = self%Ley%getFullVector() )
+        !
+        allocate( full_lbx, source = self%Lbx%getFullVector() )
+        allocate( full_lby, source = self%Lby%getFullVector() )
+        !
+        !> Lrows{j,ki} = Hinv(j,i) * ( lE - Z(k,1) * 1/omega * Rx.Lhx - Z(k,2) * 1/omega * Rx.Lhy )
+        !
+        !> Loop over Ex and Ey
+        do Ei = 1, 2
+            !
+            if( Ei == 1 ) then
+                allocate( Le, source = full_lex )
+            else
+                allocate( Le, source = full_ley )
+            endif
+            !
+            !> ????
+            call Le%multAdd( -self%response( 2 * (Ei-1) + 1 ) * comega, full_lbx ) ! 1 & 3
+            !
+            call Le%multAdd( -self%response( 2 * Ei ) * comega, full_lby )         ! 2 & 4
+            !
+            !> Loop over two impedance rows
+            do row = 1, 2
+                !
+                !> comp = 1, 3, 2, 4
+                comp = 2 * (Ei-1) + row
+                !
+                !> Loop over two polarizations
+                do pol = 1, 2
+                    !
+                    self%lrows( pol, comp )%v = Le
+                    !
+                    !> ????
+                    call self%lrows( pol, comp )%v%mult( -self%I_BB( pol, row ) )
+                    !
+                enddo
+                !
+            enddo
+            !
+            deallocate( Le )
+            !
+        enddo
+        !
+        deallocate( full_lex, full_ley )
+        !
+        deallocate( full_lbx, full_lby )
+        !
+        !deallocate( self%I_BB, self%response )
+        !
+    end subroutine setLRowsFullImpedance
+     !
     !> No subroutine briefing
     !
     function isEqualFullImpedance( self, other ) result( equal )

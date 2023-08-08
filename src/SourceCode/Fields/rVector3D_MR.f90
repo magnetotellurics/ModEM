@@ -1,24 +1,6 @@
 !
-!> This file is part of the ModEM modeling and inversion package.
-!>
-!>LICENSING information
-!>
-!> Copyright (C) 2020 ModEM research group.
-!> Contact: http://
-!>
-!> GNU General Public License Usage
-!> This file may be used under the terms of the GNU
-!> General Public License version 3.0 as published by the Free Software
-!> Foundation and appearing in the file LICENSE.GPL included in the
-!> packaging of this file.  Please review the following information to
-!> ensure the GNU General Public License version 3.0 requirements will be
-!> met: http://www.gnu.org/copyleft/gpl.html.
-!>
-!> SUMMARY
-!>
 !> This module specializes the abstract Vector3D_real class for
 !> real vector fields on a multi-resolution staggered grid.
-!>
 !
 module rVector3D_MR
     !
@@ -34,7 +16,7 @@ module rVector3D_MR
         !
         contains
             !
-            final :: _rVector3D_MR_dtor
+            final :: rVector3D_MR_dtor
             !
             !> MR Routines
             procedure, public :: initializeSub => initializeSub_rVector3D_MR
@@ -65,12 +47,6 @@ module rVector3D_MR
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zeros_rVector3D_MR
             !
-            procedure, public :: sumEdge => sumEdge_rVector3D_MR
-            procedure, public :: sumEdgeVTI => sumEdgeVTI_rVector3D_MR
-            !
-            procedure, public :: avgCell => avgCell_rVector3D_MR
-            procedure, public :: avgCellVTI => avgCellVTI_rVector3D_MR
-            !
             procedure, public :: conjugate => conjugate_rVector3D_MR
             !
             !> Arithmetic/algebraic binary operations
@@ -100,9 +76,19 @@ module rVector3D_MR
             procedure, public :: getAxis => getAxis_rVector3D_MR
             !
             procedure, public :: getReal => getReal_rVector3D_MR
+            !
+            procedure, public :: getX => getX_rVector3D_MR
+            procedure, public :: setX => setX_rVector3D_MR
+            procedure, public :: getY => getY_rVector3D_MR
+            procedure, public :: setY => setY_rVector3D_MR
+            procedure, public :: getZ => getZ_rVector3D_MR
+            procedure, public :: setZ => setZ_rVector3D_MR
+            !
+            procedure, public :: getSV => getSV_rVector3D_MR
+            procedure, public :: setSV => setSV_rVector3D_MR
+            !
             procedure, public :: getArray => getArray_rVector3D_MR
             procedure, public :: setArray => setArray_rVector3D_MR
-            procedure, public :: switchStoreState => switchStoreState_rVector3D_MR
             procedure, public :: copyFrom => copyFrom_rVector3D_MR
             !
             !> I/O operations
@@ -137,7 +123,7 @@ contains
         !
         self%ind_active = E_in%ind_active
         self%ind_interior = E_in%ind_interior
-        self%ind_boundaries = E_in%ind_boundaries
+        self%ind_boundary = E_in%ind_boundary
         !
         select type( grid => E_in%grid )
             !
@@ -189,7 +175,7 @@ contains
                 self%is_allocated = self%is_allocated .AND. ( status .EQ. 0 )
                 !
                 do i = 1, grid%n_grids
-                    self%sub_vectors(i) = rScalar3D_MR_t( grid%sub_grids(i), grid_type )
+                    self%sub_vectors(i) = rScalar3D_MR_t( grid%sub_grids(i), self%grid_type )
                 end do
                 !
                 call self%setIndexArrays
@@ -215,7 +201,7 @@ contains
         integer :: n_full, n_active, n_interior, n_boundaries
         real( kind=prec ), dimension(:), allocatable :: v_1, v_2
         !
-        if ( .NOT. present( xy_in ) ) then
+        if( .NOT. present( xy_in ) ) then
             xy = .FALSE.
         else
             xy = xy_in
@@ -287,19 +273,19 @@ contains
         !
         n_active = 0
         do k = 1, n_full
-            if (v_1(k) >= 0) then
+            if(v_1(k) >= 0) then
                 n_active = n_active + 1
             end if
         end do
         !
-        if (allocated (self%ind_active)) then
+        if(allocated (self%ind_active)) then
             deallocate (self%ind_active)
         end if
         allocate (self%ind_active(n_active))
         !
         i = 0
         do k = 1, n_full
-            if (v_1(k) >= 0) then
+            if(v_1(k) >= 0) then
                 i = i + 1
                 self%ind_active(i) = k
             end if
@@ -307,7 +293,7 @@ contains
         !
         n_interior = 0
         do k = 1, n_full
-            if (v_1(k) == 0) then
+            if(v_1(k) == 0) then
                 n_interior = n_interior + 1
             end if
         end do
@@ -315,14 +301,14 @@ contains
         allocate (v_2(n_active))
         v_2 = v_1(self%ind_active)
         !
-        if (allocated (self%ind_interior)) then
+        if(allocated (self%ind_interior)) then
             deallocate (self%ind_interior)
         end if
         allocate (self%ind_interior(n_interior))
         !
         i = 0
         do k = 1, n_active
-            if (v_2(k) == 0) then
+            if(v_2(k) == 0) then
                 i = i + 1
                 self%ind_interior(i) = k
             end if
@@ -330,21 +316,21 @@ contains
         !!
         n_boundaries = 0
         do k = 1, n_active
-            if (v_2(k) == 1) then
+            if(v_2(k) == 1) then
                 n_boundaries = n_boundaries + 1
             end if
         end do
         !
-        if (allocated (self%ind_boundaries)) then
-            deallocate (self%ind_boundaries)
+        if(allocated (self%ind_boundary)) then
+            deallocate (self%ind_boundary)
         end if
-        allocate (self%ind_boundaries(n_boundaries)) 
+        allocate (self%ind_boundary(n_boundaries)) 
         !
         i = 0
         do k = 1, n_active
-            if (v_2(k) == 1) then
+            if(v_2(k) == 1) then
                 i = i + 1
-                self%ind_boundaries(i) = k
+                self%ind_boundary(i) = k
             end if
         end do
         !
@@ -461,14 +447,14 @@ contains
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) n_I = n_I + 1
+            if(v(k) == c) n_I = n_I + 1
         end do
         !
         allocate (I(n_I))
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) then
+            if(v(k) == c) then
                 n_I = n_I + 1
                 I(n_I) = k
             end if
@@ -495,14 +481,14 @@ contains
         !
         n_I = 0
         do k = 1, n
-            if (abs (v(k) - c)/abs (c) <= TOL) n_I = n_I + 1
+            if(abs (v(k) - c)/abs (c) <= TOL) n_I = n_I + 1
         end do
         !
         allocate (I(n_I))
         !
         n_I = 0
         do k = 1, n
-            if (abs (v(k) - c)/abs (c) <= TOL) then
+            if(abs (v(k) - c)/abs (c) <= TOL) then
                 n_I = n_I + 1
                 I(n_I) = k
             end if
@@ -570,7 +556,7 @@ contains
                                 w1 = 1. - (i - 1.)/Cs
                                 w2 = 1. - w1
                                 !
-                                if (i == 1) then
+                                if(i == 1) then
                                     temp%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2) = self%sub_vectors(k)%z
                                 else
                                     last = size(self%sub_vectors(k)%z(:, 1, 1))
@@ -633,7 +619,7 @@ contains
         real( kind=prec ), pointer, dimension(:) :: tempe
         type( rVector3D_SG_t ) :: templ_r
         real( kind=prec ), pointer, dimension(:) :: templ, temple
-        real( kind=prec ), allocatable, dimension(:, :, :) :: lengthx, lengthy
+        real( kind=prec ), allocatable, dimension(:,:,:) :: lengthx, lengthy
         integer :: sx1, sx2, sx3, sy1, sy2, sy3, s1, s2
         integer :: Cs, i1, i2
         !
@@ -642,7 +628,7 @@ contains
         !
         grid => sg_v%grid
         !
-        call Edgelength( grid, templ_r )
+        call edgeLength( grid, templ_r )
         templ => null()
         call getRVector(templ_r, templ)
         !
@@ -807,7 +793,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine _rVector3D_MR_dtor( self )
+    subroutine rVector3D_MR_dtor( self )
         implicit none
         !
         type( rVector3D_MR_t ), intent( inout ) :: self
@@ -819,7 +805,7 @@ contains
         if( allocated( self%x ) ) deallocate( self%x )
         if( allocated( self%y ) ) deallocate( self%y )
         if( allocated( self%z ) ) deallocate( self%z )
-        if( allocated( self%sv ) ) deallocate( self%sv )
+        if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
         self%nx = 0
         self%ny = 0
@@ -828,7 +814,7 @@ contains
         self%grid_type = ""
         self%is_allocated = .FALSE.
         !
-    end subroutine _rVector3D_MR_dtor
+    end subroutine rVector3D_MR_dtor
     !
     !> No subroutine briefing
     !
@@ -838,9 +824,7 @@ contains
         class( rVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         select case(self%grid_type)
             !
@@ -877,9 +861,7 @@ contains
         !
         logical :: int_only_p
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( .NOT. present(int_only)) then
             int_only_p = .FALSE.
@@ -981,13 +963,13 @@ contains
         integer :: m, n
         !
         m = size( self%ind_interior )
-        n = size( self%ind_boundaries )
+        n = size( self%ind_boundary )
         !
         allocate( ind_i(m) )
         allocate( ind_b(n) )
         !
         ind_i = self%ind_interior
-        ind_b = self%ind_boundaries
+        ind_b = self%ind_boundary
         !
     end subroutine intBdryIndices_rVector3D_MR
     !
@@ -1009,7 +991,7 @@ contains
     subroutine setVecComponents_rVector3D_MR( self, xyz, &
             &                              xmin, xstep, xmax, &
             &                              ymin, ystep, ymax, &
-            &                              zmin, zstep, zmax, rvalue )
+            &                              zmin, zstep, zmax, cvalue )
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
@@ -1017,15 +999,13 @@ contains
         integer, intent( in ) :: xmin, xstep, xmax
         integer, intent( in ) :: ymin, ystep, ymax
         integer, intent( in ) :: zmin, zstep, zmax
-        real( kind=prec ), intent ( in ) :: rvalue
+        complex( kind=prec ), intent ( in ) :: cvalue
         !
         integer :: x1, x2
         integer :: y1, y2
         integer :: z1, z2
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         x1 = xmin; x2 = xmax
         y1 = ymin; y2 = ymax
@@ -1042,7 +1022,7 @@ contains
                 if(zmin == 0) z1 = self%NdX(3)
                 if(zmax <= 0) z2 = self%NdX(3) + zmax
                 !
-                self%x(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
+                self%x(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case("y")
                 if(xmin == 0) x1 = self%NdY(1)
@@ -1054,7 +1034,7 @@ contains
                 if(zmin == 0) z1 = self%NdY(3)
                 if(zmax <= 0) z2 = self%NdY(3) + zmax
                 !
-                self%y(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
+                self%y(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case("z")
                 if(xmin == 0) x1 = self%NdZ(1)
@@ -1066,7 +1046,7 @@ contains
                 if(zmin == 0) z1 = self%NdZ(3)
                 if(zmax <= 0) z2 = self%NdZ(3) + zmax
                 !
-                self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
+                self%z(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = cvalue
                 !
             case default
                 stop "Error: setVecComponents_rVector3D_MR > Invalid xyz argument."
@@ -1100,144 +1080,6 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine sumEdges_rVector3D_MR( self, cell_out, interior_only )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( in ) :: self
-        class( Scalar_t ), intent( inout ) :: cell_out
-        logical, optional, intent( in ) :: interior_only
-        !
-        integer :: x_xend, x_yend, x_zend
-        integer :: y_xend, y_yend, y_zend
-        integer :: z_xend, z_yend, z_zend
-        type( rVector3D_MR_t ) :: E_tmp
-        logical :: is_interior_only
-        !
-        E_tmp = self
-        !
-        if( self%store_state /= compound ) then
-             call E_tmp%switchStoreState
-        endif
-        !
-        is_interior_only = .FALSE.
-        !
-        if( present( interior_only ) ) is_interior_only = interior_only
-        !
-        if( is_interior_only ) then
-            call E_tmp%setAllBoundary( C_ZERO )
-        endif
-        !
-        if( .NOT. cell_out%is_allocated ) then
-            stop "Error: sumEdges_rVector3D_MR: Unallocated cell_out"
-        endif
-        !
-        select type( cell_out )
-            !
-            class is( rScalar3D_MR_t )
-                !
-                select case( E_tmp%grid_type )
-                    !
-                    case( EDGE )
-                        !
-                        x_xend = size(E_tmp%x, 1)
-                        x_yend = size(E_tmp%x, 2)
-                        x_zend = size(E_tmp%x, 3)
-                        !
-                        y_xend = size(E_tmp%y, 1)
-                        y_yend = size(E_tmp%y, 2)
-                        y_zend = size(E_tmp%y, 3)
-                        !
-                        z_xend = size(E_tmp%z, 1)
-                        z_yend = size(E_tmp%z, 2)
-                        z_zend = size(E_tmp%z, 3)
-                        !
-                        cell_out%v = E_tmp%x(:,1:x_yend-1,1:x_zend-1) + &
-                        E_tmp%x(:,2:x_yend,1:x_zend-1)       + &
-                        E_tmp%x(:,1:x_yend-1,2:x_zend)       + &
-                        E_tmp%x(:,2:x_yend,2:x_zend)         + &
-                        E_tmp%y(1:y_xend-1,:,1:y_zend-1)     + &
-                        E_tmp%y(2:y_xend,:,1:y_zend-1)       + &
-                        E_tmp%y(1:y_xend-1,:,2:y_zend)       + &
-                        E_tmp%y(2:y_xend,:,2:y_zend)         + &
-                        E_tmp%z(1:z_xend-1,1:z_yend-1,:)     + &
-                        E_tmp%z(2:z_xend,1:z_yend-1,:)       + &
-                        E_tmp%z(1:z_xend-1,2:z_yend,:)       + &
-                        E_tmp%z(2:z_xend,2:z_yend,:)
-                        !
-                    case( FACE )
-                        !
-                        x_xend = size(E_tmp%x, 1)
-                        y_xend = size(E_tmp%y, 1)
-                        z_xend = size(E_tmp%z, 1)
-                        !
-                        cell_out%v = E_tmp%x(1:x_xend-1,:,:) + E_tmp%x(2:x_xend,:,:) + &
-                                     E_tmp%y(:,1:y_yend-1,:) + E_tmp%y(:,2:y_yend,:) + &
-                                     E_tmp%z(:,:,1:z_zend-1) + E_tmp%z(:,:,2:z_zend)
-                        !
-                    case default
-                        stop "Error: sumEdges_rVector3D_MR: undefined E_tmp%grid_type"
-                  end select
-                !
-            class default
-                stop "Error: sumEdges_rVector3D_MR: Unclassified cell_out"
-        end select
-        !
-    end subroutine sumEdges_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine sumEdgeVTI_rVector3D_MR( self, cell_in, ptype )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: cell_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: sumEdgeVTI_rVector3D_MR > Not implemented yet"
-        !
-    end subroutine sumEdgeVTI_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine avgCellVTI_rVector3D_MR( self, ell_h_in, cell_v_in, ptype )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_h_in, cell_v_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: avgCellVTI_rVector3D_MR > Not implemented yet"
-        !
-    end subroutine avgCellVTI_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine avgCell_rVector3D_MR( self, cell_in, ptype )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: cell_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: avgCell_rVector3D_MR > Not implemented yet"
-        !
-    end subroutine avgCell_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine avgCellVTI_rVector3D_MR( self, ell_h_in, cell_v_in, ptype )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Scalar_t ), allocatable, dimension(:), intent( in ) :: cell_h_in, cell_v_in
-        character(*), intent( in ), optional :: ptype
-        !
-        stop "Error: avgCellVTI_rVector3D_MR > Not implemented yet"
-        !
-    end subroutine avgCellVTI_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
     subroutine conjugate_rVector3D_MR( self )
         implicit none
         !
@@ -1261,7 +1103,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1273,9 +1115,9 @@ contains
                         self%y = self%y + rhs%y
                         self%z = self%z + rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv + rhs%sv
+                        self%s_v = self%s_v + rhs%s_v
                         !
                     else
                         stop "Error: add_rVector3D_MR > Unknown rhs store_state!"
@@ -1303,7 +1145,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type(rhs)
                 !
@@ -1315,9 +1157,9 @@ contains
                         self%y = c1 * self%y + c2 * rhs%y
                         self%z = c1 * self%z + c2 * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = c1 * self%sv + c2 * rhs%sv
+                        self%s_v = c1 * self%s_v + c2 * rhs%s_v
                         !
                     else
                         stop "Error: linComb_rVector3D_MR > Unknown rhs store_state!"
@@ -1346,9 +1188,9 @@ contains
             self%y = self%y - cvalue
             self%z = self%z - cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv - cvalue
+            self%s_v = self%s_v - cvalue
             !
         else
             stop "Error: subValue_rVector3D_MR > Unknown self store_state!"
@@ -1366,7 +1208,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1378,9 +1220,9 @@ contains
                         self%y = self%y - rhs%y
                         self%z = self%z - rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv - rhs%sv
+                        self%s_v = self%s_v - rhs%s_v
                         !
                     else
                         stop "Error: subField_rVector3D_MR > Unknown rhs store_state!"
@@ -1411,9 +1253,9 @@ contains
             self%y = self%y * rvalue
             self%z = self%z * rvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv * rvalue
+            self%s_v = self%s_v * rvalue
             !
         else
             stop "Error: multByReal_rVector3D_MR > Unknown self store_state!"
@@ -1435,9 +1277,9 @@ contains
             self%y = self%y * cvalue
             self%z = self%z * cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv * cvalue
+            self%s_v = self%s_v * cvalue
             !
         else
             stop "Error: multByComplex_rVector3D_MR > Unknown self store_state!"
@@ -1455,7 +1297,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1467,9 +1309,9 @@ contains
                         self%y = self%y * rhs%y
                         self%z = self%z * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv * rhs%sv
+                        self%s_v = self%s_v * rhs%s_v
                         !
                     else
                         stop "Error: multByField_rVector3D_MR > Unknown rhs store_state!"
@@ -1483,9 +1325,9 @@ contains
                         self%y = self%y * rhs%v
                         self%z = self%z * rhs%v
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv * rhs%sv
+                        self%s_v = self%s_v * rhs%s_v
                         !
                     else
                         stop "Error: multByField_rVector3D_MR > Unknown rhs store_state!"
@@ -1508,7 +1350,7 @@ contains
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in ) :: rhs
+        class( Field_t ), intent( in ) :: rhs
         !
         class( Vector_t ), allocatable :: diag_mult
         !
@@ -1516,9 +1358,9 @@ contains
             !
             allocate( diag_mult, source = rVector3D_MR_t( self%grid, self%grid_type ) )
             !
-            if( diag_mult%store_state /= rhs%store_state ) call diag_mult%switchStoreState
+            call diag_mult%switchStoreState( rhs%store_state )
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( diag_mult )
                 class is( rVector3D_MR_t )
@@ -1533,9 +1375,9 @@ contains
                                 diag_mult%y = self%y * rhs%y
                                 diag_mult%z = self%z * rhs%z
                                 !
-                            else if( rhs%store_state .EQ. singleton ) then
+                            elseif( rhs%store_state .EQ. singleton ) then
                                 !
-                                diag_mult%sv = self%sv * rhs%sv
+                                diag_mult%s_v = self%s_v * rhs%s_v
                                 !
                             else
                                 stop "Error: diagMult_rVector3D_MR > Unknown rhs store_state!"
@@ -1568,7 +1410,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type(rhs)
                 !
@@ -1580,9 +1422,9 @@ contains
                         self%y = self%y + cvalue * rhs%y
                         self%z = self%z + cvalue * rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv + cvalue * rhs%sv
+                        self%s_v = self%s_v + cvalue * rhs%s_v
                         !
                     else
                         stop "Error: multAdd_rVector3D_MR > Unknown rhs store_state!"
@@ -1611,44 +1453,7 @@ contains
         !
         cvalue = C_ZERO
         !
-        if(( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated )) then
-            stop "Error: dotProd_rVector3D_MR > Input vectors not allocated."
-        endif
-        !
-        if( self%isCompatible( rhs ) ) then
-            !
-            if( self%store_state == rhs%store_state ) then
-                !
-                select type( rhs )
-                    !
-                    class is( rVector3D_MR_t )
-                        !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            cvalue = cvalue + cmplx( sum( self%x * rhs%x ), 0.0, kind=prec )
-                            cvalue = cvalue + cmplx( sum( self%y * rhs%y ), 0.0, kind=prec )
-                            cvalue = cvalue + cmplx( sum( self%z * rhs%z ), 0.0, kind=prec )
-                            !
-                        else if( rhs%store_state .EQ. singleton ) then
-                            !
-                            cvalue = cvalue + cmplx( sum( self%sv * rhs%sv ), 0.0, kind=prec )
-                            !
-                        else
-                            stop "Error: dotProd_rVector3D_MR > Unknown rhs store_state!"
-                        endif
-                        !
-                    class default
-                        stop "Error: dotProd_rVector3D_MR: undefined rhs"
-                    !
-                end select
-                !
-            else
-                stop "Error: dotProd_rVector3D_MR > Incompatible store_state"
-            endif
-            !
-        else
-            stop "Error: dotProd_rVector3D_MR > Incompatible rhs"
-        endif
+        call errStop( "dotProd_rVector3D_MR still not implemented" )
         !
     end function dotProd_rVector3D_MR
     !
@@ -1666,9 +1471,9 @@ contains
             self%y = self%y / cvalue
             self%z = self%z / cvalue
             !
-        else if( self%store_state .EQ. singleton ) then
+        elseif( self%store_state .EQ. singleton ) then
             !
-            self%sv = self%sv / cvalue
+            self%s_v = self%s_v / cvalue
             !
         else
             stop "Error: divByValue_rVector3D_MR > Unknown self store_state!"
@@ -1686,7 +1491,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+            call self%switchStoreState( rhs%store_state )
             !
             select type( rhs )
                 !
@@ -1698,9 +1503,9 @@ contains
                         self%y = self%y / rhs%y
                         self%z = self%z / rhs%z
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv / rhs%sv
+                        self%s_v = self%s_v / rhs%s_v
                         !
                     else
                         stop "Error: divByField_rVector3D_MR > Unknown rhs store_state!"
@@ -1714,9 +1519,9 @@ contains
                         self%y = self%y / rhs%v
                         self%z = self%z / rhs%v
                         !
-                    else if( rhs%store_state .EQ. singleton ) then
+                    elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%sv = self%sv / rhs%sv
+                        self%s_v = self%s_v / rhs%s_v
                         !
                     else
                         stop "Error: divByField_rVector3D_MR > Unknown rhs store_state!"
@@ -1752,10 +1557,10 @@ contains
     function getAxis_rVector3D_MR( self, comp_lbl ) result( comp )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( rVector3D_MR_t ), intent( inout ) :: self
         character, intent( in ) :: comp_lbl
         !
-        complex( kind=prec ), allocatable :: comp(:, :, :)
+        complex( kind=prec ), allocatable :: comp(:,:,:)
         !
         stop "Error: getAxis_rVector3D_MR still not implemented"
         !
@@ -1774,6 +1579,106 @@ contains
         call r_vector%copyFrom( self )
         !
     end subroutine getReal_rVector3D_MR
+    !
+    !> No interface function briefing
+    !
+    function getX_rVector3D_MR( self ) result( x )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( in ) :: self
+        !
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x
+        !
+        x = self%x
+        !
+    end function getX_rVector3D_MR
+    !
+    !> No interface subroutine briefing
+    !
+    subroutine setX_rVector3D_MR( self, x )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: x
+        !
+        self%x = x
+        !
+    end subroutine setX_rVector3D_MR
+    !
+    !> No interface function briefing
+    !
+    function getY_rVector3D_MR( self ) result( y )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( in ) :: self
+        !
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: y
+        !
+        y = self%y
+        !
+    end function getY_rVector3D_MR
+    !
+    !> No interface subroutine briefing
+    !
+    subroutine setY_rVector3D_MR( self, y )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: y
+        !
+        self%y = y
+        !
+    end subroutine setY_rVector3D_MR
+    !
+    !> No interface function briefing
+    !
+    function getZ_rVector3D_MR( self ) result( z )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( in ) :: self
+        !
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: z
+        !
+        z = self%z
+        !
+    end function getZ_rVector3D_MR
+    !
+    !> No interface subroutine briefing
+    !
+    subroutine setZ_rVector3D_MR( self, z )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), dimension(:,:,:), intent( in ) :: z
+        !
+        self%z = z
+        !
+    end subroutine setZ_rVector3D_MR
+    !
+    !> No function briefing
+    !
+    function getSV_rVector3D_MR( self ) result( s_v )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( in ) :: self
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
+        !
+        call errStop( "getSV_rVector3D_MR not implemented!" )
+        !
+    end function getSV_rVector3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine setSV_rVector3D_MR( self, s_v )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), dimension(:), intent( in ) :: s_v
+        !
+        call errStop( "setSV_rVector3D_MR not implemented!" )
+        !
+    end subroutine setSV_rVector3D_MR
     !
     !> No subroutine briefing
     !
@@ -1817,69 +1722,13 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine switchStoreState_rVector3D_MR( self )
+    subroutine switchStoreState_rVector3D_MR( self, store_state )
         implicit none
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
+        integer, intent( in ), optional :: store_state
         !
-        integer i1, i2
-        !
-        select case( self%store_state )
-            !
-            case( compound )
-                !
-                allocate( self%sv( self%length() ) )
-                !
-                self%sv = &
-                (/reshape( self%x, (/self%Nxyz(1), 1/) ), &
-                  reshape( self%y, (/self%Nxyz(2), 1/) ), &
-                  reshape( self%z, (/self%Nxyz(3), 1/) )/)
-                !
-                deallocate( self%x )
-                deallocate( self%y )
-                deallocate( self%z )
-                !
-                self%store_state = singleton
-                !
-            case( singleton )
-                !
-                if( self%grid_type == EDGE ) then
-                    !
-                    allocate( self%x( self%nx, self%ny + 1, self%nz + 1 ) )
-                    allocate( self%y( self%nx + 1, self%ny, self%nz + 1 ) )
-                    allocate( self%z( self%nx + 1, self%ny + 1, self%nz ) )
-                    !
-                else if( self%grid_type == FACE ) then
-                    !
-                    allocate( self%x( self%nx + 1, self%ny, self%nz ) )
-                    allocate( self%y( self%nx, self%ny + 1, self%nz ) )
-                    allocate( self%z( self%nx, self%ny, self%nz + 1 ) )
-                    !
-                else
-                    stop "Error: switchStoreState_rVector3D_MR > Only EDGE or FACE types allowed."
-                endif
-                !
-                ! Ex
-                i1 = 1; i2 = self%Nxyz(1)
-                self%x = reshape( self%sv( i1 : i2 ), self%NdX )
-                !
-                ! Ey
-                i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
-                self%y = reshape( self%sv( i1 : i2 ), self%NdY )
-                !
-                ! Ez
-                i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
-                self%z = reshape( self%sv( i1 : i2 ), self%NdZ )
-                !
-                deallocate( self%sv )
-                !
-                self%store_state = compound
-                !
-            case default
-                write( *, * ) "Error: switchStoreStateRScalar3D_MR > Unknown store_state :[", self%store_state, "]"
-                stop
-            !
-        end select
+        call errStop( "switchStoreState_rVector3D_MR not implemented!" )
         !
     end subroutine switchStoreState_rVector3D_MR
     !
@@ -1904,17 +1753,27 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-        if( allocated( rhs%ind_interior ) ) &
-        self%ind_interior = rhs%ind_interior
+        if( allocated( rhs%ind_interior ) ) then
+            self%ind_interior = rhs%ind_interior
+        else
+            call errStop( "copyFrom_rVector3D_MR > rhs%ind_interior not allocated" )
+        endif
         !
-        if( allocated( rhs%ind_boundaries ) ) &
-        self%ind_boundaries = rhs%ind_boundaries
-        !
-        if( allocated( rhs%ind_active ) ) &
-        self%ind_active = rhs%ind_active
+        if( allocated( rhs%ind_boundary ) ) then
+            self%ind_boundary = rhs%ind_boundary
+        else
+            call errStop( "copyFrom_rVector3D_MR > rhs%ind_boundary not allocated" )
+        endif
         !
         select type( rhs )
+            !
             class is( rVector3D_MR_t )
+                !
+                if( allocated( rhs%ind_active ) ) then
+                    self%ind_active = rhs%ind_active
+                else
+                    call errStop( "copyFrom_rVector3D_MR > rhs%ind_active not allocated" )
+                endif
                 !
                 self%NdX = rhs%NdX
                 self%NdY = rhs%NdY
@@ -1927,9 +1786,9 @@ contains
                     self%y = rhs%y
                     self%z = rhs%z
                     !
-                else if( rhs%store_state .EQ. singleton ) then
+                elseif( rhs%store_state .EQ. singleton ) then
                     !
-                    self%sv = rhs%sv
+                    self%s_v = rhs%s_v
                     !
                 else
                     stop "Error: copyFrom_rVector3D_MR > Unknown store_state!"
@@ -1963,10 +1822,7 @@ contains
         logical :: ok, hasname, binary
         character(80) :: fname, isbinary
         !
-        !> Make sure the store_state is compound
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         binary = .TRUE.
         !
@@ -1980,7 +1836,7 @@ contains
                 write( *, * ) "Error: read_rVector3D_MR > Unable to read_rVector3D_MR vector from unformatted file. ", &
                         trim(fname), "."
                 stop
-            else if((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
+            elseif((index(isbinary, "no") > 0 .OR.index(isbinary, "NO") > 0) &
                   .AND.binary) then
                 write( *, * ) "Error: read_rVector3D_MR > Unable to read_rVector3D_MR vector from formatted file ", &
                         trim(fname), "."
@@ -1993,11 +1849,11 @@ contains
                 write( *, * ) "Error: read_rVector3D_MR > Vector must be allocated before read_rVector3D_MRing from ", &
                         trim(fname), "."
                 stop
-            else if(self%grid_type.NE.grid_type) then
+            elseif(self%grid_type.NE.grid_type) then
                 write( *, * ) "Error: read_rVector3D_MR > Vector must be of type ", grid_type, &
                         &            "           before read_rVector3D_MRing from ", trim (fname), "."
                 stop
-            else if((self%nx.NE.Nx).OR. &
+            elseif((self%nx.NE.Nx).OR. &
                   (self%ny.NE.Ny).OR.(self%nz.NE.Nz)) then
                 write( *, * ) "Error: read_rVector3D_MR > Wrong size of vector on input from ", trim (fname), "."
                 stop
@@ -2029,10 +1885,7 @@ contains
             stop "Error: write_rVector3D_MR > Not allocated."
         endif
         !
-        !> Make sure the store_state is compound
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         binary = .TRUE.
         !
@@ -2046,7 +1899,7 @@ contains
                 write( *, * ) "Error: write_rVector3D_MR > Unable to write_rVector3D_MR vector to unformatted file. ", &
                         trim(fname), "."
                 stop
-            else if((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
+            elseif((index(isbinary,"no") > 0.OR.index(isbinary,"NO") > 0) &
                   .AND.binary) then
                 write( *, * ) "Error: write_rVector3D_MR > Unable to write_rVector3D_MR vector to formatted file. ", &
                         trim(fname), "."
@@ -2076,9 +1929,7 @@ contains
         !
         integer :: ix, iy, iz,funit
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
+        call self%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit

@@ -87,8 +87,7 @@ contains
         !
         class( InversionDCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
-        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: sigma, dsigma
         !
         real( kind=prec ) :: F, mNorm
         type( DataGroupTx_t ), allocatable, dimension(:) :: b, dx, all_predicted_data, res, JmHat
@@ -207,7 +206,7 @@ contains
         !
         class( InversionDCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( in ) :: dsigma, mHat
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma, mHat
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: res
         real( kind=prec ), intent( out ) :: F, mNorm
@@ -254,7 +253,7 @@ contains
         class( InversionDCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: b
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: x
-        class( ModelParameter_t ), allocatable, intent( in ) :: dsigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: r, p, Ap
@@ -327,7 +326,7 @@ contains
         !
         class( InversionDCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: p
-        class( ModelParameter_t ), allocatable, intent( in ) :: dsigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: Ap
         !
@@ -375,7 +374,7 @@ contains
         !
         class( InversionDCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
-        class( ModelParameter_t ), intent( in ) :: dsigma, mHat
+        class( ModelParameter_t ), intent( inout ) :: dsigma, mHat
         !
         character(100) :: out_file_name
         character(3) :: char3

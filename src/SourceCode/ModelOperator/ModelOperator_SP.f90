@@ -1,58 +1,59 @@
 !
-!> Derived class to define a ModelOperator_SP
+!> Derived class to define a ModelOperator
+!> with basic operations for Sparse Matrices
 !
 module ModelOperator_SP
     !
     use ModelOperator
-    use spOpTopology_SG
+    use SpOpTopology_SG
     use MetricElements_CSG
-    use ModelParameterCell_SG
     !
     type, extends( ModelOperator_t ) :: ModelOperator_SP_t
         !
-        type( spOpTopology_SG_t ) :: topology_sg
-        !
-        class( Vector_t ), allocatable :: sigma_C
+        type( SpOpTopology_SG_t ) :: topology_sg
         !
         integer, allocatable, dimension(:) :: EDGEi, EDGEb
         integer, allocatable, dimension(:) :: NODEi, NODEb
         !
-        type( spMatCSR_Real ) :: CC, CCii, CCib
+        type( spMatCSR_Real ) :: D, Gd, CCii, CCib
+        !
+        type( spMatCSR_Real ) :: VDiv ! div : edges->nodes (interior only)
+        type( spMatCSR_Real ) :: VDsG ! operator for div correction
+        type( spMatCSR_Real ) :: Ds  ! divergence of current operator
+        !
+        type( spMatCSR_Real ) :: VDsG_L, VDsG_U
         !
         real( kind=prec ) :: omega
         !
         real( kind=prec ), allocatable, dimension(:) :: VomegaMuSig
         !
-        type( spMatCSR_Real ) :: VDiv        ! div : edges->nodes (interior only)
-        type( spMatCSR_Real ) :: VDsG        ! operator for div correction
-        type( spMatCSR_Real ) :: VDs         ! divergence of current operator
-        !
-        type( spMatCSR_Real ) :: VDsG_L, VDsG_U
-        !
         contains
             !
             final :: ModelOperator_SP_dtor
             !
+            !> Setup
             procedure, public :: setEquations => setEquations_ModelOperator_SP
             procedure, public :: setCond => setCond_ModelOperator_SP
-            procedure, public :: amult => amultModelOperator_SP
-            procedure, public :: multAib => multAib_ModelOperator_SP
-            procedure, public :: multCurlT => multCurlT_ModelOperator_SP
+            !
+            procedure, public :: divCorInit => divCorInit_ModelOperator_SP
             procedure, public :: divCorSetUp => divCorSetUp_ModelOperator_SP
             !
-            procedure, public :: divCorInit => divCorInitModelOperator_SP
+            !> Operations
+            procedure, public :: amult => amult_ModelOperator_SP
+            procedure, public :: multAib => multAib_ModelOperator_SP
             !
-            procedure :: divCGrad => divCGrad_ModelOperator_SP
-            procedure :: divC => divC_ModelOperator_SP
-            procedure :: grad => grad_ModelOperator_SP
-            procedure :: div => div_ModelOperator_SP
+            procedure, public :: div => div_ModelOperator_SP
+            procedure, public :: divC => divC_ModelOperator_SP
+            procedure, public :: divCGrad => divCGrad_ModelOperator_SP
             !
+            procedure, public :: grad => grad_ModelOperator_SP
+            !
+            !> Alloc/Dealloc
             procedure :: create => create_ModelOperator_SP 
             procedure :: dealloc => deallocate_ModelOperator_SP
             !
+            !> Miscellaneous
             procedure, public :: print => print_ModelOperator_SP
-            !
-            procedure, private :: updateOmegaMuSig
             !
     end type ModelOperator_SP_t
     !
@@ -67,7 +68,7 @@ contains
     function ModelOperator_SP_ctor( grid ) result( self )
         implicit none
         !
-        class( Grid3D_SG_t ), target, intent( in ) :: grid
+        class( Grid_t ), target, intent( in ) :: grid
         !
         type( ModelOperator_SP_t ) :: self
         !
@@ -81,43 +82,6 @@ contains
         call self%create
         !
     end function ModelOperator_SP_ctor
-    !
-    !> No subroutine briefing
-    subroutine create_ModelOperator_SP( self )
-        implicit none
-        !
-        class( ModelOperator_SP_t ), intent( inout ) :: self
-        !
-        integer :: nInterior
-        !
-        self%is_allocated = .FALSE.
-        !
-        !> Set sparse matrices for curl (T) and grad (G)
-        !> operator topologies; these sparse matrices are stored
-        !> in module spOpTopology
-        !
-        self%topology_sg = spOpTopology_SG_t( self%metric%grid )
-        !
-        call self%topology_sg%curl( T )
-        !
-        call self%topology_sg%grad( G )
-        !
-        call boundaryIndexSP( EDGE, self%metric%grid, self%EDGEb, self%EDGEi )
-        !
-        nInterior = size( self%EDGEi )
-        !
-        !> Find indexes (in vector of all) of boundary and interior edges
-        !> allocate for diagonal part of curl-curl operator
-        !> (maybe this should just be for interior edges)
-        !> here for all edges
-        allocate( self%VomegaMuSig( nInterior ) )
-        !
-        !> set a default omega
-        self%omega = 0.0
-        !
-        self%is_allocated = .TRUE.
-        !
-    end subroutine create_ModelOperator_SP
     !
     !> ModelOperator_SP destructor
     subroutine ModelOperator_SP_dtor( self )
@@ -134,38 +98,6 @@ contains
     end subroutine ModelOperator_SP_dtor
     !
     !> No subroutine briefing
-    !
-    subroutine deallocate_ModelOperator_SP( self )
-        implicit none
-        !
-        class( ModelOperator_SP_t ), intent( inout ) :: self
-        !
-        !> interior and edge indexes
-        deallocate( self%EDGEi, self%EDGEb )
-        deallocate( self%NODEi, self%NODEb )
-        !
-        call deall_spMatCSR( self%CC )
-        call deall_spMatCSR( self%CCii )
-        call deall_spMatCSR( self%CCib )
-        !
-        !> and the edge conductivities
-        if( allocated( self%VomegaMuSig ) ) deallocate( self%VomegaMuSig )
-        !
-        !> and the curl and grad topology matrices
-        call deall_spMatCSR( T )
-        call deall_spMatCSR( G )
-        !
-        call deall_spMatCSR( self%VDiv )
-        call deall_spMatCSR( self%VDsG )
-        call deall_spMatCSR( self%VDs )
-        call deall_spMatCSR( self%VDsG_L )
-        call deall_spMatCSR( self%VDsG_U )
-        !
-        self%is_allocated = .FALSE.
-        !
-    end subroutine deallocate_ModelOperator_SP
-    !
-    !> No subroutine briefing
     !> using existing curl operator, create sparse matrix CC
     !> Note: this is the symmetric form, multiplied by edge volume elements
     !
@@ -173,7 +105,8 @@ contains
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
-        type( spMatCSR_Real ) :: Temp, Ttrans
+        !
+        type( spMatCSR_Real ) :: matrix_1, Ttrans, CC
         integer :: m, n, nz
         real( kind=prec ), allocatable, dimension(:) :: Dtemp
         integer :: fid
@@ -182,171 +115,115 @@ contains
         n = T%nCol
         nz = T%row( T%nRow + 1 ) - 1
         !
-        !allocate( Dtemp( m ) )
-        !
-        call create_spMatCSR( m, n, nz, Temp )
+        call create_spMatCSR( m, n, nz, matrix_1 )
         call create_spMatCSR( n, m, nz, Ttrans )
-        call create_spMatCSR( m, n, nz, self%CC )
+        call create_spMatCSR( m, n, nz, CC )
         !
-        call RMATxDIAG( T, real( self%metric%Edgelength%getArray(), kind=prec ), Temp )
+        call RMATxDIAG( T, real( self%metric%edge_length%getArray(), kind=prec ), matrix_1 )
         !
-        Dtemp = ( self%metric%DualEdgelength%getArray() / self%metric%FaceArea%getArray() )
+        Dtemp = ( self%metric%dual_edge_length%getArray() / self%metric%face_area%getArray() )
         !
-        call DIAGxRMAT( Dtemp, Temp, self%CC )
+        call DIAGxRMAT( Dtemp, matrix_1, CC )
         !
         call RMATtrans( T, Ttrans )
         !
-        call RMATxRMAT( Ttrans, self%CC, Temp )
+        call RMATxRMAT( Ttrans, CC, matrix_1 )
         !
-        call DIAGxRMAT( real( self%metric%Edgelength%getArray(), kind=prec ), Temp, self%CC )
+        Dtemp = self%metric%edge_length%getArray()
         !
-        call subMatrix_Real( self%CC, self%EDGEi, self%EDGEi, self%CCii )
+        call DIAGxRMAT( Dtemp, matrix_1, CC )
         !
-        call subMatrix_Real( self%CC, self%EDGEi, self%EDGEb, self%CCib )
+        call subMatrix_Real( CC, self%EDGEi, self%EDGEi, self%CCii )
         !
-        call deall_spMatCSR( Temp )
+        call subMatrix_Real( CC, self%EDGEi, self%EDGEb, self%CCib )
+        !
+        call deall_spMatCSR( matrix_1 )
         call deall_spMatCSR( Ttrans )
+        call deall_spMatCSR( CC )
         !
         self%eqset = .TRUE.
         !
         call self%divCorInit
         !
-        call self%divCorSetUp
-        !
     end subroutine setEquations_ModelOperator_SP
     !
     !> No subroutine briefing
     !
-    subroutine setCond_ModelOperator_SP( self, sigma )
+    subroutine setCond_ModelOperator_SP( self, sigma, omega_in )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         class( ModelParameter_t ), intent( in ) :: sigma
+        real( kind=prec ), intent( in ) :: omega_in
         !
-        integer :: i
-        type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
-        class( ModelParameter_t ), allocatable :: model
-        type( rVector3D_SG_t ) :: temp_vec, sig_temp_vec
+        class( Vector_t ), allocatable:: sig_temp
+        complex( kind=prec ), allocatable, dimension(:) :: sig_vec_v, v_edge_v
         !
-        sig_temp_vec = rVector3D_SG_t( self%metric%grid, EDGE )
+        call self%metric%createVector( real_t, EDGE, sig_temp )
         !
-        !> ON -> call ModelParamToEdge( sigma, sig_temp_vec )
-        call sigma%PDEmapping( sig_temp_vec )
+        call sigma%PDEmapping( sig_temp )
         !
-        call sig_temp_vec%switchStoreState()
+        sig_vec_v = sig_temp%getArray()
         !
-        self%omega = 1.0
+        deallocate( sig_temp )
         !
-        temp_vec = self%metric%VEdge
+        v_edge_v = self%metric%v_edge%getArray()
         !
-        call temp_vec%switchStoreState()
+        self%VomegaMuSig = MU_0 * omega_in * sig_vec_v( self%EDGEi ) * v_edge_v( self%EDGEi )
         !
-        self%VomegaMuSig = temp_vec%sv( self%EDGEi ) * sig_temp_vec%sv( self%EDGEi ) * mu_0 * self%omega
-        !
-        !> TEMPORARY; REQUIRED FOR BOUNDARY CONDITIONS
-        !> set static array for cell conductivities
-        !> this stores conductivity values in a module structure
-        !> that is readily accesible to boundary condition routines
-        !> rvector sigma_C is created if it is not yet allocated
-        !
-        allocate( model, source = sigma )
-        model = sigma
-        !
-        allocate( cell_cond( model%anisotropic_level ) )
-        !
-        do i = 1, model%anisotropic_level
-            !
-            cell_cond(i) = rScalar3D_SG_t( self%metric%grid, CELL_EARTH )
-            !
-            call cell_cond(i)%setArray( cmplx( self%VomegaMuSig, 0.0, kind=prec ) )
-            !
-        enddo
-        !
-        call model%setCond( cell_cond )
-        !
-        call sigma%dPDEmapping( model, self%sigma_C )
-        !
-        deallocate( model )
+        self%omega = omega_in
         !
     end subroutine setCond_ModelOperator_SP
-    !
-    !> No subroutine briefing
-    !
-    subroutine updateOmegaMuSig( self, inOmega, model_param )
-        implicit none
-        !
-        class( ModelOperator_SP_t ), intent( inout ) :: self
-        real( kind=prec ), intent ( in ) :: inOmega
-        class( ModelParameter_t ), intent( in ), optional :: model_param
-        !
-        type( rVector3D_SG_t ) :: sigTemp
-        complex( kind=prec ), allocatable, dimension(:) :: sigVec, temp_vec
-        !
-        if( present( model_param ) ) then
-            !
-            sigTemp = rVector3D_SG_t( self%metric%grid, EDGE )
-            !
-            call model_param%PDEmapping( sigTemp )
-            !
-            sigVec = sigTemp%getArray()
-            !
-            temp_vec = self%metric%VEdge%getArray()
-            !
-            self%VomegaMuSig = MU_0 * inOmega * sigVec( self%EDGEi ) * temp_vec( self%EDGEi )
-            !
-            self%omega = inOmega
-            !
-        else
-            if( self%omega .gt. 0 ) then
-                self%VomegaMuSig = ( self%VomegaMuSig / self%omega )
-            endif
-            !
-            self%VomegaMuSig = ( self%VomegaMuSig * inOmega )
-            !
-            self%omega = inOmega
-            !
-        endif
-        !
-    end subroutine updateOmegaMuSig
     !
     !> To complete setup conductivity is required
     !> DivCorInit has to be called before this routine
     !
-    subroutine divCorInitModelOperator_SP( self )
+    subroutine divCorInit_ModelOperator_SP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         !
-        type( spMatCSR_Real ) :: Temp, Temp2
-        real( kind=prec ), allocatable, dimension(:) :: d, aux_vec
+        type( spMatCSR_Real ) :: matrix_1, matrix_2
+        real( kind=prec ), allocatable, dimension(:) :: d, aux_vec, aux_vec_int
         integer, allocatable, dimension(:) :: allNodes
         integer :: i, m
         !
+        !> #Part 1. Construction of VDiv (pre-Vds matrix) and D (div operator)
+        !
         !> set indexes for interior and boundary nodes
-        call boundaryIndexSP( NODE, self%metric%grid, self%NODEb, self%NODEi )
+        call boundaryIndexSP( NODE, self%metric, self%NODEb, self%NODEi )
         !
-        !> (1) first construct VDiv operator transpose of topology
-        call RMATtrans( G, Temp )
+        !> matrix_1 -> transpose of topology G
+        call RMATtrans( G, matrix_1 )
         !
-        !> pre-multiply by dual face area
-        aux_vec = real( self%metric%DualFaceArea%getArray(), kind=prec )
+        !> matrix_2 -> Multiply matrix_1 by dual face area
+        aux_vec = self%metric%dual_face_area%getArray()
         !
-        call RMATxDIAG( Temp, aux_vec, Temp2 )
+        call RMATxDIAG( matrix_1, aux_vec, matrix_2 )
         !
-        !write( *, * ) "size( aux_vec ), Temp2%nRow, Temp2%nCol: ", size( aux_vec ), Temp2%nRow, Temp2%nCol
+        call deall_spMatCSR( matrix_1 )
         !
-        call deall_spMatCSR( Temp )
+        !> Select matrix_2 interior nodes, edges to create VDiv
+        call subMatrix_Real( matrix_2, self%NODEi, self%EDGEi, self%VDiv )
         !
-        !> select out interior nodes, edges
-        call subMatrix_Real( Temp2, self%NODEi, self%EDGEi, self%VDiv )
+        call deall_spMatCSR( matrix_2 )
         !
-        call deall_spMatCSR( Temp2 )
+        !> v_node
+        aux_vec = self%metric%v_node%getArray()
         !
-        !> (2) next turn G into actual gradient (not just topology,
+        !> self%D -> Divide self%VDiv by v_node interior
+        aux_vec_int = ( 1. / aux_vec( self%metric%v_node%ind_interior ) )
+        !
+        call DIAGxRMAT( aux_vec_int, self%VDiv, self%D )
+        !
+        !> #Part 2. Construction of self%Gd (grad operator)
+        !
+        !> turn G into actual gradient (not just topology,
         !> all nodes-> interior edges (not clear this is what we want!)
         allocate( d( G%nRow ) )
         !
-        aux_vec = real( self%metric%Edgelength%getArray(), kind=prec )
+        !> edge_length
+        aux_vec = self%metric%edge_length%getArray()
         !
         do i = 1, G%nRow
             d(i) = 1. / aux_vec(i)
@@ -358,13 +235,13 @@ contains
             allNodes(i) = i
         enddo
         !
-        call DIAGxRMAT( d, G, Temp )
-        call subMatrix_Real( Temp, self%EDGEi, allNodes, G )
-        call deall_spMatCSR( Temp )
+        call DIAGxRMAT( d, G, matrix_1 )
+        call subMatrix_Real( matrix_1, self%EDGEi, allNodes, self%Gd )
+        call deall_spMatCSR( matrix_1 )
         !
         deallocate( allNodes, d )
         !
-    end subroutine divCorInitModelOperator_SP
+    end subroutine divCorInit_ModelOperator_SP
     !
     !> To complete setup conductivity is required
     !> DivCorInit has to be called before this routine
@@ -374,43 +251,42 @@ contains
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
         !
-        type( spMatCSR_Real ) :: temp_matrix
-        type( rVector3D_SG_t ) :: temp_vec
+        type( spMatCSR_Real ) :: matrix, VDs
+        complex( kind=prec ), allocatable, dimension(:) :: v_edge_v
         real( kind=prec ), allocatable, dimension(:) :: d
         integer, allocatable, dimension(:) :: allNodes
         integer :: n, i
         !
-        !> Construct VDs .. multiply VDiv by Conductivity on edges; can use VomegaMuSig
-        n = self%VDiv%nCol
+        !> Ds -> multiply D by Conductivity on edges using VomegaMuSig
+        n = self%D%nCol
         !
         d = ( self%VomegaMuSig / ( mu_0 * self%omega ) )
         !
-        temp_vec = self%metric%VEdge
+        v_edge_v = self%metric%v_edge%getArray()
         !
-        call temp_vec%switchStoreState
+        d = ( d / v_edge_v( self%EDGEi ) )
         !
-        d = ( d / temp_vec%sv( self%EDGEi ) )
+        call RMATxDIAG( self%D, d, self%Ds )
         !
-        call RMATxDIAG( self%VDiv, d, self%VDs )
+        !> VDs -> multiply self%VDiv by Conductivity on edges using VomegaMuSig
+        call RMATxDIAG( self%VDiv, d, VDs )
         !
-        !>Construct VDsG: symmetric operator for divergence correction solver
-        allocate( allNodes( G%nRow ) )
+        !> Construct VDsG: symmetric operator for divergence correction solver
+        allocate( allNodes( self%Gd%nRow ) )
         !
-        do i = 1, G%nRow
+        do i = 1, self%Gd%nRow
             allNodes( i ) = i
         enddo
         !
-        call subMatrix_Real( G, allNodes, self%NODEi, temp_matrix )
+        call subMatrix_Real( self%Gd, allNodes, self%NODEi, matrix )
         !
-        call RMATxRMAT( self%VDs, temp_matrix, self%VDsG )
+        call RMATxRMAT( VDs, matrix, self%VDsG )
         !
-        ! Setup preconditioner
+        call deall_spMatCSR( VDs )
+        call deall_spMatCSR( matrix )
+        !
+        ! Setup preconditioner matrices: self%VDsG_L and self%VDsG_U
         call Dilu_Real( self%VDsG, self%VDsG_L, self%VDsG_U )
-        !
-        !call CholInc_real(VDsG,VDsG_L)
-        !call RMATtrans(VDsG_L,VDsG_U)
-        !
-        call deall_spMatCSR( temp_matrix )
         !
         deallocate( allNodes )
         !
@@ -420,255 +296,299 @@ contains
     !> for interior elements
     !> assume output y is already allocated
     !
-    subroutine amultModelOperator_SP( self, omega, inE, outE, p_adjoint )
+    subroutine amult_ModelOperator_SP( self, in_e, out_e, omega, adjoint )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        real( kind=prec ), intent( in ), optional :: omega
-        class( Field_t ), intent( in ) :: inE
-        class( Vector_t ), intent( inout ) :: outE
-        logical, intent( in ), optional :: p_adjoint
+        class( Vector_t ), intent( in ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
+        real( kind=prec ), intent( in ) :: omega
+        logical, intent( in ) :: adjoint
         !
-        logical :: adjoint
-        complex( kind=prec ), allocatable, dimension(:) :: array_inE, array_outE
-        complex( kind=prec ), allocatable, dimension(:) :: array_inE_int, array_result
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
         !
-        if( .NOT. inE%is_allocated ) then
-            stop "Error: amultModelOperator_SP > inE not allocated"
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "amult_ModelOperator_SP > in_e not allocated" )
         endif
         !
-        array_inE = inE%getArray()
-        array_outE = outE%getArray()
-        !
-        array_inE_int = array_inE( inE%ind_interior )
-        !
-        array_result = array_inE_int
-        array_result = C_ZERO
-        !
-        call RMATxCVEC( self%CCii, array_inE_int, array_result )
-        !
-        if( present( p_adjoint ) ) then
-            adjoint = p_adjoint
-        else
-            adjoint = .FALSE.
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "amult_ModelOperator_SP > out_e not allocated" )
         endif
+        !
+        in_e_v = in_e%getArray()
+        in_e_v_int = in_e_v( in_e%ind_interior )
+        !
+        out_e_v = out_e%getArray()
+        out_e_v_int = out_e_v( out_e%ind_interior )
+        !
+        !write(*,*) "amult_ModelOperator_SP: ", self%CCii%nCol, self%CCii%nRow, size( in_e_v_int ), size( out_e_v_int ), adjoint
+        !
+        call RMATxCVEC( self%CCii, in_e_v_int, out_e_v_int )
         !
         if( adjoint ) then
-            array_result = array_result - ONE_I * ISIGN * self%VomegaMuSig * array_inE_int
+            out_e_v_int = out_e_v_int - ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%ind_interior )
         else
-            array_result = array_result + ONE_I * ISIGN * self%VomegaMuSig * array_inE_int
+            out_e_v_int = out_e_v_int + ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%ind_interior )
         endif
         !
-        !array_inE = C_ZERO
-        array_outE( inE%ind_interior ) = array_result
+        out_e_v( in_e%ind_interior ) = out_e_v_int
         !
-        call outE%setArray( array_outE )
+        call out_e%setArray( out_e_v )
         !
-    end subroutine amultModelOperator_SP
+    end subroutine amult_ModelOperator_SP
     !
     !> Implement the sparse matrix multiply for curl-curl operator
     !> for interior/boundary elements
     !> assume output y is already allocated
     !
-    subroutine multAib_ModelOperator_SP( self, inE, outE )
+    subroutine multAib_ModelOperator_SP( self, in_e, out_e )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Field_t ), intent( in ) :: inE
-        class( Vector_t ), intent( inout ) :: outE
+        class( Vector_t ), intent( in ) :: in_e
+        class( Vector_t ), intent( inout ) :: out_e
         !
-        complex( kind=prec ), allocatable, dimension(:) :: array_inE, array_outE
-        complex( kind=prec ), allocatable, dimension(:) :: array_inE_bdry, array_outE_int
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_bry, out_e_v_int
         !
-        if( .NOT. inE%is_allocated ) then
-            stop "Error: amultModelOperator_SP > inE not allocated"
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "multAib_ModelOperator_SP > in_e not allocated" )
         endif
         !
-        array_inE = inE%getArray()
-        array_inE_bdry = array_inE( inE%ind_boundaries )
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "multAib_ModelOperator_SP > out_e not allocated" )
+        endif
         !
-        array_outE = outE%getArray()
-        array_outE_int = array_outE( inE%ind_interior )
-        array_outE_int = C_ZERO
+        in_e_v = in_e%getArray()
+        in_e_v_bry = in_e_v( in_e%ind_boundary )
         !
-        ! ON CCib DIFFERENT length ???? 
-        call RMATxCVEC( self%CCib, array_inE_bdry, array_outE_int )
+        out_e_v = out_e%getArray()
+        out_e_v_int = out_e_v( out_e%ind_interior )
         !
-        array_outE( inE%ind_interior ) = array_outE_int
+        !write(*,*) "multAib_ModelOperator_SP: ", self%CCib%nCol, self%CCib%nRow, size( in_e_v_bry ), size( out_e_v_int )
         !
-        call outE%setArray( array_outE )
+        call RMATxCVEC( self%CCib, in_e_v_bry, out_e_v_int )
+        !
+        out_e_v( out_e%ind_interior ) = out_e_v_int
+        !
+        call out_e%setArray( out_e_v )
         !
     end subroutine multAib_ModelOperator_SP
     !
     !> No subroutine briefing
-    !
-    subroutine multCurlT_ModelOperator_SP( self, inH, outE )
+    subroutine div_ModelOperator_SP( self, in_e, out_phi )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Field_t ), intent( inout ) :: inH
-        class( Vector_t ), allocatable, intent( inout ) :: outE
+        class( Vector_t ), intent( in ) :: in_e
+        class( Scalar_t ), intent( inout ) :: out_phi
         !
-        integer :: ix, iy, iz
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_phi_int
         !
-        select type( inH )
-            !
-            class is( cVector3D_SG_t )
-                !
-                call inH%div( self%Metric%FaceArea )
-                !
-                if( .NOT. outE%is_allocated ) then
-                     write( *, * ) "Error:  multCurlT_ModelOperator_SP > outE not allocated"
-                endif
-                !
-                select type( outE )
-                    !
-                    class is( cVector3D_SG_t )
-                        !
-                        !> Ex
-                        do iy = 2, inH%Ny
-                            do iz = 2, inH%Nz
-                                outE%x(:, iy, iz) =   (inH%z(:, iy, iz) - &
-                                inH%z(:, iy - 1, iz)) - &
-                               (inH%y(:, iy, iz) - inH%y(:, iy, iz - 1))
-                            enddo
-                        enddo
-                        !
-                        !> Ey
-                        do iz = 2, inH%Nz
-                            do ix = 2, inH%Nx
-                                outE%y(ix, :, iz) =(inH%x(ix, :, iz) - &
-                                inH%x(ix, :, iz - 1)) - &
-                               (inH%z(ix, :, iz) - inH%z(ix - 1, :, iz))
-                            enddo
-                        enddo
-                        !
-                        !> Ez
-                        do ix = 2, inH%Nx
-                            do iy = 2, inH%Ny
-                                outE%z(ix, iy,:) =(inH%y(ix, iy, :) - &
-                                inH%y(ix - 1, iy, :)) - &
-                               (inH%x(ix, iy, :) - inH%x(ix, iy - 1, :))
-                            enddo
-                        enddo
-                        !
-                    class default
-                        stop "Error: multCurlT_ModelOperator_SP > Unclassified outE"
-                end select
-                    !> 
-            class default
-                stop "Error: multCurlT_ModelOperator_SP > Unclassified input inH"
-                !
-        end select
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "div_ModelOperator_SP > in_e not allocated" )
+        endif
         !
-        call outE%mult( self%metric%Edgelength )
+        if( .NOT. out_phi%is_allocated ) then
+            call errStop( "div_ModelOperator_SP > out_phi not allocated" )
+        endif
         !
-    end subroutine multCurlT_ModelOperator_SP
+        in_e_v = in_e%getArray()
+        in_e_v_int = in_e_v( in_e%ind_interior )
+        !
+        out_phi_v = out_phi%getArray()
+        out_phi_int = out_phi_v( out_phi%ind_interior )
+        !
+        !write(*,*) "div_ModelOperator_SP: ", self%D%nCol, self%D%nRow, size( in_e_v_int ), size( out_phi_int )
+        !
+        call RMATxCVEC( self%D, in_e_v_int, out_phi_int )
+        !
+        out_phi_v( out_phi%ind_interior ) = out_phi_int
+        !
+        call out_phi%setArray( out_phi_v )
+        !
+    end subroutine div_ModelOperator_SP
     !
     !> No subroutine briefing
     !
-    subroutine divCGrad_ModelOperator_SP( self, inPhi, outPhi )
+    subroutine divC_ModelOperator_SP( self, in_e, out_phi )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Scalar_t ), intent( in ) :: inPhi
-        class( Scalar_t ), intent( inout ) :: outPhi
+        class( Vector_t ), intent( in ) :: in_e
+        class( Scalar_t ), intent( inout ) :: out_phi
         !
-        complex( kind=prec ), allocatable, dimension(:) :: array_inPhi, array_outPhi
-        complex( kind=prec ), allocatable, dimension(:) :: array_inPhi_int, array_result
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_phi_v_int
         !
-        array_inPhi = inPhi%getArray()
-        array_inPhi_int = array_inPhi( inPhi%ind_interior )
+        if( .NOT. in_e%is_allocated ) then
+            call errStop( "divC_ModelOperator_SP > in_e not allocated" )
+        endif
         !
-        array_outPhi = outPhi%getArray()
-        array_result = array_inPhi_int
-        array_result = C_ZERO
+        if( .NOT. out_phi%is_allocated ) then
+            call errStop( "divC_ModelOperator_SP > out_phi not allocated" )
+        endif
         !
-        call RMATxCVEC( self%VDsG, array_inPhi_int, array_result )
+        in_e_v = in_e%getArray()
+        in_e_v_int = in_e_v( in_e%ind_interior )
         !
-        array_outPhi( inPhi%ind_interior ) = array_result
+        out_phi_v = out_phi%getArray()
+        out_phi_v_int = out_phi_v( out_phi%ind_interior )
         !
-        call outPhi%setArray( array_outPhi )
+        !write(*,*) "divC_ModelOperator_SP: ", self%VDs%nCol, self%VDs%nRow, size( in_e_v_int ), size( out_phi_v_int )
+        !
+        call RMATxCVEC( self%Ds, in_e_v_int, out_phi_v_int )
+        !
+        out_phi_v( out_phi%ind_interior ) = out_phi_v_int
+        !
+        call out_phi%setArray( out_phi_v )
+        !
+    end subroutine divC_ModelOperator_SP
+    !
+    !> No subroutine briefing
+    !
+    subroutine divCGrad_ModelOperator_SP( self, in_phi, out_phi )
+        implicit none
+        !
+        class( ModelOperator_SP_t ), intent( in ) :: self
+        class( Scalar_t ), intent( in ) :: in_phi
+        class( Scalar_t ), intent( inout ) :: out_phi
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_phi_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_phi_v_int, out_phi_v_int
+        !
+        if( .NOT. in_phi%is_allocated ) then
+            call errStop( "divCGrad_ModelOperator_SP > in_phi not allocated" )
+        endif
+        !
+        if( .NOT. out_phi%is_allocated ) then
+            call errStop( "divCGrad_ModelOperator_SP > out_phi not allocated" )
+        endif
+        !
+        in_phi_v = in_phi%getArray()
+        in_phi_v_int = in_phi_v( in_phi%ind_interior )
+        !
+        out_phi_v = out_phi%getArray()
+        out_phi_v_int = out_phi_v( out_phi%ind_interior )
+        !
+        !write(*,*) "divCGrad_ModelOperator_SP: ", self%VDsG%nCol, self%VDsG%nRow, size( in_phi_v_int ), size( out_phi_v_int )
+        !
+        call RMATxCVEC( self%VDsG, in_phi_v_int, out_phi_v_int )
+        !
+        out_phi_v( out_phi%ind_interior ) = out_phi_v_int
+        !
+        call out_phi%setArray( out_phi_v )
         !
     end subroutine divCGrad_ModelOperator_SP
     !
     !> No subroutine briefing
     !
-    subroutine divC_ModelOperator_SP( self, inE, outPhi )
+    subroutine grad_ModelOperator_SP( self, in_phi, out_e )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Field_t ), intent( in ) :: inE
-        class( Scalar_t ), intent( inout ) :: outPhi
+        class( Scalar_t ), intent( in ) :: in_phi
+        class( Vector_t ), intent( inout ) :: out_e
         !
-        complex( kind=prec ), allocatable, dimension(:) :: array_inE, array_outPhi
-        complex( kind=prec ), allocatable, dimension(:) :: array_inE_int, array_outPhi_int
+        complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_e_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_phi_v_int, out_e_v_int
         !
-        array_inE = inE%getArray()
-        array_inE_int = array_inE( inE%ind_interior )
+        if( .NOT. in_phi%is_allocated ) then
+            call errStop( "grad_ModelOperator_SP > in_phi not allocated" )
+        endif
         !
-        array_outPhi = outPhi%getArray()
-        array_outPhi_int = array_outPhi( outPhi%ind_interior )
-        array_outPhi_int = C_ZERO
+        if( .NOT. out_e%is_allocated ) then
+            call errStop( "grad_ModelOperator_SP > out_e not allocated" )
+        endif
         !
-        call RMATxCVEC( self%VDs, array_inE_int, array_outPhi_int )
+        in_phi_v = in_phi%getArray()
         !
-        array_outPhi( outPhi%ind_interior ) = array_outPhi_int
+        out_e_v = out_e%getArray()
+        out_e_v_int = out_e_v( out_e%ind_interior )
         !
-        call outPhi%setArray( array_outPhi )
+        !write(*,*) "grad_ModelOperator_SP: ", self%Gd%nCol, self%Gd%nRow, size( in_phi_v ), size( out_e_v_int )
         !
-    end subroutine divC_ModelOperator_SP
-    !
-    !> No subroutine briefing
-    subroutine grad_ModelOperator_SP( self, inPhi, outE )
-        implicit none
+        call RMATxCVEC( self%Gd, in_phi_v, out_e_v_int )
         !
-        class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Scalar_t ), intent( in ) :: inPhi
-        class( Vector_t ), intent( inout ) :: outE
+        out_e_v( out_e%ind_interior ) = out_e_v_int
         !
-        complex( kind=prec ), allocatable, dimension(:) :: array_inPhi, array_outE
-        complex( kind=prec ), allocatable, dimension(:) :: array_outE_int
-        !
-        array_inPhi = inPhi%getArray()
-        !
-        array_outE = outE%getArray()
-        array_outE_int = array_outE( outE%ind_interior )
-        !
-        call RMATxCVEC( G, array_inPhi, array_outE_int )
-        !
-        array_outE( outE%ind_interior ) = array_outE_int
-        !
-        call outE%setArray( array_outE )
+        call out_e%setArray( out_e_v )
         !
     end subroutine grad_ModelOperator_SP
     !
     !> No subroutine briefing
-    subroutine div_ModelOperator_SP( self, inE, outPhi )
+    !
+    !> Set sparse matrices for curl (T) and grad (G)
+    !> operator topologies; these sparse matrices are stored
+    !> in module spOpTopology
+    !
+    !> Find indexes (in vector of all) of boundary and interior edges
+    !> allocate for diagonal part of curl-curl operator
+    !> (maybe this should just be for interior edges)
+    !> here for all edges
+    !
+    subroutine create_ModelOperator_SP( self )
         implicit none
         !
-        class( ModelOperator_SP_t ), intent( in ) :: self
-        class( Field_t ), intent( in ) :: inE
-        class( Field_t ), intent( inout ) :: outPhi
+        class( ModelOperator_SP_t ), intent( inout ) :: self
         !
-        type( spMatCSR_Real ) :: D
+        integer :: nInterior
         !
-        complex( kind=prec ), allocatable, dimension(:) :: array_inE, array_outPhi
+        self%is_allocated = .FALSE.
         !
-        call RMATtrans( G, D )
+        self%topology_sg = SpOpTopology_SG_t( self%metric%grid )
         !
-        array_inE = inE%getArray()
+        call self%topology_sg%curl( T )
         !
-        array_outPhi = array_inE
-        array_outPhi = C_ZERO
+        call self%topology_sg%grad( G )
         !
-        call RMATxCVEC( D, array_inE, array_outPhi )
+        call boundaryIndexSP( EDGE, self%metric, self%EDGEb, self%EDGEi )
         !
-        call deall_spMatCSR( D )
+        nInterior = size( self%EDGEi )
         !
-        call outPhi%setArray( array_outPhi )
+        allocate( self%VomegaMuSig( nInterior ) )
         !
-    end subroutine div_ModelOperator_SP
+        !> set a default omega
+        self%omega = 0.0
+        !
+        self%is_allocated = .TRUE.
+        !
+    end subroutine create_ModelOperator_SP
+    !
+    !> No subroutine briefing
+    !
+    subroutine deallocate_ModelOperator_SP( self )
+        implicit none
+        !
+        class( ModelOperator_SP_t ), intent( inout ) :: self
+        !
+        !> interior and edge indexes
+        deallocate( self%EDGEi, self%EDGEb )
+        deallocate( self%NODEi, self%NODEb )
+        !
+        call deall_spMatCSR( self%CCii )
+        call deall_spMatCSR( self%CCib )
+        !
+        !> and the edge conductivities
+        if( allocated( self%VomegaMuSig ) ) deallocate( self%VomegaMuSig )
+        !
+        !> and the curl and grad topology matrices
+        call deall_spMatCSR( T )
+        call deall_spMatCSR( G )
+        !
+        call deall_spMatCSR( self%Gd )
+        call deall_spMatCSR( self%D )
+        call deall_spMatCSR( self%VDiv )
+        call deall_spMatCSR( self%VDsG )
+        call deall_spMatCSR( self%Ds )
+        call deall_spMatCSR( self%VDsG_L )
+        call deall_spMatCSR( self%VDsG_U )
+        !
+        self%is_allocated = .FALSE.
+        !
+    end subroutine deallocate_ModelOperator_SP
     !
     !> No subroutine briefing
     subroutine print_ModelOperator_SP( self )

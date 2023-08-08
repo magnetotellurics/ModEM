@@ -1,18 +1,13 @@
 !
-!> Some tools that manipulate sparse matrices in CSR storage
+!> Operations over sparse matrices in CSR storage
 !
 module SpOpTools
     !
     use Utilities
-    use Grid
-    use rScalar3D_SG
-    use rVector3D_SG
-    !
-    implicit none
+    use MetricElements
     !
     !> Generic matrix types and tools, using CSR storage, 
     !> but with fortran numbering conventions(starting from 1)
-    !
     type :: spMatCSR_Real
         integer :: nRow=0
         integer :: nCol=0
@@ -131,7 +126,7 @@ contains
         implicit none
         !
         integer, intent( in ) :: m, n, nz
-        !   A will be sparse m x n with nz non-zero elements
+        ! A will be sparse m x n with nz non-zero elements
         type( spMatCSR_Real ), intent( inout ) :: A
         !
         integer :: istat
@@ -142,32 +137,35 @@ contains
         !
         A%nRow = m
         A%nCol = n
-        allocate(A%row(m+1), stat = istat )
-        allocate(A%col(nz), stat = istat )
-        allocate(A%val(nz), stat = istat )
-        A%row(m+1)=nz+1
+        allocate( A%row(m+1), stat = istat )
+        allocate( A%col(nz), stat = istat )
+        allocate( A%val(nz), stat = istat )
+        A%row(m+1) = nz + 1
+        !
         A%is_allocated = .TRUE.
         !
     end subroutine create_spMatCSR_Real
     !
     ! No subroutine briefing
     !
-    subroutine create_spMatCSR_Cmplx(m, n, nz, A)
+    subroutine create_spMatCSR_Cmplx( m, n, nz, A )
         implicit none
         !
         integer, intent( in ) :: m, n, nz
         !   A will be sparse m x n with nz non-zero elements
         type( spMatCSR_Cmplx ), intent( inout ) :: A
-
-        if(A%is_allocated) then
-        call deall_spMatCSR(A)
+        !
+        if( A%is_allocated ) then
+            call deall_spMatCSR( A )
         endif
-
+        !
         A%nRow = m
         A%nCol = n
-        allocate(A%row(m+1))
-        allocate(A%col(nz))
-        allocate(A%val(nz))
+        !
+        allocate( A%row(m+1) )
+        allocate( A%col(nz) )
+        allocate( A%val(nz) )
+        !
         A%row(m+1)=nz+1
         A%is_allocated = .TRUE.
         !
@@ -175,118 +173,133 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine create_spMatIJS_Real(m, n, nz, A)
+    subroutine create_spMatIJS_Real( m, n, nz, A )
         implicit none
         !
         integer, intent( in ) :: m, n, nz
-        !   A will be sparse m x n with nz non-zero elements
+        ! A will be sparse m x n with nz non-zero elements
         type(spMatIJS_Real), intent( inout ) :: A
-
-        if(A%is_allocated) then
-        call deall_spMatIJS(A)
+        !
+        if( A%is_allocated ) then
+            call deall_spMatIJS( A )
         endif
-
+        !
         A%nRow = m
         A%nCol = n
-        allocate(A%I(nz))
-        allocate(A%J(nz))
-        allocate(A%S(nz))
+        !
+        allocate( A%I(nz) )
+        allocate( A%J(nz) )
+        allocate( A%S(nz) )
+        !
         A%is_allocated = .TRUE.
         !
     end subroutine create_spMatIJS_Real
     !
     !> No subroutine briefing
     !
-    subroutine create_spMatIJS_Cmplx(m, n, nz, A)
-            implicit none
+    subroutine create_spMatIJS_Cmplx( m, n, nz, A )
+        implicit none
         !
         integer, intent( in ) :: m, n, nz
         !   A will be sparse m x n with nz non-zero elements
         type(spMatIJS_Cmplx), intent( inout ) :: A
-
-        if(A%is_allocated) then
-        call deall_spMatIJS(A)
+        !
+        if( A%is_allocated ) then
+            call deall_spMatIJS( A )
         endif
-
+        !
         A%nRow = m
         A%nCol = n
-        allocate(A%I(nz))
-        allocate(A%J(nz))
-        allocate(A%S(nz))
+        !
+        allocate( A%I(nz) )
+        allocate( A%J(nz) )
+        allocate( A%S(nz) )
+        !
         A%is_allocated = .TRUE.
-        return
+        !
     end subroutine create_spMatIJS_Cmplx
     !
     !> No subroutine briefing
     !
-    subroutine deall_spMatCSR_Real(A)
+    subroutine deall_spMatCSR_Real( A )
         implicit none
         !
         type( spMatCSR_Real ) :: A
-        if(A%is_allocated) then
-        deallocate(A%row)
-        deallocate(A%col)
-        deallocate(A%val)
-        A%is_allocated = .FALSE.
-        A%upper = .FALSE.
-        A%lower = .FALSE.
-        A%nRow = 0
-        A%nCol = 0
-        return
+        !
+        if( A%is_allocated ) then
+            !
+            deallocate(A%row)
+            deallocate(A%col)
+            deallocate(A%val)
+            A%is_allocated = .FALSE.
+            A%upper = .FALSE.
+            A%lower = .FALSE.
+            A%nRow = 0
+            A%nCol = 0
+            !
         endif
+        !
     end subroutine deall_spMatCSR_Real
     !
     !> No subroutine briefing
     !
-    subroutine deall_spMatCSR_Cmplx(A)
+    subroutine deall_spMatCSR_Cmplx( A )
         implicit none
         !
         type( spMatCSR_Cmplx ) :: A
-        if(A%is_allocated) then
-        deallocate(A%row)
-        deallocate(A%col)
-        deallocate(A%val)
-        A%is_allocated = .FALSE.
-        A%upper = .FALSE.
-        A%lower = .FALSE.
-        A%nRow = 0
-        A%nCol = 0
-        return
+        !
+        if( A%is_allocated ) then
+            !
+            deallocate(A%row)
+            deallocate(A%col)
+            deallocate(A%val)
+            A%is_allocated = .FALSE.
+            A%upper = .FALSE.
+            A%lower = .FALSE.
+            A%nRow = 0
+            A%nCol = 0
+            !
         endif
     end subroutine deall_spMatCSR_Cmplx
     !
     !> No subroutine briefing
     !
-    subroutine deall_spMatIJS_Real(A)
+    subroutine deall_spMatIJS_Real( A )
         implicit none
         !
-        type(spMatIJS_Real) :: A
-        if(A%is_allocated) then
-        deallocate(A%I)
-        deallocate(A%J)
-        deallocate(A%S)
-        A%is_allocated = .FALSE.
-        A%nRow = 0
-        A%nCol = 0
-        return
+        type( spMatIJS_Real ) :: A
+        !
+        if( A%is_allocated ) then
+            !
+            deallocate(A%I)
+            deallocate(A%J)
+            deallocate(A%S)
+            A%is_allocated = .FALSE.
+            A%nRow = 0
+            A%nCol = 0
+            !
         endif
+        !
     end subroutine deall_spMatIJS_Real
     !
     !> No subroutine briefing
     !
-    subroutine deall_spMatIJS_Cmplx(A)
+    subroutine deall_spMatIJS_Cmplx( A )
         implicit none
         !
-        type(spMatIJS_Cmplx) :: A
-        if(A%is_allocated) then
-        deallocate(A%I)
-        deallocate(A%J)
-        deallocate(A%S)
-        A%is_allocated = .FALSE.
-        A%nRow = 0
-        A%nCol = 0
-        return
+        type( spMatIJS_Cmplx ) :: A
+        !
+        if( A%is_allocated ) then
+            !
+            deallocate(A%I)
+            deallocate(A%J)
+            deallocate(A%S)
+            A%is_allocated = .FALSE.
+            A%nRow = 0
+            A%nCol = 0
+            !
         endif
+        !
     end subroutine deall_spMatIJS_Cmplx
     !
     !> No function briefing
@@ -499,6 +512,8 @@ contains
         !
         !> lets start coding this with little checking -- assume
         !> everything is allocated and correct on entry
+        !
+        !write( *, * ) "*A%nCol, *size(x), size(y)", A%nCol, size(x), size(y)
         !
         if( A%nCol .NE. size(x) ) then
             write( *, * ) "Error: RMATxCVEC > matrix and vector sizes incompatible = ", A%nCol, size(x)
@@ -798,9 +813,10 @@ contains
         !
         integer :: i, j, j1, j2, k, n, m, nz, nnz, nzero
         !
-        if(A%nRow.NE.size(D)) then
-        stop "Error: DIAGxRMAT > matrix sizes incompatible"
+        if( A%nRow .NE. size(D) ) then
+            call errStop( "DIAGxRMAT > matrix sizes incompatible" )
         endif
+        !
         m = A%nRow
         n = A%nCol
         nz = A%row(A%nRow+1)-1
@@ -1768,7 +1784,7 @@ contains
         colT =(/(j, j=1, A%nCol) /)
         if(A%nrow .LT. np) then
             stop "Error: splitRMAT > number of process is larger than number of rows!"
-        else if(np.EQ.1) then
+        elseif(np.EQ.1) then
             !write( *, * ) "only one process, returning the original Matrix"
             m = A%nRow
             n = A%nCol
@@ -1833,7 +1849,7 @@ contains
         colT =(/(j, j=1, A%nCol) /)
         if(A%nrow .LT. np) then
             stop "Error: splitCMAT > number of processes is larger than number of rows!"
-        else if(np.EQ.1) then
+        elseif(np.EQ.1) then
             !write( *, * ) "only one process, returning the original Matrix"
             m = A%nRow
             n = A%nCol
@@ -1953,7 +1969,7 @@ contains
     !> Solve system Lx = b for complex vector x, lower triangular L
     !> here real or cmplx refers to L; x is always complex
     !
-    subroutine LTsolve_Real(L, b, x)
+    subroutine LTsolve_Real( L, b, x )
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: L
@@ -2087,7 +2103,7 @@ contains
         !   this index should correspond to positions where
         !   columns and values are stored in L
         ii = j - A%row(i) + L%row(i)
-        else if(i.LT.A%col(j)) then
+        elseif(i.LT.A%col(j)) then
         !    these are indicies into A matrix storage
         nij = nij+1
         ij(nij) = j
@@ -2158,7 +2174,7 @@ contains
         do j = A%row(i), A%row(i+1)-1
         if(A%col(j).eq.i) then
         d(i) = d(i) + A%val(j)
-        else if(A%col(j).LT.i) then
+        elseif(A%col(j).LT.i) then
         d(i) = d(i) - A%val(j)*A%val(j)*d(A%col(j))
         endif
         enddo
@@ -2207,7 +2223,7 @@ contains
         do j = A%row(i), A%row(i+1)-1
         if(A%col(j).eq.i) then
         d(i) = d(i) + A%val(j)
-        else if(A%col(j).LT.i) then
+        elseif(A%col(j).LT.i) then
         d(i) = d(i) - A%val(j)*A%val(j)*d(A%col(j))
         endif
         enddo
@@ -2258,7 +2274,7 @@ contains
         do j = L%row(i), L%row(i+1)-1 !loop through columns
         if(L%col(j).eq.i) then ! diagonal
         d(i) = d(i) + L%val(j) 
-        else if(L%col(j).LT.i) then ! take the L and U side
+        elseif(L%col(j).LT.i) then ! take the L and U side
         d(i) = d(i) - L%val(j)*UT%val(j)*d(L%col(j))
         endif
         enddo
@@ -2324,7 +2340,7 @@ contains
                 if(Atmp%col(j).eq.i) then !diagonal
                     d(i) = Atmp%val(j) ! store previous diagonal elements
                     exit ! exit as we reached the last element in L
-                else if(Atmp%col(j).LT.i) then
+                elseif(Atmp%col(j).LT.i) then
                     !
                     if(d(Atmp%col(j)).eq.C_ZERO) then
                         write( *, * ) "Error: ilu0_Cmplx > zero pivoting in ILU0 "
@@ -2398,7 +2414,7 @@ contains
         if(Atmp%col(j).eq.i) then !diagonal
         d(i) = Atmp%val(j) ! store previous diagonal elements
         exit ! exit as we reached the last element in L
-        else if(Atmp%col(j).LT.i) then
+        elseif(Atmp%col(j).LT.i) then
         if(d(Atmp%col(j)).eq.0.0) then
         stop "Error: ilu0_Real > zero pivoting in ILU0 "
         endif 
@@ -2775,108 +2791,125 @@ contains
     !
     !> For a given type find indexes for boundary and interior nodes
     !
-    subroutine boundaryIndexSP( gridType, grid, INDb, INDi )
+    subroutine boundaryIndexSP( grid_type, metric, INDb, INDi )
         implicit none
         !
-        character(*), intent( in ) :: gridType
-        class( Grid_t ), intent( in ) :: grid
+        character(*), intent( in ) :: grid_type
+        class( MetricElements_t ), intent( in ) :: metric
         integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
         !
         integer :: nVec(3), nVecT, nBdry, nb, ni, i
-        type( rVector3D_SG_t ) :: temp_vector
-        type( rScalar3D_SG_t ) :: temp_scalar
-        real( kind=prec ), allocatable, dimension(:) :: temp_sv
+        class( Vector_t ), allocatable :: temp_vector
+        class( Scalar_t ), allocatable :: temp_scalar
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
+        complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
-        selectcase( gridType )
+        selectcase( grid_type )
             !
             case( EDGE )
                 !
-                temp_vector = rVector3D_SG_t( grid, EDGE )
+                call metric%createVector( real_t, EDGE, temp_vector )
                 !
-                nVec(1) = size(temp_vector%x)
-                nVec(2) = size(temp_vector%y)
-                nVec(3) = size(temp_vector%z)
+                x = temp_vector%getX()
+                y = temp_vector%getY()
+                z = temp_vector%getZ()
+                !
+                nVec(1) = size( x )
+                nVec(2) = size( y )
+                nVec(3) = size( z )
+                !
                 nVecT = nVec(1)+nVec(2)+nVec(3)
                 !
-                temp_vector%x(:, 1, :) = 1
-                temp_vector%x(:, temp_vector%ny+1, :) = 1
-                temp_vector%x(:, :, 1) = 1
-                temp_vector%x(:, :, temp_vector%nz+1) = 1
-                temp_vector%y(1, :, :) = 1
-                temp_vector%y(temp_vector%nx+1, :, :) = 1
-                temp_vector%y(:, :, 1) = 1
-                temp_vector%y(:, :, temp_vector%nz+1) = 1
-                temp_vector%z(1, :, :) = 1
-                temp_vector%z(temp_vector%nx+1, :, :) = 1
-                temp_vector%z(:, 1, :) = 1
-                temp_vector%z(:, temp_vector%ny+1, :) = 1
+                x(:, 1, :) = 1
+                x(:, temp_vector%ny+1, :) = 1
+                x(:, :, 1) = 1
+                x(:, :, temp_vector%nz+1) = 1
+                y(1, :, :) = 1
+                y(temp_vector%nx+1, :, :) = 1
+                y(:, :, 1) = 1
+                y(:, :, temp_vector%nz+1) = 1
+                z(1, :, :) = 1
+                z(temp_vector%nx+1, :, :) = 1
+                z(:, 1, :) = 1
+                z(:, temp_vector%ny+1, :) = 1
                 !
-                call temp_vector%switchStoreState
+                call temp_vector%setX( x )
+                call temp_vector%setY( y )
+                call temp_vector%setZ( z )
                 !
-                temp_sv = temp_vector%sv
+                s_v = temp_vector%getArray()
                 !
             case( FACE )
                 !
-                temp_vector = rVector3D_SG_t( grid, FACE )
+                call metric%createVector( real_t, FACE, temp_vector )
                 !
-                nVec(1) = size(temp_vector%x)
-                nVec(2) = size(temp_vector%y)
-                nVec(3) = size(temp_vector%z)
+                x = temp_vector%getX()
+                y = temp_vector%getY()
+                z = temp_vector%getZ()
+                !
+                nVec(1) = size( x )
+                nVec(2) = size( y )
+                nVec(3) = size( z )
                 nVecT = nVec(1)+nVec(2)+nVec(3)
                 !
-                temp_vector%x(1, :, :) = 1
-                temp_vector%x(temp_vector%nx+1, :, :) = 1
-                temp_vector%y(:, 1, :) = 1
-                temp_vector%y(:, temp_vector%ny+1, :) = 1
-                temp_vector%z(:, :, 1) = 1
-                temp_vector%z(:, :, temp_vector%nz+1) = 1
+                x(1, :, :) = 1
+                x(temp_vector%nx+1, :, :) = 1
+                y(:, 1, :) = 1
+                y(:, temp_vector%ny+1, :) = 1
+                z(:, :, 1) = 1
+                z(:, :, temp_vector%nz+1) = 1
                 !
-                call temp_vector%switchStoreState
+                call temp_vector%setX( x )
+                call temp_vector%setY( y )
+                call temp_vector%setZ( z )
                 !
-                temp_sv = temp_vector%sv
+                s_v = temp_vector%getArray()
                 !
             case( NODE )
                 !
-                temp_scalar = rScalar3D_SG_t( grid, NODE )
+                call metric%createScalar( real_t, NODE, temp_scalar )
                 !
-                nVecT = size( temp_scalar%v )
+                x = temp_scalar%getV()
                 !
-                temp_scalar%v(1, :, :) = 1
-                temp_scalar%v(temp_scalar%nx+1, :, :) = 1
-                temp_scalar%v(:, 1, :) = 1
-                temp_scalar%v(:, temp_scalar%ny+1, :) = 1
-                temp_scalar%v(:, :, 1) = 1
-                temp_scalar%v(:, :, temp_scalar%nz+1) = 1
+                nVecT = size( x )
                 !
-                call temp_scalar%switchStoreState
+                x(1, :, :) = 1
+                x(temp_scalar%nx+1, :, :) = 1
+                x(:, 1, :) = 1
+                x(:, temp_scalar%ny+1, :) = 1
+                x(:, :, 1) = 1
+                x(:, :, temp_scalar%nz+1) = 1
                 !
-                temp_sv = temp_scalar%sv
+                call temp_scalar%setV( x )
+                !
+                s_v = temp_scalar%getArray()
                 !
             case default
-                write( *, * ) "Error: boundaryIndexSP > Invalid grid type [", gridType, "]"
-                stop
+                call errStop( "boundaryIndexSP > Invalid grid type ["//grid_type//"]" )
         end select 
         !
         nBdry = 0
         do i = 1, nVecT
-            nBdry = nBdry + nint( temp_sv(i) )
+            nBdry = nBdry + nint( real( s_v(i), kind=prec ) )
         enddo
         !
         if(allocated(INDi)) then
             deallocate(INDi)
         endif
+        !
         allocate( INDi( nVecT - nBdry ) )
         !
         if(allocated(INDb)) then
             deallocate(INDb)
         endif
+        !
         allocate( INDb( nBdry ) )
         !
         nb = 0
         ni = 0
         !
         do i = 1, nVecT
-            if( nint( temp_sv(i) ) .EQ. 1 ) then
+            if( nint( real( s_v(i), kind=prec ) ) .EQ. 1 ) then
                 nb = nb+1
                 INDb(nb) = i
             else
@@ -2884,8 +2917,6 @@ contains
                 INDi(ni) = i
             endif
         enddo
-        !
-        deallocate( temp_sv )
         !
     end subroutine boundaryIndexSP
     !

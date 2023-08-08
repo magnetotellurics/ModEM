@@ -3,7 +3,7 @@
 !
 module Source
     !
-    use Constants
+    use Utilities
     use ModelOperator
     use ModelParameter
     !
@@ -19,7 +19,7 @@ module Source
         !
         real( kind=prec ) :: period
         !
-        class( Vector_t ), allocatable, dimension(:) :: rhs, E
+        type( GenVector_t ), allocatable, dimension(:) :: rhs, E
         !
         logical :: non_zero_source, non_zero_bc, calc_sens, for_transpose
         !
@@ -42,18 +42,16 @@ module Source
     abstract interface
         !
         subroutine interface_create_e_source( self )
-            !
             import :: Source_t
-            class( Source_t ), intent( inout ) :: self
             !
+            class( Source_t ), intent( inout ) :: self
         end subroutine interface_create_e_source
         !
         !> No interface subroutine briefing
         subroutine interface_create_rhs_source( self )
-            !
             import :: Source_t
-            class( Source_t ), intent( inout ) :: self
             !
+            class( Source_t ), intent( inout ) :: self
         end subroutine interface_create_rhs_source
         !
     end interface
@@ -65,15 +63,13 @@ module Source
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
-        class( Vector_t ), dimension(:), intent( in ) :: E
+        type( GenVector_t ), dimension(:), intent( in ) :: E
         !
         integer :: pol
         !
-        if( allocated( self%E ) ) deallocate( self%E )
+        self%E = E
         !
-        allocate( self%E, source = E )
-        !
-        call self%createRHS()
+        call self%createRHS
         !
     end subroutine setE_Source
     !
@@ -82,13 +78,11 @@ module Source
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
-        class( Vector_t ), dimension(:), intent( in ) :: rhs
+        type( GenVector_t ), dimension(:), intent( in ) :: rhs
         !
         integer :: pol
         !
-        if( allocated( self%rhs ) ) deallocate( self%rhs )
-        !
-        allocate( self%rhs, source = rhs )
+        self%rhs = rhs
         !
     end subroutine setRHS_Source
     !
@@ -125,5 +119,5 @@ module Source
         deallocate( self%E )
         !
     end subroutine deallocate_Source
-	!
+    !
 end module Source

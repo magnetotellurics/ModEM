@@ -476,15 +476,15 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
 
   if( keyf == 1 ) then
     call qk15 ( f, a, b, result, abserr, defabs, resabs )
-  else if( keyf == 2 ) then
+  elseif( keyf == 2 ) then
     call qk21 ( f, a, b, result, abserr, defabs, resabs )
-  else if( keyf == 3 ) then
+  elseif( keyf == 3 ) then
     call qk31 ( f, a, b, result, abserr, defabs, resabs )
-  else if( keyf == 4 ) then
+  elseif( keyf == 4 ) then
     call qk41 ( f, a, b, result, abserr, defabs, resabs )
-  else if( keyf == 5 ) then
+  elseif( keyf == 5 ) then
     call qk51 ( f, a, b, result, abserr, defabs, resabs )
-  else if( keyf == 6 ) then
+  elseif( keyf == 6 ) then
     call qk61 ( f, a, b, result, abserr, defabs, resabs )
   endif
 
@@ -541,29 +541,29 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
 
     if( keyf == 1 ) then
       call qk15 ( f, a1, b1, area1, error1, resabs, defab1 )
-    else if( keyf == 2 ) then
+    elseif( keyf == 2 ) then
       call qk21 ( f, a1, b1, area1, error1, resabs, defab1 )
-    else if( keyf == 3 ) then
+    elseif( keyf == 3 ) then
       call qk31 ( f, a1, b1, area1, error1, resabs, defab1 )
-    else if( keyf == 4 ) then
+    elseif( keyf == 4 ) then
       call qk41 ( f, a1, b1, area1, error1, resabs, defab1)
-    else if( keyf == 5 ) then
+    elseif( keyf == 5 ) then
       call qk51 ( f, a1, b1, area1, error1, resabs, defab1 )
-    else if( keyf == 6 ) then
+    elseif( keyf == 6 ) then
       call qk61 ( f, a1, b1, area1, error1, resabs, defab1 )
     endif
 
     if( keyf == 1 ) then
       call qk15 ( f, a2, b2, area2, error2, resabs, defab2 )
-    else if( keyf == 2 ) then
+    elseif( keyf == 2 ) then
       call qk21 ( f, a2, b2, area2, error2, resabs, defab2 )
-    else if( keyf == 3 ) then
+    elseif( keyf == 3 ) then
       call qk31 ( f, a2, b2, area2, error2, resabs, defab2 )
-    else if( keyf == 4 ) then
+    elseif( keyf == 4 ) then
       call qk41 ( f, a2, b2, area2, error2, resabs, defab2 )
-    else if( keyf == 5 ) then
+    elseif( keyf == 5 ) then
       call qk51 ( f, a2, b2, area2, error2, resabs, defab2 )
-    else if( keyf == 6 ) then
+    elseif( keyf == 6 ) then
       call qk61 ( f, a2, b2, area2, error2, resabs, defab2 )
     endif
 !
@@ -1081,7 +1081,7 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
         cycle
       endif
 
-      extrap = .true.
+      extrap = .TRUE.
       nrmax = 2
 
     endif
@@ -1140,7 +1140,7 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
 !  Prepare bisection of the smallest interval.
 !
     if( numrl2 == 1 ) then
-      noext = .true.
+      noext = .TRUE.
     endif
 
     if( ier == 5 ) then
@@ -1515,7 +1515,7 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
         cycle
       endif
 
-      extrap = .true.
+      extrap = .TRUE.
       nrmax = 2
 
     endif
@@ -1574,7 +1574,7 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
 !  Prepare bisection of the smallest interval.
 !
     if( numrl2 == 1 ) then
-      noext = .true.
+      noext = .TRUE.
     endif
 
     if( ier == 5 ) then
@@ -1912,7 +1912,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
   if( npts2 < 2 ) then
     ier = 6
     return
-  else if( limit <= npts .or. ( epsabs < 0.0d0 .and. &
+  elseif( limit <= npts .or. ( epsabs < 0.0d0 .and. &
     epsrel < 0.0d0) ) then
     ier = 6
     return
@@ -2186,7 +2186,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
         cycle
       endif
 
-      extrap = .true.
+      extrap = .TRUE.
       nrmax = 2
 
     endif
@@ -2247,7 +2247,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 !  Prepare bisection of the smallest interval.
 !
     if( numrl2 == 1 ) then
-      noext = .true.
+      noext = .TRUE.
     endif
 
     if( 5 <= ier ) then
@@ -2714,7 +2714,7 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
     if( .not. extrap ) then
       if( abs(blist(maxerr)-alist(maxerr)) > small ) go to 90
-      extrap = .true.
+      extrap = .TRUE.
       nrmax = 2
     endif
 
@@ -2774,7 +2774,7 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !  Prepare bisection of the smallest interval.
 !
     if( numrl2 == 1 ) then
-      noext = .true.
+      noext = .TRUE.
     endif
 
     if( ier == 5 ) then
@@ -3168,10 +3168,10 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
   if( c == a  ) then
     ier = 6
     return
-  else if( c == b ) then
+  elseif( c == b ) then
     ier = 6
     return
-  else if( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
+  elseif( epsabs < 0.0d0 .and. epsrel < 0.0d0 ) then
     ier = 6
     return
   endif
@@ -6352,12 +6352,12 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 
   if( 5.0e-01*abs(b-a)*domega <= 2.0d0) then
     numrl2 = 1
-    extall = .true.
+    extall = .TRUE.
     rlist2(1) = result
   endif
 
   if( 2.5e-01 * abs(b-a) * domega <= 2.0d0 ) then
-    extall = .true.
+    extall = .TRUE.
   endif
 
   if( dres >= (1.0d0-5.0e+01* epsilon ( defabs ) )*defabs ) then
@@ -6505,12 +6505,12 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
       cycle
     endif
 
-    extall = .true.
+    extall = .TRUE.
     go to 130
 
 60  continue
 
-    extrap = .true.
+    extrap = .TRUE.
     nrmax = 2
 
 70  continue
@@ -6569,7 +6569,7 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 100 continue
 
     if( numrl2 == 1 ) then
-      noext = .true.
+      noext = .TRUE.
     endif
 
     if( ier == 5 ) then
@@ -8815,7 +8815,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
 !  Compute the integral using the 43-point formula.
 !
-    else if( l == 2 ) then
+    elseif( l == 2 ) then
 
       res43 = w43b(12)*fcentr
       neval = 43
@@ -8839,7 +8839,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
 !  Compute the integral using the 87-point formula.
 !
-    else if( l == 3 ) then
+    elseif( l == 3 ) then
 
       res87 = w87b(23) * fcentr
       neval = 87
@@ -9131,7 +9131,7 @@ function qwgto ( x, omega, p2, p3, p4, integr )
 
   if( integr == 1 ) then
     qwgto = cos ( omega * x )
-  else if( integr == 2 ) then
+  elseif( integr == 2 ) then
     qwgto = sin ( omega * x )
   endif
 
@@ -9183,11 +9183,11 @@ function qwgts ( x, a, b, alfa, beta, integr )
 
   if( integr == 1 ) then
     qwgts = ( x - a )**alfa * ( b - x )**beta
-  else if( integr == 2 ) then
+  elseif( integr == 2 ) then
     qwgts = ( x - a )**alfa * ( b - x )**beta * log ( x - a )
-  else if( integr == 3 ) then
+  elseif( integr == 3 ) then
     qwgts = ( x - a )**alfa * ( b - x )**beta * log ( b - x )
-  else if( integr == 4 ) then
+  elseif( integr == 4 ) then
     qwgts = ( x - a )**alfa * ( b - x )**beta * log ( x - a ) * log ( b - x )
   endif
 
@@ -9246,7 +9246,7 @@ subroutine timestamp ( )
 
   if( h < 12 ) then
     ampm = 'AM'
-  else if( h == 12 ) then
+  elseif( h == 12 ) then
     if( n == 0 .and. s == 0 ) then
       ampm = 'Noon'
     else
@@ -9256,7 +9256,7 @@ subroutine timestamp ( )
     h = h - 12
     if( h < 12 ) then
       ampm = 'PM'
-    else if( h == 12 ) then
+    elseif( h == 12 ) then
       if( n == 0 .and. s == 0 ) then
         ampm = 'Midnight'
       else

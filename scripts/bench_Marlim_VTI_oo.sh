@@ -44,5 +44,5 @@ mpirun -np $procs $hostfile ../ModEM_MPI -jt -m $m0_vti -d $data -dm dsigma_mt_v
 #
 #mpirun -np $procs $hostfile ../ModEM_MPI -i -m $m0_iso -d data -ci $ctrl_nlcg -cf $ctrl_fwd -o mt_iso_oo_nlcg -c $cov
 #
-mpirun -np $procs $hostfile ../ModEM_MPI -i -m $m0_vti $data -ci $ctrl_nlcg -cf $ctrl_fwd -o mt_vti_oo_nlcg
+mpirun -np $procs $hostfile ../ModEM_MPI -i -m $m0_vti -d $data -ci $ctrl_nlcg -cf $ctrl_fwd -o mt_vti_oo_nlcg
 #

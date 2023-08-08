@@ -98,7 +98,7 @@ subroutine readsorcur(filename,freqdat,sources,comm)
       !nrecmax = nrecmax + 0
       !there will be different currents for each input current and each wire
       ncurgroup = ncurgroup + src%nwire * src%ncur
-      haswav = .true.
+      haswav = .TRUE.
     end select
   enddo
 
