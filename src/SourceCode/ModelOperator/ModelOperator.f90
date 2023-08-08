@@ -15,6 +15,8 @@ module ModelOperator
         !
         class( MetricElements_t ), allocatable :: metric
         !
+        class( Vector_t ), allocatable :: Adiag
+        !
         integer :: mKey(8)
         !
         logical :: eqset, is_allocated
@@ -53,6 +55,8 @@ module ModelOperator
     !> Public Global Generic ModelOperator object
     class( ModelOperator_t ), allocatable :: model_operator
     !
+    public :: Maxwell
+    !
     abstract interface
         !
         !> No interface subroutine briefing
@@ -86,13 +90,13 @@ module ModelOperator
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_amult_model_operator( self, omega, in_e, out_e, adjoint )
+        subroutine interface_amult_model_operator( self, in_e, out_e, omega, adjoint )
             import :: ModelOperator_t, prec, Vector_t
             !
             class( ModelOperator_t ), intent( in ) :: self
-            real( kind=prec ), intent( in ), optional :: omega
             class( Vector_t ), intent( in ) :: in_e
             class( Vector_t ), intent( inout ) :: out_e
+            real( kind=prec ), intent( in ) :: omega
             logical, intent( in ) :: adjoint
             !
         end subroutine interface_amult_model_operator
@@ -151,7 +155,7 @@ module ModelOperator
             class( Vector_t ), intent( inout ) :: out_e
             !
         end subroutine interface_grad_model_operator
-        !
+        !!
         !> No interface subroutine briefing
         !
         subroutine interface_print_model_operator( self )
@@ -187,6 +191,8 @@ contains
         !
         if( allocated( self%metric ) ) deallocate( self%metric )
         !
+        if( allocated( self%Adiag ) ) deallocate( self%Adiag )
+        !
     end subroutine baseDealloc_ModelOperator
     !
     !> No subroutine briefing
@@ -200,7 +206,7 @@ contains
         !
         integer :: ix, iy, iz
         complex( kind=prec ), allocatable, dimension(:,:,:) :: in_e_x, in_e_y, in_e_z
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: out_e_x, out_e_y, out_e_z
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: out_e_v
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "multCurlT_ModelOperator > in_e not allocated" )
@@ -209,10 +215,6 @@ contains
         call self%metric%createVector( complex_t, EDGE, out_e )
         call out_e%zeros
         !
-        out_e_x = out_e%getX()
-        out_e_y = out_e%getY()
-        out_e_z = out_e%getZ()
-        !
         call in_e%div( self%metric%face_area )
         !
         in_e_x = in_e%getX()
@@ -220,35 +222,43 @@ contains
         in_e_z = in_e%getZ()
         !
         !> Ex
+        out_e_v = out_e%getX()
+        !
         do iy = 2, in_e%Ny
             do iz = 2, in_e%Nz
-                out_e_x(:, iy, iz) = (in_e_z(:, iy, iz) - &
+                out_e_v(:, iy, iz) = (in_e_z(:, iy, iz) - &
                 in_e_z(:, iy - 1, iz)) - &
                 (in_e_y(:, iy, iz) - in_e_y(:, iy, iz - 1))
             enddo
         enddo
         !
+        call out_e%setX( out_e_v )
+        !
         !> Ey
+        out_e_v = out_e%getY()
+        !
         do iz = 2, in_e%Nz
             do ix = 2, in_e%Nx
-                out_e_y(ix, :, iz) = (in_e_x(ix, :, iz) - &
+                out_e_v(ix, :, iz) = (in_e_x(ix, :, iz) - &
                 in_e_x(ix, :, iz - 1)) - &
                 (in_e_z(ix, :, iz) - in_e_z(ix - 1, :, iz))
             enddo
         enddo
         !
+        call out_e%setY( out_e_v )
+        !
         !> Ez
+        out_e_v = out_e%getZ()
+        !
         do ix = 2, in_e%Nx
             do iy = 2, in_e%Ny
-                out_e_z(ix,iy,:) = (in_e_y(ix, iy, :) - &
+                out_e_v(ix,iy,:) = (in_e_y(ix, iy, :) - &
                 in_e_y(ix - 1, iy, :)) - &
                 (in_e_x(ix, iy, :) - in_e_x(ix, iy - 1, :))
             enddo
         enddo
         !
-        call out_e%setX( out_e_x )
-        call out_e%setY( out_e_y )
-        call out_e%setZ( out_e_z )
+        call out_e%setZ( out_e_v )
         !
         call out_e%mult( self%metric%edge_length )
         !

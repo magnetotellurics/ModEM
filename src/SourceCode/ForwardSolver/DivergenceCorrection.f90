@@ -50,7 +50,7 @@ contains
     !> Procedure setCond_DivergenceCorrection
     !> some extra things that need to be done for divergence correction, whenever
     !> conductivity (model parameter) changes
-	!
+    !
     subroutine setCond_DivergenceCorrection( self, omega )
         implicit none
         !
@@ -64,7 +64,7 @@ contains
     end subroutine setCond_DivergenceCorrection
     !
     !> No subroutine briefing
-	!
+    !
     subroutine rhsDivCor_DivergenceCorrection( self, omega, source_e, phi0 )
         implicit none
         !
@@ -127,8 +127,8 @@ contains
         self%divJ(1) = sqrt( phiRHS%dotProd( phiRHS ) )
         !
         !> point-wise multiplication with volume weights centered on corner nodes
-		call phiRHS%mult( self%solver%preconditioner%model_operator%metric%v_node )
-		!
+        call phiRHS%mult( self%solver%preconditioner%model_operator%metric%v_node )
+        !
         call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phiSol )
         !
         !> solve system of equations -- solver will have to know about

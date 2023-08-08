@@ -16,7 +16,7 @@ module ForwardControlFile
         !> FWD Components parameters
         character(:), allocatable :: model_operator_type
         !
-        character(:), allocatable :: grid_reader_type, grid_format, forward_solver_type
+        character(:), allocatable :: grid_reader_type, grid_format, solver_type, forward_solver_type
         character(:), allocatable :: source_type_mt, source_type_csem, get_1d_from
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
@@ -84,6 +84,8 @@ contains
                         self%model_operator_type = trim( args(2) )
                     elseif( index( line_text, "forward_solver_type" ) > 0 ) then
                         self%forward_solver_type = trim( args(2) )
+                    elseif( index( line_text, "solver_type" ) > 0 ) then
+                        self%solver_type = trim( args(2) )
                     elseif( index( line_text, "source_type_mt" ) > 0 ) then
                         self%source_type_mt = trim( args(2) )
                     elseif( index( line_text, "source_type_csem" ) > 0 ) then
@@ -157,6 +159,25 @@ contains
                 !
                 ! TO BE IMPLEMENTED
                 write( *, "( A30, A20)" ) "          Grid Reader = ", self%grid_reader_type
+                !
+            endif
+            !
+            ! Forward solver
+            if( allocated( self%solver_type ) ) then
+                !
+                select case( self%solver_type )
+                    !
+                    case( "QMR" )
+                        solver_type = SLV_QMR
+                    case( "BICG" )
+                        solver_type = SLV_BICG
+                    case default
+                        !
+                        call errStop( "ForwardControlFile_ctor > Wrong solver control, use [QMR|BICG]" )
+                    !
+                end select
+                !
+                write( *, "( A30, A20)" ) "          Solver = ", solver_type
                 !
             endif
             !

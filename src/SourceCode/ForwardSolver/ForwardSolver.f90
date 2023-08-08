@@ -7,7 +7,7 @@ module ForwardSolver
     use Vector
     use Source
     use ModelParameter
-    use Solver
+    use Solver_CC
     !
     character(:), allocatable :: forward_solver_type
     character( len=21 ), parameter :: FWD_FILE = "ForwardSolverFromFile"
@@ -16,7 +16,7 @@ module ForwardSolver
     !
     type, abstract :: ForwardSolver_t
         !
-        class( Solver_t ), allocatable :: solver
+        class( Solver_CC_t ), allocatable :: solver
         !
         integer :: max_iter_total, n_iter_actual
         !

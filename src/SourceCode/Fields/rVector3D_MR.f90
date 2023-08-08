@@ -201,7 +201,7 @@ contains
         integer :: n_full, n_active, n_interior, n_boundaries
         real( kind=prec ), dimension(:), allocatable :: v_1, v_2
         !
-        if ( .NOT. present( xy_in ) ) then
+        if( .NOT. present( xy_in ) ) then
             xy = .FALSE.
         else
             xy = xy_in
@@ -273,19 +273,19 @@ contains
         !
         n_active = 0
         do k = 1, n_full
-            if (v_1(k) >= 0) then
+            if(v_1(k) >= 0) then
                 n_active = n_active + 1
             end if
         end do
         !
-        if (allocated (self%ind_active)) then
+        if(allocated (self%ind_active)) then
             deallocate (self%ind_active)
         end if
         allocate (self%ind_active(n_active))
         !
         i = 0
         do k = 1, n_full
-            if (v_1(k) >= 0) then
+            if(v_1(k) >= 0) then
                 i = i + 1
                 self%ind_active(i) = k
             end if
@@ -293,7 +293,7 @@ contains
         !
         n_interior = 0
         do k = 1, n_full
-            if (v_1(k) == 0) then
+            if(v_1(k) == 0) then
                 n_interior = n_interior + 1
             end if
         end do
@@ -301,14 +301,14 @@ contains
         allocate (v_2(n_active))
         v_2 = v_1(self%ind_active)
         !
-        if (allocated (self%ind_interior)) then
+        if(allocated (self%ind_interior)) then
             deallocate (self%ind_interior)
         end if
         allocate (self%ind_interior(n_interior))
         !
         i = 0
         do k = 1, n_active
-            if (v_2(k) == 0) then
+            if(v_2(k) == 0) then
                 i = i + 1
                 self%ind_interior(i) = k
             end if
@@ -316,19 +316,19 @@ contains
         !!
         n_boundaries = 0
         do k = 1, n_active
-            if (v_2(k) == 1) then
+            if(v_2(k) == 1) then
                 n_boundaries = n_boundaries + 1
             end if
         end do
         !
-        if (allocated (self%ind_boundary)) then
+        if(allocated (self%ind_boundary)) then
             deallocate (self%ind_boundary)
         end if
         allocate (self%ind_boundary(n_boundaries)) 
         !
         i = 0
         do k = 1, n_active
-            if (v_2(k) == 1) then
+            if(v_2(k) == 1) then
                 i = i + 1
                 self%ind_boundary(i) = k
             end if
@@ -447,14 +447,14 @@ contains
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) n_I = n_I + 1
+            if(v(k) == c) n_I = n_I + 1
         end do
         !
         allocate (I(n_I))
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) then
+            if(v(k) == c) then
                 n_I = n_I + 1
                 I(n_I) = k
             end if
@@ -481,14 +481,14 @@ contains
         !
         n_I = 0
         do k = 1, n
-            if (abs (v(k) - c)/abs (c) <= TOL) n_I = n_I + 1
+            if(abs (v(k) - c)/abs (c) <= TOL) n_I = n_I + 1
         end do
         !
         allocate (I(n_I))
         !
         n_I = 0
         do k = 1, n
-            if (abs (v(k) - c)/abs (c) <= TOL) then
+            if(abs (v(k) - c)/abs (c) <= TOL) then
                 n_I = n_I + 1
                 I(n_I) = k
             end if
@@ -556,7 +556,7 @@ contains
                                 w1 = 1. - (i - 1.)/Cs
                                 w2 = 1. - w1
                                 !
-                                if (i == 1) then
+                                if(i == 1) then
                                     temp%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2) = self%sub_vectors(k)%z
                                 else
                                     last = size(self%sub_vectors(k)%z(:, 1, 1))

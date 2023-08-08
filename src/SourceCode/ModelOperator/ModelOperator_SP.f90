@@ -296,13 +296,13 @@ contains
     !> for interior elements
     !> assume output y is already allocated
     !
-    subroutine amult_ModelOperator_SP( self, omega, in_e, out_e, adjoint )
+    subroutine amult_ModelOperator_SP( self, in_e, out_e, omega, adjoint )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
-        real( kind=prec ), intent( in ), optional :: omega
         class( Vector_t ), intent( in ) :: in_e
         class( Vector_t ), intent( inout ) :: out_e
+        real( kind=prec ), intent( in ) :: omega
         logical, intent( in ) :: adjoint
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
@@ -325,12 +325,6 @@ contains
         !write(*,*) "amult_ModelOperator_SP: ", self%CCii%nCol, self%CCii%nRow, size( in_e_v_int ), size( out_e_v_int ), adjoint
         !
         call RMATxCVEC( self%CCii, in_e_v_int, out_e_v_int )
-        !
-        !if( present( p_adjoint ) ) then
-            !adjoint = p_adjoint
-        !else
-            !adjoint = .FALSE.
-        !endif
         !
         if( adjoint ) then
             out_e_v_int = out_e_v_int - ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%ind_interior )
@@ -411,8 +405,8 @@ contains
         !
         call RMATxCVEC( self%D, in_e_v_int, out_phi_int )
         !
-		out_phi_v( out_phi%ind_interior ) = out_phi_int
-		!
+        out_phi_v( out_phi%ind_interior ) = out_phi_int
+        !
         call out_phi%setArray( out_phi_v )
         !
     end subroutine div_ModelOperator_SP

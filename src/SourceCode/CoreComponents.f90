@@ -528,6 +528,7 @@ contains
         inversion_type = NLCG
         !
         ! Forward Modeling Parameters
+        solver_type = ""
         forward_solver_type = FWD_IT_DC
         model_operator_type = MODELOP_MF
         !
@@ -647,6 +648,7 @@ contains
         !
         if( allocated( grid_format ) ) deallocate( grid_format )
         if( allocated( model_operator_type ) ) deallocate( model_operator_type )
+        if( allocated( solver_type ) ) deallocate( solver_type )
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type_mt ) ) deallocate( source_type_mt )
         if( allocated( source_type_csem ) ) deallocate( source_type_csem )
@@ -779,6 +781,7 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A36)" ) "solver_type [QMR|BICG]      : QMR"
             write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A35)" ) "max_solver_iters [80]          : 80"
             write( ioFwdTmp, "(A35)" ) "max_solver_calls [20]          : 20"

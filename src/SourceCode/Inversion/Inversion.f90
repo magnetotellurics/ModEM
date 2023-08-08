@@ -138,7 +138,7 @@ contains
             !
             inquire( file = trim( outdir_name )//"/NLCG.log", opened = is_open )
             !
-            if ( .NOT. is_open ) then
+            if( .NOT. is_open ) then
                 !
                 open( unit = io_unit, file = trim( outdir_name )//"/NLCG.log", status="unknown", position="append", iostat=ios )
                 !

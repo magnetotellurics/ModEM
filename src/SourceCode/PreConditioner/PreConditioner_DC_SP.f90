@@ -5,7 +5,6 @@
 module PreConditioner_DC_SP
     !
     use PreConditioner
-    use cScalar3D_SG
     use ModelOperator_SP
     !
     type, extends( PreConditioner_t ) :: PreConditioner_DC_SP_t

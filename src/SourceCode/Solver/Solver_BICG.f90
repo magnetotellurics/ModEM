@@ -20,21 +20,19 @@
 !
 module Solver_BICG
     !
-    use Solver
+    use Solver_CC
     use ModelOperator_MF_SG
     use ModelOperator_SP
     use PreConditioner_CC_MF
     use PreConditioner_CC_SP
     !
-    type, extends( Solver_t ) :: Solver_BICG_t
+    type, extends( Solver_CC_t ) :: Solver_BICG_t
         !
         !> No derived properties
         !
         contains
             !
-            procedure, public :: solve => solveBICG
-            !
-            procedure, public :: setDefaults => setDefaults_BICG
+            procedure, public :: solve => solve_Solver_BICG
             !
      end type Solver_BICG_t
      !
@@ -73,22 +71,11 @@ contains
             !
         end select
         !
-        call self%setDefaults
+        call self%set( max_solver_iters, tolerance_solver )
         !
         call self%zeroDiagnostics
         !
     end function Solver_BICG_ctor
-    !
-    !> No subroutine briefing
-    !
-    subroutine setDefaults_BICG( self )
-        implicit none
-        !
-        class( Solver_BICG_t ), intent( inout ) :: self
-        !
-        call self%setParameters( max_solver_iters, tolerance_solver )
-        !
-    end subroutine setDefaults_BICG
     !
     !> NOTE: this iterative solver is BICG without look-ahead
     !> patterned after the scheme given on page 24 of Barrett et al.
@@ -98,7 +85,8 @@ contains
     !> the fact that our system is complex (agrees with
     !> matlab6 version of qmr)
     !
-    subroutine solveBICG( self, b, x )
+    subroutine solve_Solver_BICG( self, b, x )
+        !
         implicit none
         !
         class( Solver_BICG_t ), intent( inout ) :: self
@@ -108,212 +96,310 @@ contains
         class( Vector_t ), allocatable :: R, RT, V, T
         class( Vector_t ), allocatable :: P, PT, PH, S, ST, SH, AX
         class( Vector_t ), allocatable :: xhalf, xmin
-		real( kind=prec ) :: rnorm, bnorm, rnormin, btol
-		complex( kind=prec ) :: RHO, ALPHA, BETA, OMEGA
-		complex( kind=prec ) :: RTV, TT, RHO1
-		integer :: iter, imin
-		integer :: maxiter
-		logical :: adjoint, ilu_adjt, converged
+        real( kind=prec ) :: rnorm, bnorm, rnormin, btol
+        complex( kind=prec ) :: RHO, ALPHA, BETA, OMEGA
+        complex( kind=prec ) :: RTV, TT, RHO1
+        integer :: iter, imin
+        logical :: adjoint, ilu_adjt
         !
         if( .NOT. x%is_allocated ) then
-            call errStop( "solveBICG > x not allocated yet" )
+            call errStop( "solve_Solver_BICG > x not allocated yet" )
         endif
         !
         if( .NOT. b%is_allocated ) then
-            call errStop( "solveBICG > b not allocated yet" )
+            call errStop( "solve_Solver_BICG > b not allocated yet" )
         endif
-		!
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, xhalf )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, xmin )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, AX )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, R )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, RT )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, P )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, PT )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, PH )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, S )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, ST )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, SH )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, V )
-		call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, T )
+        !
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, xhalf )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, xmin )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, AX )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, R )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, RT )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, P )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, PT )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, PH )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, S )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, ST )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, SH )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, V )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, T )
+        !
+        self%iter = 1
         !
         !> Norm of rhs, residual
         bnorm = SQRT( b%dotProd( b ) )
         !
         !> this usually means an inadequate model, in which case Maxwell"s fails
-        if( isnan( real( abs( bnorm ), kind=prec ) ) ) then
-            call errStop( "solveQMR > b in QMR contains NaNs" )
-		elseif( bnorm .EQ. 0.0 ) then ! zero rhs -> zero solution
-			!
-			call warning( "b in BICG has all zeros, returning zero solution" )
-			x = b
-			BICGiter%niter=1
-			BICGiter%failed=.false.
-			BICGiter%rerr=0.0
-			return
-			!
-		endif
-		!
-		!> now calculate the (original) residual
-		adjoint = .FALSE.
-		!
-		call A( x, adjoint, R )
-		! R= b - Ax, for inital guess x, that has been inputted to the routine
-		rnorm = CDSQRT(dotProd(R, R))
-		Call linComb(C_ONE,b,C_MinusOne,R,R)
-		! Norm of residual
-		rnorm = CDSQRT(dotProd(R, R))
-		btol = BICGiter%tol * bnorm
-		if ( rnorm .le. btol ) then ! the first guess is already good enough
-		! returning
-		BICGiter%niter=1
-		BICGiter%failed=.false.
-		BICGiter%rerr(1)=rnorm/bnorm
-		return
-		end if
-		!================= Now start configuring the iteration ===================!
-		! the adjoint (shadow) residual
-		rnormin = rnorm
-		xmin = x
-		BICGiter%rerr(1) = real(rnormin/bnorm)
-		write(6,*) 'initial residual: ', BICGiter%rerr(1)
-		converged = .false.
-		maxiter = BICGiter%maxit
-		imin = 1
-		RHO = C_ONE
-		OMEGA = C_ONE
-		RT = R ! use the overloaded =
-		!============================== looooops! ================================!
-		do iter= 2, maxiter
-		RHO1 = RHO
-		RHO = dotProd(RT, R)
-		if (RHO .eq. 0.0) then
-		BICGiter%failed = .true.
-		exit
-		end if
-		if (iter .eq. 2) then
-		P = R
-		else
-		BETA = (RHO/RHO1)*(ALPHA/OMEGA)
-		if (BETA .eq. 0.0) then
-		BICGiter%failed = .true.
-		exit
-		end if
-		! P= R + BETA * (P - OMEGA * V);
-		Call linComb(C_One,P,-OMEGA,V,P)
-		call linComb(C_One,R,BETA,P,P)
-		end if
-		! L
-		ilu_adjt = .false.
-		call M1solve(P,ilu_adjt,PT)
-		! U
-		ilu_adjt = .false.
-		call M2solve(PT,ilu_adjt,PH)
-		!      PH = P
-		adjoint = .false.
-		call zero(V)
-		call A(PH,adjoint,V)
-		RTV = dotProd(RT, V)
-		if (RTV.eq.0.0) then
-		BICGiter%failed = .true.
-		exit
-		end if
-		ALPHA = RHO / RTV
-		if (ALPHA.eq.0.0) then
-		BICGiter%failed = .true.
-		exit
-		end if
-		! xhalf = x + ALPHA*PH ! the first half of iteration
-		call linComb(C_One,x,ALPHA,PH,xhalf)
-		adjoint = .false.
-		call zero(AX)
-		call A(xhalf,adjoint,AX)
-		call linComb(C_One,b,C_MinusOne,AX,AX)
-		rnorm = CDSQRT(dotProd(AX,AX))
-
-
-		if (rnorm.lt.btol) then
-		x = xhalf
-		BICGiter%failed = .false.
-		BICGiter%niter = iter
-		converged = .true.
-		BICGiter%rerr(iter)=real(rnorm/bnorm)
-		exit
-		end if
-		if (rnorm .lt. rnormin) then
-		rnormin = rnorm
-		xmin = xhalf
-		imin = iter
-		end if
-		! S = R - ALPHA*V  !residual for the 0.5 x
-		call linComb(C_One,R,-ALPHA,V,S)
-		! L
-		ilu_adjt = .false.
-		call M1solve(S,ilu_adjt,ST)
-		! U
-		ilu_adjt = .false.
-		call M2solve(ST,ilu_adjt,SH)
-		!     SH = S
-		adjoint = .false.
-		call zero(T)
-		call A(SH,adjoint,T)
-		TT = dotProd(T,T)
-		if (TT.eq.0.0) then
-		BICGiter%failed = .true.
-		exit
-		end if
-		OMEGA = dotProd(T,S)/TT
-		if (OMEGA.eq.0.0) then
-		BICGiter%failed = .true.
-		exit
-		end if
-		! x = xhalf + OMEGA * SH  ! the second half (shadow) of iteration
-		call linComb(C_One,xhalf,OMEGA,SH,x)
-		adjoint = .false.
-		call zero(AX)
-		call A(x,adjoint,AX)
-		call linComb(C_One,b,C_MinusOne,AX,AX)
-		rnorm = CDSQRT(dotProd(AX,AX))
-		BICGiter%rerr(iter) = real(rnorm / bnorm)
-		if (rnorm.lt.btol) then
-		BICGiter%failed = .false.
-		BICGiter%niter = iter
-		converged = .true.
-		exit
-		end if
-		if (rnorm .lt. rnormin) then
-		rnormin = rnorm
-		xmin = x
-		imin = iter
-		end if
-		!R = S - OMEGA * T  !residual for the 1.0 x
-		call linComb(C_One,S,-OMEGA,T,R)
-		end do
-
-		if (.not. converged) then
-		! it should be noted that this is the way my matlab version works
-		! the bicg will return the 'best' (smallest residual) iteration
-		x = xmin; !comment this line
-		BICGiter%niter=BICGiter%maxit
-		BICGiter%rerr(BICGiter%maxit) = BICGiter%rerr(imin) ! and this line
-		! to use the last iteration result instead of the 'best'
-		end if
-		Call deall(xhalf)
-		Call deall(xmin)
-		Call deall(AX)
-		Call deall(R)
-		Call deall(RT)
-		Call deall(P)
-		Call deall(PT)
-		Call deall(PH)
-		Call deall(S)
-		Call deall(ST)
-		Call deall(SH)
-		Call deall(V)
-		Call deall(T)
-
-        self%n_iter = self%iter
+        if( isnan( abs( bnorm ) ) ) then
+            !
+            call errStop( "solve_Solver_BICG > b in QMR contains NaNs" )
+            !
+        elseif( bnorm .EQ. 0.0 ) then ! zero rhs -> zero solution
+            !
+            call warning( "b in BICG has all zeros, returning zero solution" )
+            !
+            x = b
+            !
+            self%iter = 1
+            self%n_iter = 1
+            self%relErr(1) = 0.0
+            !
+            return
+            !
+        endif
         !
-    end subroutine solveBICG
+        !> now calculate the (original) residual
+        adjoint = .FALSE.
+        !
+        !call self%preconditioner%model_operator%multA_N( x, R, adjoint )
+        call self%preconditioner%model_operator%amult( x, R, self%omega, adjoint )
+        !
+        !> R= b - Ax, for inital guess x, that has been inputted to the routine
+        rnorm = CDSQRT( R%dotProd( R ) )
+        !
+        call R%linComb( b, C_MinusOne, C_ONE )
+        !
+        !> Norm of residual
+        rnorm = CDSQRT( R%dotProd( R ) )
+        !
+        btol = self%tolerance * bnorm
+        !
+        if( rnorm .LE. btol ) then ! the first guess is already good enough
+            !
+            self%n_iter = 1
+            !
+            call warning( "solve_Solver_BICG > the first guess is already good enough" )
+            !
+            self%relErr(1) = rnorm / bnorm
+            !
+            return
+            !
+        endif
+        !
+        !> ================= Now start configuring the iteration ===================
+        !
+        !> the adjoint (shadow) residual
+        !
+        rnormin = rnorm
+        xmin = x
+        self%relErr(1) = real( rnormin / bnorm )
+        !
+        write(*,*) 'initial residual: ', self%relErr(1)
+        !
+        self%converged = .FALSE.
+        imin = 1
+        RHO = C_ONE
+        OMEGA = C_ONE
+        RT = R ! use the overloaded =
+        !
+        !============================== looooops! ================================
+        !
+        do iter = 2, self%max_iters
+            !
+            self%iter = iter
+            !
+            RHO1 = RHO
+            RHO = RT%dotProd( R )
+            !
+            if( RHO .EQ. 0.0 ) then
+                !
+                call errStop( "solve_Solver_BICG > RHO .EQ. 0.0" )
+                !
+                exit
+                !
+            endif
+            !
+            if( self%iter .EQ. 2 ) then
+                P = R
+            else
+                !
+                BETA = ( RHO / RHO1 ) * ( ALPHA / OMEGA )
+                !
+                if( BETA .EQ. 0.0 ) then
+                    !
+                    call errStop( "solve_Solver_BICG > BETA .EQ. 0.0" )
+                    !
+                    exit
+                    !
+                endif
+                !
+                !> P= R + BETA * (P - OMEGA * V);
+                call P%linComb( V, C_One, -OMEGA )
+                call P%linComb( R, BETA, C_One )
+                !
+            endif
+            !
+            !> L
+            ilu_adjt = .FALSE.
+            call PT%zeros
+            call self%preconditioner%LTsolve( P, PT , ilu_adjt )
+            !
+            ! U
+            ilu_adjt = .FALSE.
+            call PH%zeros
+            call self%preconditioner%UTsolve( PT, PH , ilu_adjt )
+            !
+            ! PH = P
+            adjoint = .FALSE.
+            !
+            call V%zeros
+            call self%preconditioner%model_operator%amult( PH, V, self%omega, adjoint )
+            !
+            RTV = RT%dotProd( V )
+            !
+            if( RTV .EQ. 0.0 ) then
+                !
+                call errStop( "solve_Solver_BICG > RTV .EQ. 0.0" )
+                !
+                exit
+                !
+            endif
+            !
+            ALPHA = RHO / RTV
+            !
+            if( ALPHA .EQ. 0.0 ) then
+                !
+                call errStop( "solve_Solver_BICG > ALPHA .EQ. 0.0" )
+                !
+                exit
+            endif
+            !
+            !> xhalf = x + ALPHA*PH ! the first half of iteration
+            xhalf = x
+            call xhalf%linComb( PH, C_One, ALPHA )
+            !
+            adjoint = .FALSE.
+            !
+            call AX%zeros
+            call self%preconditioner%model_operator%amult( xhalf, AX, self%omega, adjoint )
+            !
+            call AX%linComb( b, C_MinusOne, C_One )
+            rnorm = CDSQRT( AX%dotProd( AX ) )
+            !
+            if( rnorm .LT. btol ) then
+                !
+                x = xhalf
+                self%n_iter = self%iter
+                self%converged = .TRUE.
+                self%relErr( self%iter ) = real( rnorm / bnorm )
+                !
+                exit
+                !
+            endif
+            !
+            if( rnorm .LT. rnormin ) then
+                !
+                rnormin = rnorm
+                xmin = xhalf
+                imin = self%iter
+                !
+            endif
+            !
+            !> S = R - ALPHA*V  !residual for the 0.5 x
+            S = R
+            call S%linComb( V, C_One, -ALPHA )
+            !
+            !> L
+            ilu_adjt = .FALSE.
+            call self%preconditioner%LTsolve( S, ST, ilu_adjt )
+            !
+            !> U
+            ilu_adjt = .FALSE.
+            call self%preconditioner%UTsolve( ST, SH, ilu_adjt )
+            !
+            !> SH = S
+            adjoint = .FALSE.
+            call T%zeros
+            call self%preconditioner%model_operator%amult( SH, T, self%omega, adjoint )
+            !
+            TT = T%dotProd( T )
+            !
+            if( TT .eq. 0.0 ) then
+                !
+                call errStop( "solve_Solver_BICG > TT .eq. 0.0" )
+                !
+                exit
+            endif
+            !
+            OMEGA = T%dotProd(S) / TT
+            !
+            if( OMEGA .EQ. 0.0 ) then
+                !
+                call errStop( "solve_Solver_BICG > OMEGA .eq. 0.0" )
+                !
+                exit
+            endif
+            !
+            !> x = xhalf + OMEGA * SH  ! the second half (shadow) of iteration
+            x = xhalf
+            call x%linComb( SH, C_One, OMEGA )
+            !
+            adjoint = .FALSE.
+            !
+            call AX%zeros
+            call self%preconditioner%model_operator%amult( x, AX, self%omega, adjoint )
+            !
+            call AX%linComb( b, C_MinusOne, C_One )
+            !
+            rnorm = CDSQRT( AX%dotProd( AX ) )
+            !
+            self%relErr( self%iter ) = real( rnorm / bnorm )
+            !
+            if( rnorm .LT. btol ) then
+                !
+                self%n_iter = self%iter
+                self%converged = .TRUE.
+                !
+                exit
+                !
+            endif
+            !
+            if( rnorm .LT. rnormin ) then
+                !
+                rnormin = rnorm
+                xmin = x
+                imin = self%iter
+                !
+            endif
+            !
+            !R = S - OMEGA * T  !residual for the 1.0 x
+            R = S
+            call R%linComb( T, C_One, -OMEGA )
+            !
+            !> Verbose
+            !write( *, "( a36, i6, a3, es12.3 )" ) "BICG iter: ", self%iter, " : ", self%relErr( self%iter )
+            !
+        end do
+        !
+        if( self%converged ) then
+            write( *, "( a52, i6, a7, es12.3 )" ) "->Solver BICG converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        else
+            write( *, "( a52, i6, a7, es12.3 )" ) "->Solver BICG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        endif
+        !
+        if( .NOT. self%converged ) then
+            ! it should be noted that this is the way my matlab version works
+            ! the bicg will return the 'best' (smallest residual) iteration
+            x = xmin; !comment this line
+            self%n_iter = self%max_iters
+            self%relErr( self%max_iters ) = self%relErr( imin ) ! and this line
+            ! to use the last iteration result instead of the 'best'
+        endif
+        !
+        deallocate( xhalf )
+        deallocate( xmin)
+        deallocate( AX )
+        deallocate( R )
+        deallocate( RT )
+        deallocate( P )
+        deallocate( PT )
+        deallocate( PH )
+        deallocate( S )
+        deallocate( ST )
+        deallocate( SH )
+        deallocate( V )
+        deallocate( T )
+        !
+    end subroutine solve_Solver_BICG
     !
 end module Solver_BICG

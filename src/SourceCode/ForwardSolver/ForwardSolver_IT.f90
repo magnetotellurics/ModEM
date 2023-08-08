@@ -5,6 +5,7 @@ module ForwardSolver_IT
     !
     use ForwardSolver
     use Solver_QMR
+    use Solver_BICG
     !
     type, extends( ForwardSolver_t ) :: ForwardSolver_IT_t
         !
@@ -48,17 +49,27 @@ contains
         !
         call self%baseInit
         !
+        !> NEED THIS LINE ????
+        !if( allocated( self%solver )  ) deallocate( self%solver )
+        !
         select case( solver_type )
             !
-            case( QMR )
+            case( SLV_QMR )
                 !
-                if( allocated( self%solver )  ) deallocate( self%solver )
                 allocate( self%solver, source = Solver_QMR_t( model_operator ) )
                 !
-            case( BiCG )
-                call errStop( "ForwardSolver_IT_ctor > Not yet coded for Bi-Conjugate Gradients" )
+            case( SLV_BICG )
+                !
+                allocate( self%solver, source = Solver_BICG_t( model_operator ) )
+                !
+            case( "" )
+                !
+                call warning( "ForwardSolver_IT_ctor > solver_type not provided, using BICG." )
+                !
+                allocate( self%solver, source = Solver_BICG_t( model_operator ) )
+                !
             case default
-                call errStop( "ForwardSolver_IT_ctor > Unknown solver" )
+                call errStop( "ForwardSolver_IT_ctor > Unknown solver ["//solver_type//"]" )
             !
         end select
         !
@@ -162,14 +173,8 @@ contains
         !> 
         fwd_solver_loop: do
             !
-            select type( solver => self%solver )
-                !
-                class is( Solver_QMR_t )
-                    call solver%solve( source%rhs( pol )%v, e_solution )
-                class default
-                    call errStop( "getESolutionForwardSolver_IT > Unknown solver type." )
-                !
-            end select
+            !> 
+            call self%solver%solve( source%rhs( pol )%v, e_solution )
             !
             do i = 1, self%solver%n_iter
                 !

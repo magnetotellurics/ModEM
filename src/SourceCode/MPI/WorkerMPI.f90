@@ -325,17 +325,17 @@ contains
             !
             case( FWD_IT )
                 !
-                allocate( forward_solver, source = ForwardSolver_IT_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_t( model_operator, solver_type ) )
                 !
             case( FWD_IT_DC )
                 !
-                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
                 !
             case( "" )
                 !
                 call warning( "setTxForwardSolver > Forward Solver type not provided, using IT_DC." )
                 !
-                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
                 !
             case default
                 !

@@ -9,12 +9,11 @@ module Solver
     !> Solver parameters
     integer :: max_solver_iters, max_solver_calls, max_divcor_iters
     !
-    real( kind=prec ) :: tolerance_divcor, tolerance_solver
+    real( kind=prec ) :: tolerance_solver, tolerance_divcor
     !
     character(:), allocatable :: solver_type
-    character( len=3 ), parameter :: QMR = "QMR"
-    character( len=3 ), parameter :: PCG = "PCG"
-    character( len=4 ), parameter :: BiCG = "BiCG"
+    character( len=3 ), parameter :: SLV_QMR = "QMR"
+    character( len=4 ), parameter :: SLV_BICG = "BICG"
     !
     !> Solver Base Type
     type, abstract :: Solver_t
@@ -29,13 +28,12 @@ module Solver
         !
         contains
             !
-            procedure( interface_set_solver_defaults ), deferred, public :: setDefaults
+            procedure, public :: set => set_Solver
             !
-            procedure, public :: baseInit => initializeSolver
-            procedure, public :: baseDealloc => deallocateSolver
+            procedure, public :: baseInit => initialize_Solve
+            procedure, public :: baseDealloc => deallocate_Solver
             !
-            procedure, public :: setParameters => setParametersSolver
-            procedure, public :: zeroDiagnostics => zeroDiagnosticsSolver
+            procedure, public :: zeroDiagnostics => zeroDiagnostics_Solver
             !
     end type Solver_t
     !
@@ -52,7 +50,7 @@ module Solver
 contains
     !
     !> No subroutine briefing
-    subroutine setParametersSolver( self, max_iters, tolerance )
+    subroutine set_Solver( self, max_iters, tolerance )
         implicit none
         !
         class( Solver_t ), intent( inout ) :: self
@@ -67,10 +65,10 @@ contains
         !
         self%tolerance = tolerance
         !
-    end subroutine setParametersSolver
+    end subroutine set_Solver
     !
     !> No subroutine briefing
-    subroutine zeroDiagnosticsSolver( self )
+    subroutine zeroDiagnostics_Solver( self )
         implicit none
         !
         class( Solver_t ), intent( inout ) :: self
@@ -78,10 +76,10 @@ contains
         self%n_iter = 0
         self%relErr = R_ZERO
         !
-    end subroutine zeroDiagnosticsSolver 
+    end subroutine zeroDiagnostics_Solver 
     !
     !> No subroutine briefing
-    subroutine initializeSolver( self )
+    subroutine initialize_Solve( self )
         implicit none
         !
         class( Solver_t ), intent( inout ) :: self
@@ -93,10 +91,10 @@ contains
         !
         self%converged = .FALSE.
         !
-    end subroutine initializeSolver
+    end subroutine initialize_Solve
     !
     !> No subroutine briefing
-    subroutine deallocateSolver( self )
+    subroutine deallocate_Solver( self )
         implicit none
         !
         class( Solver_t ), intent( inout ) :: self
@@ -105,6 +103,6 @@ contains
         !
         if( allocated( self%relErr ) ) deallocate( self%relErr )
         !
-    end subroutine deallocateSolver
+    end subroutine deallocate_Solver
     !
 end module Solver

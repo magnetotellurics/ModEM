@@ -359,7 +359,7 @@ contains
     character(80) ::ctmp
     complex (kind=prec) :: rtmp
 
-    if (int_only) then
+    if(int_only) then
        ctmp = self%grid_type
     end if
     
@@ -388,7 +388,7 @@ contains
     ! Executable statements
     !***********************
     !
-    if (.not.present (xy_in)) then
+    if(.not.present (xy_in)) then
        xy = .false.
     else
        xy = xy_in
@@ -419,11 +419,11 @@ contains
     end select
 
     do k = 2, self%grid_ptr%ngrids
-       if (self%grid_ptr%Coarseness(k - 1, 1) < self%grid_ptr%Coarseness(k, 1)) then
+       if(self%grid_ptr%Coarseness(k - 1, 1) < self%grid_ptr%Coarseness(k, 1)) then
           ! upper grid is finer: grid k-1 interface nodes are
           ! not active; also reset interior part of interface
           ! edges to 0
-          if (xy) then
+          if(xy) then
              call self%sub_vectors(k-1)%set_one_boundary('z2_x', &
                   cmplx(-1._prec, 0._prec, prec))
              call self%sub_vectors(k-1)%set_one_boundary('z2_y', &
@@ -435,7 +435,7 @@ contains
           call self%sub_vectors(k)%set_one_boundary('z1', &
                cmplx(0._prec, 0._prec, prec), int_only)
        else
-          if (xy) then
+          if(xy) then
              call self%sub_vectors(k)%set_one_boundary('z1_x', &
                   cmplx(-1.0_prec, 0._prec, prec))
              call self%sub_vectors(k)%set_one_boundary('z1_y', &
@@ -461,7 +461,7 @@ contains
     !
     n_active = 0
     do k = 1, n_full
-       if (real (v_1(k)) >= 0) then
+       if(real (v_1(k)) >= 0) then
           n_active = n_active + 1
        end if
     end do
@@ -470,7 +470,7 @@ contains
 
     i = 0
     do k = 1, n_full
-       if (real (v_1(k)) >= 0) then
+       if(real (v_1(k)) >= 0) then
           i = i + 1
           self%ind_active(i) = k
        end if
@@ -482,7 +482,7 @@ contains
     !
     n_interior = 0
     do k = 1, n_full
-       if (real (v_1(k)) == 0) then
+       if(real (v_1(k)) == 0) then
           n_interior = n_interior + 1
        end if
     end do
@@ -494,7 +494,7 @@ contains
 
     i = 0
     do k = 1, n_active
-       if (real (v_2(k)) == 0) then
+       if(real (v_2(k)) == 0) then
           i = i + 1
           self%ind_interior(i) = k               
        end if
@@ -506,7 +506,7 @@ contains
     !
     n_boundaries = 0
     do k = 1, n_active
-       if (real (v_2(k)) == 1) then
+       if(real (v_2(k)) == 1) then
           n_boundaries = n_boundaries + 1
        end if
     end do
@@ -515,7 +515,7 @@ contains
 
     i = 0
     do k = 1, n_active
-       if (real(v_2(k)) == 1) then
+       if(real(v_2(k)) == 1) then
           i = i + 1
           self%ind_boundary(i) = k             
        end if
@@ -630,7 +630,7 @@ contains
     ! Executable statements
     !***********************
     !
-    if (.not.rhs%is_allocated) then
+    if(.not.rhs%is_allocated) then
        write(*, *) 'ERROR:Vector3d_cmr_complex_t::copy_from: '
        write(*, *) '      Input vector not allocated.'
 
@@ -639,10 +639,10 @@ contains
 
     select type (rhs)
     class is (Vector3d_cmr_complex_t)  
-       if (.not.self%is_allocated) then
+       if(.not.self%is_allocated) then
           call self%Initialize(rhs%grid_ptr, rhs%grid_type)
        else
-          if (self%grid_type /= rhs%grid_type) then
+          if(self%grid_type /= rhs%grid_type) then
              write(*, *) 'ERROR:Vector3d_cmr_complex_t::copy_from: '
              write(*, *) '      Grid types not compatible.'
 
@@ -767,14 +767,14 @@ contains
 
   !   n_I = 0
   !   do k = 1, n
-  !      if (v(k) == c) n_I = n_I + 1
+  !      if(v(k) == c) n_I = n_I + 1
   !   end do
 
   !   allocate (I(n_I))
 
   !   n_I = 0
   !   do k = 1, n
-  !      if (v(k) == c) then
+  !      if(v(k) == c) then
   !         n_I = n_I + 1
   !         I(n_I) = k
   !      end if
@@ -810,14 +810,14 @@ contains
 
   !   n_I = 0
   !   do k = 1, n
-  !      if (abs (v(k) - c)/abs (c) <= TOL) n_I = n_I + 1
+  !      if(abs (v(k) - c)/abs (c) <= TOL) n_I = n_I + 1
   !   end do
 
   !   allocate (I(n_I))
 
   !   n_I = 0
   !   do k = 1, n
-  !      if (abs (v(k) - c)/abs (c) <= TOL) then
+  !      if(abs (v(k) - c)/abs (c) <= TOL) then
   !         n_I = n_I + 1
   !         I(n_I) = k
   !      end if
@@ -1151,7 +1151,7 @@ contains
              w1 = 1. - (i - 1.)/Cs
              w2 = 1. - w1
              
-             if (i == 1) then
+             if(i == 1) then
                 temp%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2) = self%sub_vectors(k)%z
              else
                 last = size(self%sub_vectors(k)%z, 1)
@@ -1381,7 +1381,7 @@ contains
     !
     n_in = size(m_in)
 
-    if (transp) then
+    if(transp) then
        allocate(m_out(nx, n_in*ny, nz))
 
        !*

@@ -16,8 +16,7 @@ module Solver_PCG
         !
         contains
             !
-            procedure, public :: solve => solvePCG
-            procedure, public :: setDefaults => setDefaults_PCG
+            procedure, public :: solve => solve_Solve_PCG
             !
     end type Solver_PCG_t
     !
@@ -56,24 +55,14 @@ contains
             !
         end select
         !
-        call self%setDefaults
+        call self%set( max_divcor_iters, tolerance_divcor )
         !
         call self%zeroDiagnostics
         !
     end function Solver_PCG_ctor
     !
     !> No subroutine briefing
-    subroutine setDefaults_PCG( self )
-        implicit none
-        !
-        class( Solver_PCG_t ), intent( inout ) :: self
-        !
-        call self%setParameters( max_divcor_iters, tolerance_divcor )
-        !
-    end subroutine setDefaults_PCG
-    !
-    !> No subroutine briefing
-    subroutine solvePCG( self, b, x )
+    subroutine solve_Solve_PCG( self, b, x )
         implicit none
         !
         class( Solver_PCG_t ), intent( inout ) :: self
@@ -88,11 +77,11 @@ contains
         complex( kind=prec ) :: bnorm, rnorm
         !
         if( .NOT. x%is_allocated ) then
-            call errStop( "solvePCG > x not allocated yet" )
+            call errStop( "solve_Solve_PCG > x not allocated yet" )
         endif
         !
         if( .NOT. b%is_allocated ) then
-            call errStop( "solvePCG > b not allocated yet" )
+            call errStop( "solve_Solve_PCG > b not allocated yet" )
         endif
         !
         !>  create local cScalar objects -- could we also use modOp%createCScalar?
@@ -174,6 +163,6 @@ contains
         !
         self%n_iter = self%iter
         !
-    end subroutine solvePCG !> PCG
+    end subroutine solve_Solve_PCG !> PCG
     !
 end module Solver_PCG

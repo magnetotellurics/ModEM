@@ -293,13 +293,13 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine amult_ModelOperator_MF_SG( self, omega, in_e, out_e, adjoint )
+    subroutine amult_ModelOperator_MF_SG( self, in_e, out_e, omega, adjoint )
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( in ) :: self
-        real( kind=prec ), intent( in ), optional :: omega
         class( Vector_t ), intent( in ) :: in_e
         class( Vector_t ), intent( inout ) :: out_e
+        real( kind=prec ), intent( in ) :: omega
         logical, intent( in ) :: adjoint
         !
         integer :: ix, iy, iz
@@ -407,7 +407,7 @@ contains
         !
         omega = R_ZERO
         !
-        call self%amult( omega, in_e, out_e, .FALSE. ) 
+        call self%amult( in_e, out_e, omega, .FALSE. ) 
         !
     end subroutine multAib_ModelOperator_MF_SG
     !

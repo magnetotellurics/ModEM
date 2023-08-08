@@ -182,7 +182,7 @@ contains
         integer :: n_full, n_active, n_interior, n_boundaries
         real( kind=prec ), dimension(:), allocatable :: v_1, v_2
         !
-        if ( .NOT. present( xy_in ) ) then
+        if( .NOT. present( xy_in ) ) then
             xy = .FALSE.
         else
             xy = xy_in
@@ -254,12 +254,12 @@ contains
         !
         n_active = 0
         do k = 1, n_full
-            if (v_1(k) >= 0) then
+            if(v_1(k) >= 0) then
                 n_active = n_active + 1
             endif
         end do
         !
-        if (allocated (self%ind_active)) then
+        if(allocated (self%ind_active)) then
             deallocate (self%ind_active)
         endif
         !
@@ -267,7 +267,7 @@ contains
         !
         i = 0
         do k = 1, n_full
-            if (v_1(k) >= 0) then
+            if(v_1(k) >= 0) then
                 i = i + 1
                 self%ind_active(i) = k
             endif
@@ -275,7 +275,7 @@ contains
         !
         n_interior = 0
         do k = 1, n_full
-            if (v_1(k) == 0) then
+            if(v_1(k) == 0) then
                 n_interior = n_interior + 1
             endif
         end do
@@ -299,12 +299,12 @@ contains
         !!
         n_boundaries = 0
         do k = 1, n_active
-            if (v_2(k) == 1) then
+            if(v_2(k) == 1) then
                 n_boundaries = n_boundaries + 1
             endif
         end do
         !
-        if (allocated (self%ind_boundary)) then
+        if(allocated (self%ind_boundary)) then
             deallocate (self%ind_boundary)
         endif
         !
@@ -312,7 +312,7 @@ contains
         !
         i = 0
         do k = 1, n_active
-            if (v_2(k) == 1) then
+            if(v_2(k) == 1) then
                 i = i + 1
                 self%ind_boundary(i) = k
             endif
@@ -431,14 +431,14 @@ contains
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) n_I = n_I + 1
+            if(v(k) == c) n_I = n_I + 1
         end do
         !
         allocate (I(n_I))
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) then
+            if(v(k) == c) then
                 n_I = n_I + 1
                 I(n_I) = k
             endif
@@ -464,14 +464,14 @@ contains
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) n_I = n_I + 1
+            if(v(k) == c) n_I = n_I + 1
         end do
         !
         allocate (I(n_I))
         !
         n_I = 0
         do k = 1, n
-            if (v(k) == c) then
+            if(v(k) == c) then
                 n_I = n_I + 1
                 I(n_I) = k
             endif
