@@ -46,7 +46,7 @@ integer        :: typelist(0:21)
 ! Parameters used in communication
 !********************************************************************
 Integer        :: answers_to_receive,received_answers,recv_loop
-Integer        :: who, which_stn,which_per,which_dt,which_pol,orginal_nPol
+Integer        :: who, which_stn,which_stn_in_Dic,which_per,which_per_in_Dic,which_dt,which_pol,orginal_nPol
 Integer , pointer, dimension(:)  :: eAll_location
 logical                          :: eAll_exist=.false.
 real*8,   pointer, dimension(:)  :: model_para_vec
@@ -76,7 +76,7 @@ DOUBLE PRECISION    :: starttime_total,endtime_total
 type :: define_worker_job
      SEQUENCE
      character*80  :: what_to_do='NOTHING'
-     Integer       :: per_index,Stn_index,pol_index,data_type_index,data_type,eAll_SolnIndex
+     Integer       :: per_index,per_index_in_Dic,Stn_index,Stn_index_in_Dic,pol_index,data_type_index,data_type,eAll_SolnIndex
      Integer       :: taskid,solver_number_of_iterations
      logical       :: keep_E_soln=.false.
      logical       :: several_Tx=.false.
@@ -99,7 +99,7 @@ subroutine create_worker_job_task_place_holder
 size_of_res_vector=size(worker_job_task%solver_residual_vec)
 
        CALL MPI_PACK_SIZE(80, MPI_CHARACTER, MPI_COMM_WORLD, Nbytes1,  ierr)
-       CALL MPI_PACK_SIZE(8, MPI_INTEGER, MPI_COMM_WORLD, Nbytes2,  ierr)
+       CALL MPI_PACK_SIZE(10, MPI_INTEGER, MPI_COMM_WORLD, Nbytes2,  ierr)
        CALL MPI_PACK_SIZE(3, MPI_LOGICAL, MPI_COMM_WORLD, Nbytes3,  ierr)
 	   CALL MPI_PACK_SIZE(size_of_res_vector, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes4,  ierr)
 	   CALL MPI_PACK_SIZE(1, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes5,  ierr)
@@ -122,7 +122,9 @@ size_of_res_vector=size(worker_job_task%solver_residual_vec)
         call MPI_Pack(worker_job_task%what_to_do,80, MPI_CHARACTER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
         call MPI_Pack(worker_job_task%per_index ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+		call MPI_Pack(worker_job_task%per_index_in_Dic ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%Stn_index ,1 ,	 	MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+		call MPI_Pack(worker_job_task%Stn_index_in_Dic ,1 ,	 	MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%pol_index ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%data_type_index ,1 , 	MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%data_type ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
@@ -150,7 +152,9 @@ size_of_res_vector=size(worker_job_task%solver_residual_vec)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%what_to_do,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%per_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
+		call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%per_index_in_Dic ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%Stn_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
+		call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%Stn_index_in_Dic ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%pol_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%data_type_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%data_type ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)

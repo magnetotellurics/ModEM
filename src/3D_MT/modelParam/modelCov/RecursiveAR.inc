@@ -22,7 +22,17 @@
 
     dm = mhat
 
+		! CmSqrt%Sx = 0.3
+		! CmSqrt%Sy = 0.3
+		! CmSqrt%Sz = 0.1
     call RecursiveAR(mhat%cellCond_h%v, dm%cellCond_h%v,2)
+	if (mhat%isVTI) then
+		! CmSqrt%Sx = 0.1
+		! CmSqrt%Sy = 0.1
+		! CmSqrt%Sz = 0.3
+
+	 call RecursiveAR(mhat%cellCond_v%v, dm%cellCond_v%v,2)
+	end if
 
     dm%temporary = .true.
 
@@ -49,8 +59,18 @@
 
     dm = mhat
 
+		! CmSqrt%Sx = 0.3
+		! CmSqrt%Sy = 0.3
+		! CmSqrt%Sz = 0.1
+		
     call RecursiveAR(mhat%cellCond_h%v, dm%cellCond_h%v, CmSqrt%N)
+	if (mhat%isVTI) then
+		! CmSqrt%Sx = 0.1
+		! CmSqrt%Sy = 0.1
+		! CmSqrt%Sz = 0.3
 
+       call RecursiveAR(mhat%cellCond_v%v, dm%cellCond_v%v, CmSqrt%N)
+	end if
     dm%temporary = .true.
 
   end function multBy_CmSqrt
@@ -74,7 +94,16 @@
 
     mhat = dm
 
+		! CmSqrt%Sx = 0.3
+		! CmSqrt%Sy = 0.3
+		! CmSqrt%Sz = 0.1
     call RecursiveARInv(dm%cellCond_h%v, mhat%cellCond_h%v, CmSqrt%N)
+	if (mhat%isVTI) then
+		! CmSqrt%Sx = 0.1
+		! CmSqrt%Sy = 0.1
+		! CmSqrt%Sz = 0.3
+	 call RecursiveARInv(dm%cellCond_v%v, mhat%cellCond_v%v, CmSqrt%N)
+	end if
 
     mhat%temporary = .true.
 

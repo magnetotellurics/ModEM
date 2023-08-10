@@ -418,7 +418,9 @@ subroutine EdgeToModelParam(Econd, m, m0)
   !         required if m%paramtype=LOGE
   type(modelParam_t), optional, intent(in) :: m0
   ! Local variables
-  type(rscalar)  :: temp, Ctemp
+  type(rscalar)  :: temp_h, Ctemp_h
+  type(rscalar)  :: temp_v, Ctemp_v
+  
   type(rvector)  :: Etemp   ! , V_E_ghost  hacking out V_E_ghost stuff -- 
   integer :: ix, iy, iz, ize, nx, ny, nz, nzEarth, nzAir, ioNum, ios
   !
@@ -444,7 +446,7 @@ subroutine EdgeToModelParam(Econd, m, m0)
   nzEarth = m%nzEarth
   nzAir = nz-nzEarth
   
-  call create_rscalar(Econd%grid, temp, CENTER)
+  !call create_rscalar(Econd%grid, temp, CENTER)
   
   ! V_C and V_E are global variables stored in GridCalc, initialized in initSolver;
   ! for efficiency, do not recompute unless called outside of solver for testing.
@@ -465,21 +467,52 @@ subroutine EdgeToModelParam(Econd, m, m0)
   !call diagDiv(Econd, V_E_ghost, Etemp)
   call diagDiv(Econd, V_E, Etemp)
   !   as before, Edge2Cell maps only to interior edges -- see no reason why it should be otherwise!
-  call Edge2Cell(m%grid, Etemp, Ctemp)
-  temp = Ctemp
-  call diagMult(V_C, Ctemp, temp)
+									  
+			  
+								 
   
-  if (m%paramType .EQ. LOGE) then
-     m%cellCond_h%v = temp%v(:, :, nzAir + 1 : nz)*exp(m0%cellCond_h%v)
+  if (m%isVTI) then
+      call Edge2Cell(m%grid, Etemp, Ctemp_h,Ctemp_v)
+
+	  temp_h = Ctemp_h
+	  call diagMult(V_C, Ctemp_h, temp_h)
+  
+	  if (m%paramType .EQ. LOGE) then
+			 m%cellCond_h%v = temp_h%v(:, :, nzAir + 1 : nz)*exp(m0%cellCond_h%v)
+	  else
+		 m%cellCond_h%v = temp_h%v(:, :, nzAir + 1 : nz)
+	  end if
+
+	  temp_v = Ctemp_v
+	  call diagMult(V_C, Ctemp_v, temp_v)
+	  
+	  if (m%paramType .EQ. LOGE) then
+		 m%cellCond_v%v = temp_v%v(:, :, nzAir + 1 : nz)*exp(m0%cellCond_v%v)
+	  else
+		 m%cellCond_v%v = temp_v%v(:, :, nzAir + 1 : nz)
+	  end if
+	  !write(550,*) m%cellCond_h%v(25, 25,40),m%cellCond_v%v(25, 25,40)
+	  
   else
-     m%cellCond_h%v = temp%v(:, :, nzAir + 1 : nz)
+	  call Edge2Cell(m%grid, Etemp, Ctemp_h)
+	  temp_h = Ctemp_h
+	  call diagMult(V_C, Ctemp_h, temp_h)
+	  
+	  if (m%paramType .EQ. LOGE) then
+		 m%cellCond_h%v = temp_h%v(:, :, nzAir + 1 : nz)*exp(m0%cellCond_h%v)
+	  else
+		 m%cellCond_h%v = temp_h%v(:, :, nzAir + 1 : nz)
+	  end if
   end if
   
   m%zeroValued = .false.
   
 !   call deall_rvector(V_E_ghost)
-  call deall_rscalar(temp)
-  call deall_rscalar(Ctemp)
+  call deall_rscalar(temp_h)
+  call deall_rscalar(Ctemp_h)
+  call deall_rscalar(temp_v)
+  call deall_rscalar(Ctemp_v)
+  
   call deall_rvector(Etemp)
   
 end subroutine EdgeToModelParam

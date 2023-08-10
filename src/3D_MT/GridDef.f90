@@ -459,7 +459,7 @@ Contains
         do iz = airlayers%Nz, 1, -1
             j = airlayers%Nz - iz + 1
             airlayers%Dz(iz) = ((airlayers%alpha)**(j-1))*grid%Dz(grid%NzAir+j)
-			write(*,*) "iZ, airLayers%Dz(iz)", iz, airLayers%Dz(iz)
+			!write(*,*) "iZ, airLayers%Dz(iz)", iz, airLayers%Dz(iz)
         end do
 
         ! the topmost air layer has to be at least 30 km
@@ -477,7 +477,7 @@ Contains
         do iz = airlayers%Nz, 1, -1
             airlayers%Dz(iz) = 10.**(z_log+dlogz) - 10.**(z_log)
            z_log = z_log + dlogz
-            write(*,*) "iZ, airLayers%Dz(iz)", iz, airLayers%Dz(iz)
+            !write(*,*) "iZ, airLayers%Dz(iz)", iz, airLayers%Dz(iz)
         end do
         !
         z1_log = log10( grid%Dz( grid%NzAir + 1 ) )

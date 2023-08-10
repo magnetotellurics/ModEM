@@ -21,6 +21,7 @@ public  :: NLCGsolver
      real (kind=prec)   :: fdiffTol
      ! initial value of lambda (will not override the NLCG input argument)
      real (kind=prec)   :: lambda
+     type(DampingFactorANI) :: lambdaANI !Added for VTI
      ! exit if lambda < lambdaTol approx. 1e-4
      real (kind=prec)   :: lambdaTol
      ! set lambda_i = lambda_{i-1}/k when the inversion stalls
@@ -67,6 +68,7 @@ Contains
      iterControl%fdiffTol = 2.0e-3
      ! initial value of lambda (will not override the NLCG input argument)
      iterControl%lambda = 1.
+	 iterControl%lambdaANI%xy = 10.  !Added for VTI
      ! exit if lambda < lambdaTol approx. 1e-4
      iterControl%lambdaTol = 1.0e-8
      ! set lambda_i = lambda_{i-1}/k when the inversion stalls
