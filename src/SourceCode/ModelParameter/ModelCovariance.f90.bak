@@ -228,8 +228,6 @@ contains
             !
             ccond_v = cmplx( dsigma_cond_v, 0.0, kind=prec )
             !
-            call dsigma_cond%setV( ccond_v )
-            !
             call dsigma%setCond( dsigma_cond, i )
             !
             deallocate( dsigma_cond )

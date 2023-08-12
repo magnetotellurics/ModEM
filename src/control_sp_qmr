@@ -16,8 +16,8 @@ grid_format [SG|MR]       : SG
 # <Model parameters>
 #
 model_method [mirror|fixed height] : fixed height
-model_n_air_layer [10]             : 10
-model_max_height [200.]            : 200.
+model_n_air_layer [10]             : 15
+model_max_height [200.]            : 500.
 #
 # <Source parameters>
 #
@@ -32,6 +32,6 @@ forward_solver_type [IT|IT_DC] : IT_DC
 max_solver_iters [80]          : 80
 max_solver_calls [20]          : 20
 max_divcor_iters [100]         : 100
-tolerance_solver [1E-7]        : 1E-7
-tolerance_divcor [1E-5]        : 1E-5
+tolerance_solver [1E-7]        : 1E-9
+tolerance_divcor [1E-5]        : 1E-8
 #
