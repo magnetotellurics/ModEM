@@ -36,6 +36,8 @@ module ModelParameterCell
             !
             procedure, public :: linComb => linComb_ModelParameterCell
             !
+            procedure, public :: cellToNode => cellToNode_ModelParameterCell
+            !
             procedure, public :: PDEmapping => PDEmapping_ModelParameterCell
             procedure, public :: dPDEmapping => dPDEmapping_ModelParameterCell
             procedure, public :: dPDEmapping_T => dPDEmapping_T_ModelParameterCell
@@ -522,6 +524,57 @@ contains
         end select
         !
     end function dotProd_ModelParameterCell
+    !
+    !> Map the entire model cells into a single edge Vector_t (e_vec).
+    !> Need to implement for VTI ????
+    !
+    subroutine cellToNode_ModelParameterCell( self, sigma_node )
+        implicit none
+        !
+        class( ModelParameterCell_t ), intent( in ) :: self
+        class( Scalar_t ), allocatable, intent( inout ) :: sigma_node
+        !
+        integer :: k0, k1, k2
+        class( Scalar_t ), allocatable:: sigma_cell, sigma_cond
+        type( GenScalar_t ), allocatable, dimension(:) :: sigma_cells
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: sigma_cond_v, sigma_cell_v
+        !
+        if( .NOT. sigma_node%is_allocated ) then
+            call errStop( "cellToNode_ModelParameterCell > sigma_node not allocated" )
+        endif
+        !
+        sigma_cells = self%getCond()
+        !
+        !> Just get the proper conductivity into sigma_cond
+        !> Directly use sigma_cells(1)%s%getV() causes compiler error ????
+        allocate( sigma_cond, source = sigma_cells(1)%s )
+        sigma_cond_v = sigma_cond%getV()
+        deallocate( sigma_cond )
+        !
+        k0 = self%metric%grid%NzAir
+        k1 = k0 + 1
+        k2 = self%metric%grid%Nz
+        !
+        call self%metric%createScalar( real_t, CELL, sigma_cell )
+        !
+        sigma_cell_v = sigma_cell%getV()
+        !
+        sigma_cell_v( :, :, k1:k2 ) = self%sigMap( real( sigma_cond_v, kind=prec ) )
+        !
+        call sigma_cell%setV( sigma_cell_v )
+        !
+        call sigma_cell%mult( self%metric%v_cell )
+        !
+        call sigma_cell%sumCell( sigma_node, .TRUE. )
+        !
+        call sigma_node%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
+        !
+        !> This should be the right thing, but no ????
+        !call sigma_node%div( self%metric%v_node )
+        !
+        deallocate( sigma_cell )
+        !
+    end subroutine cellToNode_ModelParameterCell
     !
     !> Map the entire model cells into a single edge Vector_t (e_vec).
     !

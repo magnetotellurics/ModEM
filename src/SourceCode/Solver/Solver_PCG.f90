@@ -5,7 +5,8 @@ module Solver_PCG
     !
     use Solver
     use ModelOperator_MF_SG
-    use ModelOperator_SP
+    use ModelOperator_SP_V1
+    use ModelOperator_SP_V2
     use PreConditioner_DC_MF
     use PreConditioner_DC_SP
     !
@@ -45,7 +46,7 @@ contains
             class is( ModelOperator_MF_SG_t )
                 !
                 allocate( self%preconditioner, source = PreConditioner_DC_MF_t( model_operator ) )
-            !
+                !
             class is( ModelOperator_SP_t )
                 !
                 allocate( self%preconditioner, source = PreConditioner_DC_SP_t( model_operator ) )

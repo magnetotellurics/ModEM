@@ -22,7 +22,8 @@ module Solver_BICG
     !
     use Solver_CC
     use ModelOperator_MF_SG
-    use ModelOperator_SP
+    use ModelOperator_SP_V1
+    use ModelOperator_SP_V2
     use PreConditioner_CC_MF
     use PreConditioner_CC_SP
     !

@@ -18,6 +18,8 @@ module Scalar
             procedure( interface_get_v_scalar ), deferred, public :: getV
             procedure( interface_set_v_scalar ), deferred, public :: setV
             !
+            procedure( interface_sum_cell_scalar ), deferred, public :: sumCell
+            !
             !> Scalar Routines
             !
             procedure, public :: length => length_Scalar
@@ -57,6 +59,17 @@ module Scalar
             class( Scalar_t ), intent( inout ) :: self
             complex( kind=prec ), dimension(:,:,:), intent( in ) :: v
         end subroutine interface_set_v_scalar
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_sum_cell_scalar( self, node_out, interior_only )
+            import :: Scalar_t
+            !
+            class( Scalar_t ), intent( inout ) :: self
+            class( Scalar_t ), allocatable, intent( out ) :: node_out
+            logical, intent( in ), optional :: interior_only
+            !
+        end subroutine interface_sum_cell_scalar
         !
     end interface
     !

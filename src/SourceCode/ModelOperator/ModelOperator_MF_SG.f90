@@ -28,6 +28,7 @@ module ModelOperator_MF_SG
             final :: ModelOperator_MF_SG_dtor
             !
             !> Setup
+            procedure, public :: create => create_ModelOperator_MF_SG 
             procedure, public :: setEquations => setEquations_ModelOperator_MF_SG
             procedure, public :: setCond => setCond_ModelOperator_MF_SG
             !
@@ -44,9 +45,8 @@ module ModelOperator_MF_SG
             procedure, public :: grad => grad_ModelOperator_MF_SG
             !
             !> Alloc/Dealloc
-            procedure :: create => create_ModelOperator_MF_SG 
-            procedure :: alloc => allocate_ModelOperator_MF_SG
-            procedure :: dealloc => deallocate_ModelOperator_MF_SG
+            procedure, public :: alloc => allocate_ModelOperator_MF_SG
+            procedure, public :: dealloc => deallocate_ModelOperator_MF_SG
             !
             !> Miscellaneous
             procedure, public :: print => print_ModelOperator_MF_SG
@@ -72,9 +72,6 @@ contains
         !
         call self%baseInit
         !
-        !> Instantiation of the specific object MetricElements
-        allocate( self%metric, source = MetricElements_CSG_t( grid ) )
-        !
         call self%create( grid )
         !
     end function ModelOperator_MF_SG_ctor
@@ -90,6 +87,23 @@ contains
         call self%baseDealloc()
         !
     end subroutine ModelOperator_MF_SG_dtor
+    !
+    !> No subroutine briefing
+    !
+    subroutine create_ModelOperator_MF_SG( self, grid )
+        implicit none
+        !
+        class( ModelOperator_MF_SG_t ), intent( inout ) :: self
+        class( Grid_t ), target, intent( in ) :: grid
+        !
+        self%is_allocated = .FALSE.
+        !
+        !> Instantiation of the specific object MetricElements
+        allocate( self%metric, source = MetricElements_CSG_t( grid ) )
+        !
+        call self%alloc
+        !
+    end subroutine create_ModelOperator_MF_SG
     !
     !> No subroutine briefing
     !
@@ -659,22 +673,6 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine create_ModelOperator_MF_SG( self, grid )
-        implicit none
-        !
-        class( ModelOperator_MF_SG_t ), intent( inout ) :: self
-        class( Grid_t ), target, intent( in ) :: grid
-        !
-        self%is_allocated = .FALSE.
-        !
-        self%metric%grid => grid
-        !
-        call self%alloc
-        !
-    end subroutine create_ModelOperator_MF_SG
-    !
-    !> No subroutine briefing
-    !
     subroutine allocate_ModelOperator_MF_SG( self )
         implicit none
         !
@@ -723,6 +721,7 @@ contains
     end subroutine allocate_ModelOperator_MF_SG
     !
     !> No subroutine briefing
+    !
     subroutine deallocate_ModelOperator_MF_SG( self )
         implicit none
         !

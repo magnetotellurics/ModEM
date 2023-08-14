@@ -55,6 +55,8 @@ module ModelParameter
             !
             procedure( interface_dot_product_model_parameter ), deferred, public :: dotProd
             !
+            procedure( interface_cell_to_node_model_parameter ), deferred, public :: cellToNode
+			!
             procedure( interface_pdemapping_model_parameter ), deferred, public :: PDEmapping
             procedure( interface_dpdemapping_model_parameter ), deferred, public :: dPDEmapping
             procedure( interface_dpdemapping_t_model_parameter ), deferred, public :: dPDEmapping_T
@@ -226,6 +228,16 @@ module ModelParameter
             character(:), allocatable, intent( in ) :: param_type
             !
         end subroutine interface_set_type_model_parameter
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_cell_to_node_model_parameter( self, sigma_node )
+            import :: ModelParameter_t, Scalar_t
+            !
+            class( ModelParameter_t ), intent( in ) :: self
+            class( Scalar_t ), intent( inout ) :: sigma_node
+            !
+        end subroutine interface_cell_to_node_model_parameter
         !
         !> No interface subroutine briefing
         !

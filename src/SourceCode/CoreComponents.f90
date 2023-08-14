@@ -7,7 +7,8 @@ module CoreComponents
     use InversionControlFile
     !
     use ModelOperator_MF_SG
-    use ModelOperator_SP
+    use ModelOperator_SP_V1
+    use ModelOperator_SP_V2
     !
     use ModelParameterCell
     !
@@ -127,11 +128,11 @@ contains
                 !
             case( MODELOP_SP )
                 !
-                allocate( model_operator, source = ModelOperator_SP_t( main_grid ) )
+                allocate( model_operator, source = ModelOperator_SP_V1_t( main_grid ) )
                 !
             case( MODELOP_SP2 )
                 !
-                call errStop( "handleModelFile > MODELOP_SP2 not implemented" )
+                allocate( model_operator, source = ModelOperator_SP_V2_t( main_grid ) )
                 !
             case( "" )
                 !

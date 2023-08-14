@@ -46,6 +46,8 @@ module cScalar3D_SG
             !
             procedure, public :: divByField => divByField_cScalar3D_SG
             procedure, public :: divByValue => divByValue_cScalar3D_SG
+			!
+            procedure, public :: sumCell => sumCell_cScalar3D_SG
             !
             !> Getters & Setters
             procedure, public :: getV => getV_cScalar3D_SG
@@ -482,7 +484,7 @@ contains
         endif
         !
     end subroutine add_cScalar3D_SG
-    !
+	!
     !> No subroutine briefing
     !
     subroutine linComb_cScalar3D_SG( self, rhs, c1, c2 )
@@ -810,6 +812,62 @@ contains
         endif
         !
     end subroutine divByValue_cScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine sumCell_cScalar3D_SG( self, node_out, interior_only )
+        implicit none
+        !
+        class( cScalar3D_SG_t ), intent( inout ) :: self
+        class( Scalar_t ), allocatable, intent( out ) :: node_out
+        logical, intent( in ), optional :: interior_only
+        !
+        type( cScalar3D_SG_t ) :: node_out_temp
+        integer :: v_xend, v_yend, v_zend
+        logical :: is_interior_only
+        !
+        if( .NOT. self%is_allocated ) then
+             call errStop( "sumCell_cScalar3D_SG > self not allocated." )
+        endif
+        !
+        call self%switchStoreState( compound )
+        !
+        is_interior_only = .FALSE.
+        !
+        if( present( interior_only ) ) is_interior_only = interior_only
+        !
+        if( is_interior_only ) then
+            call self%setAllBoundary( C_ZERO )
+        endif
+        !
+        node_out_temp = cScalar3D_SG_t( self%grid, NODE )
+        !
+        select case( self%grid_type )
+            !
+            case( CELL )
+                !
+                v_xend = size( self%v, 1 )
+                v_yend = size( self%v, 2 )
+                v_zend = size( self%v, 3 )
+                !
+                !> Interior
+                node_out_temp%v( 2:v_xend-1, 2:v_yend-1, 2:v_zend-1 ) = &
+                self%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
+                self%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
+                self%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
+                self%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
+                self%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
+                self%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
+                self%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
+                self%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
+                !
+            case default
+                call errStop( "sumCell_cScalar3D_SG: undefined self%grid_type" )
+        end select
+        !
+        allocate( node_out, source = node_out_temp )
+        !
+    end subroutine sumCell_cScalar3D_SG
     !
     !> No subroutine briefing
     !

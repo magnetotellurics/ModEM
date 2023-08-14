@@ -133,7 +133,7 @@ contains
                         call errStop( "ForwardControlFile_ctor > Wrong model_operator_type control, use [MF|SP|SP2]" )
                 end select
                 !
-                write( *, "( A30, A20)" ) "          model_operator_type = ", model_operator_type
+                write( *, "( A40, A20)" ) "model_operator_type = ", model_operator_type
                 !
             endif
             !
@@ -150,7 +150,7 @@ contains
                         call errStop( "ForwardControlFile_ctor > Wrong grid_format control, use [SG|MR]" )
                 end select
                 !
-                write( *, "( A30, A20)" ) "          Grid Type = ", grid_format
+                write( *, "( A40, A20)" ) "Grid Type = ", grid_format
                 !
             endif
             !
@@ -158,7 +158,7 @@ contains
             if( allocated( self%grid_reader_type ) ) then
                 !
                 ! TO BE IMPLEMENTED
-                write( *, "( A30, A20)" ) "          Grid Reader = ", self%grid_reader_type
+                write( *, "( A40, A20)" ) "Grid Reader = ", self%grid_reader_type
                 !
             endif
             !
@@ -177,7 +177,7 @@ contains
                     !
                 end select
                 !
-                write( *, "( A30, A20)" ) "          Solver = ", solver_type
+                write( *, "( A40, A20)" ) "Solver = ", solver_type
                 !
             endif
             !
@@ -198,7 +198,7 @@ contains
                     !
                 end select
                 !
-                write( *, "( A30, A20)" ) "          FWD Solver = ", forward_solver_type
+                write( *, "( A40, A20)" ) "FWD Solver = ", forward_solver_type
                 !
             endif
             !
@@ -217,7 +217,7 @@ contains
                         !
                 end select
                 !
-                write( *, "( A30, A20)" ) "          MT Source = ", source_type_mt
+                write( *, "( A40, A20)" ) "MT Source = ", source_type_mt
                 !
             endif
             !
@@ -236,7 +236,7 @@ contains
                         !
                 end select
                 !
-                write( *, "( A30, A20)" ) "          CSEM Source = ", source_type_csem
+                write( *, "( A40, A20)" ) "CSEM Source = ", source_type_csem
                 !
             endif
             !
@@ -259,7 +259,7 @@ contains
                         !
                 end select
                 !
-                write( *, "( A30, A20)" ) "          Get 1D from = ", get_1d_from
+                write( *, "( A40, A20)" ) "Get 1D from = ", get_1d_from
                 !
             endif
             !
@@ -277,7 +277,7 @@ contains
                         call errStop( "ForwardControlFile_ctor > Wrong model_method control, use [mirror|fixed height]" )
                     !
                 end select
-                write( *, "( A30, A20)" ) "          Model Method = ", model_method
+                write( *, "( A40, A20)" ) "Model Method = ", model_method
                 !
             endif
             !
@@ -286,7 +286,7 @@ contains
                 !
                 read( self%model_n_air_layer, "(I8)" ) model_n_air_layer
                 !
-                write( *, "( A30, I20)" ) "          N Air Layers = ", model_n_air_layer
+                write( *, "( A40, I20)" ) "N Air Layers = ", model_n_air_layer
                 !
             endif
             !
@@ -295,7 +295,7 @@ contains
                 !
                 read( self%model_max_height, "(f15.6)" ) model_max_height
                 !
-                write( *, "( A30, f20.2)" ) "          Model Max Height = ", model_max_height
+                write( *, "( A40, f20.2)" ) "Model Max Height = ", model_max_height
                 !
             endif
             !
@@ -304,7 +304,7 @@ contains
                 !
                 read( self%max_solver_iters, "(I8)" ) max_solver_iters
                 !
-                write( *, "( A30, I20)" ) "          PCG Iters = ", max_solver_iters
+                write( *, "( A40, I20)" ) "Solver Iters = ", max_solver_iters
                 !
             endif
             !
@@ -313,7 +313,7 @@ contains
                 !
                 read( self%max_solver_calls, "(I8)" ) max_solver_calls
                 !
-                write( *, "( A30, I20)" ) "          Max Divcor Calls = ", max_solver_calls
+                write( *, "( A40, I20)" ) "Max Solver Calls = ", max_solver_calls
                 !
             endif
             !
@@ -322,16 +322,7 @@ contains
                 !
                 read( self%max_divcor_iters, "(I8)" ) max_divcor_iters
                 !
-                write( *, "( A30, I20)" ) "          Max Divcor Iters = ", max_divcor_iters
-                !
-            endif
-            !
-            ! Solver tolerance_divcor
-            if( allocated( self%tolerance_divcor ) ) then
-                !
-                read( self%tolerance_divcor, * ) tolerance_divcor
-                !
-                write( *, "( A30, es20.2)" ) "          Divcor Tolerance = ", tolerance_divcor
+                write( *, "( A40, I20)" ) "Divcor Iters = ", max_divcor_iters
                 !
             endif
             !
@@ -340,7 +331,16 @@ contains
                 !
                 read( self%tolerance_solver, * ) tolerance_solver
                 !
-                write( *, "( A30, es20.2)" ) "          Solver Tolerance = ", tolerance_solver
+                write( *, "( A40, es20.2)" ) "Solver Tolerance = ", tolerance_solver
+                !
+            endif
+            !
+            ! Solver tolerance_divcor
+            if( allocated( self%tolerance_divcor ) ) then
+                !
+                read( self%tolerance_divcor, * ) tolerance_divcor
+                !
+                write( *, "( A40, es20.2)" ) "Divcor Tolerance = ", tolerance_divcor
                 !
             endif
             !

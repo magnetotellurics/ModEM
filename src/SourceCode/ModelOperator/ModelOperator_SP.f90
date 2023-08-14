@@ -8,7 +8,7 @@ module ModelOperator_SP
     use SpOpTopology_SG
     use MetricElements_CSG
     !
-    type, extends( ModelOperator_t ) :: ModelOperator_SP_t
+    type, abstract, extends( ModelOperator_t ) :: ModelOperator_SP_t
         !
         type( SpOpTopology_SG_t ) :: topology_sg
         !
@@ -29,9 +29,8 @@ module ModelOperator_SP
         !
         contains
             !
-            final :: ModelOperator_SP_dtor
-            !
             !> Setup
+            procedure, public :: create => create_ModelOperator_SP 
             procedure, public :: setEquations => setEquations_ModelOperator_SP
             procedure, public :: setCond => setCond_ModelOperator_SP
             !
@@ -49,53 +48,57 @@ module ModelOperator_SP
             procedure, public :: grad => grad_ModelOperator_SP
             !
             !> Alloc/Dealloc
-            procedure :: create => create_ModelOperator_SP 
-            procedure :: dealloc => deallocate_ModelOperator_SP
+            procedure, public :: dealloc => deallocate_ModelOperator_SP
             !
             !> Miscellaneous
             procedure, public :: print => print_ModelOperator_SP
             !
     end type ModelOperator_SP_t
     !
-    interface ModelOperator_SP_t
-        module procedure ModelOperator_SP_ctor
-    end interface ModelOperator_SP_t
-    !
 contains
     !
     !> No subroutine briefing
     !
-    function ModelOperator_SP_ctor( grid ) result( self )
+    !> Set sparse matrices for curl (T) and grad (G)
+    !> operator topologies; these sparse matrices are stored
+    !> in module spOpTopology
+    !
+    !> Find indexes (in vector of all) of boundary and interior edges
+    !> allocate for diagonal part of curl-curl operator
+    !> (maybe this should just be for interior edges)
+    !> here for all edges
+    !
+    subroutine create_ModelOperator_SP( self, grid )
         implicit none
         !
+        class( ModelOperator_SP_t ), intent( inout ) :: self
         class( Grid_t ), target, intent( in ) :: grid
         !
-        type( ModelOperator_SP_t ) :: self
+        integer :: nInterior
         !
-        !write( *, * ) "Constructor ModelOperator_SP"
-        !
-        call self%baseInit
+        self%is_allocated = .FALSE.
         !
         !> Instantiation of the specific object MetricElements
         allocate( self%metric, source = MetricElements_CSG_t( grid ) )
         !
-        call self%create
+        self%topology_sg = SpOpTopology_SG_t( self%metric%grid )
         !
-    end function ModelOperator_SP_ctor
-    !
-    !> ModelOperator_SP destructor
-    subroutine ModelOperator_SP_dtor( self )
-        implicit none
+        call self%topology_sg%curl( T )
         !
-        type( ModelOperator_SP_t ), intent( inout ) :: self
+        call self%topology_sg%grad( G )
         !
-        !write( *, * ) "Destructor ModelOperator_SP_t"
+        call boundaryIndexSP( EDGE, self%metric, self%EDGEb, self%EDGEi )
         !
-        call self%baseDealloc
+        nInterior = size( self%EDGEi )
         !
-        call self%dealloc
+        allocate( self%VomegaMuSig( nInterior ) )
         !
-    end subroutine ModelOperator_SP_dtor
+        !> set a default omega
+        self%omega = 0.0
+        !
+        self%is_allocated = .TRUE.
+        !
+    end subroutine create_ModelOperator_SP
     !
     !> No subroutine briefing
     !> using existing curl operator, create sparse matrix CC
@@ -520,49 +523,12 @@ contains
     !
     !> No subroutine briefing
     !
-    !> Set sparse matrices for curl (T) and grad (G)
-    !> operator topologies; these sparse matrices are stored
-    !> in module spOpTopology
-    !
-    !> Find indexes (in vector of all) of boundary and interior edges
-    !> allocate for diagonal part of curl-curl operator
-    !> (maybe this should just be for interior edges)
-    !> here for all edges
-    !
-    subroutine create_ModelOperator_SP( self )
-        implicit none
-        !
-        class( ModelOperator_SP_t ), intent( inout ) :: self
-        !
-        integer :: nInterior
-        !
-        self%is_allocated = .FALSE.
-        !
-        self%topology_sg = SpOpTopology_SG_t( self%metric%grid )
-        !
-        call self%topology_sg%curl( T )
-        !
-        call self%topology_sg%grad( G )
-        !
-        call boundaryIndexSP( EDGE, self%metric, self%EDGEb, self%EDGEi )
-        !
-        nInterior = size( self%EDGEi )
-        !
-        allocate( self%VomegaMuSig( nInterior ) )
-        !
-        !> set a default omega
-        self%omega = 0.0
-        !
-        self%is_allocated = .TRUE.
-        !
-    end subroutine create_ModelOperator_SP
-    !
-    !> No subroutine briefing
-    !
     subroutine deallocate_ModelOperator_SP( self )
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
+        !
+        call self%baseDealloc
         !
         !> interior and edge indexes
         deallocate( self%EDGEi, self%EDGEb )

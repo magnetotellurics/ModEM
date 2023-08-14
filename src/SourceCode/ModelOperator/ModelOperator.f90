@@ -7,15 +7,13 @@ module ModelOperator
     use ModelParameter
     !
     character(:), allocatable :: model_operator_type
-    character( len=15 ), parameter :: MODELOP_MF = "MatrixFreeField"
-    character( len=17 ), parameter :: MODELOP_SP = "SparseMatrixField"
-    character( len=19 ), parameter :: MODELOP_SP2 = "SparseMatrixFieldV2"
+    character( len=10 ), parameter :: MODELOP_MF = "MatrixFree"
+    character( len=12 ), parameter :: MODELOP_SP = "SparseMatrix"
+    character( len=14 ), parameter :: MODELOP_SP2 = "SparseMatrixV2"
     !
     type, abstract :: ModelOperator_t
         !
         class( MetricElements_t ), allocatable :: metric
-        !
-        class( Vector_t ), allocatable :: Adiag
         !
         integer :: mKey(8)
         !
@@ -26,8 +24,11 @@ module ModelOperator
             !> Abstract Interfaces
             !
             !> Setup
+            procedure( interface_create_model_operator ), deferred, public :: create
             procedure( interface_set_equations_model_operator ), deferred, public :: setEquations
             procedure( interface_set_cond_model_operator ), deferred, public :: setCond
+            !
+            procedure( interface_dealloc_operator ), deferred, public :: dealloc
             !
             procedure( interface_divcor_setup_model_operator ), deferred, public :: divCorSetUp
             !
@@ -61,6 +62,16 @@ module ModelOperator
         !
         !> No interface subroutine briefing
         !
+        subroutine interface_create_model_operator( self, grid )
+            import :: ModelOperator_t, Grid_t
+            !
+            class( ModelOperator_t ), intent( inout ) :: self
+            class( Grid_t ), target, intent( in ) :: grid
+            !
+        end subroutine interface_create_model_operator
+        !
+        !> No interface subroutine briefing
+        !
         subroutine interface_set_equations_model_operator( self )
             import :: ModelOperator_t
             !
@@ -78,6 +89,15 @@ module ModelOperator
             real( kind=prec ), intent( in ) :: omega_in
             !
         end subroutine interface_set_cond_model_operator
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_dealloc_operator( self )
+            import :: ModelOperator_t
+            !
+            class( ModelOperator_t ), intent( inout ) :: self
+            !
+        end subroutine interface_dealloc_operator
         !
         !> No interface subroutine briefing
         !
@@ -190,8 +210,6 @@ contains
         class( ModelOperator_t ), intent( inout ) :: self
         !
         if( allocated( self%metric ) ) deallocate( self%metric )
-        !
-        if( allocated( self%Adiag ) ) deallocate( self%Adiag )
         !
     end subroutine baseDealloc_ModelOperator
     !

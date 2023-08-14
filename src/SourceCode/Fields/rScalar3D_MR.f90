@@ -63,6 +63,8 @@ module rScalar3D_MR
             !
             procedure, public :: divByField => divByField_rScalar3D_MR
             procedure, public :: divByValue => divByValue_rScalar3D_MR
+			!
+            procedure, public :: sumCell => sumCell_rScalar3D_MR
             !
             !> Miscellaneous
             procedure, public :: getV => getV_rScalar3D_MR
@@ -877,6 +879,19 @@ contains
         stop "Error: divByValue_rScalar3D_MR not implemented!"
         !
     end subroutine divByValue_rScalar3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine sumCell_rScalar3D_MR( self, node_out, interior_only )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( inout ) :: self
+        class( Scalar_t ), allocatable, intent( out ) :: node_out
+        logical, intent( in ), optional :: interior_only
+        !
+        stop "Error: sumCell_rScalar3D_MR not implemented!"
+        !
+    end subroutine sumCell_rScalar3D_MR
     !
     !> No subroutine briefing
     !
