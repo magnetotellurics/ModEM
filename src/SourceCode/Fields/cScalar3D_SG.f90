@@ -46,7 +46,7 @@ module cScalar3D_SG
             !
             procedure, public :: divByField => divByField_cScalar3D_SG
             procedure, public :: divByValue => divByValue_cScalar3D_SG
-			!
+            !
             procedure, public :: sumCell => sumCell_cScalar3D_SG
             !
             !> Getters & Setters
@@ -484,7 +484,7 @@ contains
         endif
         !
     end subroutine add_cScalar3D_SG
-	!
+    !
     !> No subroutine briefing
     !
     subroutine linComb_cScalar3D_SG( self, rhs, c1, c2 )

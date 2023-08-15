@@ -46,7 +46,7 @@ module rScalar3D_SG
             !
             procedure, public :: divByField => divByField_rScalar3D_SG
             procedure, public :: divByValue => divByValue_rScalar3D_SG
-			!
+            !
             procedure, public :: sumCell => sumCell_rScalar3D_SG
             !
             !> Getters & Setters
@@ -228,9 +228,12 @@ contains
         select case( self%grid_type )
             !
             case( NODE )
-                if( int_only_p ) then
-                    select case(bdry)
-                        case("x1")
+                !
+				if( int_only_p ) then
+                    !
+					select case( bdry )
+                        !
+						case("x1")
                             self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue 
                         case("x2")
                             self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue
@@ -242,10 +245,14 @@ contains
                             self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = cvalue
                         case("z2")
                             self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = cvalue
+						!
                     end select
+					!
                 else
+					!
                     select case(bdry)
-                        case("x1")
+                        !
+						case("x1")
                             self%v(1, :, :) = cvalue
                         case("x2")
                             self%v(self%NdV(1), :, :) = cvalue
@@ -257,12 +264,16 @@ contains
                             self%v(:, :, 1) = cvalue
                         case("z2")
                             self%v(:, :, self%NdV(3)) = cvalue
+						!
                     end select
+					!
                 endif
                 !
             case( FACE )
-                select case(bdry)
-                    case("x1")
+                !
+				select case(bdry)
+                    !
+					case("x1")
                         self%v(1, :, :) = cvalue
                     case("x2")
                         self%v(self%NdV(1), :, :) = cvalue
@@ -274,6 +285,7 @@ contains
                         self%v(:, :, 1) = cvalue
                     case("z2")
                         self%v(:, :, self%NdV(3)) = cvalue
+					!
                 end select
                 !
             case default
@@ -327,16 +339,16 @@ contains
              nBdry = nBdry + nint( temp(i) )
         enddo
         !
-        if( allocated(ind_i)) deallocate(ind_i)
-        allocate(ind_i(nVecT - nBdry))
+        if( allocated( ind_i ) ) deallocate( ind_i )
+        allocate( ind_i( nVecT - nBdry ) )
         !
-        if( allocated(ind_b)) deallocate(ind_b)
-        allocate(ind_b(nBdry))
+        if( allocated( ind_b ) ) deallocate( ind_b )
+        allocate( ind_b( nBdry ) )
         !
         nb = 0
         ni = 0
         do i = 1, nVecT
-             if( nint( temp(i) ) .EQ. 1) then
+             if( nint( temp(i) ) .EQ. 1 ) then
                 nb = nb+1
                 ind_b(nb) = i
              else
@@ -352,9 +364,9 @@ contains
     !> No subroutine briefing
     !
     subroutine setVecComponents_rScalar3D_SG( self, xyz, &
-                                             xmin, xstep, xmax, &
-                                             ymin, ystep, ymax, &
-                                             zmin, zstep, zmax, rvalue )
+                                              xmin, xstep, xmax, &
+                                              ymin, ystep, ymax, &
+                                              zmin, zstep, zmax, rvalue )
         implicit none
         !
         class( rScalar3D_SG_t ), intent( inout ) :: self
@@ -717,7 +729,7 @@ contains
                     endif
                     !
                 class default
-                    call errStop( "multAdd_rScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
+                    call errStop( "multAdd_rScalar3D_SG > rhs must be Scalar [try vec%mult(scl)]." )
                 !
             end select
             !
@@ -936,10 +948,6 @@ contains
             call errStop( "setV_rScalar3D_SG > self not allocated." )
         endif
         !
-        !if( .NOT. allocated( v ) ) then
-            !call errStop( "setV_rScalar3D_SG > v not allocated." )
-        !endif
-        !
         call self%switchStoreState( compound )
         !
         if( allocated( self%s_v ) ) deallocate( self%s_v )
@@ -982,10 +990,6 @@ contains
         if( .NOT. self%is_allocated ) then
             call errStop( "setSV_rScalar3D_SG > self not allocated." )
         endif
-        !
-        !if( .NOT. allocated( s_v ) ) then
-            !call errStop( "setSV_rScalar3D_SG > s_v not allocated." )
-        !endif
         !
         call self%switchStoreState( singleton )
         !
