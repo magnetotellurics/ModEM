@@ -1222,19 +1222,6 @@ elseif (trim(worker_job_task%what_to_do) .eq. 'Distribute Data') then
             call MPI_BCAST(data_para_vec,Nbytes, MPI_PACKED,0, MPI_COMM_WORLD,ierr)
             call UnPack_data_para_vec(d)
 
-if (taskid==1) then
-  do j = 1, d%nTx
-    do i = 1, d%d(j)%nDt
-
-        do isite=1,d%d(j)%data(i)%nSite
-        write(*,*) d%d(j)%data(i)%value(2,isite)
-
-        end do
-
-    enddo
-end do
-end if    
-
             !deallocate (data_para_vec)           
               
 elseif (trim(worker_job_task%what_to_do) .eq. 'Distribute eAll') then
