@@ -30,6 +30,7 @@ module ModelSpace
   use sg_scalar
   use sg_vector
   use sg_sparse_vector
+  use anisConstraint !!! added for VTI Naser Meqbel 09.07.2023
 #ifdef MPI
   use Declaration_MPI
 #endif
@@ -374,8 +375,10 @@ contains
     ! if one of the model parameters is zero valued, no need to compute r
     r = R_ZERO
     if (.not. m1%zeroValued .and. .not. m2%zeroValued) then
-       ! TODO - Anisotropic conductivity
        r = dotProd_rscalar_f(m1%cellCond_h, m2%cellCond_h)
+	   if (m1%isVTI) then
+	     r = r + dotProd_rscalar_f(m1%cellCond_v, m2%cellCond_v)
+	   end if
     end if
     
   end function dotProd_modelParam
@@ -760,7 +763,10 @@ contains
     end if
     
     N = cond%Nx * cond%Ny * cond%NzEarth
-    
+	if (cond%isVTI) then
+	   N=N*2
+	end if
+	 
   end function count_modelParam
   
   !**
@@ -824,6 +830,47 @@ contains
     updated = m%updated
     
   end subroutine getValueUpdated_modelParam
-  
+
+! added for VTI Naser Meqbel 09.07.2023
+    subroutine cal_anisCsNorm(m,aniNorm,lambdaANI)
+      implicit none
+      type(modelParam_t),intent(in) :: m
+      real(kind=prec),intent(inout) :: aniNorm
+      real(kind=prec) ,intent(in) :: lambdaANI
+      ! locals
+      integer nx,ny,nzEarth
+      
+      nx = m%Nx
+      ny = m%Ny
+      nzEarth = m%NzEarth 
+      
+	 if (m%isVTI) then 
+      call anisCsNorm(nx,ny,nzEarth,lambdaANI,m%cellCond_h%v,m%cellCond_v%v,aniNorm)
+     end if
+    end subroutine cal_anisCsNorm
+    
+
+    subroutine cal_anisCsVec(m,aniVec,lambdaANI)
+      implicit none
+      type(modelParam_t),intent(in) :: m
+      type(modelParam_t),intent(inout) :: aniVec 
+      real(kind=prec) ,intent(in) :: lambdaANI
+      ! locals
+      integer nx,ny,nzEarth
+      
+      nx = m%Nx
+      ny = m%Ny
+      nzEarth = m%NzEarth
+      
+	  if (m%isVTI) then 
+        call zero_modelParam(aniVec)
+        call anisCsVec(nx,ny,nzEarth,lambdaANI,m%cellCond_h%v,m%cellCond_v%v,aniVec%cellCond_h%v,aniVec%cellCond_v%v)
+      else
+	   call zero_modelParam(aniVec)
+	   aniVec=m
+	  end if
+	  
+    end subroutine cal_anisCsVec
+	
 end module ModelSpace
 

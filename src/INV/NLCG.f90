@@ -21,6 +21,7 @@ public  :: NLCGsolver
      real (kind=prec)   :: fdiffTol
      ! initial value of lambda (will not override the NLCG input argument)
      real (kind=prec)   :: lambda
+     type(DampingFactorANI) :: lambdaANI !Added for VTI
      ! exit if lambda < lambdaTol approx. 1e-4
      real (kind=prec)   :: lambdaTol
      ! set lambda_i = lambda_{i-1}/k when the inversion stalls
@@ -67,6 +68,7 @@ Contains
      iterControl%fdiffTol = 2.0e-3
      ! initial value of lambda (will not override the NLCG input argument)
      iterControl%lambda = 1.
+	 iterControl%lambdaANI%xy = 10.  !Added for VTI
      ! exit if lambda < lambdaTol approx. 1e-4
      iterControl%lambdaTol = 1.0e-8
      ! set lambda_i = lambda_{i-1}/k when the inversion stalls
@@ -263,7 +265,9 @@ Contains
    ! initialize the output to log file
    logFile = trim(iterControl%fname)//'_NLCG.log'
    open (unit=ioLog,file=logFile,status='unknown',position='append',iostat=ios)
-
+	!
+	write( 1983, * ) "SS, Ndata, mNorm, Nmodel, F, RMS"
+	!
    ! initialize the line search
    alpha = iterControl%alpha_1
    startdm = iterControl%startdm
@@ -328,7 +332,18 @@ Contains
    g = grad
    call linComb(MinusONE,grad,R_ZERO,grad,g)
    h = g
+   
+	!
+	write( 1982, * ) "Iter, Alpha, Beta, gNorm, RMS"
+	!
    do
+		!
+		write( 1982, * ) iter, ", ", &
+							alpha, ", ", &
+							beta, ", ", &
+							gnorm, ", ", &
+							rms
+		!
       !  test for convergence ...
       if((rms.lt.iterControl%rmsTol).or.(iter.ge.iterControl%maxIter)) then
          exit
@@ -440,6 +455,14 @@ Contains
 	  ! Polak-Ribiere variant
 	  beta = ( g_dot_g - g_dot_gPrev )/gPrev_dot_gPrev
 
+	  				!
+				write( *, * ) "g_dot_g: ", g_dot_g
+				write( *, * ) "g_dot_gPrev: ", g_dot_gPrev
+				write( *, * ) "gPrev_dot_gPrev: ", gPrev_dot_gPrev
+				write( *, * ) "g_dot_h: ", g_dot_h
+				write( *, * ) "beta: ", beta
+				!stop
+				!
 	  ! restart CG if the orthogonality conditions fail. Using the fact that
 		! h_{i+1} = g_{i+1} + beta * h_i. In order for the next directional
 		! derivative = -g_{i+1}.dot.h_{i+1} to be negative, the condition

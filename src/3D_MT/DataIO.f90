@@ -180,16 +180,20 @@ Contains
     real(8)                         :: x(3),ref_x(3),Xx(3),Period,SI_factor,large,Rx_Azi
     real(8)                         :: lat,lon,ref_lat,ref_lon
     logical                         :: conjugate, isComplex
-
+	integer :: ioPlot
 	!For CSEM part
 	character(8)                    :: Dipole
 	character(40)              		:: Txid=''
     real(8) 						:: Moment, Azi, Dip, LatTx, LongTx, Tx(3)
 	
     iTxt = 1
-
+	ioPlot = 2023
     open(unit=ioDat,file=cfile,form='formatted',status='unknown')
-
+	!
+	open( unit = ioPlot, file = trim(cfile)//"_plot",form='formatted',status='unknown')
+        !
+        write( ioPlot, * ) trim(cfile)
+        !
     ! For each data type in dictionary, if data of this type exists, write it out.
     WRITE_DATA_TYPE: do iDt = 1,size(typeDict)
 
@@ -384,8 +388,10 @@ Contains
 !							error(2*icomp) = sqrt(value(2*icomp-1)*value(2*icomp-1) + value(2*icomp)*value(2*icomp))/100.0;
                         if (conjugate) then
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
+                            write(ioPlot,*) sqrt( value(2*icomp-1)**2 + (-value(2*icomp))**2 )
                         else
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
+                            write(ioPlot,*) sqrt( value(2*icomp-1)**2 + value(2*icomp)**2 )
                         end if
 							countData = countData + 1
                         end do
@@ -413,8 +419,10 @@ Contains
 
                         if (conjugate) then
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp)
+                            write(ioPlot,*) sqrt( value(2*icomp-1)**2 + (-value(2*icomp))**2 )
                         else
                             write(ioDat,'(a8,3es15.6)',iostat=ios) trim(compid),value(2*icomp-1),value(2*icomp),error(2*icomp)
+                            write(ioPlot,*) sqrt( value(2*icomp-1)**2 + value(2*icomp)**2 )
                         end if
                         countData = countData + 1
                     end do
@@ -503,6 +511,7 @@ Contains
     end do WRITE_DATA_TYPE ! data types
 
     close(ioDat)
+	close(ioPlot)
 
    end subroutine write_Z_list
 

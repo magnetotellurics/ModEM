@@ -400,7 +400,7 @@ subroutine get_source_for_csem_Dipole1D(sigma,grid,iTx,source)
 		
 		phaseConvention = 'lag'          ! The usual default is lag, where phase becomes larger 
 										 !    positive values with increasing range.
-		lenTx1D         = 00.d0        ! (m) Dipole length 0 = point dipole
+		lenTx1D         = 0.d0        ! (m) Dipole length 0 = point dipole
 		numIntegPts     = 0             ! Number of points to use for Gauss quadrature integration for finite dipole
  
  
