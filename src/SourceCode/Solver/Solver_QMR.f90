@@ -7,7 +7,7 @@ module Solver_QMR
     use ModelOperator_MF_SG
     use ModelOperator_SP_V1
     use ModelOperator_SP_V2
-    use PreConditioner_CC_MF
+    use PreConditioner_CC_MF_SG
     use PreConditioner_CC_SP
     !
     type, extends( Solver_CC_t ) :: Solver_QMR_t
@@ -44,7 +44,7 @@ contains
             !
             class is( ModelOperator_MF_SG_t )
                 !
-                allocate( self%preconditioner, source = PreConditioner_CC_MF_t( model_operator ) )
+                allocate( self%preconditioner, source = PreConditioner_CC_MF_SG_t( model_operator ) )
                 !
             class is( ModelOperator_SP_t )
                 !
@@ -281,13 +281,13 @@ contains
         enddo solver_loop
         !
         self%converged = self%relErr( self%iter ) .LE. self%tolerance
-        !
-        if( self%converged ) then
-            write( *, "( a51, i6, a7, es12.3 )" ) "->Solver QMR converged within ", self%iter, ": err= ", self%relErr( self%iter )
-        else
-            write( *, "( a51, i6, a7, es12.3 )" ) "->Solver QMR not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
-        endif
-        !
+        ! !
+        ! if( self%converged ) then
+            ! write( *, "( a51, i6, a7, es12.3 )" ) "->Solver QMR converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        ! else
+            ! write( *, "( a51, i6, a7, es12.3 )" ) "->Solver QMR not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        ! endif
+        ! !
         deallocate( R )
         deallocate( Y )
         deallocate( Z )

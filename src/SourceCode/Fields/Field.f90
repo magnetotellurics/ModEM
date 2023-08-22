@@ -75,11 +75,6 @@ module Field
             !
             procedure( interface_deallocate_other_state_field ), deferred, public :: deallOtherState
             !
-            !> I/O operations
-            procedure( interface_read_field ), deferred, public :: read
-            procedure( interface_write_field ), deferred, public :: write
-            procedure( interface_print_field ), deferred, public :: print
-            !
             !> Field procedures
             procedure, public :: baseInit => initializeField
             procedure, public :: baseDealloc => deallocateField
@@ -89,6 +84,11 @@ module Field
             procedure, public :: isCompatible => isCompatibleField
             !
             procedure, public :: setIndexArrays => setIndexArraysField
+            !
+            !> I/O operations
+            procedure( interface_read_field ), deferred, public :: read
+            procedure( interface_write_field ), deferred, public :: write
+            procedure( interface_print_field ), deferred, public :: print
             !
     end type Field_t
     !
@@ -298,7 +298,7 @@ module Field
         !> No interface subroutine briefing
         subroutine interface_print_field( self, io_unit, title, append )
             import :: Field_t
-            class( Field_t ), intent( inout ) :: self
+            class( Field_t ), intent( in ) :: self
             integer, intent( in ), optional :: io_unit
             character(*), intent( in ), optional :: title
             logical, intent( in ), optional :: append

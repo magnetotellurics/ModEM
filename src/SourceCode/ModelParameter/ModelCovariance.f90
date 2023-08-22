@@ -7,7 +7,7 @@
 module ModelCovariance
     !
     use Constants
-    use ModelParameterCell
+    use ModelParameterCell_SG
     use cVectorSparse3D_SG
     use rScalar3D_SG
     use iScalar3D_SG
@@ -151,9 +151,7 @@ contains
         class( ModelParameter_t ), allocatable, intent( inout ) :: target_model
         !
         integer :: i
-        class( Scalar_t ), allocatable :: target_cond, temp_cond
-        real( kind=prec ), allocatable, dimension(:,:,:) :: target_cond_v, temp_cond_v
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: ccond_v
+        type( rScalar3D_SG_t ) :: target_cond, temp_cond
         !
         if( .NOT. target_model%is_allocated ) then
             call errStop( "multBy_Cm > target_model not allocated!" )
@@ -161,25 +159,13 @@ contains
         !
         do i = 1, size( target_model%getCond() )
             !
-            allocate( target_cond, source = target_model%getCond(i) )
+            target_cond = target_model%getCond(i)
             !
-            allocate( temp_cond, source = target_cond )
+            temp_cond = target_cond
             !
-            target_cond_v = real( target_cond%getV(), kind=prec )
+            call self%RecursiveAR( temp_cond%v, target_cond%v, 2 )
             !
-            deallocate( target_cond )
-            !
-            temp_cond_v = real( temp_cond%getV(), kind=prec )
-            !
-            call self%RecursiveAR( target_cond_v, temp_cond_v, 2 )
-            !
-            ccond_v = cmplx( temp_cond_v, 0.0, kind=prec )
-            !
-            call temp_cond%setV( ccond_v )
-            !
-            call target_model%setCond( temp_cond, i )
-            !
-            deallocate( temp_cond )
+            call target_model%setCond( target_cond, i )
             !
         enddo
         !
@@ -199,9 +185,7 @@ contains
         class( ModelParameter_t ), intent( in ) :: mhat
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
-        class( Scalar_t ), allocatable :: mhat_cond, dsigma_cond
-        real( kind=prec ), allocatable, dimension(:,:,:) :: mhat_cond_v, dsigma_cond_v
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: ccond_v
+        type( rScalar3D_SG_t ) :: mhat_cond, dsigma_cond
         integer :: i
         !
         if( .NOT. mhat%is_allocated ) then
@@ -214,25 +198,13 @@ contains
         !
         do i = 1, size( mhat%getCond() )
             !
-            allocate( mhat_cond, source = mhat%getCond(i) )
+            mhat_cond = mhat%getCond(i)
             !
-            allocate( dsigma_cond, source = mhat_cond )
+            dsigma_cond = dsigma%getCond(i)
             !
-            mhat_cond_v = mhat_cond%getV()
-            !
-            deallocate( mhat_cond )
-            !
-            dsigma_cond_v = dsigma_cond%getV()
-            !
-            call self%RecursiveAR( mhat_cond_v, dsigma_cond_v, self%N )
-            !
-            ccond_v = cmplx( dsigma_cond_v, 0.0, kind=prec )
-            !
-            call dsigma_cond%setV( ccond_v )
+            call self%RecursiveAR( mhat_cond%v, dsigma_cond%v, self%N )
             !
             call dsigma%setCond( dsigma_cond, i )
-            !
-            deallocate( dsigma_cond )
             !
         enddo
         !
@@ -253,9 +225,7 @@ contains
         !
         class( ModelParameter_t ), allocatable :: mhat
         !
-        class( Scalar_t ), allocatable :: dsigma_cond, mhat_cond
-        real( kind=prec ), allocatable, dimension(:,:,:) :: mhat_cond_v, dsigma_cond_v
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: ccond_v
+        type( rScalar3D_SG_t ) :: dsigma_cond, mhat_cond
         integer :: i
         !
         if( allocated( mhat ) ) deallocate( mhat )
@@ -264,19 +234,11 @@ contains
         !
         do i = 1, size( dsigma%getCond() )
             !
-            allocate( dsigma_cond, source = dsigma%getCond(i) )
+            dsigma_cond = dsigma%getCond(i)
             !
-            dsigma_cond_v = dsigma_cond%getV()
+            mhat_cond = mhat%getCond(i)
             !
-            allocate( mhat_cond, source = mhat%getCond(i) )
-            !
-            mhat_cond_v = mhat_cond%getV()
-            !
-            call self%RecursiveARInv( dsigma_cond_v, mhat_cond_v, self%N )
-            !
-            ccond_v = cmplx( mhat_cond_v, 0.0, kind=prec )
-            !
-            call mhat_cond%setV( ccond_v )
+            call self%RecursiveARInv( dsigma_cond%v, mhat_cond%v, self%N )
             !
             call mhat%setCond( mhat_cond, i )
             !

@@ -86,7 +86,7 @@ contains
         !
         do ii = 1, T%nRow
             T%row( ii +  1) = 4 * ii + 1
-        end do
+        enddo
         !
         ! xFaces
         allocate(IndVec(nXface))
@@ -96,7 +96,7 @@ contains
         !
         do ii = 1, nXface
             IndVec(ii) = ii
-        end do
+        enddo
         !
         call self%grid%gridIndex( XFACE, IndVec, I, J, K )
         call self%grid%vectorIndex( YEDGE, I, J, K, IndVec )
@@ -104,14 +104,14 @@ contains
         do ii = 1, nXface
             T%col( 4 * ii - 3 ) = IndVec(ii) + nXedge
             T%val( 4 * ii - 3 ) = 1
-        end do
+        enddo
         !
         call self%grid%vectorIndex( ZEDGE, I, J, K, IndVec )
         !
         do ii = 1, nXface
             T%col( 4 * ii - 1 ) = IndVec(ii) + nXedge + nYedge
             T%val( 4 * ii - 1 ) = -1
-        end do
+        enddo
         !
         K = K + 1
         !
@@ -120,7 +120,7 @@ contains
         do ii = 1, nXface
             T%col(4*ii - 2) = IndVec(ii) + nXedge
             T%val(4*ii - 2) = -1
-        end do
+        enddo
         !
         K = K - 1
         J = J + 1
@@ -130,7 +130,7 @@ contains
         do ii = 1, nXface
             T%col(4*ii) = IndVec(ii) + nXedge + nYedge
             T%val(4*ii) = 1
-        end do
+        enddo
         !
         deallocate( IndVec, I, J, K )
         !
@@ -142,7 +142,7 @@ contains
         !
         do ii = 1, nYface
             IndVec(ii) = ii
-        end do
+        enddo
         !
         call self%grid%gridIndex( YFACE, IndVec, I, J, K )
         call self%grid%vectorIndex( XEDGE, I, J, K, IndVec )
@@ -151,7 +151,7 @@ contains
             jj = ii + nXface
             T%col(4*jj - 3) = IndVec(ii)
             T%val(4*jj - 3) = -1
-        end do
+        enddo
         !
         call self%grid%vectorIndex( ZEDGE, I, J, K, IndVec )
         !
@@ -159,7 +159,7 @@ contains
             jj = ii + nXface
             T%col(4*jj - 1) = IndVec(ii) + nXedge + nYedge
             T%val(4*jj - 1) = 1
-        end do
+        enddo
         !
         K = K + 1
         !
@@ -169,7 +169,7 @@ contains
             jj = ii + nXface
             T%col(4*jj - 2) = IndVec(ii)
             T%val(4*jj - 2) = 1
-        end do
+        enddo
         !
         K = K - 1
         I = I + 1
@@ -180,7 +180,7 @@ contains
             jj = ii + nXface
             T%col(4*jj) = IndVec(ii) + nXedge + nYedge
             T%val(4*jj) = -1
-        end do
+        enddo
         !
         deallocate( IndVec, I, J, K )
         !
@@ -192,7 +192,7 @@ contains
         !
         do ii = 1, nZface
             IndVec(ii) = ii
-        end do
+        enddo
         !
         call self%grid%gridIndex( ZFACE, IndVec, I, J, K )
         call self%grid%vectorIndex( XEDGE, I, J, K, IndVec )
@@ -201,7 +201,7 @@ contains
             jj = ii + nXface + nYface
             T%col(4*jj - 3) = IndVec(ii)
             T%val(4*jj - 3) = 1
-        end do
+        enddo
         !
         call self%grid%vectorIndex( YEDGE, I, J, K, IndVec )
         !
@@ -209,7 +209,7 @@ contains
             jj = ii + nXface + nYface
             T%col(4*jj - 1) = IndVec(ii) + nXedge
             T%val(4*jj - 1) = -1
-        end do
+        enddo
         !
         J = J + 1
         !
@@ -219,7 +219,7 @@ contains
             jj = ii + nXface + nYface
             T%col(4*jj - 2) = IndVec(ii)
             T%val(4*jj - 2) = -1
-        end do
+        enddo
         !
         I = I + 1
         J = J - 1
@@ -230,7 +230,7 @@ contains
             jj = ii + nXface + nYface
             T%col(4*jj) = IndVec(ii) + nXedge
             T%val(4*jj) = 1
-        end do
+        enddo
         !
         deallocate( IndVec, I, J, K )
         !
@@ -262,7 +262,7 @@ contains
             G%row(ii + 1) = 2*ii + 1
             G%val(2*ii - 1) = -1
             G%val(2*ii) = 1
-        end do
+        enddo
         !
         ! xedges
         allocate(IndVec(nXedge))
@@ -272,14 +272,14 @@ contains
         !
         do ii = 1, nXedge
             IndVec(ii) = ii
-        end do
+        enddo
         !
         call self%grid%gridIndex( XEDGE, IndVec, I, J, K )
         call self%grid%vectorIndex( NODE, I, J, K, IndVec )
         !
         do ii = 1, nXedge
             G%col(2*ii - 1) = IndVec(ii)
-        end do
+        enddo
         !
         I = I + 1
         !
@@ -287,7 +287,7 @@ contains
         !
         do ii = 1, nXedge
             G%col(2*ii) = IndVec(ii)
-        end do
+        enddo
         !
         deallocate( IndVec, I, J, K )
         !
@@ -299,7 +299,7 @@ contains
         !
         do ii = 1, nYedge
         IndVec(ii) = ii
-        end do
+        enddo
         !
         call self%grid%gridIndex( YEDGE, IndVec, I, J, K )
         call self%grid%vectorIndex( NODE, I, J, K, IndVec )
@@ -307,7 +307,7 @@ contains
         do ii = 1, nYedge
         jj = ii + nXedge
         G%col(2*jj - 1) = IndVec(ii)
-        end do
+        enddo
         !
         J = J + 1
         !
@@ -316,7 +316,7 @@ contains
         do ii = 1, nYedge
         jj = ii + nXedge
         G%col(2*jj) = IndVec(ii)
-        end do
+        enddo
         !
         deallocate( IndVec, I, J, K )
         !
@@ -328,7 +328,7 @@ contains
         !
         do ii = 1, nZedge
             IndVec(ii) = ii
-        end do
+        enddo
         !
         call self%grid%gridIndex( ZEDGE, IndVec, I, J, K )
         call self%grid%vectorIndex( NODE, I, J, K, IndVec )
@@ -336,7 +336,7 @@ contains
         do ii = 1, nZedge
             jj = ii + nXedge + nYedge
             G%col(2*jj - 1) = IndVec(ii)
-        end do
+        enddo
         !
         K = K + 1
         !
@@ -345,7 +345,7 @@ contains
         do ii = 1, nZedge
             jj = ii + nXedge + nYedge
             G%col(2*jj) = IndVec(ii)
-        end do
+        enddo
         !
         deallocate( IndVec, I, J, K )
         !

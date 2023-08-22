@@ -5,7 +5,7 @@
 module ModelOperator_MF_SG
     !
     use ModelOperator
-    use MetricElements_CSG
+    use MetricElements_SG
     !
     type, extends( ModelOperator_t ) :: ModelOperator_MF_SG_t
         !
@@ -29,6 +29,7 @@ module ModelOperator_MF_SG
             !
             !> Setup
             procedure, public :: create => create_ModelOperator_MF_SG 
+            !
             procedure, public :: setEquations => setEquations_ModelOperator_MF_SG
             procedure, public :: setCond => setCond_ModelOperator_MF_SG
             !
@@ -37,6 +38,8 @@ module ModelOperator_MF_SG
             !> Operations
             procedure, public :: amult => amult_ModelOperator_MF_SG
             procedure, public :: multAib => multAib_ModelOperator_MF_SG
+            !
+            procedure, public :: multCurlT => multCurlT_ModelOperator_MF_SG
             !
             procedure, public :: div => div_ModelOperator_MF_SG
             procedure, public :: divC => divC_ModelOperator_MF_SG
@@ -99,7 +102,7 @@ contains
         self%is_allocated = .FALSE.
         !
         !> Instantiation of the specific object MetricElements
-        allocate( self%metric, source = MetricElements_CSG_t( grid ) )
+        allocate( self%metric, source = MetricElements_SG_t( grid ) )
         !
         call self%alloc
         !
@@ -403,6 +406,91 @@ contains
         end select
         !
     end subroutine amult_ModelOperator_MF_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine multCurlT_ModelOperator_MF_SG( self, in_b, out_e )
+        implicit none
+        !
+        class( ModelOperator_MF_SG_t ), intent( in ) :: self
+        class( Vector_t ), intent( inout ) :: in_b
+        class( Vector_t ), allocatable, intent( out ) :: out_e
+        !
+        integer :: ix, iy, iz
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: out_e_v
+        !
+        if( .NOT. in_b%is_allocated ) then
+            call errStop( "multCurlT_ModelOperator_MF_SG > in_b not allocated" )
+        endif
+        !
+        call self%metric%createVector( complex_t, EDGE, out_e )
+        call out_e%zeros
+        !
+        call in_b%div( self%metric%face_area )
+        !
+        select type( in_b )
+            !
+            class is( cVector3D_SG_t )
+                !
+                !> Ex
+                out_e_v = out_e%getX()
+                !
+                do iy = 2, in_b%Ny
+                    !
+                    do iz = 2, in_b%Nz
+                        !
+                        out_e_v(:, iy, iz) = (in_b%z(:, iy, iz) - &
+                        in_b%z(:, iy - 1, iz)) - &
+                        (in_b%y(:, iy, iz) - in_b%y(:, iy, iz - 1))
+                        !
+                    enddo
+                    !
+                enddo
+                !
+                call out_e%setX( out_e_v )
+                !
+                !> Ey
+                out_e_v = out_e%getY()
+                !
+                do iz = 2, in_b%Nz
+                    !
+                    do ix = 2, in_b%Nx
+                        !
+                        out_e_v(ix, :, iz) = (in_b%x(ix, :, iz) - &
+                        in_b%x(ix, :, iz - 1)) - &
+                        (in_b%z(ix, :, iz) - in_b%z(ix - 1, :, iz))
+                        !
+                    enddo
+                    !
+                enddo
+                !
+                call out_e%setY( out_e_v )
+                !
+                !> Ez
+                out_e_v = out_e%getZ()
+                !
+                do ix = 2, in_b%Nx
+                    !
+                    do iy = 2, in_b%Ny
+                        !
+                        out_e_v(ix,iy,:) = (in_b%y(ix, iy, :) - &
+                        in_b%y(ix - 1, iy, :)) - &
+                        (in_b%x(ix, iy, :) - in_b%x(ix, iy - 1, :))
+                        !
+                    enddo
+                    !
+                enddo
+                !
+                call out_e%setZ( out_e_v )
+                !
+                call out_e%mult( self%metric%edge_length )
+                !
+            class default
+                call errStop( "multCurlT_ModelOperator_MF_SG > Unclassified in_b." )
+            !
+        end select
+        !
+    end subroutine multCurlT_ModelOperator_MF_SG
     !
     !> No subroutine briefing
     !

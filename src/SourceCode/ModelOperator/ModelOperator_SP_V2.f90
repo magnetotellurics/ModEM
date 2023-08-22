@@ -79,7 +79,23 @@ contains
         self%is_allocated = .FALSE.
         !
         !> Instantiation of the specific object MetricElements
-        allocate( self%metric, source = MetricElements_CSG_t( grid ) )
+        select case( grid_format )
+            !
+            case( GRID_SG )
+                !
+                allocate( self%metric, source = MetricElements_SG_t( grid ) )
+                !
+            case( GRID_MR )
+                !
+                allocate( self%metric, source = MetricElements_MR_t( grid ) )
+                !
+            case default
+                !
+                call warning( "create_ModelOperator_SP > grid_format not provided, using MetricElements_SG_t." )
+                !
+                allocate( self%metric, source = MetricElements_SG_t( grid ) )
+                !
+        end select
         !
         self%topology_sg = SpOpTopology_SG_t( self%metric%grid )
         !
@@ -87,9 +103,9 @@ contains
         !
         call self%topology_sg%grad( G )
         !
-        call boundaryIndexSP( EDGE, self%metric, self%EDGEb, self%EDGEi )
+        call self%metric%boundaryIndex( EDGE, self%EDGEb, self%EDGEi )
         !
-        call boundaryIndexSP( NODE, self%metric, self%NODEb, self%NODEi )
+        call self%metric%boundaryIndex( NODE, self%NODEb, self%NODEi )
         !
         nInterior = size( self%EDGEi )
         !
@@ -163,8 +179,8 @@ contains
         class( ModelParameter_t ), intent( in ) :: sigma
         real( kind=prec ), intent( in ) :: omega_in
         !
-        class( Vector_t ), allocatable:: sigma_edge
-        class( Scalar_t ), allocatable:: sigma_node
+        class( Vector_t ), allocatable :: sigma_edge
+        class( Scalar_t ), allocatable :: sigma_node
         real( kind=prec ), allocatable, dimension(:) :: sigma_edge_array, sigma_edge_b0_array
         real( kind=prec ), allocatable, dimension(:) :: v_edge_array, sigma_node_array
         !
@@ -183,7 +199,7 @@ contains
         !
         call self%metric%createScalar( real_t, NODE, sigma_node )
         !
-        call sigma%cellToNode( sigma_node )
+        call sigma%nodeCond( sigma_node )
         !
         sigma_node_array = sigma_node%getArray()
         !

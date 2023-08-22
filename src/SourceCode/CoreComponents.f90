@@ -10,7 +10,8 @@ module CoreComponents
     use ModelOperator_SP_V1
     use ModelOperator_SP_V2
     !
-    use ModelParameterCell
+    use ModelParameterCell_SG
+    use ModelParameterCell_MR
     !
     use ModelCovariance
     !
@@ -231,6 +232,16 @@ contains
             !
         enddo
         !
+        !> Free TCC matrix used for evaluationFunction
+        !> Just for SP case
+        select type( model_operator )
+            !
+            class is( ModelOperator_SP_t )
+                !
+                call model_operator%disposeMEM
+                !
+        end select
+        !
     end subroutine handleDataFile
     !
     !> Read Forward Modeling Control File: 
@@ -264,7 +275,7 @@ contains
         implicit none
         !
         class( ModelParameter_t ), allocatable :: model, aux_model
-        class( Scalar_t ), allocatable :: cell_cond
+        type( rScalar3D_SG_t ) :: cell_cond
         !
         ! Verbose
         write( *, * ) "     - Start jobSplitModel"
@@ -285,9 +296,18 @@ contains
         else
             !
             !> Create new isotropic model with target horizontal cond
-            allocate( cell_cond, source = model%getCond(1) )
+            cell_cond = model%getCond(1)
             !
-            allocate( aux_model, source = ModelParameterCell_t( model%metric%grid, cell_cond, 1, model%param_type ) )
+            select type( grid => model%metric%grid )
+                !
+                class is( Grid3D_SG_t )
+                    allocate( aux_model, source = ModelParameterCell_SG_t( grid, cell_cond, 1, model%param_type ) )
+                class is( Grid3D_MR_t )
+                    allocate( aux_model, source = ModelParameterCell_MR_t( grid, cell_cond, 1, model%param_type ) )
+                class default
+                    call errStop( "jobSplitModel > Unknow grid for ModelParameter" )
+                !
+            end select
             !
             call aux_model%setMetric( model_operator%metric )
             !

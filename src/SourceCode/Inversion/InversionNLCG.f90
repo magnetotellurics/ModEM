@@ -537,7 +537,7 @@ contains
         real( kind=prec ) :: Ndata, n_model
         type( DataGroupTx_t ), allocatable, dimension(:) :: res
         class( ModelParameter_t ), allocatable :: dsigma, JTd, CmJTd
-        class( ModelParameter_t ), allocatable, dimension(:) :: s_hat
+        type( GenModelParameter_t ), allocatable, dimension(:) :: s_hat
         !
         ! compute the smoothed model parameter vector
         call model_cov%multBy_CmSqrt( mHat, dsigma )
@@ -953,8 +953,8 @@ contains
         !
         call self%gradient( all_data, sigma, mHat, grad, dHat, i_sol )
         !
-        write( *, * ) "Gradient computed, line search finished"
-        write( ioInvLog, * ) "Gradient computed, line search finished"
+        write( *, * ) "Gradient computed, lineSearchCubic finished"
+        write( ioInvLog, * ) "Gradient computed, lineSearchCubic finished"
         !
         deallocate( mHat_0, mHat_1 )
         !
@@ -1013,7 +1013,7 @@ contains
     ! subroutine weightGradrients( s_hat, d, dHat, JTd )
         ! implicit none
         ! !
-        ! class( ModelParameter_t ), allocatable, dimension(:), intent( in ) :: s_hat
+        ! type( GenModelParameter_t ), allocatable, dimension(:), intent( in ) :: s_hat
         ! type( DataGroupTx_t ), dimension(:), intent( in ) :: d, dHat
         ! class( ModelParameter_t ), intent( inout ) :: JTd
         ! !
@@ -1061,7 +1061,7 @@ contains
             ! !
             ! do i_tx = 1, n_tx
                 ! !
-                ! tx_grad_norms( i_tx ) = sqrt( s_hat( i_tx )%dotProd( s_hat( i_tx ) ) )
+                ! tx_grad_norms( i_tx ) = sqrt( s_hat( i_tx )%m%dotProd( s_hat( i_tx ) ) )
                 ! !
                 ! write( ioGradNorm, "( f15.3, A1 )", advance = "no" ) tx_grad_norms( i_tx ), ","
                 ! !
@@ -1141,7 +1141,7 @@ contains
                 ! !
                 ! do i_tx = 1, n_tx
                     ! !
-                    ! shat_cond = s_hat( i_tx )%getCond()
+                    ! shat_cond = s_hat( i_tx )%m%getCond()
                     ! !
                     ! do i = 1, size( shat_cond )
                         ! !

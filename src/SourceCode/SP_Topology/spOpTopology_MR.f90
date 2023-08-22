@@ -110,7 +110,7 @@ module spOpTopology_MR
         do k = 1, self%grid%n_grids
         TOp1 = SpOpTopology_SG_t (self%grid%sub_grids(k))
         call Top1%curl(T2_array(k))
-        end do
+        enddo
         !
         call BlkDiag_Real (T2_array, T2)
         call RMATxRMAT (T2, T1, Ctmp)    
@@ -127,7 +127,7 @@ module spOpTopology_MR
         !**
         do k = 1, self%grid%n_grids
         call deall_spMatCSR_Real (T2_array(k))
-        end do
+        enddo
         deallocate (T2_array)
 
         call deall_spMatCSR (T1)
@@ -172,7 +172,7 @@ module spOpTopology_MR
         do k = 1, self%grid%n_grids
             TOp1 = SpOpTopology_SG_t (self%grid%sub_grids(k))
             call Top1%grad(G2_array(k))
-        end do
+        enddo
         !
         call BlkDiag_Real (G2_array, G2)
         call RMATxRMAT (G2, G1, Gtmp)
@@ -185,7 +185,7 @@ module spOpTopology_MR
         !
         do k = 1, self%grid%n_grids
             call deall_spMatCSR_Real (G2_array(k))
-        end do
+        enddo
         deallocate (G2_array)
         !
         call deall_spMatCSR (G1)
@@ -413,8 +413,8 @@ module spOpTopology_MR
         n_grids = size (vecR%sub_vectors)
 
         SubGrids:do k = 2, n_grids
-        if(self%grid%Coarseness(k - 1, 1) < &
-        self%grid%Coarseness(k, 1)) then
+        if(self%grid%coarseness(k - 1, 1) < &
+        self%grid%coarseness(k, 1)) then
         !**
         ! Fine grid is on top -- z-level to average to is at
         ! bottom of grid k - 1.
@@ -427,7 +427,7 @@ module spOpTopology_MR
         compR2(i)%zmin = 0
         compR2(i)%zstep = 1
         compR2(i)%zmax = 0 ! zlev = 'end' 
-        end do
+        enddo
 
         kVecR = k - 1
 
@@ -443,7 +443,7 @@ module spOpTopology_MR
         compC3(i)%zmin = 1
         compC3(i)%zstep = 1
         compC3(i)%zmax = 1 ! zlev = 1          
-        end do
+        enddo
 
         kVecC = k
         else
@@ -455,7 +455,7 @@ module spOpTopology_MR
         compR2(i)%zmin = 1
         compR2(i)%zstep = 1
         compR2(i)%zmax = 1 ! zlev = 1 
-        end do
+        enddo
 
         kVecR = k
 
@@ -471,7 +471,7 @@ module spOpTopology_MR
         compC3(i)%zmin = 0
         compC3(i)%zstep = 1
         compC3(i)%zmax = 0 ! zlev = 'end' 
-        end do
+        enddo
 
         kVecC = k - 1
         endif
@@ -494,7 +494,7 @@ module spOpTopology_MR
         compC3(i)%xmin, compC3(i)%xstep, compC3(i)%xmax, &
         compC3(i)%ymin, compC3(i)%ystep, compC3(i)%ymax, &
         compC3(i)%zmin, compC3(i)%zstep, compC3(i)%zmax, Cc(i))
-        end do
+        enddo
 
         do i = 1, 4
         call vecR1%sub_vectors(kVecR)%&
@@ -508,8 +508,8 @@ module spOpTopology_MR
         compR2(i)%xmin, compR2(i)%xstep, compR2(i)%xmax, &
         compR2(i)%ymin, compR2(i)%ystep, compR2(i)%ymax, &
         compR2(i)%zmin, compR2(i)%zstep, compR2(i)%zmax, cR(i))
-        end do
-        end do SubGrids
+        enddo
+        enddo SubGrids
 
         !**
         ! First do the edges that coincide with coarse (active) edges.
@@ -537,7 +537,7 @@ module spOpTopology_MR
         call move_alloc (Stmp, S)
 
         deallocate (indSet)
-        end do
+        enddo
 
         !**
         ! Next fill in fine grid edges that subdivide coarse face.
@@ -572,7 +572,7 @@ module spOpTopology_MR
         call move_alloc (Stmp, S)
 
         deallocate (indSet)
-        end do
+        enddo
 
         !**
         ! Create output curl matrix
@@ -585,7 +585,7 @@ module spOpTopology_MR
         T1_ijs%I(i) = R(i)
         T1_ijs%J(i) = C(i)
         T1_ijs%S(i) = S(i)
-        end do
+        enddo
 
         ! Finally in CSR format
         call create_spMatCSR (n_rows, n_cols, n, T1)
@@ -689,7 +689,7 @@ module spOpTopology_MR
 
         do i = 1, 9
         vecC(i) = rScalar3D_MR_t (self%grid, NODE)
-        end do
+        enddo
 
         !**
         ! Looping over interfaces, set zlev for coarse and fine grids
@@ -699,35 +699,35 @@ module spOpTopology_MR
         n_grids = size (vecR%sub_scalars)
 
         SubGrids:do k = 2, n_grids
-        if(self%grid%Coarseness(k - 1, 1) < &
-        self%grid%Coarseness(k, 1)) then
+        if(self%grid%coarseness(k - 1, 1) < &
+        self%grid%coarseness(k, 1)) then
         ! Fine grid is on top -- z-level for averaging is at
         ! bottom of grid k - 1.
         do i = 1, 4
         ! zlev = 'end' ModEMM notation
         compR(i)%zmin = 0; compR(i)%zstep = 1; compR(i)%zmax = 0 
-        end do
+        enddo
 
         kVecR = k - 1
 
         do i = 1, 9
         ! zlev = '1' ModEMM notation
         compC(i)%zmin = 1; compC(i)%zstep = 1; compC(i)%zmax = 1
-        end do
+        enddo
 
         kVecC = k
         else
         do i = 1, 4
         ! zlev = '1' ModEMM notation
         compR(i)%zmin = 1; compR(i)%zstep = 1; compR(i)%zmax = 1 
-        end do
+        enddo
 
         kVecR = k
 
         do i = 1, 9
         ! zlev = 'end' ModEMM notation
         compC(i)%zmin = 0; compC(i)%zstep = 1; compC(i)%zmax = 0 
-        end do
+        enddo
 
         kVecC = k - 1
         endif
@@ -738,7 +738,7 @@ module spOpTopology_MR
         compC(i)%xmin, compC(i)%xstep, compC(i)%xmax, &
         compC(i)%ymin, compC(i)%ystep, compC(i)%ymax, &
         compC(i)%zmin, compC(i)%zstep, compC(i)%zmax, cC(i))
-        end do
+        enddo
 
         do i = 1, 4
         call vecR%sub_scalars(kVecR)%setVecComponents(&
@@ -746,8 +746,8 @@ module spOpTopology_MR
         compR(i)%xmin, compR(i)%xstep, compR(i)%xmax, &
         compR(i)%ymin, compR(i)%ystep, compR(i)%ymax, &
         compR(i)%zmin, compR(i)%zstep, compR(i)%zmax, cR(i))
-        end do
-        end do SubGrids
+        enddo
+        enddo SubGrids
 
         !**
         ! First copy
@@ -795,7 +795,7 @@ module spOpTopology_MR
         deallocate (C)
         call move_alloc (Ctmp, C)
         deallocate (indC_i)
-        end do
+        enddo
 
         !***
         ! Nodes on y edges.
@@ -820,7 +820,7 @@ module spOpTopology_MR
         deallocate (C)
         call move_alloc (Ctmp, C)
         deallocate (indC_i)
-        end do
+        enddo
 
         !***
         ! Nodes in coarse grid face centers.
@@ -846,7 +846,7 @@ module spOpTopology_MR
         deallocate (C)
         call move_alloc (Ctmp, C)
         deallocate (indC_i)
-        end do
+        enddo
 
         !**
         ! Create output gradient matrix
@@ -858,7 +858,7 @@ module spOpTopology_MR
         G1_ijs%I(i) = R(i)
         G1_ijs%J(i) = C(i)
         G1_ijs%S(i) = S(i)
-        end do
+        enddo
 
         ! Finally in CSR format
         call create_spMatCSR (n_rows, n_cols, n, G1)

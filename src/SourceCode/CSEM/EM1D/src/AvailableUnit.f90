@@ -22,7 +22,7 @@ integer(kind=int32) function AvailableUnit()
         AvailableUnit = i
         return
      endif
-  end do
+  enddo
 
   !we get here if no unit number was found
   write(*,'(a)')'ERROR in AvailableUnit: No unused unit number available'

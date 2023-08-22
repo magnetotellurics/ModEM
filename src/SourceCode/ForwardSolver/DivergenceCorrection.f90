@@ -161,7 +161,7 @@ contains
         !> compute the size of current Divergence after
         self%divJ(2) = sqrt( phiRHS%dotProd( phiRHS ) )
         !
-        write( *, "( a37, es12.3, a4, es12.3 )" ) "DivJ: ", self%divJ(1), " => ", self%divJ(2)
+        !write( *, "( a37, es12.3, a4, es12.3 )" ) "DivJ: ", self%divJ(1), " => ", self%divJ(2)
         !
         deallocate( phiRHS )
         !

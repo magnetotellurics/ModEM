@@ -273,7 +273,7 @@ module Transmitter
             implicit none
             !
             class( Transmitter_t ), intent( in ) :: self
-            class( ModelParameter_t ), intent( inout ) :: sigma
+            class( ModelParameter_t ), intent( in ) :: sigma
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
             class( GenVector_t ), allocatable, dimension(:) :: eSens

@@ -3,7 +3,7 @@
 !
 module Vector
     !
-    use Scalar
+    use rScalar3D_SG
     !
     type, abstract, extends( Field_t ) :: Vector_t
         !
@@ -22,9 +22,9 @@ module Vector
         procedure( interface_sum_edge_vti_vector ), deferred, public :: sumEdgeVTI
         generic :: sumEdges => sumEdge, sumEdgeVTI
         !
-        procedure( interface_avg_cells_vector ), deferred, public :: avgCell
-        procedure( interface_avg_cells_VTI_vector ), deferred, public :: avgCellVTI
-        generic :: avgCells => avgCell, avgCellVTI
+        procedure( interface_sum_cells_vector ), deferred, public :: sumCell
+        procedure( interface_sum_cells_VTI_vector ), deferred, public :: sumCellVTI
+        generic :: sumCells => sumCell, sumCellVTI
         !
         procedure( interface_get_real_vector ), deferred, public :: getReal
         !
@@ -99,21 +99,21 @@ module Vector
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_avg_cells_vector( self, cell_in, ptype )
+        subroutine interface_sum_cells_vector( self, cell_in, ptype )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
             class( Scalar_t ), intent( in ) :: cell_in
             character(*), intent( in ), optional :: ptype
-        end subroutine interface_avg_cells_vector
+        end subroutine interface_sum_cells_vector
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_avg_cells_vti_vector( self, cell_h_in, cell_v_in, ptype )
+        subroutine interface_sum_cells_vti_vector( self, cell_h_in, cell_v_in, ptype )
             import :: Vector_t, Scalar_t
             class( Vector_t ), intent( inout ) :: self
             class( Scalar_t ), intent( in ) :: cell_h_in, cell_v_in
             character(*), intent( in ), optional :: ptype
-        end subroutine interface_avg_cells_vti_vector
+        end subroutine interface_sum_cells_vti_vector
         !
         !> No interface subroutine briefing
         subroutine interface_get_real_vector( self, r_vector )
@@ -256,12 +256,16 @@ contains
         endif
         !
         if( self%store_state .EQ. compound ) then
-            !
+            ! !
+            ! write( *, * ) "getArray_Vector: ", &
+            ! self%Nxyz(1), self%Nxyz(2), self%Nxyz(3), &
+            ! self%Nxyz(1)+self%Nxyz(2)+self%Nxyz(3), self%length()
+            ! !
             allocate( array( self%length() ) )
             !
             array = (/reshape(self%getX(), (/self%Nxyz(1), 1/)), &
-                      reshape(self%getY(), (/self%Nxyz(2), 1/)), &
-                      reshape(self%getZ(), (/self%Nxyz(3), 1/))/)
+            reshape(self%getY(), (/self%Nxyz(2), 1/)), &
+            reshape(self%getZ(), (/self%Nxyz(3), 1/))/)
             !
         elseif( self%store_state .EQ. singleton ) then
             !

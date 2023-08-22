@@ -31,9 +31,13 @@ module MetricElements
         procedure( interface_set_edge_volume_metric_elements ), deferred, public :: setEdgeVolume
         procedure( interface_set_node_volume_metric_elements ), deferred, public :: setNodeVolume
         !
+        procedure( interface_boundary_index_metric_elements ), deferred, public :: boundaryIndex
+        !
         procedure, public :: baseDealloc => deallocate_MetricElements
         !
-        procedure, public :: setMetricElements
+        procedure, public :: alloc => allocate_MetricElements
+        !
+        procedure, public :: set => set_MetricElements
         !
         procedure, public :: createScalar, createVector
     !
@@ -97,13 +101,22 @@ module MetricElements
             !
         end subroutine interface_set_node_volume_metric_elements
         !
+        subroutine interface_boundary_index_metric_elements( self, grid_type, INDb, INDi )
+            import :: MetricElements_t
+            !
+            class( MetricElements_t ), intent( in ) :: self
+            character(*), intent( in ) :: grid_type
+            integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
+            !
+        end subroutine interface_boundary_index_metric_elements
+        !
     end interface
     !
 contains
     !
     !> No subroutine briefing
     !
-    subroutine setMetricElements( self )
+    subroutine set_MetricElements( self )
         implicit none
         !
         class( MetricElements_t ), intent( inout ) :: self
@@ -117,7 +130,26 @@ contains
         call self%setCellVolume
         call self%setNodeVolume
         !
-    end subroutine setMetricElements
+    end subroutine set_MetricElements
+    !
+    !> No subroutine briefing
+    !
+    subroutine allocate_MetricElements( self )
+        implicit none
+        !
+        class( MetricElements_t ), intent( inout ) :: self
+        !
+        call self%createVector( real_t, EDGE, self%edge_length )
+        call self%createVector( real_t, FACE, self%dual_edge_length )
+        call self%createVector( real_t, FACE, self%face_area )
+        call self%createVector( real_t, EDGE, self%dual_face_area )
+        !
+        call self%createVector( real_t, EDGE, self%v_edge )
+        !
+        call self%createScalar( real_t, NODE, self%v_node )
+        call self%createScalar( real_t, CELL, self%v_cell )
+        !
+    end subroutine allocate_MetricElements
     !
     !> No subroutine briefing
     !
@@ -162,7 +194,7 @@ contains
                     elseif( scalar_type == integer_t ) then
                         allocate( scalar, source = iScalar3D_SG_t( grid, grid_type ) )
                     else
-                        call errStop( "createrScalar_SG > choose real_t, complex_t or integer_t" )
+                        call errStop( "createScalar > choose SG real_t, complex_t or integer_t" )
                     endif
                     !
                 class is( Grid3D_MR_t )
@@ -172,13 +204,13 @@ contains
                     elseif( scalar_type == complex_t ) then
                         !allocate( scalar, source = cScalar3D_MR_t( grid, grid_type ) )
                         !
-                        call errStop( "createrScalar_MR > complex_t to be implemented" )
+                        call errStop( "createScalar > MR complex_t to be implemented" )
                     elseif( scalar_type == integer_t ) then
                         !allocate( scalar, source = iScalar3D_MR_t( grid, grid_type ) )
                         !
-                        call errStop( "createrScalar_MR > integer_t to be implemented" )
+                        call errStop( "createScalar > MR integer_t to be implemented" )
                     else
-                        call errStop( "createrScalar_MR > choose real_t, complex_t or integer_t" )
+                        call errStop( "createScalar > choose MR real_t, complex_t or integer_t" )
                     endif
                     !
                 class default
@@ -215,9 +247,9 @@ contains
                     elseif( vector_type == integer_t ) then
                         !allocate( vector, source = iVector3D_SG_t( grid, grid_type ) )
                         !
-                        call errStop( "createVector_SG > integer_t to be implemented" )
+                        call errStop( "createVector > SG integer_t to be implemented" )
                     else
-                        call errStop( "createVector_SG > choose real_t, complex_t or integer_t" )
+                        call errStop( "createVector > choose SG: real_t, complex_t or integer_t" )
                     endif
                     !
                 class is( Grid3D_MR_t )
@@ -227,13 +259,13 @@ contains
                     elseif( vector_type == complex_t ) then
                         !allocate( vector, source = cVector3D_MR_t( grid, grid_type ) )
                         !
-                        call errStop( "createVector_MR > complex_t to be implemented" )
+                        call errStop( "createVector > MR complex_t to be implemented" )
                     elseif( vector_type == integer_t ) then
                         !allocate( vector, source = iVector3D_MR_t( grid, grid_type ) )
                         !
-                        call errStop( "createVector_MR > integer_t to be implemented" )
+                        call errStop( "createVector > MR integer_t to be implemented" )
                     else
-                        call errStop( "createVector_MR > choose real_t, complex_t or integer_t" )
+                        call errStop( "createVector > choose MR: real_t, complex_t or integer_t" )
                     endif
                     !
                 class default

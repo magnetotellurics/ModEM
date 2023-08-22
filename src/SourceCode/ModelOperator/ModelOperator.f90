@@ -36,6 +36,8 @@ module ModelOperator
             procedure( interface_amult_model_operator ), deferred, public :: amult
             procedure( interface_multaib_model_operator ), deferred, public :: multAib
             !
+            procedure( interface_multcurl_t_model_operator ), deferred, public :: multCurlT
+            !
             procedure( interface_div_model_operator ), deferred, public :: div
             procedure( interface_divc_model_operator ), deferred, public :: divC
             procedure( interface_divc_grad_model_operator ), deferred, public :: divCGrad
@@ -48,8 +50,6 @@ module ModelOperator
             !> Base procedures
             procedure, public :: baseInit => baseInit_ModelOperator
             procedure, public :: baseDealloc => baseDealloc_ModelOperator
-            !
-            procedure, public :: multCurlT => multCurlT_ModelOperator
             !
     end type ModelOperator_t
     !
@@ -134,6 +134,17 @@ module ModelOperator
         !
         !> No interface subroutine briefing
         !
+        subroutine interface_multcurl_t_model_operator( self, in_b, out_e )
+            import :: ModelOperator_t, Vector_t
+            !
+            class( ModelOperator_t ), intent( in ) :: self
+            class( Vector_t ), intent( inout ) :: in_b
+            class( Vector_t ), allocatable, intent( out ) :: out_e
+            !
+        end subroutine interface_multcurl_t_model_operator
+        !
+        !> No interface subroutine briefing
+        !
         subroutine interface_div_model_operator( self, in_e, out_phi )
             import :: ModelOperator_t, Vector_t, Scalar_t
             !
@@ -212,74 +223,5 @@ contains
         if( allocated( self%metric ) ) deallocate( self%metric )
         !
     end subroutine baseDealloc_ModelOperator
-    !
-    !> No subroutine briefing
-    !
-    subroutine multCurlT_ModelOperator( self, in_e, out_e )
-        implicit none
-        !
-        class( ModelOperator_t ), intent( in ) :: self
-        class( Vector_t ), intent( inout ) :: in_e
-        class( Vector_t ), allocatable, intent( out ) :: out_e
-        !
-        integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: in_e_x, in_e_y, in_e_z
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: out_e_v
-        !
-        if( .NOT. in_e%is_allocated ) then
-            call errStop( "multCurlT_ModelOperator > in_e not allocated" )
-        endif
-        !
-        call self%metric%createVector( complex_t, EDGE, out_e )
-        call out_e%zeros
-        !
-        call in_e%div( self%metric%face_area )
-        !
-        in_e_x = in_e%getX()
-        in_e_y = in_e%getY()
-        in_e_z = in_e%getZ()
-        !
-        !> Ex
-        out_e_v = out_e%getX()
-        !
-        do iy = 2, in_e%Ny
-            do iz = 2, in_e%Nz
-                out_e_v(:, iy, iz) = (in_e_z(:, iy, iz) - &
-                in_e_z(:, iy - 1, iz)) - &
-                (in_e_y(:, iy, iz) - in_e_y(:, iy, iz - 1))
-            enddo
-        enddo
-        !
-        call out_e%setX( out_e_v )
-        !
-        !> Ey
-        out_e_v = out_e%getY()
-        !
-        do iz = 2, in_e%Nz
-            do ix = 2, in_e%Nx
-                out_e_v(ix, :, iz) = (in_e_x(ix, :, iz) - &
-                in_e_x(ix, :, iz - 1)) - &
-                (in_e_z(ix, :, iz) - in_e_z(ix - 1, :, iz))
-            enddo
-        enddo
-        !
-        call out_e%setY( out_e_v )
-        !
-        !> Ez
-        out_e_v = out_e%getZ()
-        !
-        do ix = 2, in_e%Nx
-            do iy = 2, in_e%Ny
-                out_e_v(ix,iy,:) = (in_e_y(ix, iy, :) - &
-                in_e_y(ix - 1, iy, :)) - &
-                (in_e_x(ix, iy, :) - in_e_x(ix, iy - 1, :))
-            enddo
-        enddo
-        !
-        call out_e%setZ( out_e_v )
-        !
-        call out_e%mult( self%metric%edge_length )
-        !
-    end subroutine multCurlT_ModelOperator
     !
 end module ModelOperator

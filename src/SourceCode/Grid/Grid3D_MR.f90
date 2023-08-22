@@ -26,8 +26,6 @@ module Grid3D_MR
     type, extends( Grid_t ) :: Grid3D_MR_t
         !
         !> MR properties
-        integer :: n_grids
-        !
         integer, allocatable, dimension(:,:) :: coarseness, z_limits
         !
         integer, allocatable, dimension(:,:) :: n_active_edge, n_active_face
@@ -63,7 +61,7 @@ module Grid3D_MR
             procedure, public :: slice1D => slice1D_Grid3D_MR
             procedure, public :: slice2D => slice2D_Grid3D_MR
             !
-            procedure, private :: setSubGrid
+            procedure, public :: setSubGrid, setupMR
             !
     end type Grid3D_MR_t
     !
@@ -88,7 +86,7 @@ contains
         !  
         integer :: i
         !
-        !write( *, * ) "Constructor Grid3D_MR_t"
+        !write( *, * ) "Constructor Grid3D_MR_t", size(dx), size(dy), size(dz)
         !
         call self%baseInit
         !
@@ -116,6 +114,8 @@ contains
             !
             allocate( self%sub_grids( self%n_grids ) )
             !
+            self%coarseness = 0
+            !
             do i = 0, self%n_grids - 1
                 !
                 self%coarseness( i + 1, 1 ) = layers( 2 * i + 1 )
@@ -126,7 +126,14 @@ contains
             !
             call self%setup
             !
+            call self%setupMR
+            !
             self%is_initialized = .TRUE.
+            !
+            write( *, * ) "coarseness Lv1 (Factor): [", self%coarseness(:,1), "]"
+            write( *, * ) "coarseness Lv2 (z Deep): [", self%coarseness(:,2), "]"
+            write( *, * ) "coarseness Lv3 (iStart): [", self%coarseness(:,3), "]"
+            write( *, * ) "coarseness Lv4 ( iEnd ): [", self%coarseness(:,4), "]"
             !
         else
             self%is_initialized = .FALSE.
@@ -134,9 +141,119 @@ contains
         !
     end function Grid3D_MR_t_ctor
     !
+    !> setup does calculations for grid geometry, which cannot be done
+    !> until dx, dy, dz, and the origin are set.
+    subroutine setup_Grid3D_MR( self, origin )
+        implicit none
+        !
+        class( Grid3D_MR_t ), intent( inout ) :: self
+        real( kind=prec ), intent( in ), optional :: origin(3)
+        !
+        integer :: ix, iy, iz, i, j, nzAir
+        real( kind=prec ) :: xCum, yCum, zCum
+        real( kind=prec ) :: ox, oy, oz
+        !
+        self%dx_inv = 1 / self%dx
+        self%dy_inv = 1 / self%dy
+        self%dz_inv = 1 / self%dz
+        !
+        call self%GetOrigin( ox, oy, oz )
+        !
+        if( present( origin ) ) then
+            !
+            ox = origin(1)
+            oy = origin(2)
+            oz = origin(3)
+            !
+            call self%setOrigin(ox, oy, oz)
+            !
+        endif
+        !
+        self%x_edge(1) = ox
+        self%y_edge(1) = oy
+        self%z_edge(1) = oz
+        !
+        xCum = R_ZERO
+        yCum = R_ZERO
+        zCum = R_ZERO
+        !
+        do ix = 1, self%nx
+            xCum = xCum + self%dx(ix)
+            self%x_edge(ix+1) = xCum + ox
+        enddo
+        do iy = 1, self%ny
+            yCum = yCum + self%dy(iy)
+            self%y_edge(iy + 1) = yCum + oy
+        enddo
+        !
+        !> NOTE: adjust for origin later to get airthickness, 
+        !> reference to origin at Earth"s surface correct!
+        do iz = 1, self%nz
+            zCum = zCum + self%dz(iz)
+            self%z_edge(iz + 1) = zCum
+        enddo
+        !
+        nzAir = self%nzAir
+        self%zAirThick = self%z_edge(nzAir + 1)
+        !
+        !> Distance between center of the selfs
+        self%del_x(1) = self%dx(1)
+        do ix = 2, self%nx
+            self%del_x(ix) = self%dx(ix - 1) + self%dx(ix)
+        enddo
+        self%del_x(self%nx + 1) = self%dx(self%nx)
+        self%del_x = self%del_x/2.0
+        !
+        self%del_y(1) = self%dy(1)
+        do iy = 2, self%ny
+            self%del_y(iy) = self%dy(iy - 1) + self%dy(iy)
+        enddo
+        !
+        self%del_y(self%ny + 1) = self%dy(self%ny)
+        self%del_y = self%del_y/2.0
+        !
+        self%del_z(1) = self%dz(1)
+        do iz = 2, self%nz
+            self%del_z(iz) = self%dz(iz - 1) + self%dz(iz)
+        enddo
+        !
+        self%del_z(self%nz + 1) = self%dz(self%nz)
+        self%del_z = self%del_z/2.0
+        !
+        self%del_x_inv = 1/self%del_x
+        self%del_y_inv = 1/self%del_y
+        self%del_z_inv = 1/self%del_z
+        !
+        !> Cumulative distance between the centers, adjusted to model origin
+        xCum = R_ZERO
+        yCum = R_ZERO
+        zCum = R_ZERO
+        do ix = 1, self%nx
+            xCum = xCum + self%del_x(ix)
+            self%x_center(ix) = xCum + ox
+        enddo
+        do iy = 1, self%ny
+            yCum = yCum + self%del_y(iy)
+            self%y_center(iy) = yCum + oy
+        enddo
+        do iz = 1, self%nz
+            zCum = zCum + self%del_z(iz)
+            self%z_center(iz) = zCum
+        enddo
+        !> Need to be careful here ... grid origin is given
+        !> at Earth"s surface, not top of model domain!
+        do iz = 1, self%nz
+            self%z_center(iz) = self%z_center(iz) - self%zAirThick + oz
+            self%z_edge(iz) = self%z_edge(iz) - self%zAirThick + oz
+        enddo
+        !
+        self%z_edge(self%nz + 1) = self%z_edge(self%nz + 1) - self%zAirThick + oz
+        !
+    end subroutine setup_Grid3D_MR
+    !
     !> No subroutine briefing
     !
-    subroutine setup_Grid3D_MR( self, origin )
+    subroutine setupMR( self, origin )
         implicit none
         !
         class( Grid3D_MR_t ), intent( inout ) :: self
@@ -146,10 +263,11 @@ contains
         real( kind=prec ) :: ddz_interface
         !
         ! Check if coarseness parameters are consistent with
-        write(*,*) size( self%coarseness(:, 2) ), sum( self%coarseness(:, 2) ), size( self%dz ), self%nz
-        !if( sum( self%coarseness(:, 2) ) /= size( self%dz ) ) then
-            !call errStop( "setup_Grid3D_MR > Inconsistent grid coarseness parameter!" )
-        !endif
+        write(*,*) sum( self%coarseness(:, 2) ), size( self%dz )
+        !
+        if( sum( self%coarseness(:, 2) ) /= size( self%dz ) ) then
+            call errStop( "setupMR > Inconsistent grid coarseness parameter!" )
+        endif
         !
         do i = 1, self%n_grids
             !
@@ -173,7 +291,7 @@ contains
             !
         enddo
         !
-    end subroutine setup_Grid3D_MR
+    end subroutine setupMR
     !
     !> No subroutine briefing
     !
@@ -204,7 +322,7 @@ contains
         nz_air = min( max( 0, self%nzAir - i1 + 1 ), self%coarseness( k, 2 ) )
         nz_earth = size(Dz) - nz_air
         !
-        call self%sub_grids(k)%Create(nx, ny, nz_air, nz_earth)
+        self%sub_grids(k) = Grid3D_SG_t( nx, ny, nz_air, nz_earth )
         !
         self%sub_grids(k)%dx = Dx
         self%sub_grids(k)%dy = Dy
@@ -223,6 +341,8 @@ contains
         endif
         !
         call self%sub_grids(k)%setup
+        !
+        write( *, * ) "SubGrid", k, "-nx=", self%sub_grids(k)%nx, ", ny=", self%sub_grids(k)%ny, "nz=", self%sub_grids(k)%nz, self%sub_grids(k)%nx * self%sub_grids(k)%ny *self%sub_grids(k)%nz
         !
         contains
             !
@@ -610,17 +730,17 @@ contains
                 m_out(1, i1:i2, 1) = m_in
                 i1 = i2 + 1
                 i2 = i2 + n_in
-            end do
+            enddo
             !
             ! Copy along 1st dimension.
             do i = 1, nx
                 m_out(i, :, 1) = m_out(1, :, 1)
-            end do
+            enddo
             !
             ! Copy along 3rd dimension
             do i = 1, nz
                 m_out(:, :, i) = m_out(:, :, 1)
-            end do
+            enddo
             !
         else
             !
@@ -632,17 +752,17 @@ contains
                 m_out(i1:i2, 1, 1) = m_in
                 i1 = i2 + 1
                 i2 = i2 + n_in
-            end do
+            enddo
             !
             ! Copy along 2nd dimension.
             do i = 1, ny
                 m_out(:, i, 1) = m_out(:, 1, 1)
-            end do
+            enddo
             !
             ! Copy along 3rd dimension
             do i = 1, nz
                 m_out(:, :, i) = m_out(:, :, 1)
-            end do
+            enddo
             !
         endif
         !

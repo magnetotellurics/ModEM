@@ -47,7 +47,7 @@ module cScalar3D_SG
             procedure, public :: divByField => divByField_cScalar3D_SG
             procedure, public :: divByValue => divByValue_cScalar3D_SG
             !
-            procedure, public :: sumCell => sumCell_cScalar3D_SG
+            procedure, public :: toNode => toNode_cScalar3D_SG
             !
             !> Getters & Setters
             procedure, public :: getV => getV_cScalar3D_SG
@@ -815,19 +815,23 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine sumCell_cScalar3D_SG( self, node_out, interior_only )
+    subroutine toNode_cScalar3D_SG( self, node_scalar, interior_only )
         implicit none
         !
         class( cScalar3D_SG_t ), intent( inout ) :: self
-        class( Scalar_t ), allocatable, intent( out ) :: node_out
+        class( Scalar_t ), intent( inout ) :: node_scalar
         logical, intent( in ), optional :: interior_only
         !
-        type( cScalar3D_SG_t ) :: node_out_temp
+        type( cScalar3D_SG_t ) :: temp_node
         integer :: v_xend, v_yend, v_zend
         logical :: is_interior_only
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "sumCell_cScalar3D_SG > self not allocated." )
+             call errStop( "toNode_cScalar3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. node_scalar%is_allocated ) then
+             call errStop( "toNode_cScalar3D_SG > node_scalar not allocated." )
         endif
         !
         call self%switchStoreState( compound )
@@ -840,7 +844,7 @@ contains
             call self%setAllBoundary( C_ZERO )
         endif
         !
-        node_out_temp = cScalar3D_SG_t( self%grid, NODE )
+        temp_node = cScalar3D_SG_t( self%grid, NODE )
         !
         select case( self%grid_type )
             !
@@ -851,7 +855,7 @@ contains
                 v_zend = size( self%v, 3 )
                 !
                 !> Interior
-                node_out_temp%v( 2:v_xend-1, 2:v_yend-1, 2:v_zend-1 ) = &
+                temp_node%v( 2:v_xend-1, 2:v_yend-1, 2:v_zend-1 ) = &
                 self%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
                 self%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
                 self%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
@@ -861,13 +865,15 @@ contains
                 self%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
                 self%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
                 !
+                node_scalar = temp_node
+                !
+                call node_scalar%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
+                !
             case default
-                call errStop( "sumCell_cScalar3D_SG: undefined self%grid_type" )
+                call errStop( "toNode_cScalar3D_SG: undefined self%grid_type" )
         end select
         !
-        allocate( node_out, source = node_out_temp )
-        !
-    end subroutine sumCell_cScalar3D_SG
+    end subroutine toNode_cScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -1275,18 +1281,21 @@ contains
     subroutine print_cScalar3D_SG( self, io_unit, title, append )
         implicit none
         !
-        class( cScalar3D_SG_t ), intent( inout ) :: self
+        class( cScalar3D_SG_t ), intent( in ) :: self
         integer, intent( in ), optional :: io_unit
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append
         !
+        type( cScalar3D_SG_t ) :: copy
         integer :: ix, iy, iz,funit
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "print_cScalar3D_SG > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        copy = self
+        !
+        call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit
@@ -1298,14 +1307,14 @@ contains
             write(funit,*) title
         endif
         !
-        write( funit, * ) self%nx, self%ny, self%nz
+        write( funit, * ) copy%nx, copy%ny, copy%nz
         !
         write(funit,*) "cScalar3D_SG"
-        do ix = 1, self%nx
-             do iy = 1, self%ny
-                  do iz = 1, self%nz
-                        if( self%v( ix, iy, iz ) /= 0 ) then
-                            write(funit,*) ix,iy,iz, ":[", self%v( ix, iy, iz ), "]"
+        do ix = 1, copy%nx
+             do iy = 1, copy%ny
+                  do iz = 1, copy%nz
+                        if( copy%v( ix, iy, iz ) /= 0 ) then
+                            write(funit,*) ix,iy,iz, ":[", copy%v( ix, iy, iz ), "]"
                         endif
                   enddo
              enddo

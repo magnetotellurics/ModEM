@@ -880,7 +880,7 @@ contains
     subroutine print_cVectorSparse3D_SG( self, io_unit, title, append )
         implicit none
         !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        class( cVectorSparse3D_SG_t ), intent( in ) :: self
         integer, intent( in ), optional :: io_unit
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append

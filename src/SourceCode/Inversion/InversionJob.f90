@@ -43,8 +43,9 @@ contains
                 write( *, * ) "     < Cov File: [", cov_file_name, "]"
                 !
             else
+                !
                 call warning( "jobInversion > Missing Covariance file!" )
-                !write( *, * ) achar(27)//"[91m# Warning:"//achar(27)//"[0m jobInversion > Missing Covariance file!"
+                !
             endif
             !
             !> Initialize pmodel with Zeros

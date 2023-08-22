@@ -142,7 +142,7 @@ contains
                 !
                 open( unit = io_unit, file = trim( outdir_name )//"/NLCG.log", status="unknown", position="append", iostat=ios )
                 !
-            end if
+            endif
             !
         endif
         !

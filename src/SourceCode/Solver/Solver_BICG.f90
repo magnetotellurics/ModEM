@@ -24,7 +24,7 @@ module Solver_BICG
     use ModelOperator_MF_SG
     use ModelOperator_SP_V1
     use ModelOperator_SP_V2
-    use PreConditioner_CC_MF
+    use PreConditioner_CC_MF_SG
     use PreConditioner_CC_SP
     !
     type, extends( Solver_CC_t ) :: Solver_BICG_t
@@ -61,7 +61,7 @@ contains
             !
             class is( ModelOperator_MF_SG_t )
                 !
-                allocate( self%preconditioner, source = PreConditioner_CC_MF_t( model_operator ) )
+                allocate( self%preconditioner, source = PreConditioner_CC_MF_SG_t( model_operator ) )
                 !
             class is( ModelOperator_SP_t )
                 !
@@ -133,7 +133,7 @@ contains
         !> this usually means an inadequate model, in which case Maxwell"s fails
         if( isnan( abs( bnorm ) ) ) then
             !
-            call errStop( "solve_Solver_BICG > b in QMR contains NaNs" )
+            call errStop( "solve_Solver_BICG > b contains NaNs" )
             !
         elseif( bnorm .EQ. 0.0 ) then ! zero rhs -> zero solution
             !
@@ -359,14 +359,14 @@ contains
             !> Verbose
             !write( *, "( a36, i6, a3, es12.3 )" ) "BICG iter: ", self%iter, " : ", self%relErr( self%iter )
             !
-        end do
-        !
-        if( self%converged ) then
-            write( *, "( a52, i6, a7, es12.3 )" ) "->Solver BICG converged within ", self%iter, ": err= ", self%relErr( self%iter )
-        else
-            write( *, "( a52, i6, a7, es12.3 )" ) "->Solver BICG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
-        endif
-        !
+        enddo
+        ! !
+        ! if( self%converged ) then
+            ! write( *, "( a52, i6, a7, es12.3 )" ) "->Solver BICG converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        ! else
+            ! write( *, "( a52, i6, a7, es12.3 )" ) "->Solver BICG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        ! endif
+        ! !
         if( .NOT. self%converged ) then
             ! it should be noted that this is the way my matlab version works
             ! the bicg will return the 'best' (smallest residual) iteration

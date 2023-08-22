@@ -79,7 +79,7 @@ contains
         implicit none
         !
         class( ForwardSolver_IT_DC_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( inout ) :: sigma
+        class( ModelParameter_t ), intent( in ) :: sigma
         real( kind=prec ), intent( in ) :: period
         !
         !> Set omega for this ForwardSolver solver

@@ -30,7 +30,8 @@ module Grid3D_SG
     end type Grid3D_SG_t
     !
     interface Grid3D_SG_t
-        module procedure Grid3D_SG_t_ctor
+        module procedure Grid3D_SG_t_ctor_n
+        module procedure Grid3D_SG_t_ctor_n_d
     end interface Grid3D_SG_t
     !
 contains
@@ -40,7 +41,29 @@ contains
     !> Dx, Dy, Dz are cell dimensions for x, y, z direction
     !> Nza is number of air layers to allow(included in Dz)
     !
-    function Grid3D_SG_t_ctor( nx, ny, nzAir, nzEarth, dx, dy, dz ) result( self )
+    function Grid3D_SG_t_ctor_n( nx, ny, nzAir, nzEarth ) result( self )
+        implicit none
+        !
+        integer, intent( in ) :: nx, ny, nzAir, nzEarth
+        !
+        type( Grid3D_SG_t ) :: self
+        !
+        !write( *, * ) "Constructor_n Grid3D_SG_t"
+        !
+        self%n_grids = 1
+        !
+        call self%baseInit
+        !
+        call self%create( nx, ny, nzAir, nzEarth )
+        !
+    end function Grid3D_SG_t_ctor_n
+    !
+    !> Class constructor for simple tensor product grid
+    !> Usage obj = Grid_t3D(Dx,Dy,Dz,Nza)
+    !> Dx, Dy, Dz are cell dimensions for x, y, z direction
+    !> Nza is number of air layers to allow(included in Dz)
+    !
+    function Grid3D_SG_t_ctor_n_d( nx, ny, nzAir, nzEarth, dx, dy, dz ) result( self )
         implicit none
         !
         integer, intent( in ) :: nx, ny, nzAir, nzEarth
@@ -48,7 +71,9 @@ contains
         !
         type( Grid3D_SG_t ) :: self
         !
-        !write( *, * ) "Constructor Grid3D_SG_t"
+        !write( *, * ) "Constructor_n_d Grid3D_SG_t"
+        !
+        self%n_grids = 1
         !
         call self%baseInit
         !
@@ -58,7 +83,7 @@ contains
         !
         call self%setup
         !
-    end function Grid3D_SG_t_ctor
+    end function Grid3D_SG_t_ctor_n_d
     !
     !> Deconstructor routine:
     !>     Calls the base routine baseDealloc().

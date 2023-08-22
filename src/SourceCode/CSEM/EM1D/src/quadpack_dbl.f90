@@ -646,7 +646,7 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
       exit
     endif
 
-  end do
+  enddo
 !
 !  Compute final result.
 !
@@ -1108,7 +1108,7 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
         go to 90
       endif
       nrmax = nrmax + 1
-    end do
+    enddo
 !
 !  Extrapolate.
 !
@@ -1156,7 +1156,7 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier, lim
 
 90  continue
 
-  end do
+  enddo
 !
 !  Set final result and error estimate.
 !
@@ -1542,7 +1542,7 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
         go to 90
       endif
       nrmax = nrmax + 1
-    end do
+    enddo
 !
 !  Extrapolate.
 !
@@ -1590,7 +1590,7 @@ subroutine qagic ( f, fcplx, bound, inf, epsabs, epsrel, result, abserr, neval, 
 
 90  continue
 
-  end do
+  enddo
 !
 !  Set final result and error estimate.
 !
@@ -1931,7 +1931,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 
   do i = 1, npts
     pts(i+1) = points(i)
-  end do
+  enddo
 
   pts(npts+2) = max ( a, b )
   nint = npts+1
@@ -1946,8 +1946,8 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
           pts(i) = pts(j)
           pts(j) = temp
         endif
-      end do
-    end do
+      enddo
+    enddo
 
     if( pts(1) /= min ( a, b ) .or. pts(nint+1) /= max ( a, b ) ) then
       ier = 6
@@ -1981,7 +1981,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
     iord(i) = i
     a1 = b1
 
-  end do
+  enddo
 
   errsum = 0.0d0
 
@@ -1990,7 +1990,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
       elist(i) = abserr
     endif
     errsum = errsum + elist(i)
-  end do
+  enddo
 !
 !  Test on accuracy.
 !
@@ -2017,14 +2017,14 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
           ind1 = ind2
           k = j
         endif
-      end do
+      enddo
 
       if( ind1 /= iord(i) ) then
         iord(k) = iord(i)
         iord(i) = ind1
       endif
 
-    end do
+    enddo
 
     if( limit < npts2 ) then
       ier = 1
@@ -2210,7 +2210,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
           go to 160
         endif
         nrmax = nrmax + 1
-      end do
+      enddo
 
     endif
 !
@@ -2265,7 +2265,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 
 160 continue
 
-  end do
+  enddo
 !
 !  Set the final result.
 !
@@ -2740,7 +2740,7 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
           go to 90
         endif
         nrmax = nrmax+1
-      end do
+      enddo
 
     endif
 !
@@ -2798,7 +2798,7 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 
 90  continue
 
-  end do
+  enddo
 !
 !  Set final result and error estimate.
 !
@@ -3319,7 +3319,7 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
       exit
     endif
 
-  end do
+  enddo
 !
 !  Compute final result.
 !
@@ -3881,7 +3881,7 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
     c1 = c2
     c2 = c2+cycle
 
-  end do
+  enddo
 !
 !  Set final result and error estimate.
 !
@@ -4570,7 +4570,7 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
       exit
     endif
 
-  end do
+  enddo
 !
 !  Compute final result.
 !
@@ -4720,7 +4720,7 @@ subroutine qc25c ( f, a, b, c, result, abserr, krul, neval )
     isym = 26 - i
     fval(i) = f(u+centr)
     fval(isym) = f(centr-u)
-  end do
+  enddo
 !
 !  Compute the Chebyshev series expansion.
 !
@@ -4744,7 +4744,7 @@ subroutine qc25c ( f, a, b, c, result, abserr, krul, neval )
     res24 = res24 + cheb24(k) * amom2
     amom0 = amom1
     amom1 = amom2
-  end do
+  enddo
 
   do k = 14, 25
     amom2 = 2.0d0 * cc * amom1 - amom0
@@ -4755,7 +4755,7 @@ subroutine qc25c ( f, a, b, c, result, abserr, krul, neval )
     res24 = res24 + cheb24(k) * amom2
     amom0 = amom1
     amom1 = amom2
-  end do
+  enddo
 
   result = res24
   abserr = abs ( res24 - res12 )
@@ -5029,7 +5029,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
     d1(k) = (an+3.0d0)*(an+4.0d0) * par2
     v(k+3) = as-(an2-4.0d0) * ac
     an = an+2.0d0
-  end do
+  enddo
 
   an2 = an*an
   d(noequ) = -2.0d0*(an2-4.0d0) * (par22-an2-an2)
@@ -5069,7 +5069,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
     d2(i+1) = d2(i+1)-d3(i)*d1(i)/d(i)
     v(i+4) = v(i+4)-v(i+3)*d1(i)/d(i)
 
-  end do
+  enddo
 
   v(noequ+3) = v(noequ+3) / d(noequ)
   v(noequ+2) = (v(noequ+2)-d2(noeq1)*v(noequ+3))/d(noeq1)
@@ -5077,7 +5077,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
   do i = 2, noeq1
     k = noequ-i
     v(k+3) = (v(k+3)-d3(k)*v(k+5)-d2(k)*v(k+4))/d(k)
-  end do
+  enddo
 
   go to 90
 !
@@ -5093,13 +5093,13 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
      +as-par2*(an+1.0d0)*(an+2.0d0)*v(i-2))/ &
      (par2*(an-1.0d0)*(an-2.0d0))
     an = an+2.0d0
-  end do
+  enddo
 
 90 continue
 
   do j = 1, 13
     chebmo(m,2*j-1) = v(j)
-  end do
+  enddo
 !
 !  Compute the Chebyshev moments with respect to sine.
 !
@@ -5117,7 +5117,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
       an = k
       chebmo(m,2*k) = -sinpar/(an*(2.0d0*an-2.0d0)) &
                  -2.5e-01*parint*(v(k+1)/an-v(k)/(an-1.0d0))
-    end do
+    enddo
 !
 !  Compute the Chebyshev moments by means of forward recursion.
 !
@@ -5132,7 +5132,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
        /(par2*(an-1.0d0)*(an-2.0d0))
       an = an+2.0d0
       chebmo(m,2*i) = v(i)
-    end do
+    enddo
 
   endif
 
@@ -5157,7 +5157,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
     isym = 26-i
     fval(i) = f(hlgth*x(i-1)+centr)
     fval(isym) = f(centr-hlgth*x(i-1))
-  end do
+  enddo
 
   call qcheb ( x, fval, cheb12, cheb24 )
 !
@@ -5176,7 +5176,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
     estc = estc+abs((cheb12(k)-cheb24(k))*chebmo(m,k))
     ests = ests+abs((cheb12(k+1)-cheb24(k+1))*chebmo(m,k+1))
     k = k-2
-  end do
+  enddo
 
   resc24 = cheb24(25)*chebmo(m,25)
   ress24 = 0.0d0
@@ -5196,7 +5196,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
 
     k = k-2
 
-  end do
+  enddo
 
   resabs = resabs * abs ( hlgth )
 
@@ -5374,7 +5374,7 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
     isym = 26-i
     fval(i) = f(u+centr)*(fix-u)**beta
     fval(isym) = f(centr-u)*(fix+u)**beta
-  end do
+  enddo
 
   factor = hlgth**(alfa+1.0d0)
   result = 0.0d0
@@ -5391,11 +5391,11 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
   do i = 1, 13
     res12 = res12+cheb12(i)*ri(i)
     res24 = res24+cheb24(i)*ri(i)
-  end do
+  enddo
 
   do i = 14, 25
     res24 = res24 + cheb24(i) * ri(i)
-  end do
+  enddo
 
   if( integr == 1 ) go to 130
 !
@@ -5410,11 +5410,11 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
   do i = 1, 13
     res12 = res12+cheb12(i)*rg(i)
     res24 = res24+cheb24(i)*rg(i)
-  end do
+  enddo
 
   do i = 14, 25
     res24 = res24+cheb24(i)*rg(i)
-  end do
+  enddo
 
   go to 130
 !
@@ -5432,7 +5432,7 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
     isym = 26-i
     fval(i) = fval(i) * log ( fix - u )
     fval(isym) = fval(isym) * log ( fix + u )
-  end do
+  enddo
 
   call qcheb ( x, fval, cheb12, cheb24 )
 !
@@ -5441,11 +5441,11 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
   do i = 1, 13
     res12 = res12+cheb12(i)*ri(i)
     res24 = res24+cheb24(i)*ri(i)
-  end do
+  enddo
 
   do i = 14, 25
     res24 = res24+cheb24(i)*ri(i)
-  end do
+  enddo
 
   if( integr == 3 ) then
     go to 130
@@ -5462,11 +5462,11 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
   do i = 1, 13
     res12 = res12+cheb12(i)*rg(i)
     res24 = res24+cheb24(i)*rg(i)
-  end do
+  enddo
 
   do i = 14, 25
     res24 = res24+cheb24(i)*rg(i)
-  end do
+  enddo
 
 130 continue
 
@@ -5493,7 +5493,7 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
     isym = 26-i
     fval(i) = f(u+centr)*(fix+u)**alfa
     fval(isym) = f(centr-u)*(fix-u)**alfa
-  end do
+  enddo
 
   factor = hlgth**(beta+1.0d0)
   result = 0.0d0
@@ -5512,11 +5512,11 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
   do i = 1, 13
     res12 = res12+cheb12(i)*rj(i)
     res24 = res24+cheb24(i)*rj(i)
-  end do
+  enddo
 
   do i = 14, 25
     res24 = res24+cheb24(i)*rj(i)
-  end do
+  enddo
 
   if( integr == 1 ) go to 260
 !
@@ -5531,11 +5531,11 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
   do i = 1, 13
     res12 = res12+cheb12(i)*rh(i)
     res24 = res24+cheb24(i)*rh(i)
-  end do
+  enddo
 
   do i = 14, 25
     res24 = res24+cheb24(i)*rh(i)
-  end do
+  enddo
 
   go to 260
 !
@@ -5553,7 +5553,7 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
     isym = 26-i
     fval(i) = fval(i) * log(u+fix)
     fval(isym) = fval(isym) * log(fix-u)
-  end do
+  enddo
 
   call qcheb ( x, fval, cheb12, cheb24 )
 !
@@ -5562,11 +5562,11 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
   do i = 1, 13
     res12 = res12+cheb12(i)*rj(i)
     res24 = res24+cheb24(i)*rj(i)
-  end do
+  enddo
 
   do i = 14, 25
     res24 = res24+cheb24(i)*rj(i)
-  end do
+  enddo
 
   if( integr == 2 ) go to 260
 
@@ -5581,11 +5581,11 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
   do i = 1, 13
     res12 = res12+cheb12(i)*rh(i)
     res24 = res24+cheb24(i)*rh(i)
-  end do
+  enddo
 
   do i = 14, 25
     res24 = res24+cheb24(i)*rh(i)
-  end do
+  enddo
 
 260 continue
 
@@ -5657,7 +5657,7 @@ subroutine qcheb ( x, fval, cheb12, cheb24 )
     j = 26-i
     v(i) = fval(i)-fval(j)
     fval(i) = fval(i)+fval(j)
-  end do
+  enddo
 
   alam1 = v(1)-v(9)
   alam2 = x(6)*(v(3)-v(7)-v(11))
@@ -5703,7 +5703,7 @@ subroutine qcheb ( x, fval, cheb12, cheb24 )
     j = 14-i
     v(i) = fval(i)-fval(j)
     fval(i) = fval(i)+fval(j)
-  end do
+  enddo
 
   alam1 = v(1)+x(8)*v(5)
   alam2 = x(4)*v(3)
@@ -5724,7 +5724,7 @@ subroutine qcheb ( x, fval, cheb12, cheb24 )
     j = 8-i
     v(i) = fval(i)-fval(j)
     fval(i) = fval(i)+fval(j)
-  end do
+  enddo
 
   cheb12(5) = v(1)+x(8)*v(3)
   cheb12(9) = fval(1)-x(8)*fval(3)
@@ -5744,7 +5744,7 @@ subroutine qcheb ( x, fval, cheb12, cheb24 )
 
   do i = 2, 12
     cheb12(i) = cheb12(i)*alam
-  end do
+  enddo
 
   alam = 5.0e-01*alam
   cheb12(1) = cheb12(1)*alam
@@ -5752,7 +5752,7 @@ subroutine qcheb ( x, fval, cheb12, cheb24 )
 
   do i = 2, 24
     cheb24(i) = cheb24(i)*alam
-  end do
+  enddo
 
   cheb24(1) = 0.5d0 * alam*cheb24(1)
   cheb24(25) = 0.5d0 * alam*cheb24(25)
@@ -5940,7 +5940,7 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
       result = res
     endif
 
-  end do
+  enddo
 !
 !  Shift the table.
 !
@@ -5960,7 +5960,7 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
     ib2 = ib+2
     epstab(ib) = epstab(ib2)
     ib = ib2
-  end do
+  enddo
 
   if( num /= n ) then
 
@@ -5969,7 +5969,7 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
     do i = 1, n
       epstab(i)= epstab(indx)
       indx = indx+1
-    end do
+    enddo
 
   endif
 
@@ -6534,7 +6534,7 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
       errmax = elist(maxerr)
       if( abs(blist(maxerr)-alist(maxerr)) > small ) go to 140
       nrmax = nrmax+1
-    end do
+    enddo
 !
 !  Perform extrapolation.
 !
@@ -6599,7 +6599,7 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 
 140 continue
 
-  end do
+  enddo
 !
 !  set the final result.
 !
@@ -6790,7 +6790,7 @@ subroutine qk15 ( f, a, b, result, abserr, resabs, resasc )
     resg = resg+wg(j)*fsum
     resk = resk+wgk(jtw)*fsum
     resabs = resabs+wgk(jtw)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   do j = 1, 4
     jtwm1 = j*2-1
@@ -6802,14 +6802,14 @@ subroutine qk15 ( f, a, b, result, abserr, resabs, resasc )
     fsum = fval1+fval2
     resk = resk+wgk(jtwm1)*fsum
     resabs = resabs+wgk(jtwm1)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   reskh = resk * 5.0e-01
   resasc = wgk(8)*abs(fc-reskh)
 
   do j = 1, 7
     resasc = resasc+wgk(j)*(abs(fv1(j)-reskh)+abs(fv2(j)-reskh))
-  end do
+  enddo
 
   result = resk*hlgth
   resabs = resabs*dhlgth
@@ -7002,14 +7002,14 @@ subroutine qk15i ( f, boun, inf, a, b, result, abserr, resabs, resasc )
     resg = resg+wg(j)*fsum
     resk = resk+wgk(j)*fsum
     resabs = resabs+wgk(j)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   reskh = resk * 5.0e-01
   resasc = wgk(8) * abs(fc-reskh)
 
   do j = 1, 7
     resasc = resasc + wgk(j)*(abs(fv1(j)-reskh)+abs(fv2(j)-reskh))
-  end do
+  enddo
 
   result = resk * hlgth
   resasc = resasc * hlgth
@@ -7142,14 +7142,14 @@ subroutine qk15ic ( f, fcplx, boun, inf, a, b, result, abserr, resabs, resasc )
     resg = resg+wg(j)*fsum
     resk = resk+wgk(j)*fsum
     resabs = resabs+wgk(j)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   reskh = resk * 5.0e-01
   resasc = wgk(8) * abs(fc-reskh)
 
   do j = 1, 7
     resasc = resasc + wgk(j)*(abs(fv1(j)-reskh)+abs(fv2(j)-reskh))
-  end do
+  enddo
 
   result = resk * hlgth
   resasc = resasc * hlgth
@@ -7327,7 +7327,7 @@ subroutine qk15w ( f, w, p1, p2, p3, p4, kp, a, b, result, abserr, resabs, &
     resg = resg+wg(j)*fsum
     resk = resk+wgk(jtw)*fsum
     resabs = resabs+wgk(jtw)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   do j = 1, 4
     jtwm1 = j*2-1
@@ -7341,14 +7341,14 @@ subroutine qk15w ( f, w, p1, p2, p3, p4, kp, a, b, result, abserr, resabs, &
     fsum = fval1+fval2
     resk = resk+wgk(jtwm1)*fsum
     resabs = resabs+wgk(jtwm1)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   reskh = resk*5.0e-01
   resasc = wgk(8)*abs(fc-reskh)
 
   do j = 1, 7
     resasc = resasc+wgk(j)*(abs(fv1(j)-reskh)+abs(fv2(j)-reskh))
-  end do
+  enddo
 
   result = resk*hlgth
   resabs = resabs*dhlgth
@@ -7514,7 +7514,7 @@ subroutine qk21 ( f, a, b, result, abserr, resabs, resasc )
     resg = resg+wg(j)*fsum
     resk = resk+wgk(jtw)*fsum
     resabs = resabs+wgk(jtw)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   do j = 1, 5
     jtwm1 = 2*j-1
@@ -7526,14 +7526,14 @@ subroutine qk21 ( f, a, b, result, abserr, resabs, resasc )
     fsum = fval1+fval2
     resk = resk+wgk(jtwm1)*fsum
     resabs = resabs+wgk(jtwm1)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   reskh = resk*5.0e-01
   resasc = wgk(11)*abs(fc-reskh)
 
   do j = 1, 10
     resasc = resasc+wgk(j)*(abs(fv1(j)-reskh)+abs(fv2(j)-reskh))
-  end do
+  enddo
 
   result = resk*hlgth
   resabs = resabs*dhlgth
@@ -7703,7 +7703,7 @@ subroutine qk31 ( f, a, b, result, abserr, resabs, resasc )
     resg = resg+wg(j)*fsum
     resk = resk+wgk(jtw)*fsum
     resabs = resabs+wgk(jtw)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   do j = 1, 8
     jtwm1 = j*2-1
@@ -7715,14 +7715,14 @@ subroutine qk31 ( f, a, b, result, abserr, resabs, resasc )
     fsum = fval1+fval2
     resk = resk+wgk(jtwm1)*fsum
     resabs = resabs+wgk(jtwm1)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   reskh = resk*5.0e-01
   resasc = wgk(16)*abs(fc-reskh)
 
   do j = 1, 15
     resasc = resasc+wgk(j)*(abs(fv1(j)-reskh)+abs(fv2(j)-reskh))
- end do
+ enddo
 
   result = resk*hlgth
   resabs = resabs*dhlgth
@@ -7899,7 +7899,7 @@ subroutine qk41 ( f, a, b, result, abserr, resabs, resasc )
     resg = resg+wg(j)*fsum
     resk = resk+wgk(jtw)*fsum
     resabs = resabs+wgk(jtw)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   do j = 1, 10
     jtwm1 = j*2-1
@@ -7911,14 +7911,14 @@ subroutine qk41 ( f, a, b, result, abserr, resabs, resasc )
     fsum = fval1+fval2
     resk = resk+wgk(jtwm1)*fsum
     resabs = resabs+wgk(jtwm1)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   reskh = resk*5.0e-01
   resasc = wgk(21)*abs(fc-reskh)
 
   do j = 1, 20
     resasc = resasc+wgk(j)*(abs(fv1(j)-reskh)+abs(fv2(j)-reskh))
-  end do
+  enddo
 
   result = resk*hlgth
   resabs = resabs*dhlgth
@@ -8103,7 +8103,7 @@ subroutine qk51 ( f, a, b, result, abserr, resabs, resasc )
     resg = resg+wg(j)*fsum
     resk = resk+wgk(jtw)*fsum
     resabs = resabs+wgk(jtw)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   do j = 1, 13
     jtwm1 = j*2-1
@@ -8115,14 +8115,14 @@ subroutine qk51 ( f, a, b, result, abserr, resabs, resasc )
     fsum = fval1+fval2
     resk = resk+wgk(jtwm1)*fsum
     resabs = resabs+wgk(jtwm1)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   reskh = resk*5.0e-01
   resasc = wgk(26)*abs(fc-reskh)
 
   do j = 1, 25
     resasc = resasc+wgk(j)*(abs(fv1(j)-reskh)+abs(fv2(j)-reskh))
-  end do
+  enddo
 
   result = resk*hlgth
   resabs = resabs*dhlgth
@@ -8319,7 +8319,7 @@ subroutine qk61 ( f, a, b, result, abserr, resabs, resasc )
     resg = resg+wg(j)*fsum
     resk = resk+wgk(jtw)*fsum
     resabs = resabs+wgk(jtw)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   do j = 1, 15
     jtwm1 = j*2-1
@@ -8331,14 +8331,14 @@ subroutine qk61 ( f, a, b, result, abserr, resabs, resasc )
     fsum = fval1+fval2
     resk = resk+wgk(jtwm1)*fsum
     resabs = resabs+wgk(jtwm1)*(abs(fval1)+abs(fval2))
-  end do
+  enddo
 
   reskh = resk * 5.0e-01
   resasc = wgk(31)*abs(fc-reskh)
 
   do j = 1, 30
     resasc = resasc+wgk(j)*(abs(fv1(j)-reskh)+abs(fv2(j)-reskh))
-  end do
+  enddo
 
   result = resk*hlgth
   resabs = resabs*dhlgth
@@ -8455,7 +8455,7 @@ subroutine qmomo ( alfa, beta, ri, rj, rg, rh, integr )
     rj(i) = -(rbet+an*(an-betp2)*rj(i-1))/(anm1*(an+betp1))
     anm1 = an
     an = an+1.0d0
-  end do
+  enddo
 
   if( integr == 1 ) go to 70
   if( integr == 3 ) go to 40
@@ -8474,7 +8474,7 @@ subroutine qmomo ( alfa, beta, ri, rj, rg, rh, integr )
     anm1 = an
     an = an+1.0d0
     im1 = i
-  end do
+  enddo
 
   if( integr == 2 ) go to 70
 !
@@ -8494,17 +8494,17 @@ subroutine qmomo ( alfa, beta, ri, rj, rg, rh, integr )
     anm1 = an
     an = an+1.0d0
     im1 = i
-  end do
+  enddo
 
   do i = 2, 25, 2
     rh(i) = -rh(i)
-  end do
+  enddo
 
    70 continue
 
   do i = 2, 25, 2
     rj(i) = -rj(i)
-  end do
+  enddo
 
 !  90 continue
 
@@ -8781,7 +8781,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
         savfun(k) = fval
         fv1(k) = fval1
         fv2(k) = fval2
-      end do
+      enddo
 
       ipx = 5
 
@@ -8796,7 +8796,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
         savfun(ipx) = fval
         fv3(k) = fval1
         fv4(k) = fval2
-      end do
+      enddo
 !
 !  Test for convergence.
 !
@@ -8808,7 +8808,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
       do k = 1, 5
         resasc = resasc+w21a(k)*(abs(fv1(k)-reskh)+abs(fv2(k)-reskh)) &
                      +w21b(k)*(abs(fv3(k)-reskh)+abs(fv4(k)-reskh))
-      end do
+      enddo
 
       abserr = abs ( ( res21 - res10 ) * hlgth )
       resasc = resasc * dhlgth
@@ -8822,7 +8822,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 
       do k = 1, 10
         res43 = res43 + savfun(k) * w43a(k)
-      end do
+      enddo
 
       do k = 1, 11
         ipx = ipx + 1
@@ -8830,7 +8830,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
         fval = f(absc+centr) + f(centr-absc)
         res43 = res43 + fval * w43b(k)
         savfun(ipx) = fval
-      end do
+      enddo
 !
 !  Test for convergence.
 !
@@ -8846,12 +8846,12 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 
       do k = 1, 21
         res87 = res87 + savfun(k) * w87a(k)
-      end do
+      enddo
 
       do k = 1, 22
         absc = hlgth * x4(k)
         res87 = res87 + w87b(k) * ( f(absc+centr) + f(centr-absc) )
-      end do
+      enddo
 
       result = res87 * hlgth
       abserr = abs ( ( res87 - res43) * hlgth )
@@ -8874,7 +8874,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
       exit
     endif
 
-  end do
+  enddo
 
   return
 end
@@ -8975,7 +8975,7 @@ subroutine qsort ( limit, last, maxerr, ermax, elist, iord, nrmax )
     iord(nrmax) = isucc
     nrmax = nrmax-1
 
-  end do
+  enddo
 !
 !  Compute the number of elements in the list to be maintained
 !  in descending order.  This number depends on the number of
@@ -9001,7 +9001,7 @@ subroutine qsort ( limit, last, maxerr, ermax, elist, iord, nrmax )
       go to 60
     endif
     iord(i-1) = isucc
-  end do
+  enddo
 
   iord(jbnd) = maxerr
   iord(jupbn) = last
@@ -9021,7 +9021,7 @@ subroutine qsort ( limit, last, maxerr, ermax, elist, iord, nrmax )
     endif
     iord(k+1) = isucc
     k = k-1
-  end do
+  enddo
 
   iord(i) = last
   go to 90
@@ -9193,7 +9193,7 @@ function qwgts ( x, a, b, alfa, beta, integr )
 
   return
 end
-subroutine timestamp ( )
+subroutine timestamp ()
 
 !*****************************************************************************80*
 !

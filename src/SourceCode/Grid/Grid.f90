@@ -25,6 +25,8 @@ module Grid
     !> Base Grid class
     type, abstract :: Grid_t
         !
+        integer :: n_grids
+        !
         logical :: is_allocated
         !
         integer :: nx, ny, nz
@@ -71,6 +73,8 @@ module Grid
             !> Base Grid methods
             procedure, public :: baseInit => initialize_Grid
             procedure, public :: baseDealloc => deallocate_Grid
+            !
+            procedure, public :: getNGrids => getNGrids_Grid
             !
             procedure, public :: getDimensions => getDimensions_Grid
             !
@@ -216,6 +220,8 @@ contains
         !
         class( Grid_t ), intent( inout ) :: self
         !
+        self%n_grids = 0
+        !
         self%geometry = REGION
         !
         self%ox = R_ZERO
@@ -275,6 +281,19 @@ contains
         self%is_allocated = .FALSE.
         !
     end subroutine deallocate_Grid
+    !
+    !> No subroutine briefing
+    !
+    function getNGrids_Grid( self ) result( n_grids )
+        implicit none
+        !
+        class( Grid_t ), intent( in ) :: self
+        !
+        integer :: n_grids
+        !
+        n_grids = self%n_grids
+        !
+    end function getNGrids_Grid
     !
     !> No subroutine briefing
     !

@@ -31,8 +31,8 @@ module rVector3D_SG
             procedure, public :: sumEdge => sumEdge_rVector3D_SG
             procedure, public :: sumEdgeVTI => sumEdgeVTI_rVector3D_SG
             !
-            procedure, public :: avgCell => avgCell_rVector3D_SG
-            procedure, public :: avgCellVTI => avgCellVTI_rVector3D_SG
+            procedure, public :: sumCell => sumCell_rVector3D_SG
+            procedure, public :: sumCellVTI => sumCellVTI_rVector3D_SG
             !
             procedure, public :: conjugate => conjugate_rVector3D_SG
             !
@@ -116,7 +116,6 @@ contains
         self%nz = self%grid%nz
         !
         self%grid_type = trim( grid_type )
-        self%is_allocated = .FALSE.
         !
         if( self%grid_type == EDGE ) then
             !
@@ -152,7 +151,7 @@ contains
             call errStop( "rVector3D_SG_ctor > Only EDGE or FACE types allowed." )
         endif
         !
-        if(self%is_allocated) then
+        if( self%is_allocated ) then
             self%x = C_ZERO
             self%y = C_ZERO
             self%z = C_ZERO
@@ -537,7 +536,6 @@ contains
         class( Scalar_t ), allocatable, intent( out ) :: cell_out
         logical, intent( in ), optional :: interior_only
         !
-        type( rScalar3D_SG_t ) :: cell_out_temp
         integer :: x_xend, x_yend, x_zend
         integer :: y_xend, y_yend, y_zend
         integer :: z_xend, z_yend, z_zend
@@ -557,7 +555,7 @@ contains
             call self%setAllBoundary( C_ZERO )
         endif
         !
-        cell_out_temp = rScalar3D_SG_t( self%grid, CELL )
+        allocate( cell_out, source = rScalar3D_SG_t( self%grid, CELL ) )
         !
         select case( self%grid_type )
             !
@@ -575,7 +573,7 @@ contains
                 z_yend = size(self%z, 2)
                 z_zend = size(self%z, 3)
                 !
-                cell_out_temp%v = self%x(:,1:x_yend-1,1:x_zend-1) + &
+                call cell_out%setV( cmplx( self%x(:,1:x_yend-1,1:x_zend-1) + &
                                   self%x(:,2:x_yend,1:x_zend-1)   + &
                                   self%x(:,1:x_yend-1,2:x_zend)   + &
                                   self%x(:,2:x_yend,2:x_zend)     + &
@@ -586,7 +584,7 @@ contains
                                   self%z(1:z_xend-1,1:z_yend-1,:) + &
                                   self%z(2:z_xend,1:z_yend-1,:)   + &
                                   self%z(1:z_xend-1,2:z_yend,:)   + &
-                                  self%z(2:z_xend,2:z_yend,:)
+                                  self%z(2:z_xend,2:z_yend,:), 0., kind=prec ) )
                 !
             case( FACE )
                 !
@@ -594,15 +592,13 @@ contains
                 y_xend = size(self%y, 1)
                 z_xend = size(self%z, 1)
                 !
-                cell_out_temp%v = self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
+                call cell_out%setV( cmplx( self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
                                   self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:) + &
-                                  self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
+                                  self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend), 0., kind=prec ) )
                 !
             case default
                 call errStop( "sumEdge_rVector3D_SG: undefined self%grid_type" )
         end select
-        !
-        allocate( cell_out, source = cell_out_temp )
         !
     end subroutine sumEdge_rVector3D_SG
     !
@@ -613,7 +609,6 @@ contains
         class( Scalar_t ), allocatable, intent( out ) :: cell_h_out, cell_v_out
         logical, optional, intent( in ) :: interior_only
         !
-        type( rScalar3D_SG_t ) :: cell_h_out_temp, cell_v_out_temp
         integer :: x_xend, x_yend, x_zend
         integer :: y_xend, y_yend, y_zend
         integer :: z_xend, z_yend, z_zend
@@ -633,9 +628,9 @@ contains
             call self%setAllBoundary( C_ZERO )
         endif
         !
-        cell_h_out_temp = rScalar3D_SG_t( self%grid, CELL )
+        allocate( cell_h_out, source = rScalar3D_SG_t( self%grid, CELL ) )
         !
-        cell_v_out_temp = rScalar3D_SG_t( self%grid, CELL )
+        allocate( cell_v_out, source = rScalar3D_SG_t( self%grid, CELL ) )
         !
         select case( self%grid_type )
             !
@@ -653,19 +648,19 @@ contains
                 z_yend = size( self%z, 2 )
                 z_zend = size( self%z, 3 )
                 !
-                cell_h_out_temp%v = self%x(:,1:x_yend-1,1:x_zend-1) + &
+                call cell_h_out%setV( cmplx( self%x(:,1:x_yend-1,1:x_zend-1) + &
                                     self%x(:,2:x_yend,1:x_zend-1)   + &
                                     self%x(:,1:x_yend-1,2:x_zend)   + &
                                     self%x(:,2:x_yend,2:x_zend)     + &
                                     self%y(1:y_xend-1,:,1:y_zend-1) + &
                                     self%y(2:y_xend,:,1:y_zend-1)   + &
                                     self%y(1:y_xend-1,:,2:y_zend)   + &
-                                    self%y(2:y_xend,:,2:y_zend)
+                                    self%y(2:y_xend,:,2:y_zend), 0., kind=prec ) )
                 !
-                cell_v_out_temp%v = self%z(1:z_xend-1,1:z_yend-1,:) + &
+                call cell_v_out%setV( cmplx( self%z(1:z_xend-1,1:z_yend-1,:) + &
                                     self%z(2:z_xend,1:z_yend-1,:)   + &
                                     self%z(1:z_xend-1,2:z_yend,:)   + &
-                                    self%z(2:z_xend,2:z_yend,:)
+                                    self%z(2:z_xend,2:z_yend,:), 0., kind=prec ) )
                 !
             case( FACE )
                 !
@@ -673,25 +668,21 @@ contains
                 y_xend = size( self%y, 1 )
                 z_xend = size( self%z, 1 )
                 !
-                cell_h_out_temp%v = self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
-                                    self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:)
+                call cell_h_out%setV( cmplx( self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
+                                    self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:), 0., kind=prec ) )
                 !
-                cell_v_out_temp%v = self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
+                call cell_v_out%setV( cmplx( self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend), 0., kind=prec ) )
                 !
             case default
                 call errStop( "sumEdgeVTI_rVector3D_SG: undefined self%grid_type" )
             !
         end select
         !
-        allocate( cell_h_out, source = cell_h_out_temp )
-        !
-        allocate( cell_v_out, source = cell_v_out_temp )
-        !
     end subroutine sumEdgeVTI_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine avgCell_rVector3D_SG( self, cell_in, ptype )
+    subroutine sumCell_rVector3D_SG( self, cell_in, ptype )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -705,15 +696,15 @@ contains
         integer :: ix, iy, iz
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "avgCell_rVector3D_SG > self not allocated." )
+             call errStop( "sumCell_rVector3D_SG > self not allocated." )
         endif
         !
         if( .NOT. cell_in%is_allocated ) then
-             call errStop( "avgCell_rVector3D_SG > cell_in not allocated." )
+             call errStop( "sumCell_rVector3D_SG > cell_in not allocated." )
         endif
         !
         if( index( self%grid_type, CELL ) > 0 ) then
-            call errStop( "avgCell_rVector3D_SG > Only CELL type supported." )
+            call errStop( "sumCell_rVector3D_SG > Only CELL type supported." )
         endif
         !
         if( .NOT. present( ptype ) ) then
@@ -738,8 +729,8 @@ contains
                 do ix = 1, self%grid%nx
                     do iy = 2, self%grid%ny
                         do iz = 2, self%grid%nz
-                            self%x(ix, iy, iz) = (cell_in_v(ix, iy-1, iz-1) + cell_in_v(ix, iy, iz-1) + &
-                            cell_in_v(ix, iy-1, iz) + cell_in_v(ix, iy, iz))/4.0d0
+                            self%x(ix, iy, iz) = ( cell_in_v(ix, iy-1, iz-1) + cell_in_v(ix, iy, iz-1) + &
+                            cell_in_v(ix, iy-1, iz) + cell_in_v(ix, iy, iz) )! / 4.0d0
                         enddo
                     enddo
                 enddo
@@ -748,8 +739,8 @@ contains
                 do ix = 2, self%grid%nx
                     do iy = 1, self%grid%ny
                         do iz = 2, self%grid%nz
-                            self%y(ix, iy, iz) = (cell_in_v(ix-1, iy, iz-1) + cell_in_v(ix, iy, iz-1) + &
-                            cell_in_v(ix-1, iy, iz) + cell_in_v(ix, iy, iz))/4.0d0
+                            self%y(ix, iy, iz) = ( cell_in_v(ix-1, iy, iz-1) + cell_in_v(ix, iy, iz-1) + &
+                            cell_in_v(ix-1, iy, iz) + cell_in_v(ix, iy, iz) )! / 4.0d0
                         enddo
                     enddo
                 enddo
@@ -758,8 +749,8 @@ contains
                 do ix = 2, self%grid%nx
                     do iy = 2, self%grid%ny
                         do iz = 1, self%grid%nz
-                            self%z(ix, iy, iz) = (cell_in_v(ix-1, iy-1, iz) + cell_in_v(ix-1, iy, iz) + &
-                            cell_in_v(ix, iy-1, iz) + cell_in_v(ix, iy, iz))/4.0d0
+                            self%z(ix, iy, iz) = ( cell_in_v(ix-1, iy-1, iz) + cell_in_v(ix-1, iy, iz) + &
+                            cell_in_v(ix, iy-1, iz) + cell_in_v(ix, iy, iz) )! / 4.0d0
                         enddo
                     enddo
                 enddo
@@ -776,15 +767,15 @@ contains
                 self%z(:, :, 2:zend-1) = cell_in_v(:, :, 1:v_zend-1) + cell_in_v(:, :, 2:v_zend)
                 !
             case default
-                call errStop( "avgCell_rVector3D_SG: Unknown type" )
+                call errStop( "sumCell_rVector3D_SG: Unknown type" )
             !
         end select !type
         !
-    end subroutine avgCell_rVector3D_SG
+    end subroutine sumCell_rVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine avgCellVTI_rVector3D_SG( self, cell_h_in, cell_v_in, ptype )
+    subroutine sumCellVTI_rVector3D_SG( self, cell_h_in, cell_v_in, ptype )
         implicit none
         !
         class( rVector3D_SG_t ), intent( inout ) :: self
@@ -798,19 +789,19 @@ contains
         integer :: ix, iy, iz
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "avgCellVTI_rVector3D_SG > self not allocated." )
+             call errStop( "sumCellVTI_rVector3D_SG > self not allocated." )
         endif
         !
         if( .NOT. cell_h_in%is_allocated ) then
-             call errStop( "avgCellVTI_rVector3D_SG > cell_h_in not allocated." )
+             call errStop( "sumCellVTI_rVector3D_SG > cell_h_in not allocated." )
         endif
         !
         if( .NOT. cell_v_in%is_allocated ) then
-             call errStop( "avgCellVTI_rVector3D_SG > cell_v_in not allocated." )
+             call errStop( "sumCellVTI_rVector3D_SG > cell_v_in not allocated." )
         endif
         !
         if( index( self%grid_type, CELL ) > 0 ) then
-            call errStop( "avgCellVTI_rVector3D_SG > Only CELL type supported." )
+            call errStop( "sumCellVTI_rVector3D_SG > Only CELL type supported." )
         endif
         !
         if( .NOT. present( ptype ) ) then
@@ -837,7 +828,7 @@ contains
                     do iy = 2, self%grid%ny
                         do iz = 2, self%grid%nz
                             self%x(ix, iy, iz) = ( v_h(ix, iy-1, iz-1) + v_h(ix, iy, iz-1) + &
-                            v_h(ix, iy-1, iz) + v_h(ix, iy, iz) ) / 4.0d0
+                            v_h(ix, iy-1, iz) + v_h(ix, iy, iz) )! / 4.0d0
                         enddo
                     enddo
                 enddo
@@ -847,7 +838,7 @@ contains
                     do iy = 1, self%grid%ny
                         do iz = 2, self%grid%nz
                             self%y(ix, iy, iz) = ( v_h(ix-1, iy, iz-1) + v_h(ix, iy, iz-1) + &
-                            v_h(ix-1, iy, iz) + v_h(ix, iy, iz) ) / 4.0d0
+                            v_h(ix-1, iy, iz) + v_h(ix, iy, iz) )! / 4.0d0
                         enddo
                     enddo
                 enddo
@@ -857,7 +848,7 @@ contains
                     do iy = 2, self%grid%ny
                         do iz = 1, self%grid%nz
                             self%z(ix, iy, iz) = ( v_v(ix-1, iy-1, iz) + v_v(ix-1, iy, iz) + &
-                            v_v(ix, iy-1, iz) + v_v(ix, iy, iz) ) / 4.0d0
+                            v_v(ix, iy-1, iz) + v_v(ix, iy, iz) )! / 4.0d0
                         enddo
                     enddo
                 enddo
@@ -874,11 +865,11 @@ contains
                 self%z(:, :, 2:zend-1) = v_v(:, :, 1:v_zend-1) + v_v(:, :, 2:v_zend)
                 !
             case default
-                call errStop( "avgCellVTI_rVector3D_SG: Unknown type" )
+                call errStop( "sumCellVTI_rVector3D_SG: Unknown type" )
             !
         end select !grid_type
         !
-    end subroutine avgCellVTI_rVector3D_SG
+    end subroutine sumCellVTI_rVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -2045,14 +2036,17 @@ contains
     subroutine print_rVector3D_SG( self, io_unit, title, append )
         implicit none
         !
-        class( rVector3D_SG_t ), intent( inout ) :: self
+        class( rVector3D_SG_t ), intent( in ) :: self
         integer, intent( in ), optional :: io_unit
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append
         !
+        type( rVector3D_SG_t ) :: copy
         integer :: ix, iy, iz, funit
         !
-        call self%switchStoreState( compound )
+        copy = self
+        !
+        call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit
@@ -2062,35 +2056,35 @@ contains
         !
         if( present( title ) ) write( funit, * ) title
         !
-        write( funit, * ) self%nx, self%ny, self%nz
-        write(funit, * ) "x-component",self%NdX
-        do ix = 1, self%NdX(1)
-             do iy = 1, self%NdX(2)
-                do iz = 1, self%NdX(3)
-                     if( self%x( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
+        write( funit, * ) copy%nx, copy%ny, copy%nz
+        write(funit, * ) "x-component",copy%NdX
+        do ix = 1, copy%NdX(1)
+             do iy = 1, copy%NdX(2)
+                do iz = 1, copy%NdX(3)
+                     if( copy%x( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", copy%x( ix, iy, iz ), "]"
                      endif
                 enddo
              enddo
         enddo
         !
-        write(funit,*) "y-component",self%NdY
-        do ix = 1, self%NdY(1)
-             do iy = 1, self%NdY(2)
-                do iz = 1, self%NdY(3)
-                     if( self%y( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", self%y( ix, iy, iz ), "]"
+        write(funit,*) "y-component",copy%NdY
+        do ix = 1, copy%NdY(1)
+             do iy = 1, copy%NdY(2)
+                do iz = 1, copy%NdY(3)
+                     if( copy%y( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", copy%y( ix, iy, iz ), "]"
                      endif
                 enddo
              enddo
         enddo
         !
-        write(funit,*) "z-component",self%NdZ
-        do ix = 1, self%NdZ(1)
-             do iy = 1, self%NdZ(2)
-                do iz = 1, self%NdZ(3)
-                     if( self%z( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", self%z( ix, iy, iz ), "]"
+        write(funit,*) "z-component",copy%NdZ
+        do ix = 1, copy%NdZ(1)
+             do iy = 1, copy%NdZ(2)
+                do iz = 1, copy%NdZ(3)
+                     if( copy%z( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", copy%z( ix, iy, iz ), "]"
                      endif
                 enddo
              enddo

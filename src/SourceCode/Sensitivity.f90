@@ -250,7 +250,7 @@ contains
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         integer, intent( in ), optional :: i_sol
-        class( ModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
+        type( GenModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
         !
         class( ModelParameter_t ), allocatable :: dsigma_tx
         integer :: i_tx, sol_index
@@ -278,7 +278,7 @@ contains
         !> Allocate s_hat array
         if( present( s_hat ) ) then
             !
-            allocate( ModelParameterCell_t :: s_hat( size( transmitters ) ) )
+            allocate( s_hat( size( transmitters ) ) )
             !
         endif
         !
@@ -289,7 +289,7 @@ contains
             !
             if( present( s_hat ) ) then
                 !
-                s_hat( i_tx ) = dsigma_tx
+                allocate( s_hat( i_tx )%m, source = dsigma_tx )
                 !
             endif
             !
@@ -313,9 +313,9 @@ contains
     subroutine JMult_T_Tx( sigma, tx_data, tx_dsigma, i_sol )
         implicit none
         !
-        class( ModelParameter_t ), intent( inout ) :: sigma
+        class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), intent( in ) :: tx_data
-        class( ModelParameter_t ), allocatable, intent( inout ) :: tx_dsigma
+        class( ModelParameter_t ), allocatable, intent( out ) :: tx_dsigma
         integer, intent( in ), optional :: i_sol
         !
         class( Vector_t ), allocatable :: lrows

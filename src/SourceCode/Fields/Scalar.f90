@@ -18,7 +18,7 @@ module Scalar
             procedure( interface_get_v_scalar ), deferred, public :: getV
             procedure( interface_set_v_scalar ), deferred, public :: setV
             !
-            procedure( interface_sum_cell_scalar ), deferred, public :: sumCell
+            procedure( interface_to_node_scalar ), deferred, public :: toNode
             !
             !> Scalar Routines
             !
@@ -62,14 +62,13 @@ module Scalar
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_sum_cell_scalar( self, node_out, interior_only )
+        subroutine interface_to_node_scalar( self, node_scalar, interior_only )
             import :: Scalar_t
             !
-            class( Scalar_t ), intent( inout ) :: self
-            class( Scalar_t ), allocatable, intent( out ) :: node_out
+            class( Scalar_t ), intent( inout ) :: self, node_scalar
             logical, intent( in ), optional :: interior_only
             !
-        end subroutine interface_sum_cell_scalar
+        end subroutine interface_to_node_scalar
         !
     end interface
     !
@@ -143,6 +142,11 @@ contains
         if( self%store_state .EQ. compound ) then
             !
             allocate( array( self%length() ) )
+            ! !
+            ! write( *, * ) "getArray_Scalar: ", &
+            ! self%NdV(1), self%NdV(2), self%NdV(3), &
+            ! self%Nxyz, self%length()
+            ! !
             array = (/reshape( self%getV(), (/self%Nxyz, 1/))/)
             !
         elseif( self%store_state .EQ. singleton ) then
@@ -172,6 +176,9 @@ contains
         call self%deallOtherState
         !
         if( self%store_state .EQ. compound ) then
+            !
+            !write( *, * ) "setArray_Scalar: ", self%NdV(1), self%NdV(2), self%NdV(3), &
+            !self%NdV(1)*self%NdV(2)*self%NdV(3), size( array )
             !
             v = reshape( array, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
             !

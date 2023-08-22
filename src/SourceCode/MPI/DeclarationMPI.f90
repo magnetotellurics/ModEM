@@ -745,7 +745,7 @@ contains
         param_type_size = 0
         !
         if( allocated( model ) ) deallocate( model )
-        allocate( ModelParameterCell_t :: model )
+        allocate( ModelParameterCell_SG_t :: model )
         !
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%anisotropic_level, 1, MPI_INTEGER, main_comm, ierr )
         !
@@ -760,7 +760,7 @@ contains
         !
         select type( model )
             !
-            class is( ModelParameterCell_t )
+            class is( ModelParameterCell_SG_t )
                 !
                 call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                 !
@@ -776,7 +776,7 @@ contains
                     !
                 enddo
                 !
-                call model%setsigMap( model%param_type )
+                call model%setSigMap( model%param_type )
                 !
             class default
                 call errStop( "unpackModelBuffer > Unclassified model" )

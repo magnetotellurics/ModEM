@@ -7,7 +7,8 @@ module ModelReader_Weerachai
     use Utilities
     use rScalar3D_SG
     use rScalar3D_MR
-    use ModelParameterCell
+    use ModelParameterCell_SG
+    use ModelParameterCell_MR
     use ForwardControlFile
     !
     type, extends( ModelReader_t ), public :: ModelReader_Weerachai_t
@@ -37,14 +38,13 @@ contains
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         real( kind=prec ) :: ox, oy, oz, rotDeg
         real( kind=prec ), dimension(:,:,:), allocatable :: rho
-        complex( kind=prec ), dimension(:,:,:), allocatable :: cond_v
-        class( Scalar_t ), allocatable :: ccond
+        type( rScalar3D_SG_t ) :: cell_cond
         real( kind=prec ) :: ALPHA
         character(len=200), dimension(20) :: args
         !
-        integer, allocatable, dimension(:) :: layers, levels
+        integer, allocatable, dimension(:) :: layers
         !
-        layers = (/ 0, 3, 1, 4, 2, 4 /)
+        layers = (/ 0, 6, 1, 14, 2, 10, 3, 10 /)
         !
         someChar = ""
         paramType = ""
@@ -94,13 +94,19 @@ contains
                 case( GRID_SG )
                     allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
                 case( GRID_MR )
+                    !
+                    write( *, * ) "Input layers: [", layers, "]"
+                    !
                     allocate( grid, source = Grid3D_MR_t( nx, ny, nzAir, nzEarth, dx, dy, dz, layers ) )
+                    !
+                    write( *, * ) "OriginalGrid: nx=", grid%nx, ", ny=", grid%ny, "nz=", grid%nz, "with ", grid%getNGrids(), " sub-grids"
+                    !
                 case default
-					!
-					call warning( "readModelReaderWeerachai > grid_format not provided, using Grid3D_SG_t." )
-					!
-					allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
-					!
+                    !
+                    call warning( "readModelReaderWeerachai > grid_format not provided, using Grid3D_SG_t." )
+                    !
+                    allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
+                    !
             end select
             !
             !> Consider isotope at first
@@ -111,7 +117,7 @@ contains
                 !
                 anisotropic_level = 2
                 !
-            end if
+            endif
             !
             !>
             do ii = 1, anisotropic_level
@@ -124,54 +130,58 @@ contains
                     enddo
                 enddo
                 !
-                select type( grid )
-                    !
-                    class is( Grid3D_SG_t )
-                        allocate( ccond, source = rScalar3D_SG_t( grid, CELL_EARTH ) )
-                    class is( Grid3D_MR_t )
-                        allocate( ccond, source = rScalar3D_MR_t( grid, CELL_EARTH ) )
-                    class default
-                        call errStop( "readModelReaderWeerachai > Unknow grid" )
-                    !
-                end select
+                cell_cond = rScalar3D_SG_t( grid, CELL_EARTH )
                 !
-
                 if( index( paramType, "LOGE" ) > 0 .OR. &
                     index( paramType, "LOG10" ) > 0 ) then
                     !
-                    cond_v = cmplx( -rho, 0.0, kind=prec )
+                    cell_cond%v = cmplx( -rho, 0.0, kind=prec )
                     !
                 elseif( index( paramType, "LINEAR" ) > 0 ) then
                     !
-                    cond_v = cmplx( ONE/rho, 0.0, kind=prec )
+                    cell_cond%v = cmplx( ONE/rho, 0.0, kind=prec )
                     !
                 endif
                 !
-                call ccond%setV( cond_v )
-                !
-                deallocate( rho, cond_v )
+                deallocate( rho )
                 !
                 if( anisotropic_level == 1 ) then
                     !
-                    allocate( model, source = ModelParameterCell_t( grid, ccond, 1, paramType ) )
+                    select type( grid )
+                        !
+                        class is( Grid3D_SG_t )
+                            allocate( model, source = ModelParameterCell_SG_t( grid, cell_cond, 1, paramType ) )
+                        class is( Grid3D_MR_t )
+                            allocate( model, source = ModelParameterCell_MR_t( grid, cell_cond, 1, paramType ) )
+                        class default
+                            call errStop( "readModelReaderWeerachai > Unknow grid for ModelParameter" )
+                        !
+                    end select
                     !
                 else
                     !
                     if( allocated( model ) ) then
                         !
-                        call model%setCond( ccond, ii )
+                        call model%setCond( cell_cond, ii )
                         !
                     else
                         !
-                        allocate( model, source = ModelParameterCell_t( grid, ccond, 2, paramType ) )
+                        select type( grid )
+                            !
+                            class is( Grid3D_SG_t )
+                                allocate( model, source = ModelParameterCell_SG_t( grid, cell_cond, 2, paramType ) )
+                            class is( Grid3D_MR_t )
+                                allocate( model, source = ModelParameterCell_MR_t( grid, cell_cond, 2, paramType ) )
+                            class default
+                                call errStop( "readModelReaderWeerachai > Unknow grid for VTI ModelParameter" )
+                            !
+                        end select
                         !
                     endif
                     !
                 endif
                 !
-                deallocate( ccond )
-                !
-            end do
+            enddo
             !
             !> ALWAYS convert modelParam to natural log for computations ????
             paramType = LOGE

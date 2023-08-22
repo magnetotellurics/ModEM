@@ -50,15 +50,14 @@ module SourceCSEM
         class( Vector_t ), allocatable, intent( out ) :: cond_anomaly
         integer, intent( in ) :: ani_level
         !
-        class( Scalar_t ), allocatable :: sigma_cell
-        complex( kind=prec ), allocatable :: v(:,:,:)
+        type( rScalar3D_SG_t ) :: sigma_cell
         class( ModelParameter_t ), allocatable :: aModel
         real( kind=prec ) :: wt, temp_sigma_1d
         integer :: nzAir, nzEarth, i, j, k
         class( Vector_t ), allocatable :: cond_nomaly
         !
         !>
-        allocate( sigma_cell, source = self%sigma%getCond( ani_level ) )
+        sigma_cell = self%sigma%getCond( ani_level )
         !
         nzAir = sigma_cell%grid%nzAir
         !
@@ -86,8 +85,6 @@ module SourceCSEM
         !
         if( trim( get_1D_from ) == "Geometric_mean" ) then
             !
-            v = sigma_cell%getV()
-            !
             do k = nzAir+1, nlay1D
                 !
                 wt = R_ZERO
@@ -98,7 +95,7 @@ module SourceCSEM
                         !
                         wt = wt + sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
                         !
-                        temp_sigma_1d = temp_sigma_1d + v(i,j,k-nzAir) * &
+                        temp_sigma_1d = temp_sigma_1d + sigma_cell%v(i,j,k-nzAir) * &
                         sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
                         !
                     enddo
@@ -132,7 +129,7 @@ module SourceCSEM
         !
         nzEarth = sigma_cell%grid%nzEarth
         !
-        v = SIGMA_AIR
+        sigma_cell%v = SIGMA_AIR
         !
         do k = 1, nzEarth
             !
@@ -142,13 +139,11 @@ module SourceCSEM
             !
             do i = 1, sigma_cell%grid%Nx
                 do j = 1, sigma_cell%grid%Ny
-                    v( i, j, k ) = temp_sigma_1d
+                    sigma_cell%v( i, j, k ) = temp_sigma_1d
                 enddo
             enddo
             !
         enddo
-        !
-        call sigma_cell%setV( v )
         !
         !> Create ModelParam from 1D: aModel
         !> with sigma_cell conductivity in the proper anisotropic direction
