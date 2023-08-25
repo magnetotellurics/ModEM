@@ -45,7 +45,7 @@ module MetricElements
         procedure, public :: setup => setup_MetricElements
         !
         procedure, public :: createScalar, createVector
-    !
+        !
     end type MetricElements_t
     !
     abstract interface
@@ -133,8 +133,19 @@ module MetricElements
             class( MetricElements_t ), intent( in ) :: self
             !
         end subroutine interface_set_all_index_arrays_metric_elements
-        ! !
-        ! subroutine interface_boundary_index_metric_elements( self, grid_type, INDb, INDi )
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_set_limits_metric_elements( self, node_type, nx, ny, nz )
+            import :: MetricElements_t
+            !
+            class( MetricElements_t ), intent( in ) :: self
+            character(*), intent( in ) :: node_type
+            integer, intent( out ) :: nx, ny, nz
+            !
+        end subroutine interface_set_limits_metric_elements
+        ! 
+        !subroutine interface_boundary_index_metric_elements( self, grid_type, INDb, INDi )
             ! import :: MetricElements_t
             ! !
             ! class( MetricElements_t ), intent( in ) :: self
@@ -311,5 +322,5 @@ contains
         endif
         !
     end subroutine createVector
-    !
+	!
 end module MetricElements

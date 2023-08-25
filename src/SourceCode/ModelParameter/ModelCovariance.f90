@@ -342,35 +342,37 @@ contains
             !
             i = 1
             do
-                 read( ioCovariance, *, iostat = istat ) k1, k2
-                 !
-                 if( istat /= 0) exit
-                 !
-                 if( ( k1 < 0 ) .OR. ( k2 > Nz ) ) then
-                        write( *, * ) "Error: read_CmSqrt > While reading the ", i, "th block!"
-                        stop
-                 elseif( k1 > k2) then
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m read_CmSqrt > Block ", i, " will be ignored."
-                 endif
-                 !
-                 do j = Nx, 1, -1
-                        !
-                        read(ioCovariance, *, iostat = istat) temp
-                        !
-                        if( istat /= 0) then
-                             write( *, * ) "Error: read_CmSqrt > While reading the ", j, "th row in ", i,"th block."
-                             stop
-                        endif
-                        !
-                        do k = k1, k2
-                             self%mask%v(j, :, k) = temp
-                        enddo
-                 enddo
-                 !
-                 if( k == Nz) exit
-                 !
-                 i = i + 1
-                 !
+                !
+                read( ioCovariance, *, iostat = istat ) k1, k2
+                !
+                if( istat /= 0) exit
+                !
+                if( ( k1 < 0 ) .OR. ( k2 > Nz ) ) then
+                    write( *, * ) "Error: read_CmSqrt > While reading the ", i, "th block!"
+                    stop
+                elseif( k1 > k2) then
+                    write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m read_CmSqrt > Block ", i, " will be ignored."
+                endif
+                !
+                do j = Nx, 1, -1
+                !
+                read(ioCovariance, *, iostat = istat) temp
+                !
+                if( istat /= 0) then
+                    write( *, * ) "Error: read_CmSqrt > While reading the ", j, "th row in ", i,"th block."
+                    stop
+                endif
+                !
+                do k = k1, k2
+                     self%mask%v(j, :, k) = temp
+                enddo
+                !
+                enddo
+                !
+                if( k == Nz) exit
+                !
+                i = i + 1
+                !
             enddo
             !
             deallocate( temp )
@@ -378,8 +380,7 @@ contains
             close( ioCovariance )
             !
         else
-            write( *, * ) "Error: read_CmSqrt > Cant open file [", cfile, "]!"
-            stop
+            call errStop( "read_CmSqrt > Cant open file ["//cfile//"]!" )
         endif
         !
         !> create a huge sparse vector to make sure we accommodate all smoothing exceptions
@@ -666,6 +667,7 @@ contains
     end subroutine RecursiveARInv
     !
     !> computes the smoothing coefficient in the x-direction based on self
+    !
     function SmoothX( self, i, j, k ) result( alpha )
         implicit none
         !

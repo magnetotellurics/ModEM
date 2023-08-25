@@ -43,7 +43,7 @@ module MetricElements_MR
         procedure, public :: setIndexArrays => setIndexArrays_MetricElements_MR
         !
         procedure, public :: setAllIndexArrays => setAllIndexArrays_MetricElements_MR
-		!
+        !
         !procedure, public :: boundaryIndex => boundaryIndex_MetricElements_MR
         !
     end type MetricElements_MR_t
@@ -390,13 +390,13 @@ contains
         class( MetricElements_MR_t ), intent( in ) :: self
         !
         call self%setIndexArrays( EDGE, self%grid%EDGEb, self%grid%EDGEi, self%grid%EDGEa )
-        write( *, "( a17, i8, a8, i8, a8, i8 )" ) "EDGEb=", size( self%grid%EDGEb ), ", EDGEi=", size( self%grid%EDGEi ), ", EDGEa=", size( self%grid%EDGEa )
+        !write( *, "( a17, i8, a8, i8, a8, i8 )" ) "EDGEb=", size( self%grid%EDGEb ), ", EDGEi=", size( self%grid%EDGEi ), ", EDGEa=", size( self%grid%EDGEa )
         !
         call self%setIndexArrays( FACE, self%grid%FACEb, self%grid%FACEi, self%grid%FACEa )
-        write( *, "( a17, i8, a8, i8, a8, i8 )" ) "FACEb=", size( self%grid%FACEb ), ", FACEi=", size( self%grid%FACEi ), ", FACEa=", size( self%grid%FACEa )
+        !write( *, "( a17, i8, a8, i8, a8, i8 )" ) "FACEb=", size( self%grid%FACEb ), ", FACEi=", size( self%grid%FACEi ), ", FACEa=", size( self%grid%FACEa )
         !
         call self%setIndexArrays( NODE, self%grid%NODEb, self%grid%NODEi, self%grid%NODEa )
-        write( *, "( a17, i8, a8, i8, a8, i8 )" ) "NODEb=", size( self%grid%NODEb ), ", NODEi=", size( self%grid%NODEi ), ", NODEa=", size( self%grid%NODEa )
+        !write( *, "( a17, i8, a8, i8, a8, i8 )" ) "NODEb=", size( self%grid%NODEb ), ", NODEi=", size( self%grid%NODEi ), ", NODEa=", size( self%grid%NODEa )
         !
     end subroutine setAllIndexArrays_MetricElements_MR
     !

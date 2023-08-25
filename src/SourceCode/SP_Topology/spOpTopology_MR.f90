@@ -538,7 +538,7 @@ contains
         integer :: n_rows, n_cols
         !
         n_rows = self%grid%numberOfNodes()
-		!
+        !
         n_cols = size( self%grid%NODEa )
         allocate(R(n_cols), C(n_cols), S(n_cols))
 
@@ -604,7 +604,7 @@ contains
         cC =(/(i, i = 1, 9)/)
 
         do i = 1, 9
-			vecC(i) = rScalar3D_MR_t( self%grid, NODE )
+            vecC(i) = rScalar3D_MR_t( self%grid, NODE )
         enddo
 
         !**

@@ -247,7 +247,7 @@ $(OBJDIR)/ModelParameterCell.o:SourceCode/ModelParameter/ModelParameterCell.f90 
 $(OBJDIR)/ModelParameterCell_SG.o:SourceCode/ModelParameter/ModelParameterCell_SG.f90 $(OBJDIR)/ModelParameterCell.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/ModelParameter/ModelParameterCell_SG.f90 -o $(OBJDIR)/ModelParameterCell_SG.o
 
-$(OBJDIR)/ModelParameterCell_MR.o:SourceCode/ModelParameter/ModelParameterCell_MR.f90 $(OBJDIR)/ModelParameterCell_SG.o 
+$(OBJDIR)/ModelParameterCell_MR.o:SourceCode/ModelParameter/ModelParameterCell_MR.f90 $(OBJDIR)/MetricElements_SG.o $(OBJDIR)/ModelParameterCell_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/ModelParameter/ModelParameterCell_MR.f90 -o $(OBJDIR)/ModelParameterCell_MR.o
 
 $(OBJDIR)/ModelCovariance.o:SourceCode/ModelParameter/ModelCovariance.f90 $(OBJDIR)/Constants.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/cVectorSparse3D_SG.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/iScalar3D_SG.o 

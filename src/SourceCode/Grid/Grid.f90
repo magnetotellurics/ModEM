@@ -64,7 +64,7 @@ module Grid
             procedure( interface_number_of_cells ), deferred, public :: numberOfCells
             procedure( interface_grid_index ), deferred, public :: gridIndex
             procedure( interface_vector_index ), deferred, public :: vectorIndex
-            procedure( interface_limits ), deferred, public :: limits
+            procedure( interface_set_limits ), deferred, public :: setLimits
             !
             procedure( interface_setup_grid ), deferred, public :: setup
             !
@@ -96,6 +96,10 @@ module Grid
             !
             procedure, public :: setupAirLayers => setupAirLayers_Grid
             procedure, public :: updateAirLayers => updateAirLayers_Grid
+            !
+            procedure, public :: nEdges => nEdges_Grid
+            !
+            procedure, public :: nFaces => nFaces_Grid
             !
     end type Grid_t
     !
@@ -179,12 +183,12 @@ module Grid
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_limits(self, node_type, nx, ny, nz)
+        subroutine interface_set_limits(self, node_type, nx, ny, nz)
             import :: Grid_t
             class( Grid_t ), intent( in ) :: self
             character(*), intent( in ) :: node_type
             integer, intent( out ) :: nx, ny, nz
-        end subroutine interface_limits
+        end subroutine interface_set_limits
         !
         !> No interface subroutine briefing
         !
@@ -698,5 +702,45 @@ contains
         call self%setup
         !
     end subroutine updateAirLayers_Grid
+    !
+    !> No subroutine briefing
+    !
+    subroutine nEdges_Grid( self, n_xedge, n_yedge, n_zedge )
+        implicit none
+        !
+        class( Grid_t ), intent( in ) :: self
+        integer, intent( out )  :: n_xedge, n_yedge, n_zedge
+        integer :: nx, ny, nz
+
+        call self%setLimits( XEDGE, nx, ny, nz )
+        n_xedge = nx*ny*nz
+        !
+        call self%setLimits( YEDGE, nx, ny, nz )
+        n_yedge = nx*ny*nz
+        !
+        call self%setLimits( ZEDGE, nx, ny, nz )
+        n_zedge = nx*ny*nz
+        !
+    end subroutine nEdges_Grid
+    !
+    !> No subroutine briefing
+    !
+    subroutine nFaces_Grid( self, n_xface, n_yface, n_zface )
+        implicit none
+        !
+        class( Grid_t ), intent( in ) :: self
+        integer, intent(out) :: n_xface, n_yface, n_zface
+        integer :: nx, ny, nz
+        !
+        call self%setLimits( XFACE, nx, ny, nz )
+        n_xface = nx*ny*nz
+        !
+        call self%setLimits( YFACE, nx, ny, nz )
+        n_yface = nx*ny*nz
+        !
+        call self%setLimits( ZFACE, nx, ny, nz )
+        n_zface = nx*ny*nz
+        !
+    end subroutine nFaces_Grid
     !
 end module Grid

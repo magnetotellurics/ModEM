@@ -86,7 +86,7 @@ contains
         !> for x, y, z edges
         nEdgeT = 0
         !
-        call setlimitsSP( XEDGE, self%model_operator%metric%grid, nx, ny, nz )
+        call self%model_operator%metric%grid%setLimits( XEDGE, nx, ny, nz )
         !
         nEdge = nx * ( ny - 2 ) * ( nz - 2 )
         !
@@ -96,7 +96,7 @@ contains
         !
         nEdgeT = nEdgeT + nEdge
         !
-        call setlimitsSP( YEDGE, self%model_operator%metric%grid, nx, ny, nz )
+        call self%model_operator%metric%grid%setLimits( YEDGE, nx, ny, nz )
         !
         nEdge = ( nx - 2 ) * ny * ( nz - 2 )
         !
@@ -106,7 +106,7 @@ contains
         !
         nEdgeT = nEdgeT+nEdge
         !
-        call setlimitsSP( ZEDGE, self%model_operator%metric%grid, nx, ny, nz )
+        call self%model_operator%metric%grid%setLimits( ZEDGE, nx, ny, nz )
         !
         nEdge = ( nx - 2 ) * ( ny - 2 ) * nz
         !

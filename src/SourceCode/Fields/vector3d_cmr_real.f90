@@ -25,7 +25,7 @@ module Vector3d_cmr_real
   use GridCalc, only : edgeLength
   use sg_vector, only : rvector, create_rvector
   use sg_scalar, only : rscalar, create_rscalar
-  use vecTranslate, only : getRVector, setRVector, setlimits
+  use vecTranslate, only : getRVector, setRVector, setLimits
   use ModelSpace, only : modelParam_t, create_modelParam, ModelParamToEdge
   
   use MR_Constants

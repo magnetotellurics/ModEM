@@ -19,7 +19,7 @@ module Grid3D_SG
             procedure, public :: numberOfCells => numberOfCells_Grid3D_SG
             procedure, public :: gridIndex => gridIndex_Grid3D_SG
             procedure, public :: vectorIndex => vectorIndex_Grid3D_SG
-            procedure, public :: limits => limits_Grid3D_SG
+            procedure, public :: setLimits => setLimits_Grid3D_SG
             procedure, public :: length => length_Grid3D_SG
             !
             procedure, public :: setup => setup_Grid3D_SG
@@ -218,13 +218,13 @@ contains
         !
         integer :: nx, ny, nz
         !
-        call self%limits( XEDGE, nx, ny, nz )
+        call self%setLimits( XEDGE, nx, ny, nz )
         n_xedge = nx * ny * nz
         !
-        call self%limits( YEDGE, nx, ny, nz )
+        call self%setLimits( YEDGE, nx, ny, nz )
         n_yedge  = nx * ny * nz
         !
-        call self%limits( ZEDGE, nx, ny, nz )
+        call self%setLimits( ZEDGE, nx, ny, nz )
         n_zedge = nx * ny * nz
         !
     end subroutine numberOfEdges_Grid3D_SG
@@ -238,13 +238,13 @@ contains
         !
         integer :: nx, ny, nz
         !
-        call self%limits( XFACE, nx, ny, nz )
+        call self%setLimits( XFACE, nx, ny, nz )
         n_xface = nx * ny * nz
         !
-        call self%limits( YFACE, nx, ny, nz )
+        call self%setLimits( YFACE, nx, ny, nz )
         n_yface = nx * ny * nz
         !
-        call self%limits( ZFACE, nx, ny, nz )
+        call self%setLimits( ZFACE, nx, ny, nz )
         n_zface = nx * ny * nz
         !
     end subroutine numberOfFaces_Grid3D_SG
@@ -291,7 +291,7 @@ contains
         integer :: nx, ny, nz, nVec, ii
         real(4) :: rNxy, rNx
         !
-        call self%limits(node_type, nx, ny, nz)
+        call self%setLimits(node_type, nx, ny, nz)
         nVec = size(ind_vec)
         !
         if( nVec .NE. size(i) ) then
@@ -337,7 +337,7 @@ contains
         !
         integer :: nx, ny, nz, nxy, nVec, ii
         !
-        call self%limits(node_type, nx, ny, nz)
+        call self%setLimits(node_type, nx, ny, nz)
         !
         nVec = size(ind_vec)
         !
@@ -361,7 +361,7 @@ contains
     end subroutine vectorIndex_Grid3D_SG
     !
     !> No subroutine briefing
-    subroutine limits_Grid3D_SG( self, node_type, nx, ny, nz )
+    subroutine setLimits_Grid3D_SG( self, node_type, nx, ny, nz )
         implicit none
         !
         class( Grid3D_SG_t ), intent( in ) :: self
@@ -406,11 +406,11 @@ contains
                 !
             case default
                 !
-                call errStop( "limits_Grid3D_SG > Undefined node_type ["//node_type//"]" )
+                call errStop( "setLimits_Grid3D_SG > Undefined node_type ["//node_type//"]" )
                 !
         end select
         !
-    end subroutine limits_Grid3D_SG
+    end subroutine setLimits_Grid3D_SG
     !
     !> No subroutine briefing
     !

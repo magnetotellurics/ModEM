@@ -25,7 +25,7 @@ module Vector3d_cmr_complex
   use GridCalc, only : edgeLength
   use sg_vector, only : cvector, create_cvector
   use sg_vector, only : rvector, create_rvector
-  use vecTranslate, only : getRVector, setRVector, setlimits
+  use vecTranslate, only : getRVector, setRVector, setLimits
   use vecTranslate, only : getCVector, setCVector
 
   use MR_constants

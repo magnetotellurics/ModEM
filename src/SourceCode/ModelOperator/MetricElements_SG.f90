@@ -391,13 +391,13 @@ contains
         class( MetricElements_SG_t ), intent( in ) :: self
         !
         call self%setIndexArrays( EDGE, self%grid%EDGEb, self%grid%EDGEi )
-        write( *, "( a17, i8, a8, i8 )" ) "EDGEb=", size( self%grid%EDGEb ), ", EDGEi=", size( self%grid%EDGEi )
+        !write( *, "( a17, i8, a8, i8 )" ) "EDGEb=", size( self%grid%EDGEb ), ", EDGEi=", size( self%grid%EDGEi )
         !
         call self%setIndexArrays( FACE, self%grid%FACEb, self%grid%FACEi )
-        write( *, "( a17, i8, a8, i8 )" ) "FACEb=", size( self%grid%FACEb ), ", FACEi=", size( self%grid%FACEi )
+        !write( *, "( a17, i8, a8, i8 )" ) "FACEb=", size( self%grid%FACEb ), ", FACEi=", size( self%grid%FACEi )
         !
         call self%setIndexArrays( NODE, self%grid%NODEb, self%grid%NODEi )
-        write( *, "( a17, i8, a8, i8 )" ) "NODEb=", size( self%grid%NODEb ), ", NODEi=", size( self%grid%NODEi )
+        !write( *, "( a17, i8, a8, i8 )" ) "NODEb=", size( self%grid%NODEb ), ", NODEi=", size( self%grid%NODEi )
         !
     end subroutine setAllIndexArrays_MetricElements_SG
     !

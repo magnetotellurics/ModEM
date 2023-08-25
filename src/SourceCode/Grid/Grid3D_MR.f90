@@ -46,11 +46,11 @@ module Grid3D_MR
             procedure, public :: gridIndex  => gridIndex_Grid3D_MR
             procedure, public :: vectorIndex => vectorIndex_Grid3D_MR
             !
-            procedure, public :: limits => limits_Grid3D_MR
+            procedure, public :: setLimits => setLimits_Grid3D_MR
             !
             procedure, public :: reduceActive => reduceActive_Grid3D_MR
             !
-            procedure, public :: setActivelimits => setActivelimits_Grid3D_MR
+            procedure, public :: setActivelimits => setActivesetLimits_Grid3D_MR
             !
             procedure, public :: nActive => nActive_Grid3D_MR
             !
@@ -524,7 +524,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine limits_Grid3D_MR(self, node_type, nx, ny, nz)
+    subroutine setLimits_Grid3D_MR(self, node_type, nx, ny, nz)
         implicit none
         !
         class( Grid3D_MR_t ), intent( in ) :: self
@@ -539,7 +539,7 @@ contains
         !
         nx = 0; ny = 0; nz = 0
         !
-    end subroutine limits_Grid3D_MR
+    end subroutine setLimits_Grid3D_MR
     !
     !> For sub-grid iGrid, returns logical array indicating if top/bottom boundaries
     !> are active--TopBottom(1) is for top, TopBottom(2) is for bottom
@@ -612,7 +612,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setActivelimits_Grid3D_MR( self )
+    subroutine setActivesetLimits_Grid3D_MR( self )
         implicit none
         !
         class( Grid3D_MR_t ), intent( inout ) :: self
@@ -659,7 +659,7 @@ contains
             endif
         enddo
         !
-    end subroutine setActivelimits_Grid3D_MR
+    end subroutine setActivesetLimits_Grid3D_MR
     !
     !> just algorithm. -- reduce number of active edges/faces/nodes
     !> For one vertical layer in the sub_grids

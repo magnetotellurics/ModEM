@@ -247,7 +247,8 @@ contains
         integer, dimension (:), allocatable :: IndVec, I, J, K
         !
         call self%grid%numberOfEdges( nXedge, nYedge, nZedge )
-        call self%grid%limits( NODE, nx, ny, nz )
+        !
+        call self%grid%setLimits( NODE, nx, ny, nz )
         !
         nNodes = nx * ny * nz
         m = nXedge + nYedge + nZedge
