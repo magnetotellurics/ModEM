@@ -130,10 +130,10 @@ contains
             !
             self%is_initialized = .TRUE.
             !
-            write( *, * ) "coarseness Lv1 (Factor): [", self%coarseness(:,1), "]"
-            write( *, * ) "coarseness Lv2 (z Deep): [", self%coarseness(:,2), "]"
-            write( *, * ) "coarseness Lv3 (iStart): [", self%coarseness(:,3), "]"
-            write( *, * ) "coarseness Lv4 ( iEnd ): [", self%coarseness(:,4), "]"
+            write( *, * ) "CoarseMAT Row1 (Coarse): [", self%coarseness(:,1), "]"
+            write( *, * ) "CoarseMAT Row2 (Layers): [", self%coarseness(:,2), "]"
+            write( *, * ) "CoarseMAT Row3 (iStart): [", self%coarseness(:,3), "]"
+            write( *, * ) "CoarseMAT Row4 ( iEnd ): [", self%coarseness(:,4), "]"
             !
         else
             self%is_initialized = .FALSE.
@@ -202,7 +202,7 @@ contains
             self%del_x(ix) = self%dx(ix - 1) + self%dx(ix)
         enddo
         self%del_x(self%nx + 1) = self%dx(self%nx)
-        self%del_x = self%del_x/2.0
+        self%del_x = self%del_x / 2.0
         !
         self%del_y(1) = self%dy(1)
         do iy = 2, self%ny
@@ -210,7 +210,7 @@ contains
         enddo
         !
         self%del_y(self%ny + 1) = self%dy(self%ny)
-        self%del_y = self%del_y/2.0
+        self%del_y = self%del_y / 2.0
         !
         self%del_z(1) = self%dz(1)
         do iz = 2, self%nz
@@ -218,11 +218,11 @@ contains
         enddo
         !
         self%del_z(self%nz + 1) = self%dz(self%nz)
-        self%del_z = self%del_z/2.0
+        self%del_z = self%del_z / 2.0
         !
-        self%del_x_inv = 1/self%del_x
-        self%del_y_inv = 1/self%del_y
-        self%del_z_inv = 1/self%del_z
+        self%del_x_inv = 1 / self%del_x
+        self%del_y_inv = 1 / self%del_y
+        self%del_z_inv = 1 / self%del_z
         !
         !> Cumulative distance between the centers, adjusted to model origin
         xCum = R_ZERO

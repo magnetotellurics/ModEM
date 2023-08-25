@@ -2,123 +2,123 @@
 !> This module specializes the abstract Vector3D_real class for
 !> real vector fields on a multi-resolution staggered grid.
 !
-module rVector3D_MR
+module cVector3D_MR
     !
     use MatUtils
-    use rVector3D_SG
+    use cVector3D_SG
     use rScalar3D_MR
     !
-    type, extends( Vector_t ) :: rVector3D_MR_t
+    type, extends( Vector_t ) :: cVector3D_MR_t
         !
-        type( rVector3D_SG_t ), allocatable :: sub_vector(:)
+        type( cVector3D_SG_t ), allocatable :: sub_vector(:)
         !
         contains
             !
-            final :: rVector3D_MR_dtor
+            final :: cVector3D_MR_dtor
             !
             !> MR Routines
-            procedure, public :: initializeSub => initializeSub_rVector3D_MR
+            procedure, public :: initializeSub => initializeSub_cVector3D_MR
             !
             procedure, public :: setIndexArrays => setIndexArrays_Vector3D_MR
             !
-            procedure, public :: getArray => getArray_rVector3D_MR
-            procedure, public :: setArray => setArray_rVector3D_MR
+            procedure, public :: getArray => getArray_cVector3D_MR
+            procedure, public :: setArray => setArray_cVector3D_MR
             !
-            procedure, public :: getFullArray => getFullArray_rVector3D_MR
-            procedure, public :: setFullArray => setFullArray_rVector3D_MR
+            procedure, public :: getFullArray => getFullArray_cVector3D_MR
+            procedure, public :: setFullArray => setFullArray_cVector3D_MR
             !
-            procedure, public :: lengthFull => lengthFull_rVector3D_MR
-            procedure, public :: findFull => findFull_rVector3D_MR
+            procedure, public :: lengthFull => lengthFull_cVector3D_MR
+            procedure, public :: findFull => findFull_cVector3D_MR
             !
-            procedure, public :: findValue => findValue_rVector3D_MR
+            procedure, public :: findValue => findValue_cVector3D_MR
             !
-            procedure, public :: MRtoSG => MRtoSG_rVector3D_MR
-            procedure, public :: SGtoMR => SGtoMR_rVector3D_MR
-            procedure, public :: SGtoMRE0 => SGtoMRE0_rVector3D_MR
+            procedure, public :: MRtoSG => MRtoSG_cVector3D_MR
+            procedure, public :: SGtoMR => SGtoMR_cVector3D_MR
+            procedure, public :: SGtoMRE0 => SGtoMRE0_cVector3D_MR
             !
             !> Boundary operations
-            procedure, public :: setAllBoundary => setAllBoundary_rVector3D_MR
-            procedure, public :: setOneBoundary => setOneBoundary_rVector3D_MR
+            procedure, public :: setAllBoundary => setAllBoundary_cVector3D_MR
+            procedure, public :: setOneBoundary => setOneBoundary_cVector3D_MR
             !
             !> Dimensioning operations
-            procedure, public :: length => length_rVector3D_MR
-            procedure, public :: setVecComponents => setVecComponents_rVector3D_MR
+            procedure, public :: length => length_cVector3D_MR
+            procedure, public :: setVecComponents => setVecComponents_cVector3D_MR
             !
             !> Arithmetic/algebraic unary operations
-            procedure, public :: zeros => zeros_rVector3D_MR
+            procedure, public :: zeros => zeros_cVector3D_MR
             !
-            procedure, public :: sumEdge => sumEdge_rVector3D_MR
-            procedure, public :: sumEdgeVTI => sumEdgeVTI_rVector3D_MR
+            procedure, public :: sumEdge => sumEdge_cVector3D_MR
+            procedure, public :: sumEdgeVTI => sumEdgeVTI_cVector3D_MR
             !
-            procedure, public :: sumCell => sumCell_rVector3D_MR
-            procedure, public :: sumCellVTI => sumCellVTI_rVector3D_MR
+            procedure, public :: sumCell => sumCell_cVector3D_MR
+            procedure, public :: sumCellVTI => sumCellVTI_cVector3D_MR
             !
-            procedure, public :: conjugate => conjugate_rVector3D_MR
+            procedure, public :: conjugate => conjugate_cVector3D_MR
             !
             !> Arithmetic/algebraic binary operations
-            procedure, public :: add => add_rVector3D_MR
+            procedure, public :: add => add_cVector3D_MR
             !
-            procedure, public :: linComb => linComb_rVector3D_MR
+            procedure, public :: linComb => linComb_cVector3D_MR
             !
-            procedure, public :: subValue => subValue_rVector3D_MR
-            procedure, public :: subField => subField_rVector3D_MR
+            procedure, public :: subValue => subValue_cVector3D_MR
+            procedure, public :: subField => subField_cVector3D_MR
             !
-            procedure, public :: multByReal => multByReal_rVector3D_MR
-            procedure, public :: multByComplex => multByComplex_rVector3D_MR
-            procedure, public :: multByField => multByField_rVector3D_MR
+            procedure, public :: multByReal => multByReal_cVector3D_MR
+            procedure, public :: multByComplex => multByComplex_cVector3D_MR
+            procedure, public :: multByField => multByField_cVector3D_MR
             !
-            procedure, public :: diagMult => diagMult_rVector3D_MR
+            procedure, public :: diagMult => diagMult_cVector3D_MR
             !
-            procedure, public :: multAdd => multAdd_rVector3D_MR
+            procedure, public :: multAdd => multAdd_cVector3D_MR
             !
-            procedure, public :: dotProd => dotProd_rVector3D_MR
+            procedure, public :: dotProd => dotProd_cVector3D_MR
             !
-            procedure, public :: divByValue => divByValue_rVector3D_MR
-            procedure, public :: divByField => divByField_rVector3D_MR
+            procedure, public :: divByValue => divByValue_cVector3D_MR
+            procedure, public :: divByField => divByField_cVector3D_MR
             !
-            procedure, public :: interpFunc => interpFunc_rVector3D_MR
+            procedure, public :: interpFunc => interpFunc_cVector3D_MR
             !
             !> Miscellaneous
-            procedure, public :: getAxis => getAxis_rVector3D_MR
+            procedure, public :: getAxis => getAxis_cVector3D_MR
             !
-            procedure, public :: getReal => getReal_rVector3D_MR
+            procedure, public :: getReal => getReal_cVector3D_MR
             !
-            procedure, public :: getX => getX_rVector3D_MR
-            procedure, public :: setX => setX_rVector3D_MR
-            procedure, public :: getY => getY_rVector3D_MR
-            procedure, public :: setY => setY_rVector3D_MR
-            procedure, public :: getZ => getZ_rVector3D_MR
-            procedure, public :: setZ => setZ_rVector3D_MR
+            procedure, public :: getX => getX_cVector3D_MR
+            procedure, public :: setX => setX_cVector3D_MR
+            procedure, public :: getY => getY_cVector3D_MR
+            procedure, public :: setY => setY_cVector3D_MR
+            procedure, public :: getZ => getZ_cVector3D_MR
+            procedure, public :: setZ => setZ_cVector3D_MR
             !
-            procedure, public :: getSV => getSV_rVector3D_MR
-            procedure, public :: setSV => setSV_rVector3D_MR
+            procedure, public :: getSV => getSV_cVector3D_MR
+            procedure, public :: setSV => setSV_cVector3D_MR
             !
-            procedure, public :: deallOtherState => deallOtherState_rVector3D_MR
+            procedure, public :: deallOtherState => deallOtherState_cVector3D_MR
             !
-            procedure, public :: copyFrom => copyFrom_rVector3D_MR
+            procedure, public :: copyFrom => copyFrom_cVector3D_MR
             !
             !> I/O operations
-            procedure, public :: print => print_rVector3D_MR
-            procedure, public :: read => read_rVector3D_MR
-            procedure, public :: write => write_rVector3D_MR
+            procedure, public :: print => print_cVector3D_MR
+            procedure, public :: read => read_cVector3D_MR
+            procedure, public :: write => write_cVector3D_MR
             !
-    end type rVector3D_MR_t
+    end type cVector3D_MR_t
     !
-    interface rVector3D_MR_t
-        module procedure rVector3D_MR_ctor_copy
-        module procedure rVector3D_MR_ctor_default
-    end interface rVector3D_MR_t
+    interface cVector3D_MR_t
+        module procedure cVector3D_MR_ctor_copy
+        module procedure cVector3D_MR_ctor_default
+    end interface cVector3D_MR_t
     !
 contains
     !
     !> No function briefing
     !
-    function rVector3D_MR_ctor_copy( E_in ) result(  self )
+    function cVector3D_MR_ctor_copy( E_in ) result(  self )
         implicit none
         !
-        type( rVector3D_MR_t ), intent( in ) :: E_in
+        type( cVector3D_MR_t ), intent( in ) :: E_in
         !
-        type( rVector3D_MR_t ) :: self
+        type( cVector3D_MR_t ) :: self
         !
         integer :: i
         !
@@ -136,26 +136,24 @@ contains
                 enddo
                 !
             class default
-                call errStop( "rVector3D_MR_ctor_copy > Unclassified grid" )
+                call errStop( "cVector3D_MR_ctor_copy > Unclassified grid" )
             !
         end select
         !
-    end function rVector3D_MR_ctor_copy
+    end function cVector3D_MR_ctor_copy
     !
     !> No function briefing
     !
-    function rVector3D_MR_ctor_default( grid, grid_type ) result(  self )
+    function cVector3D_MR_ctor_default( grid, grid_type ) result(  self )
         implicit none
         !
         class( Grid_t ), target, intent( in ) :: grid
         character( len=4 ), intent( in ) :: grid_type
         !
-        type( rVector3D_MR_t ) :: self
+        type( cVector3D_MR_t ) :: self
         !
         self%grid => grid
         self%grid_type = grid_type
-        !
-        write(*,*) "grid_type: ", grid_type
         !
         self%nx = self%grid%nx
         self%ny = self%grid%ny
@@ -164,17 +162,17 @@ contains
         call self%initializeSub
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "rVector3D_MR_ctor_default > Unable to allocate vector." )
+            call errStop( "cVector3D_MR_ctor_default > Unable to allocate vector." )
         endif
         !
-    end function rVector3D_MR_ctor_default
+    end function cVector3D_MR_ctor_default
     !
     !> No subroutine briefing
     !
-    subroutine initializeSub_rVector3D_MR( self ) 
+    subroutine initializeSub_cVector3D_MR( self ) 
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         !
         integer :: i, alloc_stat, ndx, ndy, ndz
         !
@@ -192,7 +190,7 @@ contains
                 !
                 do i = 1, grid%n_grids
                     !
-                    self%sub_vector(i) = rVector3D_SG_t( grid%sub_grids(i), self%grid_type )
+                    self%sub_vector(i) = cVector3D_SG_t( grid%sub_grids(i), self%grid_type )
                     !
                     write( *, * ) "SubVector", i, "-nx=", self%sub_vector(i)%nx, ", ny=", self%sub_vector(i)%ny, "nz=", self%sub_vector(i)%nz
                     !
@@ -221,7 +219,7 @@ contains
                     self%NdZ = (/ndx, ndy, ndz + 1/)
                     !
                 else
-                    call errStop( "initializeSub_rVector3D_MR > Only EDGE or FACE types allowed." )
+                    call errStop( "initializeSub_cVector3D_MR > Only EDGE or FACE types allowed." )
                 endif
                 !
                 write( *, * ) "       NdX=", self%NdX(1), ", ny=", self%NdX(2), "nz=", self%NdX(3), self%NdX(1)*self%NdX(2)*self%NdX(3)
@@ -233,23 +231,23 @@ contains
                 write( *, * ) "      Nxyz=", self%Nxyz(1), ", ny=", self%Nxyz(2), "nz=", self%Nxyz(3)
                 !
             class default
-                call errStop( "initializeSub_rVector3D_MR > Unclassified grid" )
+                call errStop( "initializeSub_cVector3D_MR > Unclassified grid" )
             !
         end select
         !
-    end subroutine initializeSub_rVector3D_MR
+    end subroutine initializeSub_cVector3D_MR
     !
     !> No subroutine briefing
     !
     subroutine setIndexArrays_Vector3D_MR( self, ind_boundary, ind_interior, ind_active, xy_in ) 
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         integer, dimension(:), allocatable, intent( out ) :: ind_boundary, ind_interior
         integer, dimension(:), allocatable, intent( out ), optional :: ind_active
         logical, intent( in ), optional :: xy_in
         !
-        type( rVector3D_MR_t ) :: temp_vector
+        type( cVector3D_MR_t ) :: temp_vector
         logical :: xy, int_only
         integer :: i, k
         integer :: n_full, n_active, n_interior, n_boundaries
@@ -390,10 +388,10 @@ contains
     !> Creates standard( 1-D array) for all sub-scalars,
     !> INCLUDING redundant interface nodes.
     !
-    function getFullArray_rVector3D_MR( self ) result( array )
+    function getFullArray_cVector3D_MR( self ) result( array )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
@@ -416,14 +414,14 @@ contains
             !
         enddo
         !
-    end function getFullArray_rVector3D_MR
+    end function getFullArray_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setFullArray_rVector3D_MR( self, array )
+    subroutine setFullArray_cVector3D_MR( self, array )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:), intent( in ) :: array
         !
         integer :: i1, i2, k, n
@@ -445,18 +443,18 @@ contains
                 enddo
                 !
             class default
-                call errStop( "setFullArray_rVector3D_MR > Unclassified grid" )
+                call errStop( "setFullArray_cVector3D_MR > Unclassified grid" )
             !
         end select
         !
-    end subroutine setFullArray_rVector3D_MR
+    end subroutine setFullArray_cVector3D_MR
     !
     !> No function briefing
     !
-    function lengthFull_rVector3D_MR( self ) result( n )
+    function lengthFull_cVector3D_MR( self ) result( n )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         !
         integer :: i, n
         !
@@ -468,14 +466,14 @@ contains
             !
         enddo
         !
-    end function lengthFull_rVector3D_MR
+    end function lengthFull_cVector3D_MR
     !
     !> No function briefing
     !
-    function findFull_rVector3D_MR( self, c ) result( I )
+    function findFull_cVector3D_MR( self, c ) result( I )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         real( kind=prec ), intent( in) :: c
         !
         integer, dimension(:), allocatable :: I
@@ -500,14 +498,14 @@ contains
             endif
         enddo
         !
-    end function findFull_rVector3D_MR
+    end function findFull_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine findValue_rVector3D_MR( self, I, c )
+    subroutine findValue_cVector3D_MR( self, I, c )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         integer, allocatable, intent( out ) :: I(:)
         real( kind=prec ), intent( in ) :: c
         !
@@ -536,28 +534,28 @@ contains
             endif
         enddo
         !
-    end subroutine findValue_rVector3D_MR
+    end subroutine findValue_cVector3D_MR
     !
     !> Convert an MR TVector to a full SG, filling in the full fine grid.
     !> Converts MR Vector object to SG
     !> copying from variable resolution sub-grids to completely fill in the
     !> underlying fine grid.
     !
-    subroutine MRtoSG_rVector3D_MR( self, sg_v, sg_grid )
+    subroutine MRtoSG_cVector3D_MR( self, sg_vector, sg_grid )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
-        type( rVector3D_SG_t ), intent( inout ) :: sg_v
+        class( cVector3D_MR_t ), intent( in ) :: self
+        type( cVector3D_SG_t ), intent( inout ) :: sg_vector
         class( Grid_t ), pointer, intent( in ) :: sg_grid
         !
-        type( rVector3D_SG_t ) :: temp
+        type( cVector3D_SG_t ) :: temp
         integer :: x_nx, x_ny, x_nz
         integer :: y_nx, y_ny, y_nz
         integer :: z_nx, z_ny, z_nz
         integer :: last, Cs, i1, i2, i, k
         real( kind=prec ) :: w1, w2
         !
-        temp = rVector3D_SG_t( sg_grid, self%grid_type )
+        temp = cVector3D_SG_t( sg_grid, self%grid_type )
         !
         temp%x = 0; temp%y = 0; temp%z = 0
         !
@@ -573,7 +571,7 @@ contains
         z_ny = size(temp%z, 2)
         z_nz = size(temp%z, 3)
         !
-        sg_v%x = 0; sg_v%y = 0; sg_v%z = 0
+        sg_vector%x = 0; sg_vector%y = 0; sg_vector%z = 0
         !
         select case( self%grid_type )
             !
@@ -631,40 +629,40 @@ contains
                                 ! added by zhhq, 2017
                             enddo
                             !
-                            sg_v%x(:, :, i1:i2+1) = sg_v%x(:, :, i1:i2+1) + temp%x(:, :, i1:i2+1)
-                            sg_v%y(:, :, i1:i2+1) = sg_v%y(:, :, i1:i2+1) + temp%y(:, :, i1:i2+1)
-                            sg_v%z(:, :, i1:i2)   = sg_v%z(:, :, i1:i2)
+                            sg_vector%x(:, :, i1:i2+1) = sg_vector%x(:, :, i1:i2+1) + temp%x(:, :, i1:i2+1)
+                            sg_vector%y(:, :, i1:i2+1) = sg_vector%y(:, :, i1:i2+1) + temp%y(:, :, i1:i2+1)
+                            sg_vector%z(:, :, i1:i2)   = sg_vector%z(:, :, i1:i2)
                             !
                         enddo
                         !
                     class default
-                        call errStop( "MRtoSG_rVector3D_MR > Unclassified grid" )
+                        call errStop( "MRtoSG_cVector3D_MR > Unclassified grid" )
                     !
                 end select
                 !
             case default
-                call errStop( "MRtoSG_rVector3D_MR > Unrecognized grid type." )
+                call errStop( "MRtoSG_cVector3D_MR > Unrecognized grid type." )
             !
         end select
         !
-    end subroutine MRtoSG_rVector3D_MR
+    end subroutine MRtoSG_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine SGtoMR_rVector3D_MR( self, sg_v )
+    subroutine SGtoMR_cVector3D_MR( self, sg_v )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        type( rVector3D_SG_t ), intent( in ) :: sg_v
+        class( cVector3D_MR_t ), intent( inout ) :: self
+        type( cVector3D_SG_t ), intent( in ) :: sg_v
         !
         real( kind=prec ), pointer, dimension(:) :: tempe
-        type( rVector3D_SG_t ) :: temp_vector
+        type( cVector3D_SG_t ) :: temp_vector
         complex( kind=prec ), pointer, dimension(:) :: templ, temple
         real( kind=prec ), allocatable, dimension(:,:,:) :: lengthx, lengthy
         integer :: sx1, sx2, sx3, sy1, sy2, sy3, s1, s2
         integer :: Cs, i1, i2
         !
-        type( rVector3D_SG_t ) :: temp_L, tempEL
+        type( cVector3D_SG_t ) :: temp_L, tempEL
         integer :: k, i
         !
         call sg_v%edgeLength( temp_vector )
@@ -677,11 +675,11 @@ contains
         !
         temple = templ*tempe
         !
-        temp_L = rVector3D_SG_t( sg_v%grid, EDGE )
+        temp_L = cVector3D_SG_t( sg_v%grid, EDGE )
         !
         call temp_L%setArray( templ )
         !
-        tempEL = rVector3D_SG_t( sg_v%grid, EDGE )
+        tempEL = cVector3D_SG_t( sg_v%grid, EDGE )
         !
         call tempEL%setArray( temple )
         !
@@ -736,25 +734,25 @@ contains
                     s2 = size(sg_v%z, 2)
                     self%sub_vector(k)%z = sg_v%z(1:s1:Cs, 1:s2:Cs, i1:i2)
                     !
-                    deallocate( lengthx, lengthy)
+                    deallocate( lengthx, lengthy )
                     !
                 enddo
                 !
             class default
-                call errStop( "SGtoMR_rVector3D_MR > Unclassified grid" )
+                call errStop( "SGtoMR_cVector3D_MR > Unclassified grid" )
             !
         end select
         !
-    end subroutine SGtoMR_rVector3D_MR
+    end subroutine SGtoMR_cVector3D_MR
     !
     !> Converts SG Vector object to MR by averaging
     !> used only for e0
     !
-    subroutine SGtoMRE0_rVector3D_MR(self, sg_v)
+    subroutine SGtoMRE0_cVector3D_MR(self, sg_vector)
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        type( rVector3D_SG_t ), intent( in ) :: sg_v
+        class( cVector3D_MR_t ), intent( inout ) :: self
+        type( cVector3D_SG_t ), intent( in ) :: sg_vector
         !
         class( Grid_t ), pointer :: grid
         !
@@ -763,19 +761,19 @@ contains
         integer :: z_nx, z_ny, z_nz
         integer :: last, Cs, i1, i2, i, k
         !
-        grid => sg_v%grid
+        grid => sg_vector%grid
         !
-        x_nx = size(sg_v%x, 1)
-        x_ny = size(sg_v%x, 2)
-        x_nz = size(sg_v%x, 3)
+        x_nx = size(sg_vector%x, 1)
+        x_ny = size(sg_vector%x, 2)
+        x_nz = size(sg_vector%x, 3)
         !
-        y_nx = size(sg_v%y, 1)
-        y_ny = size(sg_v%y, 2)
-        y_nz = size(sg_v%y, 3)
+        y_nx = size(sg_vector%y, 1)
+        y_ny = size(sg_vector%y, 2)
+        y_nz = size(sg_vector%y, 3)
         !
-        z_nx = size(sg_v%z, 1)
-        z_ny = size(sg_v%z, 2)
-        z_nz = size(sg_v%z, 3)
+        z_nx = size(sg_vector%z, 1)
+        z_ny = size(sg_vector%z, 2)
+        z_nz = size(sg_vector%z, 3)
         !
         select type( grid => self%grid )
             !
@@ -791,7 +789,7 @@ contains
                         !
                         last = size(grid%Dx)
                         self%sub_vector(k)%x = self%sub_vector(k)%x + &
-                        sg_v%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) *    &
+                        sg_vector%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) *    &
                         repMat(grid%Dx(i:last:Cs), &
                         1, &
                         grid%sub_grids(k)%Ny + 1, &
@@ -799,7 +797,7 @@ contains
 
                         last = size(grid%Dy)
                         self%sub_vector(k)%y = self%sub_vector(k)%y + &
-                        sg_v%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) *  & 
+                        sg_vector%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) *  & 
                         repMat(grid%Dy(i:last:Cs), &
                         grid%sub_grids(k)%Nx + 1, &
                         1, &
@@ -819,25 +817,25 @@ contains
                     1, &
                     grid%sub_grids(k)%Nz + 1, .TRUE.)
                     !
-                    self%sub_vector(k)%z = sg_v%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2)
+                    self%sub_vector(k)%z = sg_vector%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2)
                     !
                 enddo
                 !
             class default
-                call errStop( "SGtoMRE0_rVector3D_MR > Unclassified grid" )
+                call errStop( "SGtoMRE0_cVector3D_MR > Unclassified grid" )
             !
         end select
         !
-    end subroutine SGtoMRE0_rVector3D_MR
+    end subroutine SGtoMRE0_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine rVector3D_MR_dtor( self )
+    subroutine cVector3D_MR_dtor( self )
         implicit none
         !
-        type( rVector3D_MR_t ), intent( inout ) :: self
+        type( cVector3D_MR_t ), intent( inout ) :: self
         !
-        !write( *, * ) "Destructor rVector3D_MR"
+        !write( *, * ) "Destructor cVector3D_MR"
         !
         call self%baseDealloc
         !
@@ -850,14 +848,14 @@ contains
         self%grid_type = ""
         self%is_allocated = .FALSE.
         !
-    end subroutine rVector3D_MR_dtor
+    end subroutine cVector3D_MR_dtor
     !
     !> No subroutine briefing
     !
-    subroutine setAllBoundary_rVector3D_MR( self, cvalue )
+    subroutine setAllBoundary_cVector3D_MR( self, cvalue )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
         integer :: i
@@ -884,19 +882,19 @@ contains
                     self%sub_vector(i)%z(:, :,(/1, self%sub_vector(i)%NdZ(3)/)) = real( cvalue, kind=prec )
                     !
                 case default
-                    call errStop( "setAllBoundary_rVector3D_MR > Invalid grid type." )
+                    call errStop( "setAllBoundary_cVector3D_MR > Invalid grid type." )
             end select
             !
         enddo
         !
-    end subroutine setAllBoundary_rVector3D_MR
+    end subroutine setAllBoundary_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setOneBoundary_rVector3D_MR( self, bdry, cvalue, int_only )
+    subroutine setOneBoundary_cVector3D_MR( self, bdry, cvalue, int_only )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         character(*), intent( in ) :: bdry
         complex( kind=prec ), intent( in ) :: cvalue
         logical, intent( in ), optional :: int_only
@@ -1006,19 +1004,19 @@ contains
                     end select
                     !
                 case default
-                    call errStop( "setOneBoundary_rVector3D_MR > Invalid grid type." )
+                    call errStop( "setOneBoundary_cVector3D_MR > Invalid grid type." )
             end select
             !
         enddo
         !
-    end subroutine setOneBoundary_rVector3D_MR
+    end subroutine setOneBoundary_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    function length_rVector3D_MR( self ) result( field_length )
+    function length_cVector3D_MR( self ) result( field_length )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         !
         integer :: field_length
         !
@@ -1031,20 +1029,20 @@ contains
             field_length = size( self%grid%FACEa )
             !
         else
-            call errStop( "length_rVector3D_MR > unrecognized grid type: ["//self%grid_type//"]" )
+            call errStop( "length_cVector3D_MR > unrecognized grid type: ["//self%grid_type//"]" )
         endif
         !
-    end function length_rVector3D_MR
+    end function length_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setVecComponents_rVector3D_MR( self, xyz, &
+    subroutine setVecComponents_cVector3D_MR( self, xyz, &
                                               xmin, xstep, xmax, &
                                               ymin, ystep, ymax, &
                                               zmin, zstep, zmax, cvalue )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         character, intent( in ) :: xyz
         integer, intent( in ) :: xmin, xstep, xmax
         integer, intent( in ) :: ymin, ystep, ymax
@@ -1106,19 +1104,19 @@ contains
                     self%sub_vector(i)%z( x1:x2:xstep, y1:y2:ystep, z1:z2:zstep ) = cvalue
                     !
                 case default
-                    call errStop( "setVecComponents_rVector3D_MR > Invalid xyz argument." )
+                    call errStop( "setVecComponents_cVector3D_MR > Invalid xyz argument." )
             end select
             !
         enddo
         !
-    end subroutine setVecComponents_rVector3D_MR
+    end subroutine setVecComponents_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine zeros_rVector3D_MR( self )
+    subroutine zeros_cVector3D_MR( self )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         !
         integer :: i
         !
@@ -1126,18 +1124,18 @@ contains
             call self%sub_vector(i)%zeros()
         enddo
         !
-    end subroutine zeros_rVector3D_MR
+    end subroutine zeros_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine sumEdge_rVector3D_MR( self, cell_out, interior_only )
+    subroutine sumEdge_cVector3D_MR( self, cell_out, interior_only )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         class( Scalar_t ), allocatable, intent( out ) :: cell_out
         logical, intent( in ), optional :: interior_only
         !
-        call errStop( "sumEdge_rVector3D_MR > Under implementation" )
+        call errStop( "sumEdge_cVector3D_MR > Under implementation" )
         ! !
         ! type( rScalar3D_SG_t ) :: cell_out
         ! integer :: i
@@ -1147,7 +1145,7 @@ contains
         ! logical :: is_interior_only
         ! !
         ! if( .NOT. self%is_allocated ) then
-             ! call errStop( "sumEdge_rVector3D_MR > self not allocated." )
+             ! call errStop( "sumEdge_cVector3D_MR > self not allocated." )
         ! endif
         ! !
         ! call self%switchStoreState( compound )
@@ -1208,7 +1206,7 @@ contains
                                               ! self%sub_vector(i)%z(:,:,1:z_zend-1) + self%sub_vector(i)%z(:,:,2:z_zend)
                             ! !
                         ! case default
-                            ! call errStop( "sumEdge_rVector3D_MR: undefined grid_type" )
+                            ! call errStop( "sumEdge_cVector3D_MR: undefined grid_type" )
                     ! end select
                     ! !
                     ! allocate( cell_out, source = rScalar3D_MR_t( grid, CELL ) )
@@ -1220,27 +1218,27 @@ contains
                             ! cell_out%sub_scalar(i) = cell_out
                             ! !
                         ! class default
-                            ! call errStop( "sumEdge_rVector3D_MR: undefined cell_out" )
+                            ! call errStop( "sumEdge_cVector3D_MR: undefined cell_out" )
                         ! !
                     ! end select
                     ! !
                 ! enddo
                 ! !
             ! class default
-                ! call errStop( "setFullArray_rVector3D_MR > Unclassified grid" )
+                ! call errStop( "setFullArray_cVector3D_MR > Unclassified grid" )
             ! !
         ! end select
         ! !
-    end subroutine sumEdge_rVector3D_MR
+    end subroutine sumEdge_cVector3D_MR
     !
-    subroutine sumEdgeVTI_rVector3D_MR( self, cell_h_out, cell_v_out, interior_only )
+    subroutine sumEdgeVTI_cVector3D_MR( self, cell_h_out, cell_v_out, interior_only )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         class( Scalar_t ), allocatable, intent( out ) :: cell_h_out, cell_v_out
         logical, optional, intent( in ) :: interior_only
         !
-        call errStop( "sumEdgeVTI_rVector3D_MR > Under implementation" )
+        call errStop( "sumEdgeVTI_cVector3D_MR > Under implementation" )
         ! !
         ! type( rScalar3D_SG_t ) :: cell_h_out_temp, cell_v_out_temp
         ! integer :: i
@@ -1250,7 +1248,7 @@ contains
         ! logical :: is_interior_only
         ! !
         ! if( .NOT. self%is_allocated ) then
-             ! call errStop( "sumEdgeVTI_rVector3D_MR > self not allocated." )
+             ! call errStop( "sumEdgeVTI_cVector3D_MR > self not allocated." )
         ! endif
         ! !
         ! call self%switchStoreState( compound )
@@ -1315,7 +1313,7 @@ contains
                             ! cell_v_out_temp%v = self%sub_vector(i)%z(:,:,1:z_zend-1) + self%sub_vector(i)%z(:,:,2:z_zend)
                             ! !
                         ! case default
-                            ! call errStop( "sumEdgeVTI_rVector3D_MR: undefined grid_type" )
+                            ! call errStop( "sumEdgeVTI_cVector3D_MR: undefined grid_type" )
                         ! !
                     ! end select
                     ! !
@@ -1328,7 +1326,7 @@ contains
                             ! cell_h_out%sub_scalar(i) = cell_h_out_temp
                             ! !
                         ! class default
-                            ! call errStop( "sumEdgeVTI_rVector3D_MR: undefined cell_h_out" )
+                            ! call errStop( "sumEdgeVTI_cVector3D_MR: undefined cell_h_out" )
                         ! !
                     ! end select
                     ! !
@@ -1341,25 +1339,25 @@ contains
                             ! cell_v_out%sub_scalar(i) = cell_v_out_temp
                             ! !
                         ! class default
-                            ! call errStop( "sumEdgeVTI_rVector3D_MR: undefined cell_v_out" )
+                            ! call errStop( "sumEdgeVTI_cVector3D_MR: undefined cell_v_out" )
                         ! !
                     ! end select
                     ! !
                 ! enddo
                 ! !
             ! class default
-                ! call errStop( "setFullArray_rVector3D_MR > Unclassified grid" )
+                ! call errStop( "setFullArray_cVector3D_MR > Unclassified grid" )
             ! !
         ! end select
         ! !
-    end subroutine sumEdgeVTI_rVector3D_MR
+    end subroutine sumEdgeVTI_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine sumCell_rVector3D_MR( self, cell_in, ptype )
+    subroutine sumCell_cVector3D_MR( self, cell_in, ptype )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         class( Scalar_t ), intent( in ) :: cell_in
         character(*), intent( in ), optional :: ptype
         !
@@ -1370,15 +1368,15 @@ contains
         integer :: i, ix, iy, iz
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "sumCell_rVector3D_MR > self not allocated." )
+             call errStop( "sumCell_cVector3D_MR > self not allocated." )
         endif
         !
         if( .NOT. cell_in%is_allocated ) then
-             call errStop( "sumCell_rVector3D_MR > cell_in not allocated." )
+             call errStop( "sumCell_cVector3D_MR > cell_in not allocated." )
         endif
         !
         if( index( self%grid_type, CELL ) > 0 ) then
-            call errStop( "sumCell_rVector3D_MR > Only CELL type supported." )
+            call errStop( "sumCell_cVector3D_MR > Only CELL type supported." )
         endif
         !
         if( .NOT. present( ptype ) ) then
@@ -1447,25 +1445,25 @@ contains
                             self%sub_vector(i)%z(:, :, 2:zend-1) = cell_in_v(:, :, 1:v_zend-1) + cell_in_v(:, :, 2:v_zend)
                             !
                         case default
-                            call errStop( "sumCell_rVector3D_MR: Unknown type" )
+                            call errStop( "sumCell_cVector3D_MR: Unknown type" )
                         !
                     end select !type
                     !
                 enddo
             !
             class default
-                call errStop( "sumCell_rVector3D_MR > Unclassified cell_in" )
+                call errStop( "sumCell_cVector3D_MR > Unclassified cell_in" )
             !
         end select
         !
-    end subroutine sumCell_rVector3D_MR
+    end subroutine sumCell_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine sumCellVTI_rVector3D_MR( self, cell_h_in, cell_v_in, ptype )
+    subroutine sumCellVTI_cVector3D_MR( self, cell_h_in, cell_v_in, ptype )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         class( Scalar_t ), intent( in ) :: cell_h_in, cell_v_in
         character(*), intent( in ), optional :: ptype
         !
@@ -1476,19 +1474,19 @@ contains
         integer :: i, ix, iy, iz
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "sumCellVTI_rVector3D_MR > self not allocated." )
+             call errStop( "sumCellVTI_cVector3D_MR > self not allocated." )
         endif
         !
         if( .NOT. cell_h_in%is_allocated ) then
-             call errStop( "sumCellVTI_rVector3D_MR > cell_h_in not allocated." )
+             call errStop( "sumCellVTI_cVector3D_MR > cell_h_in not allocated." )
         endif
         !
         if( .NOT. cell_v_in%is_allocated ) then
-             call errStop( "sumCellVTI_rVector3D_MR > cell_v_in not allocated." )
+             call errStop( "sumCellVTI_cVector3D_MR > cell_v_in not allocated." )
         endif
         !
         if( index( self%grid_type, CELL ) > 0 ) then
-            call errStop( "sumCellVTI_rVector3D_MR > Only CELL type supported." )
+            call errStop( "sumCellVTI_cVector3D_MR > Only CELL type supported." )
         endif
         !
         if( .NOT. present( ptype ) ) then
@@ -1562,51 +1560,51 @@ contains
                                     self%sub_vector(i)%z(:, :, 2:zend-1) = v_v(:, :, 1:v_zend-1) + v_v(:, :, 2:v_zend)
                                     !
                                 case default
-                                    call errStop( "sumCellVTI_rVector3D_MR: Unknown grid_type" )
+                                    call errStop( "sumCellVTI_cVector3D_MR: Unknown grid_type" )
                                     !
                             end select
                             !
                         enddo
                         !
                     class default
-                        call errStop( "sumCellVTI_rVector3D_MR > Unclassified cell_in_v" )
+                        call errStop( "sumCellVTI_cVector3D_MR > Unclassified cell_in_v" )
                     !
                 end select
                 !
             class default
-                call errStop( "sumCellVTI_rVector3D_MR > Unclassified cell_in_h" )
+                call errStop( "sumCellVTI_cVector3D_MR > Unclassified cell_in_h" )
             !
         end select
         !
-    end subroutine sumCellVTI_rVector3D_MR
+    end subroutine sumCellVTI_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine conjugate_rVector3D_MR( self )
+    subroutine conjugate_cVector3D_MR( self )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         !
-        call errStop( "conjugate_rVector3D_MR: Do not try to conjugate a real vector!" )
+        call errStop( "conjugate_cVector3D_MR: Do not try to conjugate a real vector!" )
         !
-    end subroutine conjugate_rVector3D_MR
+    end subroutine conjugate_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine add_rVector3D_MR( self, rhs )
+    subroutine add_cVector3D_MR( self, rhs )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "add_rVector3D_MR > self not allocated." )
+            call errStop( "add_cVector3D_MR > self not allocated." )
         endif
         !
         if( .NOT. rhs%is_allocated ) then
-            call errStop( "add_rVector3D_MR > rhs not allocated." )
+            call errStop( "add_cVector3D_MR > rhs not allocated." )
         endif
         !
         call self%switchStoreState( rhs%store_state )
@@ -1619,7 +1617,7 @@ contains
                     !
                     select type( rhs )
                         !
-                        class is( rVector3D_MR_t )
+                        class is( cVector3D_MR_t )
                             !
                             self%sub_vector(i)%x = self%sub_vector(i)%x + rhs%sub_vector(i)%x
                             self%sub_vector(i)%y = self%sub_vector(i)%y + rhs%sub_vector(i)%y
@@ -1632,7 +1630,7 @@ contains
                             self%sub_vector(i)%z = self%sub_vector(i)%z + rhs%sub_scalar(i)%v
                             !
                         class default
-                            call errStop( "add_rVector3D_MR > Undefined compound rhs" )
+                            call errStop( "add_cVector3D_MR > Undefined compound rhs" )
                             !
                     end select
                     !
@@ -1640,7 +1638,7 @@ contains
                     !
                     select type( rhs )
                         !
-                        class is( rVector3D_MR_t )
+                        class is( cVector3D_MR_t )
                             !
                             self%sub_vector(i)%s_v = self%sub_vector(i)%s_v + rhs%sub_vector(i)%s_v
                             !
@@ -1649,39 +1647,39 @@ contains
                             self%sub_vector(i)%s_v = self%sub_vector(i)%s_v + rhs%sub_scalar(i)%s_v
                             !
                         class default
-                            call errStop( "add_rVector3D_MR > Undefined singleton rhs" )
+                            call errStop( "add_cVector3D_MR > Undefined singleton rhs" )
                             !
                     end select
                     !
                 else
-                    call errStop( "add_rVector3D_MR > Unknow store_state." )
+                    call errStop( "add_cVector3D_MR > Unknow store_state." )
                 endif
                 !
             enddo
             !
         else
-            call errStop( "add_rVector3D_MR > Incompatible inputs." )
+            call errStop( "add_cVector3D_MR > Incompatible inputs." )
         endif
         !
-    end subroutine add_rVector3D_MR
+    end subroutine add_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine linComb_rVector3D_MR( self, rhs, c1, c2 )
+    subroutine linComb_cVector3D_MR( self, rhs, c1, c2 )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         complex( kind=prec ), intent( in ) :: c1, c2
         !
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "linComb_rVector3D_MR > self not allocated." )
+            call errStop( "linComb_cVector3D_MR > self not allocated." )
         endif
         !
         if( .NOT. rhs%is_allocated ) then
-            call errStop( "linComb_rVector3D_MR > rhs not allocated." )
+            call errStop( "linComb_cVector3D_MR > rhs not allocated." )
         endif
         !
         call self%switchStoreState( rhs%store_state )
@@ -1694,7 +1692,7 @@ contains
                     !
                     select type( rhs )
                         !
-                        class is( rVector3D_MR_t )
+                        class is( cVector3D_MR_t )
                             !
                             self%sub_vector(i)%x = c1* self%sub_vector(i)%x + c2 * rhs%sub_vector(i)%getX()
                             self%sub_vector(i)%y = c1* self%sub_vector(i)%y + c2 * rhs%sub_vector(i)%getY()
@@ -1707,7 +1705,7 @@ contains
                             self%sub_vector(i)%z = c1* self%sub_vector(i)%z + c2 * rhs%sub_scalar(i)%getV()
                             !
                         class default
-                            call errStop( "linComb_rVector3D_MR > Undefined rhs" )
+                            call errStop( "linComb_cVector3D_MR > Undefined rhs" )
                             !
                     end select
                     !
@@ -1715,7 +1713,7 @@ contains
                     !
                     select type( rhs )
                         !
-                        class is( rVector3D_MR_t )
+                        class is( cVector3D_MR_t )
                             !
                             self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_vector(i)%getSV()
                             !
@@ -1724,27 +1722,27 @@ contains
                             self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_scalar(i)%getSV()
                             !
                         class default
-                            call errStop( "linComb_rVector3D_MR > Undefined singleton rhs" )
+                            call errStop( "linComb_cVector3D_MR > Undefined singleton rhs" )
                             !
                     end select
                     !
                 else
-                    call errStop( "linComb_rVector3D_MR > Unknow store_state." )
+                    call errStop( "linComb_cVector3D_MR > Unknow store_state." )
                 endif
                 !
             enddo
             !
         else
-            call errStop( "linComb_rVector3D_MR > Incompatible inputs." )
+            call errStop( "linComb_cVector3D_MR > Incompatible inputs." )
         endif
         !
-    end subroutine linComb_rVector3D_MR
+    end subroutine linComb_cVector3D_MR
     !
     !> No subroutine briefing
-    subroutine subValue_rVector3D_MR( self, cvalue )
+    subroutine subValue_cVector3D_MR( self, cvalue )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
         integer :: i
@@ -1762,29 +1760,29 @@ contains
                 self%sub_vector(i)%s_v = self%sub_vector(i)%s_v - cvalue
                 !
             else
-                call errStop( "subValue_rVector3D_MR > Unknown store_state!" )
+                call errStop( "subValue_cVector3D_MR > Unknown store_state!" )
             endif
             !
         enddo
         !
-    end subroutine subValue_rVector3D_MR
+    end subroutine subValue_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine subField_rVector3D_MR( self, rhs )
+    subroutine subField_cVector3D_MR( self, rhs )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "subField_rVector3D_MR > self not allocated." )
+            call errStop( "subField_cVector3D_MR > self not allocated." )
         endif
         !
         if( .NOT. rhs%is_allocated ) then
-            call errStop( "subField_rVector3D_MR > rhs not allocated." )
+            call errStop( "subField_cVector3D_MR > rhs not allocated." )
         endif
         !
         call self%switchStoreState( rhs%store_state )
@@ -1797,7 +1795,7 @@ contains
                     !
                     select type( rhs )
                         !
-                        class is( rVector3D_MR_t )
+                        class is( cVector3D_MR_t )
                             !
                             self%sub_vector(i)%x = self%sub_vector(i)%x - rhs%sub_vector(i)%getX()
                             self%sub_vector(i)%y = self%sub_vector(i)%y - rhs%sub_vector(i)%getY()
@@ -1810,7 +1808,7 @@ contains
                             self%sub_vector(i)%z = self%sub_vector(i)%z - rhs%sub_scalar(i)%getV()
                             !
                         class default
-                            call errStop( "subField_rVector3D_MR > Undefined rhs" )
+                            call errStop( "subField_cVector3D_MR > Undefined rhs" )
                             !
                     end select
                     !
@@ -1818,7 +1816,7 @@ contains
                     !
                     select type( rhs )
                         !
-                        class is( rVector3D_MR_t )
+                        class is( cVector3D_MR_t )
                             !
                             self%sub_vector(i)%s_v = self%sub_vector(i)%s_v - rhs%sub_vector(i)%s_v
                             !
@@ -1827,28 +1825,28 @@ contains
                             self%sub_vector(i)%s_v = self%sub_vector(i)%s_v - rhs%sub_scalar(i)%s_v
                             !
                         class default
-                            call errStop( "add_rVector3D_MR > Undefined singleton rhs" )
+                            call errStop( "add_cVector3D_MR > Undefined singleton rhs" )
                             !
                     end select
                     !
                 else
-                    call errStop( "subField_rVector3D_MR > Unknow store_state." )
+                    call errStop( "subField_cVector3D_MR > Unknow store_state." )
                 endif
                 !
             enddo
             !
         else
-            call errStop( "subField_rVector3D_MR > Incompatible inputs." )
+            call errStop( "subField_cVector3D_MR > Incompatible inputs." )
         endif
         !
-    end subroutine subField_rVector3D_MR
+    end subroutine subField_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine multByReal_rVector3D_MR( self, rvalue )
+    subroutine multByReal_cVector3D_MR( self, rvalue )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: rvalue
         !
         integer :: i
@@ -1866,19 +1864,19 @@ contains
                 self%sub_vector(i)%s_v = self%sub_vector(i)%s_v * rvalue
                 !
             else
-                call errStop( "multByReal_rVector3D_MR > Unknown store_state!" )
+                call errStop( "multByReal_cVector3D_MR > Unknown store_state!" )
             endif
             !
         enddo
         !
-    end subroutine multByReal_rVector3D_MR
+    end subroutine multByReal_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine multByComplex_rVector3D_MR( self, cvalue )
+    subroutine multByComplex_cVector3D_MR( self, cvalue )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
         integer :: i
@@ -1896,28 +1894,28 @@ contains
                 self%sub_vector(i)%s_v = self%sub_vector(i)%s_v * cvalue
                 !
             else
-                call errStop( "multByComplex_rVector3D_MR > Unknown store_state!" )
+                call errStop( "multByComplex_cVector3D_MR > Unknown store_state!" )
             endif
             !
         enddo
         !
-    end subroutine multByComplex_rVector3D_MR
+    end subroutine multByComplex_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine multByField_rVector3D_MR( self, rhs )
+    subroutine multByField_cVector3D_MR( self, rhs )
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "multByField_rVector3D_MR > self not allocated." )
+            call errStop( "multByField_cVector3D_MR > self not allocated." )
         endif
         !
         if( .NOT. rhs%is_allocated ) then
-            call errStop( "multByField_rVector3D_MR > rhs not allocated." )
+            call errStop( "multByField_cVector3D_MR > rhs not allocated." )
         endif
         !
         call self%switchStoreState( rhs%store_state )
@@ -1930,7 +1928,7 @@ contains
                     !
                     select type( rhs )
                         !
-                        class is( rVector3D_MR_t )
+                        class is( cVector3D_MR_t )
                             !
                             self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%getX()
                             self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%getY()
@@ -1943,7 +1941,7 @@ contains
                             self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_scalar(i)%getV()
                             !
                         class default
-                            call errStop( "multByField_rVector3D_MR > Undefined rhs" )
+                            call errStop( "multByField_cVector3D_MR > Undefined rhs" )
                             !
                     end select
                     !
@@ -1951,7 +1949,7 @@ contains
                     !
                     select type( rhs )
                         !
-                        class is( rVector3D_MR_t )
+                        class is( cVector3D_MR_t )
                             !
                             self%sub_vector(i)%s_v = self%sub_vector(i)%s_v * rhs%sub_vector(i)%s_v
                             !
@@ -1960,44 +1958,44 @@ contains
                             self%sub_vector(i)%s_v = self%sub_vector(i)%s_v * rhs%sub_scalar(i)%s_v
                             !
                         class default
-                            call errStop( "add_rVector3D_MR > Undefined singleton rhs" )
+                            call errStop( "add_cVector3D_MR > Undefined singleton rhs" )
                             !
                     end select
                     !
                 else
-                    call errStop( "multByField_rVector3D_MR > Unknow store_state." )
+                    call errStop( "multByField_cVector3D_MR > Unknow store_state." )
                 endif
                 !
             enddo
             !
         else
-            call errStop( "multByField_rVector3D_MR > Incompatible inputs." )
+            call errStop( "multByField_cVector3D_MR > Incompatible inputs." )
         endif
         !
-    end subroutine multByField_rVector3D_MR
+    end subroutine multByField_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    function diagMult_rVector3D_MR( self, rhs ) result( diag_mult )
+    function diagMult_cVector3D_MR( self, rhs ) result( diag_mult )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         class( Vector_t ), allocatable :: diag_mult
         !
         integer :: i
-        type( rVector3D_MR_t ) :: diag_mult_temp
+        type( cVector3D_MR_t ) :: diag_mult_temp
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "diagMult_rVector3D_MR > self not allocated." )
+            call errStop( "diagMult_cVector3D_MR > self not allocated." )
         endif
         !
         if( .NOT. rhs%is_allocated ) then
-            call errStop( "diagMult_rVector3D_MR > rhs not allocated." )
+            call errStop( "diagMult_cVector3D_MR > rhs not allocated." )
         endif
         !
-        diag_mult_temp = rVector3D_MR_t( self%grid, self%grid_type )
+        diag_mult_temp = cVector3D_MR_t( self%grid, self%grid_type )
         !
         call diag_mult_temp%switchStoreState( rhs%store_state )
         !
@@ -2011,7 +2009,7 @@ contains
                     !
                     select type( rhs )
                         !
-                        class is( rVector3D_MR_t )
+                        class is( cVector3D_MR_t )
                             !
                             diag_mult_temp%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
                             diag_mult_temp%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
@@ -2024,7 +2022,7 @@ contains
                             diag_mult_temp%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_scalar(i)%v
                             !
                         class default
-                            call errStop( "diagMult_rVector3D_MR > Undefined rhs" )
+                            call errStop( "diagMult_cVector3D_MR > Undefined rhs" )
                             !
                     end select
                     !
@@ -2032,7 +2030,7 @@ contains
                     !
                     select type( rhs )
                         !
-                        class is( rVector3D_MR_t )
+                        class is( cVector3D_MR_t )
                             !
                             diag_mult_temp%sub_vector(i)%s_v = self%sub_vector(i)%s_v * rhs%sub_vector(i)%s_v
                             !
@@ -2041,12 +2039,12 @@ contains
                             diag_mult_temp%sub_vector(i)%s_v = self%sub_vector(i)%s_v * rhs%sub_scalar(i)%s_v
                             !
                         class default
-                            call errStop( "add_rVector3D_MR > Undefined singleton rhs" )
+                            call errStop( "add_cVector3D_MR > Undefined singleton rhs" )
                             !
                     end select
                     !
                 else
-                    call errStop( "diagMult_rVector3D_MR > Unknow store_state." )
+                    call errStop( "diagMult_cVector3D_MR > Unknow store_state." )
                 endif
                 !
             enddo
@@ -2054,24 +2052,24 @@ contains
             allocate( diag_mult, source = diag_mult_temp )
             !
         else
-            call errStop( "diagMult_rVector3D_MR > Incompatible inputs." )
+            call errStop( "diagMult_cVector3D_MR > Incompatible inputs." )
         endif
         !
-    end function diagMult_rVector3D_MR
+    end function diagMult_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine multAdd_rVector3D_MR( self, cvalue, rhs )
+    subroutine multAdd_cVector3D_MR( self, cvalue, rhs )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         class( Field_t ), intent( in ) :: rhs
         !
         integer :: i
         !
         if( .NOT. rhs%is_allocated ) then
-            call errStop( "multAdd_rVector3D_MR > rhs not allocated." )
+            call errStop( "multAdd_cVector3D_MR > rhs not allocated." )
         endif
         !
         call self%switchStoreState( rhs%store_state )
@@ -2084,7 +2082,7 @@ contains
                 !
                 select type( rhs )
                     !
-                    class is( rVector3D_MR_t ) 
+                    class is( cVector3D_MR_t ) 
                         !
                         if( rhs%store_state .EQ. compound ) then
                             !
@@ -2097,28 +2095,28 @@ contains
                             self%sub_vector(i)%s_v = self%sub_vector(i)%s_v + cvalue * rhs%sub_vector(i)%s_v
                             !
                         else
-                            call errStop( "multAdd_rVector3D_MR > Unknown rhs store_state!" )
+                            call errStop( "multAdd_cVector3D_MR > Unknown rhs store_state!" )
                         endif
                         !
                     class default
-                        call errStop( "multAdd_rVector3D_MR > rhs undefined." )
+                        call errStop( "multAdd_cVector3D_MR > rhs undefined." )
                     !
                 end select
                 !
             enddo
             !
         else
-            call errStop( "multAdd_rVector3D_MR >Incompatible inputs." )
+            call errStop( "multAdd_cVector3D_MR >Incompatible inputs." )
         endif
         !
-    end subroutine multAdd_rVector3D_MR
+    end subroutine multAdd_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    function dotProd_rVector3D_MR( self, rhs ) result( cvalue )
+    function dotProd_cVector3D_MR( self, rhs ) result( cvalue )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         complex( kind=prec ) :: cvalue
@@ -2137,29 +2135,29 @@ contains
                 !
                 select type( rhs )
                     !
-                    class is( rVector3D_MR_t )
+                    class is( cVector3D_MR_t )
                         !
                         cvalue = cvalue + self%sub_vector(i)%dotProd( rhs%sub_vector(i) )
                         !
                     class default
-                        call errStop( "dotProd_rVector3D_MR > rhs must be rVector3D_MR!" )
+                        call errStop( "dotProd_cVector3D_MR > rhs must be cVector3D_MR!" )
                     !
                 end select
                 !
             else
-                call errStop( "dotProd_rVector3D_MR > Incompatible rhs" )
+                call errStop( "dotProd_cVector3D_MR > Incompatible rhs" )
             endif
             !
         enddo
         !
-    end function dotProd_rVector3D_MR
+    end function dotProd_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine divByValue_rVector3D_MR( self, cvalue )
+    subroutine divByValue_cVector3D_MR( self, cvalue )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
         integer :: i
@@ -2177,19 +2175,19 @@ contains
                 self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / cvalue
                 !
             else
-                call errStop( "divByValue_rVector3D_MR > Unknown self store_state!" )
+                call errStop( "divByValue_cVector3D_MR > Unknown self store_state!" )
             endif
             !
         enddo
         !
-    end subroutine divByValue_rVector3D_MR
+    end subroutine divByValue_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine divByField_rVector3D_MR( self, rhs )
+    subroutine divByField_cVector3D_MR( self, rhs )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         integer :: i
@@ -2200,7 +2198,7 @@ contains
             !
             select type( rhs )
                 !
-                class is( rVector3D_MR_t )
+                class is( cVector3D_MR_t )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
@@ -2213,7 +2211,7 @@ contains
                         self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_vector(i)%s_v
                         !
                     else
-                        call errStop( "divByField_rVector3D_MR > Unknown rhs store_state!" )
+                        call errStop( "divByField_cVector3D_MR > Unknown rhs store_state!" )
                     endif
                     !
                 class is( rScalar3D_MR_t )
@@ -2229,38 +2227,38 @@ contains
                         self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_scalar(i)%s_v
                         !
                     else
-                        call errStop( "divByField_rVector3D_MR > Unknown rhs store_state!" )
+                        call errStop( "divByField_cVector3D_MR > Unknown rhs store_state!" )
                     endif
                     !
                 class default
-                    call errStop( "divByField_rVector3D_MR: undefined rhs" )
+                    call errStop( "divByField_cVector3D_MR: undefined rhs" )
                 !
             end select
             !
         else
-            call errStop( "divByField_rVector3D_MR: incompatible rhs" )
+            call errStop( "divByField_cVector3D_MR: incompatible rhs" )
         endif
         !
-    end subroutine divByField_rVector3D_MR
+    end subroutine divByField_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine interpFunc_rVector3D_MR( self, location, xyz, interp )
+    subroutine interpFunc_cVector3D_MR( self, location, xyz, interp )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         real( kind=prec ), intent( in ) :: location(3)
         character, intent( in ) :: xyz
         class( Vector_t ), allocatable, intent( inout ) :: interp
         !
-        type( rVector3D_SG_t ) :: interp_temp
+        type( cVector3D_SG_t ) :: interp_temp
         real( kind=prec ), allocatable, dimension(:) :: xC, yC, zC
         integer :: ix, iy, iz, i, ii
         real( kind=prec ) :: wx, wy, wz
         logical, dimension(:), allocatable :: tmp
         !
         if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "interpFunc_rVector3D_SG > Self not allocated." )
+            call errStop( "interpFunc_cVector3D_SG > Self not allocated." )
         endif
         !
         do ii = 1, self%grid%getNGrids()
@@ -2269,7 +2267,7 @@ contains
                 !
                 case( EDGE )
                     !
-                    interp_temp = rVector3D_SG_t( self%grid, EDGE )
+                    interp_temp = cVector3D_SG_t( self%grid, EDGE )
                     !
                     select case( xyz )
                         !
@@ -2304,13 +2302,13 @@ contains
                             zC = CumSum([self%grid%del_z])
                             !
                         case default
-                            call errStop( "interpFunc_rVector3D_MR: Unknown xyz" )
+                            call errStop( "interpFunc_cVector3D_MR: Unknown xyz" )
                         !
                     end select
                     !
                 case( FACE )
                     !
-                    interp_temp = rVector3D_SG_t( self%grid, FACE )
+                    interp_temp = cVector3D_SG_t( self%grid, FACE )
                     !
                     select case( xyz )
                         !
@@ -2345,12 +2343,12 @@ contains
                             zC = CumSum([0._prec, self%grid%dz])
                             !
                         case default
-                            call errStop( "interpFunc_rVector3D_MR: Unknown xyz" )
+                            call errStop( "interpFunc_cVector3D_MR: Unknown xyz" )
                         !
                     end select
                     !
                 case default
-                    call errStop( "interpFunc_rVector3D_MR: Unknown grid_type" )
+                    call errStop( "interpFunc_cVector3D_MR: Unknown grid_type" )
                 !
             end select
             !
@@ -2447,235 +2445,236 @@ contains
                     interp_temp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
                     !
                 case default
-                    call errStop( "interpFunc_rVector3D_MR: Unknown xyz" )
+                    call errStop( "interpFunc_cVector3D_MR: Unknown xyz" )
                 !
             end select !XYZ
             !
+            if( allocated( interp ) ) deallocate( interp )
             allocate( interp, source = self )
             !
             select type( interp )
                 !
-                class is( rVector3D_MR_t )
+                class is( cVector3D_MR_t )
                     !
                     interp%sub_vector(ii) = interp_temp
                     !
                 class default
-                    call errStop( "interpFunc_rVector3D_MR: undefined interp" )
+                    call errStop( "interpFunc_cVector3D_MR: undefined interp" )
                 !
             end select
             !
         enddo
         !
-    end subroutine interpFunc_rVector3D_MR
+    end subroutine interpFunc_cVector3D_MR
     !
     !> No function briefing
     !
-    function getAxis_rVector3D_MR( self, comp_lbl ) result( comp )
+    function getAxis_cVector3D_MR( self, comp_lbl ) result( comp )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         character, intent( in ) :: comp_lbl
         !
         complex( kind=prec ), allocatable :: comp(:,:,:)
         !
-        call errStop( "getAxis_rVector3D_MR still not implemented" )
+        call errStop( "getAxis_cVector3D_MR still not implemented" )
         !
-    end function getAxis_rVector3D_MR
+    end function getAxis_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine getReal_rVector3D_MR( self, r_vector )
+    subroutine getReal_cVector3D_MR( self, r_vector )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
-        allocate( r_vector, source = rVector3D_MR_t( self%grid, self%grid_type ) )
+        allocate( r_vector, source = cVector3D_MR_t( self%grid, self%grid_type ) )
         !
         call r_vector%copyFrom( self )
         !
-    end subroutine getReal_rVector3D_MR
+    end subroutine getReal_cVector3D_MR
     !
     !> No interface function briefing
     !
-    function getX_rVector3D_MR( self ) result( x )
+    function getX_cVector3D_MR( self ) result( x )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable, dimension(:,:,:) :: x
         !
-        type( rVector3D_MR_t ) :: temp
+        type( cVector3D_MR_t ) :: temp
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "getX_rVector3D_MR > self not allocated." )
+            call errStop( "getX_cVector3D_MR > self not allocated." )
         endif
         !
         !> USE getArray() or getFullArray() ????
         array = self%getFullArray()
         !
-        write( *, * ) "getX_rVector3D_MR: ", self%NdX(1), self%NdX(2), self%NdX(3), &
+        write( *, * ) "getX_cVector3D_MR: ", self%NdX(1), self%NdX(2), self%NdX(3), &
         self%NdX(1)*self%NdX(2)*self%NdX(3), size( array )
         !
         x = reshape( real( array, kind=prec ), (/self%NdX(1), self%NdX(2), self%NdX(3)/) )
         !
-    end function getX_rVector3D_MR
+    end function getX_cVector3D_MR
     !
     !> No interface subroutine briefing
     !
-    subroutine setX_rVector3D_MR( self, x )
+    subroutine setX_cVector3D_MR( self, x )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:,:,:), intent( in ) :: x
         !
-        type( rVector3D_SG_t ) :: temp
+        type( cVector3D_SG_t ) :: temp
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "setX_rVector3D_MR > self not allocated." )
+            call errStop( "setX_cVector3D_MR > self not allocated." )
         endif
         !
-        temp = rVector3D_SG_t( self%grid, self%grid_type )
+        temp = cVector3D_SG_t( self%grid, self%grid_type )
         !
         call temp%setX( x )
         !
         call self%SGtoMR( temp )
         !
-    end subroutine setX_rVector3D_MR
+    end subroutine setX_cVector3D_MR
     !
     !> No interface function briefing
     !
-    function getY_rVector3D_MR( self ) result( y )
+    function getY_cVector3D_MR( self ) result( y )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable, dimension(:,:,:) :: y
         !
-        type( rVector3D_MR_t ) :: temp
+        type( cVector3D_MR_t ) :: temp
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "getY_rVector3D_MR > self not allocated." )
+            call errStop( "getY_cVector3D_MR > self not allocated." )
         endif
         !
         !> USE getArray() or getFullArray() ????
         array = self%getFullArray()
         !
-        write( *, * ) "getY_rVector3D_MR: ", self%NdY(1), self%NdY(2), self%NdY(3), &
+        write( *, * ) "getY_cVector3D_MR: ", self%NdY(1), self%NdY(2), self%NdY(3), &
         self%NdY(1)*self%NdY(2)*self%NdY(3), size( array )
         !
         y = reshape( real( array, kind=prec ), (/self%NdY(1), self%NdY(2), self%NdY(3)/) )
         !
-    end function getY_rVector3D_MR
+    end function getY_cVector3D_MR
     !
     !> No interface subroutine briefing
     !
-    subroutine setY_rVector3D_MR( self, y )
+    subroutine setY_cVector3D_MR( self, y )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:,:,:), intent( in ) :: y
         !
-        type( rVector3D_SG_t ) :: temp
+        type( cVector3D_SG_t ) :: temp
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "setY_rVector3D_MR > self not allocated." )
+            call errStop( "setY_cVector3D_MR > self not allocated." )
         endif
         !
-        temp = rVector3D_SG_t( self%grid, self%grid_type )
+        temp = cVector3D_SG_t( self%grid, self%grid_type )
         !
         call temp%setY( y )
         !
         call self%SGtoMR( temp )
         !
-    end subroutine setY_rVector3D_MR
+    end subroutine setY_cVector3D_MR
     !
     !> No interface function briefing
     !
-    function getZ_rVector3D_MR( self ) result( z )
+    function getZ_cVector3D_MR( self ) result( z )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable, dimension(:,:,:) :: z
         !
-        type( rVector3D_MR_t ) :: temp
+        type( cVector3D_MR_t ) :: temp
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "getZ_rVector3D_MR > self not allocated." )
+            call errStop( "getZ_cVector3D_MR > self not allocated." )
         endif
         !
         !> USE getArray() or getFullArray() ????
         array = self%getFullArray()
         !
-        write( *, * ) "getZ_rVector3D_MR: ", self%NdZ(1), self%NdZ(2), self%NdZ(3), &
+        write( *, * ) "getZ_cVector3D_MR: ", self%NdZ(1), self%NdZ(2), self%NdZ(3), &
         self%NdZ(1)*self%NdZ(2)*self%NdZ(3), size( array )
         !
         z = reshape( real( array, kind=prec ), (/self%NdZ(1), self%NdZ(2), self%NdZ(3)/) )
         !
-    end function getZ_rVector3D_MR
+    end function getZ_cVector3D_MR
     !
     !> No interface subroutine briefing
     !
-    subroutine setZ_rVector3D_MR( self, z )
+    subroutine setZ_cVector3D_MR( self, z )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:,:,:), intent( in ) :: z
         !
-        type( rVector3D_SG_t ) :: temp
+        type( cVector3D_SG_t ) :: temp
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "setZ_rVector3D_MR > self not allocated." )
+            call errStop( "setZ_cVector3D_MR > self not allocated." )
         endif
         !
-        temp = rVector3D_SG_t( self%grid, self%grid_type )
+        temp = cVector3D_SG_t( self%grid, self%grid_type )
         !
         call temp%setZ( z )
         !
         call self%SGtoMR( temp )
         !
-    end subroutine setZ_rVector3D_MR
+    end subroutine setZ_cVector3D_MR
     !
     !> No function briefing
     !
-    function getSV_rVector3D_MR( self ) result( s_v )
+    function getSV_cVector3D_MR( self ) result( s_v )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         !
         complex( kind=prec ), allocatable, dimension(:) :: s_v
         !
-        call errStop( "getSV_rVector3D_MR not implemented!" )
+        call errStop( "getSV_cVector3D_MR not implemented!" )
         !
-    end function getSV_rVector3D_MR
+    end function getSV_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setSV_rVector3D_MR( self, s_v )
+    subroutine setSV_cVector3D_MR( self, s_v )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:), intent( in ) :: s_v
         !
-        call errStop( "setSV_rVector3D_MR not implemented!" )
+        call errStop( "setSV_cVector3D_MR not implemented!" )
         !
-    end subroutine setSV_rVector3D_MR
+    end subroutine setSV_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine deallOtherState_rVector3D_MR( self )
+    subroutine deallOtherState_cVector3D_MR( self )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         !
-        call errStop( "deallOtherState_rVector3D_MR not implemented!" )
+        call errStop( "deallOtherState_cVector3D_MR not implemented!" )
         ! !
         ! if( ( .NOT. self%is_allocated ) ) then
-            ! call errStop( "deallOtherState_rVector3D_MR > Self not allocated." )
+            ! call errStop( "deallOtherState_cVector3D_MR > Self not allocated." )
         ! endif
         ! !
         ! if( self%store_state .EQ. compound ) then
@@ -2687,17 +2686,17 @@ contains
             ! if( allocated( self%v ) ) deallocate( self%v )
             ! !
         ! else
-            ! call errStop( "deallOtherState_rVector3D_MR > Unknown store_state!" )
+            ! call errStop( "deallOtherState_cVector3D_MR > Unknown store_state!" )
         ! endif
         ! !
-    end subroutine deallOtherState_rVector3D_MR
+    end subroutine deallOtherState_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    function getArray_rVector3D_MR( self ) result( array )
+    function getArray_cVector3D_MR( self ) result( array )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
         real( kind=prec ), allocatable :: v_full(:)
@@ -2708,14 +2707,14 @@ contains
         !
         deallocate( v_full )
         !
-    end function getArray_rVector3D_MR
+    end function getArray_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setArray_rVector3D_MR( self, array )
+    subroutine setArray_cVector3D_MR( self, array )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:), intent( in ) :: array
         !
         complex( kind=prec ), allocatable, dimension(:) :: vFull
@@ -2728,32 +2727,32 @@ contains
         !
         deallocate( vFull )
         !
-    end subroutine setArray_rVector3D_MR
+    end subroutine setArray_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine switchStoreState_rVector3D_MR( self, store_state )
+    subroutine switchStoreState_cVector3D_MR( self, store_state )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         integer, intent( in ), optional :: store_state
         !
-        call errStop( "switchStoreState_rVector3D_MR not implemented!" )
+        call errStop( "switchStoreState_cVector3D_MR not implemented!" )
         !
-    end subroutine switchStoreState_rVector3D_MR
+    end subroutine switchStoreState_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine copyFrom_rVector3D_MR( self, rhs )
+    subroutine copyFrom_cVector3D_MR( self, rhs )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
         integer :: i
         !
         if( .NOT. rhs%is_allocated) then
-            call errStop( "copyFrom_rVector3D_MR > rhs not allocated" )
+            call errStop( "copyFrom_cVector3D_MR > rhs not allocated" )
         endif
         !
         self%grid => rhs%grid
@@ -2765,7 +2764,7 @@ contains
         !
         select type( rhs )
             !
-            class is( rVector3D_MR_t )
+            class is( cVector3D_MR_t )
                 !
                 self%NdX = rhs%NdX
                 self%NdY = rhs%NdY
@@ -2778,7 +2777,7 @@ contains
                     allocate( self%sub_vector( size( rhs%sub_vector ) ) )
                     !
                 else
-                    call errStop( "copyFrom_rVector3D_MR > rhs%sub_vector not allocated" )
+                    call errStop( "copyFrom_cVector3D_MR > rhs%sub_vector not allocated" )
                 endif
                 !
                 do i = 1, size( self%sub_vector )
@@ -2788,50 +2787,50 @@ contains
                 self%is_allocated = .TRUE.
                 !
             class default
-                call errStop( "copyFrom_rVector3D_MR > Undefined rhs" )
+                call errStop( "copyFrom_cVector3D_MR > Undefined rhs" )
         end select
         !
         self%is_allocated = .TRUE.
         !
-    end subroutine copyFrom_rVector3D_MR
+    end subroutine copyFrom_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine read_rVector3D_MR( self, funit, ftype )
+    subroutine read_cVector3D_MR( self, funit, ftype )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        call errStop( "read_rVector3D_MR not implemented!" )
+        call errStop( "read_cVector3D_MR not implemented!" )
         !
-    end subroutine read_rVector3D_MR
+    end subroutine read_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine write_rVector3D_MR( self, funit, ftype )
+    subroutine write_cVector3D_MR( self, funit, ftype )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
+        class( cVector3D_MR_t ), intent( inout ) :: self
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        call errStop( "write_rVector3D_MR not implemented!" )
+        call errStop( "write_cVector3D_MR not implemented!" )
         !
-    end subroutine write_rVector3D_MR
+    end subroutine write_cVector3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine print_rVector3D_MR( self, io_unit, title, append )
+    subroutine print_cVector3D_MR( self, io_unit, title, append )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( in ) :: self
+        class( cVector3D_MR_t ), intent( in ) :: self
         integer, intent( in ), optional :: io_unit
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append
         !
-        type( rVector3D_MR_t ) :: copy
+        type( cVector3D_MR_t ) :: copy
         integer :: i, ix, iy, iz,funit
         !
         copy = self
@@ -2844,7 +2843,7 @@ contains
             funit = 0
         endif
         !
-        write(funit,*) "rVector3D_MR field"
+        write(funit,*) "cVector3D_MR field"
         !
         do i = 1, copy%grid%getNGrids()
             !
@@ -2887,6 +2886,6 @@ contains
             !
         enddo
         !
-    end subroutine print_rVector3D_MR
+    end subroutine print_cVector3D_MR
     !
-end module rVector3D_MR
+end module cVector3D_MR

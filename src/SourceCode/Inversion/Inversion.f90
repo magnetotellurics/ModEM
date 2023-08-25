@@ -38,7 +38,8 @@ module Inversion
             !
             class( Inversion_t ), intent( inout ) :: self
             type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_data
-            class( ModelParameter_t ), allocatable, intent( inout ) :: sigma, dsigma
+            class( ModelParameter_t ), allocatable, intent( in ) :: sigma
+            class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
         end subroutine interface_solve_inversion
         !

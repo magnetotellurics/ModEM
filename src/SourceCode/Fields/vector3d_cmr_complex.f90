@@ -62,7 +62,7 @@ module Vector3d_cmr_complex
      ! pointer to parent grid
      class (Grid3d_cmr_t), pointer :: grid_ptr
 
-     class (Vector3d_csg_complex_t), allocatable :: sub_vectors(:)
+     class (Vector3d_csg_complex_t), allocatable :: sub_vector(:)
 
      ! List of all active (interior + boundary) indices
      integer, dimension (:), allocatable :: ind_active
@@ -191,7 +191,7 @@ contains
     E%ind_boundary = E_in%ind_boundary
     
     do i = 1, E_in%grid_ptr%ngrids
-       E%sub_vectors(i) = E_in%sub_vectors(i)
+       E%sub_vector(i) = E_in%sub_vector(i)
     enddo
  
   end function Vector3d_cmr_complex_t_ctor_copy
@@ -242,11 +242,11 @@ contains
     self%grid_type = grid_type
 
     self%is_allocated = .TRUE.
-    allocate (self%sub_vectors(self%grid_ptr%ngrids), STAT = status)
+    allocate (self%sub_vector(self%grid_ptr%ngrids), STAT = status)
     self%is_allocated = self%is_allocated .AND. (status.EQ.0)
 
     do i = 1, self%grid_ptr%ngrids
-       self%sub_vectors(i) = Vector3d_csg_complex_t (&
+       self%sub_vector(i) = Vector3d_csg_complex_t (&
             igrid%sub_grids(i), grid_type)
     enddo
 
@@ -397,7 +397,7 @@ contains
     ! Loop over subgrids, setting boundary edges to one,
     ! interior to  zero
     do k = 1, self%grid_ptr%ngrids
-       call self%sub_vectors(k)%set_all_boundary (cmplx(1._prec, 0._prec, prec))
+       call self%sub_vector(k)%set_all_boundary (cmplx(1._prec, 0._prec, prec))
     enddo
 
     ! Loop over interfaces: set redundant interface edges to 2
@@ -424,27 +424,27 @@ contains
           ! not active; also reset interior part of interface
           ! edges to 0
           if(xy) then
-             call self%sub_vectors(k-1)%set_one_boundary('z2_x', &
+             call self%sub_vector(k-1)%set_one_boundary('z2_x', &
                   cmplx(-1._prec, 0._prec, prec))
-             call self%sub_vectors(k-1)%set_one_boundary('z2_y', &
+             call self%sub_vector(k-1)%set_one_boundary('z2_y', &
                   cmplx(-10._prec, 0._prec, prec))
           else
-             call self%sub_vectors(k-1)%set_one_boundary('z2', &
+             call self%sub_vector(k-1)%set_one_boundary('z2', &
                   cmplx(-1._prec, 0._prec, prec))
           endif
-          call self%sub_vectors(k)%set_one_boundary('z1', &
+          call self%sub_vector(k)%set_one_boundary('z1', &
                cmplx(0._prec, 0._prec, prec), int_only)
        else
           if(xy) then
-             call self%sub_vectors(k)%set_one_boundary('z1_x', &
+             call self%sub_vector(k)%set_one_boundary('z1_x', &
                   cmplx(-1.0_prec, 0._prec, prec))
-             call self%sub_vectors(k)%set_one_boundary('z1_y', &
+             call self%sub_vector(k)%set_one_boundary('z1_y', &
                   cmplx(-10.0_prec, 0._prec, prec))
           else                
-             call self%sub_vectors(k)%set_one_boundary('z1', &
+             call self%sub_vector(k)%set_one_boundary('z1', &
                   cmplx(-1.0_prec, 0._prec, prec))
           endif
-          call self%sub_vectors(k-1)%set_one_boundary('z2', &
+          call self%sub_vector(k-1)%set_one_boundary('z2', &
                cmplx(0._prec, 0._prec, prec), int_only)
        endif
     enddo
@@ -650,9 +650,9 @@ contains
           endif
        endif
 
-       nvecs = size (self%sub_vectors)
+       nvecs = size (self%sub_vector)
        do i = 1, nvecs
-          call self%sub_vectors(i)%copy_from (rhs%sub_vectors(i))
+          call self%sub_vector(i)%copy_from (rhs%sub_vector(i))
        enddo
 
        class default
@@ -691,9 +691,9 @@ contains
     i2 = 0
 
     do k = 1, self%grid_ptr%ngrids
-       n = self%sub_vectors(k)%length()         
+       n = self%sub_vector(k)%length()         
        i2 = i2 + n
-       call self%sub_vectors(k)%Get_array (v_temp)
+       call self%sub_vector(k)%Get_array (v_temp)
        v(i1:i2) = v_temp
        i1 = i1 + n
     enddo
@@ -714,9 +714,9 @@ contains
     !
     i1 = 1; i2 = 0;
     do k = 1, self%grid_ptr%ngrids
-       n = self%sub_vectors(k)%length ()
+       n = self%sub_vector(k)%length ()
        i2 = i2 + n
-       call self%sub_vectors(k)%set_array (v(i1:i2))
+       call self%sub_vector(k)%set_array (v(i1:i2))
        i1 = i1 + n
     enddo
   end subroutine Set_full_
@@ -740,7 +740,7 @@ contains
     !
     n = 0
     do k = 1, self%grid_ptr%ngrids
-       n = n + self%sub_vectors(k)%length()
+       n = n + self%sub_vector(k)%length()
     enddo
 
   end function length_full_
@@ -847,7 +847,7 @@ contains
     !***********************
     !
     do i = 1, self%grid_ptr%NGrids
-       call self%sub_vectors(i)%Zero ()
+       call self%sub_vector(i)%Zero ()
     enddo
 
   end subroutine Zero_
@@ -1145,19 +1145,19 @@ contains
           ! Copy  x and y components in x and y directions
           ! edges that aligned with subgrid edge.
           do i = 1, Cs 
-             temp%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) = self%sub_vectors(k)%x
-             temp%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) = self%sub_vectors(k)%y
+             temp%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) = self%sub_vector(k)%x
+             temp%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) = self%sub_vector(k)%y
              
              w1 = 1. - (i - 1.)/Cs
              w2 = 1. - w1
              
              if(i == 1) then
-                temp%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2) = self%sub_vectors(k)%z
+                temp%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2) = self%sub_vector(k)%z
              else
-                last = size(self%sub_vectors(k)%z, 1)
+                last = size(self%sub_vector(k)%z, 1)
                 temp%z(i:z_nx:Cs, 1:z_ny:Cs, i1:i2) = &
-                     self%sub_vectors(k)%z(1:last-1, :, :) * w1 +&
-                     self%sub_vectors(k)%z(2:last, :, :) * w2
+                     self%sub_vector(k)%z(1:last-1, :, :) * w1 +&
+                     self%sub_vector(k)%z(2:last, :, :) * w2
              endif
           enddo
           ! edges that subdivide the subgrid
@@ -1244,27 +1244,27 @@ contains
        i1 = self%grid_ptr%coarseness(k, 3)
        i2 = self%grid_ptr%coarseness(k, 4)
 
-       sx1 = size(self%sub_vectors(k)%x, 1)
-       sx2 = size(self%sub_vectors(k)%x, 2)
-       sx3 = size(self%sub_vectors(k)%x, 3)
+       sx1 = size(self%sub_vector(k)%x, 1)
+       sx2 = size(self%sub_vector(k)%x, 2)
+       sx3 = size(self%sub_vector(k)%x, 3)
        allocate (lengthx(sx1, sx2, sx3))
        lengthx = 0.0
        
-       sy1 = size(self%sub_vectors(k)%y, 1)
-       sy2 = size(self%sub_vectors(k)%y, 2)
-       sy3 = size(self%sub_vectors(k)%y, 3)
+       sy1 = size(self%sub_vector(k)%y, 1)
+       sy2 = size(self%sub_vector(k)%y, 2)
+       sy3 = size(self%sub_vector(k)%y, 3)
        allocate (lengthy(sy1, sy2, sy3))
        lengthy = 0.0
 
        do i = 1, Cs
           s1 = size(tempEL%x, 1)
           s2 = size(tempEL%x, 2)
-          self%sub_vectors(k)%x = self%sub_vectors(k)%x + &
+          self%sub_vector(k)%x = self%sub_vector(k)%x + &
                tempEL%x(i:s1:Cs, 1:s2:Cs, i1:i2+1)
 
           s1 = size(tempEL%y, 1)
           s2 = size(tempEL%y, 2)
-          self%sub_vectors(k)%y = self%sub_vectors(k)%y + &
+          self%sub_vector(k)%y = self%sub_vector(k)%y + &
                tempEL%y(1:s1:Cs,i:s2:Cs, i1:i2+1)
 
           s1 = size(temp_L%x, 1)
@@ -1275,11 +1275,11 @@ contains
           lengthy = lengthy + temp_L%y(1:s1:Cs, i:s2:Cs, i1:i2+1);
        enddo
        
-       self%sub_vectors(k)%x = self%sub_vectors(k)%x/lengthx
-       self%sub_vectors(k)%y = self%sub_vectors(k)%y/lengthy
+       self%sub_vector(k)%x = self%sub_vector(k)%x/lengthx
+       self%sub_vector(k)%y = self%sub_vector(k)%y/lengthy
        s1 = size(sg_v%z, 1)
        s2 = size(sg_v%z, 2)
-       self%sub_vectors(k)%z = sg_v%z(1:s1:Cs, 1:s2:Cs, i1:i2)
+       self%sub_vector(k)%z = sg_v%z(1:s1:Cs, 1:s2:Cs, i1:i2)
 
        deallocate (lengthx, lengthy)
     enddo    
@@ -1332,7 +1332,7 @@ contains
        
        do i = 1, Cs
           last = size(grid%Dx)
-          self%sub_vectors(k)%x = self%sub_vectors(k)%x + &
+          self%sub_vector(k)%x = self%sub_vector(k)%x + &
                sg_v%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) *    &
                rep_mat(grid%Dx(i:last:Cs), &
                1, &
@@ -1340,7 +1340,7 @@ contains
                self%grid_ptr%sub_grids(k)%Nz + 1, .false.)
           
           last = size(grid%Dy)
-          self%sub_vectors(k)%y = self%sub_vectors(k)%y + &
+          self%sub_vector(k)%y = self%sub_vector(k)%y + &
                sg_v%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) *  & 
                rep_mat(grid%Dy(i:last:Cs), &
                self%grid_ptr%sub_grids(k)%Nx + 1, &
@@ -1348,19 +1348,19 @@ contains
                self%grid_ptr%sub_grids(k)%Nz + 1, .TRUE.)
        enddo
        
-       self%sub_vectors(k)%x = self%sub_vectors(k)%x / &
+       self%sub_vector(k)%x = self%sub_vector(k)%x / &
             rep_mat(self%grid_ptr%sub_grids(k)%Dx, &
             1, &
             self%grid_ptr%sub_grids(k)%Ny + 1, &
             self%grid_ptr%sub_grids(k)%Nz + 1, .false.)
        
-       self%sub_vectors(k)%y = self%sub_vectors(k)%y / &
+       self%sub_vector(k)%y = self%sub_vector(k)%y / &
             rep_mat(self%grid_ptr%sub_grids(k)%Dy, &
             self%grid_ptr%sub_grids(k)%Nx + 1, &
             1, &
             self%grid_ptr%sub_grids(k)%Nz + 1, .TRUE.)
        
-       self%sub_vectors(k)%z = sg_v%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2)
+       self%sub_vector(k)%z = sg_v%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2)
     enddo
     
   end subroutine cvector_to_mr_b_

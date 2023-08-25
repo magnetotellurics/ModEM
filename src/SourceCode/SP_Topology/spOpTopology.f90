@@ -1,7 +1,7 @@
 !
-!> Abstract Base class to define a spOpTopology
+!> Abstract Base class to define a SpOpTopology
 !
-module spOpTopology
+module SpOpTopology
     !
     use SpOpTools
     !
@@ -11,35 +11,35 @@ module spOpTopology
     !> Sparse curl topology : maps from all edges to all faces
     type( spMatCSR_Real ) :: T
     !
-    type, abstract :: spOpTopology_t
+    type, abstract :: SpOpTopology_t
         !
         !> No base properties
         !
         contains
             !
-            procedure( interface_curl_spoptopology ), deferred, public :: curl
-            procedure( interface_grad_spoptopology ), deferred, public :: grad
+            procedure( interface_curl_SpOpTopology ), deferred, public :: curl
+            procedure( interface_grad_SpOpTopology ), deferred, public :: grad
             !
-    end type spOpTopology_t
+    end type SpOpTopology_t
     !
     abstract interface
         !
         !> No interface subroutine briefing
-        subroutine interface_curl_spoptopology( self, T ) 
-            import :: spOpTopology_t, spMatCSR_Real
+        subroutine interface_curl_SpOpTopology( self, T ) 
+            import :: SpOpTopology_t, spMatCSR_Real
             !
-            class( spOpTopology_t ), intent( inout ) :: self
+            class( SpOpTopology_t ), intent( in ) :: self
             type( spMatCSR_Real ), intent( inout ) :: T
-        end subroutine interface_curl_spoptopology
+        end subroutine interface_curl_SpOpTopology
         !
         !> No interface subroutine briefing
-        subroutine interface_grad_spoptopology( self, G ) 
-            import :: spOpTopology_t, spMatCSR_Real
+        subroutine interface_grad_SpOpTopology( self, G ) 
+            import :: SpOpTopology_t, spMatCSR_Real
             !
-            class( spOpTopology_t ), intent( inout ) :: self
+            class( SpOpTopology_t ), intent( in ) :: self
             type( spMatCSR_Real ), intent( inout ) :: G
-        end subroutine interface_grad_spoptopology
+        end subroutine interface_grad_SpOpTopology
         !
     end interface
     !
-end module spOpTopology
+end module SpOpTopology

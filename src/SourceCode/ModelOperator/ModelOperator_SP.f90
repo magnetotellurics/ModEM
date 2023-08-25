@@ -5,16 +5,14 @@
 module ModelOperator_SP
     !
     use ModelOperator
-    use SpOpTopology_SG
+    use SpOptopology
+    use SpOpTopology_MR
     use MetricElements_SG
     use MetricElements_MR
     !
     type, abstract, extends( ModelOperator_t ) :: ModelOperator_SP_t
         !
-        type( SpOpTopology_SG_t ) :: topology_sg
-        !
-        integer, allocatable, dimension(:) :: EDGEi, EDGEb
-        integer, allocatable, dimension(:) :: NODEi, NODEb
+        class( SpOpTopology_t ), allocatable :: topology
         !
         type( spMatCSR_Real ) :: D, Gd, TCC, CCii, CCib
         !
@@ -67,7 +65,7 @@ contains
     !
     !> Set sparse matrices for curl (T) and grad (G)
     !> operator topologies; these sparse matrices are stored
-    !> in module spOpTopology
+    !> in module SpOpTopology
     !
     !> Find indexes (in vector of all) of boundary and interior edges
     !> allocate for diagonal part of curl-curl operator
@@ -80,40 +78,44 @@ contains
         class( ModelOperator_SP_t ), intent( inout ) :: self
         class( Grid_t ), target, intent( in ) :: grid
         !
-        integer :: nInterior
-        !
         self%is_allocated = .FALSE.
         !
         !> Instantiation of the specific object MetricElements
-        select case( grid_format )
+        select type( grid )
             !
-            case( GRID_SG )
+            class is ( Grid3D_SG_t )
                 !
                 allocate( self%metric, source = MetricElements_SG_t( grid ) )
                 !
-            case( GRID_MR )
+                call self%metric%setAllIndexArrays
+                !
+                allocate( self%topology, source = SpOpTopology_SG_t( grid ) )
+                !
+            class is ( Grid3D_MR_t )
                 !
                 allocate( self%metric, source = MetricElements_MR_t( grid ) )
                 !
-            case default
+                call self%metric%setAllIndexArrays
+                !
+                allocate( self%topology, source = SpOpTopology_MR_t( grid ) )
+                !
+            class default
                 !
                 call warning( "create_ModelOperator_SP > grid_format not provided, using MetricElements_SG_t." )
                 !
                 allocate( self%metric, source = MetricElements_SG_t( grid ) )
                 !
+                call self%metric%setAllIndexArrays
+                !
+                allocate( self%topology, source = SpOpTopology_SG_t( grid ) )
+                !
         end select
         !
-        self%topology_sg = SpOpTopology_SG_t( self%metric%grid )
+        call self%topology%curl( T )
         !
-        call self%topology_sg%curl( T )
+        call self%topology%grad( G )
         !
-        call self%topology_sg%grad( G )
-        !
-        call self%metric%boundaryIndex( EDGE, self%EDGEb, self%EDGEi )
-        !
-        nInterior = size( self%EDGEi )
-        !
-        allocate( self%VomegaMuSig( nInterior ) )
+        allocate( self%VomegaMuSig( size( self%metric%grid%EDGEi ) ) )
         !
         !> set a default omega
         self%omega = 0.0
@@ -144,6 +146,7 @@ contains
         call create_spMatCSR( n, m, nz, Ttrans )
         call create_spMatCSR( m, n, nz, CC )
         !
+        write( *, * ) "setEquations_ModelOperator_SP: ", T%nCol, size( self%metric%edge_length%getArray() )
         call RMATxDIAG( T, real( self%metric%edge_length%getArray(), kind=prec ), temp_matrix )
         !
         !> Create TCC for for multCurlT
@@ -166,9 +169,9 @@ contains
         !
         call DIAGxRMAT( temp_array, temp_matrix, CC )
         !
-        call subMatrix_Real( CC, self%EDGEi, self%EDGEi, self%CCii )
+        call subMatrix_Real( CC, self%metric%grid%EDGEi, self%metric%grid%EDGEi, self%CCii )
         !
-        call subMatrix_Real( CC, self%EDGEi, self%EDGEb, self%CCib )
+        call subMatrix_Real( CC, self%metric%grid%EDGEi, self%metric%grid%EDGEb, self%CCib )
         !
         call deall_spMatCSR( temp_matrix )
         call deall_spMatCSR( Ttrans )
@@ -202,7 +205,7 @@ contains
         !
         v_edge_v = self%metric%v_edge%getArray()
         !
-        self%VomegaMuSig = MU_0 * omega_in * sig_vec_v( self%EDGEi ) * v_edge_v( self%EDGEi )
+        self%VomegaMuSig = MU_0 * omega_in * sig_vec_v( self%metric%grid%EDGEi ) * v_edge_v( self%metric%grid%EDGEi )
         !
         self%omega = omega_in
         !
@@ -223,9 +226,6 @@ contains
         !
         !> #Part 1. Construction of VDiv (pre-Vds matrix) and D (div operator)
         !
-        !> set indexes for interior and boundary nodes
-        call self%metric%boundaryIndex( NODE, self%NODEb, self%NODEi )
-        !
         !> matrix_1 -> transpose of topology G
         call RMATtrans( G, matrix_1 )
         !
@@ -237,7 +237,7 @@ contains
         call deall_spMatCSR( matrix_1 )
         !
         !> Select matrix_2 interior nodes, edges to create VDiv
-        call subMatrix_Real( matrix_2, self%NODEi, self%EDGEi, self%VDiv )
+        call subMatrix_Real( matrix_2, self%metric%grid%NODEi, self%metric%grid%EDGEi, self%VDiv )
         !
         call deall_spMatCSR( matrix_2 )
         !
@@ -245,7 +245,7 @@ contains
         aux_vec = self%metric%v_node%getArray()
         !
         !> self%D -> Divide self%VDiv by v_node interior
-        aux_vec_int = ( 1. / aux_vec( self%metric%v_node%ind_interior ) )
+        aux_vec_int = ( 1. / aux_vec( self%metric%v_node%indInterior() ) )
         !
         call DIAGxRMAT( aux_vec_int, self%VDiv, self%D )
         !
@@ -269,7 +269,7 @@ contains
         enddo
         !
         call DIAGxRMAT( d, G, matrix_1 )
-        call subMatrix_Real( matrix_1, self%EDGEi, all_nodes, self%Gd )
+        call subMatrix_Real( matrix_1, self%metric%grid%EDGEi, all_nodes, self%Gd )
         call deall_spMatCSR( matrix_1 )
         !
         deallocate( all_nodes, d )
@@ -294,7 +294,7 @@ contains
         !
         v_edge_v = self%metric%v_edge%getArray()
         !
-        d = ( d / v_edge_v( self%EDGEi ) )
+        d = ( d / v_edge_v( self%metric%grid%EDGEi ) )
         !
         call RMATxDIAG( self%D, d, self%Ds )
         !
@@ -308,7 +308,7 @@ contains
             all_nodes( i ) = i
         enddo
         !
-        call subMatrix_Real( self%Gd, all_nodes, self%NODEi, matrix )
+        call subMatrix_Real( self%Gd, all_nodes, self%metric%grid%NODEi, matrix )
         !
         call RMATxRMAT( VDs, matrix, self%VDsG )
         !
@@ -347,22 +347,22 @@ contains
         endif
         !
         in_e_v = in_e%getArray()
-        in_e_v_int = in_e_v( in_e%ind_interior )
+        in_e_v_int = in_e_v( in_e%indInterior() )
         !
         out_e_v = out_e%getArray()
-        out_e_v_int = out_e_v( out_e%ind_interior )
+        out_e_v_int = out_e_v( out_e%indInterior() )
         !
-        write(*,*) "amult_ModelOperator_SP: ", self%CCii%nCol, self%CCii%nRow, size( in_e_v_int ), size( out_e_v_int ), adjoint
+        !write(*,*) "amult_ModelOperator_SP: ", self%CCii%nCol, self%CCii%nRow, size( in_e_v_int ), size( out_e_v_int ), adjoint
         !
         call RMATxCVEC( self%CCii, in_e_v_int, out_e_v_int )
         !
         if( adjoint ) then
-            out_e_v_int = out_e_v_int - ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%ind_interior )
+            out_e_v_int = out_e_v_int - ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%indInterior() )
         else
-            out_e_v_int = out_e_v_int + ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%ind_interior )
+            out_e_v_int = out_e_v_int + ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%indInterior() )
         endif
         !
-        out_e_v( in_e%ind_interior ) = out_e_v_int
+        out_e_v( in_e%indInterior() ) = out_e_v_int
         !
         call out_e%setArray( out_e_v )
         !
@@ -391,16 +391,16 @@ contains
         endif
         !
         in_e_v = in_e%getArray()
-        in_e_v_bry = in_e_v( in_e%ind_boundary )
+        in_e_v_bry = in_e_v( in_e%indBoundary() )
         !
         out_e_v = out_e%getArray()
-        out_e_v_int = out_e_v( out_e%ind_interior )
+        out_e_v_int = out_e_v( out_e%indInterior() )
         !
-        write(*,*) "multAib_ModelOperator_SP: ", self%CCib%nCol, self%CCib%nRow, size( in_e_v_bry ), size( out_e_v_int )
+        !write(*,*) "multAib_ModelOperator_SP: ", self%CCib%nCol, self%CCib%nRow, size( in_e_v_bry ), size( out_e_v_int )
         !
         call RMATxCVEC( self%CCib, in_e_v_bry, out_e_v_int )
         !
-        out_e_v( out_e%ind_interior ) = out_e_v_int
+        out_e_v( out_e%indInterior() ) = out_e_v_int
         !
         call out_e%setArray( out_e_v )
         !
@@ -428,7 +428,7 @@ contains
         !
         out_e_v = out_e%getArray()
         !
-        write(*,*) "multCurlT_ModelOperator_SP: ", self%TCC%nCol, self%TCC%nRow, size( in_b_v ), size( out_e_v )
+        !write(*,*) "multCurlT_ModelOperator_SP: ", self%TCC%nCol, self%TCC%nRow, size( in_b_v ), size( out_e_v )
         !
         call RMATxCVEC( self%TCC, in_b_v, out_e_v )
         !
@@ -456,16 +456,16 @@ contains
         endif
         !
         in_e_v = in_e%getArray()
-        in_e_v_int = in_e_v( in_e%ind_interior )
+        in_e_v_int = in_e_v( in_e%indInterior() )
         !
         out_phi_v = out_phi%getArray()
-        out_phi_int = out_phi_v( out_phi%ind_interior )
+        out_phi_int = out_phi_v( out_phi%indInterior() )
         !
-        write(*,*) "div_ModelOperator_SP: ", self%D%nCol, self%D%nRow, size( in_e_v_int ), size( out_phi_int )
+        !write(*,*) "div_ModelOperator_SP: ", self%D%nCol, self%D%nRow, size( in_e_v_int ), size( out_phi_int )
         !
         call RMATxCVEC( self%D, in_e_v_int, out_phi_int )
         !
-        out_phi_v( out_phi%ind_interior ) = out_phi_int
+        out_phi_v( out_phi%indInterior() ) = out_phi_int
         !
         call out_phi%setArray( out_phi_v )
         !
@@ -492,16 +492,16 @@ contains
         endif
         !
         in_e_v = in_e%getArray()
-        in_e_v_int = in_e_v( in_e%ind_interior )
+        in_e_v_int = in_e_v( in_e%indInterior() )
         !
         out_phi_v = out_phi%getArray()
-        out_phi_v_int = out_phi_v( out_phi%ind_interior )
+        out_phi_v_int = out_phi_v( out_phi%indInterior() )
         !
-        write(*,*) "divC_ModelOperator_SP: ", self%Ds%nCol, self%Ds%nRow, size( in_e_v_int ), size( out_phi_v_int )
+        !write(*,*) "divC_ModelOperator_SP: ", self%Ds%nCol, self%Ds%nRow, size( in_e_v_int ), size( out_phi_v_int )
         !
         call RMATxCVEC( self%Ds, in_e_v_int, out_phi_v_int )
         !
-        out_phi_v( out_phi%ind_interior ) = out_phi_v_int
+        out_phi_v( out_phi%indInterior() ) = out_phi_v_int
         !
         call out_phi%setArray( out_phi_v )
         !
@@ -528,16 +528,16 @@ contains
         endif
         !
         in_phi_v = in_phi%getArray()
-        in_phi_v_int = in_phi_v( in_phi%ind_interior )
+        in_phi_v_int = in_phi_v( in_phi%indInterior() )
         !
         out_phi_v = out_phi%getArray()
-        out_phi_v_int = out_phi_v( out_phi%ind_interior )
+        out_phi_v_int = out_phi_v( out_phi%indInterior() )
         !
-        write(*,*) "divCGrad_ModelOperator_SP: ", self%VDsG%nCol, self%VDsG%nRow, size( in_phi_v_int ), size( out_phi_v_int )
+        !write(*,*) "divCGrad_ModelOperator_SP: ", self%VDsG%nCol, self%VDsG%nRow, size( in_phi_v_int ), size( out_phi_v_int )
         !
         call RMATxCVEC( self%VDsG, in_phi_v_int, out_phi_v_int )
         !
-        out_phi_v( out_phi%ind_interior ) = out_phi_v_int
+        out_phi_v( out_phi%indInterior() ) = out_phi_v_int
         !
         call out_phi%setArray( out_phi_v )
         !
@@ -566,13 +566,13 @@ contains
         in_phi_v = in_phi%getArray()
         !
         out_e_v = out_e%getArray()
-        out_e_v_int = out_e_v( out_e%ind_interior )
+        out_e_v_int = out_e_v( out_e%indInterior() )
         !
-        write(*,*) "grad_ModelOperator_SP: ", self%Gd%nCol, self%Gd%nRow, size( in_phi_v ), size( out_e_v_int )
+        !write(*,*) "grad_ModelOperator_SP: ", self%Gd%nCol, self%Gd%nRow, size( in_phi_v ), size( out_e_v_int )
         !
         call RMATxCVEC( self%Gd, in_phi_v, out_e_v_int )
         !
-        out_e_v( out_e%ind_interior ) = out_e_v_int
+        out_e_v( out_e%indInterior() ) = out_e_v_int
         !
         call out_e%setArray( out_e_v )
         !
@@ -599,10 +599,6 @@ contains
         class( ModelOperator_SP_t ), intent( inout ) :: self
         !
         call self%baseDealloc
-        !
-        !> interior and edge indexes
-        deallocate( self%EDGEi, self%EDGEb )
-        deallocate( self%NODEi, self%NODEb )
         !
         call deall_spMatCSR( self%CCii )
         call deall_spMatCSR( self%CCib )

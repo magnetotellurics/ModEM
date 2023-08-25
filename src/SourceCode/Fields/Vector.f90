@@ -7,7 +7,6 @@ module Vector
     !
     type, abstract, extends( Field_t ) :: Vector_t
         !
-        integer :: counter = 0
         integer, dimension(3) :: NdX, NdY, NdZ, Nxyz
         !
     contains
@@ -216,7 +215,17 @@ contains
         !
         c_array = boundary%getArray()
         !
-        c_array( self%ind_interior ) = C_ZERO
+        if( self%grid_type == EDGE ) then
+            !
+            c_array( self%grid%EDGEi ) = C_ZERO
+            !
+        elseif( self%grid_type == FACE ) then
+            !
+            c_array( self%grid%FACEi ) = C_ZERO
+            !
+        else
+            call errStop( "boundary_Vector > unrecognized grid type: ["//self%grid_type//"]" )
+        endif
         !
         call boundary%setArray( c_array )
         !
@@ -236,7 +245,17 @@ contains
         !
         c_array = interior%getArray()
         !
-        c_array( self%ind_boundary ) = C_ZERO
+        if( self%grid_type == EDGE ) then
+            !
+            c_array( self%grid%EDGEb ) = C_ZERO
+            !
+        elseif( self%grid_type == FACE ) then
+            !
+            c_array( self%grid%FACEb ) = C_ZERO
+            !
+        else
+            call errStop( "boundary_Vector > unrecognized grid type: ["//self%grid_type//"]" )
+        endif
         !
         call interior%setArray( c_array )
         !

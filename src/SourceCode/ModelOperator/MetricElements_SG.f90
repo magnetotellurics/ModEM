@@ -40,7 +40,11 @@ module MetricElements_SG
         !
         procedure, public :: setCellVolume => setCellVolume_MetricElements_SG
         !
-        procedure, public :: boundaryIndex => boundaryIndex_MetricElements_SG
+        procedure, public :: setIndexArrays => setIndexArrays_MetricElements_SG
+        !
+        procedure, public :: setAllIndexArrays => setAllIndexArrays_MetricElements_SG
+        !
+        !procedure, public :: boundaryIndex => boundaryIndex_MetricElements_SG
         !
     end type MetricElements_SG_t
     !
@@ -65,7 +69,7 @@ contains
         call self%alloc
         !
         !> if were going to allocate storage for all, just set all now!
-        call self%set
+        call self%setup
         !
     end function MetricElements_SG_Ctor
     !
@@ -351,139 +355,187 @@ contains
     !
     !> For a given type find indexes for boundary and interior nodes
     !
-    subroutine boundaryIndex_MetricElements_SG( self, grid_type, INDb, INDi )
+    subroutine setIndexArrays_MetricElements_SG( self, grid_type, INDb, INDi, INDa )
         implicit none
         !
         class( MetricElements_SG_t ), intent( in ) :: self
         character(*), intent( in ) :: grid_type
-        integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
+        integer, allocatable, dimension(:), intent( out ) :: INDb, INDi
+        integer, dimension(:), allocatable, intent( out ), optional :: INDa
         !
-        integer :: nVec(3), nVecT, nBdry, nb, ni, i
         class( Field_t ), allocatable :: temp_field
-        complex( kind=prec ), allocatable, dimension(:) :: array
         !
         selectcase( grid_type )
             !
-            case( EDGE )
+            case( EDGE, FACE )
                 !
-                allocate( temp_field, source = rVector3D_SG_t( self%grid, EDGE ) )
-                !
-                select type( temp_field )
-                    !
-                    class is( rVector3D_SG_t )
-                        !
-                        nVec(1) = size( temp_field%x )
-                        nVec(2) = size( temp_field%y )
-                        nVec(3) = size( temp_field%z )
-                        !
-                        nVecT = nVec(1)+nVec(2)+nVec(3)
-                        !
-                        temp_field%x(:, 1, :) = 1
-                        temp_field%x(:, temp_field%ny+1, :) = 1
-                        temp_field%x(:, :, 1) = 1
-                        temp_field%x(:, :, temp_field%nz+1) = 1
-                        temp_field%y(1, :, :) = 1
-                        temp_field%y(temp_field%nx+1, :, :) = 1
-                        temp_field%y(:, :, 1) = 1
-                        temp_field%y(:, :, temp_field%nz+1) = 1
-                        temp_field%z(1, :, :) = 1
-                        temp_field%z(temp_field%nx+1, :, :) = 1
-                        temp_field%z(:, 1, :) = 1
-                        temp_field%z(:, temp_field%ny+1, :) = 1
-                        !
-                    class default
-                        call errStop( "boundaryIndex_MetricElements_SG > Undefined EDGE" )
-                        !
-                end select
-                !
-            case( FACE )
-                !
-                allocate( temp_field, source = rVector3D_SG_t( self%grid, EDGE ) )
-                !
-                select type( temp_field )
-                    !
-                    class is( rVector3D_SG_t )
-                        !
-                        nVec(1) = size( temp_field%x )
-                        nVec(2) = size( temp_field%y )
-                        nVec(3) = size( temp_field%z )
-                        !
-                        nVecT = nVec(1)+nVec(2)+nVec(3)
-                        !
-                        temp_field%x(1, :, :) = 1
-                        temp_field%x(temp_field%nx+1, :, :) = 1
-                        temp_field%y(:, 1, :) = 1
-                        temp_field%y(:, temp_field%ny+1, :) = 1
-                        temp_field%z(:, :, 1) = 1
-                        temp_field%z(:, :, temp_field%nz+1) = 1
-                        !
-                    class default
-                        call errStop( "boundaryIndex_MetricElements_SG > Undefined FACE" )
-                        !
-                end select
+                allocate( temp_field, source = rVector3D_SG_t( self%grid, grid_type ) )
                 !
             case( NODE )
                 !
-                allocate( temp_field, source = rScalar3D_SG_t( self%grid, NODE ) )
-                !
-                select type( temp_field )
-                    !
-                    class is( rScalar3D_SG_t )
-                        !
-                        nVecT = size( temp_field%v )
-                        !
-                        temp_field%v(1, :, :) = 1
-                        temp_field%v(temp_field%nx+1, :, :) = 1
-                        temp_field%v(:, 1, :) = 1
-                        temp_field%v(:, temp_field%ny+1, :) = 1
-                        temp_field%v(:, :, 1) = 1
-                        temp_field%v(:, :, temp_field%nz+1) = 1
-                        !
-                    class default
-                        call errStop( "boundaryIndex_MetricElements_SG > Undefined NODE" )
-                        !
-                end select
+                allocate( temp_field, source = rScalar3D_SG_t( self%grid, grid_type ) )
                 !
             case default
-                call errStop( "boundaryIndex_MetricElements_SG > Invalid grid type ["//grid_type//"]" )
+                call errStop( "setIndexArrays_MetricElements_SG > Invalid grid type ["//grid_type//"]" )
         end select 
         !
-        array = temp_field%getArray()
+        call temp_field%setIndexArrays( INDb, INDi )
         !
-        deallocate( temp_field )
-        !
-        nBdry = 0
-        do i = 1, nVecT
-            nBdry = nBdry + nint( real( array(i), kind=prec ) )
-        enddo
-        !
-        if( allocated( INDi ) ) then
-            deallocate( INDi )
-        endif
-        !
-        allocate( INDi( nVecT - nBdry ) )
-        !
-        if( allocated( INDb ) ) then
-            deallocate( INDb )
-        endif
-        !
-        allocate( INDb( nBdry ) )
-        !
-        nb = 0
-        ni = 0
-        !
-        do i = 1, nVecT
-            !
-            if( nint( real( array(i), kind=prec ) ) .EQ. 1 ) then
-                nb = nb+1
-                INDb(nb) = i
-            else
-                ni = ni+1
-                INDi(ni) = i
-            endif
-            !
-        enddo
-        !
-    end subroutine boundaryIndex_MetricElements_SG
+    end subroutine setIndexArrays_MetricElements_SG
     !
+    !> For a given type find indexes for boundary and interior nodes
+    !
+    subroutine setAllIndexArrays_MetricElements_SG( self )
+        implicit none
+        !
+        class( MetricElements_SG_t ), intent( in ) :: self
+        !
+        call self%setIndexArrays( EDGE, self%grid%EDGEb, self%grid%EDGEi )
+        write( *, "( a17, i8, a8, i8 )" ) "EDGEb=", size( self%grid%EDGEb ), ", EDGEi=", size( self%grid%EDGEi )
+        !
+        call self%setIndexArrays( FACE, self%grid%FACEb, self%grid%FACEi )
+        write( *, "( a17, i8, a8, i8 )" ) "FACEb=", size( self%grid%FACEb ), ", FACEi=", size( self%grid%FACEi )
+        !
+        call self%setIndexArrays( NODE, self%grid%NODEb, self%grid%NODEi )
+        write( *, "( a17, i8, a8, i8 )" ) "NODEb=", size( self%grid%NODEb ), ", NODEi=", size( self%grid%NODEi )
+        !
+    end subroutine setAllIndexArrays_MetricElements_SG
+    !
+    !> For a given type find indexes for boundary and interior nodes
+    ! !
+    ! subroutine boundaryIndex_MetricElements_SG( self, grid_type, INDb, INDi )
+        ! implicit none
+        ! !
+        ! class( MetricElements_SG_t ), intent( in ) :: self
+        ! character(*), intent( in ) :: grid_type
+        ! integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
+        ! !
+        ! integer :: nVec(3), nVecT, nBdry, nb, ni, i
+        ! class( Field_t ), allocatable :: temp_field
+        ! complex( kind=prec ), allocatable, dimension(:) :: array
+        ! !
+        ! selectcase( grid_type )
+            ! !
+            ! case( EDGE )
+                ! !
+                ! allocate( temp_field, source = rVector3D_SG_t( self%grid, EDGE ) )
+                ! !
+                ! select type( temp_field )
+                    ! !
+                    ! class is( rVector3D_SG_t )
+                        ! !
+                        ! nVec(1) = size( temp_field%x )
+                        ! nVec(2) = size( temp_field%y )
+                        ! nVec(3) = size( temp_field%z )
+                        ! !
+                        ! nVecT = nVec(1)+nVec(2)+nVec(3)
+                        ! !
+                        ! temp_field%x(:, 1, :) = 1
+                        ! temp_field%x(:, temp_field%ny+1, :) = 1
+                        ! temp_field%x(:, :, 1) = 1
+                        ! temp_field%x(:, :, temp_field%nz+1) = 1
+                        ! temp_field%y(1, :, :) = 1
+                        ! temp_field%y(temp_field%nx+1, :, :) = 1
+                        ! temp_field%y(:, :, 1) = 1
+                        ! temp_field%y(:, :, temp_field%nz+1) = 1
+                        ! temp_field%z(1, :, :) = 1
+                        ! temp_field%z(temp_field%nx+1, :, :) = 1
+                        ! temp_field%z(:, 1, :) = 1
+                        ! temp_field%z(:, temp_field%ny+1, :) = 1
+                        ! !
+                    ! class default
+                        ! call errStop( "boundaryIndex_MetricElements_SG > Undefined EDGE" )
+                        ! !
+                ! end select
+                ! !
+            ! case( FACE )
+                ! !
+                ! allocate( temp_field, source = rVector3D_SG_t( self%grid, FACE ) )
+                ! !
+                ! select type( temp_field )
+                    ! !
+                    ! class is( rVector3D_SG_t )
+                        ! !
+                        ! nVec(1) = size( temp_field%x )
+                        ! nVec(2) = size( temp_field%y )
+                        ! nVec(3) = size( temp_field%z )
+                        ! !
+                        ! nVecT = nVec(1)+nVec(2)+nVec(3)
+                        ! !
+                        ! temp_field%x(1, :, :) = 1
+                        ! temp_field%x(temp_field%nx+1, :, :) = 1
+                        ! temp_field%y(:, 1, :) = 1
+                        ! temp_field%y(:, temp_field%ny+1, :) = 1
+                        ! temp_field%z(:, :, 1) = 1
+                        ! temp_field%z(:, :, temp_field%nz+1) = 1
+                        ! !
+                    ! class default
+                        ! call errStop( "boundaryIndex_MetricElements_SG > Undefined FACE" )
+                        ! !
+                ! end select
+                ! !
+            ! case( NODE )
+                ! !
+                ! allocate( temp_field, source = rScalar3D_SG_t( self%grid, NODE ) )
+                ! !
+                ! select type( temp_field )
+                    ! !
+                    ! class is( rScalar3D_SG_t )
+                        ! !
+                        ! nVecT = size( temp_field%v )
+                        ! !
+                        ! temp_field%v(1, :, :) = 1
+                        ! temp_field%v(temp_field%nx+1, :, :) = 1
+                        ! temp_field%v(:, 1, :) = 1
+                        ! temp_field%v(:, temp_field%ny+1, :) = 1
+                        ! temp_field%v(:, :, 1) = 1
+                        ! temp_field%v(:, :, temp_field%nz+1) = 1
+                        ! !
+                    ! class default
+                        ! call errStop( "boundaryIndex_MetricElements_SG > Undefined NODE" )
+                        ! !
+                ! end select
+                ! !
+            ! case default
+                ! call errStop( "boundaryIndex_MetricElements_SG > Invalid grid type ["//grid_type//"]" )
+        ! end select 
+        ! !
+        ! array = temp_field%getArray()
+        ! !
+        ! deallocate( temp_field )
+        ! !
+        ! nBdry = 0
+        ! do i = 1, nVecT
+            ! nBdry = nBdry + nint( real( array(i), kind=prec ) )
+        ! enddo
+        ! !
+        ! if( allocated( INDi ) ) then
+            ! deallocate( INDi )
+        ! endif
+        ! !
+        ! allocate( INDi( nVecT - nBdry ) )
+        ! !
+        ! if( allocated( INDb ) ) then
+            ! deallocate( INDb )
+        ! endif
+        ! !
+        ! allocate( INDb( nBdry ) )
+        ! !
+        ! nb = 0
+        ! ni = 0
+        ! !
+        ! do i = 1, nVecT
+            ! !
+            ! if( nint( real( array(i), kind=prec ) ) .EQ. 1 ) then
+                ! nb = nb+1
+                ! INDb(nb) = i
+            ! else
+                ! ni = ni+1
+                ! INDi(ni) = i
+            ! endif
+            ! !
+        ! enddo
+        ! !
+    ! end subroutine boundaryIndex_MetricElements_SG
+    ! !
 end Module MetricElements_SG

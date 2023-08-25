@@ -20,7 +20,6 @@ module rVector3D_SG
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundary_rVector3D_SG
             procedure, public :: setOneBoundary => setOneBoundary_rVector3D_SG
-            procedure, public :: intBdryIndices => intBdryIndices_rVector3D_SG
             !
             !> Dimensioning operations
             procedure, public :: setVecComponents => setVecComponents_rVector3D_SG
@@ -77,6 +76,8 @@ module rVector3D_SG
             procedure, public :: deallOtherState => deallOtherState_rVector3D_SG
             !
             procedure, public :: copyFrom => copyFrom_rVector3D_SG
+            !
+            procedure, public :: edgeLength => edgeLength_rVector3D_SG
             !
             !> I/O operations
             procedure, public :: read => read_rVector3D_SG
@@ -152,17 +153,16 @@ contains
         endif
         !
         if( self%is_allocated ) then
+            !
             self%x = C_ZERO
             self%y = C_ZERO
             self%z = C_ZERO
+            !
+            self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
+            !
         else
             call errStop( "rVector3D_SG_ctor > Unable to allocate vector." )
         endif
-        !
-        self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
-        !
-        call self%setIndexArrays
-        call self%zeros
         !
     end function rVector3D_SG_ctor
     !
@@ -350,85 +350,6 @@ contains
     end subroutine setOneBoundary_rVector3D_SG
     !
     !> No subroutine briefing
-    !
-    subroutine intBdryIndices_rVector3D_SG( self, ind_i, ind_b )
-        implicit none
-        !
-        class( rVector3D_SG_t ), intent( inout ) :: self
-        integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
-        !
-        integer :: nVecT, nBdry, nb, ni, i
-        real( kind=prec ), dimension(:), allocatable :: temp
-        type( rVector3D_SG_t ) :: E
-        !
-        if( self%is_allocated ) then
-            !
-            E = rVector3D_SG_t( self%grid, self%grid_type )
-            !
-        else
-            call errStop( "intBdryIndices_rVector3D_SG > Not allocated. Exiting." )
-        endif
-        !
-        select case( self%grid_type )
-            !
-            case( EDGE )
-                !
-                E%x(:, 1, :) = 1
-                E%x(:, E%ny + 1, :) = 1
-                E%x(:, :, 1) = 1
-                E%x(:, :, E%nz + 1) = 1
-                E%y(1, :, :) = 1
-                E%y(E%nx + 1, :, :) = 1
-                E%y(:, :, 1) = 1
-                E%y(:, :, E%nz + 1) = 1
-                E%z(1, :, :) = 1
-                E%z(E%nx + 1, :, :) = 1
-                E%z(:, 1, :) = 1
-                E%z(:, E%ny + 1, :) = 1
-                !
-            case( FACE )
-                !
-                E%x(1, :, :) = 1
-                E%x(E%nx + 1, :, :) = 1
-                E%y(:, 1, :) = 1
-                E%y(:, E%ny + 1, :) = 1
-                E%z(:, :, 1) = 1
-                E%z(:, :, E%nz + 1) = 1
-                !
-            case default
-                call errStop( "intBdryIndices_rVector3D_SG > Undefined self%grid_type" )
-                !
-        end select
-        !
-        temp = E%getArray()
-        !
-        nVecT = size( E%x ) + size( E%y ) + size( E%z )
-        nBdry = 0
-        do i = 1, nVecT
-            nBdry = nBdry + nint( real( temp(i) ) )
-        enddo
-        !
-        if( allocated( ind_i ) ) deallocate( ind_i )
-        allocate( ind_i( nVecT - nBdry ) )
-        !
-        if( allocated( ind_b ) ) deallocate( ind_b )
-        allocate( ind_b( nBdry ) )
-        !
-        nb = 0
-        ni = 0
-        do i = 1, nVecT
-            if( nint( real( temp(i) ) ) .EQ. 1 ) then
-                nb = nb + 1
-                ind_b(nb) = i
-            else
-                ni = ni + 1
-                ind_i(ni) = i
-            endif
-        enddo
-        !
-        deallocate( temp )
-        !
-    end subroutine intBdryIndices_rVector3D_SG
     !
     subroutine setVecComponents_rVector3D_SG( self, xyz, &
             &                                 xmin, xstep, xmax, &
@@ -1926,14 +1847,41 @@ contains
                 !
                 self%is_allocated = .TRUE.
                 !
-                call self%setIndexArrays
-                !
             class default
                 call errStop( "copyFrom_rVector3D_SG > Different type of rhs" )
             !
         end select
         !
     end subroutine copyFrom_rVector3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine edgeLength_rVector3D_SG( self, edge_length )
+        implicit none
+        !
+        class( rVector3D_SG_t ), intent( in ) :: self
+        type( rVector3D_SG_t ), intent( inout ) :: edge_length
+        !
+        integer :: ix, iy, iz
+        !
+        edge_length = self
+        !
+        ! x-component edge length elements
+        do ix = 1, self%grid%nx
+            edge_length%x(ix, :, :) = self%grid%dx(ix)
+        enddo
+        !
+        ! y-component edge length elements
+        do iy = 1, self%grid%ny
+            edge_length%y(:, iy, :) = self%grid%dy(iy)
+        enddo
+        !
+        ! z-component edge length elements
+        do iz = 1, self%grid%nz
+            edge_length%z(:, :, iz) = self%grid%dz(iz)
+        enddo
+        !
+    end subroutine edgeLength_rVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -2091,122 +2039,5 @@ contains
         enddo
         !
     end subroutine print_rVector3D_SG
-    !
-    !> Convert an input Rvector E to a 1-D real array,
-    !> following standard staggered grid ordering
-    !
-    subroutine getRvector( E, v )
-        implicit none
-        !
-        class( rVector3D_SG_t ), intent( in ) :: E
-        real( kind=prec ), dimension(:), pointer, intent( inout ) :: v
-        !
-        integer :: nVec(3), nVecT, id(1), i1, i2
-        !
-        if( .NOT. E%is_allocated ) then
-            call errStop( "getRvector > E not allocated" )
-        endif
-        !
-        nVec(1) = size(E%x)
-        nVec(2) = size(E%y)
-        nVec(3) = size(E%z)
-        nVecT = nVec(1)+nVec(2)+nVec(3)
-        !
-        if(associated(v)) then
-            if(nVect.ne.size(v)) then
-                deallocate(v)
-            endif
-        endif
-        if(.not.associated(v)) then
-            allocate(v(nVecT))
-        endif
-        !   now that we know v is allocated, an of proper size
-        !     just copy contents of E into v
-        id(1) = nVec(1)
-        i1 = 1
-        i2 = nVec(1)
-        v(i1:i2) = reshape(E%x,id)
-        id(1) = nVec(2)
-        i1 = i2+1
-        i2 = i2+nVec(2)
-        v(i1:i2) = reshape(E%y,id)
-        id(1) = nVec(3)
-        i1 = i2+1
-        i2 = i2+nVec(3)
-        v(i1:i2) = reshape(E%z,id)
-        !
-    end subroutine getRvector
-    !
-    !> Copy contents of v into an already created and allocated Rvector
-    !
-    subroutine setRvector( v, E )
-        implicit none
-        !
-        real( kind=prec ), dimension(:), intent( in ) :: v
-        class( rVector3D_SG_t ), intent( inout ) :: E
-        !
-        integer :: nVec(3,3), nVecT, id(3), i, i1, i2
-        !
-        if( .NOT. E%is_allocated ) then
-            call errStop( "setRvector > E not allocated" )
-        endif
-        !
-        do i = 1,3 
-            nVec(1,i) = size(E%x,i)
-            nVec(2,i) = size(E%y,i)
-            nVec(3,i) = size(E%z,i)
-        enddo
-        !
-        nVect = 0
-        !
-        do i =1,3
-            nVecT = nVecT + nVec(i,1)*nVec(i,2)*nVec(i,3)
-        enddo
-        !
-        if( nVecT .NE. size(v) ) then
-            call errStop( "setRvector > Input vector of incorrect size" )
-        endif
-        !     copy contents of v into E
-        i1 = 1
-        i2 = nVec(1,1)*nVec(1,2)*nVec(1,3)
-        id = nVec(1,:)
-        E%x = reshape(v(i1:i2),id)
-        i1 = i2+1
-        i2 = i2+nVec(2,1)*nVec(2,2)*nVec(2,3)
-        id = nVec(2,:)
-        E%y = reshape(v(i1:i2),id)
-        i1 = i2+1
-        i2 = i2+nVec(3,1)*nVec(3,2)*nVec(3,3)
-        id = nVec(3,:)
-        E%z = reshape(v(i1:i2),id)
-        !
-    end subroutine setRvector
-    !
-    subroutine edgeLength( grid, l_e )
-        implicit none
-        !
-        class( Grid_t ), intent( in ) :: grid
-        type( rVector3D_SG_t ), intent( inout )  :: l_e
-        !
-        integer :: ix, iy, iz
-        !
-        l_e = rVector3D_SG_t( grid, EDGE )
-        !
-        ! x-component edge length elements
-        do ix = 1,grid%nx
-            l_e%x(ix, :, :) = grid%dx(ix)
-        enddo
-        !
-        ! y-component edge length elements
-        do iy = 1,grid%ny
-            l_e%y(:, iy, :) = grid%dy(iy)
-        enddo
-        !
-        ! z-component edge length elements
-        do iz = 1,grid%nz
-            l_e%z(:, :, iz) = grid%dz(iz)
-        enddo
-        !
-    end subroutine edgeLength
-    !
+	!
 end module rVector3D_SG

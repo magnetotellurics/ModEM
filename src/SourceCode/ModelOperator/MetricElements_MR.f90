@@ -40,7 +40,11 @@ module MetricElements_MR
         !
         procedure, public :: setCellVolume => setCellVolume_MetricElements_MR
         !
-        procedure, public :: boundaryIndex => boundaryIndex_MetricElements_MR
+        procedure, public :: setIndexArrays => setIndexArrays_MetricElements_MR
+        !
+        procedure, public :: setAllIndexArrays => setAllIndexArrays_MetricElements_MR
+		!
+        !procedure, public :: boundaryIndex => boundaryIndex_MetricElements_MR
         !
     end type MetricElements_MR_t
     !
@@ -65,7 +69,7 @@ contains
         call self%alloc
         !
         !>    if were going to allocate storage for all, just set all now!
-        call self%set
+        call self%setup
         !
     end function MetricElements_MR_Ctor
     !
@@ -104,7 +108,7 @@ contains
                             !
                             metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
                             !
-                            edge_length%sub_vectors(i) = metric_sg%edge_length
+                            edge_length%sub_vector(i) = metric_sg%edge_length
                             !
                         enddo
                         !
@@ -142,7 +146,7 @@ contains
                             !
                             metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
                             !
-                            dual_edge_length%sub_vectors(i) = metric_sg%dual_edge_length
+                            dual_edge_length%sub_vector(i) = metric_sg%dual_edge_length
                             !
                         enddo
                         !
@@ -180,7 +184,7 @@ contains
                             !
                             metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
                             !
-                            face_area%sub_vectors(i) = metric_sg%face_area
+                            face_area%sub_vector(i) = metric_sg%face_area
                             !
                         enddo
                         !
@@ -218,7 +222,7 @@ contains
                             !
                             metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
                             !
-                            dual_face_area%sub_vectors(i) = metric_sg%dual_face_area
+                            dual_face_area%sub_vector(i) = metric_sg%dual_face_area
                             !
                         enddo
                         !
@@ -256,7 +260,7 @@ contains
                             !
                             metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
                             !
-                            v_edge%sub_vectors(i) = metric_sg%v_edge
+                            v_edge%sub_vector(i) = metric_sg%v_edge
                             !
                         enddo
                         !
@@ -294,7 +298,7 @@ contains
                             !
                             metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
                             !
-                            v_node%sub_scalars(i) = metric_sg%v_node
+                            v_node%sub_scalar(i) = metric_sg%v_node
                             !
                         enddo
                         !
@@ -332,7 +336,7 @@ contains
                             !
                             metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
                             !
-                            v_cell%sub_scalars(i) = metric_sg%v_cell
+                            v_cell%sub_scalar(i) = metric_sg%v_cell
                             !
                         enddo
                         !
@@ -350,196 +354,244 @@ contains
     !
     !> For a given type find indexes for boundary and interior nodes
     !
-    subroutine boundaryIndex_MetricElements_MR( self, grid_type, INDb, INDi )
+    subroutine setIndexArrays_MetricElements_MR( self, grid_type, INDb, INDi, INDa )
         implicit none
         !
         class( MetricElements_MR_t ), intent( in ) :: self
         character(*), intent( in ) :: grid_type
-        integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
+        integer, allocatable, dimension(:), intent( out ) :: INDb, INDi
+        integer, dimension(:), allocatable, intent( out ), optional :: INDa
         !
-        !call errStop( "boundaryIndex_MetricElements_MR > Under implementation!" )
-        !
-        integer :: nVec(3), nVecT, nBdry, n, nb, ni, i
-        type( rVector3D_MR_t ) :: temp_vector
-        type( rScalar3D_MR_t ) :: temp_scalar
-        complex( kind=prec ), allocatable, dimension(:) :: array
-        !
-        n = self%grid%getNGrids()
+        class( Field_t ), allocatable :: temp_field
         !
         selectcase( grid_type )
             !
-            case( EDGE )
+            case( EDGE, FACE )
                 !
-                temp_vector = rVector3D_MR_t( self%grid, EDGE )
-                !
-                nVec(1) = 0
-                nVec(2) = 0
-                nVec(3) = 0
-                !
-                do i = 1, n
-                    !
-                    nVec(1) = nVec(1) + size( temp_vector%sub_vectors(i)%x )
-                    nVec(2) = nVec(2) + size( temp_vector%sub_vectors(i)%y )
-                    nVec(3) = nVec(3) + size( temp_vector%sub_vectors(i)%z )
-                    !
-                    !> Top sub_vector: Ignore bottom boundaries
-                    if( i == 1 ) then
-                        !
-                        temp_vector%sub_vectors(i)%x(:, 1, :) = 1
-                        temp_vector%sub_vectors(i)%x(:, temp_vector%ny+1, :) = 1
-                        temp_vector%sub_vectors(i)%x(:, :, 1) = 1
-                        !temp_vector%sub_vectors(i)%x(:, :, temp_vector%nz+1) = 1
-                        temp_vector%sub_vectors(i)%y(1, :, :) = 1
-                        temp_vector%sub_vectors(i)%y(temp_vector%nx+1, :, :) = 1
-                        temp_vector%sub_vectors(i)%y(:, :, 1) = 1
-                        !temp_vector%sub_vectors(i)%y(:, :, temp_vector%nz+1) = 1
-                    !
-                    !> Bottom sub_vector: Ignore top boundaries
-                    elseif( i == n ) then
-                        !
-                        temp_vector%sub_vectors(i)%x(:, 1, :) = 1
-                        temp_vector%sub_vectors(i)%x(:, temp_vector%ny+1, :) = 1
-                        !temp_vector%sub_vectors(i)%x(:, :, 1) = 1
-                        temp_vector%sub_vectors(i)%x(:, :, temp_vector%nz+1) = 1
-                        temp_vector%sub_vectors(i)%y(1, :, :) = 1
-                        temp_vector%sub_vectors(i)%y(temp_vector%nx+1, :, :) = 1
-                        !temp_vector%sub_vectors(i)%y(:, :, 1) = 1
-                        temp_vector%sub_vectors(i)%y(:, :, temp_vector%nz+1) = 1
-                    !
-                    !> Middle sub_vectors: Ignore top and bottom boundaries
-                    else
-                        !
-                        temp_vector%sub_vectors(i)%x(:, 1, :) = 1
-                        temp_vector%sub_vectors(i)%x(:, temp_vector%ny+1, :) = 1
-                        !temp_vector%sub_vectors(i)%x(:, :, 1) = 1
-                        !temp_vector%sub_vectors(i)%x(:, :, temp_vector%nz+1) = 1
-                        temp_vector%sub_vectors(i)%y(1, :, :) = 1
-                        temp_vector%sub_vectors(i)%y(temp_vector%nx+1, :, :) = 1
-                        !temp_vector%sub_vectors(i)%y(:, :, 1) = 1
-                        !temp_vector%sub_vectors(i)%y(:, :, temp_vector%nz+1) = 1
-                        !
-                    endif
-                    !
-                    temp_vector%sub_vectors(i)%z(1, :, :) = 1
-                    temp_vector%sub_vectors(i)%z(temp_vector%nx+1, :, :) = 1
-                    temp_vector%sub_vectors(i)%z(:, 1, :) = 1
-                    temp_vector%sub_vectors(i)%z(:, temp_vector%ny+1, :) = 1
-                    !
-                enddo
-                !
-                nVecT = nVec(1) + nVec(2) + nVec(3)
-                !
-                array = temp_vector%getArray()
-                !
-            case( FACE )
-                !
-                temp_vector = rVector3D_MR_t( self%grid, FACE )
-                !
-                nVec(1) = 0
-                nVec(2) = 0
-                nVec(3) = 0
-                !
-                do i = 1, n
-                    !
-                    nVec(1) = nVec(1) + size( temp_vector%sub_vectors(i)%x )
-                    nVec(2) = nVec(2) + size( temp_vector%sub_vectors(i)%y )
-                    nVec(3) = nVec(3) + size( temp_vector%sub_vectors(i)%z )
-                    !
-                    temp_vector%sub_vectors(i)%x(1, :, :) = 1
-                    temp_vector%sub_vectors(i)%x(temp_vector%nx+1, :, :) = 1
-                    temp_vector%sub_vectors(i)%y(:, 1, :) = 1
-                    temp_vector%sub_vectors(i)%y(:, temp_vector%ny+1, :) = 1
-                    !
-                    !> Top sub_vector: Ignore bottom boundaries
-                    if( i == 1 ) then
-                        !
-                        temp_vector%sub_vectors(i)%z(:, :, 1) = 1
-                        !temp_vector%sub_vectors(i)%z(:, :, temp_vector%nz+1) = 1
-                        !
-                    !> Bottom sub_vector: Ignore top boundaries
-                    elseif( i == n ) then
-                        !
-                        !temp_vector%sub_vectors(i)%z(:, :, 1) = 1
-                        temp_vector%sub_vectors(i)%z(:, :, temp_vector%nz+1) = 1
-                        !
-                    endif
-                    !
-                enddo
-                !
-                nVecT = nVec(1) + nVec(2) + nVec(3)
-                !
-                array = temp_vector%getArray()
+                allocate( temp_field, source = rVector3D_MR_t( self%grid, grid_type ) )
                 !
             case( NODE )
                 !
-                temp_scalar = rScalar3D_MR_t( self%grid, NODE )
-                !
-                nVecT = 0
-                !
-                do i = 1, n
-                    !
-                    nVecT = nVecT + size( temp_scalar%sub_scalars(i)%v )
-                    !
-                    temp_scalar%sub_scalars(i)%v(1, :, :) = 1
-                    temp_scalar%sub_scalars(i)%v(temp_scalar%nx+1, :, :) = 1
-                    temp_scalar%sub_scalars(i)%v(:, 1, :) = 1
-                    temp_scalar%sub_scalars(i)%v(:, temp_scalar%ny+1, :) = 1
-                    !
-                    !> Top sub_vector: Ignore bottom boundaries
-                    if( i == 1 ) then
-                        !
-                        temp_scalar%sub_scalars(i)%v(:, :, 1) = 1
-                        !temp_scalar%sub_vectors(i)%v(:, :, temp_scalar%nz+1) = 1
-                        !
-                    !> Bottom sub_vector: Ignore top boundaries
-                    elseif( i == n ) then
-                        !
-                        !temp_scalar%sub_vectors(i)%v(:, :, 1) = 1
-                        temp_scalar%sub_scalars(i)%v(:, :, temp_scalar%nz+1) = 1
-                        !
-                    endif
-                    !
-                enddo
-                !
-                array = temp_scalar%getArray()
+                allocate( temp_field, source = rScalar3D_MR_t( self%grid, grid_type ) )
                 !
             case default
-                call errStop( "boundaryIndex_MetricElements_MR > Invalid grid type ["//grid_type//"]" )
-                !
+                call errStop( "setIndexArrays_MetricElements_MR > Invalid grid type ["//grid_type//"]" )
         end select 
         !
-        nBdry = 0
-        do i = 1, nVecT
-            nBdry = nBdry + nint( real( array(i), kind=prec ) )
-        enddo
+        call temp_field%setIndexArrays( INDb, INDi, INDa )
         !
-        if( allocated( INDi ) ) then
-            deallocate( INDi )
-        endif
-        !
-        allocate( INDi( nVecT - nBdry ) )
-        !
-        if( allocated( INDb ) ) then
-            deallocate( INDb )
-        endif
-        !
-        allocate( INDb( nBdry ) )
-        !
-        nb = 0
-        ni = 0
-        !
-        do i = 1, nVecT
-            !
-            if( nint( real( array(i), kind=prec ) ) .EQ. 1 ) then
-                nb = nb+1
-                INDb(nb) = i
-            else
-                ni = ni+1
-                INDi(ni) = i
-            endif
-            !
-        enddo
-        !
-    end subroutine boundaryIndex_MetricElements_MR
+    end subroutine setIndexArrays_MetricElements_MR
     !
+    !> For a given type find indexes for boundary and interior nodes
+    !
+    subroutine setAllIndexArrays_MetricElements_MR( self )
+        implicit none
+        !
+        class( MetricElements_MR_t ), intent( in ) :: self
+        !
+        call self%setIndexArrays( EDGE, self%grid%EDGEb, self%grid%EDGEi, self%grid%EDGEa )
+        write( *, "( a17, i8, a8, i8, a8, i8 )" ) "EDGEb=", size( self%grid%EDGEb ), ", EDGEi=", size( self%grid%EDGEi ), ", EDGEa=", size( self%grid%EDGEa )
+        !
+        call self%setIndexArrays( FACE, self%grid%FACEb, self%grid%FACEi, self%grid%FACEa )
+        write( *, "( a17, i8, a8, i8, a8, i8 )" ) "FACEb=", size( self%grid%FACEb ), ", FACEi=", size( self%grid%FACEi ), ", FACEa=", size( self%grid%FACEa )
+        !
+        call self%setIndexArrays( NODE, self%grid%NODEb, self%grid%NODEi, self%grid%NODEa )
+        write( *, "( a17, i8, a8, i8, a8, i8 )" ) "NODEb=", size( self%grid%NODEb ), ", NODEi=", size( self%grid%NODEi ), ", NODEa=", size( self%grid%NODEa )
+        !
+    end subroutine setAllIndexArrays_MetricElements_MR
+    !
+    !> For a given type find indexes for boundary and interior nodes
+    ! !
+    ! subroutine boundaryIndex_MetricElements_MR( self, grid_type, INDb, INDi )
+        ! implicit none
+        ! !
+        ! class( MetricElements_MR_t ), intent( in ) :: self
+        ! character(*), intent( in ) :: grid_type
+        ! integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
+        ! !
+        ! !call errStop( "boundaryIndex_MetricElements_MR > Under implementation!" )
+        ! !
+        ! integer :: nVec(3), nVecT, nBdry, n, nb, ni, i
+        ! type( rVector3D_MR_t ) :: temp_vector
+        ! type( rScalar3D_MR_t ) :: temp_scalar
+        ! complex( kind=prec ), allocatable, dimension(:) :: array
+        ! !
+        ! n = self%grid%getNGrids()
+        ! !
+        ! selectcase( grid_type )
+            ! !
+            ! case( EDGE )
+                ! !
+                ! temp_vector = rVector3D_MR_t( self%grid, EDGE )
+                ! !
+                ! nVec(1) = 0
+                ! nVec(2) = 0
+                ! nVec(3) = 0
+                ! !
+                ! do i = 1, n
+                    ! !
+                    ! nVec(1) = nVec(1) + size( temp_vector%sub_vector(i)%x )
+                    ! nVec(2) = nVec(2) + size( temp_vector%sub_vector(i)%y )
+                    ! nVec(3) = nVec(3) + size( temp_vector%sub_vector(i)%z )
+                    ! !
+                    ! !> Top sub_vector: Ignore bottom boundaries
+                    ! if( i == 1 ) then
+                        ! !
+                        ! temp_vector%sub_vector(i)%x(:, 1, :) = 1
+                        ! temp_vector%sub_vector(i)%x(:, temp_vector%ny+1, :) = 1
+                        ! temp_vector%sub_vector(i)%x(:, :, 1) = 1
+                        ! !temp_vector%sub_vector(i)%x(:, :, temp_vector%nz+1) = 1
+                        ! temp_vector%sub_vector(i)%y(1, :, :) = 1
+                        ! temp_vector%sub_vector(i)%y(temp_vector%nx+1, :, :) = 1
+                        ! temp_vector%sub_vector(i)%y(:, :, 1) = 1
+                        ! !temp_vector%sub_vector(i)%y(:, :, temp_vector%nz+1) = 1
+                    ! !
+                    ! !> Bottom sub_vector: Ignore top boundaries
+                    ! elseif( i == n ) then
+                        ! !
+                        ! temp_vector%sub_vector(i)%x(:, 1, :) = 1
+                        ! temp_vector%sub_vector(i)%x(:, temp_vector%ny+1, :) = 1
+                        ! !temp_vector%sub_vector(i)%x(:, :, 1) = 1
+                        ! temp_vector%sub_vector(i)%x(:, :, temp_vector%nz+1) = 1
+                        ! temp_vector%sub_vector(i)%y(1, :, :) = 1
+                        ! temp_vector%sub_vector(i)%y(temp_vector%nx+1, :, :) = 1
+                        ! !temp_vector%sub_vector(i)%y(:, :, 1) = 1
+                        ! temp_vector%sub_vector(i)%y(:, :, temp_vector%nz+1) = 1
+                    ! !
+                    ! !> Middle sub_vector: Ignore top and bottom boundaries
+                    ! else
+                        ! !
+                        ! temp_vector%sub_vector(i)%x(:, 1, :) = 1
+                        ! temp_vector%sub_vector(i)%x(:, temp_vector%ny+1, :) = 1
+                        ! !temp_vector%sub_vector(i)%x(:, :, 1) = 1
+                        ! !temp_vector%sub_vector(i)%x(:, :, temp_vector%nz+1) = 1
+                        ! temp_vector%sub_vector(i)%y(1, :, :) = 1
+                        ! temp_vector%sub_vector(i)%y(temp_vector%nx+1, :, :) = 1
+                        ! !temp_vector%sub_vector(i)%y(:, :, 1) = 1
+                        ! !temp_vector%sub_vector(i)%y(:, :, temp_vector%nz+1) = 1
+                        ! !
+                    ! endif
+                    ! !
+                    ! temp_vector%sub_vector(i)%z(1, :, :) = 1
+                    ! temp_vector%sub_vector(i)%z(temp_vector%nx+1, :, :) = 1
+                    ! temp_vector%sub_vector(i)%z(:, 1, :) = 1
+                    ! temp_vector%sub_vector(i)%z(:, temp_vector%ny+1, :) = 1
+                    ! !
+                ! enddo
+                ! !
+                ! nVecT = nVec(1) + nVec(2) + nVec(3)
+                ! !
+                ! array = temp_vector%getArray()
+                ! !
+            ! case( FACE )
+                ! !
+                ! temp_vector = rVector3D_MR_t( self%grid, FACE )
+                ! !
+                ! nVec(1) = 0
+                ! nVec(2) = 0
+                ! nVec(3) = 0
+                ! !
+                ! do i = 1, n
+                    ! !
+                    ! nVec(1) = nVec(1) + size( temp_vector%sub_vector(i)%x )
+                    ! nVec(2) = nVec(2) + size( temp_vector%sub_vector(i)%y )
+                    ! nVec(3) = nVec(3) + size( temp_vector%sub_vector(i)%z )
+                    ! !
+                    ! temp_vector%sub_vector(i)%x(1, :, :) = 1
+                    ! temp_vector%sub_vector(i)%x(temp_vector%nx+1, :, :) = 1
+                    ! temp_vector%sub_vector(i)%y(:, 1, :) = 1
+                    ! temp_vector%sub_vector(i)%y(:, temp_vector%ny+1, :) = 1
+                    ! !
+                    ! !> Top sub_vector: Ignore bottom boundaries
+                    ! if( i == 1 ) then
+                        ! !
+                        ! temp_vector%sub_vector(i)%z(:, :, 1) = 1
+                        ! !temp_vector%sub_vector(i)%z(:, :, temp_vector%nz+1) = 1
+                        ! !
+                    ! !> Bottom sub_vector: Ignore top boundaries
+                    ! elseif( i == n ) then
+                        ! !
+                        ! !temp_vector%sub_vector(i)%z(:, :, 1) = 1
+                        ! temp_vector%sub_vector(i)%z(:, :, temp_vector%nz+1) = 1
+                        ! !
+                    ! endif
+                    ! !
+                ! enddo
+                ! !
+                ! nVecT = nVec(1) + nVec(2) + nVec(3)
+                ! !
+                ! array = temp_vector%getArray()
+                ! !
+            ! case( NODE )
+                ! !
+                ! temp_scalar = rScalar3D_MR_t( self%grid, NODE )
+                ! !
+                ! nVecT = 0
+                ! !
+                ! do i = 1, n
+                    ! !
+                    ! nVecT = nVecT + size( temp_scalar%sub_scalar(i)%v )
+                    ! !
+                    ! temp_scalar%sub_scalar(i)%v(1, :, :) = 1
+                    ! temp_scalar%sub_scalar(i)%v(temp_scalar%nx+1, :, :) = 1
+                    ! temp_scalar%sub_scalar(i)%v(:, 1, :) = 1
+                    ! temp_scalar%sub_scalar(i)%v(:, temp_scalar%ny+1, :) = 1
+                    ! !
+                    ! !> Top sub_vector: Ignore bottom boundaries
+                    ! if( i == 1 ) then
+                        ! !
+                        ! temp_scalar%sub_scalar(i)%v(:, :, 1) = 1
+                        ! !temp_scalar%sub_vector(i)%v(:, :, temp_scalar%nz+1) = 1
+                        ! !
+                    ! !> Bottom sub_vector: Ignore top boundaries
+                    ! elseif( i == n ) then
+                        ! !
+                        ! !temp_scalar%sub_vector(i)%v(:, :, 1) = 1
+                        ! temp_scalar%sub_scalar(i)%v(:, :, temp_scalar%nz+1) = 1
+                        ! !
+                    ! endif
+                    ! !
+                ! enddo
+                ! !
+                ! array = temp_scalar%getArray()
+                ! !
+            ! case default
+                ! call errStop( "boundaryIndex_MetricElements_MR > Invalid grid type ["//grid_type//"]" )
+                ! !
+        ! end select 
+        ! !
+        ! nBdry = 0
+        ! do i = 1, nVecT
+            ! nBdry = nBdry + nint( real( array(i), kind=prec ) )
+        ! enddo
+        ! !
+        ! if( allocated( INDi ) ) then
+            ! deallocate( INDi )
+        ! endif
+        ! !
+        ! allocate( INDi( nVecT - nBdry ) )
+        ! !
+        ! if( allocated( INDb ) ) then
+            ! deallocate( INDb )
+        ! endif
+        ! !
+        ! allocate( INDb( nBdry ) )
+        ! !
+        ! nb = 0
+        ! ni = 0
+        ! !
+        ! do i = 1, nVecT
+            ! !
+            ! if( nint( real( array(i), kind=prec ) ) .EQ. 1 ) then
+                ! nb = nb+1
+                ! INDb(nb) = i
+            ! else
+                ! ni = ni+1
+                ! INDi(ni) = i
+            ! endif
+            ! !
+        ! enddo
+        ! !
+    ! end subroutine boundaryIndex_MetricElements_MR
+    ! !
 end Module MetricElements_MR

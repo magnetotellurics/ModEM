@@ -416,42 +416,46 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine IJS2CSR_Real(S, C)
+    subroutine IJS2CSR_Real( S, C )
         implicit none
         !
-        type(spMatIJS_Real), intent( in ) :: S
+        type( spMatIJS_Real ), intent( in ) :: S
         type( spMatCSR_Real ), intent( inout ) :: C
+        !
         integer :: i, j, nz
         integer, allocatable, dimension(:) :: rowT
-
-
-        allocate(rowT(S%nRow+1))
-
+        !
+        allocate( rowT( S%nRow + 1 ) )
+        !
         if(.NOT.C%is_allocated) then
-        stop "Error: IJS2CSR_Real > allocate output matrix before call"
+            call errStop( "IJS2CSR_Real > allocate output matrix before call" )
         endif
-
-        !   first pass: find numbers of columns in each row of output
+        !
+        !> first pass: find numbers of columns in each row of output
         rowT = 0
         nz = size(S%I)
         do i = 1, nz
-        rowT(S%I(i)) = rowT(S%I(i))+1
+            rowT(S%I(i)) = rowT(S%I(i))+1
         enddo
-        !   set row array in output CSR matrix
+        !
+        !> set row array in output CSR matrix
         C%row(1) = 1
         do i = 1, C%nRow
-        C%row(i+1) = C%row(i)+rowT(i)
+            C%row(i+1) = C%row(i)+rowT(i)
         enddo
-
-        !    now fill in columns and values
+        !
+        !> now fill in columns and values
         rowT = 0
         do i = 1, nz
-        j = C%row(S%I(i)) +rowT(S%I(i))
-        C%col(j) = S%J(i)
-        C%val(j) = S%S(i) 
-        rowT(S%I(i)) = rowT(S%I(i))+1
+            !
+            j = C%row( S%I(i) ) +rowT( S%I(i) )
+            !
+            C%col(j) = S%J(i)
+            C%val(j) = S%S(i) 
+            !
+            rowT( S%I(i) ) = rowT( S%I(i) ) + 1
+            !
         enddo
-        deallocate(rowT)
         !
     end subroutine IJS2CSR_Real
     !
@@ -918,8 +922,9 @@ contains
         type( spMatCSR_Real ) :: Btmp
         integer :: i, j, j1, j2, k, m, n, nz, nnz, nzero
         !
+		write( *, * ) "A%nRow, A%nCol*, size( D )*: ", A%nRow, A%nCol, size( D )
         if( A%nCol .NE. size( D ) ) then
-            stop "Error: RMATxDIAG > matrix sizes incompatible"
+            call errStop( "RMATxDIAG > matrix sizes incompatible" )
         endif
         !
         m = A%nRow

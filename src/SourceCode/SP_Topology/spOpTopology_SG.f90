@@ -20,12 +20,12 @@
 !
 module SpOpTopology_SG
     !
-    use spOpTopology
-    use Grid
+    use SpOpTopology
+    use Grid3D_SG
     !
-    type, extends( spOpTopology_t ) :: SpOpTopology_SG_t
+    type, extends( SpOpTopology_t ) :: SpOpTopology_SG_t
         !
-        class( Grid_t ), pointer :: grid
+        type( Grid3D_SG_t ), pointer :: grid
         !
         contains
             !
@@ -44,7 +44,7 @@ contains
     function SpOpTopology_SG_ctor( grid ) result( self )
         implicit none
         !
-        class( Grid_t ), pointer, intent( in ) :: grid
+        type( Grid3D_SG_t ), pointer, intent( in ) :: grid
         !
         type( SpOpTopology_SG_t ) :: self
         !
@@ -55,7 +55,7 @@ contains
     subroutine curl_SpOpTopology_SG( self, T ) 
         implicit none
         !
-        class( SpOpTopology_SG_t ), intent( inout ) :: self
+        class( SpOpTopology_SG_t ), intent( in ) :: self
         type( spMatCSR_Real ), intent( inout ) :: T
         !  
         integer :: nXedge, nYedge, nZedge
@@ -239,7 +239,7 @@ contains
     subroutine grad_SpOpTopology_SG( self, G )
         implicit none
         !
-        class( SpOpTopology_SG_t ), intent( inout ) :: self
+        class( SpOpTopology_SG_t ), intent( in ) :: self
         type( spMatCSR_Real ), intent( inout ) :: G
         !
         integer :: nXedge, nYedge, nZedge, nNodes

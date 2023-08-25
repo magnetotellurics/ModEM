@@ -101,7 +101,7 @@ contains
         !
         c_array = boundary%getArray()
         !
-        c_array( self%ind_interior ) = C_ZERO
+        c_array( self%indInterior() ) = C_ZERO
         !
         call boundary%setArray( c_array )
         !
@@ -121,7 +121,7 @@ contains
         !
         c_array = interior%getArray()
         !
-        c_array( self%ind_boundary ) = C_ZERO
+        c_array( self%indBoundary()) = C_ZERO
         !
         call interior%setArray( c_array )
         !

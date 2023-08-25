@@ -19,8 +19,6 @@ module Field
         !
         integer :: nx, ny, nz, store_state
         !
-        integer, dimension(:), allocatable :: ind_interior, ind_boundary
-        !
         logical :: is_allocated
         !
         contains
@@ -30,7 +28,6 @@ module Field
             !> Boundary operations
             procedure( interface_set_all_boundary_field ), deferred, public :: setAllBoundary
             procedure( interface_set_one_boundary_field ), deferred, public :: setOneBoundary
-            procedure( interface_int_bdry_indices_field ), deferred, public :: intBdryIndices
             !
             !> Dimensioning operations
             procedure( interface_length_field ), deferred, public :: length
@@ -76,14 +73,18 @@ module Field
             procedure( interface_deallocate_other_state_field ), deferred, public :: deallOtherState
             !
             !> Field procedures
-            procedure, public :: baseInit => initializeField
-            procedure, public :: baseDealloc => deallocateField
+            procedure, public :: baseInit => initialize_Field
+            procedure, public :: baseDealloc => deallocate_Field
             !
             procedure, public :: switchStoreState => switchStoreState_Field
             !
-            procedure, public :: isCompatible => isCompatibleField
+            procedure, public :: isCompatible => isCompatible_Field
             !
-            procedure, public :: setIndexArrays => setIndexArraysField
+            procedure, public :: setIndexArrays => setIndexArrays_Field
+            !
+            procedure, public :: indInterior => indInterior_Field
+            procedure, public :: indBoundary => indBoundary_Field
+            procedure, public :: indActive => indActive_Field
             !
             !> I/O operations
             procedure( interface_read_field ), deferred, public :: read
@@ -130,16 +131,10 @@ module Field
             logical, intent( in ), optional :: int_only
         end subroutine interface_set_one_boundary_field
         !
-        !> No interface subroutine briefing
-        subroutine interface_int_bdry_indices_field( self, ind_i, ind_b )
-            import :: Field_t, prec
-            class( Field_t ), intent( inout ) :: self
-            integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
-        end subroutine interface_int_bdry_indices_field
-        !
         ! Dimensioning operations
         !
         !> No interface function briefing
+        !
         function interface_length_field( self ) result( field_length )
             import :: Field_t
             class( Field_t ), intent( in ) :: self
@@ -168,6 +163,7 @@ module Field
         end subroutine interface_set_sv_field
         !
         !> No interface function briefing
+        !
         function interface_get_array_field( self ) result( array )
             import :: Field_t, prec
             class( Field_t ), intent( in ) :: self
@@ -175,6 +171,7 @@ module Field
         end function interface_get_array_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_array_field( self, array )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
@@ -184,12 +181,14 @@ module Field
         ! Arithmetic/algebraic operations
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_zeros_field( self )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
         end subroutine interface_zeros_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_add_field( self, rhs )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
@@ -197,6 +196,7 @@ module Field
         end subroutine interface_add_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_sub_value_field( self, cvalue )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
@@ -204,6 +204,7 @@ module Field
         end subroutine interface_sub_value_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_sub_field_field( self, rhs )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
@@ -211,6 +212,7 @@ module Field
         end subroutine interface_sub_field_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_field_mult_by_field( self, rhs )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
@@ -218,6 +220,7 @@ module Field
         end subroutine interface_field_mult_by_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_field_mult_by_complex( self, cvalue )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
@@ -225,6 +228,7 @@ module Field
         end subroutine interface_field_mult_by_complex
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_field_mult_by_real( self, rvalue )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
@@ -232,6 +236,7 @@ module Field
         end subroutine interface_field_mult_by_real
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_field_div_by_field( self, rhs )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
@@ -239,6 +244,7 @@ module Field
         end subroutine interface_field_div_by_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_field_div_by_value( self, cvalue )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
@@ -246,12 +252,14 @@ module Field
         end subroutine interface_field_div_by_value
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_conjugate_field( self )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
         end subroutine interface_conjugate_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_lin_comb_field( self, rhs, c1, c2 )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
@@ -260,6 +268,7 @@ module Field
         end subroutine interface_lin_comb_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_mult_add_field( self, cvalue, rhs )
             import :: Field_t, prec
             class( Field_t ), intent( inout ) :: self
@@ -268,6 +277,7 @@ module Field
         end subroutine interface_mult_add_field
         !
         !> No interface function briefing
+        !
         function interface_dot_product_field( self, rhs ) result( cvalue )
             import :: Field_t, prec
             class( Field_t ), intent( in ) :: self
@@ -276,6 +286,7 @@ module Field
         end function interface_dot_product_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_copy_from_field( self, rhs )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
@@ -283,12 +294,14 @@ module Field
         end subroutine interface_copy_from_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_deallocate_other_state_field( self )
             import :: Field_t
             class( Field_t ), intent( inout ) :: self
         end subroutine interface_deallocate_other_state_field
         !
         !> No interface function briefing
+        !
         function interface_is_compatible_field( self, rhs ) result( is_compatible )
             import :: Field_t
             class( Field_t ), intent( in ) :: self, rhs
@@ -296,6 +309,7 @@ module Field
         end function interface_is_compatible_field
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_print_field( self, io_unit, title, append )
             import :: Field_t
             class( Field_t ), intent( in ) :: self
@@ -303,6 +317,8 @@ module Field
             character(*), intent( in ), optional :: title
             logical, intent( in ), optional :: append
         end subroutine interface_print_field
+        !
+        !> No interface subroutine briefing
         !
         subroutine interface_set_boundary_interior_field( self )
             import :: Field_t
@@ -315,7 +331,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine initializeField( self )
+    subroutine initialize_Field( self )
         implicit none
         !
         class( Field_t ), intent( inout ) :: self
@@ -332,19 +348,15 @@ contains
         !
         self%is_allocated = .FALSE.
         !
-    end subroutine initializeField
+    end subroutine initialize_Field
     !
     !> No subroutine briefing
-    subroutine deallocateField( self )
+    subroutine deallocate_Field( self )
         implicit none
         !
         class( Field_t ), intent( inout ) :: self
         !
-        if( allocated( self%ind_interior ) ) deallocate( self%ind_interior )
-        !
-        if( allocated( self%ind_boundary ) ) deallocate( self%ind_boundary )
-        !
-    end subroutine deallocateField
+    end subroutine deallocate_Field
     !
     !> No subroutine briefing
     !
@@ -387,7 +399,7 @@ contains
     !
     !> No subroutine briefing
     !
-    function isCompatibleField( self, rhs ) result( is_compatible )
+    function isCompatible_Field( self, rhs ) result( is_compatible )
         implicit none
         !
         class( Field_t ), intent( in ) :: self, rhs
@@ -404,30 +416,34 @@ contains
             is_compatible = .TRUE.
         endif
         !
-    end function isCompatibleField
+    end function isCompatible_Field
     !
     !> Defines the index arrays: ind_interior and ind_boundary.
     !>     Create copy with zeros and value boundaries with C_ONE.
     !>     Take two sizes and allocate the two arrays.
     !>     Fills the two arrays with their proper indices.
     !
-    subroutine setIndexArraysField( self, xy_in )
+    subroutine setIndexArrays_Field( self, ind_boundary, ind_interior, ind_active, xy_in )
         implicit none
         !
-        class( Field_t ), intent( inout ) :: self
+        class( Field_t ), intent( in ) :: self
+        integer, dimension(:), allocatable, intent( out ) :: ind_boundary, ind_interior
+        integer, dimension(:), allocatable, intent( out ), optional :: ind_active
         logical, intent( in ), optional :: xy_in
         !
         integer :: i, j, k, int_size, bdry_size
-        class( Field_t ), allocatable :: aux_field
+        class( Field_t ), allocatable :: temp_field
         complex( kind=prec ), dimension(:), allocatable :: c_array
         !
-        allocate( aux_field, source = self )
+        allocate( temp_field, source = self )
         !
-        call aux_field%zeros
+        call temp_field%zeros
         !
-        call aux_field%setAllBoundary( C_ONE )
+        call temp_field%setAllBoundary( C_ONE )
         !
-        c_array = aux_field%getArray()
+        c_array = temp_field%getArray()
+        !
+        deallocate( temp_field )
         !
         int_size = 0
         bdry_size = 0
@@ -439,26 +455,123 @@ contains
             endif
         enddo
         !
-        if( allocated( self%ind_boundary ) ) deallocate( self%ind_boundary )
-        allocate( self%ind_boundary( bdry_size ) )
+        allocate( ind_boundary( bdry_size ) )
         !
-        if( allocated( self%ind_interior ) ) deallocate( self%ind_interior )
-        allocate( self%ind_interior( int_size ) )
+        allocate( ind_interior( int_size ) )
         !
         j = 1
         k = 1
         do i = 1, size( c_array )
             if( c_array(i) == C_ONE ) then
-                self%ind_boundary(j) = i
+                ind_boundary(j) = i
                 j = j + 1
             else
-                self%ind_interior(k) = i
+                ind_interior(k) = i
                 k = k + 1
             endif
         enddo
         !
-        deallocate( aux_field )
+        !write( *, * ) self%grid_type, size( ind_boundary ), size( ind_interior )
+        !        
+    end subroutine setIndexArrays_Field
+    !
+    ! No function briefing
+    !
+    function indBoundary_Field( self ) result( ind_boundary )
+        implicit none
         !
-    end subroutine setIndexArraysField
+        class( Field_t ), intent( in ) :: self
+        !
+        integer, dimension(:), allocatable :: ind_boundary
+        !
+        select case( self%grid_type )
+            !
+            case( EDGE )
+                !
+                ind_boundary = self%grid%EDGEb
+                !
+            case( FACE )
+                !
+                ind_boundary = self%grid%FACEb
+                !
+            case( NODE )
+                !
+                ind_boundary = self%grid%NODEb
+                !
+            case( CELL, CELL_EARTH )
+                !
+                call errStop( "CELL/CELL_EARTH indBoundary need to be implement" )
+                !
+            case default
+                call errStop( "indBoundary > Invalid grid type ["//self%grid_type//"]" )
+        end select 
+        !
+    end function indBoundary_Field
+    !
+    ! No function briefing
+    !
+    function indInterior_Field( self ) result( ind_interior )
+        implicit none
+        !
+        class( Field_t ), intent( in ) :: self
+        !
+        integer, dimension(:), allocatable :: ind_interior
+        !
+        select case( self%grid_type )
+            !
+            case( EDGE )
+                !
+                ind_interior = self%grid%EDGEi
+                !
+            case( FACE )
+                !
+                ind_interior = self%grid%FACEi
+                !
+            case( NODE )
+                !
+                ind_interior = self%grid%NODEi
+                !
+            case( CELL, CELL_EARTH )
+                !
+                call errStop( "CELL/CELL_EARTH indInterior need to be implement" )
+                !
+            case default
+                call errStop( "indInterior > Invalid grid type ["//self%grid_type//"]" )
+        end select 
+        !
+    end function indInterior_Field
+    !
+    ! No function briefing
+    !
+    function indActive_Field( self ) result( ind_active )
+        implicit none
+        !
+        class( Field_t ), intent( in ) :: self
+        !
+        integer, dimension(:), allocatable :: ind_active
+        !
+        select case( self%grid_type )
+            !
+            case( EDGE )
+                !
+                ind_active = self%grid%EDGEa
+                !
+            case( FACE )
+                !
+                ind_active = self%grid%FACEa
+                !
+            case( NODE )
+                !
+                ind_active = self%grid%NODEa
+                !
+            case( CELL, CELL_EARTH )
+                !
+                call errStop( "CELL/CELL_EARTH indActive need to be implement" )
+                !
+            case default
+                call errStop( "indActive > Invalid grid type ["//self%grid_type//"]" )
+        end select 
+        !
+    end function indActive_Field
     !
 end module Field

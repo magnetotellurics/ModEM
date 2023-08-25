@@ -8,6 +8,7 @@ module MetricElements
     use rScalar3D_MR
     use cVector3D_SG
     use rVector3D_MR
+    use cVector3D_MR
     !
     type, abstract :: MetricElements_t
         !
@@ -31,13 +32,17 @@ module MetricElements
         procedure( interface_set_edge_volume_metric_elements ), deferred, public :: setEdgeVolume
         procedure( interface_set_node_volume_metric_elements ), deferred, public :: setNodeVolume
         !
-        procedure( interface_boundary_index_metric_elements ), deferred, public :: boundaryIndex
+        procedure( interface_set_index_arrays_metric_elements ), deferred, public :: setIndexArrays
+        !
+        procedure( interface_set_all_index_arrays_metric_elements ), deferred, public :: setAllIndexArrays
+        !
+        !procedure( interface_boundary_index_metric_elements ), deferred, public :: boundaryIndex
         !
         procedure, public :: baseDealloc => deallocate_MetricElements
         !
         procedure, public :: alloc => allocate_MetricElements
         !
-        procedure, public :: set => set_MetricElements
+        procedure, public :: setup => setup_MetricElements
         !
         procedure, public :: createScalar, createVector
     !
@@ -46,6 +51,7 @@ module MetricElements
     abstract interface
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_edge_length_metric_elements( self )
             import :: MetricElements_t
             !
@@ -54,6 +60,7 @@ module MetricElements
         end subroutine interface_set_edge_length_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_face_area_metric_elements( self )
             import :: MetricElements_t
             !
@@ -62,6 +69,7 @@ module MetricElements
         end subroutine interface_set_face_area_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_dual_edge_length_metric_elements( self )
             import :: MetricElements_t
             !
@@ -70,6 +78,7 @@ module MetricElements
         end subroutine interface_set_dual_edge_length_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_dual_face_area_metric_elements( self )
             import :: MetricElements_t
             !
@@ -78,6 +87,7 @@ module MetricElements
         end subroutine interface_set_dual_face_area_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_cell_volume_metric_elements( self )
             import :: MetricElements_t
             !
@@ -86,6 +96,7 @@ module MetricElements
         end subroutine interface_set_cell_volume_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_edge_volume_metric_elements( self )
             import :: MetricElements_t
             !
@@ -94,6 +105,7 @@ module MetricElements
         end subroutine interface_set_edge_volume_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_node_volume_metric_elements( self )
             import :: MetricElements_t
             !
@@ -101,22 +113,43 @@ module MetricElements
             !
         end subroutine interface_set_node_volume_metric_elements
         !
-        subroutine interface_boundary_index_metric_elements( self, grid_type, INDb, INDi )
+        !> No interface subroutine briefing
+        !
+        subroutine interface_set_index_arrays_metric_elements( self, grid_type, INDb, INDi, INDa )
             import :: MetricElements_t
             !
             class( MetricElements_t ), intent( in ) :: self
             character(*), intent( in ) :: grid_type
-            integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
+            integer, allocatable, dimension(:), intent( out ) :: INDb, INDi
+            integer, dimension(:), allocatable, intent( out ), optional :: INDa
             !
-        end subroutine interface_boundary_index_metric_elements
+        end subroutine interface_set_index_arrays_metric_elements
         !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_set_all_index_arrays_metric_elements( self )
+            import :: MetricElements_t
+            !
+            class( MetricElements_t ), intent( in ) :: self
+            !
+        end subroutine interface_set_all_index_arrays_metric_elements
+        ! !
+        ! subroutine interface_boundary_index_metric_elements( self, grid_type, INDb, INDi )
+            ! import :: MetricElements_t
+            ! !
+            ! class( MetricElements_t ), intent( in ) :: self
+            ! character(*), intent( in ) :: grid_type
+            ! integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
+            ! !
+        ! end subroutine interface_boundary_index_metric_elements
+        ! !
     end interface
     !
 contains
     !
     !> No subroutine briefing
     !
-    subroutine set_MetricElements( self )
+    subroutine setup_MetricElements( self )
         implicit none
         !
         class( MetricElements_t ), intent( inout ) :: self
@@ -130,7 +163,7 @@ contains
         call self%setCellVolume
         call self%setNodeVolume
         !
-    end subroutine set_MetricElements
+    end subroutine setup_MetricElements
     !
     !> No subroutine briefing
     !
@@ -255,11 +288,13 @@ contains
                 class is( Grid3D_MR_t )
                     !
                     if( vector_type == real_t ) then
-                        allocate( vector, source = rVector3D_MR_t( grid, grid_type ) )
-                    elseif( vector_type == complex_t ) then
-                        !allocate( vector, source = cVector3D_MR_t( grid, grid_type ) )
                         !
-                        call errStop( "createVector > MR complex_t to be implemented" )
+                        allocate( vector, source = rVector3D_MR_t( grid, grid_type ) )
+                        !
+                    elseif( vector_type == complex_t ) then
+                        !
+                        allocate( vector, source = cVector3D_MR_t( grid, grid_type ) )
+                        !
                     elseif( vector_type == integer_t ) then
                         !allocate( vector, source = iVector3D_MR_t( grid, grid_type ) )
                         !

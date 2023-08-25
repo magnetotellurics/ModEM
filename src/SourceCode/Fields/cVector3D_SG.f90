@@ -18,7 +18,6 @@ module cVector3D_SG
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundary_cVector3D_SG
             procedure, public :: setOneBoundary => setOneBoundary_cVector3D_SG
-            procedure, public :: intBdryIndices => intBdryIndices_cVector3D_SG
             !
             !> Dimensioning operations
             procedure, public :: setVecComponents => setVecComponents_cVector3D_SG
@@ -75,6 +74,8 @@ module cVector3D_SG
             procedure, public :: deallOtherState => deallOtherState_cVector3D_SG
             !
             procedure, public :: copyFrom => copyFrom_cVector3D_SG
+            !
+            procedure, public :: edgeLength => edgeLength_cVector3D_SG
             !
             !> I/O operations
             procedure, public :: read => read_cVector3D_SG
@@ -152,11 +153,11 @@ contains
         !
         if( self%is_allocated ) then
             !
-            self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
-            call self%zeros
+            self%x = C_ZERO
+            self%y = C_ZERO
+            self%z = C_ZERO
             !
-            call self%setIndexArrays
-            call self%zeros
+            self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
             !
         else
             call errStop( "cVector3D_SG_ctor > Unable to allocate vector." )
@@ -348,85 +349,6 @@ contains
     end subroutine setOneBoundary_cVector3D_SG
     !
     !> No subroutine briefing
-    !
-    subroutine intBdryIndices_cVector3D_SG( self, ind_i, ind_b )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
-        !
-        integer :: nVecT, nBdry, nb, ni, i
-        real( kind=prec ), dimension(:), allocatable :: temp
-        type( cVector3D_SG_t ) :: E
-        !
-        if( self%is_allocated ) then
-            !
-            E = cVector3D_SG_t( self%grid, self%grid_type )
-            !
-        else
-            call errStop( "intBdryIndices_cVector3D_SG > Not allocated. Exiting." )
-        endif
-        !
-        select case( self%grid_type )
-            !
-            case( EDGE )
-                !
-                E%x(:, 1, :) = 1
-                E%x(:, E%ny + 1, :) = 1
-                E%x(:, :, 1) = 1
-                E%x(:, :, E%nz + 1) = 1
-                E%y(1, :, :) = 1
-                E%y(E%nx + 1, :, :) = 1
-                E%y(:, :, 1) = 1
-                E%y(:, :, E%nz + 1) = 1
-                E%z(1, :, :) = 1
-                E%z(E%nx + 1, :, :) = 1
-                E%z(:, 1, :) = 1
-                E%z(:, E%ny + 1, :) = 1
-                !
-            case( FACE )
-                !
-                E%x(1, :, :) = 1
-                E%x(E%nx + 1, :, :) = 1
-                E%y(:, 1, :) = 1
-                E%y(:, E%ny + 1, :) = 1
-                E%z(:, :, 1) = 1
-                E%z(:, :, E%nz + 1) = 1
-                !
-            case default
-                call errStop( "intBdryIndices_cVector3D_SG > Undefined self%grid_type" )
-                !
-        end select
-        !
-        temp = E%getArray()
-        !
-        nVecT = size( E%x ) + size( E%y ) + size( E%z )
-        nBdry = 0
-        do i = 1, nVecT
-            nBdry = nBdry + nint( temp(i) )
-        enddo
-        !
-        if( allocated( ind_i ) ) deallocate( ind_i )
-        allocate( ind_i( nVecT - nBdry ) )
-        !
-        if( allocated( ind_b ) ) deallocate( ind_b )
-        allocate( ind_b( nBdry ) )
-        !
-        nb = 0
-        ni = 0
-        do i = 1, nVecT
-            if( nint( temp(i) ) .EQ. 1 ) then
-                nb = nb + 1
-                ind_b(nb) = i
-            else
-                ni = ni + 1
-                ind_i(ni) = i
-            endif
-        enddo
-        !
-        deallocate( temp )
-        !
-    end subroutine intBdryIndices_cVector3D_SG
     !
     subroutine setVecComponents_cVector3D_SG( self, xyz, &
             &                                 xmin, xstep, xmax, &
@@ -1940,14 +1862,41 @@ contains
                 !
                 self%is_allocated = .TRUE.
                 !
-                call self%setIndexArrays
-                !
             class default
                 call errStop( "copyFrom_cVector3D_SG > Different type of rhs" )
             !
         end select
         !
     end subroutine copyFrom_cVector3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine edgeLength_cVector3D_SG( self, edge_length )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in ) :: self
+        type( cVector3D_SG_t ), intent( inout ) :: edge_length
+        !
+        integer :: ix, iy, iz
+        !
+        edge_length = self
+        !
+        ! x-component edge length elements
+        do ix = 1, self%grid%nx
+            edge_length%x(ix, :, :) = self%grid%dx(ix)
+        enddo
+        !
+        ! y-component edge length elements
+        do iy = 1, self%grid%ny
+            edge_length%y(:, iy, :) = self%grid%dy(iy)
+        enddo
+        !
+        ! z-component edge length elements
+        do iz = 1, self%grid%nz
+            edge_length%z(:, :, iz) = self%grid%dz(iz)
+        enddo
+        !
+    end subroutine edgeLength_cVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -2034,10 +1983,10 @@ contains
                 call errStop( "write_cVector3D_SG > Unable to write to formatted file ["//trim(fname)//"]." )
             endif
             !
-            write(funit) self%nx, self%ny, self%nz, self%grid_type
-            write(funit) self%x
-            write(funit) self%y
-            write(funit) self%z
+            write( funit ) self%nx, self%ny, self%nz, self%grid_type
+            write( funit ) self%x
+            write( funit ) self%y
+            write( funit ) self%z
             !
         else
             call errStop( "write_cVector3D_SG > unable to open file" )
@@ -2105,5 +2054,5 @@ contains
         enddo
         !
     end subroutine print_cVector3D_SG
-    !
+	!
 end module cVector3D_SG

@@ -214,21 +214,21 @@ contains
         in_e_v = in_e%getArray()
         !
         out_e_v = out_e%getArray()
-        out_e_v_int = out_e_v( out_e%ind_interior )
+        out_e_v_int = out_e_v( out_e%indInterior() )
         !
         if( adjoint ) then
             !
-            call UTsolve_Cmplx( self%LH, in_e_v( in_e%ind_interior ), out_e_v_int )
+            call UTsolve_Cmplx( self%LH, in_e_v( in_e%indInterior() ), out_e_v_int )
             !
         else
             !
             out_e_v_int = C_ZERO
             !
-            call LTsolve_Cmplx( self%L, in_e_v( in_e%ind_interior ), out_e_v_int )
+            call LTsolve_Cmplx( self%L, in_e_v( in_e%indInterior() ), out_e_v_int )
             !
         endif
         !
-        out_e_v( out_e%ind_interior ) = out_e_v_int
+        out_e_v( out_e%indInterior() ) = out_e_v_int
         !
         call out_e%setArray( out_e_v )
         !
@@ -258,10 +258,10 @@ contains
         endif
         !
         in_e_v = in_e%getArray()
-        in_e_v_int = in_e_v( in_e%ind_interior )
+        in_e_v_int = in_e_v( in_e%indInterior() )
         !
         out_e_v = out_e%getArray()
-        out_e_v_int = out_e_v( out_e%ind_interior )
+        out_e_v_int = out_e_v( out_e%indInterior() )
         !
         if( adjoint ) then
             !
@@ -273,7 +273,7 @@ contains
             !
         endif
         !
-        out_e_v( out_e%ind_interior ) = out_e_v_int
+        out_e_v( out_e%indInterior() ) = out_e_v_int
         !
         call out_e%setArray( out_e_v )
         !

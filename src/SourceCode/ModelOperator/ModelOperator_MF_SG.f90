@@ -104,6 +104,8 @@ contains
         !> Instantiation of the specific object MetricElements
         allocate( self%metric, source = MetricElements_SG_t( grid ) )
         !
+        call self%metric%setAllIndexArrays
+        !
         call self%alloc
         !
     end subroutine create_ModelOperator_MF_SG

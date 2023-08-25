@@ -41,8 +41,9 @@ module Grid
         !
         real( kind=prec ) :: zAirThick
         !
-        integer, dimension(:), allocatable :: ind_interior_edges, ind_interior_nodes
-        integer, dimension(:), allocatable :: ind_boundaries_edges, ind_boundaries_nodes
+        integer, allocatable, dimension(:) :: EDGEb, FACEb, NODEb
+        integer, allocatable, dimension(:) :: EDGEi, FACEi, NODEi
+        integer, allocatable, dimension(:) :: EDGEa, FACEa, NODEa
         !
         real( kind=prec ), allocatable, dimension(:) :: dx, dy, dz
         real( kind=prec ), allocatable, dimension(:) :: dx_inv, dy_inv, dz_inv
@@ -596,7 +597,7 @@ contains
                 airLayers%dz(1) = airLayers%minTopDz
             endif
 
-        elseif(index(airLayers%method, "fixed height") > 0) then 
+        elseif( index(airLayers%method, "fixed height") > 0 ) then 
             !
             !> ON IMPLEMENTATION
             z1_log = log10( self%Dz( self%NzAir + 1 ) )

@@ -130,7 +130,8 @@ contains
         !
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( inout ) :: sigma, dsigma
+        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
         !> flavor is a string that specifies the algorithm to use
         character(80) :: flavor = "Cubic"
@@ -449,7 +450,8 @@ contains
         !
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( inout ) :: sigma, mHat
+        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: mHat
         real( kind=prec ), intent( inout ) :: F, m_norm
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
         integer, intent( inout ) :: i_sol
@@ -530,7 +532,8 @@ contains
         !
         class( InversionNLCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( inout ) :: sigma, mHat, grad
+        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
+		class( ModelParameter_t ), allocatable, intent( inout ) :: mHat, grad
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: dHat
         integer, intent( in ) :: i_sol
         !
@@ -673,7 +676,8 @@ contains
         !
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( inout ) :: sigma, h, mHat
+        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
+		class( ModelParameter_t ), allocatable, intent( inout ) :: h, mHat
         real( kind=prec ), intent( inout ) :: f
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
         integer, intent( out ) :: niter

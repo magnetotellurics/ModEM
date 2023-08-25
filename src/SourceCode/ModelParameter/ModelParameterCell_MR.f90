@@ -289,9 +289,9 @@ contains
                     ! !> ... but these are not used in the equations!
                     ! temp_e_vec = e_vec
                     ! !
-                    ! temp_e_vec%sub_vectors(k)%x = temp_vector_sg%x(:,:, kk1:kk2)
-                    ! temp_e_vec%sub_vectors(k)%y = temp_vector_sg%y(:,:, kk1:kk2)
-                    ! temp_e_vec%sub_vectors(k)%z = temp_vector_sg%z(:,:, kk1:kk2-1)
+                    ! temp_e_vec%sub_vector(k)%x = temp_vector_sg%x(:,:, kk1:kk2)
+                    ! temp_e_vec%sub_vector(k)%y = temp_vector_sg%y(:,:, kk1:kk2)
+                    ! temp_e_vec%sub_vector(k)%z = temp_vector_sg%z(:,:, kk1:kk2-1)
                     ! !
                     ! e_vec = temp_e_vec
                     ! !
@@ -300,7 +300,7 @@ contains
                 ! !mr_m = e_vec%get_array() !????
                 ! !
             ! class default
-                ! call errStop( "sgToMR_rScalar3D_MR > Unclassified grid" )
+                ! call errStop( "SGtoMR_rScalar3D_MR > Unclassified grid" )
             ! !
         ! end select
         ! !

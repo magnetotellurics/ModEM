@@ -18,7 +18,6 @@ module ModelOperator_SP_V2
             final :: ModelOperator_SP_V2_dtor
             !
             !> Setup
-            procedure, public :: create => create_ModelOperator_SP_V2 
             procedure, public :: setCond => setCond_ModelOperator_SP_V2
             !
             procedure, private :: GradDivSetup2, airNIndex
@@ -59,67 +58,6 @@ contains
     !
     !> No subroutine briefing
     !
-    !> Set sparse matrices for curl (T) and grad (G)
-    !> operator topologies; these sparse matrices are stored
-    !> in module spOpTopology
-    !
-    !> Find indexes (in vector of all) of boundary and interior edges
-    !> allocate for diagonal part of curl-curl operator
-    !> (maybe this should just be for interior edges)
-    !> here for all edges
-    !
-    subroutine create_ModelOperator_SP_V2( self, grid )
-        implicit none
-        !
-        class( ModelOperator_SP_V2_t ), intent( inout ) :: self
-        class( Grid_t ), target, intent( in ) :: grid
-        !
-        integer :: nInterior
-        !
-        self%is_allocated = .FALSE.
-        !
-        !> Instantiation of the specific object MetricElements
-        select case( grid_format )
-            !
-            case( GRID_SG )
-                !
-                allocate( self%metric, source = MetricElements_SG_t( grid ) )
-                !
-            case( GRID_MR )
-                !
-                allocate( self%metric, source = MetricElements_MR_t( grid ) )
-                !
-            case default
-                !
-                call warning( "create_ModelOperator_SP > grid_format not provided, using MetricElements_SG_t." )
-                !
-                allocate( self%metric, source = MetricElements_SG_t( grid ) )
-                !
-        end select
-        !
-        self%topology_sg = SpOpTopology_SG_t( self%metric%grid )
-        !
-        call self%topology_sg%curl( T )
-        !
-        call self%topology_sg%grad( G )
-        !
-        call self%metric%boundaryIndex( EDGE, self%EDGEb, self%EDGEi )
-        !
-        call self%metric%boundaryIndex( NODE, self%NODEb, self%NODEi )
-        !
-        nInterior = size( self%EDGEi )
-        !
-        allocate( self%VomegaMuSig( nInterior ) )
-        !
-        !> set a default omega
-        self%omega = 0.0
-        !
-        self%is_allocated = .TRUE.
-        !
-    end subroutine create_ModelOperator_SP_V2
-    !
-    !> No subroutine briefing
-    !
     subroutine deallocate_ModelOperator_SP_V2( self )
         implicit none
         !
@@ -129,10 +67,6 @@ contains
         !
         call deall_spMatCSR( self%AAii )
         call deall_spMatCSR( self%GDii )
-        !
-        !> interior and edge indexes
-        deallocate( self%EDGEi, self%EDGEb )
-        deallocate( self%NODEi, self%NODEb )
         !
         call deall_spMatCSR( self%CCii )
         call deall_spMatCSR( self%CCib )
@@ -206,8 +140,8 @@ contains
         deallocate( sigma_node )
         !
         !> force the boundary to be zeros
-        sigma_edge_b0_array( self%EDGEb ) = 0.0
-        sigma_node_array( self%NODEb ) = 0.0
+        sigma_edge_b0_array( self%metric%grid%EDGEb ) = 0.0
+        sigma_node_array( self%metric%grid%NODEb ) = 0.0
         !
         !> modify the system equation here,
         !> as the GD should be updated whenever the omega or the conductivity
@@ -217,7 +151,7 @@ contains
         !
         v_edge_array = self%metric%v_edge%getArray()
         !
-        self%VomegaMuSig = MU_0 * omega_in * sigma_edge_array( self%EDGEi ) * v_edge_array( self%EDGEi )
+        self%VomegaMuSig = MU_0 * omega_in * sigma_edge_array( self%metric%grid%EDGEi ) * v_edge_array( self%metric%grid%EDGEi )
         !
         self%omega = omega_in
         !
@@ -249,10 +183,10 @@ contains
         endif
         !
         in_e_v = in_e%getArray()
-        in_e_v_int = in_e_v( in_e%ind_interior )
+        in_e_v_int = in_e_v( in_e%indInterior() )
         !
         out_e_v = out_e%getArray()
-        out_e_v_int = out_e_v( out_e%ind_interior )
+        out_e_v_int = out_e_v( out_e%indInterior() )
         !
         if( adjoint ) then
             !
@@ -264,7 +198,7 @@ contains
             !
             call deall_spMATcsr( AAit )
             !
-            out_e_v_int = out_e_v_int - ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%ind_interior )
+            out_e_v_int = out_e_v_int - ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%indInterior() )
             !
         else
             !
@@ -272,11 +206,11 @@ contains
             !
             call RMATxCVEC( self%AAii, in_e_v_int, out_e_v_int )
             !
-            out_e_v_int = out_e_v_int + ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%ind_interior )
+            out_e_v_int = out_e_v_int + ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%indInterior() )
             !
         endif
         !
-        out_e_v( in_e%ind_interior ) = out_e_v_int
+        out_e_v( in_e%indInterior() ) = out_e_v_int
         !
         call out_e%setArray( out_e_v )
         !
@@ -316,9 +250,9 @@ contains
         real( kind=prec ) :: tol
         integer :: Ne, Nei, Nn, fid, i
         !
-        Nn = size( self%NODEi ) + size( self%NODEb )
-        Nei = size( self%EDGEi )
-        Ne = Nei + size( self%EDGEb )
+        Nn = size( self%metric%grid%NODEi ) + size( self%metric%grid%NODEb )
+        Nei = size( self%metric%grid%EDGEi )
+        Ne = Nei + size( self%metric%grid%EDGEb )
         !
         tol = 1E-8
         !
@@ -373,7 +307,7 @@ contains
         !
         call deall_spMatCSR( GDa )
         !
-        call subMatrix_Real( GD, self%EDGEi, self%EDGEi, self%GDii )
+        call subMatrix_Real( GD, self%metric%grid%EDGEi, self%metric%grid%EDGEi, self%GDii )
         !
         call RMATplusRMAT( self%CCii, self%GDii, self%AAii )
         !
@@ -386,7 +320,7 @@ contains
         !
         call RMATxDIAG( GDe, M4earth, GD )
         !
-        call subMatrix_Real( GD, self%EDGEi, self%EDGEi, self%GDii )
+        call subMatrix_Real( GD, self%metric%grid%EDGEi, self%metric%grid%EDGEi, self%GDii )
         !
         !> 
         call deall_spMatCSR( GDe )
@@ -423,7 +357,7 @@ contains
         integer :: Ne,Nn,i
         !
         Ne = size( SigEdge )
-        Nn = size( self%NODEi ) + size( self%NODEb )
+        Nn = size( self%metric%grid%NODEi ) + size( self%metric%grid%NODEb )
         !
         call RMATtrans( G, Dt )
         !
@@ -465,8 +399,8 @@ contains
             endif
         enddo
         !
-        Nearth( self%NODEb ) = 0.0
-        Nair( self%NODEb ) = 0.0
+        Nearth( self%metric%grid%NODEb ) = 0.0
+        Nair( self%metric%grid%NODEb ) = 0.0
         !
         call deall_spMatCSR_Real( Dt )
         !

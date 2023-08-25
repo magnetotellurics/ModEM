@@ -28,7 +28,7 @@ get_1d_from [Fixed|Geometric_mean|Mean_around_Tx|Tx_Position] : Geometric_mean
 # <Solver parameters>
 #
 solver_type [QMR|BICG]         : QMR
-forward_solver_type [IT|IT_DC] : IT
+forward_solver_type [IT|IT_DC] : IT_DC
 max_solver_iters [80]          : 80
 max_solver_calls [20]          : 20
 max_divcor_iters [100]         : 100

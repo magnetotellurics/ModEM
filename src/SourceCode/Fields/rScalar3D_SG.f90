@@ -19,7 +19,6 @@ module rScalar3D_SG
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundary_rScalar3D_SG
             procedure, public :: setOneBoundary => setOneBoundary_rScalar3D_SG
-            procedure, public :: intBdryIndices => intBdryIndices_rScalar3D_SG
             !
             !> Dimensioning operations
             procedure, public :: setVecComponents => setVecComponents_rScalar3D_SG
@@ -135,9 +134,6 @@ contains
             !
             self%Nxyz = product( self%NdV )
             !
-            call self%setIndexArrays
-            call self%zeros
-            !
         else
             call errStop( "rScalar3D_SG_ctor > Unable to allocate self" )
         endif
@@ -157,9 +153,8 @@ contains
             call errStop( "rScalar3D_SG_dtor > self not allocated." )
         endif
         !
-        call self%baseDealloc
-        !
         if( allocated( self%v ) ) deallocate( self%v )
+        !
         if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
         self%nx = 0
@@ -290,73 +285,7 @@ contains
         end select
         !
     end subroutine setOneBoundary_rScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine intBdryIndices_rScalar3D_SG( self, ind_i, ind_b )
-        implicit none
-        !
-        class( rScalar3D_SG_t ), intent( inout ) :: self
-        integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
-        !
-        integer :: nVecT, nBdry, nb, ni, i
-        real( kind=prec ), allocatable :: temp(:)
-        type( rScalar3D_SG_t ) :: phi
-        !
-        if( self%is_allocated ) then
-            !
-            phi = rScalar3D_SG_t( self%grid, self%grid_type )
-            !
-        else
-            call errStop( "intBdryIndices_rScalar3D_SG > Not allocated. Exiting." )
-        endif
-        !
-        select case( self%grid_type )
-            !
-            case( NODE )
-                 !
-                 phi%v(1,:,:) = 1
-                 phi%v(phi%nx+1,:,:) = 1
-                 phi%v(:,1,:) = 1
-                 phi%v(:,phi%ny+1,:) = 1
-                 phi%v(:,:,1) = 1
-                 phi%v(:,:,phi%nz+1) = 1
-                 !
-                 temp = phi%getArray()
-                 !
-            case default
-                call errStop( "intBdryIndices_rScalar3D_SG > Unknown self%grid_type" )
-                !
-        end select
-        !
-        nVecT = size( phi%v )
-        nBdry = 0
-        do i = 1, nVecT
-             nBdry = nBdry + nint( temp(i) )
-        enddo
-        !
-        if( allocated( ind_i ) ) deallocate( ind_i )
-        allocate( ind_i( nVecT - nBdry ) )
-        !
-        if( allocated( ind_b ) ) deallocate( ind_b )
-        allocate( ind_b( nBdry ) )
-        !
-        nb = 0
-        ni = 0
-        do i = 1, nVecT
-             if( nint( temp(i) ) .EQ. 1 ) then
-                nb = nb+1
-                ind_b(nb) = i
-             else
-                ni = ni+1
-                ind_i(ni) = i
-             endif
-        enddo
-        !
-        deallocate( temp )
-        !
-    end subroutine intBdryIndices_rScalar3D_SG
-    !
+	!
     !> No subroutine briefing
     !
     subroutine setVecComponents_rScalar3D_SG( self, xyz, &
@@ -1043,12 +972,6 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-        if( allocated( rhs%ind_interior ) ) &
-        self%ind_interior = rhs%ind_interior
-        !
-        if( allocated( rhs%ind_boundary ) ) &
-        self%ind_boundary = rhs%ind_boundary
-        !
         select type( rhs )
             !
             class is( rScalar3D_SG_t )
@@ -1069,8 +992,6 @@ contains
                 endif
                 !
                 self%is_allocated = .TRUE.
-                !
-                call self%setIndexArrays
                 !
             class default
                     call errStop( "copyFrom_rScalar3D_SG > Unclassified rhs" )
