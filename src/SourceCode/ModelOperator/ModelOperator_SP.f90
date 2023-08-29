@@ -87,7 +87,7 @@ contains
                 !
                 allocate( self%metric, source = MetricElements_SG_t( grid ) )
                 !
-                call self%metric%setAllIndexArrays
+                call self%metric%setGridIndexArrays( self%metric%grid )
                 !
                 allocate( self%topology, source = SpOpTopology_SG_t( grid ) )
                 !
@@ -95,7 +95,7 @@ contains
                 !
                 allocate( self%metric, source = MetricElements_MR_t( grid ) )
                 !
-                call self%metric%setAllIndexArrays
+                call self%metric%setGridIndexArrays( self%metric%grid )
                 !
                 allocate( self%topology, source = SpOpTopology_MR_t( grid ) )
                 !
@@ -105,7 +105,7 @@ contains
                 !
                 allocate( self%metric, source = MetricElements_SG_t( grid ) )
                 !
-                call self%metric%setAllIndexArrays
+                call self%metric%setGridIndexArrays( self%metric%grid )
                 !
                 allocate( self%topology, source = SpOpTopology_SG_t( grid ) )
                 !
@@ -145,8 +145,7 @@ contains
         call create_spMatCSR( m, n, nz, temp_matrix )
         call create_spMatCSR( n, m, nz, Ttrans )
         call create_spMatCSR( m, n, nz, CC )
-        !
-        write( *, * ) "setEquations_ModelOperator_SP: ", T%nCol, size( self%metric%edge_length%getArray() )
+        !!
         call RMATxDIAG( T, real( self%metric%edge_length%getArray(), kind=prec ), temp_matrix )
         !
         !> Create TCC for for multCurlT

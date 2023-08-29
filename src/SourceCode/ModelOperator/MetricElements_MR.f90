@@ -40,9 +40,7 @@ module MetricElements_MR
         !
         procedure, public :: setCellVolume => setCellVolume_MetricElements_MR
         !
-        procedure, public :: setIndexArrays => setIndexArrays_MetricElements_MR
-        !
-        procedure, public :: setAllIndexArrays => setAllIndexArrays_MetricElements_MR
+        procedure, public :: setGridIndexArrays => setGridIndexArrays_MetricElements_MR
         !
         !procedure, public :: boundaryIndex => boundaryIndex_MetricElements_MR
         !
@@ -106,7 +104,7 @@ contains
                         !
                         do i = 1, grid%n_grids
                             !
-                            metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
+                            metric_sg = MetricElements_SG_t( grid%sub_grid(i) )
                             !
                             edge_length%sub_vector(i) = metric_sg%edge_length
                             !
@@ -144,7 +142,7 @@ contains
                         !
                         do i = 1, grid%n_grids
                             !
-                            metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
+                            metric_sg = MetricElements_SG_t( grid%sub_grid(i) )
                             !
                             dual_edge_length%sub_vector(i) = metric_sg%dual_edge_length
                             !
@@ -182,7 +180,7 @@ contains
                         !
                         do i = 1, grid%n_grids
                             !
-                            metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
+                            metric_sg = MetricElements_SG_t( grid%sub_grid(i) )
                             !
                             face_area%sub_vector(i) = metric_sg%face_area
                             !
@@ -220,7 +218,7 @@ contains
                         !
                         do i = 1, grid%n_grids
                             !
-                            metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
+                            metric_sg = MetricElements_SG_t( grid%sub_grid(i) )
                             !
                             dual_face_area%sub_vector(i) = metric_sg%dual_face_area
                             !
@@ -258,7 +256,7 @@ contains
                         !
                         do i = 1, grid%n_grids
                             !
-                            metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
+                            metric_sg = MetricElements_SG_t( grid%sub_grid(i) )
                             !
                             v_edge%sub_vector(i) = metric_sg%v_edge
                             !
@@ -296,7 +294,7 @@ contains
                         !
                         do i = 1, grid%n_grids
                             !
-                            metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
+                            metric_sg = MetricElements_SG_t( grid%sub_grid(i) )
                             !
                             v_node%sub_scalar(i) = metric_sg%v_node
                             !
@@ -334,7 +332,7 @@ contains
                         !
                         do i = 1, grid%n_grids
                             !
-                            metric_sg = MetricElements_SG_t( grid%sub_grids(i) )
+                            metric_sg = MetricElements_SG_t( grid%sub_grid(i) )
                             !
                             v_cell%sub_scalar(i) = metric_sg%v_cell
                             !
@@ -354,51 +352,57 @@ contains
     !
     !> For a given type find indexes for boundary and interior nodes
     !
-    subroutine setIndexArrays_MetricElements_MR( self, grid_type, INDb, INDi, INDa )
+    subroutine setGridIndexArrays_MetricElements_MR( self, grid )
         implicit none
         !
         class( MetricElements_MR_t ), intent( in ) :: self
-        character(*), intent( in ) :: grid_type
-        integer, allocatable, dimension(:), intent( out ) :: INDb, INDi
-        integer, dimension(:), allocatable, intent( out ), optional :: INDa
+        class( Grid_t ), intent( inout ) :: grid
         !
+        integer :: i_grid
         class( Field_t ), allocatable :: temp_field
         !
-        selectcase( grid_type )
+        select type( grid )
             !
-            case( EDGE, FACE )
+            class is( Grid3D_MR_t )
                 !
-                allocate( temp_field, source = rVector3D_MR_t( self%grid, grid_type ) )
+                allocate( temp_field, source = rVector3D_MR_t( grid, EDGE ) )
+                call temp_field%setIndexArrays( grid%EDGEb, grid%EDGEi, grid%EDGEa )
+                deallocate( temp_field )
                 !
-            case( NODE )
+                allocate( temp_field, source = rVector3D_MR_t( grid, FACE ) )
+                call temp_field%setIndexArrays( grid%FACEb, grid%FACEi, grid%FACEa )
+                deallocate( temp_field )
                 !
-                allocate( temp_field, source = rScalar3D_MR_t( self%grid, grid_type ) )
+                allocate( temp_field, source = rScalar3D_MR_t( grid, NODE ) )
+                call temp_field%setIndexArrays( grid%NODEb, grid%NODEi, grid%NODEa )
+                deallocate( temp_field )
                 !
-            case default
-                call errStop( "setIndexArrays_MetricElements_MR > Invalid grid type ["//grid_type//"]" )
-        end select 
+                do i_grid = 1, grid%n_grids
+                    !
+                    call self%setGridIndexArrays( grid%sub_grid(i_grid) )
+                    !
+                enddo
+                !
+            class is( Grid3D_SG_t )
+                !
+                allocate( temp_field, source = rVector3D_SG_t( grid, EDGE ) )
+                call temp_field%setIndexArrays( grid%EDGEb, grid%EDGEi )
+                deallocate( temp_field )
+                !
+                allocate( temp_field, source = rVector3D_SG_t( grid, FACE ) )
+                call temp_field%setIndexArrays( grid%FACEb, grid%FACEi )
+                deallocate( temp_field )
+                !
+                allocate( temp_field, source = rScalar3D_SG_t( grid, NODE ) )
+                call temp_field%setIndexArrays( grid%NODEb, grid%NODEi )
+                deallocate( temp_field )
+                !
+            class default
+                call errStop( "setGridIndexArrays_MetricElements_MR > Unclassified v_cell" )
+            !
+        end select
         !
-        call temp_field%setIndexArrays( INDb, INDi, INDa )
-        !
-    end subroutine setIndexArrays_MetricElements_MR
-    !
-    !> For a given type find indexes for boundary and interior nodes
-    !
-    subroutine setAllIndexArrays_MetricElements_MR( self )
-        implicit none
-        !
-        class( MetricElements_MR_t ), intent( in ) :: self
-        !
-        call self%setIndexArrays( EDGE, self%grid%EDGEb, self%grid%EDGEi, self%grid%EDGEa )
-        !write( *, "( a17, i8, a8, i8, a8, i8 )" ) "EDGEb=", size( self%grid%EDGEb ), ", EDGEi=", size( self%grid%EDGEi ), ", EDGEa=", size( self%grid%EDGEa )
-        !
-        call self%setIndexArrays( FACE, self%grid%FACEb, self%grid%FACEi, self%grid%FACEa )
-        !write( *, "( a17, i8, a8, i8, a8, i8 )" ) "FACEb=", size( self%grid%FACEb ), ", FACEi=", size( self%grid%FACEi ), ", FACEa=", size( self%grid%FACEa )
-        !
-        call self%setIndexArrays( NODE, self%grid%NODEb, self%grid%NODEi, self%grid%NODEa )
-        !write( *, "( a17, i8, a8, i8, a8, i8 )" ) "NODEb=", size( self%grid%NODEb ), ", NODEi=", size( self%grid%NODEi ), ", NODEa=", size( self%grid%NODEa )
-        !
-    end subroutine setAllIndexArrays_MetricElements_MR
+    end subroutine setGridIndexArrays_MetricElements_MR
     !
     !> For a given type find indexes for boundary and interior nodes
     ! !

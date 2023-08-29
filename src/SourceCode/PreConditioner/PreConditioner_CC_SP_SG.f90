@@ -2,12 +2,12 @@
 !> Derived class to define a Curl-Curl PreConditioner
 !> Using Sparse Matrices System
 !
-module PreConditioner_CC_SP
+module PreConditioner_CC_SP_SG
     !
     use PreConditioner
     use ModelOperator_SP
     !
-    type, extends( PreConditioner_t ) :: PreConditioner_CC_SP_t
+    type, extends( PreConditioner_t ) :: PreConditioner_CC_SP_SG_t
         !
         !> upper and lower triangular
         type( spMatCSR_Cmplx ) :: L, U
@@ -16,61 +16,61 @@ module PreConditioner_CC_SP
         !
         contains
             !
-            final :: PreConditioner_CC_SP_dtor
+            final :: PreConditioner_CC_SP_SG_dtor
             !
-            procedure, public :: setPreConditioner => setPreConditioner_CC_SP !> This needs to be called by Solver    object
+            procedure, public :: setPreConditioner => setPreConditioner_CC_SP_SG !> This needs to be called by Solver    object
             !
-            procedure, public :: LTSolve => LTSolvePreConditioner_CC_SP !> These are left (M1) and right (M2)
-            procedure, public :: UTSolve => UTSolvePreConditioner_CC_SP !> preconditioning matrices for curl-curl equation.
-            procedure, public :: LUSolve => LUSolvePreConditioner_CC_SP !> preconditoner for symmetric divCGrad operator
+            procedure, public :: LTSolve => LTSolvePreConditioner_CC_SP_SG !> These are left (M1) and right (M2)
+            procedure, public :: UTSolve => UTSolvePreConditioner_CC_SP_SG !> preconditioning matrices for curl-curl equation.
+            procedure, public :: LUSolve => LUSolvePreConditioner_CC_SP_SG !> preconditoner for symmetric divCGrad operator
             !
-    end type PreConditioner_CC_SP_t
+    end type PreConditioner_CC_SP_SG_t
     !
-    interface PreConditioner_CC_SP_t
-        module procedure PreConditioner_CC_SP_ctor
-    end interface PreConditioner_CC_SP_t
+    interface PreConditioner_CC_SP_SG_t
+        module procedure PreConditioner_CC_SP_SG_ctor
+    end interface PreConditioner_CC_SP_SG_t
     !
 contains
     !
     !> No subroutine briefing
     !
-    function PreConditioner_CC_SP_ctor( model_operator ) result( self ) 
+    function PreConditioner_CC_SP_SG_ctor( model_operator ) result( self ) 
         implicit none
         !
         class( ModelOperator_t ), target, intent( in ) :: model_operator
-        type( PreConditioner_CC_SP_t ) :: self
+        type( PreConditioner_CC_SP_SG_t ) :: self
         !
-        !write( *, * ) "Constructor PreConditioner_CC_SP_t"
+        !write( *, * ) "Constructor PreConditioner_CC_SP_SG_t"
         !
         self%omega = R_ZERO
         !
         self%model_operator => model_operator
         !
-    end function PreConditioner_CC_SP_ctor
+    end function PreConditioner_CC_SP_SG_ctor
     !
     !> PreConditioner_DC_SP destructor
     !
-    subroutine PreConditioner_CC_SP_dtor( self )
+    subroutine PreConditioner_CC_SP_SG_dtor( self )
         implicit none
         !
-        type( PreConditioner_CC_SP_t ), intent( inout ) :: self
+        type( PreConditioner_CC_SP_SG_t ), intent( inout ) :: self
         !
-        !write( *, * ) "Destructor PreConditioner_CC_SP_t"
+        !write( *, * ) "Destructor PreConditioner_CC_SP_SG_t"
         !
         call deall_spMatCSR( self%L )
         call deall_spMatCSR( self%U )
         call deall_spMatCSR( self%LH )
         call deall_spMatCSR( self%UH )
         !
-    end subroutine PreConditioner_CC_SP_dtor
+    end subroutine PreConditioner_CC_SP_SG_dtor
     !
     !> Block DILU preconditioner for CC operator, should be
     !> comparable to what is implemented for matrix-free version
     !
-    subroutine setPreConditioner_CC_SP( self, omega )
+    subroutine setPreConditioner_CC_SP_SG( self, omega )
         implicit none
         !
-        class( PreConditioner_CC_SP_t ), intent( inout ) :: self
+        class( PreConditioner_CC_SP_SG_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: omega
         !
         integer, allocatable, dimension(:) :: ix, iy, iz
@@ -185,18 +185,18 @@ contains
                 deallocate( Lblk, Ublk )
                 !
             class default
-                call errStop( "LTSolvePreConditioner_CC_SP: Unclassified ModelOperator" )
+                call errStop( "LTSolvePreConditioner_CC_SP_SG: Unclassified ModelOperator" )
             !
         end select
         !
-    end subroutine setPreConditioner_CC_SP
+    end subroutine setPreConditioner_CC_SP_SG
     !
     !> Implement the sparse matrix solve for curl-curl operator
     !
-    subroutine LTSolvePreConditioner_CC_SP( self, in_e, out_e, adjoint )
+    subroutine LTSolvePreConditioner_CC_SP_SG( self, in_e, out_e, adjoint )
         implicit none
         !
-        class( PreConditioner_CC_SP_t ), intent( inout ) :: self
+        class( PreConditioner_CC_SP_SG_t ), intent( inout ) :: self
         class( Vector_t ), intent( in ) :: in_e
         class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
@@ -204,11 +204,11 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v, out_e_v_int
         !
         if( .NOT. in_e%is_allocated ) then
-            call errStop( "LTSolvePreConditioner_CC_SP > in_e not allocated yet" )
+            call errStop( "LTSolvePreConditioner_CC_SP_SG > in_e not allocated yet" )
         endif
         !
         if( .NOT. out_e%is_allocated ) then
-            call errStop( "LTSolvePreConditioner_CC_SP > out_e not allocated" )
+            call errStop( "LTSolvePreConditioner_CC_SP_SG > out_e not allocated" )
         endif
         !
         in_e_v = in_e%getArray()
@@ -232,16 +232,16 @@ contains
         !
         call out_e%setArray( out_e_v )
         !
-    end subroutine LTSolvePreConditioner_CC_SP
+    end subroutine LTSolvePreConditioner_CC_SP_SG
     !
-    !> Procedure UTSolvePreConditioner_CC_SP
+    !> Procedure UTSolvePreConditioner_CC_SP_SG
     !> Purpose: to solve the upper triangular system (or it"s adjoint);
     !> for the d-ilu pre-condtioner
     !
-    subroutine UTSolvePreConditioner_CC_SP( self, in_e, out_e, adjoint )
+    subroutine UTSolvePreConditioner_CC_SP_SG( self, in_e, out_e, adjoint )
         implicit none
         !
-        class( PreConditioner_CC_SP_t ), intent( inout ) :: self
+        class( PreConditioner_CC_SP_SG_t ), intent( inout ) :: self
         class( Vector_t ), intent( in ) :: in_e
         class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
@@ -250,11 +250,11 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
         !
         if( .NOT. in_e%is_allocated ) then
-            call errStop( "UTSolvePreConditioner_CC_SP > in_e not allocated yet" )
+            call errStop( "UTSolvePreConditioner_CC_SP_SG > in_e not allocated yet" )
         endif
         !
         if( .NOT. out_e%is_allocated ) then
-            call errStop( "UTSolvePreConditioner_CC_SP > out_e not allocated" )
+            call errStop( "UTSolvePreConditioner_CC_SP_SG > out_e not allocated" )
         endif
         !
         in_e_v = in_e%getArray()
@@ -277,21 +277,21 @@ contains
         !
         call out_e%setArray( out_e_v )
         !
-    end subroutine UTSolvePreConditioner_CC_SP
+    end subroutine UTSolvePreConditioner_CC_SP_SG
     !
-    !> Procedure LUSolvePreConditioner_CC_SP
+    !> Procedure LUSolvePreConditioner_CC_SP_SG
     !> this is dummy routine required by abstract preconditioner class
     !
-    subroutine LUSolvePreConditioner_CC_SP( self, in_phi, out_phi )
+    subroutine LUSolvePreConditioner_CC_SP_SG( self, in_phi, out_phi )
         implicit none
         !
-        class( PreConditioner_CC_SP_t ), intent( inout ) :: self
+        class( PreConditioner_CC_SP_SG_t ), intent( inout ) :: self
         class( Scalar_t ), intent( in ) :: in_phi
         class( Scalar_t ), intent( inout ) :: out_phi
         !
-        call errStop( "LUSolvePreConditioner_CC_SP not implemented" )
+        call errStop( "LUSolvePreConditioner_CC_SP_SG not implemented" )
         !
-    end subroutine LUSolvePreConditioner_CC_SP
+    end subroutine LUSolvePreConditioner_CC_SP_SG
     !
-end module PreConditioner_CC_SP
+end module PreConditioner_CC_SP_SG
 

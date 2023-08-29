@@ -60,9 +60,6 @@ module Field
             generic :: div => divByField, divByValue
             !
             !> Getters & Setters
-            procedure( interface_get_sv_field ), deferred, public :: getSV
-            procedure( interface_set_sv_field ), deferred, public :: setSV
-            !
             procedure( interface_get_array_field ), deferred, public :: getArray
             procedure( interface_set_array_field ), deferred, public :: setArray
             !
@@ -140,27 +137,6 @@ module Field
             class( Field_t ), intent( in ) :: self
             integer :: field_length
         end function interface_length_field
-        !
-        !> No interface function briefing
-        !
-        function interface_get_sv_field( self ) result( s_v )
-            import :: Field_t, prec
-            !
-            class( Field_t ), intent( in ) :: self
-            !
-            complex( kind=prec ), allocatable, dimension(:) :: s_v
-            !
-        end function interface_get_sv_field
-        !
-        !> No interface subroutine briefing
-        !
-        subroutine interface_set_sv_field( self, s_v )
-            import :: Field_t, prec
-            !
-            class( Field_t ), intent( inout ) :: self
-            complex( kind=prec ), dimension(:), intent( in ) :: s_v
-            !
-        end subroutine interface_set_sv_field
         !
         !> No interface function briefing
         !

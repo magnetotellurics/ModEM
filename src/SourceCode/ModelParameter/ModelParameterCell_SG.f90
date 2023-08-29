@@ -11,7 +11,6 @@ module ModelParameterCell_SG
     type, extends( ModelParameterCell_t ) :: ModelParameterCell_SG_t
         !
         !> No derived properties
-        !> cell_cond treated as SG field array here
         !
         contains
             !
@@ -68,14 +67,16 @@ contains
         nzAir = 0
         !
         allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
-                ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
-                  grid%dz( grid%nzAir+1:grid%nz ) ) )
+        ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+        grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
         self%anisotropic_level = anisotropic_level
         !
         allocate( self%cell_cond( anisotropic_level ) )
         !
         self%cell_cond(1) = cell_cond
+        !
+        self%cell_cond(1)%grid => self%param_grid
         !
         if( present( param_type ) ) then
             !
@@ -113,11 +114,18 @@ contains
         nzAir = 0
         !
         allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
-                ( grid%nz - grid%nzAir ), grid%dx, grid%dy, grid%dz( grid%nzAir+1:grid%nz ) ) )
+                ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+                grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
         self%anisotropic_level = size( cell_cond )
         !
         self%cell_cond = cell_cond
+        !
+        do i = 1, size( self%cell_cond )
+            !
+            self%cell_cond(i)%grid => self%param_grid
+            !
+        enddo
         !
         if( present( param_type ) ) then
             !
@@ -170,14 +178,13 @@ contains
         !
         sigma_cell = rScalar3D_SG_t( sigma_node%grid, CELL )
         !
+        sigma_cell%v( :, :, 1:k0 ) = self%air_cond
+        !
         sigma_cell%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v, kind=prec ) )
         !
         call sigma_cell%mult( self%metric%v_cell )
         !
         call sigma_cell%toNode( sigma_node, .TRUE. )
-        !
-        !> This should be the right thing, but no why ????
-        !call sigma_node%div( self%metric%v_node )
         !
     end subroutine nodeCond_ModelParameterCell_SG
     !
@@ -197,7 +204,7 @@ contains
         endif
         !
         if( .NOT. e_vec%is_allocated ) then
-            call errStop( "PDEmapping_ModelParameterCell_SG > e_vec not allocated yet" )
+            call errStop( "PDEmapping_ModelParameterCell_SG > e_vec not allocated" )
         endif
         !
         allocate( sigma_cells( self%anisotropic_level ) )
@@ -208,10 +215,7 @@ contains
         !
         do i = 1, self%anisotropic_level
             !
-            !> Create and initialize e_vec with zeros
             sigma_cells(i) = rScalar3D_SG_t( self%metric%grid, CELL )
-            !
-            call sigma_cells(i)%zeros
             !
             sigma_cells(i)%v( :, :, 1:k0 ) = self%air_cond
             !
@@ -278,8 +282,6 @@ contains
             !
             !> Create and initialize sigma_cells with zeros
             sigma_cells(i) = rScalar3D_SG_t( self%metric%grid, CELL )
-            !
-            call sigma_cells(i)%zeros
             !
             sigma_cells(i)%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(i)%v, kind=prec ), JOB )
             !
@@ -441,9 +443,11 @@ contains
             temp_sigma_value = R_ZERO
             do i = 1, self%metric%grid%Nx
                 do j = 1, self%metric%grid%Ny
+                    !
                     wt = wt + self%metric%grid%dx(i) * self%metric%grid%dy(j)
                     temp_sigma_value = temp_sigma_value + self%cell_cond(1)%v( i, j, k ) * &
                     self%metric%grid%dx(i) * self%metric%grid%dy(j)
+                    !
                 enddo
             enddo
             !
@@ -556,8 +560,6 @@ contains
             enddo
             !
             write( ioModelParam, * )
-            !
-            write( *, * ) self%anisotropic_level
             !
             do ii = 1, self%anisotropic_level
                 !

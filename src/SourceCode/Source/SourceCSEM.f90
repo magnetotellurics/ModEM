@@ -16,7 +16,8 @@ module SourceCSEM
     character( len=14 ), parameter :: FROM_TX_GEOM_MEAN = "Mean_around_Tx"
     character( len=11 ), parameter :: FROM_TX_LOCATION = "Tx_Position"
     !
-    class( Vector_t ), allocatable :: E_p
+    !> Global primary electrical Field
+    type( cVector3D_SG_t ) :: E_p
     !
     type, abstract, extends( Source_t ) :: SourceCSEM_t
         !

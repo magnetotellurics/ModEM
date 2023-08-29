@@ -30,11 +30,12 @@ module ModelParameter
             !> Base procedures
             procedure, public :: baseInit => initialize_ModelParameter
             !
-            procedure, public :: setMetric => setMetric_ModelParameter
             procedure, public :: sigMap => sigMap_ModelParameter
             procedure, public :: setSigMap => setSigMap_ModelParameter
             !
             !> Interfaces
+            procedure( interface_set_metric_model_parameter ), deferred, public :: setMetric
+            !
             procedure( interface_set_type_model_parameter ), deferred, public :: setType
             !
             procedure( interface_get_one_cond_model_parameter ), deferred, public :: getOneCond
@@ -79,6 +80,16 @@ module ModelParameter
     end type GenModelParameter_t
     !
     abstract interface
+        !
+        !> No subroutine briefing
+        !
+        subroutine interface_set_metric_model_parameter( self, metric )
+            import :: ModelParameter_t, MetricElements_t
+            !
+            class( ModelParameter_t ), intent( inout ) :: self
+            class( MetricElements_t ), target, intent( in ) :: metric
+            !
+        end subroutine interface_set_metric_model_parameter
         !
         !> No interface function briefing
         !
@@ -291,18 +302,6 @@ module ModelParameter
     end interface
     !
 contains
-    !
-    !> No subroutine briefing
-    !
-    subroutine setMetric_ModelParameter( self, metric )
-        implicit none
-        !
-        class( ModelParameter_t ), intent( inout ) :: self
-        class( MetricElements_t ), target, intent( in ) :: metric
-        !
-        self%metric => metric
-        !
-    end subroutine setMetric_ModelParameter
     !
     !> No procedure briefing
     !

@@ -192,11 +192,9 @@ contains
             call errStop( "multBy_CmSqrt > mhat not allocated!" )
         endif
         !
-        if( .NOT. allocated( dsigma ) ) then
-            allocate( dsigma, source = mhat )
-        else
-            dsigma = mhat
-        endif
+        if( allocated( dsigma ) ) deallocate( dsigma )
+        allocate( dsigma, source = mhat )
+        dsigma = mhat
         !
         do i = 1, mhat%anisotropic_level
             !

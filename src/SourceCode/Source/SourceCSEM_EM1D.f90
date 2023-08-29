@@ -133,18 +133,15 @@ contains
         allocate( self%E( 1 ) )
         !
         !> Construct E from E_p
-        allocate( self%E(1)%v, source = E_p )
+        self%E(1) = E_p
         !
-        x = self%cond_anomaly_h%getAxis("x") * E_P%getX()
-        call self%E(1)%v%setX( x )
+        self%E(1)%x = self%cond_anomaly_h%getAxis("x") * E_P%x
         !
-        y = self%cond_anomaly_h%getAxis("y") * E_P%getY()
-        call self%E(1)%v%setY( y )
+        self%E(1)%y = self%cond_anomaly_h%getAxis("y") * E_P%y
         !
-        z = self%cond_anomaly_v%getAxis("z") * E_P%getZ()
-        call self%E(1)%v%setZ( z )
+        self%E(1)%z = self%cond_anomaly_v%getAxis("z") * E_P%z
         !
-        call self%E(1)%v%mult( i_omega_mu )
+        call self%E(1)%mult( i_omega_mu )
         !
         deallocate( freqdat%omega )
         deallocate( bgdat%sigv, bgdat%sigh )
@@ -173,57 +170,43 @@ contains
         type( backgrounddata ), intent( in ) :: bgdat
         !
         integer ix, iy, iz, counter
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
-        if( allocated( E_p ) ) deallocate( E_p )
-        allocate( E_p, source = cVector3D_SG_t( grid, EDGE ) )
+        E_p = cVector3D_SG_t( grid, EDGE )
         !
         !> Fill e_vector (cVector3D_SG) from E2D (Esoln2DTM_t)
-        !
-        x = E_p%getX()
         !
         counter = 1
         !> E-field corresponding to these nodes is Ex
         do iz = 1,grid%Nz+1    !Edge Z
             do iy = 1,grid%Ny+1     !Edge Y
                 do ix = 1,grid%Nx       !Center X
-                    x(ix,iy,iz) = bgdat%Ex(counter)
+                    E_p%x(ix,iy,iz) = bgdat%Ex(counter)
                     counter = counter + 1
                 enddo
             enddo
         enddo
-        !
-        call E_p%setX( x )
-        !
-        y = E_p%getY()
         !
         counter = 1
         !> E-field corresponing to these nodes is Ey
         do iz = 1, grid%Nz+1    !Edge Z
             do iy = 1, grid%Ny      !Center y
                 do ix = 1, grid%Nx+1    !Edge x
-                    y(ix,iy,iz) = bgdat%Ey(counter)
+                    E_p%y(ix,iy,iz) = bgdat%Ey(counter)
                     counter = counter + 1
                 enddo
             enddo
         enddo
-        !
-        call E_p%setY( y )
-        !
-        z = E_p%getZ()
         !
         counter = 1
         !> E-field corresponing to these nodes is Ez
         do iz = 1,grid%Nz !Center Z
             do iy = 1,grid%Ny+1 !Edge y
                 do ix = 1,grid%Nx+1 !Edge x
-                    z(ix,iy,iz) = bgdat%Ez(counter)
+                    E_p%z(ix,iy,iz) = bgdat%Ez(counter)
                     counter = counter + 1
                 enddo
             enddo
         enddo
-        !
-        call E_p%setZ( z )
         !
     end subroutine create_Ep_from_EM1D
     !
@@ -237,9 +220,9 @@ contains
         !if( allocated( self%rhs ) ) deallocate( self%rhs )
         allocate( self%rhs(1) )
         !
-        allocate( self%rhs(1)%v, source = self%E(1)%v )
+        self%rhs(1) = self%E(1)
         !
-        call self%rhs(1)%v%mult( self%model_operator%metric%v_edge )
+        call self%rhs(1)%mult( self%model_operator%metric%v_edge )
         !
     end subroutine createRHS_SourceCSEM_EM1D
     !
@@ -345,6 +328,7 @@ contains
         ix = bgdat%nEx * 1.5_real64
         iy = bgdat%nEy * 1.5_real64
         iz = bgdat%nEz * 1.5_real64
+        !
         allocate(bgdat%Ex(ix),bgdat%Ey(iy),bgdat%Ez(iz), stat=ierr )
         if( ierr .NE. 0 ) call alloc_error(pid,'Out-backgroundfield','E fields', ierr )
         !
@@ -364,10 +348,13 @@ contains
         do iz = 1, self%sigma%metric%grid%Nz+1 !Edge Z
             do iy = 1, self%sigma%metric%grid%Ny+1 !Edge Y
                 do ix = 1,self%sigma%metric%grid%Nx !Center X
+                    !
                     bgdat%Expos(counter,1) = self%sigma%metric%grid%x_center(ix)
                     bgdat%Expos(counter,2) = self%sigma%metric%grid%y_edge(iy)
                     bgdat%Expos(counter,3) = self%sigma%metric%grid%z_edge(iz)
+                    !
                     counter = counter + 1
+                    !
                 enddo
             enddo
         enddo
@@ -377,10 +364,13 @@ contains
         do iz = 1,self%sigma%metric%grid%Nz+1 !Edge Z
             do iy = 1,self%sigma%metric%grid%Ny !Center y
                 do ix = 1,self%sigma%metric%grid%Nx+1 !Edge x
+                    !
                     bgdat%Eypos(counter,1) = self%sigma%metric%grid%x_edge(ix)
                     bgdat%Eypos(counter,2) = self%sigma%metric%grid%y_center(iy)
                     bgdat%Eypos(counter,3) = self%sigma%metric%grid%z_edge(iz)
+                    !
                     counter = counter + 1
+                    !
                 enddo
             enddo
         enddo
@@ -390,10 +380,13 @@ contains
         do iz = 1,self%sigma%metric%grid%Nz !Center Z
             do iy = 1,self%sigma%metric%grid%Ny+1 !Edge y
                 do ix = 1,self%sigma%metric%grid%Nx+1 !Edge x
+                    !
                     bgdat%Ezpos(counter,1)= self%sigma%metric%grid%x_edge(ix)
                     bgdat%Ezpos(counter,2) = self%sigma%metric%grid%y_edge(iy)
                     bgdat%Ezpos(counter,3) = self%sigma%metric%grid%z_center(iz)
+                    !
                     counter = counter + 1
+                    !
                 enddo
             enddo
         enddo

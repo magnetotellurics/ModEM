@@ -247,7 +247,7 @@ contains
 
     do i = 1, self%grid_ptr%ngrids
        self%sub_vector(i) = Vector3d_csg_complex_t (&
-            igrid%sub_grids(i), grid_type)
+            igrid%sub_grid(i), grid_type)
     enddo
 
     call self%set_active_int_boundary ()
@@ -1336,29 +1336,29 @@ contains
                sg_v%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) *    &
                rep_mat(grid%Dx(i:last:Cs), &
                1, &
-               self%grid_ptr%sub_grids(k)%Ny + 1, &
-               self%grid_ptr%sub_grids(k)%Nz + 1, .false.)
+               self%grid_ptr%sub_grid(k)%Ny + 1, &
+               self%grid_ptr%sub_grid(k)%Nz + 1, .false.)
           
           last = size(grid%Dy)
           self%sub_vector(k)%y = self%sub_vector(k)%y + &
                sg_v%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) *  & 
                rep_mat(grid%Dy(i:last:Cs), &
-               self%grid_ptr%sub_grids(k)%Nx + 1, &
+               self%grid_ptr%sub_grid(k)%Nx + 1, &
                1, &
-               self%grid_ptr%sub_grids(k)%Nz + 1, .TRUE.)
+               self%grid_ptr%sub_grid(k)%Nz + 1, .TRUE.)
        enddo
        
        self%sub_vector(k)%x = self%sub_vector(k)%x / &
-            rep_mat(self%grid_ptr%sub_grids(k)%Dx, &
+            rep_mat(self%grid_ptr%sub_grid(k)%Dx, &
             1, &
-            self%grid_ptr%sub_grids(k)%Ny + 1, &
-            self%grid_ptr%sub_grids(k)%Nz + 1, .false.)
+            self%grid_ptr%sub_grid(k)%Ny + 1, &
+            self%grid_ptr%sub_grid(k)%Nz + 1, .false.)
        
        self%sub_vector(k)%y = self%sub_vector(k)%y / &
-            rep_mat(self%grid_ptr%sub_grids(k)%Dy, &
-            self%grid_ptr%sub_grids(k)%Nx + 1, &
+            rep_mat(self%grid_ptr%sub_grid(k)%Dy, &
+            self%grid_ptr%sub_grid(k)%Nx + 1, &
             1, &
-            self%grid_ptr%sub_grids(k)%Nz + 1, .TRUE.)
+            self%grid_ptr%sub_grid(k)%Nz + 1, .TRUE.)
        
        self%sub_vector(k)%z = sg_v%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2)
     enddo

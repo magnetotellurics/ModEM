@@ -129,13 +129,13 @@ contains
         !>
         allocate( self%E( 1 ) )
         !
-        allocate( self%E(1)%v, source = E_p )
+        self%E(1) = E_p
         !
-        call self%E(1)%v%mult( self%cond_anomaly )
+        call self%E(1)%mult( self%cond_anomaly )
         !
         i_omega_mu = cmplx( 0., real( -1.0d0 * isign * mu_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
         !
-        call self%E(1)%v%mult( i_omega_mu )
+        call self%E(1)%mult( i_omega_mu )
         !
         call self%createRHS
         !
@@ -183,19 +183,21 @@ contains
         !
         allocate ( bx1D(n1D), by1D(n1D), bz1D(n1D) )
         !
-        !====================================================================
         !> Create position vector that the primary field has to be calculated
-        !====================================================================
+        !
         counter = 1
         !
         !> e_field-field corresponding to these nodes is Ex
         do iz = 1,grid%Nz+1 !Edge Z
             do iy = 1,grid%Ny+1 !Edge Y
                 do ix = 1,grid%Nx !Center X
+                    !
                     x1D(counter) = grid%x_center(ix)
                     y1D(counter) = grid%y_edge(iy)
                     z1D(counter) = grid%z_edge(iz)
+                    !
                     counter = counter + 1
+                    !
                 enddo
             enddo
         enddo
@@ -204,10 +206,13 @@ contains
         do iz = 1,grid%Nz+1 !Edge Z
             do iy = 1,grid%Ny !Center y
                 do ix = 1,grid%Nx+1 !Edge x
+                    !
                     x1D(counter) = grid%x_edge(ix)
                     y1D(counter) = grid%y_center(iy)
                     z1D(counter) = grid%z_edge(iz)
+                    !
                     counter = counter + 1
+                    !
                 enddo
             enddo
         enddo
@@ -216,10 +221,13 @@ contains
         do iz = 1,grid%Nz !Center Z
             do iy = 1,grid%Ny+1 !Edge y
                 do ix = 1,grid%Nx+1 !Edge x
+                    !
                     x1D(counter) = grid%x_edge(ix)
                     y1D(counter) = grid%y_edge(iy)
                     z1D(counter) = grid%z_center(iz)
+                    !
                     counter = counter + 1
+                    !
                 enddo
             enddo
         enddo
@@ -235,11 +243,8 @@ contains
         class( Grid_t ), intent( in ) :: grid
         !
         integer ix, iy, iz, counter
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
-        call self%sigma%metric%createVector( complex_t, EDGE, E_p )
-        !
-        x = E_p%getX()
+        E_p = cVector3D_SG_t( self%sigma%metric%grid, EDGE )
         !
         counter = 1
         !
@@ -247,41 +252,33 @@ contains
         do iz = 1,grid%Nz+1 !Edge Z
             do iy = 1,grid%Ny+1 !Edge Y
                 do ix = 1,grid%Nx !Center X
-                    x(ix,iy,iz) = ex1D(counter)
+                    !
+                    E_p%x(ix,iy,iz) = ex1D(counter)
                     counter = counter + 1
+                    !
                 enddo
             enddo
         enddo
-        !
-        call E_p%setX( x )
-        !
-        y = E_p%getY()
         !
         !> e_field-field corresponding to these nodes is Ey
         do iz = 1,grid%Nz+1 !Edge Z
             do iy = 1,grid%Ny !Center y
                 do ix = 1,grid%Nx+1 !Edge x
-                    y(ix,iy,iz) = ey1D(counter)
+                    E_p%y(ix,iy,iz) = ey1D(counter)
                     counter = counter + 1
                 enddo
             enddo
         enddo
-        !
-        call E_p%setY( y )
-        !
-        z = E_p%getZ()
         !
         !> e_field-field corresponding to these nodes is Ez
         do iz = 1,grid%Nz !Center Z
             do iy = 1,grid%Ny+1 !Edge y
                 do ix = 1,grid%Nx+1 !Edge x
-                    z(ix,iy,iz) = jz1D(counter)
+                    E_p%z(ix,iy,iz) = jz1D(counter)
                     counter = counter + 1
                 enddo
             enddo
         enddo
-        !
-        call E_p%setZ( z )
         !
         deallocate( x1D, y1D, z1D )
         deallocate( ex1D, ey1D, jz1D )
@@ -299,9 +296,9 @@ contains
         !if( allocated( self%rhs ) ) deallocate( self%rhs )
         allocate( self%rhs(1) )
         !
-        allocate( self%rhs(1)%v, source = self%E(1)%v )
+        self%rhs(1) = self%E(1)
         !
-        call self%rhs(1)%v%mult( self%model_operator%metric%v_edge )
+        call self%rhs(1)%mult( self%model_operator%metric%v_edge )
         !
     end subroutine createRHS_SourceCSEM_Dipole1D
     !

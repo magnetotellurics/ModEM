@@ -91,11 +91,11 @@ contains
             if( self%for_transpose ) then
                 !
                 !> E = E / V_E
-                call self%E( pol )%v%div( self%model_operator%metric%v_edge )
+                call self%E( pol )%div( self%model_operator%metric%v_edge )
                 !
             else
                 !> RHS = RHS * V_E
-                call self%rhs( pol )%v%mult( self%model_operator%metric%v_edge )
+                call self%rhs( pol )%mult( self%model_operator%metric%v_edge )
                 !
             endif
             !

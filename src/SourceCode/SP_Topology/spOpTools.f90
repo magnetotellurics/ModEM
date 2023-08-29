@@ -922,7 +922,6 @@ contains
         type( spMatCSR_Real ) :: Btmp
         integer :: i, j, j1, j2, k, m, n, nz, nnz, nzero
         !
-        write( *, * ) "A%nRow, A%nCol*, size( D )*: ", A%nRow, A%nCol, size( D )
         if( A%nCol .NE. size( D ) ) then
             call errStop( "RMATxDIAG > matrix sizes incompatible" )
         endif

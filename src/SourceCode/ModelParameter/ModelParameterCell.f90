@@ -11,14 +11,16 @@ module ModelParameterCell
     !
     type, abstract, extends( ModelParameter_t ) :: ModelParameterCell_t
         !
-        class( Grid_t ), allocatable :: param_grid
+        class( Grid_t ), pointer :: param_grid
         !
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
         !
         contains
             !
             !> Procedures
-            procedure, public :: baseDealloc => baseDealloc_ModelParameter
+            procedure, public :: baseDealloc => baseDealloc_ModelParameterCell
+            !
+            procedure, public :: setMetric => setMetric_ModelParameterCell
             !
             procedure, public :: getOneCond => getOneCond_ModelParameterCell
             procedure, public :: getAllCond => getAllCond_ModelParameterCell
@@ -46,14 +48,29 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine baseDealloc_ModelParameter( self )
+    subroutine baseDealloc_ModelParameterCell( self )
         implicit none
         !
         class( ModelParameterCell_t ), intent( inout ) :: self
         !
-        if( allocated( self%param_grid ) ) deallocate( self%param_grid )
+        !if( associated( self%param_grid ) ) deallocate( self%param_grid )
         !
-    end subroutine baseDealloc_ModelParameter
+    end subroutine baseDealloc_ModelParameterCell
+    !
+    !> No subroutine briefing
+    !
+    subroutine setMetric_ModelParameterCell( self, metric )
+        implicit none
+        !
+        class( ModelParameterCell_t ), intent( inout ) :: self
+        class( MetricElements_t ), target, intent( in ) :: metric
+        !
+        !> NEED TO SETUP param_grid INTERIOR, BOUNDARY AND ACTIVE INDEXES ????
+        !call metric%setGridIndexArrays( self%param_grid )
+        !
+        self%metric => metric
+        !
+    end subroutine setMetric_ModelParameterCell
     !
     !> No function briefing
     !
@@ -186,7 +203,8 @@ contains
                 !
                 self%is_allocated = rhs%is_allocated
                 !
-                self%param_grid = rhs%param_grid
+                !if( allocated( self%param_grid ) ) deallocate( self%param_grid )
+                !allocate( self%param_grid, source = rhs%param_grid )
                 !
                 self%cell_cond = rhs%cell_cond
                 !
@@ -377,8 +395,8 @@ contains
         !
         integer :: i
         !
-        write( *, * ) "ModelParameterCell_t:", self%mKey, self%air_cond, self%param_type, &
-        self%is_allocated, self%param_grid%nx, self%param_grid%ny, self%param_grid%nz, self%param_grid%nzAir
+        !write( *, * ) "ModelParameterCell_t:", self%mKey, self%air_cond, self%param_type, &
+        !self%is_allocated, self%param_grid%nx, self%param_grid%ny, self%param_grid%nz, self%param_grid%nzAir
         !
         do i = 1, self%anisotropic_level
             !

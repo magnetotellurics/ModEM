@@ -104,7 +104,7 @@ contains
         allocate( T2_array( self%grid%n_grids ) )
         !
         do i = 1, self%grid%n_grids
-            TOp1 = SpOpTopology_SG_t( self%grid%sub_grids(i) )
+            TOp1 = SpOpTopology_SG_t( self%grid%sub_grid(i) )
             call Top1%curl( T2_array(i) )
         enddo
         !
@@ -162,7 +162,7 @@ contains
         allocate( G2_array( self%grid%n_grids ) )
         !
         do i = 1, self%grid%n_grids
-            TOp1 = SpOpTopology_SG_t( self%grid%sub_grids(i) )
+            TOp1 = SpOpTopology_SG_t( self%grid%sub_grid(i) )
             call Top1%grad( G2_array(i) )
         enddo
         !

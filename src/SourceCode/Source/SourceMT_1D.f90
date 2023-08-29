@@ -28,7 +28,7 @@ module SourceMT_1D
 contains
     !
     !> SourceMT_1D constructor
-	!
+    !
     function SourceMT_1D_ctor( model_operator, sigma, period ) result( self )
         implicit none
         !
@@ -54,7 +54,7 @@ contains
     !
     !> Deconstructor routine:
     !>     Call the base routine baseDealloc().
-	!
+    !
     subroutine SourceMT_1D_dtor( self )
         implicit none
         !
@@ -67,7 +67,7 @@ contains
     end subroutine SourceMT_1D_dtor
     !
     !> Set self%E from Forward Modeling 1D
-	!
+    !
     subroutine createE_SourceMT_1D( self )
         implicit none
         !
@@ -76,7 +76,6 @@ contains
         type( ModelParameter1D_t ) :: model_parameter_1D
         type( Forward1D_t ) :: forward_1D
         complex( kind=prec ), allocatable, dimension(:) :: E1D
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y
         integer :: ix, iy, pol
         !
         !> Get Model1D from average conductivity 3D
@@ -96,36 +95,30 @@ contains
         !
         do pol = 1, 2
             !
-            call self%sigma%metric%createVector( complex_t, EDGE, self%E( pol )%v )
+            self%E( pol ) = cVector3D_SG_t( self%sigma%metric%grid, EDGE )
             !
             !> Fill e_vector (Vector_t) from E1D (Esoln1DTM_t)
             !>     Note that Ez components are all left set to 9
             !
-            y = self%E( pol )%v%getY()
-            !
             !> 1st polarization case: Only y components are non-zero
             if( pol == 1 ) then
+                !
                 do ix = 1, self%model_operator%metric%grid%nx+1
                     do iy = 1, self%model_operator%metric%grid%ny
-                        y( ix, iy, : ) = E1D
+                        self%E( pol )%y( ix, iy, : ) = E1D
                     enddo
                 enddo
             !
-            call self%E( pol )%v%setY( Y )
-            !
-            x = self%E( pol )%v%getX()
-            !
             !> 2nd polarization case: Only x components are non-zero
             else
+                !
                 do ix = 1, self%model_operator%metric%grid%nx
                     do iy = 1, self%model_operator%metric%grid%ny+1
-                        x( ix, iy, : ) = E1D
+                        self%E( pol )%x( ix, iy, : ) = E1D
                     enddo
                 enddo
                 !
             endif
-            !
-            call self%E( pol )%v%setX( x )
             !
         enddo
         !
@@ -150,15 +143,15 @@ contains
         !
         do pol = 1, 2
             !
-            call self%E( pol )%v%boundary( e_boundary )
+            call self%E( pol )%boundary( e_boundary )
             !
-            call self%sigma%metric%createVector( complex_t, EDGE, self%rhs( pol )%v )
+            self%rhs( pol ) = cVector3D_SG_t( self%sigma%metric%grid, EDGE )
             !
-            call self%model_operator%MultAib( e_boundary, self%rhs( pol )%v )
+            call self%model_operator%MultAib( e_boundary, self%rhs( pol ) )
             !
             deallocate( e_boundary )
             !
-            call self%rhs( pol )%v%mult( C_MinusOne )
+            call self%rhs( pol )%mult( C_MinusOne )
             !
         enddo
         !

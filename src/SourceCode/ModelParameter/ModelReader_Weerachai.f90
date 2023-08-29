@@ -92,14 +92,14 @@ contains
             select case( grid_format )
                 !
                 case( GRID_SG )
+                    !
                     allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
+                    !
                 case( GRID_MR )
                     !
                     write( *, * ) "Input layers: [", layers, "]"
                     !
                     allocate( grid, source = Grid3D_MR_t( nx, ny, nzAir, nzEarth, dx, dy, dz, layers ) )
-                    !
-                    write( *, * ) "OriginalGrid: nx=", grid%nx, ", ny=", grid%ny, "nz=", grid%nz, "with ", grid%getNGrids(), " sub-grids"
                     !
                 case default
                     !

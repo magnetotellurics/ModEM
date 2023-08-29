@@ -3,12 +3,8 @@
 !
 module MetricElements
     !
-    use iScalar3D_SG
-    use cScalar3D_SG
-    use rScalar3D_MR
-    use cVector3D_SG
-    use rVector3D_MR
     use cVector3D_MR
+    use iScalar3D_SG
     !
     type, abstract :: MetricElements_t
         !
@@ -32,9 +28,7 @@ module MetricElements
         procedure( interface_set_edge_volume_metric_elements ), deferred, public :: setEdgeVolume
         procedure( interface_set_node_volume_metric_elements ), deferred, public :: setNodeVolume
         !
-        procedure( interface_set_index_arrays_metric_elements ), deferred, public :: setIndexArrays
-        !
-        procedure( interface_set_all_index_arrays_metric_elements ), deferred, public :: setAllIndexArrays
+        procedure( interface_set_grid_index_arrays_metric_elements ), deferred, public :: setGridIndexArrays
         !
         !procedure( interface_boundary_index_metric_elements ), deferred, public :: boundaryIndex
         !
@@ -115,24 +109,13 @@ module MetricElements
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_set_index_arrays_metric_elements( self, grid_type, INDb, INDi, INDa )
-            import :: MetricElements_t
+        subroutine interface_set_grid_index_arrays_metric_elements( self, grid )
+            import :: MetricElements_t, Grid_t
             !
-            class( MetricElements_t ), intent( in ) :: self
-            character(*), intent( in ) :: grid_type
-            integer, allocatable, dimension(:), intent( out ) :: INDb, INDi
-            integer, dimension(:), allocatable, intent( out ), optional :: INDa
+            class( MetricElements_t ), intent( in) :: self
+            class( Grid_t ), intent( inout ) :: grid
             !
-        end subroutine interface_set_index_arrays_metric_elements
-        !
-        !> No interface subroutine briefing
-        !
-        subroutine interface_set_all_index_arrays_metric_elements( self )
-            import :: MetricElements_t
-            !
-            class( MetricElements_t ), intent( in ) :: self
-            !
-        end subroutine interface_set_all_index_arrays_metric_elements
+        end subroutine interface_set_grid_index_arrays_metric_elements
         !
         !> No interface subroutine briefing
         !
@@ -246,9 +229,7 @@ contains
                     if( scalar_type == real_t ) then
                         allocate( scalar, source = rScalar3D_MR_t( grid, grid_type ) )
                     elseif( scalar_type == complex_t ) then
-                        !allocate( scalar, source = cScalar3D_MR_t( grid, grid_type ) )
-                        !
-                        call errStop( "createScalar > MR complex_t to be implemented" )
+                        allocate( scalar, source = cScalar3D_MR_t( grid, grid_type ) )
                     elseif( scalar_type == integer_t ) then
                         !allocate( scalar, source = iScalar3D_MR_t( grid, grid_type ) )
                         !
@@ -322,5 +303,5 @@ contains
         endif
         !
     end subroutine createVector
-	!
+    !
 end module MetricElements

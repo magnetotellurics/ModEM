@@ -104,7 +104,7 @@ contains
         !> Instantiation of the specific object MetricElements
         allocate( self%metric, source = MetricElements_SG_t( grid ) )
         !
-        call self%metric%setAllIndexArrays
+        call self%metric%setGridIndexArrays( self%metric%grid )
         !
         call self%alloc
         !
@@ -419,7 +419,6 @@ contains
         class( Vector_t ), allocatable, intent( out ) :: out_e
         !
         integer :: ix, iy, iz
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: out_e_v
         !
         if( .NOT. in_b%is_allocated ) then
             call errStop( "multCurlT_ModelOperator_MF_SG > in_b not allocated" )
@@ -434,58 +433,54 @@ contains
             !
             class is( cVector3D_SG_t )
                 !
-                !> Ex
-                out_e_v = out_e%getX()
-                !
-                do iy = 2, in_b%Ny
+                select type( out_e )
                     !
-                    do iz = 2, in_b%Nz
+                    class is( cVector3D_SG_t )
                         !
-                        out_e_v(:, iy, iz) = (in_b%z(:, iy, iz) - &
-                        in_b%z(:, iy - 1, iz)) - &
-                        (in_b%y(:, iy, iz) - in_b%y(:, iy, iz - 1))
+                        do iy = 2, in_b%Ny
+                            !
+                            do iz = 2, in_b%Nz
+                                !
+                                out_e%x(:, iy, iz) = (in_b%z(:, iy, iz) - &
+                                in_b%z(:, iy - 1, iz)) - &
+                                (in_b%y(:, iy, iz) - in_b%y(:, iy, iz - 1))
+                                !
+                            enddo
+                            !
+                        enddo
                         !
-                    enddo
+                        !> Ey
+                        do iz = 2, in_b%Nz
+                            !
+                            do ix = 2, in_b%Nx
+                                !
+                                out_e%y(ix, :, iz) = (in_b%x(ix, :, iz) - &
+                                in_b%x(ix, :, iz - 1)) - &
+                                (in_b%z(ix, :, iz) - in_b%z(ix - 1, :, iz))
+                                !
+                            enddo
+                            !
+                        enddo
+                        !
+                        !> Ez
+                        do ix = 2, in_b%Nx
+                            !
+                            do iy = 2, in_b%Ny
+                                !
+                                out_e%z(ix,iy,:) = (in_b%y(ix, iy, :) - &
+                                in_b%y(ix - 1, iy, :)) - &
+                                (in_b%x(ix, iy, :) - in_b%x(ix, iy - 1, :))
+                                !
+                            enddo
+                            !
+                        enddo
+                        !
+                        call out_e%mult( self%metric%edge_length )
+                        !
+                    class default
+                        call errStop( "multCurlT_ModelOperator_MF_SG > Unclassified out_e." )
                     !
-                enddo
-                !
-                call out_e%setX( out_e_v )
-                !
-                !> Ey
-                out_e_v = out_e%getY()
-                !
-                do iz = 2, in_b%Nz
-                    !
-                    do ix = 2, in_b%Nx
-                        !
-                        out_e_v(ix, :, iz) = (in_b%x(ix, :, iz) - &
-                        in_b%x(ix, :, iz - 1)) - &
-                        (in_b%z(ix, :, iz) - in_b%z(ix - 1, :, iz))
-                        !
-                    enddo
-                    !
-                enddo
-                !
-                call out_e%setY( out_e_v )
-                !
-                !> Ez
-                out_e_v = out_e%getZ()
-                !
-                do ix = 2, in_b%Nx
-                    !
-                    do iy = 2, in_b%Ny
-                        !
-                        out_e_v(ix,iy,:) = (in_b%y(ix, iy, :) - &
-                        in_b%y(ix - 1, iy, :)) - &
-                        (in_b%x(ix, iy, :) - in_b%x(ix, iy - 1, :))
-                        !
-                    enddo
-                    !
-                enddo
-                !
-                call out_e%setZ( out_e_v )
-                !
-                call out_e%mult( self%metric%edge_length )
+                end select
                 !
             class default
                 call errStop( "multCurlT_ModelOperator_MF_SG > Unclassified in_b." )

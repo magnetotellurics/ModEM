@@ -6,7 +6,7 @@
 #
 # <Field parameters>
 #
-model_operator_type [MF|SP|SP2] : SP2
+model_operator_type [MF|SP|SP2] : SP
 #
 # <Grid parameters>
 #

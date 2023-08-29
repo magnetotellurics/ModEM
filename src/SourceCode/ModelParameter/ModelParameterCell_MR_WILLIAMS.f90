@@ -8,13 +8,12 @@ module ModelParameterCell_MR
     !
     use MetricElements_SG
     use ModelParameterCell_SG
-    use Grid3D_MR
     !
     type, extends( ModelParameterCell_t ) :: ModelParameterCell_MR_t
         !
-        type( Grid3D_MR_t ) :: param_grid_mr
+        !> cell_cond treated as SG field array here
         !
-        !> cell_cond treated as SG field array here (base property)
+        type( Grid3D_MR_t ) :: param_grid_mr
         !
         contains
             !
@@ -45,10 +44,10 @@ contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_MR_ctor_one_cond( grid_mr, cell_cond, anisotropic_level, param_type ) result( self )
+    function ModelParameterCell_MR_ctor_one_cond( grid, cell_cond, anisotropic_level, param_type ) result( self )
         implicit none
         !
-        type( Grid3D_MR_t ), intent( in ) :: grid_mr
+        class( Grid_t ), intent( in ) :: grid
         type( rScalar3D_SG_t ), intent( in ) :: cell_cond
         integer, intent( in ) :: anisotropic_level
         character(:), allocatable, optional, intent( in ) :: param_type
@@ -67,25 +66,19 @@ contains
             self%param_type = trim( param_type )
         endif
         !
+        self%param_grid_mr = grid
+        !
         nzAir = 0
         !
-        !> COND PARAM GRID
-        allocate( self%param_grid, source = Grid3D_SG_t( grid_mr%nx, grid_mr%ny, nzAir, &
-        ( grid_mr%nz - grid_mr%nzAir ), grid_mr%dx, grid_mr%dy, &
-        grid_mr%dz( grid_mr%nzAir+1:grid_mr%nz ) ) )
-        !
-        !> PARAM GRID MR
-        self%param_grid_mr = Grid3D_MR_t( grid_mr%nx, grid_mr%ny, nzAir, &
-        ( grid_mr%nz - grid_mr%nzAir ), grid_mr%dx, grid_mr%dy, &
-        grid_mr%dz( grid_mr%nzAir+1:grid_mr%nz ), grid_mr%cs )
+        allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
+               ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+                  grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
         self%anisotropic_level = anisotropic_level
         !
         allocate( self%cell_cond( anisotropic_level ) )
         !
         self%cell_cond(1) = cell_cond
-        !
-        self%cell_cond(1)%grid => self%param_grid
         !
         self%cell_cond(1)%store_state = compound
         !
@@ -101,10 +94,10 @@ contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_MR_ctor_all_conds( grid_mr, cell_cond, param_type ) result( self )
+    function ModelParameterCell_MR_ctor_all_conds( grid, cell_cond, param_type ) result( self )
         implicit none
         !
-        type( Grid3D_MR_t ), intent( in ) :: grid_mr
+        class( Grid_t ), intent( in ) :: grid
         type( rScalar3D_SG_t ), dimension(:), intent( in ) :: cell_cond
         character(:), allocatable, optional, intent( in ) :: param_type
         !
@@ -124,25 +117,12 @@ contains
         !
         nzAir = 0
         !
-        !> COND PARAM GRID - ALWAYS SG FOR NOW !!!!
-        allocate( self%param_grid, source = Grid3D_SG_t( grid_mr%nx, grid_mr%ny, nzAir, &
-        ( grid_mr%nz - grid_mr%nzAir ), grid_mr%dx, grid_mr%dy, &
-        grid_mr%dz( grid_mr%nzAir+1:grid_mr%nz ) ) )
-        !
-        !> PARAM GRID MR
-        self%param_grid_mr = Grid3D_MR_t( grid_mr%nx, grid_mr%ny, nzAir, &
-        ( grid_mr%nz - grid_mr%nzAir ), grid_mr%dx, grid_mr%dy, &
-        grid_mr%dz( grid_mr%nzAir+1:grid_mr%nz ), grid_mr%cs )
+        allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
+               ( grid%nz - grid%nzAir ), grid%dx, grid%dy, grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
         self%anisotropic_level = size( cell_cond )
         !
         self%cell_cond = cell_cond
-        !
-        do i = 1, size( self%cell_cond )
-            !
-            self%cell_cond(i)%grid => self%param_grid
-            !
-        enddo
         !
         if( present( param_type ) ) then
             !
@@ -179,7 +159,7 @@ contains
         class( Scalar_t ), allocatable, intent( inout ) :: sigma_node
         !
         integer :: k0, k1, k2
-        type( rScalar3D_SG_t ) :: sigma_cell
+        type( rScalar3D_MR_t ) :: sigma_cell_mr_air_layers
         type( rScalar3D_MR_t ) :: sigma_cell_mr
         !
         if( .NOT. self%is_allocated ) then
@@ -190,85 +170,30 @@ contains
             call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
         endif
         !
-        k0 = self%metric%grid%NzAir
-        k1 = k0 + 1
-        k2 = self%metric%grid%Nz
+        sigma_cell_mr = rScalar3D_MR_t( self%param_grid_mr, CELL )
         !
-        sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
+        sigma_cell_mr_air_layers = rScalar3D_MR_t( self%metric%grid, CELL )
         !
-        sigma_cell%v( :, :, 1:k0 ) = self%air_cond
+        call self%cell_cond(1)%v%SGtoMR( sigma_cell_mr )
         !
-        sigma_cell%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v, kind=prec ) )
+        do i = 1, size( sigma_cell_mr%sub_scalar )
+            !
+            k0 = self%metric%grid%sub_grid(i)%NzAir
+            k1 = k0 + 1
+            k2 = self%metric%grid%sub_grid(i)%Nz
+            !
+            sigma_cell_mr_air_layers%sub_scalar(i)%v( :, :, 1:k0 ) = self%air_cond
+            !
+            sigma_cell_mr_air_layers%sub_scalar(i)%v( :, :, k1:k2 ) = self%sigMap( real( sigma_cell_mr%sub_scalar(i)%v, kind=prec ) )
+            !
+        enddo
         !
-        sigma_cell_mr = rScalar3D_MR_t( self%metric%grid, CELL )
+        call sigma_cell_mr_air_layers%mult( self%metric%v_cell )
         !
-        call SGtoMR( sigma_cell, sigma_cell_mr )
-        !
-        call sigma_cell_mr%mult( self%metric%v_cell )
-        !
-        call sigma_cell_mr%toNode( sigma_node, .TRUE. )
+        call sigma_cell_mr_air_layers%toNode( sigma_node, .TRUE. )
         !
     end subroutine nodeCond_ModelParameterCell_MR
     !
-    !> Map the entire model cells into a single edge Vector_t(e_vec).
-    !> Need to implement for VTI ????
-    ! !
-    ! subroutine nodeCond_ModelParameterCell_MR( self, sigma_node )
-        ! implicit none
-        ! !
-        ! class( ModelParameterCell_MR_t ), intent( in ) :: self
-        ! class( Scalar_t ), allocatable, intent( inout ) :: sigma_node
-        ! !
-        ! integer :: i_grid, k0, k1, k2
-        ! type( rScalar3D_MR_t ) :: sigma_cell_mr_air_layers
-        ! type( rScalar3D_MR_t ) :: sigma_cell_mr
-        ! !
-        ! if( .NOT. self%is_allocated ) then
-            ! call errStop( "nodeCond_ModelParameterCell_SG > self not allocated" )
-        ! endif
-        ! !
-        ! if( .NOT. sigma_node%is_allocated ) then
-            ! call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
-        ! endif
-        ! !
-        ! write( *, * ) "nodeCond_ModelParameterCell_MR - sigma_cell_mr"
-        ! !
-        ! sigma_cell_mr = rScalar3D_MR_t( self%param_grid_mr, CELL )
-        ! !
-        ! call SGtoMR( self%cell_cond(1), sigma_cell_mr )
-        ! !
-        ! write( *, * ) "nodeCond_ModelParameterCell_MR - sigma_cell_mr_air_layers"
-        ! !
-        ! sigma_cell_mr_air_layers = rScalar3D_MR_t( self%metric%grid, CELL )
-        ! !
-        ! select type( grid => self%metric%grid )
-            ! !
-            ! class is( Grid3D_MR_t )
-                ! !
-                ! do i_grid = 1, size( grid%sub_grid )
-                    ! !
-                    ! k0 = grid%sub_grid( i_grid )%NzAir
-                    ! k1 = k0 + 1
-                    ! k2 = grid%sub_grid( i_grid )%Nz
-                    ! !
-                    ! write( *, * ) "i_grid, k1, k2: ", i_grid, k1, k2
-                    ! sigma_cell_mr_air_layers%sub_scalar( i_grid )%v( :, :, 1:k0 ) = self%air_cond
-                    ! !
-                    ! sigma_cell_mr_air_layers%sub_scalar( i_grid )%v( :, :, k1:k2 ) = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
-                    ! !
-                ! enddo
-                ! !
-                ! call sigma_cell_mr_air_layers%mult( self%metric%v_cell )
-                ! !
-                ! call sigma_cell_mr_air_layers%toNode( sigma_node, .TRUE. )
-                ! !
-            ! class default
-                ! call errStop( "nodeCond_ModelParameterCell_MR > Unclassified grid" )
-            ! !
-        ! end select
-        ! !
-    ! end subroutine nodeCond_ModelParameterCell_MR
-    ! !
     !> Map the entire model cells into a single edge Vector_t(e_vec).
     !
     subroutine PDEmapping_ModelParameterCell_MR( self, e_vec )
@@ -447,17 +372,7 @@ contains
         !
         type( ModelParameter1D_t ) ::  model_param_1D 
         !
-        real( kind=prec ), allocatable, dimension(:) :: cond_slice
-        !
-        model_param_1D = ModelParameter1D_t( self%metric%grid%slice1D() )
-        !
-        allocate( cond_slice( model_param_1D%grid%nz ) )
-        !
-        cond_slice = self%sigMap( real( self%cell_cond(1)%v( ix, iy, : ), kind=prec ) )
-        !
-        call model_param_1D%setConductivity( cond_slice, self%air_cond, self%param_type, self%mKey )
-        !
-        deallocate( cond_slice )
+        call errStop( "slice1D_ModelParameterCell_MR > must be implemented!" )
         !
     end function slice1D_ModelParameterCell_MR
     !

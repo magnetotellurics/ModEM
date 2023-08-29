@@ -62,9 +62,6 @@ module Grid
             procedure( interface_number_of_faces ), deferred, public :: numberOfFaces
             procedure( interface_number_of_nodes ), deferred, public :: numberOfNodes
             procedure( interface_number_of_cells ), deferred, public :: numberOfCells
-            procedure( interface_grid_index ), deferred, public :: gridIndex
-            procedure( interface_vector_index ), deferred, public :: vectorIndex
-            procedure( interface_set_limits ), deferred, public :: setLimits
             !
             procedure( interface_setup_grid ), deferred, public :: setup
             !
@@ -100,6 +97,12 @@ module Grid
             procedure, public :: nEdges => nEdges_Grid
             !
             procedure, public :: nFaces => nFaces_Grid
+            !
+            procedure, public :: setLimits => setLimits_Grid
+            procedure, public :: gridIndex => gridIndex_Grid
+            procedure, public :: vectorIndex => vectorIndex_Grid
+            !
+            procedure, public :: write => write_Grid
             !
     end type Grid_t
     !
@@ -154,41 +157,6 @@ module Grid
             class( Grid_t ), intent( in ) :: self
             integer :: n
         end function interface_number_of_cells
-        !
-        !> Based on matlab method of same name in class Grid_t
-        !> IndVec is the index within the list of nodes of a fixed type
-        !> e.g., among the list of y-Faces.     An offset needs to be
-        !> added to get index in list of all faces (for example).
-        !
-        subroutine interface_grid_index( self, node_type, ind_vec, i, j, k )
-            import :: Grid_t
-            class( Grid_t ), intent( in ) :: self
-            character(*), intent( in ) :: node_type
-            integer, dimension (:), intent( in ) :: ind_vec
-            integer, dimension (:), intent( out ) :: i, j, k
-        end subroutine interface_grid_index
-        !
-        !> Based on matlab method of same name in class Grid_t
-        !> returned array IndVec gives numbering of nodes within
-        !> the list for node_type; need to add an offset for position
-        !> in full list of all faces or edges (not nodes and cells).
-        !
-        subroutine interface_vector_index(self, node_type, i, j, k, ind_vec)
-            import :: Grid_t
-            class( Grid_t ), intent( in ) :: self
-            character(*), intent( in ) :: node_type
-            integer, dimension (:), intent( in ) :: i, j, k
-            integer, dimension (:), intent( out ) :: ind_vec
-        end subroutine interface_vector_index
-        !
-        !> No interface subroutine briefing
-        !
-        subroutine interface_set_limits(self, node_type, nx, ny, nz)
-            import :: Grid_t
-            class( Grid_t ), intent( in ) :: self
-            character(*), intent( in ) :: node_type
-            integer, intent( out ) :: nx, ny, nz
-        end subroutine interface_set_limits
         !
         !> No interface subroutine briefing
         !
@@ -529,8 +497,8 @@ contains
     !> but the use of "fixed height 12 1000" is recommended
     !
     subroutine setupAirLayers_Grid( self, airLayers, method, &
-                                        nzAir, maxHeight, minTopDz, &
-                                        alpha, dzAir )
+                                    nzAir, maxHeight, minTopDz, &
+                                    alpha, dzAir )
         implicit none
         !
         class( Grid_t ), intent( inout ) :: self
@@ -606,7 +574,7 @@ contains
             !> ON IMPLEMENTATION
             z1_log = log10( self%Dz( self%NzAir + 1 ) )
             dlogz = ( log10( airlayers%maxHeight ) - z1_log ) / ( airlayers%Nz )
-
+            !
             z_log = z1_log
             do iz = airlayers%Nz, 1, -1
                 airlayers%Dz(iz) = 10.**(z_log+dlogz) - 10.**(z_log)
@@ -648,9 +616,10 @@ contains
         !
     end subroutine setupAirLayers_Grid
     !
-    !> Procedure updateAirLayers_Grid3D_SG
+    !> Procedure updateAirLayers_Grid
     !> Assumes that the grid is already defined, and merely
     !> includes the new air layers in the grid.
+    !
     subroutine updateAirLayers_Grid( self, nzAir, dzAir )
         implicit none
         !
@@ -666,7 +635,7 @@ contains
         character( len=80 ) :: geometry_old
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "updateAirLayers_Grid3D_SG > Grid not allocated." )
+             call errStop( "updateAirLayers_Grid > Grid not allocated." )
         endif
         !
         nx_old = self%nx
@@ -742,5 +711,186 @@ contains
         n_zface = nx*ny*nz
         !
     end subroutine nFaces_Grid
+    !
+    !> No subroutine briefing
+    subroutine setLimits_Grid( self, node_type, nx, ny, nz )
+        implicit none
+        !
+        class( Grid_t ), intent( in ) :: self
+        character(*), intent( in ) :: node_type
+        integer, intent( out ) :: nx, ny, nz
+        !
+        select case( node_type )
+        !
+            case( CELL, CELL_EARTH )
+                 nx = self%nx
+                 ny = self%ny
+                 nz = self%nz
+            case( NODE )
+                 nx = self%nx + 1
+                 ny = self%ny + 1
+                 nz = self%nz + 1
+            case( XEDGE )
+                nx = self%nx
+                ny = self%ny + 1
+                nz = self%nz + 1
+                !
+            case( XFACE )
+                 nx = self%nx + 1
+                 ny = self%ny
+                 nz = self%nz
+            case( YEDGE )
+                 nx = self%nx + 1
+                 ny = self%ny
+                 nz = self%nz + 1
+            case( YFACE )
+                 nx = self%nx
+                 ny = self%ny + 1
+                 nz = self%nz
+            case( ZEDGE )
+                 nx = self%nx + 1
+                 ny = self%ny + 1
+                 nz = self%nz
+            case( ZFACE )
+                 nx = self%nx
+                 ny = self%ny
+                 nz = self%nz + 1
+                !
+            case default
+                !
+                call errStop( "setLimits_Grid > Undefined node_type ["//node_type//"]" )
+                !
+        end select
+        !
+    end subroutine setLimits_Grid
+    !
+    !> Based on matlab method of same name in class Grid_t3D
+    !> IndVec is the index within the list of nodes of a fixed type
+    !> e.g., among the list of y-Faces.     An offset needs to be
+    !> added to get index in list of all faces(for example).
+    !
+    subroutine gridIndex_Grid( self, node_type, ind_vec, i, j, k )
+        implicit none
+        !
+        class( Grid_t ), intent( in ) :: self
+        character(*), intent( in ) :: node_type
+        integer, intent( in ) :: ind_vec(:)
+        integer, intent( out ) :: i(:), j(:), k(:)
+        !
+        integer :: nx, ny, nz, nVec, ii
+        real(4) :: rNxy, rNx
+        !
+        call self%setLimits(node_type, nx, ny, nz)
+        nVec = size(ind_vec)
+        !
+        if( nVec .NE. size(i) ) then
+            call errStop( "gridIndex_Grid > Size of 'ind_vec' and 'i' do not agree." )
+        endif
+        !
+        if( nVec .NE. size(j) ) then
+            call errStop( "gridIndex_Grid > Size of 'ind_vec' and 'j' do not agree." )
+        endif
+        !
+        if( nVec .NE. size(k) ) then
+            call errStop( "gridIndex_Grid > Size of 'ind_vec' and 'k' do not agree." )
+        endif
+        !
+        rNxy = float(nx*ny)
+        rNx = float(nx)
+        !
+        do ii = 1, nVec
+            i(ii) = mod(ind_vec(ii), nx)
+            j(ii) = mod(ceiling(float(ind_vec(ii) )/rNx), ny)
+            k(ii) = ceiling(float(ind_vec(ii) )/rNxy)
+        enddo
+        !
+        where( i .EQ. 0 ) i = nx
+        where( j .EQ. 0 ) j = ny
+        where( k .EQ. 0 ) k = nz
+        !
+    end subroutine gridIndex_Grid
+    !
+    !> vectorIndex
+    !
+    !> Based on matlab method of same name in class Grid_t3D
+    !> returned array IndVec gives numbering of nodes within
+    !> the list for node_type; need to add an offset for position
+    !> in full list of all faces or edges(not nodes and cells).
+    !
+    subroutine vectorIndex_Grid( self, node_type, i, j, k, ind_vec )
+        implicit none
+        !
+        class( Grid_t ), intent( in ) :: self
+        character(*), intent( in ) :: node_type
+        integer, intent( in ) :: i(:), j(:), k(:)
+        integer, intent( out ) :: ind_vec(:)
+        !
+        integer :: nx, ny, nz, nxy, nVec, ii
+        !
+        call self%setLimits(node_type, nx, ny, nz)
+        !
+        nVec = size(ind_vec)
+        !
+        if( nVec .NE. size(i) ) then
+            call errStop( "vectorIndex_Grid > Size of 'ind_vec' and 'i' do not agree." )
+        endif
+        !
+        if( nVec .NE. size(J) ) then
+            call errStop( "vectorIndex_Grid > Size of 'ind_vec' and 'j' do not agree." )
+        endif
+        !
+        if( nVec .NE. size(K) ) then
+            call errStop( "vectorIndex_Grid > Size of 'ind_cec' and 'k' do not agree." )
+        endif
+        !
+        nxy = nx*ny
+        do ii = 1, nVec
+            ind_vec(ii) =(K(ii) - 1) * nxy +(j(ii) - 1) * nx + i(ii)
+        enddo
+        !
+    end subroutine vectorIndex_Grid
+    !
+    !
+    !
+    subroutine write_Grid( self )
+        implicit none
+        !
+        class( Grid_t ), intent( in ) :: self
+        !
+        write( *, * ) "Grid:"
+        !
+        write( *, * ) "    n_grids: ", self%n_grids
+        !
+        write( *, * ) "    is_allocated: ", self%is_allocated
+        !
+        write( *, * ) "    nx, ny, nz: ", self%nx, self%ny, self%nz
+        write( *, * ) "    nzAir: ", self%nzAir   !> Number of air layers
+        write( *, * ) "    nzEarth: ", self%nzEarth !> Number of earth layers
+        !
+        write( *, * ) "    geometry: ", self%geometry
+        !
+        write( *, * ) "    ox, oy, oz: ", self%ox, self%oy, self%oz
+        !
+        write( *, * ) "    rotDeg: ", self%rotDeg
+        !
+        write( *, * ) "    zAirThick: ", self%zAirThick
+        !
+        write( *, * ) "    EDGEb, FACEb, NODEb: ", size( self%EDGEb ), size( self%FACEb ), size( self%NODEb )
+        write( *, * ) "    EDGEi, FACEi, NODEi: ", size( self%EDGEi ), size( self%FACEi ), size( self%NODEi )
+        if( allocated( self%EDGEa ) ) then
+            write( *, * ) "    EDGEa, FACEa, NODEa: ", size( self%EDGEa ), size( self%FACEa ), size( self%NODEa )
+        endif
+        !
+        write( *, * ) "    dx, dy, dz: ", size( self%dx ), size( self%dy ), size( self%dz )
+        write( *, * ) "    dx_inv, dy_inv, dz_inv: ", size( self%dx_inv ), size( self%dy_inv ), size( self%dz_inv )
+        !
+        write( *, * ) "    del_x, del_y, del_z: ", size( self%del_x ), size( self%del_y ), size( self%del_z )
+        write( *, * ) "    del_x_inv, del_y_inv, del_z_inv: ", size( self%del_x_inv ), size( self%del_y_inv ), size( self%del_z_inv )
+        !
+        write( *, * ) "    x_edge, y_edge, z_edge: ", size( self%x_edge ), size( self%y_edge ), size( self%z_edge )
+        !
+        write( *, * ) "    x_center, y_center, z_center: ", size( self%x_center ), size( self%y_center ), size( self%z_center )
+        !
+    end subroutine write_Grid
     !
 end module Grid

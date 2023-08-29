@@ -122,7 +122,7 @@ contains
         if( source%non_zero_source ) then
             !
             !> Create phi0
-            call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol )%v, phi0 )
+            call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol ), phi0 )
             !
         endif
         !
@@ -136,7 +136,7 @@ contains
         fwd_solver_loop: do
             !
             !> 
-            call self%solver%solve( source%rhs( pol )%v, e_solution )
+            call self%solver%solve( source%rhs( pol ), e_solution )
             !
             do i = 1, self%solver%n_iter
                 !
@@ -186,11 +186,11 @@ contains
         !
         if( source%non_zero_bc ) then
             !
-            call source%rhs( pol )%v%boundary( boundary )
+            call source%rhs( pol )%boundary( boundary )
             !
         else
             !
-            call source%E( pol )%v%boundary( boundary )
+            call source%E( pol )%boundary( boundary )
             !
         endif
         !

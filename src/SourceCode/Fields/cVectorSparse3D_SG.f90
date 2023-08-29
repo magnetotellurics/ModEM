@@ -57,9 +57,6 @@ module cVectorSparse3D_SG
             !> Miscellaneous
             procedure, public :: getReal => getReal_cVectorSparse3D_SG
             !
-            procedure, public :: getSV => getSV_cVectorSparse3D_SG
-            procedure, public :: setSV => setSV_cVectorSparse3D_SG
-            !
             procedure, public :: deallOtherState => deallOtherState_cVectorSparse3D_SG
             !
             procedure, public :: getArray => getArray_cVectorSparse3D_SG
@@ -478,31 +475,6 @@ contains
         stop "Error: length_cVectorSparse3D_SG not implemented yet!"
         !
     end function length_cVectorSparse3D_SG
-    !
-    !> No function briefing
-    !
-    function getSV_cVectorSparse3D_SG( self ) result( s_v )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:) :: s_v
-        !
-        call errStop( "getSV_cVectorSparse3D_SG not implemented!" )
-        !
-    end function getSV_cVectorSparse3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setSV_cVectorSparse3D_SG( self, s_v )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:), intent( in ) :: s_v
-        !
-        call errStop( "setSV_cVectorSparse3D_SG not implemented!" )
-        !
-    end subroutine setSV_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !

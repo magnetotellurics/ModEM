@@ -319,7 +319,7 @@ contains
         integer, intent( in ), optional :: i_sol
         !
         class( Vector_t ), allocatable :: lrows
-        class( GenVector_t ), allocatable, dimension(:) :: bSrc
+        type( cVector3D_SG_t ), allocatable, dimension(:) :: bSrc
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
         type( DataGroup_t ) :: data_group
@@ -346,8 +346,9 @@ contains
         !
         do i_pol = 1, Tx%n_pol
             !
-            call sigma%metric%createVector( complex_t, EDGE, bSrc( i_pol )%v )
-            call bSrc( i_pol )%v%zeros
+            bSrc( i_pol ) = cVector3D_SG_t( model_operator%metric%grid, EDGE )
+            !
+            call bSrc( i_pol )%zeros
             !
         enddo
         !
@@ -385,7 +386,7 @@ contains
                     !
                     call lrows%mult( tx_data_cvalue )
                     !
-                    call bSrc( i_pol )%v%add( lrows )
+                    call bSrc( i_pol )%add( lrows )
                     !
                     deallocate( lrows )
                     !
@@ -398,7 +399,7 @@ contains
         !> NECESSARY FOR FULL VECTOR LROWS ????
         do i_pol = 1, Tx%n_pol
             !
-            call bSrc( i_pol )%v%mult( C_MinusOne )
+            call bSrc( i_pol )%mult( C_MinusOne )
             !
         enddo
         !

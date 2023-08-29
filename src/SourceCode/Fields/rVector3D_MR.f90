@@ -6,7 +6,7 @@ module rVector3D_MR
     !
     use MatUtils
     use rVector3D_SG
-    use rScalar3D_MR
+    use cScalar3D_MR
     !
     type, extends( Vector_t ) :: rVector3D_MR_t
         !
@@ -19,7 +19,7 @@ module rVector3D_MR
             !> MR Routines
             procedure, public :: initializeSub => initializeSub_rVector3D_MR
             !
-            procedure, public :: setIndexArrays => setIndexArrays_Vector3D_MR
+            procedure, public :: setIndexArrays => setIndexArrays_rVector3D_MR
             !
             procedure, public :: getArray => getArray_rVector3D_MR
             procedure, public :: setArray => setArray_rVector3D_MR
@@ -33,7 +33,6 @@ module rVector3D_MR
             procedure, public :: findValue => findValue_rVector3D_MR
             !
             procedure, public :: MRtoSG => MRtoSG_rVector3D_MR
-            procedure, public :: SGtoMR => SGtoMR_rVector3D_MR
             procedure, public :: SGtoMRE0 => SGtoMRE0_rVector3D_MR
             !
             !> Boundary operations
@@ -83,16 +82,6 @@ module rVector3D_MR
             !
             procedure, public :: getReal => getReal_rVector3D_MR
             !
-            procedure, public :: getX => getX_rVector3D_MR
-            procedure, public :: setX => setX_rVector3D_MR
-            procedure, public :: getY => getY_rVector3D_MR
-            procedure, public :: setY => setY_rVector3D_MR
-            procedure, public :: getZ => getZ_rVector3D_MR
-            procedure, public :: setZ => setZ_rVector3D_MR
-            !
-            procedure, public :: getSV => getSV_rVector3D_MR
-            procedure, public :: setSV => setSV_rVector3D_MR
-            !
             procedure, public :: deallOtherState => deallOtherState_rVector3D_MR
             !
             procedure, public :: copyFrom => copyFrom_rVector3D_MR
@@ -105,46 +94,14 @@ module rVector3D_MR
     end type rVector3D_MR_t
     !
     interface rVector3D_MR_t
-        module procedure rVector3D_MR_ctor_copy
-        module procedure rVector3D_MR_ctor_default
+        module procedure rVector3D_MR_ctor
     end interface rVector3D_MR_t
     !
 contains
     !
     !> No function briefing
     !
-    function rVector3D_MR_ctor_copy( E_in ) result(  self )
-        implicit none
-        !
-        type( rVector3D_MR_t ), intent( in ) :: E_in
-        !
-        type( rVector3D_MR_t ) :: self
-        !
-        integer :: i
-        !
-        self%grid => E_in%grid
-        self%grid_type = E_in%grid_type
-        !
-        call self%initializeSub
-        !
-        select type( grid => E_in%grid )
-            !
-            class is( Grid3D_MR_t )
-                !
-                do i = 1, grid%n_grids
-                    self%sub_vector(i) = E_in%sub_vector(i)
-                enddo
-                !
-            class default
-                call errStop( "rVector3D_MR_ctor_copy > Unclassified grid" )
-            !
-        end select
-        !
-    end function rVector3D_MR_ctor_copy
-    !
-    !> No function briefing
-    !
-    function rVector3D_MR_ctor_default( grid, grid_type ) result(  self )
+    function rVector3D_MR_ctor( grid, grid_type ) result(  self )
         implicit none
         !
         class( Grid_t ), target, intent( in ) :: grid
@@ -152,10 +109,10 @@ contains
         !
         type( rVector3D_MR_t ) :: self
         !
+        call self%baseInit
+        !
         self%grid => grid
         self%grid_type = grid_type
-        !
-        write(*,*) "grid_type: ", grid_type
         !
         self%nx = self%grid%nx
         self%ny = self%grid%ny
@@ -163,11 +120,31 @@ contains
         !
         call self%initializeSub
         !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "rVector3D_MR_ctor_default > Unable to allocate vector." )
+        if( self%is_allocated ) then
+            !
+            if( self%grid_type == EDGE ) then
+                !
+                self%NdX = (/self%nx, self%ny + 1, self%nz + 1/)
+                self%NdY = (/self%nx + 1, self%ny, self%nz + 1/)
+                self%NdZ = (/self%nx + 1, self%ny + 1, self%nz/)
+                !
+            elseif( self%grid_type == FACE ) then
+                !
+                self%NdX = (/self%nx + 1, self%ny, self%nz/)
+                self%NdY = (/self%nx, self%ny + 1, self%nz/)
+                self%NdZ = (/self%nx, self%ny, self%nz + 1/)
+                !
+            else
+                call errStop( "rVector3D_MR_ctor > Only EDGE or FACE types allowed." )
+            endif
+            !
+            self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
+            !
+        else
+            call errStop( "rVector3D_MR_ctor > Unable to allocate vector." )
         endif
         !
-    end function rVector3D_MR_ctor_default
+    end function rVector3D_MR_ctor
     !
     !> No subroutine briefing
     !
@@ -176,7 +153,7 @@ contains
         !
         class( rVector3D_MR_t ), intent( inout ) :: self
         !
-        integer :: i, alloc_stat, ndx, ndy, ndz
+        integer :: i, alloc_stat
         !
         select type( grid => self%grid )
             !
@@ -186,51 +163,15 @@ contains
                 allocate( self%sub_vector( grid%n_grids ), stat = alloc_stat )
                 self%is_allocated = self%is_allocated .AND. (  alloc_stat .EQ. 0 )
                 !
-                ndx = 0
-                ndy = 0
-                ndz = 0
-                !
                 do i = 1, grid%n_grids
                     !
-                    self%sub_vector(i) = rVector3D_SG_t( grid%sub_grids(i), self%grid_type )
+                    self%sub_vector(i) = rVector3D_SG_t( grid%sub_grid(i), self%grid_type )
                     !
-                    write( *, * ) "SubVector", i, "-nx=", self%sub_vector(i)%nx, ", ny=", self%sub_vector(i)%ny, "nz=", self%sub_vector(i)%nz
-                    !
-                    ndx = ndx + self%sub_vector(i)%nx / ( 2 ** grid%coarseness( i, 1 ) )
-                    ndy = ndy + self%sub_vector(i)%ny / ( 2 ** grid%coarseness( i, 1 ) )
-                    ndz = ndz + self%sub_vector(i)%nz
+                    !write( *, * ) "SubVector", i, "-nx=", self%sub_vector(i)%nx, ", ny=", self%sub_vector(i)%ny, "nz=", self%sub_vector(i)%nz
                     !
                 enddo
                 !
-                ndx = ndx / self%grid%getNGrids()
-                ndy = ndy / self%grid%getNGrids()
-                ndz = ndz / self%grid%getNGrids()
-                !
-                write( *, * ) "MainVector-nx=", self%nx, ", ny=", self%ny, "nz=", self%nz, self%nx*self%ny*self%nz
-                !
-                if( self%grid_type == EDGE ) then
-                    !
-                    self%NdX = (/ndx, ndy + 1, ndz + 1/)
-                    self%NdY = (/ndx + 1, ndy, ndz + 1/)
-                    self%NdZ = (/ndx + 1, ndy + 1, ndz/)
-                    !
-                elseif( self%grid_type == FACE ) then
-                    !
-                    self%NdX = (/ndx + 1, ndy, ndz/)
-                    self%NdY = (/ndx, ndy + 1, ndz/)
-                    self%NdZ = (/ndx, ndy, ndz + 1/)
-                    !
-                else
-                    call errStop( "initializeSub_rVector3D_MR > Only EDGE or FACE types allowed." )
-                endif
-                !
-                write( *, * ) "       NdX=", self%NdX(1), ", ny=", self%NdX(2), "nz=", self%NdX(3), self%NdX(1)*self%NdX(2)*self%NdX(3)
-                write( *, * ) "       NdY=", self%NdY(1), ", ny=", self%NdY(2), "nz=", self%NdY(3), self%NdY(1)*self%NdY(2)*self%NdY(3)
-                write( *, * ) "       NdZ=", self%NdZ(1), ", ny=", self%Ndz(2), "nz=", self%Ndz(3), self%Ndz(1)*self%Ndz(2)*self%Ndz(3)
-                !
-                self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
-                !
-                write( *, * ) "      Nxyz=", self%Nxyz(1), ", ny=", self%Nxyz(2), "nz=", self%Nxyz(3)
+                !write( *, * ) "MainVector-nx=", self%nx, ", ny=", self%ny, "nz=", self%nz, self%nx*self%ny*self%nz
                 !
             class default
                 call errStop( "initializeSub_rVector3D_MR > Unclassified grid" )
@@ -241,7 +182,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setIndexArrays_Vector3D_MR( self, ind_boundary, ind_interior, ind_active, xy_in ) 
+    subroutine setIndexArrays_rVector3D_MR( self, ind_boundary, ind_interior, ind_active, xy_in ) 
         implicit none
         !
         class( rVector3D_MR_t ), intent( in ) :: self
@@ -282,7 +223,7 @@ contains
                         int_only = .FALSE.
                     case default
                         !
-                        call errStop( "setIndexArrays_Vector3D_MR > Invalid grid type option!" )
+                        call errStop( "setIndexArrays_rVector3D_MR > Invalid grid type option!" )
                     !
                 end select
                 !
@@ -315,7 +256,7 @@ contains
                 enddo
                 !
             class default
-                call errStop( "setIndexArrays_Vector3D_MR > Unclassified grid" )
+                call errStop( "setIndexArrays_rVector3D_MR > Unclassified grid" )
             !
         end select
         !
@@ -385,7 +326,7 @@ contains
             endif
         enddo
         !
-    end subroutine setIndexArrays_Vector3D_MR
+    end subroutine setIndexArrays_rVector3D_MR
     !
     !> Creates standard( 1-D array) for all sub-scalars,
     !> INCLUDING redundant interface nodes.
@@ -651,11 +592,11 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine SGtoMR_rVector3D_MR( self, sg_v )
+    subroutine SGtoMR_rVector3D_MR( vector_sg, vector_mr )
         implicit none
         !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        type( rVector3D_SG_t ), intent( in ) :: sg_v
+        type( rVector3D_SG_t ), intent( in ) :: vector_sg
+        type( rVector3D_MR_t ), intent( inout ) :: vector_mr
         !
         real( kind=prec ), pointer, dimension(:) :: tempe
         type( rVector3D_SG_t ) :: temp_vector
@@ -665,78 +606,91 @@ contains
         integer :: Cs, i1, i2
         !
         type( rVector3D_SG_t ) :: temp_L, tempEL
-        integer :: k, i
+        integer :: i, i_grid
         !
-        call sg_v%edgeLength( temp_vector )
+        if( .NOT. vector_sg%is_allocated ) then
+            call errStop( "SGtoMR_rVector3D_MR > vector_sg not allocated" )
+        endif
+        !
+        if( .NOT. vector_mr%is_allocated ) then
+            call errStop( "SGtoMR_rVector3D_MR > vector_mr not allocated" )
+        endif
+        !
+        write( *, * ) "SGtoMR_rVector3D_MR SG: ", vector_sg%nx, vector_sg%ny, vector_sg%nz
+        write( *, * ) "                    MR: ", vector_mr%nx, vector_mr%ny, vector_mr%nz
+        !
+        call vector_sg%edgeLength( temp_vector )
         !
         templ = temp_vector%getArray()
         !
-        tempe = sg_v%getArray()
+        tempe = vector_sg%getArray()
         !
         allocate( temple( size( templ ) ) )
         !
         temple = templ*tempe
         !
-        temp_L = rVector3D_SG_t( sg_v%grid, EDGE )
+        temp_L = rVector3D_SG_t( vector_sg%grid, EDGE )
         !
         call temp_L%setArray( templ )
         !
-        tempEL = rVector3D_SG_t( sg_v%grid, EDGE )
+        tempEL = rVector3D_SG_t( vector_sg%grid, EDGE )
         !
         call tempEL%setArray( temple )
         !
-        select type( grid => sg_v%grid )
+        select type( grid => vector_sg%grid )
             !
             class is( Grid3D_MR_t )
                 !
-                do k = 1, grid%n_grids
+                do i_grid = 1, grid%n_grids
                     !
-                    Cs = 2**grid%coarseness(k, 1)
-                    i1 = grid%coarseness(k, 3)
-                    i2 = grid%coarseness(k, 4)
+                    vector_mr%sub_vector( i_grid )%grid => grid%sub_grid( i_grid )
                     !
-                    sx1 = size(self%sub_vector(k)%x, 1)
-                    sx2 = size(self%sub_vector(k)%x, 2)
-                    sx3 = size(self%sub_vector(k)%x, 3)
+                    Cs = 2 ** grid%coarseness( i_grid, 1 )
+                    i1 = grid%coarseness( i_grid, 3 )
+                    i2 = grid%coarseness( i_grid, 4 )
+                    !
+                    sx1 = size( vector_mr%sub_vector( i_grid )%x, 1 )
+                    sx2 = size( vector_mr%sub_vector( i_grid )%x, 2 )
+                    sx3 = size( vector_mr%sub_vector( i_grid )%x, 3 )
                     allocate( lengthx(sx1, sx2, sx3))
                     lengthx = 0.0
                     !
-                    sy1 = size(self%sub_vector(k)%y, 1)
-                    sy2 = size(self%sub_vector(k)%y, 2)
-                    sy3 = size(self%sub_vector(k)%y, 3)
+                    sy1 = size( vector_mr%sub_vector( i_grid )%y, 1 )
+                    sy2 = size( vector_mr%sub_vector( i_grid )%y, 2 )
+                    sy3 = size( vector_mr%sub_vector( i_grid )%y, 3 )
                     allocate( lengthy(sy1, sy2, sy3))
                     lengthy = 0.0
                     !
                     do i = 1, Cs
                         !
-                        s1 = size(tempEL%x, 1)
-                        s2 = size(tempEL%x, 2)
-                        self%sub_vector(k)%x = self%sub_vector(k)%x + &
+                        s1 = size( tempEL%x, 1 )
+                        s2 = size( tempEL%x, 2 )
+                        vector_mr%sub_vector( i_grid )%x = vector_mr%sub_vector( i_grid )%x + &
                         tempEL%x(i:s1:Cs, 1:s2:Cs, i1:i2+1)
                         !
-                        s1 = size(tempEL%y, 1)
-                        s2 = size(tempEL%y, 2)
-                        self%sub_vector(k)%y = self%sub_vector(k)%y + &
+                        s1 = size( tempEL%y, 1 )
+                        s2 = size( tempEL%y, 2 )
+                        vector_mr%sub_vector( i_grid )%y = vector_mr%sub_vector( i_grid )%y + &
                         tempEL%y(1:s1:Cs,i:s2:Cs, i1:i2+1)
                         !
-                        s1 = size(temp_L%x, 1)
-                        s2 = size(temp_L%x, 2)
+                        s1 = size( temp_L%x, 1 )
+                        s2 = size( temp_L%x, 2 )
                         lengthx = lengthx + temp_L%x(i:s1:Cs, 1:s2:Cs, i1:i2+1)
                         !
-                        s1 = size(temp_L%y, 1)
-                        s2 = size(temp_L%y, 2)
+                        s1 = size( temp_L%y, 1 )
+                        s2 = size( temp_L%y, 2 )
                         lengthy = lengthy + temp_L%y(1:s1:Cs, i:s2:Cs, i1:i2+1)
                         !
                     enddo
                     !
-                    self%sub_vector(k)%x = self%sub_vector(k)%x/lengthx
-                    self%sub_vector(k)%y = self%sub_vector(k)%y/lengthy
+                    vector_mr%sub_vector( i_grid )%x = vector_mr%sub_vector( i_grid )%x / lengthx
+                    vector_mr%sub_vector( i_grid )%y = vector_mr%sub_vector( i_grid )%y / lengthy
                     !
-                    s1 = size(sg_v%z, 1)
-                    s2 = size(sg_v%z, 2)
-                    self%sub_vector(k)%z = sg_v%z(1:s1:Cs, 1:s2:Cs, i1:i2)
+                    s1 = size( vector_sg%z, 1 )
+                    s2 = size( vector_sg%z, 2 )
+                    vector_mr%sub_vector( i_grid )%z = vector_sg%z(1:s1:Cs, 1:s2:Cs, i1:i2)
                     !
-                    deallocate( lengthx, lengthy)
+                    deallocate( lengthx, lengthy )
                     !
                 enddo
                 !
@@ -794,30 +748,30 @@ contains
                         sg_v%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) *    &
                         repMat(grid%Dx(i:last:Cs), &
                         1, &
-                        grid%sub_grids(k)%Ny + 1, &
-                        grid%sub_grids(k)%Nz + 1, .false.)
+                        grid%sub_grid(k)%Ny + 1, &
+                        grid%sub_grid(k)%Nz + 1, .false.)
 
                         last = size(grid%Dy)
                         self%sub_vector(k)%y = self%sub_vector(k)%y + &
                         sg_v%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) *  & 
                         repMat(grid%Dy(i:last:Cs), &
-                        grid%sub_grids(k)%Nx + 1, &
+                        grid%sub_grid(k)%Nx + 1, &
                         1, &
-                        grid%sub_grids(k)%Nz + 1, .TRUE.)
+                        grid%sub_grid(k)%Nz + 1, .TRUE.)
                         !
                     enddo
                     !
                     self%sub_vector(k)%x = self%sub_vector(k)%x / &
-                    repMat(grid%sub_grids(k)%Dx, &
+                    repMat(grid%sub_grid(k)%Dx, &
                     1, &
-                    grid%sub_grids(k)%Ny + 1, &
-                    grid%sub_grids(k)%Nz + 1, .false.)
+                    grid%sub_grid(k)%Ny + 1, &
+                    grid%sub_grid(k)%Nz + 1, .false.)
                     !
                     self%sub_vector(k)%y = self%sub_vector(k)%y / &
-                    repMat(grid%sub_grids(k)%Dy, &
-                    grid%sub_grids(k)%Nx + 1, &
+                    repMat(grid%sub_grid(k)%Dy, &
+                    grid%sub_grid(k)%Nx + 1, &
                     1, &
-                    grid%sub_grids(k)%Nz + 1, .TRUE.)
+                    grid%sub_grid(k)%Nz + 1, .TRUE.)
                     !
                     self%sub_vector(k)%z = sg_v%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2)
                     !
@@ -1166,7 +1120,7 @@ contains
                 ! !
                 ! do i = 1, grid%n_grids
                     ! !
-                    ! cell_out = rScalar3D_SG_t( grid%sub_grids(i), CELL )
+                    ! cell_out = rScalar3D_SG_t( grid%sub_grid(i), CELL )
                     ! !
                     ! select case( self%grid_type )
                         ! !
@@ -1269,9 +1223,9 @@ contains
                 ! !
                 ! do i = 1, grid%n_grids
                     ! !
-                    ! cell_h_out_temp = rScalar3D_SG_t( grid%sub_grids(i), CELL )
+                    ! cell_h_out_temp = rScalar3D_SG_t( grid%sub_grid(i), CELL )
                     ! !
-                    ! cell_v_out_temp = rScalar3D_SG_t( grid%sub_grids(i), CELL )
+                    ! cell_v_out_temp = rScalar3D_SG_t( grid%sub_grid(i), CELL )
                     ! !
                     ! select case( self%sub_vector(i)%grid_type )
                         ! !
@@ -1397,7 +1351,7 @@ contains
                 ! !
                 ! do i = 1, self%grid%getNgrids()
                     ! !
-                    ! cell_in_v = cell_in%sub_scalar(i)%getV()
+                    ! cell_in_v = cell_in%sub_scalar(i)%v
                     ! !
                     ! v_xend = size( cell_in_v, 1 )
                     ! v_yend = size( cell_in_v, 2 )
@@ -1513,8 +1467,8 @@ contains
                         ! !
                         ! do i = 1, self%grid%getNgrids()
                             ! !
-                            ! v_h = cell_h_in%getV()
-                            ! v_v = cell_v_in%getV()
+                            ! v_h = cell_h_in%v
+                            ! v_v = cell_v_in%v
                             ! !
                             ! v_xend = size( v_h, 1 )
                             ! v_yend = size( v_h, 2 )
@@ -1700,15 +1654,15 @@ contains
                         !
                         class is( rVector3D_MR_t )
                             !
-                            self%sub_vector(i)%x = c1* self%sub_vector(i)%x + c2 * rhs%sub_vector(i)%getX()
-                            self%sub_vector(i)%y = c1* self%sub_vector(i)%y + c2 * rhs%sub_vector(i)%getY()
-                            self%sub_vector(i)%z = c1* self%sub_vector(i)%z + c2 * rhs%sub_vector(i)%getZ()
+                            self%sub_vector(i)%x = c1* self%sub_vector(i)%x + c2 * rhs%sub_vector(i)%x
+                            self%sub_vector(i)%y = c1* self%sub_vector(i)%y + c2 * rhs%sub_vector(i)%y
+                            self%sub_vector(i)%z = c1* self%sub_vector(i)%z + c2 * rhs%sub_vector(i)%z
                             !
                         class is( rScalar3D_MR_t )
                             !
-                            self%sub_vector(i)%x = c1* self%sub_vector(i)%x + c2 * rhs%sub_scalar(i)%getV()
-                            self%sub_vector(i)%y = c1* self%sub_vector(i)%y + c2 * rhs%sub_scalar(i)%getV()
-                            self%sub_vector(i)%z = c1* self%sub_vector(i)%z + c2 * rhs%sub_scalar(i)%getV()
+                            self%sub_vector(i)%x = c1* self%sub_vector(i)%x + c2 * rhs%sub_scalar(i)%v
+                            self%sub_vector(i)%y = c1* self%sub_vector(i)%y + c2 * rhs%sub_scalar(i)%v
+                            self%sub_vector(i)%z = c1* self%sub_vector(i)%z + c2 * rhs%sub_scalar(i)%v
                             !
                         class default
                             call errStop( "linComb_rVector3D_MR > Undefined rhs" )
@@ -1721,11 +1675,11 @@ contains
                         !
                         class is( rVector3D_MR_t )
                             !
-                            self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_vector(i)%getSV()
+                            self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_vector(i)%s_v
                             !
                         class is( rScalar3D_MR_t )
                             !
-                            self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_scalar(i)%getSV()
+                            self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_scalar(i)%s_v
                             !
                         class default
                             call errStop( "linComb_rVector3D_MR > Undefined singleton rhs" )
@@ -1803,15 +1757,15 @@ contains
                         !
                         class is( rVector3D_MR_t )
                             !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x - rhs%sub_vector(i)%getX()
-                            self%sub_vector(i)%y = self%sub_vector(i)%y - rhs%sub_vector(i)%getY()
-                            self%sub_vector(i)%z = self%sub_vector(i)%z - rhs%sub_vector(i)%getZ()
+                            self%sub_vector(i)%x = self%sub_vector(i)%x - rhs%sub_vector(i)%x
+                            self%sub_vector(i)%y = self%sub_vector(i)%y - rhs%sub_vector(i)%y
+                            self%sub_vector(i)%z = self%sub_vector(i)%z - rhs%sub_vector(i)%z
                             !
                         class is( rScalar3D_MR_t )
                             !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x - rhs%sub_scalar(i)%getV()
-                            self%sub_vector(i)%y = self%sub_vector(i)%y - rhs%sub_scalar(i)%getV()
-                            self%sub_vector(i)%z = self%sub_vector(i)%z - rhs%sub_scalar(i)%getV()
+                            self%sub_vector(i)%x = self%sub_vector(i)%x - rhs%sub_scalar(i)%v
+                            self%sub_vector(i)%y = self%sub_vector(i)%y - rhs%sub_scalar(i)%v
+                            self%sub_vector(i)%z = self%sub_vector(i)%z - rhs%sub_scalar(i)%v
                             !
                         class default
                             call errStop( "subField_rVector3D_MR > Undefined rhs" )
@@ -1936,15 +1890,15 @@ contains
                         !
                         class is( rVector3D_MR_t )
                             !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%getX()
-                            self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%getY()
-                            self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%getZ()
+                            self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
+                            self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
+                            self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%z
                             !
                         class is( rScalar3D_MR_t )
                             !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_scalar(i)%getV()
-                            self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_scalar(i)%getV()
-                            self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_scalar(i)%getV()
+                            self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_scalar(i)%v
+                            self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_scalar(i)%v
+                            self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_scalar(i)%v
                             !
                         class default
                             call errStop( "multByField_rVector3D_MR > Undefined rhs" )
@@ -2499,175 +2453,6 @@ contains
         call r_vector%copyFrom( self )
         !
     end subroutine getReal_rVector3D_MR
-    !
-    !> No interface function briefing
-    !
-    function getX_rVector3D_MR( self ) result( x )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: x
-        !
-        type( rVector3D_MR_t ) :: temp
-        complex( kind=prec ), allocatable, dimension(:) :: array
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "getX_rVector3D_MR > self not allocated." )
-        endif
-        !
-        !> USE getArray() or getFullArray() ????
-        array = self%getFullArray()
-        !
-        write( *, * ) "getX_rVector3D_MR: ", self%NdX(1), self%NdX(2), self%NdX(3), &
-        self%NdX(1)*self%NdX(2)*self%NdX(3), size( array )
-        !
-        x = reshape( real( array, kind=prec ), (/self%NdX(1), self%NdX(2), self%NdX(3)/) )
-        !
-    end function getX_rVector3D_MR
-    !
-    !> No interface subroutine briefing
-    !
-    subroutine setX_rVector3D_MR( self, x )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:,:,:), intent( in ) :: x
-        !
-        type( rVector3D_SG_t ) :: temp
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setX_rVector3D_MR > self not allocated." )
-        endif
-        !
-        temp = rVector3D_SG_t( self%grid, self%grid_type )
-        !
-        call temp%setX( x )
-        !
-        call self%SGtoMR( temp )
-        !
-    end subroutine setX_rVector3D_MR
-    !
-    !> No interface function briefing
-    !
-    function getY_rVector3D_MR( self ) result( y )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: y
-        !
-        type( rVector3D_MR_t ) :: temp
-        complex( kind=prec ), allocatable, dimension(:) :: array
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "getY_rVector3D_MR > self not allocated." )
-        endif
-        !
-        !> USE getArray() or getFullArray() ????
-        array = self%getFullArray()
-        !
-        write( *, * ) "getY_rVector3D_MR: ", self%NdY(1), self%NdY(2), self%NdY(3), &
-        self%NdY(1)*self%NdY(2)*self%NdY(3), size( array )
-        !
-        y = reshape( real( array, kind=prec ), (/self%NdY(1), self%NdY(2), self%NdY(3)/) )
-        !
-    end function getY_rVector3D_MR
-    !
-    !> No interface subroutine briefing
-    !
-    subroutine setY_rVector3D_MR( self, y )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:,:,:), intent( in ) :: y
-        !
-        type( rVector3D_SG_t ) :: temp
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setY_rVector3D_MR > self not allocated." )
-        endif
-        !
-        temp = rVector3D_SG_t( self%grid, self%grid_type )
-        !
-        call temp%setY( y )
-        !
-        call self%SGtoMR( temp )
-        !
-    end subroutine setY_rVector3D_MR
-    !
-    !> No interface function briefing
-    !
-    function getZ_rVector3D_MR( self ) result( z )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: z
-        !
-        type( rVector3D_MR_t ) :: temp
-        complex( kind=prec ), allocatable, dimension(:) :: array
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "getZ_rVector3D_MR > self not allocated." )
-        endif
-        !
-        !> USE getArray() or getFullArray() ????
-        array = self%getFullArray()
-        !
-        write( *, * ) "getZ_rVector3D_MR: ", self%NdZ(1), self%NdZ(2), self%NdZ(3), &
-        self%NdZ(1)*self%NdZ(2)*self%NdZ(3), size( array )
-        !
-        z = reshape( real( array, kind=prec ), (/self%NdZ(1), self%NdZ(2), self%NdZ(3)/) )
-        !
-    end function getZ_rVector3D_MR
-    !
-    !> No interface subroutine briefing
-    !
-    subroutine setZ_rVector3D_MR( self, z )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:,:,:), intent( in ) :: z
-        !
-        type( rVector3D_SG_t ) :: temp
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setZ_rVector3D_MR > self not allocated." )
-        endif
-        !
-        temp = rVector3D_SG_t( self%grid, self%grid_type )
-        !
-        call temp%setZ( z )
-        !
-        call self%SGtoMR( temp )
-        !
-    end subroutine setZ_rVector3D_MR
-    !
-    !> No function briefing
-    !
-    function getSV_rVector3D_MR( self ) result( s_v )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:) :: s_v
-        !
-        call errStop( "getSV_rVector3D_MR not implemented!" )
-        !
-    end function getSV_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine setSV_rVector3D_MR( self, s_v )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:), intent( in ) :: s_v
-        !
-        call errStop( "setSV_rVector3D_MR not implemented!" )
-        !
-    end subroutine setSV_rVector3D_MR
     !
     !> No subroutine briefing
     !

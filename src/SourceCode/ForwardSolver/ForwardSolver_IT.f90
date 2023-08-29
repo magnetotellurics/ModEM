@@ -174,7 +174,7 @@ contains
         fwd_solver_loop: do
             !
             !> 
-            call self%solver%solve( source%rhs( pol )%v, e_solution )
+            call self%solver%solve( source%rhs( pol ), e_solution )
             !
             do i = 1, self%solver%n_iter
                 !
@@ -209,11 +209,11 @@ contains
         !
         if( source%non_zero_bc ) then
             !
-            call source%rhs( pol )%v%boundary( temp_vec )
+            call source%rhs( pol )%boundary( temp_vec )
             !
         else
             !
-            call source%E( pol )%v%boundary( temp_vec )
+            call source%E( pol )%boundary( temp_vec )
             !
         endif
         !

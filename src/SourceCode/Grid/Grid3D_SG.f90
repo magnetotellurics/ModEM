@@ -17,9 +17,7 @@ module Grid3D_SG
             procedure, public :: numberOfFaces => numberOfFaces_Grid3D_SG
             procedure, public :: numberOfNodes => numberOfNodes_Grid3D_SG
             procedure, public :: numberOfCells => numberOfCells_Grid3D_SG
-            procedure, public :: gridIndex => gridIndex_Grid3D_SG
-            procedure, public :: vectorIndex => vectorIndex_Grid3D_SG
-            procedure, public :: setLimits => setLimits_Grid3D_SG
+            !
             procedure, public :: length => length_Grid3D_SG
             !
             procedure, public :: setup => setup_Grid3D_SG
@@ -198,7 +196,7 @@ contains
             self%z_center(iz) = zCum
         enddo
         !
-		!> Need to be careful here ... grid origin is given
+        !> Need to be careful here ... grid origin is given
         !> at Earth"s surface, not top of model domain!
         do iz = 1, self%nz
             self%z_center(iz) = self%z_center(iz) - self%zAirThick + oz
@@ -274,143 +272,6 @@ contains
         call errStop( "numberOfCells_Grid3D_SG > numberOfCells_Grid3D_SG not implemented" )
         !
     end function numberOfCells_Grid3D_SG
-    !
-    !> Based on matlab method of same name in class Grid_t3D
-    !> IndVec is the index within the list of nodes of a fixed type
-    !> e.g., among the list of y-Faces.     An offset needs to be
-    !> added to get index in list of all faces(for example).
-    !
-    subroutine gridIndex_Grid3D_SG( self, node_type, ind_vec, i, j, k )
-        implicit none
-        !
-        class( Grid3D_SG_t ), intent( in ) :: self
-        character(*), intent( in ) :: node_type
-        integer, intent( in ) :: ind_vec(:)
-        integer, intent( out ) :: i(:), j(:), k(:)
-        !
-        integer :: nx, ny, nz, nVec, ii
-        real(4) :: rNxy, rNx
-        !
-        call self%setLimits(node_type, nx, ny, nz)
-        nVec = size(ind_vec)
-        !
-        if( nVec .NE. size(i) ) then
-            call errStop( "gridIndex_Grid3D_SG > Size of 'ind_vec' and 'i' do not agree." )
-        endif
-        !
-        if( nVec .NE. size(j) ) then
-            call errStop( "gridIndex_Grid3D_SG > Size of 'ind_vec' and 'j' do not agree." )
-        endif
-        !
-        if( nVec .NE. size(k) ) then
-            call errStop( "gridIndex_Grid3D_SG > Size of 'ind_vec' and 'k' do not agree." )
-        endif
-        !
-        rNxy = float(nx*ny)
-        rNx = float(nx)
-        !
-        do ii = 1, nVec
-            i(ii) = mod(ind_vec(ii), nx)
-            j(ii) = mod(ceiling(float(ind_vec(ii) )/rNx), ny)
-            k(ii) = ceiling(float(ind_vec(ii) )/rNxy)
-        enddo
-        !
-        where( i .EQ. 0 ) i = nx
-        where( j .EQ. 0 ) j = ny
-        where( k .EQ. 0 ) k = nz
-        !
-    end subroutine gridIndex_Grid3D_SG
-    !
-    !> vectorIndex
-    !
-    !> Based on matlab method of same name in class Grid_t3D
-    !> returned array IndVec gives numbering of nodes within
-    !> the list for node_type; need to add an offset for position
-    !> in full list of all faces or edges(not nodes and cells).
-    subroutine vectorIndex_Grid3D_SG( self, node_type, i, j, k, ind_vec )
-        implicit none
-        !
-        class( Grid3D_SG_t ), intent( in ) :: self
-        character(*), intent( in ) :: node_type
-        integer, intent( in ) :: i(:), j(:), k(:)
-        integer, intent( out ) :: ind_vec(:)
-        !
-        integer :: nx, ny, nz, nxy, nVec, ii
-        !
-        call self%setLimits(node_type, nx, ny, nz)
-        !
-        nVec = size(ind_vec)
-        !
-        if( nVec .NE. size(i) ) then
-            call errStop( "vectorIndex_Grid3D_SG > Size of 'ind_vec' and 'i' do not agree." )
-        endif
-        !
-        if( nVec .NE. size(J) ) then
-            call errStop( "vectorIndex_Grid3D_SG > Size of 'ind_vec' and 'j' do not agree." )
-        endif
-        !
-        if( nVec .NE. size(K) ) then
-            call errStop( "vectorIndex_Grid3D_SG > Size of 'ind_cec' and 'k' do not agree." )
-        endif
-        !
-        nxy = nx*ny
-        do ii = 1, nVec
-            ind_vec(ii) =(K(ii) - 1) * nxy +(j(ii) - 1) * nx + i(ii)
-        enddo
-        
-    end subroutine vectorIndex_Grid3D_SG
-    !
-    !> No subroutine briefing
-    subroutine setLimits_Grid3D_SG( self, node_type, nx, ny, nz )
-        implicit none
-        !
-        class( Grid3D_SG_t ), intent( in ) :: self
-        character(*), intent( in ) :: node_type
-        integer, intent( out ) :: nx, ny, nz
-        !
-        select case( node_type )
-        !
-            case( CELL, CELL_EARTH )
-                 nx = self%nx
-                 ny = self%ny
-                 nz = self%nz
-            case( NODE )
-                 nx = self%nx + 1
-                 ny = self%ny + 1
-                 nz = self%nz + 1
-            case( XEDGE )
-                nx = self%nx
-                ny = self%ny + 1
-                nz = self%nz + 1
-                !
-            case( XFACE )
-                 nx = self%nx + 1
-                 ny = self%ny
-                 nz = self%nz
-            case( YEDGE )
-                 nx = self%nx + 1
-                 ny = self%ny
-                 nz = self%nz + 1
-            case( YFACE )
-                 nx = self%nx
-                 ny = self%ny + 1
-                 nz = self%nz
-            case( ZEDGE )
-                 nx = self%nx + 1
-                 ny = self%ny + 1
-                 nz = self%nz
-            case( ZFACE )
-                 nx = self%nx
-                 ny = self%ny
-                 nz = self%nz + 1
-                !
-            case default
-                !
-                call errStop( "setLimits_Grid3D_SG > Undefined node_type ["//node_type//"]" )
-                !
-        end select
-        !
-    end subroutine setLimits_Grid3D_SG
     !
     !> No subroutine briefing
     !

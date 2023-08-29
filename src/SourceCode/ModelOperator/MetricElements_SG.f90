@@ -40,9 +40,7 @@ module MetricElements_SG
         !
         procedure, public :: setCellVolume => setCellVolume_MetricElements_SG
         !
-        procedure, public :: setIndexArrays => setIndexArrays_MetricElements_SG
-        !
-        procedure, public :: setAllIndexArrays => setAllIndexArrays_MetricElements_SG
+        procedure, public :: setGridIndexArrays => setGridIndexArrays_MetricElements_SG
         !
         !procedure, public :: boundaryIndex => boundaryIndex_MetricElements_SG
         !
@@ -355,51 +353,26 @@ contains
     !
     !> For a given type find indexes for boundary and interior nodes
     !
-    subroutine setIndexArrays_MetricElements_SG( self, grid_type, INDb, INDi, INDa )
+    subroutine setGridIndexArrays_MetricElements_SG( self, grid )
         implicit none
         !
         class( MetricElements_SG_t ), intent( in ) :: self
-        character(*), intent( in ) :: grid_type
-        integer, allocatable, dimension(:), intent( out ) :: INDb, INDi
-        integer, dimension(:), allocatable, intent( out ), optional :: INDa
-        !
+        class( Grid_t ), intent( inout ) :: grid
         class( Field_t ), allocatable :: temp_field
         !
-        selectcase( grid_type )
-            !
-            case( EDGE, FACE )
-                !
-                allocate( temp_field, source = rVector3D_SG_t( self%grid, grid_type ) )
-                !
-            case( NODE )
-                !
-                allocate( temp_field, source = rScalar3D_SG_t( self%grid, grid_type ) )
-                !
-            case default
-                call errStop( "setIndexArrays_MetricElements_SG > Invalid grid type ["//grid_type//"]" )
-        end select 
+        allocate( temp_field, source = rVector3D_SG_t( grid, EDGE ) )
+        call temp_field%setIndexArrays( grid%EDGEb, grid%EDGEi )
+        deallocate( temp_field )
         !
-        call temp_field%setIndexArrays( INDb, INDi )
+        allocate( temp_field, source = rVector3D_SG_t( grid, FACE ) )
+        call temp_field%setIndexArrays( grid%FACEb, grid%FACEi )
+        deallocate( temp_field )
         !
-    end subroutine setIndexArrays_MetricElements_SG
-    !
-    !> For a given type find indexes for boundary and interior nodes
-    !
-    subroutine setAllIndexArrays_MetricElements_SG( self )
-        implicit none
+        allocate( temp_field, source = rScalar3D_SG_t( grid, NODE ) )
+        call temp_field%setIndexArrays( grid%NODEb, grid%NODEi )
+        deallocate( temp_field )
         !
-        class( MetricElements_SG_t ), intent( in ) :: self
-        !
-        call self%setIndexArrays( EDGE, self%grid%EDGEb, self%grid%EDGEi )
-        !write( *, "( a17, i8, a8, i8 )" ) "EDGEb=", size( self%grid%EDGEb ), ", EDGEi=", size( self%grid%EDGEi )
-        !
-        call self%setIndexArrays( FACE, self%grid%FACEb, self%grid%FACEi )
-        !write( *, "( a17, i8, a8, i8 )" ) "FACEb=", size( self%grid%FACEb ), ", FACEi=", size( self%grid%FACEi )
-        !
-        call self%setIndexArrays( NODE, self%grid%NODEb, self%grid%NODEi )
-        !write( *, "( a17, i8, a8, i8 )" ) "NODEb=", size( self%grid%NODEb ), ", NODEi=", size( self%grid%NODEi )
-        !
-    end subroutine setAllIndexArrays_MetricElements_SG
+    end subroutine setGridIndexArrays_MetricElements_SG
     !
     !> For a given type find indexes for boundary and interior nodes
     ! !
