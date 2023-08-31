@@ -1019,6 +1019,7 @@ if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 
               !deallocate(e_para_vec,worker_job_package)
               call exitSolver(e0)
+              b0%allocated= .false.
 
 elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
 
