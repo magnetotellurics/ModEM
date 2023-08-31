@@ -82,133 +82,97 @@ contains
         type( spMatCSR_Cmplx ) :: Axx
         type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
         !
-        !> Different SP1 and SP2 implementations
+        !> Commom SP implementation
+        call self%model_operator%metric%grid%numberOfEdges( nx, ny, nz )
+        !
+        !> ix
+        nEdgeT = 0
+        nEdge = 0
+        do i = 1, size( self%model_operator%metric%grid%EDGEi )
+            if( self%model_operator%metric%grid%EDGEi(i) <= nx ) nEdge = nEdge + 1
+        enddo
+        !
+        allocate( ix(nEdge) )
+        !
+        ix =(/(j, j = nEdgeT + 1, nEdgeT + nEdge) /)
+        !
+        !> iy
+        nEdgeT = nEdgeT + nEdge
+        nEdge = 0
+        do i = 1, size( self%model_operator%metric%grid%EDGEi )
+            !
+            if( self%model_operator%metric%grid%EDGEi(i) > nx .AND. &
+                self%model_operator%metric%grid%EDGEi(i) <= nx + ny ) then
+                nEdge = nEdge + 1
+            endif
+            !
+        enddo
+        !
+        allocate( iy(nEdge) )
+        !
+        iy =(/(j,j = nEdgeT + 1, nEdgeT + nEdge) /)
+        !
+        !> iz
+        nEdgeT = nEdgeT+nEdge
+        nEdge = 0
+        do i = 1, size( self%model_operator%metric%grid%EDGEi )
+            !
+            if( self%model_operator%metric%grid%EDGEi(i) > nx + ny ) then
+                nEdge = nEdge + 1
+            end if
+            !
+        end do
+        !
+        allocate( iz(nEdge) )
+        !
+        iz =(/(j, j = nEdgeT + 1, nEdgeT + nEdge) /)
+        !
+        !> Construct submatrices for x, y, z components
+        allocate( Lblk(3) )
+        allocate( Ublk(3) )
+        !
+        !> Different SP1 (CCii) and SP2 (AAii) implementations
         select type( model_operator => self%model_operator )
             !
             class is( ModelOperator_SP_V1_t )
-				!
-				!> find indexes of x, y, z elements
-				!> this generates indexes (in list of interior edges)
-				!> for x, y, z edges
-				nEdgeT = 0
-				!
-				call model_operator%metric%grid%setLimits( XEDGE, nx, ny, nz )
-				!
-				nEdge = nx * ( ny - 2 ) * ( nz - 2 )
-				!
-				allocate( ix( nEdge ) )
-				!
-				ix = (/ (j, j=nEdgeT+1, nEdgeT+nEdge) /)
-				!
-				nEdgeT = nEdgeT + nEdge
-				!
-				call model_operator%metric%grid%setLimits( YEDGE, nx, ny, nz )
-				!
-				nEdge = ( nx - 2 ) * ny * ( nz - 2 )
-				!
-				allocate( iy( nEdge ) )
-				!
-				iy = (/ (j, j=nEdgeT+1, nEdgeT+nEdge) /)
-				!
-				nEdgeT = nEdgeT+nEdge
-				!
-				call model_operator%metric%grid%setLimits( ZEDGE, nx, ny, nz )
-				!
-				nEdge = ( nx - 2 ) * ( ny - 2 ) * nz
-				!
-				allocate( iz( nEdge ) )
-				!
-				iz = (/ (j, j=nEdgeT+1, nEdgeT+nEdge) /)
-				!
-				! Construct sub-matrices for x, y, z components
-				allocate( Lblk(3) )
-				allocate( Ublk(3) )
-				!
-				call SubMatrix_Real( model_operator%CCii, ix, ix, CCxx )
-				!
-				n = size(ix)
-				!
-				allocate( d(n) )
-				!
-				d = model_operator%VomegaMuSig(ix)
-				!
-				call CSR_R2Cdiag( CCxx, d, Axx )
-				!
-				call dilu_Cmplx( Axx, Lblk(1), Ublk(1) )
-				!
-				deallocate(d)
-				!
-				call SubMatrix_Real( model_operator%CCii, iy, iy, CCxx )
-				!
-				n = size(iy)
-				!
-				allocate( d(n) )
-				!
-				d = model_operator%VomegaMuSig(iy)
-				!
-				call CSR_R2Cdiag( CCxx, d, Axx )
-				!
-				call dilu_Cmplx( Axx, Lblk(2), Ublk(2) )
-				!
-				deallocate(d)
-				!
-				call SubMatrix_Real( model_operator%CCii, iz, iz, CCxx )
-				!
-				n = size(iz)
-				!
-				allocate( d(n) )
-				!
-				d = model_operator%VomegaMuSig(iz)
-				!
+                !
+                call SubMatrix_Real( model_operator%CCii, ix, ix, CCxx )
+                !
+                n = size(ix)
+                !
+                allocate( d(n) )
+                !
+                d = model_operator%VomegaMuSig(ix)
+                !
+                call CSR_R2Cdiag( CCxx, d, Axx )
+                !
+                call dilu_Cmplx( Axx, Lblk(1), Ublk(1) )
+                !
+                deallocate(d)
+                !
+                call SubMatrix_Real( model_operator%CCii, iy, iy, CCxx )
+                !
+                n = size(iy)
+                !
+                allocate( d(n) )
+                !
+                d = model_operator%VomegaMuSig(iy)
+                !
+                call CSR_R2Cdiag( CCxx, d, Axx )
+                !
+                call dilu_Cmplx( Axx, Lblk(2), Ublk(2) )
+                !
+                deallocate(d)
+                !
+                call SubMatrix_Real( model_operator%CCii, iz, iz, CCxx )
+                !
+                n = size(iz)
+                !
+                allocate( d(n) )
+                !
+                d = model_operator%VomegaMuSig(iz)
+                !
             class is( ModelOperator_SP_V2_t )
-                !
-                call model_operator%metric%grid%numberOfEdges( nx, ny, nz )
-                !
-                !> ix
-                nEdgeT = 0
-                nEdge = 0
-                do i = 1, size( model_operator%metric%grid%EDGEi )
-                    if( model_operator%metric%grid%EDGEi(i) <= nx ) nEdge = nEdge + 1
-                enddo
-                !
-                allocate( ix(nEdge) )
-                !
-                ix =(/(j, j = nEdgeT + 1, nEdgeT + nEdge) /)
-                !
-                !> iy
-                nEdgeT = nEdgeT + nEdge
-                nEdge = 0
-                do i = 1, size( model_operator%metric%grid%EDGEi )
-                    !
-                    if( model_operator%metric%grid%EDGEi(i) > nx .AND. &
-                        model_operator%metric%grid%EDGEi(i) <= nx + ny ) then
-                        nEdge = nEdge + 1
-                    endif
-                    !
-                enddo
-                !
-                allocate( iy(nEdge) )
-                !
-                iy =(/(j,j = nEdgeT + 1, nEdgeT + nEdge) /)
-                !
-                !> iz
-                nEdgeT = nEdgeT+nEdge
-                nEdge = 0
-                do i = 1, size( model_operator%metric%grid%EDGEi )
-                    !
-                    if( model_operator%metric%grid%EDGEi(i) > nx + ny ) then
-                        nEdge = nEdge + 1
-                    end if
-                    !
-                end do
-                !
-                allocate( iz(nEdge) )
-                !
-                iz =(/(j, j = nEdgeT + 1, nEdgeT + nEdge) /)
-                !
-                !> construct submatrices for x, y, z components
-                allocate( Lblk(3) )
-                allocate( Ublk(3) )
                 !
                 call SubMatrix_Real( model_operator%AAii, ix, ix, CCxx )
                 !
