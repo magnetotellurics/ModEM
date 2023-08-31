@@ -12,7 +12,7 @@ module ModelParameterCell_MR
     !
     type, extends( ModelParameterCell_t ) :: ModelParameterCell_MR_t
         !
-        type( Grid3D_MR_t ) :: param_grid_mr
+        !> No derived properties
         !
         !> cell_cond treated as rScalar3D_SG array here (base class property)
         !
@@ -69,15 +69,9 @@ contains
         !
         nzAir = 0
         !
-        !> COND PARAM GRID
-        allocate( self%param_grid, source = Grid3D_SG_t( grid_mr%nx, grid_mr%ny, nzAir, &
+        allocate( self%param_grid, source = Grid3D_MR_t( grid_mr%nx, grid_mr%ny, nzAir, &
         ( grid_mr%nz - grid_mr%nzAir ), grid_mr%dx, grid_mr%dy, &
-        grid_mr%dz( grid_mr%nzAir+1:grid_mr%nz ) ) )
-        !
-        !> PARAM GRID MR
-        self%param_grid_mr = Grid3D_MR_t( grid_mr%nx, grid_mr%ny, nzAir, &
-        ( grid_mr%nz - grid_mr%nzAir ), grid_mr%dx, grid_mr%dy, &
-        grid_mr%dz( grid_mr%nzAir+1:grid_mr%nz ), grid_mr%cs )
+        grid_mr%dz( grid_mr%nzAir+1:grid_mr%nz ), grid_mr%cs ) )
         !
         self%anisotropic_level = anisotropic_level
         !
@@ -122,15 +116,9 @@ contains
         !
         nzAir = 0
         !
-        !> COND PARAM GRID - ALWAYS SG FOR NOW !!!!
-        allocate( self%param_grid, source = Grid3D_SG_t( grid_mr%nx, grid_mr%ny, nzAir, &
+        allocate( self%param_grid, source = Grid3D_MR_t( grid_mr%nx, grid_mr%ny, nzAir, &
         ( grid_mr%nz - grid_mr%nzAir ), grid_mr%dx, grid_mr%dy, &
-        grid_mr%dz( grid_mr%nzAir+1:grid_mr%nz ) ) )
-        !
-        !> PARAM GRID MR
-        self%param_grid_mr = Grid3D_MR_t( grid_mr%nx, grid_mr%ny, nzAir, &
-        ( grid_mr%nz - grid_mr%nzAir ), grid_mr%dx, grid_mr%dy, &
-        grid_mr%dz( grid_mr%nzAir+1:grid_mr%nz ), grid_mr%cs )
+        grid_mr%dz( grid_mr%nzAir+1:grid_mr%nz ), grid_mr%cs ) )
         !
         self%anisotropic_level = size( cell_cond )
         !
@@ -169,47 +157,6 @@ contains
     !
     !> Map the entire model cells into a single edge Vector_t(e_vec).
     !> Need to implement for VTI ????
-    ! !
-    ! subroutine nodeCond_ModelParameterCell_MR( self, sigma_node )
-        ! implicit none
-        ! !
-        ! class( ModelParameterCell_MR_t ), intent( in ) :: self
-        ! class( Scalar_t ), allocatable, intent( inout ) :: sigma_node
-        ! !
-        ! integer :: k0, k1, k2
-        ! type( rScalar3D_SG_t ) :: sigma_cell
-        ! type( rScalar3D_MR_t ) :: sigma_cell_mr
-        ! !
-        ! if( .NOT. self%is_allocated ) then
-            ! call errStop( "nodeCond_ModelParameterCell_SG > self not allocated" )
-        ! endif
-        ! !
-        ! if( .NOT. sigma_node%is_allocated ) then
-            ! call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
-        ! endif
-        ! !
-        ! k0 = self%metric%grid%NzAir
-        ! k1 = k0 + 1
-        ! k2 = self%metric%grid%Nz
-        ! !
-        ! sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
-        ! !
-        ! sigma_cell%v( :, :, 1:k0 ) = self%air_cond
-        ! !
-        ! sigma_cell%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v, kind=prec ) )
-        ! !
-        ! sigma_cell_mr = rScalar3D_MR_t( self%metric%grid, CELL )
-        ! !
-        ! call fromSG( sigma_cell, sigma_cell_mr )
-        ! !
-        ! call sigma_cell_mr%mult( self%metric%v_cell )
-        ! !
-        ! call sigma_cell_mr%toNode( sigma_node, .TRUE. )
-        ! !
-    ! end subroutine nodeCond_ModelParameterCell_MR
-    ! !
-    !> Map the entire model cells into a single edge Vector_t(e_vec).
-    !> Need to implement for VTI ????
     !
     subroutine nodeCond_ModelParameterCell_MR( self, sigma_node )
         implicit none
@@ -229,7 +176,7 @@ contains
             call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
         endif
         !
-        sigma_cell_mr = rScalar3D_MR_t( self%param_grid_mr, self%cell_cond(1)%grid_type )
+        sigma_cell_mr = rScalar3D_MR_t( self%param_grid, self%cell_cond(1)%grid_type )
         !
         call sigma_cell_mr%fromSG( self%cell_cond(1) )
         !

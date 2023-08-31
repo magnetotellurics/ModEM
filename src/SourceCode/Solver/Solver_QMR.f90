@@ -40,12 +40,12 @@ contains
         !
         call self%baseInit
         !
-        !> Instantiate the PreConditioner object according to the ModelOperator type
+        !> Instantiate the PreConditioner CC object
+		!> According to the Grid (SG/MR) and ModelOperator (MF_SG/SP)
         select type( grid => model_operator%metric%grid )
             !
             class is( Grid3D_SG_t )
                 !
-                !> Instantiate the PreConditioner object according to the ModelOperator type
                 select type( model_operator )
                     !
                     class is( ModelOperator_MF_SG_t )
@@ -63,12 +63,11 @@ contains
                 !
             class is( Grid3D_MR_t )
                 !
-                !> Instantiate the PreConditioner object according to the ModelOperator type
                 select type( model_operator )
                     !
                     class is( ModelOperator_MF_SG_t )
                         !
-                        call errStop( "Solver_QMR_ctor > For MR use model_operator SP" )
+                        call errStop( "Solver_QMR_ctor > For MR use a model_operator_SP" )
                         !
                     class is( ModelOperator_SP_t )
                         !

@@ -15,6 +15,8 @@ module ModelParameter
         !
         class( MetricElements_t ), pointer :: metric
         !
+        class( Grid_t ), pointer :: param_grid
+        !
         integer :: anisotropic_level, mKey(8)
         !
         real( kind=prec ) :: air_cond

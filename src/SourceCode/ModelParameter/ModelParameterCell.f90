@@ -11,8 +11,6 @@ module ModelParameterCell
     !
     type, abstract, extends( ModelParameter_t ) :: ModelParameterCell_t
         !
-        class( Grid_t ), pointer :: param_grid
-        !
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
         !
         contains

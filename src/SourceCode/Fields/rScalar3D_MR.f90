@@ -42,7 +42,6 @@ module rScalar3D_MR
             !
             !> Dimensioning operations
             procedure, public :: length => length_rScalar3D_MR
-            procedure, public :: setVecComponents => setVecComponents_rScalar3D_MR
             !
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zeros_rScalar3D_MR
@@ -449,7 +448,7 @@ contains
         class( rScalar3D_MR_t ), intent( in ) :: self
         type( rScalar3D_SG_t ), intent( out ) :: scalar_sg
         !
-        integer :: i_grid, i, j, k, cs
+        integer :: i_grid, i, j, k, z, cs
         integer :: i1, i2, j1, j2, k1, k2
         !
         scalar_sg = rScalar3D_SG_t( self%grid, NODE )
@@ -463,24 +462,30 @@ contains
                     !> vertical layers in fine grid
                     k1 = grid%coarseness( i_grid, 3 )
                     k2 = grid%coarseness( i_grid, 4 )
+                    !
                     cs = 2 ** grid%coarseness( i_grid, 1 )
+                    !
+                    z = 1
                     !
                     do k = k1, k2
                         !
                         do i = 1, self%sub_scalar( i_grid )%nx
                             !
                             i1 = (i-1) * cs + 1
-                            i2 = i1 + cs
+                            i2 = i * cs
                             !
                             do j = 1, self%sub_scalar( i_grid )%ny
                                 !
                                 j1 = (j-1)*cs+1
-                                j2 = j1+cs
+                                j2 = j * cs
                                 !
-                                scalar_sg%v( i1:i2, j1:j2, k ) = self%sub_scalar( i_grid )%v(i,j,k)
+                                scalar_sg%v( i1:i2, j1:j2, k ) = self%sub_scalar( i_grid )%v(i,j,z)
                                 !
                             enddo
                         enddo
+                        !
+                        z = z + 1
+                        !
                     enddo
                 enddo
                 !
@@ -574,18 +579,15 @@ contains
                                 !
                                 do i = 1, self%sub_scalar( i_grid )%nx
                                     !
-                                    !i1 = (i-1) * cs + 1
-                                    i1 = (i-1) * cs
-                                    i2 = i1 + cs
+                                    i1 = (i-1) * cs + 1
+                                    i2 = i * cs
                                     !
+
                                     do j = 1, self%sub_scalar( i_grid )%ny
                                         !
-                                        !j1 = (j-1) * cs + 1
-                                        j1 = (j-1) * cs
-                                        j2 = j1 + cs
+                                        j1 = (j-1) * cs + 1
+                                        j2 = j * cs
                                         !
-                                        !write( *, * ) i_grid, i, j, k, z
-                                        !write( *, * ) "MR: ", self%sub_scalar( i_grid )%nx, self%sub_scalar( i_grid )%ny, self%sub_scalar( i_grid )%nz
                                         !write( *, * ) "SG: x=(", i1, ", ", i2, ") y=(", j1, ", ", j2, ") z=", k 
                                         !
                                         self%sub_scalar( i_grid )%v(i,j,z) = sum( scalar_sg%v( i1:i2, j1:j2, k ) )
@@ -618,7 +620,7 @@ contains
         !
         type( rScalar3D_MR_t ), intent( inout ) :: self
         !
-        write( *, * ) "Destructor rScalar3D_MR: ", self%grid_type, self%nx, self%ny, self%nz
+        !write( *, * ) "Destructor rScalar3D_MR: ", self%grid_type, self%nx, self%ny, self%nz
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "rScalar3D_MR_dtor > self not allocated." )
@@ -766,51 +768,6 @@ contains
         field_length = size( self%indActive() )
         !
     end function length_rScalar3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine setVecComponents_rScalar3D_MR( self, xyz, &
-                                             xmin, xstep, xmax, &
-                                             ymin, ystep, ymax, &
-                                             zmin, zstep, zmax, rvalue )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        character, intent( in ) :: xyz
-        integer, intent( in ) :: xmin, xstep, xmax
-        integer, intent( in ) :: ymin, ystep, ymax
-        integer, intent( in ) :: zmin, zstep, zmax
-        real( kind=prec ), intent( in ) :: rvalue
-        !
-        integer :: i
-        integer :: x1, x2
-        integer :: y1, y2
-        integer :: z1, z2
-        !
-        call self%switchStoreState( compound )
-        !
-        do i = 1, self%grid%getNGrids()
-            !
-            x1 = xmin; x2 = xmax
-            y1 = ymin; y2 = ymax
-            z1 = zmin; z2 = zmax
-            !
-            if( xmin == 0) x1 = self%sub_scalar(i)%NdV(1)
-            if( xmax <= 0) x2 = self%sub_scalar(i)%NdV(1) + xmax
-            !
-            if( ymin == 0) y1 = self%sub_scalar(i)%NdV(2)
-            if( ymax <= 0) y2 = self%sub_scalar(i)%NdV(2) + ymax
-            !
-            if( zmin == 0) z1 = self%sub_scalar(i)%NdV(3)
-            if( zmax <= 0) z2 = self%sub_scalar(i)%NdV(3) + zmax
-            !
-            self%sub_scalar(i)%v( x1:x2:xstep, y1:y2:ystep, z1:z2:zstep ) = rvalue
-            !
-        enddo
-        !
-    end subroutine setVecComponents_rScalar3D_MR
-    !
-    !> No subroutine briefing
     !
     subroutine zeros_rScalar3D_MR( self )
         implicit none
