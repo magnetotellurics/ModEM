@@ -103,11 +103,11 @@ contains
         !
         ! the old baggage is out of the door
         if(self%is_allocated) then
-            deallocate(self%i, STAT = status)
-            deallocate(self%j, STAT = status)
-            deallocate(self%k, STAT = status)
-            deallocate(self%xyz, STAT = status)
-            deallocate(self%c, STAT = status)
+            deallocate(self%i, stat=status)
+            deallocate(self%j, stat=status)
+            deallocate(self%k, stat=status)
+            deallocate(self%xyz, stat=status)
+            deallocate(self%c, stat=status)
             self%grid_type = ''
             self%is_allocated = .FALSE.
         endif

@@ -242,7 +242,7 @@ contains
     self%grid_type = grid_type
 
     self%is_allocated = .TRUE.
-    allocate (self%sub_vector(self%grid_ptr%ngrids), STAT = status)
+    allocate (self%sub_vector(self%grid_ptr%ngrids), stat=status)
     self%is_allocated = self%is_allocated .AND. (status.EQ.0)
 
     do i = 1, self%grid_ptr%ngrids

@@ -7,7 +7,7 @@ module Vector
     !
     type, abstract, extends( Field_t ) :: Vector_t
         !
-        integer, dimension(3) :: NdX, NdY, NdZ, Nxyz
+        !> No derived properties
         !
     contains
         !
@@ -26,8 +26,6 @@ module Vector
         generic :: sumCells => sumCell, sumCellVTI
         !
         procedure( interface_get_real_vector ), deferred, public :: getReal
-        !
-        procedure, public :: length => length_Vector
         !
         procedure, public :: boundary => boundary_Vector
         procedure, public :: interior => interior_Vector
@@ -114,19 +112,6 @@ module Vector
     end interface
     !
 contains
-    !
-    !> No subroutine briefing
-    !
-    function length_Vector( self ) result( n )
-        implicit none
-        !
-        class( Vector_t ), intent( in ) :: self
-        !
-        integer :: n
-        !
-        n = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
-        !
-    end function length_Vector
     !
     !> No subroutine briefing
     !

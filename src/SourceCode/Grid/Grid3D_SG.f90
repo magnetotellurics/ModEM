@@ -1,13 +1,40 @@
 !
 !> Implementation of standard 3D Cartesian grid.
 !
+!> dx_inv = 1/ dx and similarly for dy_inv and dz_inv
+!
+!> del_x, del_y, and del_z are the distances between
+!> the electrical field defined on the center of the
+!> edges in x, y, and z axes, respectively.
+!
+!> x_edge is the array for cumulative distance of the edge
+!> for each grid (starting from the coordinate axes) with
+!> dimensions nx + 1.
+!
+!> x_center is the array for cumulative distance of the center
+!> for each grid (starting from the coordinate axes) with
+!> dimension n.
+!
+!> y_edge, y_center, z_edge, z_center are analagous arrays for
+!> other directions.
+!
 module Grid3D_SG
     !
     use Grid
     !
     type, extends( Grid_t ) :: Grid3D_SG_t
         !
-        !> No derived properties
+        real( kind=prec ), allocatable, dimension(:) :: dx_inv, dy_inv, dz_inv
+        !
+        real( kind=prec ), allocatable, dimension(:) :: del_x, del_y, del_z
+        !
+        real( kind=prec ), allocatable, dimension(:) :: del_x_inv, del_y_inv, del_z_inv
+        !
+        real( kind=prec ), allocatable, dimension(:) :: x_center, y_center, z_center
+        !
+        real( kind=prec ), allocatable, dimension(:) :: x_edge, y_edge, z_edge
+        !
+        real( kind=prec ) :: zAirThick
         !
         contains
             !
@@ -20,10 +47,16 @@ module Grid3D_SG
             !
             procedure, public :: length => length_Grid3D_SG
             !
+            procedure, public :: allocateDim => allocateDim_Grid3D_SG
+            !
+            procedure, public :: deallocateDim => deallocateDim_Grid3D_SG
+            !
             procedure, public :: setup => setup_Grid3D_SG
             !
             procedure, public :: slice1D => slice1D_Grid3D_SG
             procedure, public :: slice2D => slice2D_Grid3D_SG
+            !
+            procedure, public :: write => write_Grid3D_SG
             !
     end type Grid3D_SG_t
     !
@@ -94,7 +127,79 @@ contains
         !
         call self%baseDealloc
         !
+        call self%deallocateDim
+        !
+        self%is_allocated = .FALSE.
+        !
     end subroutine Grid3D_SG_dtor
+    !
+    !> No subroutine briefing
+    !
+    subroutine allocateDim_Grid3D_SG( self )
+        implicit none
+        !
+        class( Grid3D_SG_t ), intent( inout ) :: self
+        !
+        if( self%is_allocated ) call self%baseDealloc
+        !
+        call self%deallocateDim
+        !
+        allocate( self%dx( self%nx ) )
+        allocate( self%dy( self%ny ) )
+        allocate( self%dz( self%nz ) )
+        !
+        allocate( self%dx_inv( self%nx ) )
+        allocate( self%dy_inv( self%ny ) )
+        allocate( self%dz_inv( self%nz ) )
+        !
+        allocate( self%del_x( self%nx + 1 ) )
+        allocate( self%del_y( self%ny + 1 ) )
+        allocate( self%del_z( self%nz + 1 ) )
+        !
+        allocate( self%del_x_inv( self%nx + 1 ) )
+        allocate( self%del_y_inv( self%ny + 1 ) )
+        allocate( self%del_z_inv( self%nz + 1 ) )
+        !
+        allocate( self%x_center( self%nx ) )
+        allocate( self%y_center( self%ny ) )
+        allocate( self%z_center( self%nz ) )
+        !
+        allocate( self%x_edge( self%nx + 1 ) )
+        allocate( self%y_edge( self%ny + 1 ) )
+        allocate( self%z_edge( self%nz + 1 ) )
+        !
+        self%is_allocated = .TRUE.
+        !
+    end subroutine allocateDim_Grid3D_SG
+    !
+    !> Deconstructor routine:
+    !>     Calls the base routine baseDealloc().
+    subroutine deallocateDim_Grid3D_SG( self )
+        implicit none
+        !
+        class( Grid3D_SG_t ), intent( inout ) :: self
+        !
+        if( allocated( self%dx_inv ) ) deallocate( self%dx_inv )
+        if( allocated( self%dy_inv ) ) deallocate( self%dy_inv )
+        if( allocated( self%dz_inv ) ) deallocate( self%dz_inv )
+        !
+        if( allocated( self%del_x ) ) deallocate( self%del_x )
+        if( allocated( self%del_y ) ) deallocate( self%del_y )
+        if( allocated( self%del_z ) ) deallocate( self%del_z )
+        !
+        if( allocated( self%del_x_inv ) ) deallocate( self%del_x_inv )
+        if( allocated( self%del_y_inv ) ) deallocate( self%del_y_inv )
+        if( allocated( self%del_z_inv ) ) deallocate( self%del_z_inv )
+        !
+        if( allocated( self%x_center ) ) deallocate( self%x_center )
+        if( allocated( self%y_center ) ) deallocate( self%y_center )
+        if( allocated( self%z_center ) ) deallocate( self%z_center )
+        !
+        if( allocated( self%x_edge ) ) deallocate( self%x_edge )
+        if( allocated( self%y_edge ) ) deallocate( self%y_edge )
+        if( allocated( self%z_edge ) ) deallocate( self%z_edge )
+        !
+    end subroutine deallocateDim_Grid3D_SG
     !
     !> setup does calculations for grid geometry, which cannot be done
     !> until dx, dy, dz, and the origin are set.
@@ -112,7 +217,7 @@ contains
         self%dy_inv = 1 / self%dy
         self%dz_inv = 1 / self%dz
         !
-        call self%GetOrigin( ox, oy, oz )
+        call self%getOrigin( ox, oy, oz )
         !
         if( present( origin ) ) then
             !
@@ -126,7 +231,7 @@ contains
         !
         self%x_edge(1) = ox
         self%y_edge(1) = oy
-        self%z_edge(1) = oz
+        self%z_edge(1) = 0.0 !> ALWAYS BE ZERO ????
         !
         xCum = R_ZERO
         yCum = R_ZERO
@@ -136,6 +241,7 @@ contains
             xCum = xCum + self%dx(ix)
             self%x_edge(ix+1) = xCum + ox
         enddo
+        !
         do iy = 1, self%ny
             yCum = yCum + self%dy(iy)
             self%y_edge(iy + 1) = yCum + oy
@@ -145,7 +251,7 @@ contains
         !> reference to origin at Earth"s surface correct!
         do iz = 1, self%nz
             zCum = zCum + self%dz(iz)
-            self%z_edge(iz + 1) = zCum
+            self%z_edge(iz + 1) = zCum !> CHECK - WHY SHIFT X and Y BUT NOT Z ????
         enddo
         !
         nzAir = self%nzAir
@@ -156,6 +262,7 @@ contains
         do ix = 2, self%nx
             self%del_x(ix) = self%dx(ix - 1) + self%dx(ix)
         enddo
+        !
         self%del_x(self%nx + 1) = self%dx(self%nx)
         self%del_x = self%del_x / 2.0
         !
@@ -309,5 +416,45 @@ contains
         g2D = Grid2D_t( self%ny, self%nzAir, self%nzEarth, self%dy, self%dz )
         !
     end function slice2D_Grid3D_SG
+    !
+    !
+    !
+    subroutine write_Grid3D_SG( self )
+        implicit none
+        !
+        class( Grid3D_SG_t ), intent( in ) :: self
+        !
+        write( *, * ) "Grid3D_SG:"
+        !
+        write( *, * ) "    n_grids: ", self%n_grids
+        !
+        write( *, * ) "    is_allocated: ", self%is_allocated
+        !
+        write( *, * ) "    nx, ny, nz: ", self%nx, self%ny, self%nz
+        write( *, * ) "    nzAir: ", self%nzAir   !> Number of air layers
+        write( *, * ) "    nzEarth: ", self%nzEarth !> Number of earth layers
+        !
+        write( *, * ) "    geometry: ", self%geometry
+        !
+        write( *, * ) "    ox, oy, oz: ", self%ox, self%oy, self%oz
+        !
+        write( *, * ) "    rotDeg: ", self%rotDeg
+        !
+        write( *, * ) "    zAirThick: ", self%zAirThick
+        !
+        write( *, * ) "    EDGEb, FACEb, NODEb: ", size( self%EDGEb ), size( self%FACEb ), size( self%NODEb )
+        write( *, * ) "    EDGEi, FACEi, NODEi: ", size( self%EDGEi ), size( self%FACEi ), size( self%NODEi )
+        !
+        write( *, * ) "    dx, dy, dz: ", size( self%dx ), size( self%dy ), size( self%dz )
+        write( *, * ) "    dx_inv, dy_inv, dz_inv: ", size( self%dx_inv ), size( self%dy_inv ), size( self%dz_inv )
+        !
+        write( *, * ) "    del_x, del_y, del_z: ", size( self%del_x ), size( self%del_y ), size( self%del_z )
+        write( *, * ) "    del_x_inv, del_y_inv, del_z_inv: ", size( self%del_x_inv ), size( self%del_y_inv ), size( self%del_z_inv )
+        !
+        write( *, * ) "    x_edge, y_edge, z_edge: ", size( self%x_edge ), size( self%y_edge ), size( self%z_edge )
+        !
+        write( *, * ) "    x_center, y_center, z_center: ", size( self%x_center ), size( self%y_center ), size( self%z_center )
+        !
+    end subroutine write_Grid3D_SG
     !
 end module Grid3D_SG

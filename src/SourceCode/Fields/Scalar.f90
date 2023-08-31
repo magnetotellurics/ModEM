@@ -8,9 +8,7 @@ module Scalar
     !> Abstract base class
     type, abstract, extends( Field_t ) :: Scalar_t
         !
-        integer, dimension(3) :: NdV
-        !
-        integer :: Nxyz
+        !> No derived properties
         !
     contains
             !
@@ -18,8 +16,6 @@ module Scalar
             procedure( interface_to_node_scalar ), deferred, public :: toNode
             !
             !> Scalar Routines
-            !
-            procedure, public :: length => length_Scalar
             !
             procedure, public :: boundary => boundary_Scalar
             procedure, public :: interior => interior_Scalar
@@ -49,19 +45,6 @@ module Scalar
     end interface
     !
 contains
-    !
-    !> No subroutine briefing
-    !
-    function length_Scalar( self ) result( field_length )
-        implicit none
-        !
-        class( Scalar_t ), intent( in ) :: self
-        !
-        integer :: field_length
-        !
-        field_length = self%Nxyz
-        !
-    end function length_Scalar
     !
     !> No subroutine briefing
     !

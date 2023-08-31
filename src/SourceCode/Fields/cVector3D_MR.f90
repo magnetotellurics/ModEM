@@ -93,8 +93,6 @@ module cVector3D_MR
     end type cVector3D_MR_t
     !
     interface SGtoMR
-        module procedure :: SGtoMR_rScalar3D_MR
-        module procedure :: SGtoMR_cScalar3D_MR
         module procedure :: SGtoMR_rVector3D_MR
         module procedure :: SGtoMR_cVector3D_MR
     end interface SGtoMR
@@ -126,27 +124,7 @@ contains
         !
         call self%initializeSub
         !
-        if( self%is_allocated ) then
-            !
-            if( self%grid_type == EDGE ) then
-                !
-                self%NdX = (/self%nx, self%ny + 1, self%nz + 1/)
-                self%NdY = (/self%nx + 1, self%ny, self%nz + 1/)
-                self%NdZ = (/self%nx + 1, self%ny + 1, self%nz/)
-                !
-            elseif( self%grid_type == FACE ) then
-                !
-                self%NdX = (/self%nx + 1, self%ny, self%nz/)
-                self%NdY = (/self%nx, self%ny + 1, self%nz/)
-                self%NdZ = (/self%nx, self%ny, self%nz + 1/)
-                !
-            else
-                call errStop( "rVector3D_MR_ctor > Only EDGE or FACE types allowed." )
-            endif
-            !
-            self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
-            !
-        else
+        if( .NOT. self%is_allocated ) then
             call errStop( "rVector3D_MR_ctor > Unable to allocate vector." )
         endif
         !
@@ -598,109 +576,106 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine SGtoMR_cVector3D_MR( vector_sg, vector_mr )
+    subroutine SGtoMR_cVector3D_MR( target_sg, target_mr )
         implicit none
         !
-        type( cVector3D_SG_t ), intent( in ) :: vector_sg
-        class( Field_t ), intent( inout ) :: vector_mr
+        type( cVector3D_SG_t ), intent( in ) :: target_sg
+        class( Field_t ), intent( inout ) :: target_mr
         !
-        real( kind=prec ), allocatable, dimension(:) :: tempe
-        type( cVector3D_SG_t ) :: temp_vector
-        complex( kind=prec ), allocatable, dimension(:) :: templ, temple
-        real( kind=prec ), allocatable, dimension(:,:,:) :: lengthx, lengthy
+        type( cVector3D_SG_t ) :: temp_edge_length_sg, sg_vector_l, sg_vector_el
+        complex( kind=prec ), allocatable, dimension(:) :: array_l, array_e, array_le
+        real( kind=prec ), allocatable, dimension(:,:,:) :: x_length, y_length
         integer :: sx1, sx2, sx3, sy1, sy2, sy3, s1, s2
-        integer :: Cs, i1, i2
+        integer :: i_grid, Cs, i, i1, i2
         !
-        type( cVector3D_SG_t ) :: temp_L, tempEL
-        integer :: i_grid, i
-        !
-        if( .NOT. vector_sg%is_allocated ) then
-            call errStop( "SGtoMR_cVector3D_MR > vector_sg not allocated" )
+        if( .NOT. target_sg%is_allocated ) then
+            call errStop( "SGtoMR_cVector3D_MR > target_sg not allocated" )
         endif
         !
-        if( .NOT. vector_mr%is_allocated ) then
-            call errStop( "SGtoMR_cVector3D_MR > vector_mr not allocated" )
+        if( .NOT. target_mr%is_allocated ) then
+            call errStop( "SGtoMR_cVector3D_MR > target_mr not allocated" )
         endif
         !
-        write( *, * ) "SGtoMR_cVector3D_MR SG: ", vector_sg%nx, vector_sg%ny, vector_sg%nz
-        write( *, * ) "                    MR: ", vector_mr%nx, vector_mr%ny, vector_mr%nz
+        !>
+        write( *, * ) "SGtoMR_cVector3D_MR SG: ", target_sg%grid%nx, target_sg%grid%ny, target_sg%grid%nz, target_sg%grid%n_grids
+        write( *, * ) "                    MR: ", target_mr%grid%nx, target_mr%grid%ny, target_mr%grid%nz, target_mr%grid%n_grids
         !
-        call vector_sg%edgeLength( temp_vector )
+        call target_sg%edgeLength( temp_edge_length_sg )
         !
-        templ = temp_vector%getArray()
+        array_l = temp_edge_length_sg%getArray()
         !
-        tempe = vector_sg%getArray()
+        array_e = target_sg%getArray()
         !
-        allocate( temple( size( templ ) ) )
+        allocate( array_le( size( array_l ) ) )
         !
-        temple = templ*tempe
+        array_le = array_l * array_e
         !
-        temp_L = cVector3D_SG_t( vector_sg%grid, EDGE )
+        sg_vector_l = cVector3D_SG_t( target_sg%grid, EDGE )
         !
-        call temp_L%setArray( templ )
+        call sg_vector_l%setArray( array_l )
         !
-        tempEL = cVector3D_SG_t( vector_sg%grid, EDGE )
+        sg_vector_el = cVector3D_SG_t( target_sg%grid, EDGE )
         !
-        call tempEL%setArray( temple )
+        call sg_vector_el%setArray( array_le )
         !
-        select type( vector_mr )
+        select type( target_mr )
             !
             class is( cVector3D_MR_t )
                 !
-                select type( grid => vector_sg%grid )
+                select type( grid => target_sg%grid )
                     !
                     class is( Grid3D_MR_t )
                         !
                         do i_grid = 1, grid%n_grids
                             !
-                            vector_mr%sub_vector( i_grid )%grid => grid%sub_grid( i_grid )
+                            target_mr%sub_vector( i_grid )%grid => grid%sub_grid( i_grid )
                             !
-                            Cs = 2 ** grid%coarseness(i_grid, 1)
-                            i1 = grid%coarseness(i_grid, 3)
-                            i2 = grid%coarseness(i_grid, 4)
+                            Cs = 2 ** grid%coarseness( i_grid, 1 )
+                            i1 = grid%coarseness( i_grid, 3 )
+                            i2 = grid%coarseness( i_grid, 4 )
                             !
-                            sx1 = size(vector_mr%sub_vector(i_grid)%x, 1)
-                            sx2 = size(vector_mr%sub_vector(i_grid)%x, 2)
-                            sx3 = size(vector_mr%sub_vector(i_grid)%x, 3)
-                            allocate( lengthx(sx1, sx2, sx3))
-                            lengthx = 0.0
+                            sx1 = size( target_mr%sub_vector(i_grid)%x, 1 )
+                            sx2 = size( target_mr%sub_vector(i_grid)%x, 2 )
+                            sx3 = size( target_mr%sub_vector(i_grid)%x, 3 )
+                            allocate( x_length( sx1, sx2, sx3 ) )
+                            x_length = 0.0
                             !
-                            sy1 = size(vector_mr%sub_vector(i_grid)%y, 1)
-                            sy2 = size(vector_mr%sub_vector(i_grid)%y, 2)
-                            sy3 = size(vector_mr%sub_vector(i_grid)%y, 3)
-                            allocate( lengthy(sy1, sy2, sy3))
-                            lengthy = 0.0
+                            sy1 = size( target_mr%sub_vector(i_grid)%y, 1 )
+                            sy2 = size( target_mr%sub_vector(i_grid)%y, 2 )
+                            sy3 = size( target_mr%sub_vector(i_grid)%y, 3 )
+                            allocate( y_length( sy1, sy2, sy3 ) )
+                            y_length = 0.0
                             !
                             do i = 1, Cs
                                 !
-                                s1 = size(tempEL%x, 1)
-                                s2 = size(tempEL%x, 2)
-                                vector_mr%sub_vector(i_grid)%x = vector_mr%sub_vector(i_grid)%x + &
-                                tempEL%x(i:s1:Cs, 1:s2:Cs, i1:i2+1)
+                                s1 = size( sg_vector_el%x, 1 )
+                                s2 = size( sg_vector_el%x, 2 )
+                                target_mr%sub_vector(i_grid)%x = target_mr%sub_vector(i_grid)%x + &
+                                sg_vector_el%x( i:s1:Cs, 1:s2:Cs, i1:i2+1 )
                                 !
-                                s1 = size(tempEL%y, 1)
-                                s2 = size(tempEL%y, 2)
-                                vector_mr%sub_vector(i_grid)%y = vector_mr%sub_vector(i_grid)%y + &
-                                tempEL%y(1:s1:Cs,i:s2:Cs, i1:i2+1)
+                                s1 = size( sg_vector_el%y, 1 )
+                                s2 = size( sg_vector_el%y, 2 )
+                                target_mr%sub_vector(i_grid)%y = target_mr%sub_vector(i_grid)%y + &
+                                sg_vector_el%y( 1:s1:Cs, i:s2:Cs, i1:i2+1 )
                                 !
-                                s1 = size(temp_L%x, 1)
-                                s2 = size(temp_L%x, 2)
-                                lengthx = lengthx + temp_L%x(i:s1:Cs, 1:s2:Cs, i1:i2+1)
+                                s1 = size( sg_vector_l%x, 1 )
+                                s2 = size( sg_vector_l%x, 2 )
+                                x_length = x_length + sg_vector_l%x( i:s1:Cs, 1:s2:Cs, i1:i2+1 )
                                 !
-                                s1 = size(temp_L%y, 1)
-                                s2 = size(temp_L%y, 2)
-                                lengthy = lengthy + temp_L%y(1:s1:Cs, i:s2:Cs, i1:i2+1)
+                                s1 = size( sg_vector_l%y, 1 )
+                                s2 = size( sg_vector_l%y, 2 )
+                                y_length = y_length + sg_vector_l%y( 1:s1:Cs, i:s2:Cs, i1:i2+1 )
                                 !
                             enddo
                             !
-                            vector_mr%sub_vector(i_grid)%x = vector_mr%sub_vector(i_grid)%x/lengthx
-                            vector_mr%sub_vector(i_grid)%y = vector_mr%sub_vector(i_grid)%y/lengthy
+                            target_mr%sub_vector(i_grid)%x = target_mr%sub_vector(i_grid)%x / x_length
+                            target_mr%sub_vector(i_grid)%y = target_mr%sub_vector(i_grid)%y / y_length
                             !
-                            s1 = size(vector_sg%z, 1)
-                            s2 = size(vector_sg%z, 2)
-                            vector_mr%sub_vector(i_grid)%z = vector_sg%z(1:s1:Cs, 1:s2:Cs, i1:i2)
+                            s1 = size( target_sg%z, 1 )
+                            s2 = size( target_sg%z, 2 )
+                            target_mr%sub_vector(i_grid)%z = target_sg%z( 1:s1:Cs, 1:s2:Cs, i1:i2 )
                             !
-                            deallocate( lengthx, lengthy )
+                            deallocate( x_length, y_length )
                             !
                         enddo
                         !
@@ -710,7 +685,7 @@ contains
                 end select
                 !
             class default
-                call errStop( "SGtoMR_cVector3D_MR > Unclassified vector_mr" )
+                call errStop( "SGtoMR_cVector3D_MR > Unclassified target_mr" )
             !
         end select
         !
@@ -1029,48 +1004,46 @@ contains
         y1 = ymin; y2 = ymax
         z1 = zmin; z2 = zmax
         !
-        call self%switchStoreState( compound )
-        !
         do i = 1, self%grid%getNGrids()
             !
             select case( xyz )
                 !
                 case("x")
                     !
-                    if(xmin == 0) x1 = self%NdX(1)
-                    if(xmax <= 0) x2 = self%NdX(1) + xmax
+                    if(xmin == 0) x1 = self%sub_vector(i)%NdX(1)
+                    if(xmax <= 0) x2 = self%sub_vector(i)%NdX(1) + xmax
                     !
-                    if(ymin == 0) y1 = self%NdX(2)
-                    if(ymax <= 0) y2 = self%NdX(2) + ymax
+                    if(ymin == 0) y1 = self%sub_vector(i)%NdX(2)
+                    if(ymax <= 0) y2 = self%sub_vector(i)%NdX(2) + ymax
                     !
-                    if(zmin == 0) z1 = self%NdX(3)
-                    if(zmax <= 0) z2 = self%NdX(3) + zmax
+                    if(zmin == 0) z1 = self%sub_vector(i)%NdX(3)
+                    if(zmax <= 0) z2 = self%sub_vector(i)%NdX(3) + zmax
                     !
                     self%sub_vector(i)%x( x1:x2:xstep, y1:y2:ystep, z1:z2:zstep ) = cvalue
                     !
                 case("y")
                     !
-                    if(xmin == 0) x1 = self%NdY(1)
-                    if(xmax <= 0) x2 = self%NdY(1) + xmax
+                    if(xmin == 0) x1 = self%sub_vector(i)%NdY(1)
+                    if(xmax <= 0) x2 = self%sub_vector(i)%NdY(1) + xmax
                     !
-                    if(ymin == 0) y1 = self%NdY(2)
-                    if(ymax <= 0) y2 = self%NdY(2) + ymax
+                    if(ymin == 0) y1 = self%sub_vector(i)%NdY(2)
+                    if(ymax <= 0) y2 = self%sub_vector(i)%NdY(2) + ymax
                     !
-                    if(zmin == 0) z1 = self%NdY(3)
-                    if(zmax <= 0) z2 = self%NdY(3) + zmax
+                    if(zmin == 0) z1 = self%sub_vector(i)%NdY(3)
+                    if(zmax <= 0) z2 = self%sub_vector(i)%NdY(3) + zmax
                     !
                     self%sub_vector(i)%y( x1:x2:xstep, y1:y2:ystep, z1:z2:zstep ) = cvalue
                     !
                 case("z")
                     !
-                    if(xmin == 0) x1 = self%NdZ(1)
-                    if(xmax <= 0) x2 = self%NdZ(1) + xmax
+                    if(xmin == 0) x1 = self%sub_vector(i)%NdZ(1)
+                    if(xmax <= 0) x2 = self%sub_vector(i)%NdZ(1) + xmax
                     !
-                    if(ymin == 0) y1 = self%NdZ(2)
-                    if(ymax <= 0) y2 = self%NdZ(2) + ymax
+                    if(ymin == 0) y1 = self%sub_vector(i)%NdZ(2)
+                    if(ymax <= 0) y2 = self%sub_vector(i)%NdZ(2) + ymax
                     !
-                    if(zmin == 0) z1 = self%NdZ(3)
-                    if(zmax <= 0) z2 = self%NdZ(3) + zmax
+                    if(zmin == 0) z1 = self%sub_vector(i)%NdZ(3)
+                    if(zmax <= 0) z2 = self%sub_vector(i)%NdZ(3) + zmax
                     !
                     self%sub_vector(i)%z( x1:x2:xstep, y1:y2:ystep, z1:z2:zstep ) = cvalue
                     !
@@ -1282,8 +1255,6 @@ contains
                         !
                         class is( cVector3D_SG_t )
                             !
-                            !call errStop( "linComb_cVector3D_MR > cVector3D_SG_t case" )
-                            !
                             allocate( mr_rhs, source = cVector3D_MR_t( self%grid, rhs%grid_type ) )
                             !
                             call SGtoMR( rhs, mr_rhs )
@@ -1292,18 +1263,18 @@ contains
                             !
                             deallocate( mr_rhs )
                             !
+                        class is( rVector3D_SG_t )
+                            !
+                            call errStop( "linComb_cVector3D_MR > rVector3D_SG_t case not implemented" )
+                            !
+                        class is( cScalar3D_SG_t )
+                            !
+                            call errStop( "linComb_cVector3D_MR > cScalar3D_SG_t case not implemented" )
+                            !
                         class is( rScalar3D_SG_t )
                             !
-                            call errStop( "linComb_cVector3D_MR > rScalar3D_SG_t case" )
-                            ! !
-                            ! allocate( mr_rhs, source = rScalar3D_MR_t( rhs%grid, rhs%grid_type ) )
-                            ! !
-                            ! call SGtoMR( rhs, mr_rhs )
-                            ! !
-                            ! call self%linComb( mr_rhs )
-                            ! !
-                            ! deallocate( mr_rhs )
-                            ! !
+                            call errStop( "linComb_cVector3D_MR > rScalar3D_SG_t case not implemented" )
+                            !
                         class default
                             call errStop( "linComb_cVector3D_MR > Undefined rhs" )
                             !
@@ -1851,219 +1822,13 @@ contains
         character, intent( in ) :: xyz
         class( Vector_t ), allocatable, intent( inout ) :: interp
         !
-        type( cVector3D_SG_t ) :: interp_temp
-        real( kind=prec ), allocatable, dimension(:) :: xC, yC, zC
-        integer :: ix, iy, iz, i, ii
-        real( kind=prec ) :: wx, wy, wz
-        logical, dimension(:), allocatable :: tmp
+        type( cVector3D_MR_t ) :: temp_interp
         !
-        if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "interpFunc_cVector3D_SG > Self not allocated." )
-        endif
+        !> FIND THE i_grid SUBGRID FROM location(3) THEN self%sub_vector(i_grid)%interpFunc( 
         !
-        do ii = 1, self%grid%getNGrids()
-            !
-            select case( self%grid_type )
-                !
-                case( EDGE )
-                    !
-                    interp_temp = cVector3D_SG_t( self%grid, EDGE )
-                    !
-                    select case( xyz )
-                        !
-                        case("x")
-                            !
-                            allocate(xC(size(self%grid%del_x)))
-                            allocate(yC(size(self%grid%dy + 1)))
-                            allocate(zC(size(self%grid%dz + 1)))
-                            !
-                            xC = CumSum(self%grid%del_x)
-                            yC = CumSum([0._prec, self%grid%dy])
-                            zC = CumSum([0._prec, self%grid%dz])
-                            !
-                        case("y")
-                            !
-                            allocate(xC(size(self%grid%dx + 1)))
-                            allocate(yC(size(self%grid%del_y)))
-                            allocate(zC(size(self%grid%dz)))
-                            
-                            xC = CumSum([0._prec, self%grid%dx])
-                            yC = CumSum([self%grid%del_y])
-                            zC = CumSum([0._prec, self%grid%dz])
-                            !
-                        case("z")
-                            !
-                            allocate(xC(size(self%grid%dx + 1)))
-                            allocate(yC(size(self%grid%dy + 1)))
-                            allocate(zC(size(self%grid%del_z)))
-                            !
-                            xC = CumSum([0._prec, self%grid%dx])
-                            yC = CumSum([0._prec, self%grid%dy])
-                            zC = CumSum([self%grid%del_z])
-                            !
-                        case default
-                            call errStop( "interpFunc_cVector3D_MR: Unknown xyz" )
-                        !
-                    end select
-                    !
-                case( FACE )
-                    !
-                    interp_temp = cVector3D_SG_t( self%grid, FACE )
-                    !
-                    select case( xyz )
-                        !
-                        case( "x" )
-                            !
-                            allocate(xC(size(self%grid%dx + 1)))
-                            allocate(yC(size(self%grid%del_y)))
-                            allocate(zC(size(self%grid%del_z)))
-                            !
-                            xC = CumSum([0._prec, self%grid%dx])
-                            yC = CumSum([self%grid%del_y])
-                            zC = CumSum([self%grid%del_z])
-                            !
-                        case( "y" )
-                            !
-                            allocate(xC(size(self%grid%del_x)))
-                            allocate(yC(size(self%grid%dy + 1)))
-                            allocate(zC(size(self%grid%del_z)))
-                            !
-                            xC = CumSum([self%grid%del_x])
-                            yC = CumSum([0._prec, self%grid%dy])
-                            zC = CumSum([self%grid%del_z])
-                            !
-                        case( "z" )
-                            !
-                            allocate(xC(size(self%grid%del_x)))
-                            allocate(yC(size(self%grid%del_y)))
-                            allocate(zC(size(self%grid%dz + 1)))
-                            !
-                            xC = CumSum([self%grid%del_x])
-                            yC = CumSum([self%grid%del_y])
-                            zC = CumSum([0._prec, self%grid%dz])
-                            !
-                        case default
-                            call errStop( "interpFunc_cVector3D_MR: Unknown xyz" )
-                        !
-                    end select
-                    !
-                case default
-                    call errStop( "interpFunc_cVector3D_MR: Unknown grid_type" )
-                !
-            end select
-            !
-            xC = xC + self%grid%ox
-            yC = yC + self%grid%oy
-            zC = zC - sum(self%grid%dz(1:self%grid%nzAir)) - self%grid%oz
-            !
-            tmp = location(1) > xC
-            !
-            ix = size( tmp )
-            !
-            do i = size( tmp ), 1, -1 
-                if(tmp(i)) then
-                    ix = i
-                    exit
-                endif
-            enddo
-            !
-            tmp = location(2) > yC
-            !
-            iy = size( tmp )
-            !
-            do i = size( tmp ), 1, -1 
-                if(tmp(i)) then
-                    iy = i
-                    exit
-                endif
-            enddo
-            !
-            tmp = location(3) > zC
-            !
-            iz = size( tmp )
-            !
-            do i = size( tmp ), 1, -1 
-                if(tmp(i)) then
-                    iz = i
-                    exit
-                endif
-            enddo
-            !
-            deallocate( tmp )
-            !
-            !> ????
-            !ix = findloc( location(1) > xC, .TRUE., back = .TRUE., dim = 1 )
-            !iy = findloc( location(2) > yC, .TRUE., back = .TRUE., dim = 1 )
-            !iz = findloc( location(3) > zC, .TRUE., back = .TRUE., dim = 1 )
-            !
-            ! Find weights
-            wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))
-            !
-            deallocate( xC )
-            !
-            wy = (yC(iy + 1) - location(2))/(yC(iy + 1) - yC(iy))
-            !
-            deallocate( yC )
-            !
-            wz = (zC(iz + 1) - location(3))/(zC(iz + 1) - zC(iz))
-            !
-            deallocate( zC )
-            !
-            select case( xyz )
-                !
-                case("x")
-                    !
-                    interp_temp%x(ix,iy,iz) = wx*wy*wz
-                    interp_temp%x(ix+1,iy,iz) = (1-wx)*wy*wz
-                    interp_temp%x(ix,iy+1,iz) = wx*(1-wy)*wz
-                    interp_temp%x(ix,iy,iz+1) = wx*wy*(1-wz)
-                    interp_temp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                    interp_temp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                    interp_temp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                    interp_temp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                    !
-                case("y")
-                    !
-                    interp_temp%y(ix,iy,iz) = wx*wy*wz
-                    interp_temp%y(ix+1,iy,iz) = (1-wx)*wy*wz
-                    interp_temp%y(ix,iy+1,iz) = wx*(1-wy)*wz
-                    interp_temp%y(ix,iy,iz+1) = wx*wy*(1-wz)
-                    interp_temp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                    interp_temp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                    interp_temp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                    interp_temp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                    !
-                case("z")
-                    !
-                    interp_temp%z(ix,iy,iz) = wx*wy*wz
-                    interp_temp%z(ix+1,iy,iz) = (1-wx)*wy*wz
-                    interp_temp%z(ix,iy+1,iz) = wx*(1-wy)*wz
-                    interp_temp%z(ix,iy,iz+1) = wx*wy*(1-wz)
-                    interp_temp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                    interp_temp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                    interp_temp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                    interp_temp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                    !
-                case default
-                    call errStop( "interpFunc_cVector3D_MR: Unknown xyz" )
-                !
-            end select !XYZ
-            !
-            if( allocated( interp ) ) deallocate( interp )
-            allocate( interp, source = self )
-            !
-            select type( interp )
-                !
-                class is( cVector3D_MR_t )
-                    !
-                    interp%sub_vector(ii) = interp_temp
-                    !
-                class default
-                    call errStop( "interpFunc_cVector3D_MR: undefined interp" )
-                !
-            end select
-            !
-        enddo
+        temp_interp = self
+        !
+        allocate( interp, source = temp_interp )
         !
     end subroutine interpFunc_cVector3D_MR
     !
@@ -2197,11 +1962,6 @@ contains
             !
             class is( cVector3D_MR_t )
                 !
-                self%NdX = rhs%NdX
-                self%NdY = rhs%NdY
-                self%NdZ = rhs%NdZ
-                self%Nxyz = rhs%Nxyz
-                !
                 if( allocated( rhs%sub_vector ) ) then
                     !
                     if( allocated( self%sub_vector ) ) deallocate( self%sub_vector )
@@ -2247,7 +2007,15 @@ contains
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        call errStop( "write_cVector3D_MR not implemented!" )
+        integer :: i_grid
+        !
+        write( *, * ) "cVector3D_MR: ", self%nx, self%ny, self%nz
+        !
+        do i_grid = 1, size( self%sub_vector)
+            !
+            write( *, * ) "   ", i_grid, ":", self%sub_vector(i_grid)%nx, self%sub_vector(i_grid)%ny, self%sub_vector(i_grid)%nz
+            !
+        enddo
         !
     end subroutine write_cVector3D_MR
     !

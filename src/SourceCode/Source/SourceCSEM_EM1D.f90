@@ -343,53 +343,62 @@ contains
         bgdat%Ey = 0._real64
         bgdat%Ez = 0._real64
         !
-        counter = 1
-        !> E-field corresponding to these nodes is Ex
-        do iz = 1, self%sigma%metric%grid%Nz+1 !Edge Z
-            do iy = 1, self%sigma%metric%grid%Ny+1 !Edge Y
-                do ix = 1,self%sigma%metric%grid%Nx !Center X
-                    !
-                    bgdat%Expos(counter,1) = self%sigma%metric%grid%x_center(ix)
-                    bgdat%Expos(counter,2) = self%sigma%metric%grid%y_edge(iy)
-                    bgdat%Expos(counter,3) = self%sigma%metric%grid%z_edge(iz)
-                    !
-                    counter = counter + 1
-                    !
+        select type( grid => self%sigma%metric%grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                counter = 1
+                !> E-field corresponding to these nodes is Ex
+                do iz = 1, grid%Nz+1 !Edge Z
+                    do iy = 1, grid%Ny+1 !Edge Y
+                        do ix = 1, grid%Nx !Center X
+                            !
+                            bgdat%Expos(counter,1) = grid%x_center(ix)
+                            bgdat%Expos(counter,2) = grid%y_edge(iy)
+                            bgdat%Expos(counter,3) = grid%z_edge(iz)
+                            !
+                            counter = counter + 1
+                            !
+                        enddo
+                    enddo
                 enddo
-            enddo
-        enddo
-        !
-        counter = 1
-        !> E-field corresponing to these nodes is Ey
-        do iz = 1,self%sigma%metric%grid%Nz+1 !Edge Z
-            do iy = 1,self%sigma%metric%grid%Ny !Center y
-                do ix = 1,self%sigma%metric%grid%Nx+1 !Edge x
-                    !
-                    bgdat%Eypos(counter,1) = self%sigma%metric%grid%x_edge(ix)
-                    bgdat%Eypos(counter,2) = self%sigma%metric%grid%y_center(iy)
-                    bgdat%Eypos(counter,3) = self%sigma%metric%grid%z_edge(iz)
-                    !
-                    counter = counter + 1
-                    !
+                !
+                counter = 1
+                !> E-field corresponing to these nodes is Ey
+                do iz = 1, grid%Nz+1 !Edge Z
+                    do iy = 1, grid%Ny !Center y
+                        do ix = 1, grid%Nx+1 !Edge x
+                            !
+                            bgdat%Eypos(counter,1) = grid%x_edge(ix)
+                            bgdat%Eypos(counter,2) = grid%y_center(iy)
+                            bgdat%Eypos(counter,3) = grid%z_edge(iz)
+                            !
+                            counter = counter + 1
+                            !
+                        enddo
+                    enddo
                 enddo
-            enddo
-        enddo
-        !
-        counter = 1
-        !> E-field corresponing to these nodes is Ez
-        do iz = 1,self%sigma%metric%grid%Nz !Center Z
-            do iy = 1,self%sigma%metric%grid%Ny+1 !Edge y
-                do ix = 1,self%sigma%metric%grid%Nx+1 !Edge x
-                    !
-                    bgdat%Ezpos(counter,1)= self%sigma%metric%grid%x_edge(ix)
-                    bgdat%Ezpos(counter,2) = self%sigma%metric%grid%y_edge(iy)
-                    bgdat%Ezpos(counter,3) = self%sigma%metric%grid%z_center(iz)
-                    !
-                    counter = counter + 1
-                    !
+                !
+                counter = 1
+                !> E-field corresponing to these nodes is Ez
+                do iz = 1, grid%Nz !Center Z
+                    do iy = 1, grid%Ny+1 !Edge y
+                        do ix = 1, grid%Nx+1 !Edge x
+                            !
+                            bgdat%Ezpos(counter,1)= grid%x_edge(ix)
+                            bgdat%Ezpos(counter,2) = grid%y_edge(iy)
+                            bgdat%Ezpos(counter,3) = grid%z_center(iz)
+                            !
+                            counter = counter + 1
+                            !
+                        enddo
+                    enddo
                 enddo
-            enddo
-        enddo
+                !
+            class default
+                call errStop( "createBackgroundData > grid must be Grid3D_SG_t" )
+            !
+        end select
         !
     end subroutine createBackgroundData
     !

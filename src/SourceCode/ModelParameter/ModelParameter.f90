@@ -264,7 +264,7 @@ module ModelParameter
             import :: ModelParameter_t, Scalar_t
             !
             class( ModelParameter_t ), intent( in ) :: self
-            class( Scalar_t ), allocatable, intent( inout ) :: sigma_node
+            class( Scalar_t ), intent( inout ) :: sigma_node
             !
         end subroutine interface_node_cond_model_parameter
         !

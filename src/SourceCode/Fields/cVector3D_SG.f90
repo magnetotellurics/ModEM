@@ -3,10 +3,13 @@
 !
 module cVector3D_SG
     !
+    use Grid3D_SG
     use rVector3D_SG
     use cScalar3D_SG
     !
     type, extends( Vector_t ) :: cVector3D_SG_t
+        !
+        integer, dimension(3) :: NdX, NdY, NdZ, Nxyz
         !
         complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
@@ -21,6 +24,7 @@ module cVector3D_SG
             procedure, public :: setOneBoundary => setOneBoundary_cVector3D_SG
             !
             !> Dimensioning operations
+            procedure, public :: length => length_cVector3D_SG
             procedure, public :: setVecComponents => setVecComponents_cVector3D_SG
             !
             !> Arithmetic/algebraic unary operations
@@ -96,7 +100,7 @@ contains
         !
         type( cVector3D_SG_t ) :: self
         !
-        integer :: status
+        integer :: alloc_stat
         !
         !write( *, * ) "Constructor cVector3D_SG"
         !
@@ -113,14 +117,14 @@ contains
         !
         if( self%grid_type == EDGE ) then
             !
-            allocate(self%x(self%nx, self%ny + 1, self%nz + 1), STAT = status)
-            self%is_allocated = status.EQ.0
+            allocate( self%x(self%nx, self%ny + 1, self%nz + 1), stat=alloc_stat )
+            self%is_allocated = alloc_stat .EQ. 0
             !
-            allocate(self%y(self%nx + 1, self%ny, self%nz + 1), STAT = status)
-            self%is_allocated = self%is_allocated.AND.(status.EQ.0)
+            allocate( self%y(self%nx + 1, self%ny, self%nz + 1), stat=alloc_stat )
+            self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
-            allocate(self%z(self%nx + 1, self%ny + 1, self%nz), STAT = status)
-            self%is_allocated = self%is_allocated.AND.(status.EQ.0)
+            allocate( self%z(self%nx + 1, self%ny + 1, self%nz), stat=alloc_stat )
+            self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
             self%NdX = (/self%nx, self%ny + 1, self%nz + 1/)
             self%NdY = (/self%nx + 1, self%ny, self%nz + 1/)
@@ -128,14 +132,14 @@ contains
             !
         elseif( self%grid_type == FACE ) then
             !
-            allocate(self%x(self%nx + 1, self%ny, self%nz), STAT = status)
-            self%is_allocated = status.EQ.0
+            allocate( self%x(self%nx + 1, self%ny, self%nz), stat=alloc_stat )
+            self%is_allocated = alloc_stat .EQ. 0
             !
-            allocate(self%y(self%nx, self%ny + 1, self%nz), STAT = status)
-            self%is_allocated = self%is_allocated .AND. (status.EQ.0)
+            allocate( self%y(self%nx, self%ny + 1, self%nz), stat=alloc_stat )
+            self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
-            allocate(self%z(self%nx, self%ny, self%nz + 1), STAT = status)
-            self%is_allocated = self%is_allocated .AND. (status.EQ.0)
+            allocate( self%z(self%nx, self%ny, self%nz + 1), stat=alloc_stat)
+            self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
             self%NdX = (/self%nx + 1, self%ny, self%nz/)
             self%NdY = (/self%nx, self%ny + 1, self%nz/)
@@ -341,6 +345,19 @@ contains
         end select
         !
     end subroutine setOneBoundary_cVector3D_SG
+    !
+    !> No subroutine briefing
+    !
+    function length_cVector3D_SG( self ) result( field_length )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in ) :: self
+        !
+        integer :: field_length
+        !
+        field_length = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
+        !
+    end function length_cVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -1532,7 +1549,7 @@ contains
         character, intent( in ) :: xyz
         class( Vector_t ), allocatable, intent( inout ) :: interp
         !
-        type( cVector3D_SG_t ) :: interp_temp
+        type( cVector3D_SG_t ) :: temp_interp
         real( kind=prec ), allocatable, dimension(:) :: xC, yC, zC
         integer :: ix, iy, iz, i
         real( kind=prec ) :: wx, wy, wz
@@ -1542,98 +1559,106 @@ contains
             call errStop( "interpFunc_cVector3D_SG > Self not allocated." )
         endif
         !
-        select case( self%grid_type )
+        select type( grid => self%grid )
             !
-            case( EDGE )
+            class is( Grid3D_SG_t )
                 !
-                interp_temp = cVector3D_SG_t( self%grid, EDGE )
-                !
-                select case( xyz )
+                select case( self%grid_type )
                     !
-                    case("x")
+                    case( EDGE )
                         !
-                        allocate(xC(size(self%grid%del_x)))
-                        allocate(yC(size(self%grid%dy + 1)))
-                        allocate(zC(size(self%grid%dz + 1)))
+                        temp_interp = cVector3D_SG_t( grid, EDGE )
                         !
-                        xC = CumSum(self%grid%del_x)
-                        yC = CumSum([0._prec, self%grid%dy])
-                        zC = CumSum([0._prec, self%grid%dz])
+                        select case( xyz )
+                            !
+                            case("x")
+                                !
+                                allocate(xC(size(grid%del_x)))
+                                allocate(yC(size(grid%dy + 1)))
+                                allocate(zC(size(grid%dz + 1)))
+                                !
+                                xC = CumSum(grid%del_x)
+                                yC = CumSum([0._prec, grid%dy])
+                                zC = CumSum([0._prec, grid%dz])
+                                !
+                            case("y")
+                                !
+                                allocate(xC(size(grid%dx + 1)))
+                                allocate(yC(size(grid%del_y)))
+                                allocate(zC(size(grid%dz)))
+                                
+                                xC = CumSum([0._prec, grid%dx])
+                                yC = CumSum([grid%del_y])
+                                zC = CumSum([0._prec, grid%dz])
+                                !
+                            case("z")
+                                !
+                                allocate(xC(size(grid%dx + 1)))
+                                allocate(yC(size(grid%dy + 1)))
+                                allocate(zC(size(grid%del_z)))
+                                !
+                                xC = CumSum([0._prec, grid%dx])
+                                yC = CumSum([0._prec, grid%dy])
+                                zC = CumSum([grid%del_z])
+                                !
+                            case default
+                                call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
+                            !
+                        end select
                         !
-                    case("y")
+                    case( FACE )
                         !
-                        allocate(xC(size(self%grid%dx + 1)))
-                        allocate(yC(size(self%grid%del_y)))
-                        allocate(zC(size(self%grid%dz)))
-                        
-                        xC = CumSum([0._prec, self%grid%dx])
-                        yC = CumSum([self%grid%del_y])
-                        zC = CumSum([0._prec, self%grid%dz])
+                        temp_interp = cVector3D_SG_t( grid, FACE )
                         !
-                    case("z")
-                        !
-                        allocate(xC(size(self%grid%dx + 1)))
-                        allocate(yC(size(self%grid%dy + 1)))
-                        allocate(zC(size(self%grid%del_z)))
-                        !
-                        xC = CumSum([0._prec, self%grid%dx])
-                        yC = CumSum([0._prec, self%grid%dy])
-                        zC = CumSum([self%grid%del_z])
+                        select case( xyz )
+                            !
+                            case( "x" )
+                                !
+                                allocate(xC(size(grid%dx + 1)))
+                                allocate(yC(size(grid%del_y)))
+                                allocate(zC(size(grid%del_z)))
+                                !
+                                xC = CumSum([0._prec, grid%dx])
+                                yC = CumSum([grid%del_y])
+                                zC = CumSum([grid%del_z])
+                                !
+                            case( "y" )
+                                !
+                                allocate(xC(size(grid%del_x)))
+                                allocate(yC(size(grid%dy + 1)))
+                                allocate(zC(size(grid%del_z)))
+                                !
+                                xC = CumSum([grid%del_x])
+                                yC = CumSum([0._prec, grid%dy])
+                                zC = CumSum([grid%del_z])
+                                !
+                            case( "z" )
+                                !
+                                allocate(xC(size(grid%del_x)))
+                                allocate(yC(size(grid%del_y)))
+                                allocate(zC(size(grid%dz + 1)))
+                                !
+                                xC = CumSum([grid%del_x])
+                                yC = CumSum([grid%del_y])
+                                zC = CumSum([0._prec, grid%dz])
+                                !
+                            case default
+                                call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
+                            !
+                        end select
                         !
                     case default
-                        call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
+                        call errStop( "interpFunc_cVector3D_SG: Unknown grid_type" )
                     !
                 end select
                 !
-            case( FACE )
+                xC = xC + grid%ox
+                yC = yC + grid%oy
+                zC = zC - sum(grid%dz(1:grid%nzAir)) - grid%oz
                 !
-                interp_temp = cVector3D_SG_t( self%grid, FACE )
-                !
-                select case( xyz )
-                    !
-                    case( "x" )
-                        !
-                        allocate(xC(size(self%grid%dx + 1)))
-                        allocate(yC(size(self%grid%del_y)))
-                        allocate(zC(size(self%grid%del_z)))
-                        !
-                        xC = CumSum([0._prec, self%grid%dx])
-                        yC = CumSum([self%grid%del_y])
-                        zC = CumSum([self%grid%del_z])
-                        !
-                    case( "y" )
-                        !
-                        allocate(xC(size(self%grid%del_x)))
-                        allocate(yC(size(self%grid%dy + 1)))
-                        allocate(zC(size(self%grid%del_z)))
-                        !
-                        xC = CumSum([self%grid%del_x])
-                        yC = CumSum([0._prec, self%grid%dy])
-                        zC = CumSum([self%grid%del_z])
-                        !
-                    case( "z" )
-                        !
-                        allocate(xC(size(self%grid%del_x)))
-                        allocate(yC(size(self%grid%del_y)))
-                        allocate(zC(size(self%grid%dz + 1)))
-                        !
-                        xC = CumSum([self%grid%del_x])
-                        yC = CumSum([self%grid%del_y])
-                        zC = CumSum([0._prec, self%grid%dz])
-                        !
-                    case default
-                        call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
-                    !
-                end select
-                !
-            case default
-                call errStop( "interpFunc_cVector3D_SG: Unknown grid_type" )
-            !
+            class default
+                call errStop( "interpFunc_cVector3D_SG > Undefined grid" )
         end select
-        !
-        xC = xC + self%grid%ox
-        yC = yC + self%grid%oy
-        zC = zC - sum(self%grid%dz(1:self%grid%nzAir)) - self%grid%oz
         !
         tmp = location(1) > xC
         !
@@ -1692,43 +1717,43 @@ contains
             !
             case("x")
                 !
-                interp_temp%x(ix,iy,iz) = wx*wy*wz
-                interp_temp%x(ix+1,iy,iz) = (1-wx)*wy*wz
-                interp_temp%x(ix,iy+1,iz) = wx*(1-wy)*wz
-                interp_temp%x(ix,iy,iz+1) = wx*wy*(1-wz)
-                interp_temp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                interp_temp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                interp_temp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                interp_temp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                temp_interp%x(ix,iy,iz) = wx*wy*wz
+                temp_interp%x(ix+1,iy,iz) = (1-wx)*wy*wz
+                temp_interp%x(ix,iy+1,iz) = wx*(1-wy)*wz
+                temp_interp%x(ix,iy,iz+1) = wx*wy*(1-wz)
+                temp_interp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                temp_interp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                temp_interp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                temp_interp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
                 !
             case("y")
                 !
-                interp_temp%y(ix,iy,iz) = wx*wy*wz
-                interp_temp%y(ix+1,iy,iz) = (1-wx)*wy*wz
-                interp_temp%y(ix,iy+1,iz) = wx*(1-wy)*wz
-                interp_temp%y(ix,iy,iz+1) = wx*wy*(1-wz)
-                interp_temp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                interp_temp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                interp_temp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                interp_temp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                temp_interp%y(ix,iy,iz) = wx*wy*wz
+                temp_interp%y(ix+1,iy,iz) = (1-wx)*wy*wz
+                temp_interp%y(ix,iy+1,iz) = wx*(1-wy)*wz
+                temp_interp%y(ix,iy,iz+1) = wx*wy*(1-wz)
+                temp_interp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                temp_interp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                temp_interp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                temp_interp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
                 !
             case("z")
                 !
-                interp_temp%z(ix,iy,iz) = wx*wy*wz
-                interp_temp%z(ix+1,iy,iz) = (1-wx)*wy*wz
-                interp_temp%z(ix,iy+1,iz) = wx*(1-wy)*wz
-                interp_temp%z(ix,iy,iz+1) = wx*wy*(1-wz)
-                interp_temp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                interp_temp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                interp_temp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                interp_temp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                temp_interp%z(ix,iy,iz) = wx*wy*wz
+                temp_interp%z(ix+1,iy,iz) = (1-wx)*wy*wz
+                temp_interp%z(ix,iy+1,iz) = wx*(1-wy)*wz
+                temp_interp%z(ix,iy,iz+1) = wx*wy*(1-wz)
+                temp_interp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                temp_interp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                temp_interp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                temp_interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
                 !
             case default
                 call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
             !
         end select !XYZ
         !
-        allocate( interp, source = interp_temp )
+        allocate( interp, source = temp_interp )
         !
     end subroutine interpFunc_cVector3D_SG
     !

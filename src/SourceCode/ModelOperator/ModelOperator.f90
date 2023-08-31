@@ -13,7 +13,7 @@ module ModelOperator
     !
     type, abstract :: ModelOperator_t
         !
-        class( MetricElements_t ), allocatable :: metric
+        class( MetricElements_t ), pointer :: metric
         !
         integer :: mKey(8)
         !
@@ -219,8 +219,6 @@ contains
         implicit none
         !
         class( ModelOperator_t ), intent( inout ) :: self
-        !
-        if( allocated( self%metric ) ) deallocate( self%metric )
         !
     end subroutine baseDealloc_ModelOperator
     !

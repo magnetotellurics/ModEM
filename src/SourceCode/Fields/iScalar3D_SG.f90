@@ -7,6 +7,10 @@ module iScalar3D_SG
     !
     type, extends( Scalar_t ) :: iScalar3D_SG_t
         !
+        integer, dimension(3) :: NdV
+        !
+        integer :: Nxyz
+        !
         integer( kind=prec ), allocatable, dimension(:,:,:) :: v
         !
         integer( kind=prec ), allocatable, dimension(:) :: s_v
@@ -21,6 +25,7 @@ module iScalar3D_SG
             procedure, public :: setOneBoundary => setOneBoundary_iScalar3D_SG
             !
             !> Dimensioning operations
+            procedure, public :: length => length_iScalar3D_SG
             procedure, public :: setVecComponents => setVecComponents_iScalar3D_SG
             !
             !> Arithmetic/algebraic unary operations
@@ -106,18 +111,18 @@ contains
         !
         if( grid_type == NODE ) then
              !
-             allocate( self%v(nx + 1, ny + 1, nz + 1), STAT = status )
+             allocate( self%v(nx + 1, ny + 1, nz + 1), stat=status )
              self%NdV = (/self%nx + 1, self%ny + 1, self%nz + 1/)
              !
         elseif( grid_type == CELL ) then
              !
-             allocate(self%v(nx, ny, nz), STAT = status) 
+             allocate(self%v(nx, ny, nz), stat=status) 
              self%NdV = (/self%nx, self%ny, self%nz/)
              !
         elseif( grid_type == CELL_EARTH ) then
              !
              self%nz = nz_earth
-             allocate(self%v(nx, ny, nz_earth), STAT = status)
+             allocate(self%v(nx, ny, nz_earth), stat=status)
              self%NdV = (/nx, ny, nz_earth/)
              !
         else
@@ -274,6 +279,19 @@ contains
         end select
         !
     end subroutine setOneBoundary_iScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
+    function length_iScalar3D_SG( self ) result( field_length )
+        implicit none
+        !
+        class( iScalar3D_SG_t ), intent( in ) :: self
+        !
+        integer :: field_length
+        !
+        field_length = self%Nxyz
+        !
+    end function length_iScalar3D_SG
     !
     !> No subroutine briefing
     !

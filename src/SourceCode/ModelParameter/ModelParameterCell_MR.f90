@@ -14,7 +14,7 @@ module ModelParameterCell_MR
         !
         type( Grid3D_MR_t ) :: param_grid_mr
         !
-        !> cell_cond treated as SG field array here (base property)
+        !> cell_cond treated as rScalar3D_SG array here (base class property)
         !
         contains
             !
@@ -86,8 +86,6 @@ contains
         self%cell_cond(1) = cell_cond
         !
         self%cell_cond(1)%grid => self%param_grid
-        !
-        self%cell_cond(1)%store_state = compound
         !
         if( present( param_type ) ) then
             !
@@ -171,47 +169,6 @@ contains
     !
     !> Map the entire model cells into a single edge Vector_t(e_vec).
     !> Need to implement for VTI ????
-    !
-    subroutine nodeCond_ModelParameterCell_MR( self, sigma_node )
-        implicit none
-        !
-        class( ModelParameterCell_MR_t ), intent( in ) :: self
-        class( Scalar_t ), allocatable, intent( inout ) :: sigma_node
-        !
-        integer :: k0, k1, k2
-        type( rScalar3D_SG_t ) :: sigma_cell
-        type( rScalar3D_MR_t ) :: sigma_cell_mr
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "nodeCond_ModelParameterCell_SG > self not allocated" )
-        endif
-        !
-        if( .NOT. sigma_node%is_allocated ) then
-            call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
-        endif
-        !
-        k0 = self%metric%grid%NzAir
-        k1 = k0 + 1
-        k2 = self%metric%grid%Nz
-        !
-        sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
-        !
-        sigma_cell%v( :, :, 1:k0 ) = self%air_cond
-        !
-        sigma_cell%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v, kind=prec ) )
-        !
-        sigma_cell_mr = rScalar3D_MR_t( self%metric%grid, CELL )
-        !
-        call SGtoMR( sigma_cell, sigma_cell_mr )
-        !
-        call sigma_cell_mr%mult( self%metric%v_cell )
-        !
-        call sigma_cell_mr%toNode( sigma_node, .TRUE. )
-        !
-    end subroutine nodeCond_ModelParameterCell_MR
-    !
-    !> Map the entire model cells into a single edge Vector_t(e_vec).
-    !> Need to implement for VTI ????
     ! !
     ! subroutine nodeCond_ModelParameterCell_MR( self, sigma_node )
         ! implicit none
@@ -219,8 +176,8 @@ contains
         ! class( ModelParameterCell_MR_t ), intent( in ) :: self
         ! class( Scalar_t ), allocatable, intent( inout ) :: sigma_node
         ! !
-        ! integer :: i_grid, k0, k1, k2
-        ! type( rScalar3D_MR_t ) :: sigma_cell_mr_air_layers
+        ! integer :: k0, k1, k2
+        ! type( rScalar3D_SG_t ) :: sigma_cell
         ! type( rScalar3D_MR_t ) :: sigma_cell_mr
         ! !
         ! if( .NOT. self%is_allocated ) then
@@ -231,44 +188,101 @@ contains
             ! call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
         ! endif
         ! !
-        ! write( *, * ) "nodeCond_ModelParameterCell_MR - sigma_cell_mr"
+        ! k0 = self%metric%grid%NzAir
+        ! k1 = k0 + 1
+        ! k2 = self%metric%grid%Nz
         ! !
-        ! sigma_cell_mr = rScalar3D_MR_t( self%param_grid_mr, CELL )
+        ! sigma_cell = rScalar3D_SG_t( self%metric%grid, CELL )
         ! !
-        ! call SGtoMR( self%cell_cond(1), sigma_cell_mr )
+        ! sigma_cell%v( :, :, 1:k0 ) = self%air_cond
         ! !
-        ! write( *, * ) "nodeCond_ModelParameterCell_MR - sigma_cell_mr_air_layers"
+        ! sigma_cell%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v, kind=prec ) )
         ! !
-        ! sigma_cell_mr_air_layers = rScalar3D_MR_t( self%metric%grid, CELL )
+        ! sigma_cell_mr = rScalar3D_MR_t( self%metric%grid, CELL )
         ! !
-        ! select type( grid => self%metric%grid )
-            ! !
-            ! class is( Grid3D_MR_t )
-                ! !
-                ! do i_grid = 1, size( grid%sub_grid )
-                    ! !
-                    ! k0 = grid%sub_grid( i_grid )%NzAir
-                    ! k1 = k0 + 1
-                    ! k2 = grid%sub_grid( i_grid )%Nz
-                    ! !
-                    ! write( *, * ) "i_grid, k1, k2: ", i_grid, k1, k2
-                    ! sigma_cell_mr_air_layers%sub_scalar( i_grid )%v( :, :, 1:k0 ) = self%air_cond
-                    ! !
-                    ! sigma_cell_mr_air_layers%sub_scalar( i_grid )%v( :, :, k1:k2 ) = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
-                    ! !
-                ! enddo
-                ! !
-                ! call sigma_cell_mr_air_layers%mult( self%metric%v_cell )
-                ! !
-                ! call sigma_cell_mr_air_layers%toNode( sigma_node, .TRUE. )
-                ! !
-            ! class default
-                ! call errStop( "nodeCond_ModelParameterCell_MR > Unclassified grid" )
-            ! !
-        ! end select
+        ! call fromSG( sigma_cell, sigma_cell_mr )
+        ! !
+        ! call sigma_cell_mr%mult( self%metric%v_cell )
+        ! !
+        ! call sigma_cell_mr%toNode( sigma_node, .TRUE. )
         ! !
     ! end subroutine nodeCond_ModelParameterCell_MR
     ! !
+    !> Map the entire model cells into a single edge Vector_t(e_vec).
+    !> Need to implement for VTI ????
+    !
+    subroutine nodeCond_ModelParameterCell_MR( self, sigma_node )
+        implicit none
+        !
+        class( ModelParameterCell_MR_t ), intent( in ) :: self
+        class( Scalar_t ), intent( inout ) :: sigma_node
+        !
+        integer :: i_grid, k0, k1, k2
+        type( rScalar3D_MR_t ) :: sigma_cell_mr_air_layers
+        type( rScalar3D_MR_t ) :: sigma_cell_mr
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "nodeCond_ModelParameterCell_SG > self not allocated" )
+        endif
+        !
+        if( .NOT. sigma_node%is_allocated ) then
+            call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
+        endif
+        !
+        sigma_cell_mr = rScalar3D_MR_t( self%param_grid_mr, self%cell_cond(1)%grid_type )
+        !
+        call sigma_cell_mr%fromSG( self%cell_cond(1) )
+        !
+        write( *, * )  "sigma_cell_mr after: "
+        !
+        call sigma_cell_mr%write(0)
+        !
+        write( *, * )  "cell_cond(1): ", self%cell_cond(1)%nx, self%cell_cond(1)%ny, self%cell_cond(1)%nz
+        !
+        sigma_cell_mr_air_layers = rScalar3D_MR_t( self%metric%grid, CELL )
+        !
+        write( *, * )  "sigma_cell_mr_air_layers: "
+        !
+        call sigma_cell_mr_air_layers%write(0)
+        !
+        select type( grid => self%metric%grid )
+            !
+            class is( Grid3D_MR_t )
+                !
+                do i_grid = 1, size( grid%sub_grid )
+                    !
+                    if( i_grid == 1 ) then
+                        !
+                        k0 = grid%sub_grid(i_grid)%NzAir
+                        k1 = k0 + 1
+                        k2 = grid%sub_grid(i_grid)%Nz
+                        !
+                        sigma_cell_mr_air_layers%sub_scalar( i_grid )%v( :, :, 1:k0 ) = self%air_cond
+                        !
+                        sigma_cell_mr_air_layers%sub_scalar( i_grid )%v( :, :, k1:k2 ) = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
+                        !
+                        write( *, * ) i_grid, size( sigma_cell_mr_air_layers%sub_scalar( i_grid )%v( :, :, k1:k2 ) ), size( sigma_cell_mr%sub_scalar( i_grid )%v )
+                    else
+                        !
+                        write( *, * ) i_grid, size( sigma_cell_mr_air_layers%sub_scalar( i_grid )%v ), size( sigma_cell_mr%sub_scalar( i_grid )%v )
+                        !
+                        sigma_cell_mr_air_layers%sub_scalar( i_grid )%v = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
+                        !
+                    endif
+                    !
+                enddo
+                !
+                call sigma_cell_mr_air_layers%mult( self%metric%v_cell )
+                !
+                call sigma_cell_mr_air_layers%toNode( sigma_node, .TRUE. )
+                !
+            class default
+                call errStop( "nodeCond_ModelParameterCell_MR > Unclassified grid" )
+            !
+        end select
+        !
+    end subroutine nodeCond_ModelParameterCell_MR
+    !
     !> Map the entire model cells into a single edge Vector_t(e_vec).
     !
     subroutine PDEmapping_ModelParameterCell_MR( self, e_vec )
@@ -405,7 +419,7 @@ contains
                 !mr_m = e_vec%get_array() !????
                 !
             class default
-                call errStop( "SGtoMR_rScalar3D_MR > Unclassified grid" )
+                call errStop( "fromSG_rScalar3D_MR > Unclassified grid" )
             !
         end select
         !

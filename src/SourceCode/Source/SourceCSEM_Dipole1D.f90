@@ -117,9 +117,18 @@ contains
         write( *, * ) "          - Extract CSEM Source from Dipole 1D"
         !
         call self%set1DModel
-        !
-        call initilize_1d_vectors( self%sigma%metric%grid ) !> Initilize the 1D vectors where to compupte the e_field field
-        !
+		!
+		select type( grid => self%sigma%metric%grid )
+			!
+			class is( Grid3D_SG_t )
+				!
+				call initilize_1d_vectors( grid ) !> Initilize the 1D vectors where to compupte the e_field field
+				!
+			class default
+				call errStop( "createE_SourceCSEM_Dipole1D > grid must be Grid3D_SG_t" )
+			!
+		end select
+		!
         call comp_dipole1D !> Calculate e_field-Field by Key's code
         !
         call self%create_Ep_from_Dipole1D( self%sigma%metric%grid )
@@ -157,7 +166,7 @@ contains
     subroutine initilize_1d_vectors( grid )
         implicit none
         !
-        class( Grid_t ), intent( in ) :: grid 
+        type( Grid3D_SG_t ), intent( in ) :: grid 
         !
         integer counter, ix, iy, iz
         !
@@ -188,9 +197,9 @@ contains
         counter = 1
         !
         !> e_field-field corresponding to these nodes is Ex
-        do iz = 1,grid%Nz+1 !Edge Z
-            do iy = 1,grid%Ny+1 !Edge Y
-                do ix = 1,grid%Nx !Center X
+        do iz = 1, grid%Nz+1 !Edge Z
+            do iy = 1, grid%Ny+1 !Edge Y
+                do ix = 1, grid%Nx !Center X
                     !
                     x1D(counter) = grid%x_center(ix)
                     y1D(counter) = grid%y_edge(iy)
@@ -203,9 +212,9 @@ contains
         enddo
         !
         !> e_field-field corresponding to these nodes is Ey
-        do iz = 1,grid%Nz+1 !Edge Z
-            do iy = 1,grid%Ny !Center y
-                do ix = 1,grid%Nx+1 !Edge x
+        do iz = 1, grid%Nz+1 !Edge Z
+            do iy = 1, grid%Ny !Center y
+                do ix = 1, grid%Nx+1 !Edge x
                     !
                     x1D(counter) = grid%x_edge(ix)
                     y1D(counter) = grid%y_center(iy)
@@ -218,9 +227,9 @@ contains
         enddo
         !
         !> e_field-field corresponding to these nodes is Ez
-        do iz = 1,grid%Nz !Center Z
-            do iy = 1,grid%Ny+1 !Edge y
-                do ix = 1,grid%Nx+1 !Edge x
+        do iz = 1, grid%Nz !Center Z
+            do iy = 1, grid%Ny+1 !Edge y
+                do ix = 1, grid%Nx+1 !Edge x
                     !
                     x1D(counter) = grid%x_edge(ix)
                     y1D(counter) = grid%y_edge(iy)
@@ -244,14 +253,14 @@ contains
         !
         integer ix, iy, iz, counter
         !
-        E_p = cVector3D_SG_t( self%sigma%metric%grid, EDGE )
+        E_p = cVector3D_SG_t( grid, EDGE )
         !
         counter = 1
         !
         !> e_field-field corresponding to these nodes is Ex
-        do iz = 1,grid%Nz+1 !Edge Z
-            do iy = 1,grid%Ny+1 !Edge Y
-                do ix = 1,grid%Nx !Center X
+        do iz = 1, grid%Nz+1 !Edge Z
+            do iy = 1, grid%Ny+1 !Edge Y
+                do ix = 1, grid%Nx !Center X
                     !
                     E_p%x(ix,iy,iz) = ex1D(counter)
                     counter = counter + 1
@@ -261,9 +270,9 @@ contains
         enddo
         !
         !> e_field-field corresponding to these nodes is Ey
-        do iz = 1,grid%Nz+1 !Edge Z
-            do iy = 1,grid%Ny !Center y
-                do ix = 1,grid%Nx+1 !Edge x
+        do iz = 1, grid%Nz+1 !Edge Z
+            do iy = 1, grid%Ny !Center y
+                do ix = 1, grid%Nx+1 !Edge x
                     E_p%y(ix,iy,iz) = ey1D(counter)
                     counter = counter + 1
                 enddo
@@ -271,9 +280,9 @@ contains
         enddo
         !
         !> e_field-field corresponding to these nodes is Ez
-        do iz = 1,grid%Nz !Center Z
-            do iy = 1,grid%Ny+1 !Edge y
-                do ix = 1,grid%Nx+1 !Edge x
+        do iz = 1, grid%Nz !Center Z
+            do iy = 1, grid%Ny+1 !Edge y
+                do ix = 1, grid%Nx+1 !Edge x
                     E_p%z(ix,iy,iz) = jz1D(counter)
                     counter = counter + 1
                 enddo

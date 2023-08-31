@@ -29,31 +29,25 @@ module Grid
         !
         logical :: is_allocated
         !
-        integer :: nx, ny, nz
-        integer :: nzAir   !> Number of air layers
-        integer :: nzEarth !> Number of earth layers
+        integer, allocatable, dimension(:) :: EDGEb, FACEb, NODEb
+        integer, allocatable, dimension(:) :: EDGEi, FACEi, NODEi
+        integer, allocatable, dimension(:) :: EDGEa, FACEa, NODEa
         !
         character( len=80 ) :: geometry
+        !
+        integer :: nx, ny, nz    !> Think is usefull have this for SG and MR
+        !
+        !> USED IN MR setSubGrid !!!!
+        real( kind=prec ), allocatable, dimension(:) :: dx, dy, dz
+        !
+        !> USED IN MR setSubGrid !!!!
+        integer :: nzAir
         !
         real( kind=prec ) :: ox, oy, oz
         !
         real( kind=prec ) :: rotDeg
         !
-        real( kind=prec ) :: zAirThick
-        !
-        integer, allocatable, dimension(:) :: EDGEb, FACEb, NODEb
-        integer, allocatable, dimension(:) :: EDGEi, FACEi, NODEi
-        integer, allocatable, dimension(:) :: EDGEa, FACEa, NODEa
-        !
-        real( kind=prec ), allocatable, dimension(:) :: dx, dy, dz
-        real( kind=prec ), allocatable, dimension(:) :: dx_inv, dy_inv, dz_inv
-        !
-        real( kind=prec ), allocatable, dimension(:) :: del_x, del_y, del_z
-        real( kind=prec ), allocatable, dimension(:) :: del_x_inv, del_y_inv, del_z_inv
-        !
-        real( kind=prec ), allocatable, dimension(:) :: x_edge, y_edge, z_edge
-        !
-        real( kind=prec ), allocatable, dimension(:) :: x_center, y_center, z_center
+        integer :: nzEarth       ! (JUST SG ????)
         !
         contains
             !
@@ -63,10 +57,14 @@ module Grid
             procedure( interface_number_of_nodes ), deferred, public :: numberOfNodes
             procedure( interface_number_of_cells ), deferred, public :: numberOfCells
             !
+            procedure( interface_allocate_dim_grid ), deferred, public :: allocateDim
+            !
             procedure( interface_setup_grid ), deferred, public :: setup
             !
             procedure( interface_slice_1d_grid ), deferred, public :: slice1D
             procedure( interface_slice_2d_grid ), deferred, public :: slice2D
+            !
+            procedure( interface_write_grid ), deferred, public :: write
             !
             !> Base Grid methods
             procedure, public :: baseInit => initialize_Grid
@@ -89,7 +87,6 @@ module Grid
             procedure, public :: getCellSizes => getCellSizes_Grid
             !
             procedure, public :: create => create_Grid
-            procedure, public :: allocateDim => allocateDim_Grid
             !
             procedure, public :: setupAirLayers => setupAirLayers_Grid
             procedure, public :: updateAirLayers => updateAirLayers_Grid
@@ -101,8 +98,6 @@ module Grid
             procedure, public :: setLimits => setLimits_Grid
             procedure, public :: gridIndex => gridIndex_Grid
             procedure, public :: vectorIndex => vectorIndex_Grid
-            !
-            procedure, public :: write => write_Grid
             !
     end type Grid_t
     !
@@ -160,6 +155,13 @@ module Grid
         !
         !> No interface subroutine briefing
         !
+        subroutine interface_allocate_dim_grid( self )
+            import :: Grid_t
+            class( Grid_t ), intent( inout ) :: self
+        end subroutine interface_allocate_dim_grid
+        !
+        !> No interface subroutine briefing
+        !
         subroutine interface_setup_grid( self, origin )
             import :: Grid_t, prec
             class( Grid_t ), intent( inout ) :: self
@@ -181,6 +183,13 @@ module Grid
             class( Grid_t ), intent( in ) :: self
             type( Grid2D_t ) :: g2D
         end function interface_slice_2d_grid
+        !
+        !> No interface function briefing
+        !
+        subroutine interface_write_grid( self )
+            import :: Grid_t
+            class( Grid_t ), intent( in ) :: self
+        end subroutine interface_write_grid
         !
     end interface
     !
@@ -210,8 +219,6 @@ contains
         self%nzAir = 0
         self%nzEarth = 0
         !
-        self%zAirThick = 0
-        !
         self%is_allocated = .FALSE.
         !
     end subroutine initialize_Grid
@@ -230,26 +237,6 @@ contains
         if( allocated( self%dx ) ) deallocate( self%dx )
         if( allocated( self%dy ) ) deallocate( self%dy )
         if( allocated( self%dz ) ) deallocate( self%dz )
-        !
-        if( allocated( self%dx_inv ) ) deallocate( self%dx_inv )
-        if( allocated( self%dy_inv ) ) deallocate( self%dy_inv )
-        if( allocated( self%dz_inv ) ) deallocate( self%dz_inv )
-        !
-        if( allocated( self%del_x ) ) deallocate( self%del_x )
-        if( allocated( self%del_y ) ) deallocate( self%del_y )
-        if( allocated( self%del_z ) ) deallocate( self%del_z )
-        !
-        if( allocated( self%del_x_inv ) ) deallocate( self%del_x_inv )
-        if( allocated( self%del_y_inv ) ) deallocate( self%del_y_inv )
-        if( allocated( self%del_z_inv ) ) deallocate( self%del_z_inv )
-        !
-        if( allocated( self%x_edge ) ) deallocate( self%x_edge )
-        if( allocated( self%y_edge ) ) deallocate( self%y_edge )
-        if( allocated( self%z_edge ) ) deallocate( self%z_edge )
-        !
-        if( allocated( self%x_center ) ) deallocate( self%x_center )
-        if( allocated( self%y_center ) ) deallocate( self%y_center )
-        if( allocated( self%z_center ) ) deallocate( self%z_center )
         !
         self%is_allocated = .FALSE.
         !
@@ -435,60 +422,6 @@ contains
         call self%allocateDim
         !
     end subroutine create_Grid
-    !
-    !> No subroutine briefing
-    subroutine allocateDim_Grid( self )
-        implicit none
-        !
-        class( Grid_t ), intent( inout ) :: self
-        !
-        integer :: nx, ny, nz
-        !
-        if( self%is_allocated ) call self%baseDealloc
-        !
-        nx = self%nx
-        ny = self%ny
-        nz = self%nz
-        !
-        allocate( self%dx(nx) )
-        allocate( self%dy(ny) )
-        allocate( self%dz(nz) )
-        !
-        !> dx_inv = 1/ dx and similarly for dy_inv and dz_inv
-        allocate( self%dx_inv(nx) )
-        allocate( self%dy_inv(ny) )
-        allocate( self%dz_inv(nz) )
-        !
-        !> del_x, del_y, and del_z are the distances between
-        !> the electrical field defined on the center of the
-        !> edges in x, y, and z axes, respectively.
-        allocate( self%del_x(nx + 1) )
-        allocate( self%del_y(ny + 1) )
-        allocate( self%del_z(nz + 1) )
-        !
-        allocate( self%del_x_inv(nx + 1) )
-        allocate( self%del_y_inv(ny + 1) )
-        allocate( self%del_z_inv(nz + 1) )
-        !
-        !> x_edge is the array for cumulative distance of the edge
-        !> for each grid (starting from the coordinate axes) with
-        !> dimensions nx + 1.
-        !> x_center is the array for cumulative distance of the center
-        !> for each grid (starting from the coordinate axes) with
-        !> dimension n.
-        !> y_edge, y_center, z_edge, z_center are analagous arrays for
-        !> other directions.
-        !
-        allocate( self%x_edge(nx + 1) )
-        allocate( self%y_edge(ny + 1) )
-        allocate( self%z_edge(nz + 1) )
-        allocate( self%x_center(nx) )
-        allocate( self%y_center(ny) )
-        allocate( self%z_center(nz) )
-        !
-        self%is_allocated = .TRUE.
-        !
-    end subroutine allocateDim_Grid
     !
     !> setupAirLayers computes the Dz in the airlayers structure
     !> using the grid to get the top layers Dz;
@@ -849,48 +782,5 @@ contains
         enddo
         !
     end subroutine vectorIndex_Grid
-    !
-    !
-    !
-    subroutine write_Grid( self )
-        implicit none
-        !
-        class( Grid_t ), intent( in ) :: self
-        !
-        write( *, * ) "Grid:"
-        !
-        write( *, * ) "    n_grids: ", self%n_grids
-        !
-        write( *, * ) "    is_allocated: ", self%is_allocated
-        !
-        write( *, * ) "    nx, ny, nz: ", self%nx, self%ny, self%nz
-        write( *, * ) "    nzAir: ", self%nzAir   !> Number of air layers
-        write( *, * ) "    nzEarth: ", self%nzEarth !> Number of earth layers
-        !
-        write( *, * ) "    geometry: ", self%geometry
-        !
-        write( *, * ) "    ox, oy, oz: ", self%ox, self%oy, self%oz
-        !
-        write( *, * ) "    rotDeg: ", self%rotDeg
-        !
-        write( *, * ) "    zAirThick: ", self%zAirThick
-        !
-        write( *, * ) "    EDGEb, FACEb, NODEb: ", size( self%EDGEb ), size( self%FACEb ), size( self%NODEb )
-        write( *, * ) "    EDGEi, FACEi, NODEi: ", size( self%EDGEi ), size( self%FACEi ), size( self%NODEi )
-        if( allocated( self%EDGEa ) ) then
-            write( *, * ) "    EDGEa, FACEa, NODEa: ", size( self%EDGEa ), size( self%FACEa ), size( self%NODEa )
-        endif
-        !
-        write( *, * ) "    dx, dy, dz: ", size( self%dx ), size( self%dy ), size( self%dz )
-        write( *, * ) "    dx_inv, dy_inv, dz_inv: ", size( self%dx_inv ), size( self%dy_inv ), size( self%dz_inv )
-        !
-        write( *, * ) "    del_x, del_y, del_z: ", size( self%del_x ), size( self%del_y ), size( self%del_z )
-        write( *, * ) "    del_x_inv, del_y_inv, del_z_inv: ", size( self%del_x_inv ), size( self%del_y_inv ), size( self%del_z_inv )
-        !
-        write( *, * ) "    x_edge, y_edge, z_edge: ", size( self%x_edge ), size( self%y_edge ), size( self%z_edge )
-        !
-        write( *, * ) "    x_center, y_center, z_center: ", size( self%x_center ), size( self%y_center ), size( self%z_center )
-        !
-    end subroutine write_Grid
     !
 end module Grid

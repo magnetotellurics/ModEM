@@ -159,7 +159,7 @@ contains
         implicit none
         !
         class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( Scalar_t ), allocatable, intent( inout ) :: sigma_node
+        class( Scalar_t ), intent( inout ) :: sigma_node
         !
         integer :: k0, k1, k2
         type( rScalar3D_SG_t ) :: sigma_cell

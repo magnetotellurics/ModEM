@@ -53,7 +53,7 @@ LIBS_PATH = -L-L/usr/lib64  -L/usr/lib/x86_64-linux-gnu
 LIBS = -llapack -lblas -lfftw3l -lfftw3f -lfftw3
 
 # -------------------End-macro-Defs---------------------------
-OBJ = $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/Utilities.o $(OBJDIR)/String.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/Grid.o $(OBJDIR)/Field.o $(OBJDIR)/Scalar.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/Vector.o $(OBJDIR)/iScalar3D_SG.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/Grid3D_MR.o $(OBJDIR)/rScalar3D_MR.o $(OBJDIR)/MatUtils.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/rVector3D_MR.o $(OBJDIR)/cVector3D_MR.o $(OBJDIR)/MetricElements.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Esoln2DTM.o $(OBJDIR)/ModelParameter2D.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Source.o $(OBJDIR)/PreConditioner.o $(OBJDIR)/Solver.o $(OBJDIR)/Solver_CC.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/SourceCSEM.o $(OBJDIR)/ForwardControlFile.o $(OBJDIR)/InversionControlFile.o $(OBJDIR)/MetricElements_SG.o $(OBJDIR)/ModelOperator_MF_SG.o $(OBJDIR)/SpOpTools.o $(OBJDIR)/SpOpTopology.o $(OBJDIR)/SpOpTopology_SG.o $(OBJDIR)/SpOpTopology_MR.o $(OBJDIR)/MetricElements_MR.o $(OBJDIR)/ModelOperator_SP.o $(OBJDIR)/ModelOperator_SP_V1.o $(OBJDIR)/ModelOperator_SP_V2.o $(OBJDIR)/ModelParameterCell.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelParameterCell_MR.o $(OBJDIR)/cVectorSparse3D_SG.o $(OBJDIR)/ModelCovariance.o $(OBJDIR)/PreConditioner_CC_MF_SG.o $(OBJDIR)/PreConditioner_CC_SP_SG.o $(OBJDIR)/PreConditioner_CC_SP_MR.o $(OBJDIR)/Solver_QMR.o $(OBJDIR)/Solver_BICG.o $(OBJDIR)/ForwardSolver_IT.o $(OBJDIR)/PreConditioner_DC_MF_SG.o $(OBJDIR)/PreConditioner_DC_SP.o $(OBJDIR)/Solver_PCG.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/ForwardSolver_IT_DC.o $(OBJDIR)/Forward1D.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o $(OBJDIR)/constants_mod.o $(OBJDIR)/spline_mod.o $(OBJDIR)/io_common_mod.o $(OBJDIR)/hankel_mod.o $(OBJDIR)/adaptive_int_mod.o $(OBJDIR)/counter_mod.o $(OBJDIR)/refl_mod_new.o $(OBJDIR)/EM1D.o $(OBJDIR)/SourceInteriorForce.o $(OBJDIR)/Transmitter.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/TransmitterArray.o $(OBJDIR)/SourceCSEM_EM1D.o $(OBJDIR)/SourceCSEM_Dipole1D.o $(OBJDIR)/DataGroup.o $(OBJDIR)/Receiver.o $(OBJDIR)/ReceiverFullImpedance.o $(OBJDIR)/ReceiverFullVerticalMagnetic.o $(OBJDIR)/ReceiverOffDiagonalImpedance.o $(OBJDIR)/ReceiverSingleField.o $(OBJDIR)/DataGroupTx.o $(OBJDIR)/ReceiverArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/DataGroupTxArray.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/DataEntry.o $(OBJDIR)/DataEntryArray.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o $(OBJDIR)/ReceiverExyAmpliPhase.o $(OBJDIR)/DataFile.o $(OBJDIR)/DataFileStandard.o $(OBJDIR)/CoreComponents.o $(OBJDIR)/DeclarationMPI.o $(OBJDIR)/MasterMPI.o $(OBJDIR)/ForwardModeling.o $(OBJDIR)/Sensitivity.o $(OBJDIR)/Inversion.o $(OBJDIR)/InversionDCG.o $(OBJDIR)/InversionNLCG.o $(OBJDIR)/InversionJob.o $(OBJDIR)/WorkerMPI.o $(OBJDIR)/ModEM.o 
+OBJ = $(OBJDIR)/Constants.o $(OBJDIR)/FileUnits.o $(OBJDIR)/Utilities.o $(OBJDIR)/String.o $(OBJDIR)/Grid1D.o $(OBJDIR)/Grid2D.o $(OBJDIR)/Grid.o $(OBJDIR)/Field.o $(OBJDIR)/Scalar.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/Vector.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/MatUtils.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/Grid3D_MR.o $(OBJDIR)/rScalar3D_MR.o $(OBJDIR)/cScalar3D_MR.o $(OBJDIR)/rVector3D_MR.o $(OBJDIR)/cVector3D_MR.o $(OBJDIR)/iScalar3D_SG.o $(OBJDIR)/MetricElements.o $(OBJDIR)/ModelParameter1D.o $(OBJDIR)/Esoln2DTM.o $(OBJDIR)/ModelParameter2D.o $(OBJDIR)/ModelParameter.o $(OBJDIR)/ModelOperator.o $(OBJDIR)/Source.o $(OBJDIR)/PreConditioner.o $(OBJDIR)/Solver.o $(OBJDIR)/Solver_CC.o $(OBJDIR)/ForwardSolver.o $(OBJDIR)/FilterModules.o $(OBJDIR)/Dipole1D.o $(OBJDIR)/SourceCSEM.o $(OBJDIR)/ForwardControlFile.o $(OBJDIR)/InversionControlFile.o $(OBJDIR)/MetricElements_SG.o $(OBJDIR)/ModelOperator_MF_SG.o $(OBJDIR)/SpOpTools.o $(OBJDIR)/SpOpTopology.o $(OBJDIR)/SpOpTopology_SG.o $(OBJDIR)/SpOpTopology_MR.o $(OBJDIR)/MetricElements_MR.o $(OBJDIR)/ModelOperator_SP.o $(OBJDIR)/ModelOperator_SP_V1.o $(OBJDIR)/ModelOperator_SP_V2.o $(OBJDIR)/ModelParameterCell.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelParameterCell_MR.o $(OBJDIR)/cVectorSparse3D_SG.o $(OBJDIR)/ModelCovariance.o $(OBJDIR)/PreConditioner_CC_MF_SG.o $(OBJDIR)/PreConditioner_CC_SP_SG.o $(OBJDIR)/PreConditioner_CC_SP_MR.o $(OBJDIR)/Solver_QMR.o $(OBJDIR)/Solver_BICG.o $(OBJDIR)/ForwardSolver_IT.o $(OBJDIR)/PreConditioner_DC_MF_SG.o $(OBJDIR)/PreConditioner_DC_SP.o $(OBJDIR)/Solver_PCG.o $(OBJDIR)/DivergenceCorrection.o $(OBJDIR)/ForwardSolver_IT_DC.o $(OBJDIR)/Forward1D.o $(OBJDIR)/SourceMT_1D.o $(OBJDIR)/SourceMT_2D.o $(OBJDIR)/machine_dep_mod.o $(OBJDIR)/util_mod.o $(OBJDIR)/constants_mod.o $(OBJDIR)/spline_mod.o $(OBJDIR)/io_common_mod.o $(OBJDIR)/hankel_mod.o $(OBJDIR)/adaptive_int_mod.o $(OBJDIR)/counter_mod.o $(OBJDIR)/refl_mod_new.o $(OBJDIR)/EM1D.o $(OBJDIR)/SourceInteriorForce.o $(OBJDIR)/Transmitter.o $(OBJDIR)/TransmitterCSEM.o $(OBJDIR)/TransmitterArray.o $(OBJDIR)/SourceCSEM_EM1D.o $(OBJDIR)/SourceCSEM_Dipole1D.o $(OBJDIR)/DataGroup.o $(OBJDIR)/Receiver.o $(OBJDIR)/ReceiverFullImpedance.o $(OBJDIR)/ReceiverFullVerticalMagnetic.o $(OBJDIR)/ReceiverOffDiagonalImpedance.o $(OBJDIR)/ReceiverSingleField.o $(OBJDIR)/DataGroupTx.o $(OBJDIR)/ReceiverArray.o $(OBJDIR)/TransmitterMT.o $(OBJDIR)/DataGroupTxArray.o $(OBJDIR)/ModelReader.o $(OBJDIR)/ModelReader_Weerachai.o $(OBJDIR)/DataEntry.o $(OBJDIR)/DataEntryArray.o $(OBJDIR)/DataEntryMT.o $(OBJDIR)/DataEntryMT_REF.o $(OBJDIR)/DataEntryCSEM.o $(OBJDIR)/ReceiverExyAmpliPhase.o $(OBJDIR)/DataFile.o $(OBJDIR)/DataFileStandard.o $(OBJDIR)/CoreComponents.o $(OBJDIR)/DeclarationMPI.o $(OBJDIR)/MasterMPI.o $(OBJDIR)/ForwardModeling.o $(OBJDIR)/Sensitivity.o $(OBJDIR)/Inversion.o $(OBJDIR)/InversionDCG.o $(OBJDIR)/InversionNLCG.o $(OBJDIR)/InversionJob.o $(OBJDIR)/WorkerMPI.o $(OBJDIR)/ModEM.o 
 
 
 all: ModEM 
@@ -100,14 +100,20 @@ $(OBJDIR)/rScalar3D_SG.o:SourceCode/Fields/rScalar3D_SG.f90 $(OBJDIR)/Scalar.o
 $(OBJDIR)/Vector.o:SourceCode/Fields/Vector.f90 $(OBJDIR)/rScalar3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/Vector.f90 -o $(OBJDIR)/Vector.o
 
-$(OBJDIR)/iScalar3D_SG.o:SourceCode/Fields/iScalar3D_SG.f90 $(OBJDIR)/Scalar.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/iScalar3D_SG.f90 -o $(OBJDIR)/iScalar3D_SG.o
+$(OBJDIR)/Grid3D_SG.o:SourceCode/Grid/Grid3D_SG.f90 $(OBJDIR)/Grid.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Grid/Grid3D_SG.f90 -o $(OBJDIR)/Grid3D_SG.o
+
+$(OBJDIR)/MatUtils.o:SourceCode/Utils/MatUtils.f90 $(OBJDIR)/Constants.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Utils/MatUtils.f90 -o $(OBJDIR)/MatUtils.o
+
+$(OBJDIR)/rVector3D_SG.o:SourceCode/Fields/rVector3D_SG.f90 $(OBJDIR)/MatUtils.o $(OBJDIR)/Vector.o $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rScalar3D_SG.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/rVector3D_SG.f90 -o $(OBJDIR)/rVector3D_SG.o
 
 $(OBJDIR)/cScalar3D_SG.o:SourceCode/Fields/cScalar3D_SG.f90 $(OBJDIR)/rScalar3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/cScalar3D_SG.f90 -o $(OBJDIR)/cScalar3D_SG.o
 
-$(OBJDIR)/Grid3D_SG.o:SourceCode/Grid/Grid3D_SG.f90 $(OBJDIR)/Grid.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Grid/Grid3D_SG.f90 -o $(OBJDIR)/Grid3D_SG.o
+$(OBJDIR)/cVector3D_SG.o:SourceCode/Fields/cVector3D_SG.f90 $(OBJDIR)/Grid3D_SG.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/cScalar3D_SG.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/cVector3D_SG.f90 -o $(OBJDIR)/cVector3D_SG.o
 
 $(OBJDIR)/Grid3D_MR.o:SourceCode/Grid/Grid3D_MR.f90 $(OBJDIR)/Utilities.o $(OBJDIR)/Grid3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Grid/Grid3D_MR.f90 -o $(OBJDIR)/Grid3D_MR.o
@@ -115,22 +121,19 @@ $(OBJDIR)/Grid3D_MR.o:SourceCode/Grid/Grid3D_MR.f90 $(OBJDIR)/Utilities.o $(OBJD
 $(OBJDIR)/rScalar3D_MR.o:SourceCode/Fields/rScalar3D_MR.f90 $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/Grid3D_MR.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/rScalar3D_MR.f90 -o $(OBJDIR)/rScalar3D_MR.o
 
-$(OBJDIR)/MatUtils.o:SourceCode/Utils/MatUtils.f90 $(OBJDIR)/Constants.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Utils/MatUtils.f90 -o $(OBJDIR)/MatUtils.o
+$(OBJDIR)/cScalar3D_MR.o:SourceCode/Fields/cScalar3D_MR.f90 $(OBJDIR)/rScalar3D_MR.o $(OBJDIR)/cScalar3D_SG.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/cScalar3D_MR.f90 -o $(OBJDIR)/cScalar3D_MR.o
 
-$(OBJDIR)/rVector3D_SG.o:SourceCode/Fields/rVector3D_SG.f90 $(OBJDIR)/MatUtils.o $(OBJDIR)/Vector.o $(OBJDIR)/rScalar3D_SG.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/rVector3D_SG.f90 -o $(OBJDIR)/rVector3D_SG.o
-
-$(OBJDIR)/cVector3D_SG.o:SourceCode/Fields/cVector3D_SG.f90 $(OBJDIR)/rVector3D_SG.o 
-	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/cVector3D_SG.f90 -o $(OBJDIR)/cVector3D_SG.o
-
-$(OBJDIR)/rVector3D_MR.o:SourceCode/Fields/rVector3D_MR.f90 $(OBJDIR)/MatUtils.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/rScalar3D_MR.o 
+$(OBJDIR)/rVector3D_MR.o:SourceCode/Fields/rVector3D_MR.f90 $(OBJDIR)/MatUtils.o $(OBJDIR)/rVector3D_SG.o $(OBJDIR)/cScalar3D_MR.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/rVector3D_MR.f90 -o $(OBJDIR)/rVector3D_MR.o
 
-$(OBJDIR)/cVector3D_MR.o:SourceCode/Fields/cVector3D_MR.f90 $(OBJDIR)/MatUtils.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/rScalar3D_MR.o 
+$(OBJDIR)/cVector3D_MR.o:SourceCode/Fields/cVector3D_MR.f90 $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/rVector3D_MR.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/cVector3D_MR.f90 -o $(OBJDIR)/cVector3D_MR.o
 
-$(OBJDIR)/MetricElements.o:SourceCode/ModelOperator/MetricElements.f90 $(OBJDIR)/iScalar3D_SG.o $(OBJDIR)/cScalar3D_SG.o $(OBJDIR)/rScalar3D_MR.o $(OBJDIR)/cVector3D_SG.o $(OBJDIR)/rVector3D_MR.o $(OBJDIR)/cVector3D_MR.o 
+$(OBJDIR)/iScalar3D_SG.o:SourceCode/Fields/iScalar3D_SG.f90 $(OBJDIR)/Scalar.o 
+	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/Fields/iScalar3D_SG.f90 -o $(OBJDIR)/iScalar3D_SG.o
+
+$(OBJDIR)/MetricElements.o:SourceCode/ModelOperator/MetricElements.f90 $(OBJDIR)/cVector3D_MR.o $(OBJDIR)/iScalar3D_SG.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/ModelOperator/MetricElements.f90 -o $(OBJDIR)/MetricElements.o
 
 $(OBJDIR)/ModelParameter1D.o:SourceCode/1D/ModelParameter1D.f90 $(OBJDIR)/Constants.o $(OBJDIR)/Grid1D.o 
@@ -214,7 +217,7 @@ $(OBJDIR)/ModelParameterCell.o:SourceCode/ModelParameter/ModelParameterCell.f90 
 $(OBJDIR)/ModelParameterCell_SG.o:SourceCode/ModelParameter/ModelParameterCell_SG.f90 $(OBJDIR)/ModelParameterCell.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/ModelParameter/ModelParameterCell_SG.f90 -o $(OBJDIR)/ModelParameterCell_SG.o
 
-$(OBJDIR)/ModelParameterCell_MR.o:SourceCode/ModelParameter/ModelParameterCell_MR.f90 $(OBJDIR)/MetricElements_SG.o $(OBJDIR)/ModelParameterCell_SG.o 
+$(OBJDIR)/ModelParameterCell_MR.o:SourceCode/ModelParameter/ModelParameterCell_MR.f90 $(OBJDIR)/MetricElements_SG.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/Grid3D_MR.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/ModelParameter/ModelParameterCell_MR.f90 -o $(OBJDIR)/ModelParameterCell_MR.o
 
 $(OBJDIR)/cVectorSparse3D_SG.o:SourceCode/Fields/cVectorSparse3D_SG.f90 $(OBJDIR)/Field.o $(OBJDIR)/cVector3D_SG.o 

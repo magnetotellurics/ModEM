@@ -34,6 +34,8 @@ module Grid3D_MR
         !
         type( Grid3D_SG_t ), allocatable, dimension(:) :: sub_grid
         !
+        !real( kind=prec ), allocatable, dimension(n_grids) :: z_top
+        !
         logical :: is_initialized
         !
         contains
@@ -45,11 +47,13 @@ module Grid3D_MR
             !
             procedure, public :: reduceActive => reduceActive_Grid3D_MR
             !
-            procedure, public :: setActivelimits => setActivesetLimits_Grid3D_MR
+            procedure, public :: setActivelimits => setActiveLimits_Grid3D_MR
             !
             procedure, public :: nActive => nActive_Grid3D_MR
             !
             procedure, public :: active => active_Grid3D_MR
+            !
+            procedure, public :: allocateDim => allocateDim_Grid3D_MR
             !
             procedure, public :: setup => setup_Grid3D_MR
             !
@@ -140,6 +144,22 @@ contains
         !
     end function Grid3D_MR_t_ctor
     !
+    !> No subroutine briefing
+    subroutine allocateDim_Grid3D_MR( self )
+        implicit none
+        !
+        class( Grid3D_MR_t ), intent( inout ) :: self
+        !
+        if( self%is_allocated ) call self%baseDealloc
+        !
+        allocate( self%dx( self%nx ) )
+        allocate( self%dy( self%ny ) )
+        allocate( self%dz( self%nz ) )
+        !
+        self%is_allocated = .TRUE.
+        !
+    end subroutine allocateDim_Grid3D_MR
+    !
     !> setup does calculations for grid geometry, which cannot be done
     !> until dx, dy, dz, and the origin are set.
     subroutine setup_Grid3D_MR( self, origin )
@@ -148,15 +168,9 @@ contains
         class( Grid3D_MR_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ), optional :: origin(3)
         !
-        integer :: ix, iy, iz, i, j, nzAir
-        real( kind=prec ) :: xCum, yCum, zCum
         real( kind=prec ) :: ox, oy, oz
         !
-        self%dx_inv = 1 / self%dx
-        self%dy_inv = 1 / self%dy
-        self%dz_inv = 1 / self%dz
-        !
-        call self%GetOrigin( ox, oy, oz )
+        call self%getOrigin( ox, oy, oz )
         !
         if( present( origin ) ) then
             !
@@ -167,86 +181,6 @@ contains
             call self%setOrigin(ox, oy, oz)
             !
         endif
-        !
-        self%x_edge(1) = ox
-        self%y_edge(1) = oy
-        self%z_edge(1) = oz
-        !
-        xCum = R_ZERO
-        yCum = R_ZERO
-        zCum = R_ZERO
-        !
-        do ix = 1, self%nx
-            xCum = xCum + self%dx(ix)
-            self%x_edge(ix+1) = xCum + ox
-        enddo
-        do iy = 1, self%ny
-            yCum = yCum + self%dy(iy)
-            self%y_edge(iy + 1) = yCum + oy
-        enddo
-        !
-        !> NOTE: adjust for origin later to get airthickness, 
-        !> reference to origin at Earth"s surface correct!
-        do iz = 1, self%nz
-            zCum = zCum + self%dz(iz)
-            self%z_edge(iz + 1) = zCum
-        enddo
-        !
-        nzAir = self%nzAir
-        self%zAirThick = self%z_edge(nzAir + 1)
-        !
-        !> Distance between center of the selfs
-        self%del_x(1) = self%dx(1)
-        do ix = 2, self%nx
-            self%del_x(ix) = self%dx(ix - 1) + self%dx(ix)
-        enddo
-        self%del_x(self%nx + 1) = self%dx(self%nx)
-        self%del_x = self%del_x / 2.0
-        !
-        self%del_y(1) = self%dy(1)
-        do iy = 2, self%ny
-            self%del_y(iy) = self%dy(iy - 1) + self%dy(iy)
-        enddo
-        !
-        self%del_y(self%ny + 1) = self%dy(self%ny)
-        self%del_y = self%del_y / 2.0
-        !
-        self%del_z(1) = self%dz(1)
-        do iz = 2, self%nz
-            self%del_z(iz) = self%dz(iz - 1) + self%dz(iz)
-        enddo
-        !
-        self%del_z(self%nz + 1) = self%dz(self%nz)
-        self%del_z = self%del_z / 2.0
-        !
-        self%del_x_inv = 1 / self%del_x
-        self%del_y_inv = 1 / self%del_y
-        self%del_z_inv = 1 / self%del_z
-        !
-        !> Cumulative distance between the centers, adjusted to model origin
-        xCum = R_ZERO
-        yCum = R_ZERO
-        zCum = R_ZERO
-        do ix = 1, self%nx
-            xCum = xCum + self%del_x(ix)
-            self%x_center(ix) = xCum + ox
-        enddo
-        do iy = 1, self%ny
-            yCum = yCum + self%del_y(iy)
-            self%y_center(iy) = yCum + oy
-        enddo
-        do iz = 1, self%nz
-            zCum = zCum + self%del_z(iz)
-            self%z_center(iz) = zCum
-        enddo
-        !> Need to be careful here ... grid origin is given
-        !> at Earth"s surface, not top of model domain!
-        do iz = 1, self%nz
-            self%z_center(iz) = self%z_center(iz) - self%zAirThick + oz
-            self%z_edge(iz) = self%z_edge(iz) - self%zAirThick + oz
-        enddo
-        !
-        self%z_edge(self%nz + 1) = self%z_edge(self%nz + 1) - self%zAirThick + oz
         !
     end subroutine setup_Grid3D_MR
     !
@@ -534,7 +468,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setActivesetLimits_Grid3D_MR( self )
+    subroutine setActiveLimits_Grid3D_MR( self )
         implicit none
         !
         class( Grid3D_MR_t ), intent( inout ) :: self
@@ -581,7 +515,7 @@ contains
             endif
         enddo
         !
-    end subroutine setActivesetLimits_Grid3D_MR
+    end subroutine setActiveLimits_Grid3D_MR
     !
     !> just algorithm. -- reduce number of active edges/faces/nodes
     !> For one vertical layer in the sub_grid
@@ -772,21 +706,11 @@ contains
         !
         write( *, * ) "    rotDeg: ", self%rotDeg
         !
-        write( *, * ) "    zAirThick: ", self%zAirThick
-        !
         write( *, * ) "    EDGEb, FACEb, NODEb: ", size( self%EDGEb ), size( self%FACEb ), size( self%NODEb )
         write( *, * ) "    EDGEi, FACEi, NODEi: ", size( self%EDGEi ), size( self%FACEi ), size( self%NODEi )
         write( *, * ) "    EDGEa, FACEa, NODEa: ", size( self%EDGEa ), size( self%FACEa ), size( self%NODEa )
         !
         write( *, * ) "    dx, dy, dz: ", size( self%dx ), size( self%dy ), size( self%dz )
-        write( *, * ) "    dx_inv, dy_inv, dz_inv: ", size( self%dx_inv ), size( self%dy_inv ), size( self%dz_inv )
-        !
-        write( *, * ) "    del_x, del_y, del_z: ", size( self%del_x ), size( self%del_y ), size( self%del_z )
-        write( *, * ) "    del_x_inv, del_y_inv, del_z_inv: ", size( self%del_x_inv ), size( self%del_y_inv ), size( self%del_z_inv )
-        !
-        write( *, * ) "    x_edge, y_edge, z_edge: ", size( self%x_edge ), size( self%y_edge ), size( self%z_edge )
-        !
-        write( *, * ) "    x_center, y_center, z_center: ", size( self%x_center ), size( self%y_center ), size( self%z_center )
         !
         do i = 1, self%n_grids
             call self%sub_grid(i)%write

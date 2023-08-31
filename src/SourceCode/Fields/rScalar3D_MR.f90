@@ -34,6 +34,8 @@ module rScalar3D_MR
             procedure, public :: MRtoSG => MRtoSG_rScalar3D_MR
             procedure, public :: divFine => divFine_rScalar3D_MR
             !
+            procedure, public :: fromSG => fromSG_rScalar3D_MR
+            !
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundary_rScalar3D_MR
             procedure, public :: setOneBoundary => setOneBoundary_rScalar3D_MR
@@ -112,29 +114,7 @@ contains
         !
         call self%initializeSub
         !
-        if( self%is_allocated ) then
-            !
-            if( grid_type == NODE ) then
-                 !
-                 self%NdV = (/self%nx + 1, self%ny + 1, self%nz + 1/)
-                 !
-            elseif( grid_type == CELL ) then
-                 !
-                 self%NdV = (/self%nx, self%ny, self%nz/)
-                 !
-            elseif( grid_type == CELL_EARTH ) then
-                 !
-                 self%nz = nz_earth
-                 !
-                 self%NdV = (/nx, ny, nz_earth/)
-                 !
-            else
-                call errStop( "rScalar3D_MR_ctor > unrecognized grid type: ["//grid_type//"]" )
-            endif
-            !
-            self%Nxyz = product( self%NdV )
-            !
-        else
+        if( .NOT. self%is_allocated ) then
             call errStop( "rScalar3D_MR_ctor > Unable to allocate self" )
         endif
         !
@@ -548,150 +528,88 @@ contains
         !
     end subroutine divFine_rScalar3D_MR
     !
-    !> SGtoMR
+    !> fromSG
     !> Gary's implementation
     !
     !> this is adjoint (transpose) of MR2SG
     !
     !> self is of class rScalar3D_MR (output/modified), SGscalar (input, not modified)
     !> is of class rScalar3D_SG -- should be compatible
-    ! !
-    ! subroutine SGtoMR_rScalar3D_MR( scalar_sg, scalar_mr )
-        ! implicit none
-        ! !
-        ! type( rScalar3D_SG_t ), intent( in ) :: scalar_sg
-        ! type( rScalar3D_MR_t ), intent( inout ) :: scalar_mr
-        ! !
-        ! integer :: i_grid, i, j, k, cs
-        ! integer :: i1, i2, j1, j2, k1, k2
-        ! !
-        ! if( .NOT. scalar_sg%is_allocated ) then
-            ! call errStop( "SGtoMR_rScalar3D_MR > scalar_sg not allocated" )
-        ! endif
-        ! !
-        ! if( .NOT. scalar_mr%is_allocated ) then
-            ! call errStop( "SGtoMR_rScalar3D_MR > scalar_mr not allocated" )
-        ! endif
-        ! !
-        ! write( *, * ) "#SGtoMR_rScalar3D_MR SG: ", scalar_sg%nx, scalar_sg%ny, scalar_sg%nz, scalar_sg%grid%getNGrids()
-        ! write( *, * ) "#                    MR: ", scalar_mr%nx, scalar_mr%ny, scalar_mr%nz, scalar_mr%grid%getNGrids()
-        ! !
-        ! select case( scalar_mr%grid_type )
-            ! !
-            ! case( CELL, CELL_EARTH )
-                ! !
-                ! write( *, * ) "SGtoMR_rScalar3D_MR using ["//scalar_mr%grid_type//"]"
-                ! !
-                ! select type( grid => scalar_mr%grid )
-                    ! !
-                    ! class is( Grid3D_MR_t )
-                        ! !
-                        ! do i_grid = 1, grid%n_grids
-                            ! !
-                            ! !> vertical layers in fine grid
-                            ! k1 = grid%coarseness( i_grid, 3 )
-                            ! k2 = grid%coarseness( i_grid, 4 )
-                            ! !
-                            ! cs = 2 ** grid%coarseness( i_grid, 1 )
-                            ! !
-                            ! do k = k1, k2
-                                ! !
-                                ! do i = 1, scalar_mr%sub_scalar( i_grid )%nx
-                                    ! !
-                                    ! i1 = (i-1) * cs + 1
-                                    ! i2 = i1 + cs
-                                    ! !
-                                    ! do j = 1, scalar_mr%sub_scalar( i_grid )%ny
-                                        ! !
-                                        ! j1 = (j-1) * cs + 1
-                                        ! j2 = j1 + cs
-                                        ! !  not sure sum-sum works here, but guess it should
-                                        ! !    Note that only this line changes from MR2SG
-                                        ! scalar_mr%sub_scalar( i_grid )%v(i,j,k) = sum( scalar_sg%v( i1:i2, j1:j2, k ) )
-                                        ! !
-                                    ! enddo
-                                    ! !
-                                ! enddo
-                            ! enddo
-                        ! enddo
-                        ! !
-                    ! class default
-                        ! call errStop( "SGtoMR_rScalar3D_MR > Unclassified grid" )
-                    ! !
-                ! end select
-                ! !
-            ! case default
-                ! call errStop( "SGtoMR_rScalar3D_MR > Implemented just for type CELL" )
-            ! !
-        ! end select
-        ! !
-    ! end subroutine SGtoMR_rScalar3D_MR
-    ! !
-    !> SGtoMR
-    !> Williams implementation
     !
-    subroutine SGtoMR_rScalar3D_MR( scalar_sg, scalar_mr )
+    subroutine fromSG_rScalar3D_MR( self, scalar_sg )
         implicit none
         !
+        class( rScalar3D_MR_t ), intent( inout ) :: self
         type( rScalar3D_SG_t ), intent( in ) :: scalar_sg
-        type( rScalar3D_MR_t ), intent( inout ) :: scalar_mr
         !
-        class( Grid_t ), pointer :: grid
-        !
-        integer :: x_nx, x_ny, x_nz
-        integer :: last, Cs, i1, i2, i, k
+        integer :: i_grid, i, j, k, cs, z
+        integer :: i1, i2, j1, j2, k1, k2
         !
         if( .NOT. scalar_sg%is_allocated ) then
-            call errStop( "SGtoMR_rScalar3D_MR > scalar_sg not allocated" )
+            call errStop( "fromSG_rScalar3D_MR > scalar_sg not allocated" )
         endif
         !
-        if( .NOT. scalar_mr%is_allocated ) then
-            call errStop( "SGtoMR_rScalar3D_MR > scalar_mr not allocated" )
-        endif
+        write( *, * ) "#fromSG_rScalar3D_MR SG: ", scalar_sg%grid_type, scalar_sg%nx, scalar_sg%ny, scalar_sg%nz, scalar_sg%grid%getNGrids()
+        write( *, * ) "#                    MR: ", self%grid_type, self%nx, self%ny, self%nz, self%grid%getNGrids()
         !
-        write( *, * ) "#SGtoMR_rScalar3D_MR SG: ", scalar_sg%nx, scalar_sg%ny, scalar_sg%nz, scalar_sg%grid%getNGrids()
-        write( *, * ) "#                    MR: ", scalar_mr%nx, scalar_mr%ny, scalar_mr%nz, scalar_mr%grid%getNGrids()
-        !
-        select type( grid => scalar_mr%grid )
+        select case( self%grid_type )
             !
-            class is( Grid3D_MR_t )
+            case( CELL, CELL_EARTH )
                 !
-                x_nx = size( scalar_sg%v, 1 )
-                x_ny = size( scalar_sg%v, 2 )
-                x_nz = size( scalar_sg%v, 3 )
+                select type( grid => self%grid )
+                    !
+                    class is( Grid3D_MR_t )
+                        !
+                        do i_grid = 1, grid%n_grids
+                            !
+                            !> vertical layers in fine grid
+                            k1 = grid%coarseness( i_grid, 3 )
+                            k2 = grid%coarseness( i_grid, 4 )
+                            !
+                            cs = 2 ** grid%coarseness( i_grid, 1 )
+                            !
+                            z = 1
+                            !
+                            do k = k1, k2
+                                !
+                                do i = 1, self%sub_scalar( i_grid )%nx
+                                    !
+                                    !i1 = (i-1) * cs + 1
+                                    i1 = (i-1) * cs
+                                    i2 = i1 + cs
+                                    !
+                                    do j = 1, self%sub_scalar( i_grid )%ny
+                                        !
+                                        !j1 = (j-1) * cs + 1
+                                        j1 = (j-1) * cs
+                                        j2 = j1 + cs
+                                        !
+                                        !write( *, * ) i_grid, i, j, k, z
+                                        !write( *, * ) "MR: ", self%sub_scalar( i_grid )%nx, self%sub_scalar( i_grid )%ny, self%sub_scalar( i_grid )%nz
+                                        !write( *, * ) "SG: x=(", i1, ", ", i2, ") y=(", j1, ", ", j2, ") z=", k 
+                                        !
+                                        self%sub_scalar( i_grid )%v(i,j,z) = sum( scalar_sg%v( i1:i2, j1:j2, k ) )
+                                        !
+                                    enddo
+                                    !
+                                enddo
+                                !
+                                z = z + 1
+                                !
+                            enddo
+                        enddo
+                        !
+                    class default
+                        call errStop( "fromSG_rScalar3D_MR > Unclassified grid" )
+                    !
+                end select
                 !
-                do k = 1, grid%n_grids
-                    !
-                    Cs = 2**grid%coarseness(k, 1)
-                    i1 = grid%coarseness(k, 3)
-                    i2 = grid%coarseness(k, 4)
-                    !
-                    do i = 1, Cs
-                        !
-                        last = size( grid%Dx )
-                        !
-                        scalar_mr%sub_scalar(k)%v = scalar_mr%sub_scalar(k)%v + &
-                        scalar_sg%v( i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1 ) * &
-                        repMat( grid%Dx(i:last:Cs), 1, &
-                        grid%sub_grid(k)%Ny + 1, &
-                        grid%sub_grid(k)%Nz + 1, .FALSE. )
-                        !
-                    enddo
-                    !
-                    scalar_mr%sub_scalar(k)%v = scalar_mr%sub_scalar(k)%v / &
-                    repMat(grid%sub_grid(k)%Dx, &
-                    1, &
-                    grid%sub_grid(k)%Ny + 1, &
-                    grid%sub_grid(k)%Nz + 1, .FALSE. )
-                    !
-                enddo
-                !
-            class default
-                call errStop( "SGtoMR_rScalar3D_MR > Unclassified grid" )
+            case default
+                call errStop( "fromSG_rScalar3D_MR > Implemented just for type CELL" )
             !
         end select
         !
-    end subroutine SGtoMR_rScalar3D_MR
+    end subroutine fromSG_rScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -700,7 +618,7 @@ contains
         !
         type( rScalar3D_MR_t ), intent( inout ) :: self
         !
-        !write( *, * ) "Destructor rScalar3D_MR"
+        write( *, * ) "Destructor rScalar3D_MR: ", self%grid_type, self%nx, self%ny, self%nz
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "rScalar3D_MR_dtor > self not allocated." )
@@ -727,28 +645,15 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        integer :: i
+        integer :: i_grid
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "setAllBoundary_rScalar3D_MR > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
-        !
-        do i = 1, self%grid%getNGrids()
+        do i_grid = 1, self%grid%getNGrids()
             !
-            select case( self%grid_type )
-                !
-                case( NODE, CELL, CELL_EARTH ) 
-                    !
-                    self%sub_scalar(i)%v((/1, self%NdV(1)/), :, :) = cvalue
-                    self%sub_scalar(i)%v(:, (/1, self%NdV(2)/), :) = cvalue
-                    self%sub_scalar(i)%v(:, :, (/1, self%NdV(3)/)) = cvalue
-                    !
-                case default
-                    call errStop( "setAllBoundary_rScalar3D_MR > grid_type ["//self%grid_type//"] not recognized." )
-                !
-            end select
+            call self%sub_scalar(i_grid)%setAllBoundary( cvalue )
             !
         enddo
         !
@@ -1394,53 +1299,67 @@ contains
         class( Scalar_t ), intent( inout ) :: node_scalar
         logical, intent( in ), optional :: interior_only
         !
-        type( rScalar3D_MR_t ) :: node_out_temp
         integer :: v_xend, v_yend, v_zend
         logical :: is_interior_only
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "toNode_rScalar3D_SG > self not allocated." )
+             call errStop( "toNode_rScalar3D_MR > self not allocated." )
         endif
+        !
+        if( .NOT. node_scalar%is_allocated ) then
+             call errStop( "toNode_rScalar3D_MR > node_scalar not allocated." )
+        endif
+        !
+        !>
+        write( *, * ) "toNode_rScalar3D_MR CELL: ", self%grid%nx, self%grid%ny, self%grid%nz, self%grid%n_grids
+        write( *, * ) "                    NODE: ", node_scalar%grid%nx, node_scalar%grid%ny, node_scalar%grid%nz, node_scalar%grid%n_grids
         !
         call self%switchStoreState( compound )
         !
-        node_out_temp = rScalar3D_MR_t( self%grid, NODE )
-        !
-        do i = 1, self%grid%getNGrids()
+        select type( node_scalar )
             !
-            is_interior_only = .FALSE.
-            !
-            if( present( interior_only ) ) is_interior_only = interior_only
-            !
-            if( is_interior_only ) then
-                call self%sub_scalar(i)%setAllBoundary( C_ZERO )
-            endif
-            !
-            select case( self%sub_scalar(i)%grid_type )
+            class is( rScalar3D_MR_t )
                 !
-                case( CELL )
+                select case( self%grid_type )
                     !
-                    v_xend = size( self%sub_scalar(i)%v, 1 )
-                    v_yend = size( self%sub_scalar(i)%v, 2 )
-                    v_zend = size( self%sub_scalar(i)%v, 3 )
-                    !
-                    !> Interior
-                    node_out_temp%sub_scalar(i)%v( 2:v_xend-1, 2:v_yend-1, 2:v_zend-1 ) = &
-                    self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
-                    self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
-                    self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
-                    self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
-                    self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
-                    self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
-                    self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
-                    self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
-                    !
-                case default
-                    call errStop( "toNode_rScalar3D_SG: undefined self%grid_type" )
-            end select
+                    case( CELL )
+                        !
+                        do i = 1, self%grid%getNGrids()
+                            !
+                            is_interior_only = .FALSE.
+                            !
+                            if( present( interior_only ) ) is_interior_only = interior_only
+                            !
+                            if( is_interior_only ) then
+                                call self%sub_scalar(i)%setAllBoundary( C_ZERO )
+                            endif
+                            !
+                            v_xend = size( self%sub_scalar(i)%v, 1 )
+                            v_yend = size( self%sub_scalar(i)%v, 2 )
+                            v_zend = size( self%sub_scalar(i)%v, 3 )
+                            !
+                            !> Interior
+                            node_scalar%sub_scalar(i)%v( 2:v_xend-1, 2:v_yend-1, 2:v_zend-1 ) = &
+                            self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
+                            self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
+                            self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
+                            self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
+                            self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
+                            self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
+                            self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
+                            self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
+                            !
+                        enddo
+                        !
+                    case default
+                        call errStop( "toNode_rScalar3D_MR just for CELL type" )
+                end select
+                !
+            class default
+                call errStop( "toNode_rScalar3D_MR > Unclassified node_scalar" )
             !
-        enddo
+        end select
         !
     end subroutine toNode_rScalar3D_MR
     !
@@ -1534,9 +1453,6 @@ contains
             !
             class is( rScalar3D_MR_t )
                 !
-                self%NdV = rhs%NdV
-                self%Nxyz = rhs%Nxyz
-                !
                 if( allocated( rhs%sub_scalar ) ) then
                     !
                     if( allocated( self%sub_scalar ) ) deallocate( self%sub_scalar )
@@ -1581,7 +1497,15 @@ contains
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        call errStop( "write_rScalar3D_MR not implemented!" )
+        integer :: i_grid
+        !
+        write( *, * ) "rScalar3D_MR: ", self%nx, self%ny, self%nz
+        !
+        do i_grid = 1, size( self%sub_scalar )
+            !
+            write( *, * ) "   ", i_grid, ":", self%sub_scalar(i_grid)%nx, self%sub_scalar(i_grid)%ny, self%sub_scalar(i_grid)%nz
+            !
+        enddo
         !
     end subroutine write_rScalar3D_MR
     !

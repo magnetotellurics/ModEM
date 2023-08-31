@@ -60,91 +60,100 @@ module SourceCSEM
         !>
         sigma_cell = self%sigma%getCond( ani_level )
         !
-        nzAir = sigma_cell%grid%nzAir
-        !
-        nlay1D = sigma_cell%nz + nzAir
-        !
-        if( allocated( zlay1D ) ) deallocate( zlay1D )
-        allocate( zlay1D( nlay1D ) )
-        !
-        do i = 1, nlay1D
-            zlay1D(i) = sigma_cell%grid%z_edge(i)
-        enddo
-        !
-        !> For create sig1D, we divide this process into two parts (1) for air layers and 
-        !>    (2) for earth layers
-        !> For air layer, sig1D equal to air layer conductivity
-        !> For earth layer, The Geometric mean is be used to create sig1D
-        !
-        if( allocated( sig1D ) ) deallocate( sig1D )
-        allocate( sig1D( nlay1D ) )
-        !
-        sig1D(1:nzAir) = SIGMA_AIR
-        !
-        !> Verbose
-        write( *, "( a39, a14 )" ) "- Get 1D according to: ", trim( get_1d_from )
-        !
-        if( trim( get_1D_from ) == "Geometric_mean" ) then
+        select type( grid => sigma_cell%grid )
             !
-            do k = nzAir+1, nlay1D
+            class is( Grid3D_SG_t )
                 !
-                wt = R_ZERO
-                temp_sigma_1d = R_ZERO
+                nzAir = grid%nzAir
                 !
-                do i = 1, sigma_cell%grid%Nx
-                    do j = 1, sigma_cell%grid%Ny
+                nlay1D = sigma_cell%nz + nzAir
+                !
+                if( allocated( zlay1D ) ) deallocate( zlay1D )
+                allocate( zlay1D( nlay1D ) )
+                !
+                do i = 1, nlay1D
+                    zlay1D(i) = grid%z_edge(i)
+                enddo
+                !
+                !> For create sig1D, we divide this process into two parts (1) for air layers and 
+                !>    (2) for earth layers
+                !> For air layer, sig1D equal to air layer conductivity
+                !> For earth layer, The Geometric mean is be used to create sig1D
+                !
+                if( allocated( sig1D ) ) deallocate( sig1D )
+                allocate( sig1D( nlay1D ) )
+                !
+                sig1D(1:nzAir) = SIGMA_AIR
+                !
+                !> Verbose
+                write( *, "( a39, a14 )" ) "- Get 1D according to: ", trim( get_1d_from )
+                !
+                if( trim( get_1D_from ) == "Geometric_mean" ) then
+                    !
+                    do k = nzAir+1, nlay1D
                         !
-                        wt = wt + sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
+                        wt = R_ZERO
+                        temp_sigma_1d = R_ZERO
                         !
-                        temp_sigma_1d = temp_sigma_1d + sigma_cell%v(i,j,k-nzAir) * &
-                        sigma_cell%grid%dx(i) * sigma_cell%grid%dy(j)
+                        do i = 1, grid%Nx
+                            do j = 1, grid%Ny
+                                !
+                                wt = wt + grid%dx(i) * grid%dy(j)
+                                !
+                                temp_sigma_1d = temp_sigma_1d + sigma_cell%v(i,j,k-nzAir) * &
+                                grid%dx(i) * grid%dy(j)
+                                !
+                            enddo
+                        enddo
+                        !
+                        sig1D(k) = exp( temp_sigma_1d / wt )
                         !
                     enddo
+                    !
+                elseif( trim( get_1D_from ) == "At_Tx_Position" ) then
+                    !
+                    call errStop( "setTemp_SourceCSEM_Dipole1D > At_Tx_Position not implemented yet" )
+                    !
+                elseif( trim( get_1d_from ) == "Geometric_mean_around_Tx" ) then
+                    !
+                    call errStop( "setTemp_SourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet" )
+                    !
+                elseif( trim( get_1d_from ) == "Full_Geometric_mean" ) then
+                    !
+                    call errStop( "setTemp_SourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet" )
+                    !
+                elseif( trim( get_1d_from ) == "Fixed_Value" ) then
+                    !
+                    call errStop( "setTemp_SourceCSEM_Dipole1D > Fixed_Value not implemented yet" )
+                    !
+                else
+                    !
+                    call errStop( "setTemp_SourceCSEM_Dipole1D > Unknown get_1d_from" )
+                    !
+                endif
+                !
+                nzEarth = grid%nzEarth
+                !
+                sigma_cell%v = SIGMA_AIR
+                !
+                do k = 1, nzEarth
+                    !
+                    temp_sigma_1d = sig1D( k + nzAir )
+                    !
+                    if( trim( self%sigma%param_type ) == LOGE ) temp_sigma_1d = log( temp_sigma_1d )
+                    !
+                    do i = 1, grid%Nx
+                        do j = 1, grid%Ny
+                            sigma_cell%v( i, j, k ) = temp_sigma_1d
+                        enddo
+                    enddo
+                    !
                 enddo
                 !
-                sig1D(k) = exp( temp_sigma_1d / wt )
-                !
-            enddo
+            class default
+                call errStop( "setCondAnomally: undefined grid" )
             !
-        elseif( trim( get_1D_from ) == "At_Tx_Position" ) then
-            !
-            call errStop( "setTemp_SourceCSEM_Dipole1D > At_Tx_Position not implemented yet" )
-            !
-        elseif( trim( get_1d_from ) == "Geometric_mean_around_Tx" ) then
-            !
-            call errStop( "setTemp_SourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet" )
-            !
-        elseif( trim( get_1d_from ) == "Full_Geometric_mean" ) then
-            !
-            call errStop( "setTemp_SourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet" )
-            !
-        elseif( trim( get_1d_from ) == "Fixed_Value" ) then
-            !
-            call errStop( "setTemp_SourceCSEM_Dipole1D > Fixed_Value not implemented yet" )
-            !
-        else
-            !
-            call errStop( "setTemp_SourceCSEM_Dipole1D > Unknown get_1d_from" )
-            !
-        endif
-        !
-        nzEarth = sigma_cell%grid%nzEarth
-        !
-        sigma_cell%v = SIGMA_AIR
-        !
-        do k = 1, nzEarth
-            !
-            temp_sigma_1d = sig1D( k + nzAir )
-            !
-            if( trim( self%sigma%param_type ) == LOGE ) temp_sigma_1d = log( temp_sigma_1d )
-            !
-            do i = 1, sigma_cell%grid%Nx
-                do j = 1, sigma_cell%grid%Ny
-                    sigma_cell%v( i, j, k ) = temp_sigma_1d
-                enddo
-            enddo
-            !
-        enddo
+        end select
         !
         !> Create ModelParam from 1D: aModel
         !> with sigma_cell conductivity in the proper anisotropic direction

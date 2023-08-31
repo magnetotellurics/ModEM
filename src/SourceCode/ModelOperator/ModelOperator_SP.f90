@@ -101,13 +101,7 @@ contains
                 !
             class default
                 !
-                call warning( "create_ModelOperator_SP > grid_format not provided, using MetricElements_SG_t." )
-                !
-                allocate( self%metric, source = MetricElements_SG_t( grid ) )
-                !
-                call self%metric%setGridIndexArrays( self%metric%grid )
-                !
-                allocate( self%topology, source = SpOpTopology_SG_t( grid ) )
+                call errStop( "create_ModelOperator_SP > grid_format not provided" )
                 !
         end select
         !
