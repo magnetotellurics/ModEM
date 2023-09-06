@@ -9,7 +9,7 @@ module Grid
     use Grid1D
     use Grid2D
     !
-    !> Global Grid related properties
+    !> Global Grid control parameters
     integer :: model_n_air_layer
     !
     real( kind=prec ) :: model_max_height
@@ -29,25 +29,20 @@ module Grid
         !
         logical :: is_allocated
         !
-        integer, allocatable, dimension(:) :: EDGEb, FACEb, NODEb
-        integer, allocatable, dimension(:) :: EDGEi, FACEi, NODEi
-        integer, allocatable, dimension(:) :: EDGEa, FACEa, NODEa
-        !
         character( len=80 ) :: geometry
         !
-        integer :: nx, ny, nz    !> Think is usefull have this for SG and MR
+        integer :: nx, ny, nz, nzAir, nzEarth
         !
-        !> USED IN MR setSubGrid !!!!
         real( kind=prec ), allocatable, dimension(:) :: dx, dy, dz
-        !
-        !> USED IN MR setSubGrid !!!!
-        integer :: nzAir
         !
         real( kind=prec ) :: ox, oy, oz
         !
         real( kind=prec ) :: rotDeg
         !
-        integer :: nzEarth       ! (JUST SG ????)
+        !> Indexes Arrays
+        integer, allocatable, dimension(:) :: EDGEb, FACEb, NODEb
+        integer, allocatable, dimension(:) :: EDGEi, FACEi, NODEi
+        integer, allocatable, dimension(:) :: EDGEa, FACEa, NODEa
         !
         contains
             !

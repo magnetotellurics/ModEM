@@ -122,6 +122,30 @@ contains
     !
     !> No subroutine briefing
     !
+    subroutine writeIJS_Matrix( matrix_csr, i_unit )
+        implicit none
+        !
+        type( spMatCSR_Real ), intent( in ) :: matrix_csr
+        
+        integer, intent( in ) :: i_unit
+        !
+        type( spMatIJS_Real ) :: matrix_ijs
+        integer :: i
+        !
+        call create_spMatIJS_Real( size( matrix_csr%row ), size( matrix_csr%col ), size( matrix_csr%val ), matrix_ijs )
+        !
+        call CSR2IJS( matrix_csr, matrix_ijs )
+        !
+        do i = 1, matrix_ijs%nCol
+            !
+            write( i_unit, * ) matrix_ijs%I(i), matrix_ijs%J(i), matrix_ijs%S(i)
+            !
+        enddo
+        !
+    end subroutine writeIJS_Matrix
+    !
+    !> No subroutine briefing
+    !
     subroutine create_spMatCSR_Real( m, n, nz, A )
         implicit none
         !

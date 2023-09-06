@@ -871,7 +871,7 @@ contains
             ! self%NdV(1), self%NdV(2), self%NdV(3), &
             ! self%Nxyz, self%length()
             ! !
-            array = (/reshape( self%v, (/self%Nxyz, 1/))/)
+            array = (/reshape( cmplx( self%v, 0.0, kind=prec ), (/self%Nxyz, 1/))/)
             !
         elseif( self%store_state .EQ. singleton ) then
             !
@@ -904,7 +904,7 @@ contains
             !write( *, * ) "setArray_Scalar: ", self%NdV(1), self%NdV(2), self%NdV(3), &
             !self%NdV(1)*self%NdV(2)*self%NdV(3), size( array )
             !
-            v = reshape( array, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
+            v = reshape( real( array, kind=prec ), (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
             !
             self%v = v
             !

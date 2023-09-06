@@ -6,17 +6,17 @@
 #
 # <Field parameters>
 #
-model_operator_type [MF|SP|SP2] : SP
+model_operator_type [MF|SP|SP2] : SP2
 #
 # <Grid parameters>
 #
 #grid_header [ModEM|HDF5] : ModEM
-grid_format [SG|MR]       : SG
+grid_format [SG|MR]       : MR
 #
 # <Model parameters>
 #
 model_method [mirror|fixed height] : fixed height
-model_n_air_layer [10]             : 15
+model_n_air_layer [10]             : 0
 model_max_height [200.]            : 500.
 #
 # <Source parameters>

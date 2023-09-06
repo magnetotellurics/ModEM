@@ -1776,9 +1776,9 @@ contains
             ! !
             allocate( array( self%length() ) )
             !
-            array = (/reshape(self%x, (/self%Nxyz(1), 1/)), &
-            reshape(self%y, (/self%Nxyz(2), 1/)), &
-            reshape(self%z, (/self%Nxyz(3), 1/))/)
+            array = (/reshape( cmplx( self%x, 0.0, kind=prec ), (/self%Nxyz(1), 1/)), &
+            reshape( cmplx( self%y, 0.0, kind=prec ), (/self%Nxyz(2), 1/)), &
+            reshape( cmplx( self%z, 0.0, kind=prec ), (/self%Nxyz(3), 1/))/)
             !
         elseif( self%store_state .EQ. singleton ) then
             !
@@ -1811,17 +1811,17 @@ contains
             !> Ex
             i1 = 1; i2 = self%Nxyz(1)
             !
-            self%x = reshape( array(i1:i2), self%NdX )
+            self%x = reshape( real( array(i1:i2), kind=prec ), self%NdX )
             !
             !> Ey
             i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
             !
-            self%y = reshape( array(i1:i2), self%NdY )
+            self%y = reshape( real( array(i1:i2), kind=prec ), self%NdY )
             !
             !> Ez
             i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
             !
-            self%z = reshape(array(i1:i2), self%NdZ)
+            self%z = reshape( real( array(i1:i2), kind=prec ), self%NdZ )
             !
         elseif( self%store_state .EQ. singleton ) then
             !

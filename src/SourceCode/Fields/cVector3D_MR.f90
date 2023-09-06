@@ -614,7 +614,7 @@ contains
         !
         call sg_vector_el%setArray( array_le )
         !
-        select type( grid => vector_sg%grid )
+        select type( grid => self%grid )
             !
             class is( Grid3D_MR_t )
                 !
@@ -623,6 +623,7 @@ contains
                     self%sub_vector( i_grid )%grid => grid%sub_grid( i_grid )
                     !
                     Cs = 2 ** grid%coarseness( i_grid, 1 )
+                    !
                     i1 = grid%coarseness( i_grid, 3 )
                     i2 = grid%coarseness( i_grid, 4 )
                     !
@@ -665,6 +666,10 @@ contains
                     !
                     s1 = size( vector_sg%z, 1 )
                     s2 = size( vector_sg%z, 2 )
+                    !
+                    !> Consider AirLayers for the 1st sub_grid !!!!
+                    if( i_grid == 1 ) i2 = i2 + grid%nzAir
+                    !
                     self%sub_vector(i_grid)%z = vector_sg%z( 1:s1:Cs, 1:s2:Cs, i1:i2 )
                     !
                     deallocate( x_length, y_length )
@@ -1147,71 +1152,79 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            do i = 1, self%grid%getNGrids()
+            if( rhs%store_state .EQ. compound ) then
                 !
-                if( rhs%store_state .EQ. compound ) then
+                select type( rhs )
                     !
-                    select type( rhs )
+                    class is( cVector3D_MR_t )
                         !
-                        class is( cVector3D_MR_t )
+                        do i = 1, self%grid%getNGrids()
+                            !
+                            !write( *, * ) "x: ", size( self%sub_vector(i)%x ), size( rhs%sub_vector(i)%x )
+                            !write( *, * ) "y: ", size( self%sub_vector(i)%y ), size( rhs%sub_vector(i)%y )
+                            !write( *, * ) "z: ", size( self%sub_vector(i)%z ), size( rhs%sub_vector(i)%z )
                             !
                             self%sub_vector(i)%x = c1* self%sub_vector(i)%x + c2 * rhs%sub_vector(i)%x
                             self%sub_vector(i)%y = c1* self%sub_vector(i)%y + c2 * rhs%sub_vector(i)%y
                             self%sub_vector(i)%z = c1* self%sub_vector(i)%z + c2 * rhs%sub_vector(i)%z
                             !
-                        class is( rScalar3D_MR_t )
+                        enddo
+                        !
+                    class is( rScalar3D_MR_t )
+                        !
+                        do i = 1, self%grid%getNGrids()
                             !
                             self%sub_vector(i)%x = c1* self%sub_vector(i)%x + c2 * rhs%sub_scalar(i)%v
                             self%sub_vector(i)%y = c1* self%sub_vector(i)%y + c2 * rhs%sub_scalar(i)%v
                             self%sub_vector(i)%z = c1* self%sub_vector(i)%z + c2 * rhs%sub_scalar(i)%v
+                            !
+                        enddo
                         !
-                        class is( cVector3D_SG_t )
-                            !
-                            mr_rhs = cVector3D_MR_t( self%grid, rhs%grid_type )
-                            !
-                            call mr_rhs%fromSG( rhs )
-                            !
-                            call self%linComb( mr_rhs, c1, c2 )
-                            !
-                        class is( rVector3D_SG_t )
-                            !
-                            call errStop( "linComb_cVector3D_MR > rVector3D_SG_t case not implemented" )
-                            !
-                        class is( cScalar3D_SG_t )
-                            !
-                            call errStop( "linComb_cVector3D_MR > cScalar3D_SG_t case not implemented" )
-                            !
-                        class is( rScalar3D_SG_t )
-                            !
-                            call errStop( "linComb_cVector3D_MR > rScalar3D_SG_t case not implemented" )
-                            !
-                        class default
-                            call errStop( "linComb_cVector3D_MR > Undefined rhs" )
-                            !
-                    end select
-                    !
-                elseif( rhs%store_state .EQ. singleton ) then
-                    !
-                    select type( rhs )
+                    class is( cVector3D_SG_t )
                         !
-                        class is( cVector3D_MR_t )
-                            !
-                            self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_vector(i)%s_v
-                            !
-                        class is( rScalar3D_MR_t )
-                            !
-                            self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_scalar(i)%s_v
-                            !
-                        class default
-                            call errStop( "linComb_cVector3D_MR > Undefined singleton rhs" )
-                            !
-                    end select
-                    !
-                else
-                    call errStop( "linComb_cVector3D_MR > Unknow store_state." )
-                endif
+                        mr_rhs = cVector3D_MR_t( self%grid, self%grid_type )
+                        !
+                        call mr_rhs%fromSG( rhs )
+                        !
+                        call self%linComb( mr_rhs, c1, c2 )
+                        !
+                    class is( rVector3D_SG_t )
+                        !
+                        call errStop( "linComb_cVector3D_MR > rVector3D_SG_t case not implemented" )
+                        !
+                    class is( cScalar3D_SG_t )
+                        !
+                        call errStop( "linComb_cVector3D_MR > cScalar3D_SG_t case not implemented" )
+                        !
+                    class is( rScalar3D_SG_t )
+                        !
+                        call errStop( "linComb_cVector3D_MR > rScalar3D_SG_t case not implemented" )
+                        !
+                    class default
+                        call errStop( "linComb_cVector3D_MR > Undefined rhs" )
+                        !
+                end select
                 !
-            enddo
+            elseif( rhs%store_state .EQ. singleton ) then
+                !
+                select type( rhs )
+                    !
+                    class is( cVector3D_MR_t )
+                        !
+                        self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_vector(i)%s_v
+                        !
+                    class is( rScalar3D_MR_t )
+                        !
+                        self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_scalar(i)%s_v
+                        !
+                    class default
+                        call errStop( "linComb_cVector3D_MR > Undefined singleton rhs" )
+                        !
+                end select
+                !
+            else
+                call errStop( "linComb_cVector3D_MR > Unknow store_state." )
+            endif
             !
         else
             call errStop( "linComb_cVector3D_MR > Incompatible inputs." )

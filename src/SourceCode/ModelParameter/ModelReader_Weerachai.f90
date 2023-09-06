@@ -44,7 +44,8 @@ contains
         !
         integer, allocatable, dimension(:) :: layers
         !
-        layers = (/ 0, 6, 1, 14, 2, 10, 3, 10 /)
+        !layers = (/ 0, 6, 1, 14, 2, 10, 3, 10 /)
+        layers = (/ 0, 4, 1, 4, 2, 4 /)
         !
         someChar = ""
         paramType = ""

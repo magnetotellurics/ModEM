@@ -107,8 +107,14 @@ contains
         !
         call self%topology%curl( T )
         !
+		call writeIJS_Matrix( T, 6666 )
+		!
         call self%topology%grad( G )
         !
+		call writeIJS_Matrix( G, 6667 )
+		!
+		stop "MATRICES PRINTED"
+		!
         allocate( self%VomegaMuSig( size( self%metric%grid%EDGEi ) ) )
         !
         !> set a default omega

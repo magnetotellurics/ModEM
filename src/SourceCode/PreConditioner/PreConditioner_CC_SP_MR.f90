@@ -94,7 +94,7 @@ contains
         !
         allocate( ix(nEdge) )
         !
-        ix =(/(j, j = nEdgeT + 1, nEdgeT + nEdge) /)
+        ix = (/(j, j = nEdgeT + 1, nEdgeT + nEdge) /)
         !
         !> iy
         nEdgeT = nEdgeT + nEdge
