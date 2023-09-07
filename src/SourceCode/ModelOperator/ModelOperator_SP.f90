@@ -63,7 +63,7 @@ contains
     !
     !> No subroutine briefing
     !
-    !> Set sparse matrices for curl (T) and grad (G)
+    !> Set sparse matrices for curl (topology%T) and grad (topology%G)
     !> operator topologies; these sparse matrices are stored
     !> in module SpOpTopology
     !
@@ -105,16 +105,16 @@ contains
                 !
         end select
         !
-        call self%topology%curl( T )
+        call self%topology%curl( self%topology%T )
         !
-		call writeIJS_Matrix( T, 6666 )
-		!
-        call self%topology%grad( G )
+        call writeIJS_Matrix( self%topology%T, 6666 )
         !
-		call writeIJS_Matrix( G, 6667 )
-		!
-		stop "MATRICES PRINTED"
-		!
+        call self%topology%grad( self%topology%G )
+        !
+        call writeIJS_Matrix( self%topology%G, 6667 )
+        !
+        stop "MATRICES PRINTED"
+        !
         allocate( self%VomegaMuSig( size( self%metric%grid%EDGEi ) ) )
         !
         !> set a default omega
@@ -138,15 +138,15 @@ contains
         real( kind=prec ), allocatable, dimension(:) :: temp_array
         integer :: fid
         !
-        m = T%nRow
-        n = T%nCol
-        nz = T%row( T%nRow + 1 ) - 1
+        m = self%topology%T%nRow
+        n = self%topology%T%nCol
+        nz = self%topology%T%row( self%topology%T%nRow + 1 ) - 1
         !
         call create_spMatCSR( m, n, nz, temp_matrix )
         call create_spMatCSR( n, m, nz, Ttrans )
         call create_spMatCSR( m, n, nz, CC )
         !!
-        call RMATxDIAG( T, real( self%metric%edge_length%getArray(), kind=prec ), temp_matrix )
+        call RMATxDIAG( self%topology%T, real( self%metric%edge_length%getArray(), kind=prec ), temp_matrix )
         !
         !> Create TCC for for multCurlT
         temp_array = 1. / self%metric%face_area%getArray()
@@ -160,7 +160,7 @@ contains
         !
         call DIAGxRMAT( temp_array, temp_matrix, CC )
         !
-        call RMATtrans( T, Ttrans )
+        call RMATtrans( self%topology%T, Ttrans )
         !
         call RMATxRMAT( Ttrans, CC, temp_matrix )
         !
@@ -225,8 +225,8 @@ contains
         !
         !> #Part 1. Construction of VDiv (pre-Vds matrix) and D (div operator)
         !
-        !> matrix_1 -> transpose of topology G
-        call RMATtrans( G, matrix_1 )
+        !> matrix_1 -> transpose of self%topology self%topology%G
+        call RMATtrans( self%topology%G, matrix_1 )
         !
         !> matrix_2 -> Multiply matrix_1 by dual face area
         aux_vec = self%metric%dual_face_area%getArray()
@@ -250,24 +250,24 @@ contains
         !
         !> #Part 2. Construction of self%Gd (grad operator)
         !
-        !> turn G into actual gradient (not just topology,
+        !> turn self%topology%G into actual gradient (not just self%topology,
         !> all nodes-> interior edges (not clear this is what we want!)
-        allocate( d( G%nRow ) )
+        allocate( d( self%topology%G%nRow ) )
         !
         !> edge_length
         aux_vec = self%metric%edge_length%getArray()
         !
-        do i = 1, G%nRow
+        do i = 1, self%topology%G%nRow
             d(i) = 1. / aux_vec(i)
         enddo
         !
-        allocate( all_nodes( G%nCol ) )
+        allocate( all_nodes( self%topology%G%nCol ) )
         !
-        do i=1,G%nCol
+        do i=1,self%topology%G%nCol
             all_nodes(i) = i
         enddo
         !
-        call DIAGxRMAT( d, G, matrix_1 )
+        call DIAGxRMAT( d, self%topology%G, matrix_1 )
         call subMatrix_Real( matrix_1, self%metric%grid%EDGEi, all_nodes, self%Gd )
         call deall_spMatCSR( matrix_1 )
         !
@@ -605,9 +605,9 @@ contains
         !> and the edge conductivities
         if( allocated( self%VomegaMuSig ) ) deallocate( self%VomegaMuSig )
         !
-        !> and the curl and grad topology matrices
-        call deall_spMatCSR( T )
-        call deall_spMatCSR( G )
+        !> and the curl and grad self%topology matrices
+        call deall_spMatCSR( self%topology%T )
+        call deall_spMatCSR( self%topology%G )
         !
         call deall_spMatCSR( self%Gd )
         call deall_spMatCSR( self%D )

@@ -6,7 +6,6 @@ module ModelReader_Weerachai
     use ModelReader
     use Utilities
     use rScalar3D_SG
-    use rScalar3D_MR
     use ModelParameterCell_SG
     use ModelParameterCell_MR
     use ForwardControlFile
@@ -24,6 +23,7 @@ module ModelReader_Weerachai
 contains
     !
     !> No subroutine briefing
+    !
     subroutine readModelReaderWeerachai( self, file_name, grid, model ) 
         implicit none
         !
@@ -52,7 +52,7 @@ contains
         someIndex = 0
         ALPHA = 3.0
         !
-        open( newunit = ioPrm, file = trim(file_name),status = "old", iostat = io_stat)
+        open( newunit = ioPrm, file = trim(file_name),status = "old", iostat = io_stat )
         !
         if( io_stat == 0 ) then
             !
@@ -88,8 +88,7 @@ contains
                 paramType = LINEAR
             endif
             !
-            !> The default method for creating air layers in the grid has been deleted
-            !
+            !> Create Grid according to the control format
             select case( grid_format )
                 !
                 case( GRID_SG )
@@ -110,17 +109,18 @@ contains
                     !
             end select
             !
-            !> Consider isotope at first
+            !> Consider isotropy at first
             anisotropic_level = 1
             !
-            !> Read conductivity values in a model parameter object.
+            !> Read tag, check if it is VTI
             if( index( someChar, "VTI" ) > 0 ) then
                 !
                 anisotropic_level = 2
                 !
             endif
             !
-            !>
+            !> Read conductivity values,
+			!> create rScalar3D_SG cell_cond with them
             do ii = 1, anisotropic_level
                 !
                 allocate( rho( nx, ny, nzEarth ) )
@@ -145,7 +145,8 @@ contains
                 endif
                 !
                 deallocate( rho )
-                !
+				!
+				!> Create the proper SG or MR model
                 if( anisotropic_level == 1 ) then
                     !
                     select type( grid )
@@ -190,7 +191,7 @@ contains
             !
             !> End - Reading cells conductivity values.
             !
-            !> In case the grid origin is stored next (in metres!)...
+            !> In case the grid origin is stored next (in meters!)...
             read(ioPrm, *, iostat = io_stat) ox, oy, oz
             !
             !> Defaults to the grid center at the Earth"s surface
@@ -218,3 +219,4 @@ contains
     end subroutine readModelReaderWeerachai
     !
 end module ModelReader_Weerachai
+!

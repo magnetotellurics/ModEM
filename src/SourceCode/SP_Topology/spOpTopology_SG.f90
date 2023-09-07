@@ -52,11 +52,11 @@ contains
         !
     end function SpOpTopology_SG_ctor
     !
-    subroutine curl_SpOpTopology_SG( self, T ) 
+    subroutine curl_SpOpTopology_SG( self, curl ) 
         implicit none
         !
         class( SpOpTopology_SG_t ), intent( in ) :: self
-        type( spMatCSR_Real ), intent( inout ) :: T
+        type( spMatCSR_Real ), intent( inout ) :: curl
         !  
         integer :: nXedge, nYedge, nZedge
         integer :: nXface, nYface, nZface
@@ -71,21 +71,21 @@ contains
         n = nXedge + nYedge + nZedge
         nz = 4 * m
         !
-        call create_spMatCSR( m, n, nz, T )
+        call create_spMatCSR( m, n, nz, curl )
         !
-        deallocate( T%row )
-        allocate( T%row( T%nRow + 1 ) )
+        deallocate( curl%row )
+        allocate( curl%row( curl%nRow + 1 ) )
         !
-        deallocate( T%col )
-        allocate( T%col( 4 * T%nRow ) )
+        deallocate( curl%col )
+        allocate( curl%col( 4 * curl%nRow ) )
         !
-        deallocate( T%val )
-        allocate( T%val( 4 * T%nRow ) )
+        deallocate( curl%val )
+        allocate( curl%val( 4 * curl%nRow ) )
         !
-        T%row(1) = 1
+        curl%row(1) = 1
         !
-        do ii = 1, T%nRow
-            T%row( ii +  1) = 4 * ii + 1
+        do ii = 1, curl%nRow
+            curl%row( ii +  1) = 4 * ii + 1
         enddo
         !
         ! xFaces
@@ -102,15 +102,15 @@ contains
         call self%grid%vectorIndex( YEDGE, I, J, K, IndVec )
         !
         do ii = 1, nXface
-            T%col( 4 * ii - 3 ) = IndVec(ii) + nXedge
-            T%val( 4 * ii - 3 ) = 1
+            curl%col( 4 * ii - 3 ) = IndVec(ii) + nXedge
+            curl%val( 4 * ii - 3 ) = 1
         enddo
         !
         call self%grid%vectorIndex( ZEDGE, I, J, K, IndVec )
         !
         do ii = 1, nXface
-            T%col( 4 * ii - 1 ) = IndVec(ii) + nXedge + nYedge
-            T%val( 4 * ii - 1 ) = -1
+            curl%col( 4 * ii - 1 ) = IndVec(ii) + nXedge + nYedge
+            curl%val( 4 * ii - 1 ) = -1
         enddo
         !
         K = K + 1
@@ -118,8 +118,8 @@ contains
         call self%grid%vectorIndex( YEDGE, I, J, K, IndVec )
         !
         do ii = 1, nXface
-            T%col(4*ii - 2) = IndVec(ii) + nXedge
-            T%val(4*ii - 2) = -1
+            curl%col(4*ii - 2) = IndVec(ii) + nXedge
+            curl%val(4*ii - 2) = -1
         enddo
         !
         K = K - 1
@@ -128,8 +128,8 @@ contains
         call self%grid%vectorIndex( ZEDGE, I, J, K, IndVec )
         !
         do ii = 1, nXface
-            T%col(4*ii) = IndVec(ii) + nXedge + nYedge
-            T%val(4*ii) = 1
+            curl%col(4*ii) = IndVec(ii) + nXedge + nYedge
+            curl%val(4*ii) = 1
         enddo
         !
         deallocate( IndVec, I, J, K )
@@ -149,16 +149,16 @@ contains
         !
         do ii = 1, nYface
             jj = ii + nXface
-            T%col(4*jj - 3) = IndVec(ii)
-            T%val(4*jj - 3) = -1
+            curl%col(4*jj - 3) = IndVec(ii)
+            curl%val(4*jj - 3) = -1
         enddo
         !
         call self%grid%vectorIndex( ZEDGE, I, J, K, IndVec )
         !
         do ii = 1, nYface
             jj = ii + nXface
-            T%col(4*jj - 1) = IndVec(ii) + nXedge + nYedge
-            T%val(4*jj - 1) = 1
+            curl%col(4*jj - 1) = IndVec(ii) + nXedge + nYedge
+            curl%val(4*jj - 1) = 1
         enddo
         !
         K = K + 1
@@ -167,8 +167,8 @@ contains
         !
         do ii = 1, nYface
             jj = ii + nXface
-            T%col(4*jj - 2) = IndVec(ii)
-            T%val(4*jj - 2) = 1
+            curl%col(4*jj - 2) = IndVec(ii)
+            curl%val(4*jj - 2) = 1
         enddo
         !
         K = K - 1
@@ -178,8 +178,8 @@ contains
         !
         do ii = 1, nYface
             jj = ii + nXface
-            T%col(4*jj) = IndVec(ii) + nXedge + nYedge
-            T%val(4*jj) = -1
+            curl%col(4*jj) = IndVec(ii) + nXedge + nYedge
+            curl%val(4*jj) = -1
         enddo
         !
         deallocate( IndVec, I, J, K )
@@ -199,16 +199,16 @@ contains
         !
         do ii = 1, nZface
             jj = ii + nXface + nYface
-            T%col(4*jj - 3) = IndVec(ii)
-            T%val(4*jj - 3) = 1
+            curl%col(4*jj - 3) = IndVec(ii)
+            curl%val(4*jj - 3) = 1
         enddo
         !
         call self%grid%vectorIndex( YEDGE, I, J, K, IndVec )
         !
         do ii = 1, nZface
             jj = ii + nXface + nYface
-            T%col(4*jj - 1) = IndVec(ii) + nXedge
-            T%val(4*jj - 1) = -1
+            curl%col(4*jj - 1) = IndVec(ii) + nXedge
+            curl%val(4*jj - 1) = -1
         enddo
         !
         J = J + 1
@@ -217,8 +217,8 @@ contains
         !
         do ii = 1, nZface
             jj = ii + nXface + nYface
-            T%col(4*jj - 2) = IndVec(ii)
-            T%val(4*jj - 2) = -1
+            curl%col(4*jj - 2) = IndVec(ii)
+            curl%val(4*jj - 2) = -1
         enddo
         !
         I = I + 1
@@ -228,19 +228,19 @@ contains
         !
         do ii = 1, nZface
             jj = ii + nXface + nYface
-            T%col(4*jj) = IndVec(ii) + nXedge
-            T%val(4*jj) = 1
+            curl%col(4*jj) = IndVec(ii) + nXedge
+            curl%val(4*jj) = 1
         enddo
         !
         deallocate( IndVec, I, J, K )
         !
     end subroutine curl_SpOpTopology_SG
 
-    subroutine grad_SpOpTopology_SG( self, G )
+    subroutine grad_SpOpTopology_SG( self, grad )
         implicit none
         !
         class( SpOpTopology_SG_t ), intent( in ) :: self
-        type( spMatCSR_Real ), intent( inout ) :: G
+        type( spMatCSR_Real ), intent( inout ) :: grad
         !
         integer :: nXedge, nYedge, nZedge, nNodes
         integer :: ii, jj, n, m, nx, ny, nz
@@ -255,14 +255,14 @@ contains
         n = nNodes
         nz = 2 * m
         !
-        call create_spMatCSR( m, n, nz, G )
+        call create_spMatCSR( m, n, nz, grad )
         !
-        G%row(1) = 1
+        grad%row(1) = 1
         !
-        do ii = 1,G%nRow
-            G%row(ii + 1) = 2*ii + 1
-            G%val(2*ii - 1) = -1
-            G%val(2*ii) = 1
+        do ii = 1,grad%nRow
+            grad%row(ii + 1) = 2*ii + 1
+            grad%val(2*ii - 1) = -1
+            grad%val(2*ii) = 1
         enddo
         !
         ! xedges
@@ -279,7 +279,7 @@ contains
         call self%grid%vectorIndex( NODE, I, J, K, IndVec )
         !
         do ii = 1, nXedge
-            G%col(2*ii - 1) = IndVec(ii)
+            grad%col(2*ii - 1) = IndVec(ii)
         enddo
         !
         I = I + 1
@@ -287,7 +287,7 @@ contains
         call self%grid%vectorIndex( NODE, I, J, K, IndVec )
         !
         do ii = 1, nXedge
-            G%col(2*ii) = IndVec(ii)
+            grad%col(2*ii) = IndVec(ii)
         enddo
         !
         deallocate( IndVec, I, J, K )
@@ -307,7 +307,7 @@ contains
         !
         do ii = 1, nYedge
         jj = ii + nXedge
-        G%col(2*jj - 1) = IndVec(ii)
+        grad%col(2*jj - 1) = IndVec(ii)
         enddo
         !
         J = J + 1
@@ -316,7 +316,7 @@ contains
         !
         do ii = 1, nYedge
         jj = ii + nXedge
-        G%col(2*jj) = IndVec(ii)
+        grad%col(2*jj) = IndVec(ii)
         enddo
         !
         deallocate( IndVec, I, J, K )
@@ -336,7 +336,7 @@ contains
         !
         do ii = 1, nZedge
             jj = ii + nXedge + nYedge
-            G%col(2*jj - 1) = IndVec(ii)
+            grad%col(2*jj - 1) = IndVec(ii)
         enddo
         !
         K = K + 1
@@ -345,7 +345,7 @@ contains
         !
         do ii = 1, nZedge
             jj = ii + nXedge + nYedge
-            G%col(2*jj) = IndVec(ii)
+            grad%col(2*jj) = IndVec(ii)
         enddo
         !
         deallocate( IndVec, I, J, K )

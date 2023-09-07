@@ -41,10 +41,8 @@ module CoreComponents
     !
     character(:), allocatable :: modem_job
     !
-    character(:), allocatable :: fwd_control_file_name
-    character(:), allocatable :: inv_control_file_name
-    character(:), allocatable :: model_file_name
-    character(:), allocatable :: pmodel_file_name
+    character(:), allocatable :: fwd_control_file_name, inv_control_file_name
+    character(:), allocatable :: model_file_name, pmodel_file_name
     character(:), allocatable :: data_file_name
     character(:), allocatable :: dsigma_file_name
     character(:), allocatable :: cov_file_name
@@ -52,28 +50,22 @@ module CoreComponents
     !
     !> Program Control Flags
     logical :: has_outdir_name
-    logical :: has_fwd_control_file
-    logical :: has_inv_control_file
-    logical :: has_model_file
+    logical :: has_fwd_control_file, has_inv_control_file
+    logical :: has_model_file, has_pmodel_file
     logical :: has_cov_file
-    logical :: has_pmodel_file
     logical :: has_data_file
     logical :: has_e_solution_file
     logical :: verbosis
     !
     !> Public Module Routines
-    public :: handleModelFile
-    public :: handlePModelFile
-    public :: handleDataFile
-    public :: handleForwardControlFile
-    public :: handleInversionControlFile
+    public :: handleModelFile, handlePModelFile, handleDataFile
+    public :: handleForwardControlFile, handleInversionControlFile
     public :: handleArguments
     public :: setupDefaultParameters
     public :: createOutputDirectory
     public :: getLiteralTime
     public :: garbageCollector
-    public :: printUsage
-    public :: printHelp
+    public :: printUsage, printHelp
     public :: printForwardControlFileTemplate
     public :: printInversionControlFileTemplate
     !
@@ -201,7 +193,7 @@ contains
             !
         else
             !
-            write( str_msg, "(A55, I2, A5, I2, A1 )") "handleDataFile > Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
+            write( str_msg, "( A55, I2, A5, I2, A1 )") "handleDataFile > Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
             call errStop( str_msg )
             !
         endif
@@ -216,7 +208,7 @@ contains
             !
         else
             !
-            write( str_msg, "(A54, I2, A5, I2, A1 )") "handleDataFile > Number of Tx mismatched from Header :[", n_tx, " and ", data_file_standard%n_tx, "]"
+            write( str_msg, "( A54, I2, A5, I2, A1 )") "handleDataFile > Number of Tx mismatched from Header :[", n_tx, " and ", data_file_standard%n_tx, "]"
             call errStop( str_msg )
             !
         endif

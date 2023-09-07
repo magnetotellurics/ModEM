@@ -72,7 +72,7 @@ contains
     end function SpOpTopology_MR_ctor
     !
     !> The multi-resolution version can be  viewed  as a product of
-    !>   three sparse matrices:   T = T3*T2*T1  where
+    !>   three sparse matrices:   curl = T3*T2*T1  where
     !>   --> T1 maps from the active edges, to a full set of edges
     !>          for all subVectors; all active edges are just copied,
     !>          and redundant edges in the outputs are set as averages
@@ -86,11 +86,11 @@ contains
     !>          the product T2*T1 to the submatrix of rows corresponding to
     !>          active faces
     !
-    subroutine curl_SpOpTopology_MR( self, T ) 
+    subroutine curl_SpOpTopology_MR( self, curl ) 
         implicit none
         !
         class( SpOpTopology_MR_t ), intent( in ) :: self
-        type( spMatCSR_Real ), intent( inout ) :: T
+        type( spMatCSR_Real ), intent( inout ) :: curl
         !
         type( spMatCSR_Real ), pointer, dimension(:) :: T2_array
         type( spMatCSR_Real ) :: T1, T2, Ctmp
@@ -115,7 +115,7 @@ contains
         vecC = rVector3D_MR_t( self%grid, FACE )
         allocate( col( Ctmp%nCol ) )
         col =(/(i, i = 1, Ctmp%nCol)/)
-        call subMatrix_Real( Ctmp, self%grid%FACEa, col, T )
+        call subMatrix_Real( Ctmp, self%grid%FACEa, col, curl )
         !
         !> Clean up
         do i = 1, self%grid%n_grids
@@ -130,7 +130,7 @@ contains
     end subroutine curl_SpOpTopology_MR
     !
     !> The multi-resolution version can be  viewed  as a product of
-    !> three sparse matrices:   G = G3*G2*G1  where
+    !> three sparse matrices:   grad = G3*G2*G1  where
     !>   --> G1 maps from the active nodes, to a full set of nodes
     !>       for all subVectors; all active nodes are just copied,
     !>       and redundant nodes on interfaces are copied from the
@@ -145,11 +145,11 @@ contains
     !>       the product T2*T1 to the submatrix of rows corresponding to
     !>       active edges.
     !
-    subroutine grad_SpOpTopology_MR(self, G)
+    subroutine grad_SpOpTopology_MR( self, grad )
         implicit none
         !
         class( SpOpTopology_MR_t ), intent( in ) :: self
-        type( spMatCSR_Real ), intent( inout ) :: G
+        type( spMatCSR_Real ), intent( inout ) :: grad
         !
         type( spMatCSR_Real ), pointer, dimension(:) :: G2_array
         type( spMatCSR_Real ) :: G1, G2, Gtmp
@@ -172,7 +172,7 @@ contains
         !> Pick out rows associated with active edges ...
         allocate( col( Gtmp%nCol ) )
         col =(/(i, i = 1, Gtmp%nCol)/)
-        call subMatrix_Real( Gtmp, self%grid%EDGEa, col, G )
+        call subMatrix_Real( Gtmp, self%grid%EDGEa, col, grad )
         !
         do i = 1, self%grid%n_grids
             call deall_spMatCSR_Real( G2_array(i) )

@@ -75,8 +75,8 @@ contains
         if( allocated( self%VomegaMuSig ) ) deallocate( self%VomegaMuSig )
         !
         !> and the curl and grad topology matrices
-        call deall_spMatCSR( T )
-        call deall_spMatCSR( G )
+        call deall_spMatCSR( self%topology%T )
+        call deall_spMatCSR( self%topology%G )
         !
         call deall_spMatCSR( self%Gd )
         call deall_spMatCSR( self%D )
@@ -91,6 +91,7 @@ contains
     end subroutine deallocate_ModelOperator_SP_V2
     !
     !> ModelOperator_SP_V2 destructor
+	!
     subroutine ModelOperator_SP_V2_dtor( self )
         implicit none
         !
@@ -285,16 +286,16 @@ contains
         M3earth = 1.0 / edge_length_v
         M4earth = dual_face_area_v
         !
-        call RMATtrans( G, Dt )
+        call RMATtrans( self%topology%G, Dt )
         !> build the Air part...
         !
-        call DIAGxRMAT( M1air, G, GD )
+        call DIAGxRMAT( M1air, self%topology%G, GD )
         call RMATxDIAG( GD, M2air, GDa )
         call RMATxRMAT( GDa, Dt, GD )
         call RMATxDIAG( GD, M1air, GDa )
         !
         ! build the Earth part...
-        call DIAGxRMAT( M0earth, G, GD )
+        call DIAGxRMAT( M0earth, self%topology%G, GD )
         !
         call RMATxDIAG( GD, M2earth, GDe )
         !
@@ -312,7 +313,7 @@ contains
         call RMATplusRMAT( self%CCii, self%GDii, self%AAii )
         !
         ! build the GradDiv matrix for additional terms in RHS...
-        call DIAGxRMAT( M3earth, G, GDe )
+        call DIAGxRMAT( M3earth, self%topology%G, GDe )
         !
         call RMATxDIAG( GDe, M2earth, GD )
         !
@@ -359,7 +360,7 @@ contains
         Ne = size( SigEdge )
         Nn = size( self%metric%grid%NODEi ) + size( self%metric%grid%NODEb )
         !
-        call RMATtrans( G, Dt )
+        call RMATtrans( self%topology%G, Dt )
         !
         Dt%val = abs(Dt%val)
         !
