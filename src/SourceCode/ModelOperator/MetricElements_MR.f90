@@ -68,14 +68,16 @@ contains
         !
         self%grid_mr => grid_mr
         !
-        self%grid => grid_mr
-        !
         call self%alloc
         !
         !>    if were going to allocate storage for all, just set all now!
         call self%setup
         !
-        call self%setGridIndexArrays( self%grid )
+        call self%setGridIndexArrays( self%grid_mr )
+        !
+        call self%grid_mr%setXYZ
+        !
+        self%grid => grid_mr
         !
     end function MetricElements_MR_Ctor
     !

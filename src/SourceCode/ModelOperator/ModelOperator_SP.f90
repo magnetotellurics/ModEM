@@ -87,15 +87,11 @@ contains
                 !
                 allocate( self%metric, source = MetricElements_SG_t( grid ) )
                 !
-                call self%metric%setGridIndexArrays( self%metric%grid )
-                !
                 allocate( self%topology, source = SpOpTopology_SG_t( grid ) )
                 !
             class is ( Grid3D_MR_t )
                 !
                 allocate( self%metric, source = MetricElements_MR_t( grid ) )
-                !
-                call self%metric%setGridIndexArrays( self%metric%grid )
                 !
                 allocate( self%topology, source = SpOpTopology_MR_t( grid ) )
                 !
@@ -112,8 +108,6 @@ contains
         call self%topology%grad( self%topology%G )
         !
         call writeIJS_Matrix( self%topology%G, 6667 )
-        !
-        stop "MATRICES PRINTED"
         !
         allocate( self%VomegaMuSig( size( self%metric%grid%EDGEi ) ) )
         !

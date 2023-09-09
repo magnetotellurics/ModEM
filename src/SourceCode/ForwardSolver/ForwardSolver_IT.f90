@@ -157,8 +157,27 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), allocatable, intent( out ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_vec
+        class( Vector_t ), allocatable :: temp_e, temp_vec
+        type( cVector3D_MR_t ) :: temp_e_mr
         integer :: i
+        !
+        !> Create proper SG or MR temp source vectors
+        select type( grid => source%E( pol )%grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                allocate( temp_e, source = source%E( pol ) )
+            !
+            class is( Grid3D_MR_t )
+                !
+                temp_e_mr = cVector3D_MR_t( grid, source%E( pol )%grid_type )
+                call temp_e_mr%fromSG( source%E( pol ) )
+                allocate( temp_e, source = temp_e_mr )
+                !
+            class default
+               call errStop( "createESolution_ForwardSolver_IT > Unclassified Source grid." )
+            !
+        end select
         !
         !> Create e_solution Vector
         call self%solver%preconditioner%model_operator%metric%createVector( complex_t, EDGE, e_solution )
@@ -173,8 +192,7 @@ contains
         !> 
         fwd_solver_loop: do
             !
-            !> 
-            call self%solver%solve( source%rhs( pol ), e_solution )
+            call self%solver%solve( source%rhs( pol )%v, e_solution )
             !
             do i = 1, self%solver%n_iter
                 !
@@ -209,11 +227,11 @@ contains
         !
         if( source%non_zero_bc ) then
             !
-            call source%rhs( pol )%boundary( temp_vec )
+            call source%rhs( pol )%v%boundary( temp_vec )
             !
         else
             !
-            call source%E( pol )%boundary( temp_vec )
+            call temp_e%boundary( temp_vec )
             !
         endif
         !

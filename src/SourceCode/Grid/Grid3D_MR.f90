@@ -26,13 +26,15 @@ module Grid3D_MR
     type, extends( Grid_t ) :: Grid3D_MR_t
         !
         !> MR properties
+        type( Grid3D_SG_t ), allocatable, dimension(:) :: sub_grid
+        !
         integer, allocatable, dimension(:,:) :: coarseness, z_limits
         !
         integer, allocatable, dimension(:,:) :: n_active_edge, n_active_face
         !
         integer, allocatable, dimension(:) :: n_active_node, n_active_cell, cs
         !
-        type( Grid3D_SG_t ), allocatable, dimension(:) :: sub_grid
+        integer, allocatable, dimension(:) :: iXYZfull, iXYZinterior, iXYZactive
         !
         !real( kind=prec ), allocatable, dimension(n_grids) :: z_top
         !
@@ -44,6 +46,8 @@ module Grid3D_MR
             procedure, public :: numberOfFaces => numberOfFaces_Grid3D_MR
             procedure, public :: numberOfNodes => numberOfNodes_Grid3D_MR
             procedure, public :: numberOfCells => numberOfCells_Grid3D_MR
+            !
+            procedure, public :: setXYZ => setXYZ_Grid3D_MR
             !
             procedure, public :: reduceActive => reduceActive_Grid3D_MR
             !
@@ -516,6 +520,63 @@ contains
         enddo
         !
     end subroutine setActiveLimits_Grid3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine setXYZ_Grid3D_MR( self )
+        implicit none
+        !
+        class( Grid3D_MR_t ), intent( inout ) :: self
+        !
+        integer :: i_grid, i0, i1
+        integer :: n_xedge, n_yedge, n_zedge, length_full
+        !
+        length_full = 0
+        !
+        do i_grid = 1, self%n_grids
+            !
+            call self%sub_grid(i_grid)%numberOfEdges( n_xedge, n_yedge, n_zedge )
+            !
+            length_full = length_full + n_xedge + n_yedge + n_zedge
+            !
+        enddo
+        !
+        !> integer array length of full vector (active and inactive edges)
+        allocate( self%iXYZfull( length_full ) )
+        !
+        write( *, * ) "setXYZ_Grid3D_MR FULL    : ", size( self%iXYZfull )
+        !
+        i0 = 0
+        !
+        do i_grid = 1, self%n_grids
+            !
+            call self%sub_grid(i_grid)%numberOfEdges( n_xedge, n_yedge, n_zedge )
+            !
+            i1 = i0 + n_xedge
+            self%iXYZfull( i0+1:i1 ) = 1
+            !
+            i0 = i1
+            i1 = i0 + n_yedge
+            self%iXYZfull( i0+1:i1 ) = 2
+            !
+            i0 = i1
+            i1 = i0 + n_zedge
+            self%iXYZfull( i0+1:i1 ) = 3
+            !
+            i0 = i1
+            !
+        enddo
+        !
+        !   now reduce to active edges
+        self%iXYZactive = self%iXYZfull( self%EDGEa )
+        !
+        write( *, * ) "ACTIVE  : ", size( self%iXYZactive )
+        !
+        self%iXYZinterior = self%iXYZactive( self%EDGEi )
+        !
+        write( *, * ) "INTERIOR: ", size( self%iXYZinterior )
+        !
+    end subroutine setXYZ_Grid3D_MR
     !
     !> just algorithm. -- reduce number of active edges/faces/nodes
     !> For one vertical layer in the sub_grid

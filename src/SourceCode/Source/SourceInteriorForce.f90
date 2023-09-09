@@ -82,11 +82,33 @@ contains
         class( SourceInteriorForce_t ), intent( inout ) :: self
         !
         integer :: pol
+        type( cVector3D_MR_t ) :: temp_vec_mr
         !
         !> RHS = E
-        self%rhs = self%E
+        allocate( self%rhs( size( self%E ) ) )
         !
         do pol = 1, size( self%rhs )
+            !
+            !> Check if grid is MR 
+            !> RHS calculated as MR vector
+            select type( grid => self%model_operator%metric%grid )
+                !
+                class is( Grid3D_SG_t )
+                    !
+                    allocate( self%rhs( pol )%v, source = self%E( pol ) )
+                    !
+                class is( Grid3D_MR_t )
+                    !
+                    temp_vec_mr = cVector3D_MR_t( grid, self%E( pol )%grid_type )
+                    !
+                    call temp_vec_mr%fromSG( self%E( pol ) )
+                    !
+                    allocate( self%rhs( pol )%v, source = temp_vec_mr )
+                    !
+                class default
+                    call errStop( "createRHS_SourceInteriorForce > model_operator must be SP V1 or V2" )
+                !
+            end select
             !
             if( self%for_transpose ) then
                 !
@@ -95,7 +117,7 @@ contains
                 !
             else
                 !> RHS = RHS * V_E
-                call self%rhs( pol )%mult( self%model_operator%metric%v_edge )
+                call self%rhs( pol )%v%mult( self%model_operator%metric%v_edge )
                 !
             endif
             !

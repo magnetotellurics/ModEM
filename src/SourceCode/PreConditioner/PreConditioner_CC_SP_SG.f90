@@ -185,7 +185,7 @@ contains
                 deallocate( Lblk, Ublk )
                 !
             class default
-                call errStop( "LTSolvePreConditioner_CC_SP_SG: Unclassified ModelOperator" )
+                call errStop( "setPreConditioner_CC_SP_SG: Unclassified ModelOperator" )
             !
         end select
         !

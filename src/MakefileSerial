@@ -349,7 +349,7 @@ $(OBJDIR)/ReceiverSingleField.o:SourceCode/Receivers/ReceiverSingleField.f90 $(O
 $(OBJDIR)/ModelReader.o:SourceCode/ModelParameter/ModelReader.f90 $(OBJDIR)/Grid.o $(OBJDIR)/ModelParameter.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/ModelParameter/ModelReader.f90 -o $(OBJDIR)/ModelReader.o
 
-$(OBJDIR)/ModelReader_Weerachai.o:SourceCode/ModelParameter/ModelReader_Weerachai.f90 $(OBJDIR)/ModelReader.o $(OBJDIR)/Utilities.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/rScalar3D_MR.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelParameterCell_MR.o $(OBJDIR)/ForwardControlFile.o 
+$(OBJDIR)/ModelReader_Weerachai.o:SourceCode/ModelParameter/ModelReader_Weerachai.f90 $(OBJDIR)/ModelReader.o $(OBJDIR)/Utilities.o $(OBJDIR)/rScalar3D_SG.o $(OBJDIR)/ModelParameterCell_SG.o $(OBJDIR)/ModelParameterCell_MR.o $(OBJDIR)/ForwardControlFile.o 
 	 $(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) SourceCode/ModelParameter/ModelReader_Weerachai.f90 -o $(OBJDIR)/ModelReader_Weerachai.o
 
 $(OBJDIR)/DataEntry.o:SourceCode/DataIO/DataEntry.f90 $(OBJDIR)/Constants.o 

@@ -217,12 +217,33 @@ contains
         !
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
         !
+        type( cVector3D_MR_t ) :: temp_vec_mr
+        !
         !if( allocated( self%rhs ) ) deallocate( self%rhs )
         allocate( self%rhs(1) )
         !
-        self%rhs(1) = self%E(1)
+        !> Check if grid is MR 
+        !> RHS calculated as MR vector
+        select type( grid => self%model_operator%metric%grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                allocate( self%rhs(1)%v, source = self%E(1) )
+                !
+            class is( Grid3D_MR_t )
+                !
+                temp_vec_mr = cVector3D_MR_t( grid, self%E(1)%grid_type )
+                !
+                call temp_vec_mr%fromSG( self%E(1) )
+                !
+                allocate( self%rhs(1)%v, source = temp_vec_mr )
+                !
+            class default
+                call errStop( "createRHS_SourceCSEM_EM1D > model_operator must be SP V1 or V2" )
+            !
+        end select
         !
-        call self%rhs(1)%mult( self%model_operator%metric%v_edge )
+        call self%rhs(1)%v%mult( self%model_operator%metric%v_edge )
         !
     end subroutine createRHS_SourceCSEM_EM1D
     !

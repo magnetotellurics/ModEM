@@ -75,68 +75,89 @@ contains
         real( kind=prec ), intent( in ) :: omega
         !
         integer, allocatable, dimension(:) :: ix, iy, iz
+        integer :: sum_x, sum_y, sum_z
         real( kind=prec ), allocatable, dimension(:) :: d
         integer :: nx, ny, na, nz
         integer :: nEdge, nEdgeT, n, i, j
-        type( spMatCSR_real ) :: CCxx
+        type( spMatCSR_real ) :: Mii, CCxx
         type( spMatCSR_Cmplx ) :: Axx
         type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
         !
-        !> Commom SP implementation
-        call self%model_operator%metric%grid%numberOfEdges( nx, ny, nz )
-        !
-        !> ix
-        nEdgeT = 0
-        nEdge = 0
-        do i = 1, size( self%model_operator%metric%grid%EDGEi )
-            if( self%model_operator%metric%grid%EDGEi(i) <= nx ) nEdge = nEdge + 1
-        enddo
-        !
-        allocate( ix(nEdge) )
-        !
-        ix = (/(j, j = nEdgeT + 1, nEdgeT + nEdge) /)
-        !
-        !> iy
-        nEdgeT = nEdgeT + nEdge
-        nEdge = 0
-        do i = 1, size( self%model_operator%metric%grid%EDGEi )
+        !> Generate the index arrays ix, iy and iz from grid%iXYZinterior
+        select type( grid => self%model_operator%metric%grid )
             !
-            if( self%model_operator%metric%grid%EDGEi(i) > nx .AND. &
-                self%model_operator%metric%grid%EDGEi(i) <= nx + ny ) then
-                nEdge = nEdge + 1
-            endif
+            class is( Grid3D_MR_t )
+                !
+                !> Find and sum all x=1, y=2, z=3; for ix, iy, iz allocation sizes
+                sum_x = 0; sum_y = 0; sum_z = 0
+                !
+                do i = 1, size( grid%iXYZinterior )
+                    !
+                    if( grid%iXYZinterior(i) == 1 ) sum_x = sum_x + 1
+                    !
+                    if( grid%iXYZinterior(i) == 2 ) sum_y = sum_y + 1
+                    !
+                    if( grid%iXYZinterior(i) == 3 ) sum_z = sum_z + 1
+                    !
+                enddo
+                !
+                allocate( ix( sum_x ) )
+                allocate( iy( sum_y ) )
+                allocate( iz( sum_z ) )
+                !
+                !> Populate ix, iy, iz
+                sum_x = 1; sum_y = 1; sum_z = 1
+                !
+                do i = 1, size( grid%iXYZinterior )
+                    !
+                    if( grid%iXYZinterior(i) == 1 ) then
+                        ix(sum_x) = grid%iXYZinterior(i)
+                        sum_x = sum_x + 1
+                    endif
+                    !
+                    if( grid%iXYZinterior(i) == 2 ) then
+                        iy(sum_y) = grid%iXYZinterior(i)
+                        sum_y = sum_y + 1
+                    endif
+                    !
+                    if( grid%iXYZinterior(i) == 3 ) then
+                        iz(sum_z) = grid%iXYZinterior(i)
+                        sum_z = sum_z + 1
+                    endif
+                    !
+                enddo
+                !
+            class default
+                call errStop( "setPreConditioner_CC_SP_MR > Grid must be MR" )
             !
-        enddo
-        !
-        allocate( iy(nEdge) )
-        !
-        iy =(/(j,j = nEdgeT + 1, nEdgeT + nEdge) /)
-        !
-        !> iz
-        nEdgeT = nEdgeT+nEdge
-        nEdge = 0
-        do i = 1, size( self%model_operator%metric%grid%EDGEi )
-            !
-            if( self%model_operator%metric%grid%EDGEi(i) > nx + ny ) then
-                nEdge = nEdge + 1
-            end if
-            !
-        end do
-        !
-        allocate( iz(nEdge) )
-        !
-        iz =(/(j, j = nEdgeT + 1, nEdgeT + nEdge) /)
+        end select
         !
         !> Construct submatrices for x, y, z components
         allocate( Lblk(3) )
         allocate( Ublk(3) )
         !
-        !> Different SP1 (CCii) and SP2 (AAii) implementations
+        !> Ensure that the model_operator is SP
         select type( model_operator => self%model_operator )
             !
-            class is( ModelOperator_SP_V1_t )
+            class is( ModelOperator_SP_t )
                 !
-                call SubMatrix_Real( model_operator%CCii, ix, ix, CCxx )
+                !> Differentiation between SP1 (CCii) and SP2 (AAii)
+                select type( model_operator )
+                    !
+                    class is( ModelOperator_SP_V1_t )
+                        !
+                        Mii = model_operator%CCii
+                        !
+                    class is( ModelOperator_SP_V2_t )
+                        !
+                        Mii = model_operator%AAii
+                        !
+                    class default
+                        call errStop( "setPreConditioner_CC_SP_MR > model_operator must be SP V1 or V2" )
+                    !
+                end select
+                !
+                call SubMatrix_Real( Mii, ix, ix, CCxx )
                 !
                 n = size(ix)
                 !
@@ -150,7 +171,7 @@ contains
                 !
                 deallocate(d)
                 !
-                call SubMatrix_Real( model_operator%CCii, iy, iy, CCxx )
+                call SubMatrix_Real( Mii, iy, iy, CCxx )
                 !
                 n = size(iy)
                 !
@@ -164,7 +185,7 @@ contains
                 !
                 deallocate(d)
                 !
-                call SubMatrix_Real( model_operator%CCii, iz, iz, CCxx )
+                call SubMatrix_Real( Mii, iz, iz, CCxx )
                 !
                 n = size(iz)
                 !
@@ -172,66 +193,39 @@ contains
                 !
                 d = model_operator%VomegaMuSig(iz)
                 !
-            class is( ModelOperator_SP_V2_t )
-                !
-                call SubMatrix_Real( model_operator%AAii, ix, ix, CCxx )
-                !
-                n = size(ix)
-                allocate(d(n))
-                d = model_operator%VomegaMuSig(ix)
-                !
                 call CSR_R2Cdiag( CCxx, d, Axx )
-                call ilu0_Cmplx( Axx, Lblk(1), Ublk(1) )
+                !
+                call dilu_Cmplx( Axx, Lblk(3), Ublk(3) )
                 !
                 deallocate(d)
                 !
-                call SubMatrix_Real( model_operator%AAii, iy, iy, CCxx )
-                n = size(iy)
-                allocate(d(n))
-                d = model_operator%VomegaMuSig(iy)
+                ! Could merge into a single LT and UT matrix, or solve systems individually
+                call BlkDiag_Cmplx( Lblk, self%L )
+                call BlkDiag_Cmplx( Ublk, self%U )
                 !
-                call CSR_R2Cdiag( CCxx, d, Axx )
-                call ilu0_cmplx( Axx, Lblk(2), Ublk(2) )
+                call CMATtrans( self%L, self%LH )
+                call CMATtrans( self%U, self%UH )
                 !
-                deallocate(d)
+                deallocate( ix, iy, iz )
                 !
-                call SubMatrix_Real( model_operator%AAii, iz, iz, CCxx )
-                n = size(iz)
-                allocate(d(n))
-                d = model_operator%VomegaMuSig(iz)
+                call deall_spMatCSR( CCxx )
+                call deall_spMatCSR( Axx )
+                !
+                do j = 1, 3
+                    call deall_spMatCSR( Lblk(j) )
+                    call deall_spMatCSR( Ublk(j) )
+                enddo
+                !
+                deallocate( Lblk, Ublk )
                 !
             class default
-                call errStop( "setPreConditioner_CC_SP_MR > Unclassified target" )
+                call errStop( "setPreConditioner_CC_SP_MR > Unclassified model_operator" )
             !
         end select
         !
-        call CSR_R2Cdiag( CCxx, d, Axx )
-        call ilu0_Cmplx( Axx, Lblk(3), Ublk(3) )
-        !
-        deallocate(d)
-        !
-        !> could merge into a single LT and UT matrix, or solve systems individually
-        call BlkDiag_Cmplx( Lblk, self%L )
-        call BlkDiag_Cmplx( Ublk, self%U )
-        call CMATtrans( self%L, self%LH )
-        call CMATtrans( self%U, self%UH )
-        deallocate(ix)
-        deallocate(iy)
-        deallocate(iz)
-        call deall_spMatCSR(CCxx)
-        call deall_spMatCSR(Axx)
-        !
-        do j = 1, 3
-            call deall_spMatCSR(Lblk(j))
-            call deall_spMatCSR(Ublk(j))
-        enddo
-        !
-        deallocate(Lblk)
-        deallocate(Ublk)
-        !
     end subroutine setPreConditioner_CC_SP_MR
     !
-    !> Implement the sparse matrix solve for curl-curl operator
+    !> Implement the sparse matrix LT solve for curl-curl operator
     !
     subroutine LTSolvePreConditioner_CC_SP_MR( self, in_e, out_e, adjoint )
         implicit none
@@ -275,7 +269,7 @@ contains
     end subroutine LTSolvePreConditioner_CC_SP_MR
     !
     !> Procedure UTSolvePreConditioner_CC_SP_MR
-    !> Purpose: to solve the upper triangular system(or it"s adjoint);
+    !> Purpose: to solve the upper triangular system(or its adjoint);
     !> for the d-ilu pre-condtioner
     !
     subroutine UTSolvePreConditioner_CC_SP_MR( self, in_e, out_e, adjoint )

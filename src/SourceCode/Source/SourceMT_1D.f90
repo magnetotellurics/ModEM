@@ -138,20 +138,42 @@ contains
         class( Vector_t ), allocatable :: e_boundary
         !
         integer :: pol
+        type( cVector3D_MR_t ) :: temp_vec_mr
         !
         allocate( self%rhs( 2 ) )
         !
         do pol = 1, 2
             !
-            call self%E( pol )%boundary( e_boundary )
+            !> Check if grid is MR 
+            !> RHS calculated as MR vector
+            select type( grid => self%model_operator%metric%grid )
+                !
+                class is( Grid3D_SG_t )
+                    !
+                    call self%E( pol )%boundary( e_boundary )
+                    !
+                    allocate( self%rhs( pol )%v, source = cVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
+                    !
+                class is( Grid3D_MR_t )
+                    !
+                    temp_vec_mr = cVector3D_MR_t( grid, self%E( pol )%grid_type )
+                    !
+                    call temp_vec_mr%fromSG( self%E( pol ) )
+                    !
+                    call temp_vec_mr%boundary( e_boundary )
+                    !
+                    allocate( self%rhs( pol )%v, source = cVector3D_MR_t( self%sigma%metric%grid, EDGE ) )
+                    !
+                class default
+                    call errStop( "createRHS_SourceMT_1D > model_operator must be SP V1 or V2" )
+                !
+            end select
             !
-            self%rhs( pol ) = cVector3D_SG_t( self%sigma%metric%grid, EDGE )
-            !
-            call self%model_operator%MultAib( e_boundary, self%rhs( pol ) )
+            call self%model_operator%MultAib( e_boundary, self%rhs( pol )%v )
             !
             deallocate( e_boundary )
             !
-            call self%rhs( pol )%mult( C_MinusOne )
+            call self%rhs( pol )%v%mult( C_MinusOne )
             !
         enddo
         !

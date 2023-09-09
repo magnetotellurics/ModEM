@@ -19,7 +19,9 @@ module Source
         !
         real( kind=prec ) :: period
         !
-        type( cVector3D_SG_t ), allocatable, dimension(:) :: rhs, E
+        type( cVector3D_SG_t ), allocatable, dimension(:) :: E
+        !
+        type( GenVector_t ), allocatable, dimension(:) :: rhs
         !
         logical :: non_zero_source, non_zero_bc, calc_sens, for_transpose
         !
@@ -76,7 +78,7 @@ module Source
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
-        type( cVector3D_SG_t ), dimension(:), intent( in ) :: rhs
+        type( GenVector_t ), allocatable, dimension(:) :: rhs
         !
         self%rhs = rhs
         !

@@ -63,9 +63,6 @@ contains
         class( ModelParameterCell_t ), intent( inout ) :: self
         class( MetricElements_t ), target, intent( in ) :: metric
         !
-        !> NEED TO SETUP param_grid INTERIOR, BOUNDARY AND ACTIVE INDEXES ????
-        !call metric%setGridIndexArrays( self%param_grid )
-        !
         self%metric => metric
         !
     end subroutine setMetric_ModelParameterCell
