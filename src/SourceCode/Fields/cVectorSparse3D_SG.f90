@@ -4,7 +4,7 @@
 module cVectorSparse3D_SG
     !
     use Field
-    use cVector3D_SG
+    use cVector3D_MR
     !
     type, extends( Field_t ) :: cVectorSparse3D_SG_t
         !
@@ -220,6 +220,7 @@ contains
         complex( kind=prec ) :: cvalue
         !
         integer :: i, xi, yi, zi
+        type( cVector3D_SG_t ) :: temp_cvector_sg
         !
         cvalue = C_ZERO
         !
@@ -278,6 +279,14 @@ contains
                     endif
                     !
                 enddo
+            !
+            class is( cVector3D_MR_t )
+                !
+                temp_cvector_sg = cVector3D_SG_t( rhs%grid, rhs%grid_type )
+                !
+                call rhs%MRtoSG( temp_cvector_sg )
+                !
+                cvalue = self%dotProd( temp_cvector_sg )
                 !
             class default
                 call errStop( "dotProd_cVectorSparse3D_SG > undefined rhs" )
@@ -362,8 +371,8 @@ contains
         integer, allocatable, dimension(:,:,:) :: Ix, Jx, Kx, XYZ1
         integer, allocatable, dimension(:,:,:) :: Iy, Jy, Ky, XYZ2
         integer, allocatable, dimension(:,:,:) :: Iz, Jz, Kz, XYZ3
-        !
         integer :: i, j, k, Nx, Ny, Nz
+        type( cVector3D_SG_t ) :: temp_cvector_sg
         !
         select type( cvector )
             !
@@ -458,7 +467,18 @@ contains
                 deallocate( Ix, Jx, Kx, XYZ1 )
                 deallocate( Iy, Jy, Ky, XYZ2 )
                 deallocate( Iz, Jz, Kz, XYZ3 )
+            !
+            class is( cVector3D_MR_t )
                 !
+                temp_cvector_sg = cVector3D_SG_t( cvector%grid, cvector%grid_type )
+                !
+                call cvector%MRtoSG( temp_cvector_sg )
+                !
+                call self%fromFullVector( temp_cvector_sg )
+                !
+            class default
+                call errStop( "fromFullVector_cVectorSparse3D_SG > rhs must be cVector3D_SG_t" )
+            !
         end select
         !
     end subroutine fromFullVector_cVectorSparse3D_SG

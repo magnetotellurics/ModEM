@@ -196,6 +196,8 @@ contains
         !
         do k = 1, size( self%EHxy )
             !
+            !> Create e_h vector with proper type
+            !> Eletrical(E) - EDGE and Magnetic(B) - FACE
             select case( self%EHxy(k)%str )
                 !
                 case( "Ex", "Ey", "Ez" )
@@ -208,8 +210,10 @@ contains
                     !
                 case default
                     call errStop( "evaluationFunction_Receiver > Unknown EHxy" )
+                !
             end select
             !
+            !> Different behaviour for E and B components
             select case( self%EHxy(k)%str )
                 !
                 case( "Ex" )

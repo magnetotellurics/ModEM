@@ -44,10 +44,19 @@ contains
         !
         integer, allocatable, dimension(:) :: layers
         !
-        layers = (/ 0, 20, 0, 20 /)
+        !layers = (/ 0, 12 /)
+        !layers = (/ 1, 12 /)
+        !layers = (/ 2, 12 /)
+        !layers = (/ 0, 6, 0, 6 /)
+        !layers = (/ 1, 4, 0, 4, 0, 4 /)
+        !layers = (/ 0, 4, 0, 4, 0, 4 /)
+        !layers = (/ 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 /)
+        !layers = (/ 0, 4, 1, 4, 0, 4 /)
+        !layers = (/ 0, 20, 0, 20 /)
         !layers = (/ 0, 6, 1, 14, 2, 10, 3, 10 /)
-        !layers = (/ 0, 40 /)
         !layers = (/ 0, 4, 1, 4, 2, 4 /)
+        !> Benchmarcking
+        layers = (/ 1, 11 /)
         !
         someChar = ""
         paramType = ""
@@ -122,7 +131,7 @@ contains
             endif
             !
             !> Read conductivity values,
-			!> create rScalar3D_SG cell_cond with them
+            !> create rScalar3D_SG cell_cond with them
             do ii = 1, anisotropic_level
                 !
                 allocate( rho( nx, ny, nzEarth ) )
@@ -147,8 +156,8 @@ contains
                 endif
                 !
                 deallocate( rho )
-				!
-				!> Create the proper SG or MR model
+                !
+                !> Create the proper SG or MR model
                 if( anisotropic_level == 1 ) then
                     !
                     select type( grid )

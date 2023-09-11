@@ -77,6 +77,10 @@ contains
         !
         self%grid => grid_sg
         !
+        write( *, * ) "EDGE: ", self%grid%EDGEf, size( self%grid%EDGEb ), size( self%grid%EDGEi )
+        write( *, * ) "FACE: ", self%grid%FACEf, size( self%grid%FACEb ), size( self%grid%FACEi )
+        write( *, * ) "NODE: ", self%grid%NODEf, size( self%grid%NODEb ), size( self%grid%NODEi )
+        !
     end function MetricElements_SG_Ctor
     !
     !> No subroutine briefing
@@ -362,15 +366,15 @@ contains
         class( Field_t ), allocatable :: temp_field
         !
         allocate( temp_field, source = rVector3D_SG_t( grid, EDGE ) )
-        call temp_field%setIndexArrays( grid%EDGEb, grid%EDGEi )
+        call temp_field%setIndexArrays( grid%EDGEf, grid%EDGEb, grid%EDGEi )
         deallocate( temp_field )
         !
         allocate( temp_field, source = rVector3D_SG_t( grid, FACE ) )
-        call temp_field%setIndexArrays( grid%FACEb, grid%FACEi )
+        call temp_field%setIndexArrays( grid%FACEf, grid%FACEb, grid%FACEi )
         deallocate( temp_field )
         !
         allocate( temp_field, source = rScalar3D_SG_t( grid, NODE ) )
-        call temp_field%setIndexArrays( grid%NODEb, grid%NODEi )
+        call temp_field%setIndexArrays( grid%NODEf, grid%NODEb, grid%NODEi )
         deallocate( temp_field )
         !
     end subroutine setGridIndexArrays_MetricElements_SG

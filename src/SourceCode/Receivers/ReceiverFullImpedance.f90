@@ -13,13 +13,13 @@ module ReceiverFullImpedance
             !
             final :: ReceiverFullImpedance_dtor
             !
-            procedure, public :: predictedData => predictedDataFullImpedance
+            procedure, public :: predictedData => predictedData_FullImpedance
             !
-            procedure, public :: setLRows => setLRowsFullImpedance
+            procedure, public :: setLRows => setLRows_FullImpedance
             !
-            procedure, public :: isEqualRx => isEqualFullImpedance
+            procedure, public :: isEqualRx => isEqual_FullImpedance
             !
-            procedure, public :: print => printReceiverFullImpedance
+            procedure, public :: print => print_FullImpedance
             !
     end type ReceiverFullImpedance_t
     !
@@ -82,7 +82,7 @@ contains
     !
     !> No subroutine briefing
      !
-    subroutine predictedDataFullImpedance( self, transmitter, data_group )
+    subroutine predictedData_FullImpedance( self, transmitter, data_group )
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
@@ -100,9 +100,13 @@ contains
         comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         allocate( EE(2,2) )
+        !
         EE(1,1) = self%Lex%dotProd( tx_e_1 )
+        !
         EE(2,1) = self%Ley%dotProd( tx_e_1 )
+        !
         EE(1,2) = self%Lex%dotProd( tx_e_2 )
+        !
         EE(2,2) = self%Ley%dotProd( tx_e_2 )
         !
         !write( *, * ) "EE"
@@ -134,7 +138,7 @@ contains
             self%I_BB(1,2) = -BB(1,2) / det
             self%I_BB(2,1) = -BB(2,1) / det
         else
-            call errStop( "predictedDataFullImpedance > Determinant is Zero!" )
+            call errStop( "predictedData_FullImpedance > Determinant is Zero!" )
         endif
         !
         deallocate( BB )
@@ -157,10 +161,10 @@ contains
             !
         endif
         !
-    end subroutine predictedDataFullImpedance
+    end subroutine predictedData_FullImpedance
     !
     !> No subroutine briefing
-    subroutine setLRowsFullImpedance( self, transmitter )
+    subroutine setLRows_FullImpedance( self, transmitter )
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
@@ -226,11 +230,11 @@ contains
         !
         !deallocate( self%I_BB, self%response )
         !
-    end subroutine setLRowsFullImpedance
+    end subroutine setLRows_FullImpedance
      !
     !> No subroutine briefing
     !
-    function isEqualFullImpedance( self, other ) result( equal )
+    function isEqual_FullImpedance( self, other ) result( equal )
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( in ) :: self
@@ -256,16 +260,16 @@ contains
             !
         end select
         !
-    end function isEqualFullImpedance
+    end function isEqual_FullImpedance
     !
     !> No subroutine briefing
-    subroutine printReceiverFullImpedance( self )
+    subroutine print_FullImpedance( self )
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( in ) :: self
         !
         write( *, * ) "ReceiverFullImpedance_t: ", self%i_rx, self%rx_type, self%n_comp
         !
-    end subroutine printReceiverFullImpedance
+    end subroutine print_FullImpedance
     !
 end module ReceiverFullImpedance

@@ -9,7 +9,7 @@ module cVector3D_MR
     !
     type, extends( Vector_t ) :: cVector3D_MR_t
         !
-        type( cVector3D_SG_t ), allocatable :: sub_vector(:)
+        type( cVector3D_SG_t ), allocatable, dimension(:) :: sub_vector
         !
         contains
             !
@@ -141,7 +141,7 @@ contains
                 !
                 self%is_allocated = .TRUE.
                 allocate( self%sub_vector( grid%n_grids ), stat = alloc_stat )
-                self%is_allocated = self%is_allocated .AND. (  alloc_stat .EQ. 0 )
+                self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
                 !
                 do i = 1, grid%n_grids
                     !
@@ -162,10 +162,11 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setIndexArrays_cVector3D_MR( self, ind_boundary, ind_interior, ind_active, xy_in ) 
+    subroutine setIndexArrays_cVector3D_MR( self, n_full, ind_boundary, ind_interior, ind_active, xy_in ) 
         implicit none
         !
         class( cVector3D_MR_t ), intent( in ) :: self
+        integer, intent( inout ) :: n_full
         integer, dimension(:), allocatable, intent( out ) :: ind_boundary, ind_interior
         integer, dimension(:), allocatable, intent( out ), optional :: ind_active
         logical, intent( in ), optional :: xy_in
@@ -173,7 +174,7 @@ contains
         type( cVector3D_MR_t ) :: temp_vector
         logical :: xy, int_only
         integer :: i, k
-        integer :: n_full, n_active, n_interior, n_boundaries
+        integer :: n_active, n_interior, n_boundaries
         real( kind=prec ), dimension(:), allocatable :: v_1, v_2
         !
         if( .NOT. present( xy_in ) ) then
@@ -464,12 +465,11 @@ contains
     !> copying from variable resolution sub-grids to completely fill in the
     !> underlying fine grid.
     !
-    subroutine MRtoSG_cVector3D_MR( self, sg_vector, sg_grid )
+    subroutine MRtoSG_cVector3D_MR( self, sg_vector )
         implicit none
         !
         class( cVector3D_MR_t ), intent( in ) :: self
         type( cVector3D_SG_t ), intent( inout ) :: sg_vector
-        class( Grid_t ), pointer, intent( in ) :: sg_grid
         !
         type( cVector3D_SG_t ) :: temp
         integer :: x_nx, x_ny, x_nz
@@ -478,7 +478,7 @@ contains
         integer :: last, Cs, i1, i2, i, i_grid
         real( kind=prec ) :: w1, w2
         !
-        temp = cVector3D_SG_t( sg_grid, self%grid_type )
+        temp = cVector3D_SG_t( self%grid, self%grid_type )
         !
         temp%x = 0; temp%y = 0; temp%z = 0
         !

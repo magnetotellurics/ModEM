@@ -41,7 +41,7 @@ contains
         call self%baseInit
         !
         !> Instantiate the PreConditioner CC object
-		!> According to the Grid (SG/MR) and ModelOperator (MF_SG/SP)
+        !> According to the Grid (SG/MR) and ModelOperator (MF_SG/SP)
         select type( grid => model_operator%metric%grid )
             !
             class is( Grid3D_SG_t )
@@ -295,7 +295,7 @@ contains
             rnorm = SQRT( R%dotProd( R ) )
             !
             !> Verbose
-            write( *, "( a36, i6, a3, es12.3 )" ) "QMR iter: ", self%iter, " : ", self%relErr( self%iter )
+            !write( *, "( a36, i6, a3, es12.3 )" ) "QMR iter: ", self%iter, " : ", self%relErr( self%iter )
             !
             self%iter = self%iter + 1
             !

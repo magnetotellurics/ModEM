@@ -79,6 +79,10 @@ contains
         !
         self%grid => grid_mr
         !
+        write( *, * ) "EDGE: ", size( self%grid%EDGEa ), self%grid%EDGEf, size( self%grid%EDGEb ), size( self%grid%EDGEi )
+        write( *, * ) "FACE: ", size( self%grid%FACEa ), self%grid%FACEf, size( self%grid%FACEb ), size( self%grid%FACEi )
+        write( *, * ) "NODE: ", size( self%grid%NODEa ), self%grid%NODEf, size( self%grid%NODEb ), size( self%grid%NODEi )
+        !
     end function MetricElements_MR_Ctor
     !
     !> No subroutine briefing
@@ -313,15 +317,15 @@ contains
             class is( Grid3D_MR_t )
                 !
                 allocate( temp_field, source = rVector3D_MR_t( grid, EDGE ) )
-                call temp_field%setIndexArrays( grid%EDGEb, grid%EDGEi, grid%EDGEa )
+                call temp_field%setIndexArrays( grid%EDGEf, grid%EDGEb, grid%EDGEi, grid%EDGEa )
                 deallocate( temp_field )
                 !
                 allocate( temp_field, source = rVector3D_MR_t( grid, FACE ) )
-                call temp_field%setIndexArrays( grid%FACEb, grid%FACEi, grid%FACEa )
+                call temp_field%setIndexArrays( grid%FACEf, grid%FACEb, grid%FACEi, grid%FACEa )
                 deallocate( temp_field )
                 !
                 allocate( temp_field, source = rScalar3D_MR_t( grid, NODE ) )
-                call temp_field%setIndexArrays( grid%NODEb, grid%NODEi, grid%NODEa )
+                call temp_field%setIndexArrays( grid%NODEf, grid%NODEb, grid%NODEi, grid%NODEa )
                 deallocate( temp_field )
                 !
                 do i_grid = 1, grid%n_grids
@@ -333,15 +337,15 @@ contains
             class is( Grid3D_SG_t )
                 !
                 allocate( temp_field, source = rVector3D_SG_t( grid, EDGE ) )
-                call temp_field%setIndexArrays( grid%EDGEb, grid%EDGEi )
+                call temp_field%setIndexArrays( grid%EDGEf, grid%EDGEb, grid%EDGEi )
                 deallocate( temp_field )
                 !
                 allocate( temp_field, source = rVector3D_SG_t( grid, FACE ) )
-                call temp_field%setIndexArrays( grid%FACEb, grid%FACEi )
+                call temp_field%setIndexArrays( grid%FACEf, grid%FACEb, grid%FACEi )
                 deallocate( temp_field )
                 !
                 allocate( temp_field, source = rScalar3D_SG_t( grid, NODE ) )
-                call temp_field%setIndexArrays( grid%NODEb, grid%NODEi )
+                call temp_field%setIndexArrays( grid%NODEf, grid%NODEb, grid%NODEi )
                 deallocate( temp_field )
                 !
             class default

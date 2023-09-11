@@ -40,6 +40,7 @@ module Grid
         real( kind=prec ) :: rotDeg
         !
         !> Indexes Arrays
+        integer :: EDGEf, FACEf, NODEf
         integer, allocatable, dimension(:) :: EDGEb, FACEb, NODEb
         integer, allocatable, dimension(:) :: EDGEi, FACEi, NODEi
         integer, allocatable, dimension(:) :: EDGEa, FACEa, NODEa

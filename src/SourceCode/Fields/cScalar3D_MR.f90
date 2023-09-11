@@ -155,10 +155,11 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setIndexArrays_cScalar3D_MR( self, ind_boundary, ind_interior, ind_active, xy_in ) 
+    subroutine setIndexArrays_cScalar3D_MR( self, n_full, ind_boundary, ind_interior, ind_active, xy_in ) 
         implicit none
         !
         class( cScalar3D_MR_t ), intent( in ) :: self
+        integer, intent( inout ) :: n_full
         integer, dimension(:), allocatable, intent( out ) :: ind_boundary, ind_interior
         integer, dimension(:), allocatable, intent( out ), optional :: ind_active
         logical, intent( in ), optional :: xy_in
@@ -166,7 +167,7 @@ contains
         type( cScalar3D_MR_t ) :: temp_scalar
         logical :: xy, int_only
         integer :: i, k
-        integer :: n_full, n_active, n_interior, n_boundaries
+        integer :: n_active, n_interior, n_boundaries
         real( kind=prec ), dimension(:), allocatable :: v_1, v_2
         !
         if( .NOT. present( xy_in ) ) then

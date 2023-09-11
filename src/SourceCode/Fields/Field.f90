@@ -399,10 +399,11 @@ contains
     !>     Take two sizes and allocate the two arrays.
     !>     Fills the two arrays with their proper indices.
     !
-    subroutine setIndexArrays_Field( self, ind_boundary, ind_interior, ind_active, xy_in )
+    subroutine setIndexArrays_Field( self, n_full, ind_boundary, ind_interior, ind_active, xy_in )
         implicit none
         !
         class( Field_t ), intent( in ) :: self
+        integer, intent( inout ) :: n_full
         integer, dimension(:), allocatable, intent( out ) :: ind_boundary, ind_interior
         integer, dimension(:), allocatable, intent( out ), optional :: ind_active
         logical, intent( in ), optional :: xy_in
@@ -412,6 +413,8 @@ contains
         complex( kind=prec ), dimension(:), allocatable :: c_array
         !
         allocate( temp_field, source = self )
+        !
+        n_full = temp_field%length()
         !
         call temp_field%zeros
         !
