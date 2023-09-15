@@ -669,6 +669,15 @@ subroutine strcount(str,delims,nargs)
   end subroutine strcount
 
 !**********************************************************************
+! useful for grid operations & needed for I/O with HDF5 [Spencer Wilbur]
+pure function cumsum(a) result (r)
+real(kind=8), intent(in) :: a(:)
+real(kind=8) :: r(size(a))
+integer :: i
+r(:) = [(sum(a(1:i)),i=1,size(a))]
+end function cumsum
+
+!**********************************************************************
 recursive subroutine QSort(a, ia, i0, i1)
 ! a simple recursive quick sort routine using a middle pivot
 ! the average time complexity is O(nlog(n)), with the worst case of 

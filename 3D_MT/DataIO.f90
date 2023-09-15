@@ -183,10 +183,11 @@ Contains
     logical, allocatable            :: exist(:) ! (ncomp)
     character(2)                    :: temp = '> '
     character(8)                    :: today
-    character(40)                   :: siteid,ref_siteid,compid
+    character(50)                   :: siteid,ref_siteid,compid
+    character(20)                   :: sitename
     character(1000)                 :: strtemp
     integer                         :: iTxt,iTx,iRx,iDt,icomp,i,j,k,istat,ios,nBlocks
-    real(8)                         :: x(3),ref_x(3), Period,SI_factor,large
+    real(8)                         :: x(3),ref_x(3),Xx(3),Period,SI_factor,large
     real(8)                         :: lat,lon,ref_lat,ref_lon,rx_azimuth
     logical                         :: conjugate, isComplex
     type(orient_t)                  :: azimu ! 2022.09.28, Liu Zhongyin, add azimuth for MT
@@ -333,9 +334,18 @@ Contains
                             cycle
                         end if
                         compid = typeDict(iDt)%id(icomp)
-                        write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
+                        write(ioDat,'(es13.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
-                        write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                        if (FindStr(gridCoords, CARTESIAN)>0) then
+                            write(ioDat,'(a50,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
+                   
+                        elseif (FindStr(gridCoords, SPHERICAL)>0) then
+                            read(siteid,'(a20,2f15.3)',iostat=ios) sitename,Xx(1),Xx(2)
+                            write(ioDat,'(a20,5f15.3)',iostat=ios,advance='no') trim(sitename),x(1),x(2),Xx(1),Xx(2),x(3)
+                            
+                        end if
+                        
+
                         ! 2022.09.28, Liu Zhongyin, add azimu while writing
                         if (conjugate) then
                                 write(ioDat,'(a8,3es15.6,4f9.3)',iostat=ios) trim(compid),value(2*icomp-1),-value(2*icomp),error(2*icomp), &
@@ -362,7 +372,7 @@ Contains
                         compid = typeDict(iDt)%id(icomp)
                         ref_siteid = rxDict(iRx)%id_ref
                         ref_x = rxDict(iRx)%r
-                        write(ioDat,'(es12.6)',    iostat=ios,advance='no') Period
+                        write(ioDat,'(es13.6)',    iostat=ios,advance='no') Period
                         write(ioDat, '(a1)', iostat=ios,advance='no') ' '
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(siteid),x(:)
                         write(ioDat,'(a40,3f15.3)',iostat=ios,advance='no') trim(ref_siteid),ref_x(:)
@@ -555,7 +565,7 @@ Contains
     integer, allocatable            :: new_Rx(:) ! contains rxDict indices (nRx)
     character(2)                    :: temp
     character(200)                  :: txTypeName,typeName,typeInfo,typeHeader
-    character(40)                   :: siteid,ref_siteid,compid
+    character(50)                   :: siteid,ref_siteid,compid
     integer                         :: nTxt,iTxt,iDt,i,j,k,istat,ios
     character(40)                   :: code,ref_code
     real(8)                         :: x(3),ref_x(3), Period,SI_factor
@@ -871,7 +881,15 @@ Contains
 
                 ! Update the receiver dictionary and index (sets up if necessary)
                 ! For now, make lat & lon part of site ID; could use directly in the future
-                write(siteid,'(a20,2f9.3)') code,lat,lon
+                
+                if (FindStr(gridCoords, CARTESIAN)>0) then
+                    write(siteid,'(a20,2f9.3)') code,lat,lon
+                   
+                elseif (FindStr(gridCoords, SPHERICAL)>0) then
+                write(siteid,'(a20,2f15.3)') code,x(1),x(2)
+                    x(1) = lat
+                    x(2) = lon
+                end if
                 iRx = update_rxDict(x,siteid)
 
             case(Full_Interstation_TF)

@@ -376,6 +376,7 @@ sub process_fsource {
 
 
  my @modfiles=();
+ my @specialmodules=('iso_c_binding','mpi','hdf5');
  MODLOOP:foreach $module (@modulelist){
     foreach $directory (@spath){
       # print "# Looking in directory $directory\n";
@@ -414,8 +415,14 @@ sub process_fsource {
       close( SOURCEFILE );
     }
   }
-  # exhausted source files
-  print STDERR "Couldn't find source file for module $module\n";
+  if (grep (/$module/,@specialmodules )){
+    if($optiond){
+      print STDERR "# $module is sourced through a library; skip processing\n";
+    }
+  }
+  else {  # exhausted source files
+    print STDERR "Couldn't find source file for module $module\n";
+  }
 }
 
 if ($WIN) {

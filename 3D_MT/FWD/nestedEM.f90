@@ -74,18 +74,18 @@ type(sparsevecc), pointer, dimension(:)                         ::  e_sparse_vec
 Contains
 
   !**********************************************************************
-  subroutine setup_BC_from_file(grid,nTx,nPol)
+  subroutine setup_BC_from_file(grid,nTx_nPol)
 
   type(grid_t),intent(in)                   ::  grid
-  integer, intent(in)                       ::  nTx, nPol
+  integer, intent(in)                       ::  nTx_nPol
   ! local
   type(cboundary)  :: BC
   integer     :: j,status
 
-    allocate (BC_from_file(nTx*nPol),E0_from_file(nTx*nPol), STAT=status)
+    allocate (BC_from_file(nTx_nPol), STAT=status)
 
     call create_cboundary(grid,BC)
-    do j=1,nTx*nPol
+    do j=1,nTx_nPol
       BC_from_file(j)=BC
     end do
 
@@ -158,7 +158,7 @@ Contains
   ! local
   integer     :: j, status
 
-    deallocate(BC_from_file,E0_from_file, STAT=status)
+    deallocate(BC_from_file, STAT=status)
 
     deallocate(xTslice,xBslice, STAT=status)
     deallocate(yTslice,yBslice, STAT=status)

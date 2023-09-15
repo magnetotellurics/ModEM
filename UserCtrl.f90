@@ -15,6 +15,7 @@ module UserCtrl
   character*1, parameter	:: INVERSE = 'I'
   character*1, parameter	:: APPLY_COV = 'C'
   character*1, parameter    :: EXTRACT_BC = 'b'
+  character*1, parameter    :: DATA_FROM_E = 'd'
   character*1, parameter  :: TEST_GRAD = 'g'
   character*1, parameter  :: TEST_ADJ = 'A'
   character*1, parameter  :: TEST_SENS = 'S'
@@ -259,6 +260,10 @@ Contains
         write(*,*) '  Applies the model covariance to produce a smooth model output'
         write(*,*) '  Optionally, also specify the prior model to compute resistivities'
         write(*,*) '  from model perturbation: m = C_m^{1/2} \\tilde{m} + m_0'
+        write(*,*) '[DATA_FROM_E]'
+        write(*,*) ' -d  rFile_Model rFile_Data rFile_EMsoln wFile_Data [wFile_EMrhs]'
+        write(*,*) '  Reads your input files to set up the grid and data functionals;'
+        write(*,*) '  computes the data functionals from the supplied electric field'
         write(*,*) '[EXTRACT_BC]'
         write(*,*) ' -b rFile_Model rFile_Data wFile_EMrhs [rFile_fwdCtrl]'
         write(*,*) '  Initializes the forward solver and extracts the boundary conditions,'
@@ -603,6 +608,28 @@ Contains
         end if
         if (narg > 4) then
             ctrl%rFile_Prior = temp(5)
+        end if
+
+      case (DATA_FROM_E) ! d
+        if (narg < 4) then
+           write(0,*) 'Usage: -d  rFile_Model rFile_Data rFile_EMsoln wFile_Data [wFile_EMrhs wFile_EMsoln]'
+           write(0,*)
+           write(0,*) '  Reads your input files to set up the grid and data functionals;'
+           write(0,*) '  computes the data functionals from the supplied electric field'
+           write(0,*) '  Optionally writes out the BCs extracted from the electric field.'
+           write(0,*) '  Optionally also writes back the electric field for debugging.'
+           stop
+        else
+            ctrl%rFile_Model = temp(1)
+            ctrl%rFile_Data = temp(2)
+            ctrl%rFile_EMsoln = temp(3)
+            ctrl%wFile_Data = temp(4)
+            if (narg > 4) then
+                ctrl%wFile_EMrhs = temp(5)
+            end if
+            if (narg > 5) then
+                ctrl%wFile_EMsoln = temp(6)
+            end if
         end if
 
       case (EXTRACT_BC) ! b

@@ -467,6 +467,26 @@ contains
 
    end subroutine getBC_solnVectorMTX
 
+   !**********************************************************************
+   subroutine count_solnVectorMTX(eAll,nTx_nPol)
+
+      type(solnVectorMTX_t), intent(in)    :: eAll
+      integer, intent(inout)               :: nTx_nPol
+
+      !  local variables
+      integer                           :: j,istat
+
+      if (.not. eAll%allocated) then
+          call errStop('EM solution not allocated in count_solnVectorMTX')
+      end if
+
+      nTx_nPol = 0
+      do j = 1,eAll%nTx
+          nTx_nPol = nTx_nPol + eAll%solns(j)%nPol
+      end do
+
+   end subroutine count_solnVectorMTX
+
 !**********************************************************************
 !           Basic sparseVector methods
 !**********************************************************************
@@ -1159,5 +1179,25 @@ contains
     end do
 
    end subroutine random_rhsVectorMTX
+
+   !**********************************************************************
+   subroutine count_rhsVectorMTX(bAll,nTx_nPol)
+
+      type(rhsVectorMTX_t), intent(in)    :: bAll
+      integer, intent(inout)               :: nTx_nPol
+
+      !  local variables
+      integer                           :: j,istat
+
+      if (.not. bAll%allocated) then
+          call errStop('RHS not allocated in count_rhsVectorMTX')
+      end if
+
+      nTx_nPol = 0
+      do j = 1,bAll%nTx
+          nTx_nPol = nTx_nPol + bAll%combs(j)%nPol
+      end do
+
+   end subroutine count_rhsVectorMTX
 
 end module SolnSpace

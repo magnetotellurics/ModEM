@@ -12,6 +12,9 @@ module solver
    use math_constants   ! math/ physics constants
    use utilities, only: isnan
    use spoptools        ! for sparse-matrix operations
+#ifdef CUDA
+   use cudaFortMap      ! c GPU api bindings for fortran
+#endif
    !use griddef	! staggered grid definitions
    !use sg_scalar
    !use sg_vector

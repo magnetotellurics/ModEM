@@ -172,10 +172,13 @@ Contains
         NESTED_BC = .true.
       end if
     end if
-    ! Determine whether or not there is a primary solution file to read
+    ! Determine whether or not there is a primary solution file to read;
+    ! otherwise, if E field is supplied, grab the boundary conditions only
     inquire(FILE=cUserDef%rFile_EMsoln,EXIST=exists)
     if (exists .and. (cUserDef%job==SECONDARY_FIELD)) then
        PRIMARY_E_FROM_FILE = .true.
+    elseif (exists) then
+       BC_FROM_E0_FILE = .true.
     end if
 
 	!--------------------------------------------------------------------------
@@ -206,6 +209,12 @@ Contains
        call warning('No input data file - unable to set up dictionaries')
     end if
     
+    !--------------------------------------------------------------------------
+    ! Allocate bAll in all cases except if we compute the BCs internally
+    if (.not. COMPUTE_BC) then
+        call create_rhsVectorMTX(allData%nTx,bAll)
+    end if
+
 	!--------------------------------------------------------------------------
 	!  Initialize additional data as necessary
 	select case (cUserDef%job)
@@ -266,6 +275,12 @@ Contains
        end if
        sigma1 = sigma0
        call zero(sigma1)
+
+     case (DATA_FROM_E) ! already reading the E field under the BC_FROM_E0_FILE flag
+         inquire(FILE=cUserDef%rFile_EMsoln,EXIST=exists)
+         if (.not. exists) then
+            call warning('Cannot compute data from the input EM solution - file does not exist')
+         end if
 
      case (TEST_GRAD, TEST_SENS)
          inquire(FILE=cUserDef%rFile_dModel,EXIST=exists)

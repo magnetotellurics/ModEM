@@ -331,26 +331,26 @@ Contains
 
   ! ***************************************************************************
   ! read electric field solution for one mode, frequency; open unit ioNum first ...
-  subroutine EfileRead(ioNum, ifreq, imode, fileOmega, inE)
+  subroutine EfileRead(ioNum, nRecSkip, fileOmega, inE)
 
     implicit none
-    integer, intent(in)             :: ioNum,ifreq,imode
+    integer, intent(in)             :: ioNum,nRecSkip !ifreq,imode
     type (cvector), intent(inout)       :: inE
     real (kind=prec), intent(out)   :: fileOmega
 
     !  local variables
-    integer                 :: nRecSkip, iskip
-!    integer                    :: iskip
+    !integer                 :: nRecSkip, iskip
+    integer                    :: iskip
 
     !  following could be optional oututs
     integer (kind=4)        :: fileIfreq, fileMode
     character (len = 20)                :: ModeName
 
     !  hard code number of modes for now
-    integer     :: nMode = 2
+    !integer     :: nMode = 2
 
     ! calculate number of records before the header for this frequency/mode
-    nRecSkip = ((ifreq-1)*nMode+(imode-1))*4+4
+    !nRecSkip = ((ifreq-1)*nMode+(imode-1))*4+4
 
     ! rewind the file, skip to header record
     rewind(ioNum)
@@ -360,6 +360,7 @@ Contains
 
     ! read frequency header - 1 record
     read(ioNum) fileOmega, fileIfreq, fileMode, ModeName
+    write(0,*) fileOmega, fileIfreq, fileMode, ModeName
 
     ! read electrical field data - 3 records
     read(ioNum) inE%x
@@ -508,7 +509,7 @@ Contains
 
       !   local variables
       integer           :: j,k,nMode = 2, ios,ig,cdot,filePer
-      integer           :: iTx,nTx
+      integer           :: iTx,nTx,nRecSkip
       character (len=3)         :: igchar
       character (len=20)        :: version = ''
       character (len=200)       :: fn_input
@@ -535,11 +536,15 @@ Contains
       end do		  
 		  
 		  
+          nRecSkip = 0
+
           do j = 1,nTx
        
              do k = 1,eAll%solns(j)%nPol
 
-               call EfileRead(ioE, j, k, omega, eAll%solns(j)%pol(k))
+               nRecSkip = nRecSkip+4
+
+               call EfileRead(ioE, nRecSkip, omega, eAll%solns(j)%pol(k))
 
                if (abs((omega - txDict(eAll%solns(j)%tx)%omega)/omega) > TOL6) then
                     write(0,*) 'Warning: frequencies don''t match on E-field input ',j
@@ -612,7 +617,7 @@ Contains
 
           !   local variables
           integer           :: j,k,jj,kk,nMode = 2, ios,istat,ig,cdot,filePer, nPol
-          integer           :: iTx,nTx
+          integer           :: iTx,nTx,nRecSkip
           character (len=3)         :: igchar
           character (len=20)        :: version = '',source_type,tx_type,mode
           character (len=30)        :: str
@@ -645,12 +650,15 @@ Contains
                   call create_rhsVector(grid,iTx,bAll%combs(iTx))
               end do
 
+              nRecSkip = 0
 
               do j = 1,nTx
 
                   do k = 1,bAll%combs(j)%nPol
 
-                      call EfileRead(ioE, j, k, omega, bAll%combs(j)%b(k)%s)
+                      nRecSkip = nRecSkip+4
+
+                      call EfileRead(ioE, nRecSkip, omega, bAll%combs(j)%b(k)%s)
 
                       if (abs(omega - txDict(bAll%combs(j)%tx)%omega) > R_TINY) then
                           write(0,*) 'Warning: frequencies don''t match on E-field input ',j

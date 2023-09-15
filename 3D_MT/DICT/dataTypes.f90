@@ -362,7 +362,7 @@ Contains
   function ImpType(typeName) result (dataType)
 
     character(*), intent(in)    :: typeName
-	integer	             	 	:: dataType
+    integer	             	:: dataType
 
     select case (trim(typeName))
 

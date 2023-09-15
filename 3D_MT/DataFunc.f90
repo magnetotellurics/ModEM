@@ -592,26 +592,37 @@ Contains
            enddo
         enddo
         Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Orient,Binv)
+     case (Ex_Field,Ey_Field,Bx_Field,By_Field)
+        ! Horizontal electric and magnetic field components as implemented now
+        nComp = 1
+        ComputeHz = .false.
+     case (Bz_Field)
+        nComp = 1
+        ComputeHz = .true.
+     case default
+        write(0,*) 'Unknown data type ',iDt,' in dataResp'
 
-     endselect
+     end select
 
-  ! Then set up interpolation functionals for Ex, Ey, Bx, By, Bz, (Bx,By at referance station)
-  xyz = 1
-  call EinterpSetUp(e0%grid,x,xyz,Lex)
-  xyz = 2
-  call EinterpSetUp(e0%grid,x,xyz,Ley)
-  xyz = 1
-  call BfromESetUp(e0%grid,omega,x,xyz,Lbx)
-  xyz = 2
-  call BfromESetUp(e0%grid,omega,x,xyz,Lby)
-  xyz = 1
-  call BfromESetUp(e0%grid,omega,x_ref,xyz,Lrx)
-  xyz = 2
-  call BfromESetUp(e0%grid,omega,x_ref,xyz,Lry)
-  if(ComputeHz) then
-     xyz = 3
-     call BfromESetUp(e0%grid,omega,x,xyz,Lbz)
-  endif
+      ! Then set up interpolation functionals for Ex, Ey, Bx, By, Bz
+      xyz = 1
+      call EinterpSetUp(e0%grid,x,xyz,Lex)
+      xyz = 2
+      call EinterpSetUp(e0%grid,x,xyz,Ley)
+      xyz = 1
+      call BfromESetUp(e0%grid,omega,x,xyz,Lbx)
+      xyz = 2
+      call BfromESetUp(e0%grid,omega,x,xyz,Lby)
+      if(ComputeHz) then
+         xyz = 3
+         call BfromESetUp(e0%grid,omega,x,xyz,Lbz)
+      endif
+      ! ... Bx,By at reference station
+      xyz = 1
+      call BfromESetUp(e0%grid,omega,x_ref,xyz,Lrx)
+      xyz = 2
+      call BfromESetUp(e0%grid,omega,x_ref,xyz,Lry)
+
 
   ! Liu Zhongyin, 2019.09.06, Add another modification according to Anna Kelbert
   EyAngle = EyAngle*D2R
@@ -644,47 +655,70 @@ Contains
    c2 = cos(HxAngle_ref) / sin(HyAngle_ref-HxAngle_ref)
    call linComb_sparsevecc(Lrx,c1,Lry,c2,Lry_rot)
 
-  !  compute sparse vector representations of linearized functionals
-  do n = 1,nComp
-     !  i runs over rows of TF matrix, j runs over columns of TF
-     i = IJ(1,n)
-     j = IJ(2,n)
-     predictedComp = IJ(3,n)
-     c1 = Z(2*(i-1)+1)
-     c2 = Z(2*(i-1)+2)
-    if(typeDict(iDT)%tfType .eq. Full_Interstation_TF) then
-      Call linComb_sparsevecc(Lrx_rot,c1,Lry_rot,c2,L1)
-    else
-      Call linComb_sparsevecc(Lbx_rot,c1,Lby_rot,c2,L1)
-    end if
-     do k = 1,2
-        !  k defines which mode the linearized functional is
-        !   to be applied to
-        c1 = Binv(k,j)  !In case of interstaion TF, Binv = RRinv.
-        c2 = -c1
-        if(predictedComp.eq.1) then
-           !  component in x row of impedance tensor
-           Call linComb_sparsevecc(Lex_rot,c1,L1,c2,L(n)%L(k))
-        elseif(predictedComp.eq.2) then
-           !  component in y row of impedance tensor
-           Call linComb_sparsevecc(Ley_rot,c1,L1,c2,L(n)%L(k))
-        elseif(predictedComp.eq.3) then
-           !  component in Bz row (vertical field TF)
-           Call linComb_sparsevecc(Lbz,c1,L1,c2,L(n)%L(k))
-        elseif(predictedComp.eq.4) then
-           !  component in x row (interstation TF)
-           Call linComb_sparsevecc(Lbx_rot,c1,L1,c2,L(n)%L(k))
-        elseif(predictedComp.eq.5) then
-           !  component in y row (interstation TF)
-           Call linComb_sparsevecc(Lby_rot,c1,L1,c2,L(n)%L(k))
-        endif
-     enddo
-  enddo
-if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
-       do k=1,2 ! 2 modes
-        ! PHSYX
-        c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(3)) / (abs(Z(3))**TWO)
-	     Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(4)%L(k))
+      ! Save interpolation functionals in the output structure
+      select case(iDT)
+
+        case (Ex_Field)
+            L(1)%L(1) = Lex
+
+        case (Ey_Field)
+            L(1)%L(1) = Ley
+
+        case (Bx_Field)
+            L(1)%L(1) = Lbx
+
+        case (By_Field)
+            L(1)%L(1) = Lby
+
+        case (Bz_Field)
+            L(1)%L(1) = Lbz
+
+        case default
+            !  compute sparse vector representations of linearized functionals
+            do n = 1,nComp
+                !  i runs over rows of TF matrix, j runs over columns of TF
+                i = IJ(1,n)
+                j = IJ(2,n)
+                predictedComp = IJ(3,n)
+                c1 = Z(2*(i-1)+1)
+                c2 = Z(2*(i-1)+2)
+                if(typeDict(iDT)%tfType .eq. Full_Interstation_TF) then
+                  Call linComb_sparsevecc(Lrx_rot,c1,Lry_rot,c2,L1)
+                else
+                  Call linComb_sparsevecc(Lbx_rot,c1,Lby_rot,c2,L1)
+                end if
+                do k = 1,2
+                    !  k defines which mode the linearized functional is
+                    !   to be applied to
+                    c1 = Binv(k,j)  !In case of interstaion TF, Binv = RRinv.
+                    c2 = -c1
+                    if(predictedComp.eq.1) then
+                       !  component in x row of impedance tensor
+                       Call linComb_sparsevecc(Lex_rot,c1,L1,c2,L(n)%L(k))
+                    elseif(predictedComp.eq.2) then
+                       !  component in y row of impedance tensor
+                       Call linComb_sparsevecc(Ley_rot,c1,L1,c2,L(n)%L(k))
+                    elseif(predictedComp.eq.3) then
+                       !  component in Bz row (vertical field TF)
+                       Call linComb_sparsevecc(Lbz,c1,L1,c2,L(n)%L(k))
+                    elseif(predictedComp.eq.4) then
+                       !  component in x row (interstation TF)
+                       Call linComb_sparsevecc(Lbx_rot,c1,L1,c2,L(n)%L(k))
+                    elseif(predictedComp.eq.5) then
+                       !  component in y row (interstation TF)
+                       Call linComb_sparsevecc(Lby_rot,c1,L1,c2,L(n)%L(k))
+                    endif
+                enddo
+            enddo
+
+      end select
+
+
+      if (typeDict(iDT)%tfType .eq. Off_Diagonal_Rho_Phase) then
+           do k=1,2 ! 2 modes
+            ! PHSYX
+            c1 =dcmplx(0.0d0,1.0d0)*conjg(Z(3)) / (abs(Z(3))**TWO)
+             Call linComb_sparsevecc(L(2)%L(k),c1,L(2)%L(k),C_ZERO,L(4)%L(k))
 
             !log RHOYX
             ! c1 =  TWO*conjg(Z(3))  /(abs(Z(3))**TWO)*dlog(10.0d0)

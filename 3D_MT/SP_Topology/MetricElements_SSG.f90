@@ -99,5 +99,8 @@ Contains
       if(associated(Vnode)) then
           deallocate(Vnode)
       endif
+      if(associated(Vcell)) then
+          deallocate(Vcell)
+      endif
    end subroutine deall_MetricElements
 end module

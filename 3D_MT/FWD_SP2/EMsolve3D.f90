@@ -343,9 +343,14 @@ Contains
     end if
 
     KSSiter%niter = 0
-
+#ifdef CUDA
+    ! FIXME this is now hard coded here
+    ! need a more elegant way to deal with it
+    KSSiter%maxIt = maxIterTotal
+    MaxDivCor = 1
+#else
     KSSiter%maxIt = IterPerDivCor
-
+#endif
     allocate(KSSiter%rerr(KSSiter%maxIt))
     KSSiter%rerr = 0.0
     converged = .false.
@@ -365,14 +370,14 @@ Contains
            ! before start, need to tell if the device is available
            ierr = kernelc_hookCtx(device_id)
            if (trim(solver_name) .eq. 'PCG') then
-             write(*,*) 'I am using PCG with initial relative error ',KSSiter%rerr(1)
-             Call PCG(b, ei, KSSiter, device_id)
+             write(*,*) 'Warning: CUDA PCG is not yet implemented',KSSiter%rerr(1)
+             Call PCG(b, ei, KSSiter)
            elseif (trim(solver_name) .eq. 'QMR') then
-             write(*,*) 'I am using QMR with initial relative error ',KSSiter%rerr(1)
-             Call QMR(b, ei, KSSiter, device_id)
+             write(*,*) 'Warning: CUDA QMR is not yet implemented ',KSSiter%rerr(1)
+             Call QMR(b, ei, KSSiter)
            elseif (trim(solver_name) .eq. 'TFQMR') then
-             write(*,*) 'I am using TFQMR with initial relative error ',KSSiter%rerr(1)
-             Call TFQMR(b, ei, KSSiter, device_id)
+             write(*,*) 'Warning CUDA TFQMR is not yet implemented ',KSSiter%rerr(1)
+             Call TFQMR(b, ei, KSSiter)
            elseif (trim(solver_name) .eq. 'BICG') then
              write(*,*) 'I am using BICG with initial relative error ',KSSiter%rerr(1)
              Call BICG(b, ei, KSSiter, device_id)

@@ -675,6 +675,71 @@ Contains
   end subroutine fwdPred
 
   !**********************************************************************
+  subroutine dataOnly(sigma,d,eAll)
+
+   !  The "data only" version of the forward solver fwdPred. Runs dataResp
+   !  for dataVectorMTX object d and for conductivity parameter sigma.
+   !  Useful to compute data functional from existing electric fields.
+   !
+   !  First need to set up transmitter, receiver, dataType dictionaries;
+   !  "pointers" to dictionaries are attached to multi-transmitter
+   !   data vector d .
+   !
+   !   sigma is input conductivity parameter
+   type(modelParam_t), intent(in)   :: sigma
+   !   d is the computed (output) data vector, also used to identify
+   !     receiver/transmitter
+   type(dataVectorMTX_t), intent(inout) :: d
+   !  structure containing array of boundary conditions
+   type(solnVectorMTX_t), optional, intent(in) :: eAll
+
+   ! local variables
+   integer              :: i,j,k,iTx,iDt,iMode
+
+   if(.not.d%allocated) then
+      call errStop('data vector not allocated on input to dataOnly')
+   end if
+
+   if(present(eAll)) then
+      if(.not. eAll%allocated) then
+         call errStop('eAll is not allocated on input to dataOnly')
+      else if(d%nTx .ne. eAll%nTx) then
+         call errStop('dimensions of eAll and d do not agree in dataOnly')
+      endif
+   endif
+
+   ! loop over transmitters: solve forward system for each,
+   !    apply (non-linear) data functionals
+   do j = 1,d%nTx
+
+      ! get index into transmitter dictionary for this dataVector
+      iTx = d%d(j)%tx
+
+      ! cycle over data types
+      do i = 1,d%d(j)%nDt
+
+            ! set errorBar=.false. since predicted data do not have
+            ! well-defined error bars (important for the inversion)
+            d%d(j)%data(i)%errorBar = .false.
+
+            iDt = d%d(j)%data(i)%dataType
+
+            ! apply data functionals - loop over sites
+             do k = 1,d%d(j)%data(i)%nSite
+
+                ! output is a real vector: complex values come in pairs
+              call dataResp(eAll%solns(j),sigma,iDt,d%d(j)%data(i)%rx(k),d%d(j)%data(i)%value(:,k), &
+                           d%d(j)%data(i)%orient(k))
+
+             enddo
+
+      enddo
+
+   enddo
+
+  end subroutine dataOnly
+
+  !**********************************************************************
   subroutine dryRun(sigma,d,bAll,eAll)
 
    !  The "dry run" version of the forward solver fwdPred. Runs initSolver
@@ -696,7 +761,7 @@ Contains
    type(solnVectorMTX_t), optional, intent(inout) :: eAll
 
    ! local variables
-   integer              :: j,iTx,iMode
+   integer              :: i,j,k,iTx,iDt,iMode
 
    if(.not.d%allocated) then
       call errStop('data vector not allocated on input to dryRun')
@@ -728,21 +793,8 @@ Contains
       !  do any necessary initialization for transmitter iTx
       call initSolver(iTx,sigma,grid,e0)
 
-!      ! initialize the RHS vector
-!      b0%nonzero_BC = .true.
-!      call create_rhsVector(e0%grid,iTx,b0)
-
       ! compute initial conditions and the RHS
       call fwdSetup(iTx,e0,b0)
-
-!      !  now set boundary conditions just like we do for fwdSolve
-!      do iMode = 1,e0%nPol
-!      ! compute boundary conditions for polarization iMode
-!      !   uses cell conductivity already set by updateCond
-!        call setBound(iTx,e0%Pol_index(iMode),e0%pol(iMode),b0%b(iMode)%bc)
-!        write (*,'(a12,a19,a3,a20,i4,a15,i2)') node_info, 'Setting the BC for ','FWD', &
-!                ' problem for period ',iTx,' & mode # ',e0%Pol_index(iMode)
-!      enddo
 
       if(present(bAll)) then
          call copy_rhsVector(bAll%combs(j),b0)
