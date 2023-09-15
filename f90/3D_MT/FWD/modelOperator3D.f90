@@ -158,10 +158,17 @@ Contains
 
     ! Use the grid (which, potentially, maybe have been updated!) to set up
     !   all the grid length, surface and volume elements stored in GridCalc.
-    ! Want to initialize them here in case the grid gets updated along the way.
+    ! Want to initialize them here in case the grid gets updated along the way,
+    ! also to ensure that the MPI worker nodes have access as well.
     ! The reason for storing them in GridCalc is that they are also used
-    !   by ModelMap, EMfieldInterp, nestedEM
-    Call EdgeVolume(mGrid, V_E)
+    ! by ModelMap, EMfieldInterp, nestedEM
+    ! To the best of my knowledge, dual elements l_F and S_E are not used now;
+    ! primary elements l_E and S_F in this implementation of curl-curl are
+    ! explicitly calculated (xXY etc) for optimal efficiency [AK]
+    Call EdgeLength(mGrid, l_E) ! l_E and S_F are currently only used
+    Call FaceArea(mGrid, S_F)   ! ... for EM field interpolation
+    Call EdgeVolume(mGrid, V_E) ! used for curl-curl
+    Call CellVolume(mGrid, V_C) ! used for ModelParamToEdge
     Call NodeVolume(mGrid, V_N) ! used for divergence correction
 
     !  Allocate sigma_E, conductivity defined on computational cell edges
@@ -181,7 +188,10 @@ Contains
     call deall_grid(mGrid)
 
     ! and the grid elements stored in GridCalc
+    call deall_rvector(l_E)
+    call deall_rvector(S_F)
     call deall_rvector(V_E)
+    call deall_rscalar(V_C)
     call deall_rscalar(V_N)
 
     ! and the edge conductivities

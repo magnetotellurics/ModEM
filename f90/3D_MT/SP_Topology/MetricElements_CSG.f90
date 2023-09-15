@@ -20,6 +20,7 @@ module MetricElements_SG
    real(kind=prec),dimension(:),pointer  :: DualEdgeL
    real(kind=prec),dimension(:),pointer  :: Vnode
    real(kind=prec),dimension(:),pointer  :: Vedge
+   real(kind=prec),dimension(:),pointer  :: Vcell
 
 Contains
    subroutine setFaceArea(grid)
@@ -68,6 +69,14 @@ Contains
       call EdgeVolume(grid,temp)
       call getRvector(temp,Vedge)
       call deall_rvector(temp)
+   end subroutine
+   !*******************************************************************
+   subroutine setVcell(grid)
+      type (grid_t), intent(in)           :: grid     ! input model
+      type (rscalar)                      :: temp
+      call CellVolume(grid,temp)
+      call getRscalar(temp,Vcell)
+      call deall_rscalar(temp)
    end subroutine
    !*******************************************************************
    subroutine deall_MetricElements()

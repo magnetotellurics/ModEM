@@ -1,21 +1,31 @@
-
 Module Declaration_MPI
+  use file_units
 #ifdef MPI
      implicit none
+! consider building mpi binding and using 'use mpi' instead
 include 'mpif.h'
 
-! Decleration of general MPI stuff
+! Declaration of general MPI stuff
 !********************************************************************
 Integer        :: taskid,total_number_of_Proc,number_of_workers
 Integer        :: MASTER, FROM_MASTER, FROM_WORKER,TAG,ierr,dest
-INTEGER        :: STATUS(5)
+Integer        :: STATUS(MPI_STATUS_SIZE)
 parameter         (MASTER=0,FROM_MASTER=1,FROM_WORKER=2,Tag=1)
 !********************************************************************
+! additional parameters needed by two-layered parallelization
+!********************************************************************
+integer        :: comm_world, comm_leader, comm_local
+integer        :: rank_world, rank_leader, rank_local
+integer        :: size_world, size_leader, size_local
+integer        :: group_world, group_leader
+! this is used to store the timer of each mpi sub-process
+DOUBLE PRECISION    :: previous_time
+integer, allocatable, dimension(:) :: prev_group_sizes
+! this is used for store the current name of proc/cpu to identify different
+! platforms, useful to group cpus from different nodes
+character*(80) ::  current_proc_name_MPI
 
-
-
-
-
+!********************************************************************
 ! Parameters required to create an MPI derived data types.
 !********************************************************************
 Integer        :: cvector_mpi_3D,gridDef3D_mpi,eAll_mpi,dvecMTX_mpi
@@ -43,7 +53,7 @@ real*8,   pointer, dimension(:)  :: model_para_vec
 character, pointer, dimension(:) :: eAll_para_vec       !! needed for MPI_pack/MPI_unpack; counted in bytes
 character, pointer, dimension(:) :: e_para_vec          !! needed for MPI_pack/MPI_unpack; counted in bytes
 character, pointer, dimension(:) :: sigma_para_vec      !! needed for MPI_pack/MPI_unpack; counted in bytes
-character, pointer, dimension(:) :: data_para_vec      !! needed for MPI_pack/MPI_unpack; counted in bytes
+character, pointer, dimension(:) :: data_para_vec       !! needed for MPI_pack/MPI_unpack; counted in bytes
 character, pointer, dimension(:) :: worker_job_package  !! needed for MPI_pack/MPI_unpack; counted in bytes
 character, pointer, dimension(:) :: userdef_control_package !! needed for MPI_pack/MPI_unpack; counted in bytes
 
@@ -63,23 +73,24 @@ DOUBLE PRECISION    :: starttime_total,endtime_total
 
 
 
-! A drived data type to distribute Info. between Processors.
+! A derived data type to distribute Info. between Processors.
 !********************************************************************
 type :: define_worker_job
      SEQUENCE
      character*80  :: what_to_do='NOTHING'
-     Integer       :: per_index,Stn_index,pol_index,data_type_index,data_type
-     Integer       :: taskid
+     Integer       :: per_index,Stn_index,pol_index,data_type_index,data_type,eAll_SolnIndex
+     Integer       :: taskid,solver_number_of_iterations
      logical       :: keep_E_soln=.false.
      logical       :: several_Tx=.false.
      logical       :: create_your_own_e0=.false.
+     DOUBLE PRECISION, pointer, dimension(:) :: solver_residual_vec
+     DOUBLE PRECISION    :: period
+     character*10  :: solver_name='QMR'
     ! 2022.10.06, Liu Zhongyin, add iSite storing the site index in rx of dataBlock_t
      Integer       :: iSite
  end type define_worker_job
 type(define_worker_job), save :: worker_job_task
 !********************************************************************
-
-
 
 
 Contains
@@ -88,30 +99,32 @@ Contains
 subroutine create_worker_job_task_place_holder
 
      implicit none
-     integer index,Nbytes1,Nbytes2,Nbytes3
+     integer index,Nbytes1,Nbytes2,Nbytes3,Nbytes4,Nbytes5,Nbytes6,size_of_res_vector
+
+       size_of_res_vector=size(worker_job_task%solver_residual_vec)
 
        CALL MPI_PACK_SIZE(80, MPI_CHARACTER, MPI_COMM_WORLD, Nbytes1,  ierr)
-       ! 2019.05.10, Liu Zhongyin, replace 6 with 7, for the iSite
-       ! CALL MPI_PACK_SIZE(6, MPI_INTEGER, MPI_COMM_WORLD, Nbytes2,  ierr)
-       CALL MPI_PACK_SIZE(7, MPI_INTEGER, MPI_COMM_WORLD, Nbytes2,  ierr)
+       CALL MPI_PACK_SIZE(9, MPI_INTEGER, MPI_COMM_WORLD, Nbytes2,  ierr)
        CALL MPI_PACK_SIZE(3, MPI_LOGICAL, MPI_COMM_WORLD, Nbytes3,  ierr)
+       CALL MPI_PACK_SIZE(size_of_res_vector, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes4,  ierr)
+       CALL MPI_PACK_SIZE(1, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes5,  ierr)
+       CALL MPI_PACK_SIZE(10, MPI_CHARACTER, MPI_COMM_WORLD, Nbytes6,  ierr)
 
-         Nbytes=(Nbytes1+Nbytes2+Nbytes3)+1
+         Nbytes=(Nbytes1+Nbytes2+Nbytes3+Nbytes4+Nbytes5+Nbytes6)+1
 
-         if(.not. associated(worker_job_package)) then
-            allocate(worker_job_package(Nbytes))
-         end if
-             
+         if( associated( worker_job_package ) ) deallocate( worker_job_package )
+         allocate( worker_job_package( Nbytes ) )
 
 end subroutine create_worker_job_task_place_holder
 !*******************************************************************************
 
 subroutine Pack_worker_job_task
-implicit none
-integer index
+     implicit none
+     integer index,size_of_res_vector, ierr
 
-index=1
-
+     index=1
+     size_of_res_vector=size(worker_job_task%solver_residual_vec)
+     
         call MPI_Pack(worker_job_task%what_to_do,80, MPI_CHARACTER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
         call MPI_Pack(worker_job_task%per_index ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
@@ -119,21 +132,30 @@ index=1
         call MPI_Pack(worker_job_task%pol_index ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%data_type_index ,1 , 	MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%data_type ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(worker_job_task%taskid ,1 , 			MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(worker_job_task%taskid ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(worker_job_task%solver_number_of_iterations,1, MPI_INTEGER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(worker_job_task%eAll_SolnIndex,1, MPI_INTEGER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
         call MPI_Pack(worker_job_task%keep_E_soln,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%several_Tx,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(worker_job_task%create_your_own_e0,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-
+        call MPI_Pack(worker_job_task%create_your_own_e0,1, 	MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(worker_job_task%solver_residual_vec(1), &
+                size_of_res_vector, MPI_DOUBLE_PRECISION, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(worker_job_task%period,1, 		MPI_DOUBLE_PRECISION, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(worker_job_task%solver_name,10,           MPI_CHARACTER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+		
         ! 2019.05.08, Liu Zhongyin, add iSite for rx in dataBlock_t
         call MPI_Pack(worker_job_task%iSite, 1,                 MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
 end subroutine Pack_worker_job_task
 
 subroutine Unpack_worker_job_task
-implicit none
-integer index
-index=1
+     implicit none
+     integer index,size_of_res_vector, ierr
+
+     index=1
+     size_of_res_vector=size(worker_job_task%solver_residual_vec)
+
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%what_to_do,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%per_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
@@ -142,17 +164,41 @@ index=1
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%data_type_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%data_type ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%taskid ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
+        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%solver_number_of_iterations,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
+        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%eAll_SolnIndex,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
         
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%keep_E_soln,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%several_Tx,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%create_your_own_e0,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
+        call MPI_Unpack(worker_job_package, Nbytes, &
+                index, worker_job_task%solver_residual_vec(1),size_of_res_vector, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
+        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%period,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
+        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%solver_name,10, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
         ! 2019.05.08, Liu Zhongyin, add iSite for rx in dataBlock_t
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%iSite, 1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
 
+        deallocate( worker_job_package )
+
 end subroutine Unpack_worker_job_task
 
-
+subroutine gather_runtime(comm_current,time_passed,time_buff)
+! simple subroutine to get the runtime of each sub tasks to access the
+! parallel efficiency 
+! collective on comm_current
+      implicit none
+      double precision,intent(in)                :: time_passed
+      integer,intent(in)                         :: comm_current
+      double precision,intent(out),pointer,dimension(:)   :: time_buff
+      integer                                    :: current_rank
+      integer                                    :: current_size,root=0
+      call MPI_COMM_RANK(comm_current,current_rank,ierr)
+      call MPI_COMM_SIZE(comm_current,current_size,ierr)
+      allocate(time_buff(current_size))
+      call MPI_Gather(time_passed, 1, MPI_DOUBLE_PRECISION, time_buff, 1,     &
+     &     MPI_DOUBLE_PRECISION, root,comm_current,ierr) 
+      return
+end subroutine gather_runtime
 
 #endif
 

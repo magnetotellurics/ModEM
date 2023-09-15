@@ -6,6 +6,12 @@ fi
 if [ -e $1 ]; then
     rm $1
 fi
+
+MT_path_dir="3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod"
+EM_path_dir="3D_EM:3D_EM/DICT:3D_EM/modelParam:3D_EM/Dipole1D:3D_EM/DC_Geoelec:3D_EM/FWD:3D_EM/FWD/Mod2d:3D_EM/ioMod"
+SP_path_dir="3D_MT/FWD_SP:3D_MT/SP_Topology"
+INV_dir="INV"
+
 if [ $2 = "debug" ]; then
 # Debug configuration
 perl fmkmf.pl -f90 gfortran \
@@ -14,7 +20,7 @@ perl fmkmf.pl -f90 gfortran \
 -o './objs/3D_MT/GFortDebug' \
 -l '-llapack -lblas' \
 -lp '/usr/lib' \
--p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
+-p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
 elif [ $2 = "release" ]; then
@@ -25,18 +31,18 @@ perl fmkmf.pl -f90 gfortran \
 -o './objs/3D_MT/GFortRelease' \
 -l '-llapack -lblas' \
 -lp '/usr/lib' \
--p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
+-p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
 else
-# MPI configuration (not tested)
+# MPI configuration
 perl fmkmf.pl -f90 mpifort \
 -opt '-O3 -ffree-line-length-none -fallow-argument-mismatch' \
 -mpi '-x f95-cpp-input -DMPI' \
 -o './objs/3D_MT/GFortReleaseMPI' \
 -l '-llapack -lblas' \
 -lp '/usr/lib' \
--p .:INV:MPI:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
+-p .:MPI:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 fi
 
@@ -52,11 +58,26 @@ if [ $3 = "spherical" ]; then
 	sed -i.bak 's/GFort/GFortS/g' $1
 	sed -i .bak 's/GridCalc\./GridCalcS\./g' $1
 	sed -i .bak 's/boundary_ws\./boundary_wsS\./g' $1	
-	sed -i .bak 's/3DMT /3DMT_sph /g' $1
-	sed -i .bak 's/3DMT:/3DMT_sph:/g' $1
-	#sed -i .bak 's/\.\/objs\/3D_MT\/(\w+)/\.\/objs\/3D_MT\/(\w+)s/g' $1	
+  	sed -i .bak 's/MetricElements_CSG\./MetricElements_SSG\./g' $1
+	sed -i .bak 's/3DMT /3DMT_SP_sph /g' $1
+	sed -i .bak 's/3DMT:/3DMT_SP_sph:/g' $1
+	if [ $2 == "debug" ]; then
+		sed -i .bak 's/Mod3DMT /Mod3DMTs_SP_dbg /g' $1
+	elif [ $2 == "release" ]; then
+		sed -i .bak 's/Mod3DMT /Mod3DMTs_SP /g' $1
+	else
+		sed -i .bak 's/Mod3DMT /Mod3DMTs_SP_MPI /g' $1
+	fi
 	rm $1.bak
     echo 1>&2 Spherical version of the makefile ready to use.
 else
+	if [ $2 == "debug" ]; then
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DMT_SP_dbg/g' $1
+	elif [ $2 == "release" ]; then
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DMT_SP/g' $1
+	else
+		sed -i .bak 's/\/Mod3DMT/\/Mod3DMT_SP_MPI/g' $1
+	fi
+    rm $1.bak
     echo 1>&2 Cartesian version of the makefile ready to use.
 fi

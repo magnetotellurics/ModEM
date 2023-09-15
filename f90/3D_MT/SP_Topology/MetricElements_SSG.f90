@@ -6,10 +6,11 @@
 !     coordinate version.   The idea here is to mimic ModEMM matlab
 !    approach as much as possible.  At some point it might make sense
 !      to clean this up, and get rid of some of the layers of wrappers!
+!   Added Vcell for consistency to create V_C which is used in ModelMap
 
 module MetricElements_SG
 
-   use gridcalc
+   use gridcalc ! spherical coords module selected at compile time from GridCalcS.f90
    use vectranslate
 
    implicit none
@@ -20,6 +21,7 @@ module MetricElements_SG
    real(kind=prec),dimension(:),pointer  :: DualEdgeL
    real(kind=prec),dimension(:),pointer  :: Vnode
    real(kind=prec),dimension(:),pointer  :: Vedge
+   real(kind=prec),dimension(:),pointer  :: Vcell
 
 Contains
    subroutine setFaceArea(grid)
@@ -68,6 +70,14 @@ Contains
       call EdgeVolume(grid,temp)
       call getRvector(temp,Vedge)
       call deall_rvector(temp)
+   end subroutine
+   !*******************************************************************
+   subroutine setVcell(grid)
+      type (grid_t), intent(in)           :: grid     ! input model
+      type (rscalar)                      :: temp
+      call CellVolume(grid,temp)
+      call getRscalar(temp,Vcell)
+      call deall_rscalar(temp)
    end subroutine
    !*******************************************************************
    subroutine deall_MetricElements()

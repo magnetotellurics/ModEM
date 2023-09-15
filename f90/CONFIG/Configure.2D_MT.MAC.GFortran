@@ -1,0 +1,49 @@
+#!/bin/sh
+if [ $# -le 1 ]; then
+    echo 1>&2 Usage: $0 Makefile [debug|release|MPI]
+    exit 127
+fi
+if [ -e $1 ]; then
+    rm $1
+fi
+if [ $2 = "debug" ]; then
+# Debug configuration
+perl fmkmf.pl -f90 gfortran \
+-opt '-g -fbacktrace -fbounds-check -ffree-line-length-none -fallow-argument-mismatch' \
+-mpi '-x f95-cpp-input' \
+-o './objs/2D_MT/GFortDebug' \
+-l '-llapack -lblas' \
+-lp '/usr/lib' \
+-p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
+
+elif [ $2 = "release" ]; then
+# Release configuration
+perl fmkmf.pl -f90 gfortran \
+-opt '-O3 -ffree-line-length-none -fallow-argument-mismatch' \
+-mpi '-x f95-cpp-input' \
+-o './objs/2D_MT/GFortRelease' \
+-l '-llapack -lblas' \
+-lp '/usr/lib' \
+-p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
+
+else
+# MPI configuration (not tested)
+perl fmkmf.pl -f90 mpifort \
+-opt '-O3 -ffree-line-length-none -fallow-argument-mismatch' \
+-mpi '-x f95-cpp-input -DMPI' \
+-o './objs/2D_MT/GFortReleaseMPI' \
+-l '-llapack -lblas' \
+-lp '/usr/lib' \
+-p .:INV:LAPACK:SENS:UTILS:2D_MT:2D_MT/DICT:2D_MT/modelParam:2D_MT/FWD:2D_MT/ioMod \
+Mod2DMT.f90 > $1
+fi
+
+# Fix the MODULE directory for temporary object files - done in fmkmf.pl already
+# sed -i 's/-module/-fintrinsic-modules-path/' $1
+
+if [ $# -le 2 ]; then
+    echo 1>&2 Cartesian version of the makefile ready to use.
+    exit
+fi
