@@ -19,7 +19,7 @@ perl fmkmf.pl -f90 gfortran \
 -mpi '-x f95-cpp-input' \
 -o './objs/3D_MT/GFortDebug' \
 -l '-llapack -lblas' \
--lp '/usr/lib64' \
+-lp '/usr/lib' \
 -p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
@@ -30,7 +30,7 @@ perl fmkmf.pl -f90 gfortran \
 -mpi '-x f95-cpp-input' \
 -o './objs/3D_MT/GFortRelease' \
 -l '-llapack -lblas' \
--lp '/usr/lib64' \
+-lp '/usr/lib' \
 -p .:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 
@@ -41,7 +41,7 @@ perl fmkmf.pl -f90 mpifort \
 -mpi '-x f95-cpp-input -DMPI' \
 -o './objs/3D_MT/GFortReleaseMPI' \
 -l '-llapack -lblas' \
--lp '/usr/lib64' \
+-lp '/usr/lib' \
 -p .:MPI:$INV_dir:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:$SP_path_dir:$MT_path_dir \
 Mod3DMT.f90 > $1
 fi

@@ -29,6 +29,7 @@ module datafunc
   use transmitters
   use receivers
   use dataTypes
+  use fields_orientation
 
   implicit none
 
@@ -40,7 +41,7 @@ module datafunc
 Contains
 
 !******************************************************************************
-  subroutine dataResp(ef,Sigma,iDT,iRX,Resp)
+  subroutine dataResp(ef,Sigma,iDT,iRX,Resp,Orient)
 
   !   2D MT impedance; gets mode from solution
   ! given electric field solution  (stored as type cvector)
@@ -57,6 +58,8 @@ Contains
   !  real data returned; note that this will always be real (even when
   !   data are complex ... then real and imag parts come in pairs)
   real(kind=prec), intent(inout)    :: Resp(2)
+  ! add Azimuth to match 3D code (currently not used)
+  type(orient_t), intent(in), optional   :: Orient
   !  Z will always be an array in the calling
   !    routine (as in top-level inversion routines) and so needs to
   !    be treated as an array here, even if there is only one element.
@@ -147,7 +150,7 @@ Contains
   end subroutine dataResp
 
 !****************************************************************************
-  subroutine Lrows(e0,Sigma0,iDT,iRX,Lz)
+  subroutine Lrows(e0,Sigma0,iDT,iRX,Orient,Lz)
   !  given input background electric field solution,
   !  index into receiver dictionary for a single site (iRX)
   !  compute sparse complex vector giving coefficients
@@ -172,6 +175,8 @@ Contains
   !   As an example: to add tippers to TE mode, dimension on LZ will
   !    have to be changed to 2.
   type(sparseVector_t), intent(inout)		:: Lz(1)
+  ! add Azimuth to match 3D code (currently not used)
+  type(orient_t), intent(in)        :: Orient
 
   !  local variables
   complex (kind=prec)		:: B,E,c_E,c_B,By,Bz,c_By,c_Bz,Z

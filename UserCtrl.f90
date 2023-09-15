@@ -346,7 +346,8 @@ Contains
            write(0,*) 'Air layers mirror|fixed height|read from file : read from file'
            write(0,*) 'Number of air layers and dz top to bottom km  : 10 500. 200. 100. 50. 20. 10. 5. 2. 1. 0.5'
            write(0,*)
-           write(0,*) 'Different solvers are available; QMR and BICG in all versions of 3D MT'
+           write(0,*) 'Different solvers are available; QMR and BICG in all versions of 3D MT;'
+           write(0,*) 'For matrix-free version (default), QMR is recommended. Otherwise, BICG.'
            write(0,*)
            write(0,*) 'Forward solver method PCG|QMR|TFQMR|BICG      : QMR'
            stop
@@ -403,6 +404,7 @@ Contains
            write(0,*) 'Number of air layers and dz top to bottom km  : 10 500. 200. 100. 50. 20. 10. 5. 2. 1. 0.5'
            write(0,*)
            write(0,*) 'Different solvers are available; QMR and BICG in all versions of 3D MT'
+           write(0,*) 'For matrix-free version (default), QMR is recommended. Otherwise, BICG.'
            write(0,*)
            write(0,*) 'Forward solver method PCG|QMR|TFQMR|BICG      : QMR'
            stop

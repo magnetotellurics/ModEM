@@ -581,7 +581,7 @@ end subroutine SdivCorr ! SdivCorr
         tolEMfwd = tolEMDef
         tolEMadj = tolEMDef
         tolDivCor = tolDivCorDef
-        solver_name="QMR"
+        solver_name="BICG"
         get_1D_from="Geometric_mean"
      else
         IterPerDivCor = solverControl%IterPerDivCor

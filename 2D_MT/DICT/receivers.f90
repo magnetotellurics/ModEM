@@ -129,6 +129,34 @@ Contains
 
   end subroutine print_rxDict
 
+!**********************************************************************
+! Writes the receiver dictionary to a file -- needed to associate rows in sensitivity
+!  sensitivity matrix J with correct data vector elements.   This assumes that iounit
+!  is opened for formated io-- file connection and  closing are done by calling routine
+
+  subroutine write_rxDict_bin(iounit)
+
+     ! local variables
+     integer                     :: iounit, iRx, nRx
+     character(len=80)          :: header
+
+     if (.not. associated(rxDict)) then
+        return
+     end if
+
+     nRx = size(rxDict)
+     header = 'Receiver Dictionary'
+     write(iounit) header
+     write(iounit) nRx
+     do iRx = 1, size(rxDict)
+        write(iounit) iRx,rxDict(iRx)%x
+        !   hard to read variable length records from a binary file,
+        !   unless written as individual sequential records; hence this
+        write(iounit) trim(rxDict(iRx)%id)
+     enddo
+
+  end subroutine write_rxDict_bin
+
   ! **************************************************************************
   ! Cleans up and deletes receiver dictionary at end of program execution
   subroutine deall_rxDict()

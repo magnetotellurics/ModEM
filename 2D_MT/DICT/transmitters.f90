@@ -131,6 +131,42 @@ Contains
 
   end subroutine print_txDict
 
+!**********************************************************************
+! Writes the transmitter dictionary to a file -- needed to associate a sensitivity
+!   (i.e., in full sensitivity matrix J, or for Jmult_MTX computation) with correct
+!   data vector elements.   This version assumes that iounit is opened for sequential unformated io
+!     -- file connection and  closing are done by calling routine
+
+  subroutine write_txDict_bin(iounit)
+
+
+     ! local variables
+     integer                     :: iounit,iTx,nMT,nTx
+     character(len=80) header
+
+     if (.not. associated(txDict)) then
+        return
+     end if
+
+     nMT = 0
+     nTx = size(txDict)
+     !   this is only coded for MT + CSEM -- could be generalized
+     do iTx = 1, nTx
+        if (txDict(iTx)%tx_type .eq. 'MT') then
+           nMT = nMT + 1
+        endif
+     enddo
+     write(iounit) nTx,nMT
+     header = 'Transmitter Dictionary: MT'
+     write(iounit) header
+     do iTx = 1, nTx
+        if (txDict(iTx)%tx_type .eq. 'MT') then
+           write(iounit) iTx,txDict(iTx)%period,txDict(iTx)%nPol
+        endif
+     enddo
+
+  end subroutine write_txDict_bin
+
 ! **************************************************************************
 ! Cleans up and deletes transmitter dictionary at end of program execution
 

@@ -13,7 +13,7 @@ perl fmkmf.pl -f90 gfortran \
 -mpi '-x f95-cpp-input' \
 -o './objs/3D_MT/GFortDebug' \
 -l '-llapack -lblas' \
--lp '/usr/lib64' \
+-lp '/usr/lib' \
 -p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
 Mod3DMT.f90 > $1
 
@@ -24,7 +24,7 @@ perl fmkmf.pl -f90 gfortran \
 -mpi '-x f95-cpp-input' \
 -o './objs/3D_MT/GFortRelease' \
 -l '-llapack -lblas' \
--lp '/usr/lib64' \
+-lp '/usr/lib' \
 -p .:INV:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
 Mod3DMT.f90 > $1
 
@@ -35,7 +35,7 @@ perl fmkmf.pl -f90 mpifort \
 -mpi '-x f95-cpp-input -DMPI' \
 -o './objs/3D_MT/GFortReleaseMPI' \
 -l '-llapack -lblas' \
--lp '/usr/lib64' \
+-lp '/usr/lib' \
 -p .:INV:MPI:LAPACK:SENS:UTILS:FIELDS/FiniteDiff3D:3D_MT:3D_MT/DICT:3D_MT/modelParam:3D_MT/FWD:3D_MT/FWD/Mod2d:3D_MT/ioMod \
 Mod3DMT.f90 > $1
 fi
