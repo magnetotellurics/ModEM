@@ -65,7 +65,6 @@ fi
 if [ $3 = "spherical" ]; then
 	sed -i.bak 's/GridCalc\./GridCalcS\./g' $1
 	sed -i.bak 's/boundary_ws\./boundary_wsS\./g' $1
-  	sed -i.bak 's/MetricElements_CSG\./MetricElements_SSG\./g' $1
 	if [ $2 == "debug" ]; then
 		sed -i.bak 's/\/Mod3DMT/\/Mod3DMTs_dbg/g' $1
 	elif [ $2 == "release" ]; then

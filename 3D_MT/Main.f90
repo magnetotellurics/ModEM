@@ -197,7 +197,6 @@ Contains
 	  call create_grid(1,1,1,1,grid)
 	end if
 
-
 	!--------------------------------------------------------------------------
 	!  Read in data file (only a template on input--periods/sites)
 	inquire(FILE=cUserDef%rFile_Data,EXIST=exists)
@@ -369,6 +368,7 @@ Contains
 	   write(0,*) 'Cleaning up grid...'
 	endif
 	call deall_grid(grid)
+	call deall_gridElements()
 
 	if (output_level > 3) then
 	   write(0,*) 'Cleaning up data...'

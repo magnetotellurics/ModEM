@@ -106,22 +106,6 @@ Contains
       call setDualEdgeLength(mGrid)
       call setVnode(mGrid)
       call setVedge(mGrid)
-      call setVcell(mGrid)
-
-      !    also initialize l_E and S_F as they are (repeatedly) used
-      !     in EMfieldInterp so makes sense to create them once
-      call create_rvector(mGrid,l_E,EDGE)
-      call setRvector(EdgeL,l_E)
-      call create_rvector(mGrid,S_F,FACE)
-      call setRvector(FaceA,S_F)
-
-      !    and initialize V_E, V_C, V_N which are needed for ModelMap
-      call create_rvector(mGrid,V_E,EDGE)
-      call setRvector(Vedge,V_E)
-      call create_rscalar(mGrid,V_C,CENTER)
-      call setRscalar(Vcell,V_C)
-      call create_rscalar(mGrid,V_N,CORNER)
-      call setRscalar(Vnode,V_N)
 
       ! set a default omega
       omega = 0.0
@@ -151,13 +135,6 @@ Contains
       deallocate(NODEb)
       !    and the metric elements
       call deall_MetricElements()
-
-      ! and the grid elements stored in GridCalc
-      call deall_rvector(l_E) ! used in EMfieldInterp
-      call deall_rvector(S_F)
-      call deall_rvector(V_E) ! used in ModelMap
-      call deall_rscalar(V_C)
-      call deall_rscalar(V_N)
 
       ! and the edge conductivities
       if(allocated(VomegaMuSig)) then

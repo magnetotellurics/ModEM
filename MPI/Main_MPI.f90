@@ -1506,14 +1506,18 @@ end subroutine RECV_cUserDef
 subroutine setGrid_MPI(newgrid)
 
    !  Use to set and/or update the numerical grid, that is then used
-   !   all computations in this module;
+   !   for all computations in this module;
    !   This is not a pointer target.
    !  Might also have to run exitSolver at this point, if we are updating
    !   the grid during an inversion; that restarts the ForwardSolver module.
+   !  Initialize grid elements in GridCalc module, used in modelOperator3D
+   !  to set the metric element vectors, and in ModelMap & EMfieldInterp
 
    type(grid_t), intent(in)     :: newgrid
 
    grid = newgrid
+
+   call init_gridElements(grid)
 
 end subroutine setGrid_MPI
 !*****************************************************************************************
@@ -1523,6 +1527,7 @@ end subroutine setGrid_MPI
 
    !call exitSolver(e0,e,comb)
    call deall_grid(grid)
+   call deall_gridElements()
 
   end subroutine cleanUp_MPI
   

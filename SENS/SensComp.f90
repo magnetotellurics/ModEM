@@ -819,6 +819,8 @@ Contains
    !   This is not a pointer target.
    !  Might also have to run exitSolver at this point, if we are updating
    !   the grid during an inversion; that restarts the ForwardSolver module.
+   !  Initialize grid elements in GridCalc module, used in modelOperator3D
+   !  to set the metric element vectors, and in ModelMap & EMfieldInterp
 
    type(grid_t), intent(in)     :: newgrid
 
@@ -830,6 +832,8 @@ Contains
     call errStop('grid is not set up properly in setGrid; exiting')
    end if
 
+   call create_gridElements(grid)
+
   end subroutine setGrid
 
 
@@ -840,6 +844,7 @@ Contains
 
    call exitSolver(e0,e,comb)
    call deall_grid(grid)
+   call deall_gridElements()
 
   end subroutine cleanUp
 

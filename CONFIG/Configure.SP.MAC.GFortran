@@ -58,7 +58,6 @@ if [ $3 = "spherical" ]; then
 	sed -i.bak 's/GFort/GFortS/g' $1
 	sed -i .bak 's/GridCalc\./GridCalcS\./g' $1
 	sed -i .bak 's/boundary_ws\./boundary_wsS\./g' $1	
-  	sed -i .bak 's/MetricElements_CSG\./MetricElements_SSG\./g' $1
 	sed -i .bak 's/3DMT /3DMT_SP_sph /g' $1
 	sed -i .bak 's/3DMT:/3DMT_SP_sph:/g' $1
 	if [ $2 == "debug" ]; then

@@ -509,11 +509,13 @@ end subroutine unpack_BC_from_file
       !call scMult(term,e0%pol(1),e0%pol(1))
 
    elseif (txDict(iTx)%Tx_type=='SFF') then 
- 
+
       ! General b0%s = - ISIGN * i\omega\mu_0 (sigma-sigma1d) E1D already computed
       do iMode = 1,e0%nPol
          ! Extract primary solution again...
-         E_P = eAllPrimary%solns(iTx)%pol(iMode)
+! DEBUG DEBUG DEBUG
+         E_P = eAllPrimary%solns(iTx)%pol(e0%Pol_index(iMode))
+! NEED TO FIX THE MODE FOR PARALLEL
 		   ! call forward solver, compute secondary field
          ! set the starting solution to zero
 		   ! NOTE that in the MPI parallelization, e0 may only contain a single mode;

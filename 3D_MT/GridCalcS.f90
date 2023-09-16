@@ -22,22 +22,24 @@ module GridCalc
   !!!!!!!>>>>>>>>> block of precomputed grid elements (public)
   !!!!!!!>>>>>>>>> initialized in ModelDataInit to accommodate
   !!!!!!!>>>>>>>>> for potential on-the-fly grid modification
-  type(rvector), public     :: V_E, l_E, S_E ! edges (primary)
-  type(rvector), public     :: V_F, l_F, S_F ! faces (dual)
+  type(rvector), public     :: V_E, l_E, S_F ! defined on primary grid
+  type(rvector), public     :: V_F, l_F, S_E ! defined on dual grid
   type(rscalar), public     :: V_N, V_C ! nodes and cells
 
+  public      :: create_gridElements, deall_gridElements
   public      :: EdgeVolume, FaceVolume, NodeVolume, CellVolume
-  public      :: EdgeLength, FaceLength
-  public      :: EdgeArea,   FaceArea
+  public      :: EdgeLength, DualEdgeLength
+  public      :: FaceArea,   DualFaceArea
   public      :: Cell2Edge,  Edge2Cell
   public      :: Cell2Node
 
   !!!!!!!>>>>>>>>> global parameter key to enable switching
   !!!!!!!>>>>>>>>> between cartesian and spherical grids
   !!!!!!!>>>>>>>>> (spherical can be global or regional)
-  character (len=80), parameter  :: gridCoords = SPHERICAL
+  character (len=80), public, parameter  :: gridCoords = SPHERICAL
 
 Contains
+
 
   ! *************************************************************************
   ! * EdgeVolume creates volume elements centered around the edges of
@@ -84,7 +86,7 @@ Contains
       ! create length and surface elements vectors
       if (compute_elements) then
         call EdgeLength(grid,length)
-        call EdgeArea(grid,area)
+        call DualFaceArea(grid,area)
       else
         length = l_E
         area = S_E
@@ -140,7 +142,7 @@ Contains
 
       ! create length and surface elements vectors
       if (compute_elements) then
-        call FaceLength(grid,length)
+        call DualEdgeLength(grid,length)
         call FaceArea(grid,area)
       else
         length = l_F
@@ -363,13 +365,13 @@ Contains
   end subroutine EdgeLength
 
   ! *************************************************************************
-  ! * FaceLength creates line elements defined on faces of the primary grid.
+  ! * DualEdgeLength creates line elements defined on faces of the primary grid.
   ! * These line elements are perpendicular to a face with center coinciding
   ! * with the face center. They correspond to the edges of the dual grid.
   ! *
   ! * Face length elements are defined on interior faces only.
 
-  subroutine FaceLength(grid,l_F)
+  subroutine DualEdgeLength(grid,l_F)
 
       type(grid_t), intent(in)      :: grid
       type(rvector), intent(inout)  :: l_F
@@ -444,16 +446,16 @@ Contains
       call coordFlip_rvector(l_F, gl_F, Cartesian)
 
       return
-      end subroutine FaceLength
+      end subroutine DualEdgeLength
 
   ! ***************************************************************************
-  ! * EdgeArea: surface area elements perpendicular to the edges of the primary
+  ! * DualFaceArea: surface area elements perpendicular to the edges of the primary
   ! * grid, with indices matching the primary grid edges. These correspond to
   ! * faces of the dual grid.
   ! *
   ! * Edge surface area elements are defined on interior edges only.
 
-  subroutine EdgeArea(grid,S_E)
+  subroutine DualFaceArea(grid,S_E)
 
       type(grid_t), intent(in)      :: grid
       type(rvector), intent(inout)  :: S_E
@@ -527,7 +529,7 @@ Contains
       call coordFlip_rvector(S_E, gS_E, Cartesian)
 
       return
-      end subroutine EdgeArea
+      end subroutine DualFaceArea
 
   ! *************************************************************************
   ! * FaceArea computes surface area elements on faces of the primary grid.
@@ -1155,5 +1157,39 @@ Contains
 
   end subroutine Edge2Cell
 
+  ! *************************************************************************
+  ! * create_gridElements(grid) is the master call to initialize all arrays
+
+  subroutine create_gridElements(grid)
+      implicit none
+      type (grid_t), intent(in)           :: grid     ! input model
+
+      ! First deallocate, if already exist
+      call deall_gridElements()
+
+      ! Now, initialize all grid elements using the input grid
+      call FaceArea(grid, S_F)
+      call DualFaceArea(grid, S_E)
+      call EdgeLength(grid, l_E)
+      call DualEdgeLength(grid, l_F)
+      call NodeVolume(grid, V_N)
+      call EdgeVolume(grid, V_E, l_E, S_E)
+      call CellVolume(grid, V_C)
+
+  end subroutine create_gridElements
+
+  ! *************************************************************************
+  ! * deall_gridElements() is the master call to deallocate all saved arrays
+  subroutine deall_gridElements()
+
+      call deall_rvector(S_F)
+      call deall_rvector(S_E)
+      call deall_rvector(l_E)
+      call deall_rvector(l_F)
+      call deall_rvector(V_E)
+      call deall_rscalar(V_N)
+      call deall_rscalar(V_C)
+
+   end subroutine deall_gridElements
 
 end module GridCalc

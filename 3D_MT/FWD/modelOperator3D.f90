@@ -153,23 +153,25 @@ Contains
     !   copy inGrid to mGrid
     call copy_grid(mGrid,inGrid)
 
-    ! Allocate data structure for volume elements, and compute these
-    Call create(mGrid, V_E, EDGE)
-
-    ! Use the grid (which, potentially, maybe have been updated!) to set up
-    !   all the grid length, surface and volume elements stored in GridCalc.
+    ! Use the grid (which, potentially, maybe have been updated!) to update
+    !   all the grid length, are and volume elements stored in GridCalc.
     ! Want to initialize them here in case the grid gets updated along the way,
     ! also to ensure that the MPI worker nodes have access as well.
+    ! This is already done through setGrid() so possibly unnecessary...
     ! The reason for storing them in GridCalc is that they are also used
-    ! by ModelMap, EMfieldInterp, nestedEM
-    ! To the best of my knowledge, dual elements l_F and S_E are not used now;
+    ! by ModelMap, EMfieldInterp, nestedEM - so we don't deallocate them here
+    ! but instead do it when we exit from an MPI node entirely.
+    ! To the best of my knowledge, dual elements l_F and S_E are not used now
+    ! (but we initialize them anyway because they are used for SP/SP2
+    ! and saving on the extra storage is not worth all the debugging time
+    ! when they are needed someplace and not defined correctly or consistent);
     ! primary elements l_E and S_F in this implementation of curl-curl are
-    ! explicitly calculated (xXY etc) for optimal efficiency [AK]
-    Call EdgeLength(mGrid, l_E) ! l_E and S_F are currently only used
-    Call FaceArea(mGrid, S_F)   ! ... for EM field interpolation
-    Call EdgeVolume(mGrid, V_E) ! used for curl-curl
-    Call CellVolume(mGrid, V_C) ! used for ModelParamToEdge
-    Call NodeVolume(mGrid, V_N) ! used for divergence correction
+    ! explicitly calculated (xXY etc) for optimal efficiency. [AK]
+    ! l_E and S_F are currently only used for EM field interpolation,
+    ! V_E is used for curl-curl
+    ! V_C is used for ModelParamToEdge
+    ! V_N is used for divergence correction
+    call create_gridElements(mGrid)
 
     !  Allocate sigma_E, conductivity defined on computational cell edges
     !   sigma_E is also needed in EMfieldInterp
@@ -186,13 +188,6 @@ Contains
 
     ! Deallocated the grid
     call deall_grid(mGrid)
-
-    ! and the grid elements stored in GridCalc
-    call deall_rvector(l_E)
-    call deall_rvector(S_F)
-    call deall_rvector(V_E)
-    call deall_rscalar(V_C)
-    call deall_rscalar(V_N)
 
     ! and the edge conductivities
     call deall_rvector(sigma_E)
