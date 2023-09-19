@@ -47,7 +47,10 @@ logical, save, public   :: PRIMARY_E_FROM_FILE = .false.
 !=======================================================================
 !Aug 18, 2021== AK == Also store an array of primary fields (not good
 !in terms of memory usage, will read each from file as needed ...)
+!The primary grid is at present the same as "grid" but we don't want
+!to overwrite it every time we read in an E-field file (MPI seg faults)
 !=======================================================================
+  type(grid_t),save,public                    ::  gridPrimary
   type(solnVectorMTX_t),save,public           ::  eAllPrimary
   type(modelParam_t),save,public              ::  sigmaPrimary
 
@@ -512,10 +515,8 @@ end subroutine unpack_BC_from_file
 
       ! General b0%s = - ISIGN * i\omega\mu_0 (sigma-sigma1d) E1D already computed
       do iMode = 1,e0%nPol
-         ! Extract primary solution again...
-! DEBUG DEBUG DEBUG
+         ! Extract primary solution again... NOTE THE MODE INDEXING FOR MPI
          E_P = eAllPrimary%solns(iTx)%pol(e0%Pol_index(iMode))
-! NEED TO FIX THE MODE FOR PARALLEL
 		   ! call forward solver, compute secondary field
          ! set the starting solution to zero
 		   ! NOTE that in the MPI parallelization, e0 may only contain a single mode;

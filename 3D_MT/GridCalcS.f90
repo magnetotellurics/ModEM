@@ -60,7 +60,7 @@ Contains
       type (rvector)                      :: length, area
       logical                             :: compute_elements
 
-      write(*,*) 'Computing edge volume elements...'
+      !write(*,*) 'Computing edge volume elements...'
 
       if (.not. V_E%allocated) then
         call create_rvector(grid, V_E, EDGE)
@@ -117,7 +117,7 @@ Contains
       type (rvector)                      :: length, area
       logical                             :: compute_elements
 
-      write(*,*) 'Computing face volume elements...'
+      !write(*,*) 'Computing face volume elements...'
 
       if (.not. V_F%allocated) then
         call create_rvector(grid, V_F, FACE)
@@ -172,7 +172,7 @@ Contains
       real(8)                            :: volume,sijk2,zm,zp,ym,yp
       integer                            :: i, j, k, istat
 
-      write(*,*) 'Computing node volume elements...'
+      !write(*,*) 'Computing node volume elements...'
 
       if (.not. V_N%allocated) then
         call create_rscalar(grid, V_N, CORNER)
@@ -240,7 +240,7 @@ Contains
       real(8)                            :: volume
       integer                            :: i, j, k, istat
 
-      write(*,*) 'Computing cell volume elements...'
+      !write(*,*) 'Computing cell volume elements...'
 
       if (.not. V_C%allocated) then
         call create_rscalar(grid, V_C, CENTER)
@@ -308,7 +308,7 @@ Contains
       real(8)                   :: xlen,ylen,zlen
       integer                   :: ic,i,j,k,ii,istat
 
-      write(*,*) 'Computing edge length elements...'
+      !write(*,*) 'Computing edge length elements...'
 
       call create_rvector(grid, l_E, EDGE)
 
@@ -382,7 +382,7 @@ Contains
       real(8)                   :: xlen,ylen,zlen
       integer                   :: ic,i,j,k,ii,istat
 
-      write(*,*) 'Computing face length elements...'
+      !write(*,*) 'Computing face length elements...'
 
       call create_rvector(grid, l_F, FACE)
 
@@ -467,7 +467,7 @@ Contains
       real(8)                   :: zm,ym,yp,zp
       integer                   :: ic,i,j,k,ii,istat
 
-      write(*,*) 'Computing edge area elements...'
+      !write(*,*) 'Computing edge area elements...'
 
       call create_rvector(grid, S_E, EDGE)
 
@@ -546,7 +546,7 @@ Contains
       real(8)                   :: sijk,sjki,skij
       integer                   :: i,j,k,istat
 
-      write(*,*) 'Computing face area elements...'
+      !write(*,*) 'Computing face area elements...'
 
       call create_rvector(grid, S_F, FACE)
 
@@ -1168,6 +1168,7 @@ Contains
       call deall_gridElements()
 
       ! Now, initialize all grid elements using the input grid
+      write(*,*) 'Computing spherical coords grid elements...'
       call FaceArea(grid, S_F)
       call DualFaceArea(grid, S_E)
       call EdgeLength(grid, l_E)

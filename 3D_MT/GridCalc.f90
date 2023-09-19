@@ -1247,6 +1247,7 @@ Contains
       call deall_gridElements()
 
       ! Now, initialize all grid elements using the input grid
+      write(*,*) 'Computing cartesian coords grid elements...'
       call EdgeLength(grid, l_E)
       call FaceArea(grid, S_F)
       call DualEdgeLength(grid, l_F)

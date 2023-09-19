@@ -260,6 +260,7 @@ subroutine QMR(b,x, QMRiter)
       endif
 
       adjoint = .false.
+      call zero(PT)
       Call A(P, adjoint, PT)
       EPSIL = dotProd(Q,PT)
       if (EPSIL.eq.C_ZERO) then
@@ -282,6 +283,7 @@ subroutine QMR(b,x, QMRiter)
       RHO = CDSQRT(dotProd(Y,Y))
 
       adjoint = .true.
+      call zero(WT)
       Call A(Q, adjoint, WT)
       Call scMultAdd(-conjg(BETA),W,WT)
 
@@ -439,23 +441,24 @@ subroutine BICG(b,x,BICGiter)
 !================= Now start configuring the iteration ===================!
   ! the adjoint (shadow) residual
   rnormin = rnorm
-  BICGiter%rerr(1) = rnormin/bnorm
+  xmin = x
+  BICGiter%rerr(1) = real(rnormin/bnorm)
   write(6,*) 'initial residual: ', BICGiter%rerr(1)
   converged = .false.
   maxiter = BICGiter%maxit
-  imin = 0
+  imin = 1
   RHO = C_ONE
   OMEGA = C_ONE
   RT = R ! use the overloaded =
 !============================== looooops! ================================!
-  do iter= 1, maxiter
+  do iter= 2, maxiter
       RHO1 = RHO
       RHO = dotProd(RT, R)
       if (RHO .eq. 0.0) then
           BICGiter%failed = .true.
           exit
-      end if 
-      if (iter .eq. 1) then
+      end if
+      if (iter .eq. 2) then
           P = R
       else 
           BETA = (RHO/RHO1)*(ALPHA/OMEGA) 
@@ -475,6 +478,7 @@ subroutine BICG(b,x,BICGiter)
       call M2solve(PT,ilu_adjt,PH)
 !      PH = P
       adjoint = .false.
+      call zero(V)
       call A(PH,adjoint,V)
       RTV = dotProd(RT, V)
       if (RTV.eq.0.0) then
@@ -488,6 +492,26 @@ subroutine BICG(b,x,BICGiter)
       end if
       ! xhalf = x + ALPHA*PH ! the first half of iteration      
       call linComb(C_One,x,ALPHA,PH,xhalf)
+      adjoint = .false.
+      call zero(AX)
+      call A(xhalf,adjoint,AX)
+      call linComb(C_One,b,C_MinusOne,AX,AX)
+      rnorm = CDSQRT(dotProd(AX,AX))
+     
+	  
+      if (rnorm.lt.btol) then
+          x = xhalf
+          BICGiter%failed = .false.
+          BICGiter%niter = iter
+          converged = .true.
+		  BICGiter%rerr(iter)=real(rnorm/bnorm)
+          exit
+      end if
+      if (rnorm .lt. rnormin) then
+          rnormin = rnorm
+          xmin = xhalf
+          imin = iter
+      end if
       ! S = R - ALPHA*V  !residual for the 0.5 x
       call linComb(C_One,R,-ALPHA,V,S)
       ! L
@@ -498,6 +522,7 @@ subroutine BICG(b,x,BICGiter)
       call M2solve(ST,ilu_adjt,SH)
 !     SH = S
       adjoint = .false.
+      call zero(T)
       call A(SH,adjoint,T)
       TT = dotProd(T,T)
       if (TT.eq.0.0) then
@@ -511,10 +536,12 @@ subroutine BICG(b,x,BICGiter)
       end if
       ! x = xhalf + OMEGA * SH  ! the second half (shadow) of iteration
       call linComb(C_One,xhalf,OMEGA,SH,x)
-      ! R = S - OMEGA * T  !residual for the 1.0 x
-      call linComb(C_One,S,-OMEGA,T,R)
-      rnorm = SQRT(dotProd(R,R))
-      BICGiter%rerr(iter) = rnorm / bnorm
+      adjoint = .false.
+      call zero(AX)
+      call A(x,adjoint,AX)
+      call linComb(C_One,b,C_MinusOne,AX,AX)
+      rnorm = CDSQRT(dotProd(AX,AX))
+      BICGiter%rerr(iter) = real(rnorm / bnorm)
       if (rnorm.lt.btol) then
           BICGiter%failed = .false.
           BICGiter%niter = iter
@@ -527,6 +554,8 @@ subroutine BICG(b,x,BICGiter)
           xmin = x
           imin = iter
       end if
+      !R = S - OMEGA * T  !residual for the 1.0 x
+      call linComb(C_One,S,-OMEGA,T,R)
   end do
  
   if (.not. converged) then

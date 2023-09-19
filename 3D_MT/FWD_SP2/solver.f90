@@ -12,7 +12,6 @@ module solver
    use math_constants   ! math/ physics constants
    use utilities, only: isnan
    use spoptools        ! for sparse-matrix operations
-
    !use griddef	! staggered grid definitions
    !use sg_scalar
    !use sg_vector

@@ -71,12 +71,12 @@ program Mod3DMT
     ! still want to store in BC_from_file to enable MPI communication [AK]
     if (BC_FROM_RHS_FILE) then
         if (taskid==0) then
-            call read_rhsVectorMTX(grid,bAll,cUserDef%rFile_EMrhs)
-            call pack_BC_from_file(grid,bAll,nTx_nPol)
+            call read_rhsVectorMTX(gridPrimary,bAll,cUserDef%rFile_EMrhs)
+            call pack_BC_from_file(gridPrimary,bAll,nTx_nPol)
             call Master_job_Distribute_nTx_nPol(nTx_nPol)
         else
             call RECV_nTx_nPol
-            call init_BC_from_file(grid,nTx_nPol)
+            call init_BC_from_file(gridPrimary,nTx_nPol)
             call RECV_BC_form_Master
             call unpack_BC_from_file(bAll)
         end if
@@ -85,13 +85,13 @@ program Mod3DMT
     ! still want to store in BC_from_file to enable MPI communication [AK]
     if (BC_FROM_E0_FILE) then
         if (taskid==0) then
-            call read_solnVectorMTX(grid,eAll,cUserDef%rFile_EMsoln)
+            call read_solnVectorMTX(gridPrimary,eAll,cUserDef%rFile_EMsoln)
             call getBC_solnVectorMTX(eAll,bAll)
-            call pack_BC_from_file(grid,bAll,nTx_nPol)
+            call pack_BC_from_file(gridPrimary,bAll,nTx_nPol)
             call Master_job_Distribute_nTx_nPol(nTx_nPol)
         else
             call RECV_nTx_nPol
-            call init_BC_from_file(grid,nTx_nPol)
+            call init_BC_from_file(gridPrimary,nTx_nPol)
             call RECV_BC_form_Master
             call unpack_BC_from_file(bAll)
         end if
@@ -106,10 +106,10 @@ program Mod3DMT
             nestedEM_initialized = .true.
     end if
     if (BC_FROM_RHS_FILE) then
-            call read_rhsVectorMTX(grid,bAll,cUserDef%rFile_EMrhs)
+            call read_rhsVectorMTX(gridPrimary,bAll,cUserDef%rFile_EMrhs)
     end if
     if (BC_FROM_E0_FILE) then
-            call read_solnVectorMTX(grid,eAll,cUserDef%rFile_EMsoln)
+            call read_solnVectorMTX(gridPrimary,eAll,cUserDef%rFile_EMsoln)
             call getBC_solnVectorMTX(eAll,bAll)
     end if
 #endif
@@ -117,20 +117,20 @@ program Mod3DMT
 #ifdef MPI
     if (PRIMARY_E_FROM_FILE) then
         if (taskid==0) then
-            call read_solnVectorMTX(grid,eAllPrimary,cUserDef%rFile_EMsoln)
+            call read_solnVectorMTX(gridPrimary,eAllPrimary,cUserDef%rFile_EMsoln)
             write(0,*) 'Read the primary electric field solutions for',eAllPrimary%nTx,' periods'
-            call read_modelParam(grid,airLayers,sigmaPrimary,cUserDef%rFile_Model1D)
+            call read_modelParam(gridPrimary,airLayers,sigmaPrimary,cUserDef%rFile_Model1D)
        else
             ! need to logic to fetch the interior source from the master node
             ! for now, just reading the files again on each node!
-            call read_solnVectorMTX(grid,eAllPrimary,cUserDef%rFile_EMsoln)
-            call read_modelParam(grid,airLayers,sigmaPrimary,cUserDef%rFile_Model1D)
+            call read_solnVectorMTX(gridPrimary,eAllPrimary,cUserDef%rFile_EMsoln)
+            call read_modelParam(gridPrimary,airLayers,sigmaPrimary,cUserDef%rFile_Model1D)
         end if
     end if
 #else
     if (PRIMARY_E_FROM_FILE) then
-        call read_solnVectorMTX(grid,eAllPrimary,cUserDef%rFile_EMsoln)
-        call read_modelParam(grid,airLayers,sigmaPrimary,cUserDef%rFile_Model1D)
+        call read_solnVectorMTX(gridPrimary,eAllPrimary,cUserDef%rFile_EMsoln)
+        call read_modelParam(gridPrimary,airLayers,sigmaPrimary,cUserDef%rFile_Model1D)
     end if
 #endif
 

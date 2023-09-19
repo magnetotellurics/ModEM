@@ -1331,14 +1331,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,eAll_in)
                    !if (nPol_MPI==1)  which_pol=1
                    call Unpack_e_para_vec(eAll_out%solns(which_per))
                    write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,': Recieve Per # ',which_per ,' and Pol # ', which_pol ,' from ', who 
-                   ! Writing into the solver's diagnostic file.
-                   ! Naser and Paulo 02.10.2019
-                   
-                   do solver_residual_iter = 1,size(worker_job_task%solver_residual_vec)
-                       if (worker_job_task%solver_residual_vec(solver_residual_iter) .gt. R_ZERO) then
-                           write(ioSolverStat,'(a20,g20.7,i20,i20,i20,g20.7)')trim(job_name), worker_job_task%period, which_per, which_pol, solver_residual_iter, worker_job_task%solver_residual_vec(solver_residual_iter)
-                       end if
-                   end do
+
                    received_answers=received_answers+1
                     
                    
@@ -1517,7 +1510,7 @@ subroutine setGrid_MPI(newgrid)
 
    grid = newgrid
 
-   call init_gridElements(grid)
+   call create_gridElements(grid)
 
 end subroutine setGrid_MPI
 !*****************************************************************************************
