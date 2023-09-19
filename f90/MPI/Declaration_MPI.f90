@@ -114,6 +114,8 @@ subroutine Pack_worker_job_task
      implicit none
      integer index,size_of_res_vector, ierr
 
+        index=1
+	
         call MPI_Pack(worker_job_task%what_to_do,80, MPI_CHARACTER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
         call MPI_Pack(worker_job_task%per_index ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
@@ -137,6 +139,8 @@ end subroutine Pack_worker_job_task
 subroutine Unpack_worker_job_task
      implicit none
      integer index,size_of_res_vector, ierr
+     
+        index=1
 
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%what_to_do,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
