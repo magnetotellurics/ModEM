@@ -56,7 +56,9 @@ contains
         !layers = (/ 0, 6, 1, 14, 2, 10, 3, 10 /)
         !layers = (/ 0, 4, 1, 4, 2, 4 /)
         !> Benchmarcking
-        layers = (/ 1, 11 /)
+        !layers = (/ 1, 11 /)
+        !> MR AS ONE SUB-GRID
+        layers = (/ 0, 40 /)
         !
         someChar = ""
         paramType = ""

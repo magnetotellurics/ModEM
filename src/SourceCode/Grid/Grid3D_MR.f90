@@ -38,8 +38,6 @@ module Grid3D_MR
         !
         !real( kind=prec ), allocatable, dimension(n_grids) :: z_top
         !
-        logical :: is_initialized
-        !
         contains
             !
             procedure, public :: numberOfEdges => numberOfEdges_Grid3D_MR
@@ -135,15 +133,13 @@ contains
             !
             call self%setupMR
             !
-            self%is_initialized = .TRUE.
-            !
             !write( *, * ) "CoarseMAT Row1 (Coarse): [", self%coarseness(:,1), "]"
             !write( *, * ) "CoarseMAT Row2 (Layers): [", self%coarseness(:,2), "]"
             !write( *, * ) "CoarseMAT Row3 (iStart): [", self%coarseness(:,3), "]"
             !write( *, * ) "CoarseMAT Row4 ( iEnd ): [", self%coarseness(:,4), "]"
             !
         else
-            self%is_initialized = .FALSE.
+            call errStop( "Grid3D_MR_t_ctor > n_grids equal 0" )
         endif
         !
     end function Grid3D_MR_t_ctor

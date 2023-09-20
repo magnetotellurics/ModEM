@@ -103,11 +103,11 @@ contains
         !
         call self%topology%curl( self%topology%T )
         !
-        call writeIJS_Matrix( self%topology%T, 6666 )
+        !call writeIJS_Matrix( self%topology%T, 6666 )
         !
         call self%topology%grad( self%topology%G )
         !
-        call writeIJS_Matrix( self%topology%G, 6667 )
+        !call writeIJS_Matrix( self%topology%G, 6667 )
         !
         allocate( self%VomegaMuSig( size( self%metric%grid%EDGEi ) ) )
         !

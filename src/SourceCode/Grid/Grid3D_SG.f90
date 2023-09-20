@@ -231,7 +231,7 @@ contains
         !
         self%x_edge(1) = ox
         self%y_edge(1) = oy
-        self%z_edge(1) = 0.0 !> ALWAYS BE ZERO ????
+        self%z_edge(1) = 0.0 !> ALWAYS BE ZERO ???? BEFORE WAS oz
         !
         xCum = R_ZERO
         yCum = R_ZERO

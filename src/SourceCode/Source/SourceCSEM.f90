@@ -27,7 +27,7 @@ module SourceCSEM
             !
             procedure( interface_set_1d_model_source ), deferred, public :: set1DModel
             !
-            procedure, public :: setCondAnomally
+            procedure, public :: setCondAnomally => setCondAnomally_SourceCSEM
             !
     end type SourceCSEM_t
     !
@@ -42,9 +42,9 @@ module SourceCSEM
         !
     end interface
     !
-    contains
+contains
     !
-    subroutine setCondAnomally( self, cond_anomaly, ani_level )
+    subroutine setCondAnomally_SourceCSEM( self, cond_anomaly, ani_level )
         implicit none
         !
         class( SourceCSEM_t ), intent( in) :: self
@@ -112,23 +112,23 @@ module SourceCSEM
                     !
                 elseif( trim( get_1D_from ) == "At_Tx_Position" ) then
                     !
-                    call errStop( "setTemp_SourceCSEM_Dipole1D > At_Tx_Position not implemented yet" )
+                    call errStop( "setCondAnomally_SourceCSEM > At_Tx_Position not implemented yet" )
                     !
                 elseif( trim( get_1d_from ) == "Geometric_mean_around_Tx" ) then
                     !
-                    call errStop( "setTemp_SourceCSEM_Dipole1D > Geometric_mean_around_Tx not implemented yet" )
+                    call errStop( "setCondAnomally_SourceCSEM > Geometric_mean_around_Tx not implemented yet" )
                     !
                 elseif( trim( get_1d_from ) == "Full_Geometric_mean" ) then
                     !
-                    call errStop( "setTemp_SourceCSEM_Dipole1D > Full_Geometric_mean not implemented yet" )
+                    call errStop( "setCondAnomally_SourceCSEM > Full_Geometric_mean not implemented yet" )
                     !
                 elseif( trim( get_1d_from ) == "Fixed_Value" ) then
                     !
-                    call errStop( "setTemp_SourceCSEM_Dipole1D > Fixed_Value not implemented yet" )
+                    call errStop( "setCondAnomally_SourceCSEM > Fixed_Value not implemented yet" )
                     !
                 else
                     !
-                    call errStop( "setTemp_SourceCSEM_Dipole1D > Unknown get_1d_from" )
+                    call errStop( "setCondAnomally_SourceCSEM > Unknown get_1d_from" )
                     !
                 endif
                 !
@@ -151,7 +151,7 @@ module SourceCSEM
                 enddo
                 !
             class default
-                call errStop( "setCondAnomally: undefined grid" )
+                call errStop( "setCondAnomally_SourceCSEM: undefined grid" )
             !
         end select
         !
@@ -172,6 +172,6 @@ module SourceCSEM
         !cond_anomaly = cond_anomaly - cond_nomaly
         call cond_anomaly%sub( cond_nomaly )
         !
-    end subroutine setCondAnomally
+    end subroutine setCondAnomally_SourceCSEM
     !
 end module SourceCSEM

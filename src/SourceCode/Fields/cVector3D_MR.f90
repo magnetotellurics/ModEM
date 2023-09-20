@@ -592,10 +592,6 @@ contains
             call errStop( "fromSG_cVector3D_MR > self not allocated" )
         endif
         !
-        !>
-        write( *, * ) "fromSG_cVector3D_MR SG: ", vector_sg%grid%nx, vector_sg%grid%ny, vector_sg%grid%nz, vector_sg%grid%n_grids
-        write( *, * ) "                    MR: ", self%grid%nx, self%grid%ny, self%grid%nz, self%grid%n_grids
-        !
         call vector_sg%edgeLength( temp_edge_length_sg )
         !
         array_l = temp_edge_length_sg%getArray()
@@ -806,18 +802,18 @@ contains
                 !
                 case( EDGE )
                     !
-                    self%sub_vector(i)%x(:,(/1, self%sub_vector(i)%NdX(2)/), :) = real( cvalue, kind=prec )
-                    self%sub_vector(i)%x(:, :,(/1, self%sub_vector(i)%NdX(3)/)) = real( cvalue, kind=prec )
-                    self%sub_vector(i)%y((/1, self%sub_vector(i)%NdY(1)/), :, :) = real( cvalue, kind=prec )
-                    self%sub_vector(i)%y(:, :,(/1, self%sub_vector(i)%NdY(3)/)) = real( cvalue, kind=prec )
-                    self%sub_vector(i)%z(:,(/1, self%sub_vector(i)%NdZ(2)/), :) = real( cvalue, kind=prec )
-                    self%sub_vector(i)%z((/1, self%sub_vector(i)%NdZ(1)/), :, :) = real( cvalue, kind=prec )
+                    self%sub_vector(i)%x(:,(/1, self%sub_vector(i)%NdX(2)/), :) = cvalue
+                    self%sub_vector(i)%x(:, :,(/1, self%sub_vector(i)%NdX(3)/)) = cvalue
+                    self%sub_vector(i)%y((/1, self%sub_vector(i)%NdY(1)/), :, :) = cvalue
+                    self%sub_vector(i)%y(:, :,(/1, self%sub_vector(i)%NdY(3)/)) = cvalue
+                    self%sub_vector(i)%z(:,(/1, self%sub_vector(i)%NdZ(2)/), :) = cvalue
+                    self%sub_vector(i)%z((/1, self%sub_vector(i)%NdZ(1)/), :, :) = cvalue
                     !
                 case( FACE )
                     !
-                    self%sub_vector(i)%x((/1, self%sub_vector(i)%NdX(1)/), :, :) = real( cvalue, kind=prec )
-                    self%sub_vector(i)%y(:,(/1, self%sub_vector(i)%NdY(2)/), :) = real( cvalue, kind=prec )
-                    self%sub_vector(i)%z(:, :,(/1, self%sub_vector(i)%NdZ(3)/)) = real( cvalue, kind=prec )
+                    self%sub_vector(i)%x((/1, self%sub_vector(i)%NdX(1)/), :, :) = cvalue
+                    self%sub_vector(i)%y(:,(/1, self%sub_vector(i)%NdY(2)/), :) = cvalue
+                    self%sub_vector(i)%z(:, :,(/1, self%sub_vector(i)%NdZ(3)/)) = cvalue
                     !
                 case default
                     call errStop( "setAllBoundary_cVector3D_MR > Invalid grid type." )
@@ -859,31 +855,31 @@ contains
                         select case( bdry )
                             !
                             case("x1")
-                                self%sub_vector(i)%z(1, 2:self%sub_vector(i)%NdZ(2)-1, :) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%y(1, :, 2:self%sub_vector(i)%NdY(3)-1) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%z(1, 2:self%sub_vector(i)%NdZ(2)-1, :) = cvalue
+                                self%sub_vector(i)%y(1, :, 2:self%sub_vector(i)%NdY(3)-1) = cvalue
                             case("x2")
-                                self%sub_vector(i)%z(self%sub_vector(i)%NdZ(1), 2:self%sub_vector(i)%NdZ(2)-1, :) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%y(self%sub_vector(i)%NdY(1), :, 2:self%sub_vector(i)%NdY(3)-1) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%z(self%sub_vector(i)%NdZ(1), 2:self%sub_vector(i)%NdZ(2)-1, :) = cvalue
+                                self%sub_vector(i)%y(self%sub_vector(i)%NdY(1), :, 2:self%sub_vector(i)%NdY(3)-1) = cvalue
                             case("y1")
-                                self%sub_vector(i)%z(2:self%sub_vector(i)%NdZ(1)-1, 1, :) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%x(:, 1, 2:self%sub_vector(i)%NdX(3)-1) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%z(2:self%sub_vector(i)%NdZ(1)-1, 1, :) = cvalue
+                                self%sub_vector(i)%x(:, 1, 2:self%sub_vector(i)%NdX(3)-1) = cvalue
                             case("y2")
-                                self%sub_vector(i)%z(2:self%sub_vector(i)%NdZ(1)-1, self%sub_vector(i)%NdZ(2), :) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%x(:, self%sub_vector(i)%NdX(2), 2:self%sub_vector(i)%NdX(3)-1) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%z(2:self%sub_vector(i)%NdZ(1)-1, self%sub_vector(i)%NdZ(2), :) = cvalue
+                                self%sub_vector(i)%x(:, self%sub_vector(i)%NdX(2), 2:self%sub_vector(i)%NdX(3)-1) = cvalue
                             case("z1")
-                                self%sub_vector(i)%x(:, 2:self%sub_vector(i)%NdX(2)-1, 1) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%y(2:self%sub_vector(i)%NdY(1)-1, :, 1) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%x(:, 2:self%sub_vector(i)%NdX(2)-1, 1) = cvalue
+                                self%sub_vector(i)%y(2:self%sub_vector(i)%NdY(1)-1, :, 1) = cvalue
                             case("z2")
-                                self%sub_vector(i)%x(:, 2:self%sub_vector(i)%NdX(2)-1, self%sub_vector(i)%NdX(3)) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%y(2:self%sub_vector(i)%NdY(1)-1, :, self%sub_vector(i)%NdY(3)) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%x(:, 2:self%sub_vector(i)%NdX(2)-1, self%sub_vector(i)%NdX(3)) = cvalue
+                                self%sub_vector(i)%y(2:self%sub_vector(i)%NdY(1)-1, :, self%sub_vector(i)%NdY(3)) = cvalue
                             case("z1_x")
-                                self%sub_vector(i)%x(:, 2:self%sub_vector(i)%NdX(2)-1, 1) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%x(:, 2:self%sub_vector(i)%NdX(2)-1, 1) = cvalue
                             case("z2_x")
-                                self%sub_vector(i)%x(:, 2:self%sub_vector(i)%NdX(2)-1, self%sub_vector(i)%NdX(3)) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%x(:, 2:self%sub_vector(i)%NdX(2)-1, self%sub_vector(i)%NdX(3)) = cvalue
                             case("z1_y")
-                                self%sub_vector(i)%y(2:self%sub_vector(i)%NdY(1)-1, :, 1) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%y(2:self%sub_vector(i)%NdY(1)-1, :, 1) = cvalue
                             case("z2_y")
-                                self%sub_vector(i)%y(2:self%sub_vector(i)%NdY(1)-1, :, self%sub_vector(i)%NdY(3)) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%y(2:self%sub_vector(i)%NdY(1)-1, :, self%sub_vector(i)%NdY(3)) = cvalue
                             !
                         end select
                         !
@@ -892,31 +888,31 @@ contains
                         select case( bdry )
                             !
                             case("x1")
-                                self%sub_vector(i)%z(1, :, :) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%y(1, :, :) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%z(1, :, :) = cvalue
+                                self%sub_vector(i)%y(1, :, :) = cvalue
                             case("x2")
-                                self%sub_vector(i)%z(self%sub_vector(i)%NdZ(1), :, :) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%y(self%sub_vector(i)%NdY(1), :, :) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%z(self%sub_vector(i)%NdZ(1), :, :) = cvalue
+                                self%sub_vector(i)%y(self%sub_vector(i)%NdY(1), :, :) = cvalue
                             case("y1")
-                                self%sub_vector(i)%z(:, 1, :) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%x(:, 1, :) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%z(:, 1, :) = cvalue
+                                self%sub_vector(i)%x(:, 1, :) = cvalue
                             case("y2")
-                                self%sub_vector(i)%z(:, self%sub_vector(i)%NdZ(2), :) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%x(:, self%sub_vector(i)%NdX(2), :) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%z(:, self%sub_vector(i)%NdZ(2), :) = cvalue
+                                self%sub_vector(i)%x(:, self%sub_vector(i)%NdX(2), :) = cvalue
                             case("z1")
-                                self%sub_vector(i)%x(:, :, 1) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%y(:, :, 1) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%x(:, :, 1) = cvalue
+                                self%sub_vector(i)%y(:, :, 1) = cvalue
                             case("z2")
-                                self%sub_vector(i)%x(:, :, self%sub_vector(i)%NdX(3)) = real( cvalue, kind=prec )
-                                self%sub_vector(i)%y(:, :, self%sub_vector(i)%NdY(3)) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%x(:, :, self%sub_vector(i)%NdX(3)) = cvalue
+                                self%sub_vector(i)%y(:, :, self%sub_vector(i)%NdY(3)) = cvalue
                             case("z1_x")
-                                self%sub_vector(i)%x(:, :, 1) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%x(:, :, 1) = cvalue
                             case("z2_x")
-                                self%sub_vector(i)%x(:, :, self%sub_vector(i)%NdX(3)) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%x(:, :, self%sub_vector(i)%NdX(3)) = cvalue
                             case("z1_y")
-                                self%sub_vector(i)%y(:, :, 1) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%y(:, :, 1) = cvalue
                             case("z2_y")
-                                self%sub_vector(i)%y(:, :, self%sub_vector(i)%NdY(3)) = real( cvalue, kind=prec )
+                                self%sub_vector(i)%y(:, :, self%sub_vector(i)%NdY(3)) = cvalue
                             !
                         end select
                         !
@@ -927,17 +923,17 @@ contains
                     select case( bdry )
                         !
                         case("x1")
-                            self%sub_vector(i)%x(1, :, :) = real( cvalue, kind=prec )
+                            self%sub_vector(i)%x(1, :, :) = cvalue
                         case("x2")
-                            self%sub_vector(i)%x(self%sub_vector(i)%NdX(1), :, :) = real( cvalue, kind=prec )
+                            self%sub_vector(i)%x(self%sub_vector(i)%NdX(1), :, :) = cvalue
                         case("y1")
-                            self%sub_vector(i)%y(:, 1, :) = real( cvalue, kind=prec )
+                            self%sub_vector(i)%y(:, 1, :) = cvalue
                         case("y2")
-                            self%sub_vector(i)%y(:, self%sub_vector(i)%NdY(2), :) = real( cvalue, kind=prec )
+                            self%sub_vector(i)%y(:, self%sub_vector(i)%NdY(2), :) = cvalue
                         case("z1")
-                            self%sub_vector(i)%z(:, :, 1) = real( cvalue, kind=prec )
+                            self%sub_vector(i)%z(:, :, 1) = cvalue
                         case("z2")
-                            self%sub_vector(i)%z(:, :, self%sub_vector(i)%NdZ(3)) = real( cvalue, kind=prec )
+                            self%sub_vector(i)%z(:, :, self%sub_vector(i)%NdZ(3)) = cvalue
                         !
                     end select
                     !
@@ -1164,9 +1160,9 @@ contains
                             !write( *, * ) "y: ", size( self%sub_vector(i)%y ), size( rhs%sub_vector(i)%y )
                             !write( *, * ) "z: ", size( self%sub_vector(i)%z ), size( rhs%sub_vector(i)%z )
                             !
-                            self%sub_vector(i)%x = c1* self%sub_vector(i)%x + c2 * rhs%sub_vector(i)%x
-                            self%sub_vector(i)%y = c1* self%sub_vector(i)%y + c2 * rhs%sub_vector(i)%y
-                            self%sub_vector(i)%z = c1* self%sub_vector(i)%z + c2 * rhs%sub_vector(i)%z
+                            self%sub_vector(i)%x = c1 * self%sub_vector(i)%x + c2 * rhs%sub_vector(i)%x
+                            self%sub_vector(i)%y = c1 * self%sub_vector(i)%y + c2 * rhs%sub_vector(i)%y
+                            self%sub_vector(i)%z = c1 * self%sub_vector(i)%z + c2 * rhs%sub_vector(i)%z
                             !
                         enddo
                         !
@@ -1174,9 +1170,9 @@ contains
                         !
                         do i = 1, self%grid%getNGrids()
                             !
-                            self%sub_vector(i)%x = c1* self%sub_vector(i)%x + c2 * rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%y = c1* self%sub_vector(i)%y + c2 * rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%z = c1* self%sub_vector(i)%z + c2 * rhs%sub_scalar(i)%v
+                            self%sub_vector(i)%x = c1 * self%sub_vector(i)%x + c2 * rhs%sub_scalar(i)%v
+                            self%sub_vector(i)%y = c1 * self%sub_vector(i)%y + c2 * rhs%sub_scalar(i)%v
+                            self%sub_vector(i)%z = c1 * self%sub_vector(i)%z + c2 * rhs%sub_scalar(i)%v
                             !
                         enddo
                         !
@@ -1745,13 +1741,15 @@ contains
         character, intent( in ) :: xyz
         class( Vector_t ), allocatable, intent( inout ) :: interp
         !
-        type( cVector3D_MR_t ) :: temp_interp
+        !type( cVector3D_MR_t ) :: temp_interp
+        !
+        !call errStop( "interpFunc_cVector3D_MR still not implemented" )
         !
         !> FIND THE i_grid SUBGRID FROM location(3) THEN self%sub_vector(i_grid)%interpFunc( 
         !
-        temp_interp = self
+        call self%sub_vector(1)%interpFunc( location, xyz, interp )
         !
-        allocate( interp, source = temp_interp )
+        !allocate( interp, source = temp_interp )
         !
     end subroutine interpFunc_cVector3D_MR
     !
@@ -1818,7 +1816,7 @@ contains
         class( cVector3D_MR_t ), intent( in ) :: self
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
-        real( kind=prec ), allocatable :: v_full(:)
+        complex( kind=prec ), allocatable :: v_full(:)
         !
         v_full = self%getFullArray()
         !
@@ -1887,24 +1885,18 @@ contains
                 !
                 if( allocated( rhs%sub_vector ) ) then
                     !
-                    if( allocated( self%sub_vector ) ) deallocate( self%sub_vector )
-                    allocate( self%sub_vector( size( rhs%sub_vector ) ) )
+                    self%sub_vector = rhs%sub_vector
                     !
                 else
                     call errStop( "copyFrom_cVector3D_MR > rhs%sub_vector not allocated" )
                 endif
                 !
-                do i = 1, size( self%sub_vector )
-                    self%sub_vector(i) = rhs%sub_vector(i)
-                enddo
-                !
                 self%is_allocated = .TRUE.
                 !
             class default
                 call errStop( "copyFrom_cVector3D_MR > Undefined rhs" )
+            !
         end select
-        !
-        self%is_allocated = .TRUE.
         !
     end subroutine copyFrom_cVector3D_MR
     !

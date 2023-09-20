@@ -211,7 +211,7 @@ contains
     !
     !> No subroutine briefing
     !
-    function dotProd_cVectorSparse3D_SG( self, rhs ) result( cvalue )
+    RECURSIVE function dotProd_cVectorSparse3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( in ) :: self

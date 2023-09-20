@@ -10,7 +10,7 @@ module rVector3D_MR
     !
     type, extends( Vector_t ) :: rVector3D_MR_t
         !
-        type( rVector3D_SG_t ), allocatable :: sub_vector(:)
+        type( rVector3D_SG_t ), allocatable, dimension(:) :: sub_vector
         !
         contains
             !
@@ -2115,6 +2115,8 @@ contains
         !
         type( rVector3D_MR_t ) :: temp_interp
         !
+        call errStop( "interpFunc_rVector3D_MR still not implemented" )
+        !
         !> FIND THE i_grid SUBGRID FROM location(3) THEN self%sub_vector(i_grid)%interpFunc( 
         !
         temp_interp = self
@@ -2236,8 +2238,6 @@ contains
         class( rVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        integer :: i
-        !
         if( .NOT. rhs%is_allocated) then
             call errStop( "copyFrom_rVector3D_MR > rhs not allocated" )
         endif
@@ -2255,24 +2255,17 @@ contains
                 !
                 if( allocated( rhs%sub_vector ) ) then
                     !
-                    if( allocated( self%sub_vector ) ) deallocate( self%sub_vector )
-                    allocate( self%sub_vector( size( rhs%sub_vector ) ) )
+                    self%sub_vector = rhs%sub_vector
                     !
                 else
                     call errStop( "copyFrom_rVector3D_MR > rhs%sub_vector not allocated" )
                 endif
-                !
-                do i = 1, size( self%sub_vector )
-                    self%sub_vector(i) = rhs%sub_vector(i)
-                enddo
                 !
                 self%is_allocated = .TRUE.
                 !
             class default
                 call errStop( "copyFrom_rVector3D_MR > Undefined rhs" )
         end select
-        !
-        self%is_allocated = .TRUE.
         !
     end subroutine copyFrom_rVector3D_MR
     !

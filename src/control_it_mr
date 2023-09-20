@@ -1,0 +1,37 @@
+##############################################
+# ModEM Forward Modeling Control File Template
+#     Here are all supported parameters       
+#     Comment or remove to use default value  
+##############################################
+#
+# <Field parameters>
+#
+model_operator_type [MF|SP|SP2] : SP
+#
+# <Grid parameters>
+#
+#grid_header [ModEM|HDF5] : ModEM
+grid_format [SG|MR]       : MR
+#
+# <Model parameters>
+#
+model_method [mirror|fixed height] : fixed height
+model_n_air_layer [10]             : 10
+model_max_height [200.]            : 200.
+#
+# <Source parameters>
+#
+source_type_mt [1D|2D]                                        : 1D
+source_type_csem [EM1D|Dipole1D]                              : Dipole1D
+get_1d_from [Fixed|Geometric_mean|Mean_around_Tx|Tx_Position] : Geometric_mean
+#
+# <Solver parameters>
+#
+solver_type [QMR|BICG]         : QMR
+forward_solver_type [IT|IT_DC] : IT
+max_solver_iters [80]          : 80
+max_solver_calls [20]          : 20
+max_divcor_iters [100]         : 100
+tolerance_solver [1E-7]        : 1E-7
+tolerance_divcor [1E-5]        : 1E-5
+#

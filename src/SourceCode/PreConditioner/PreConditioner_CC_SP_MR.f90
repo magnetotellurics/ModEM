@@ -84,8 +84,9 @@ contains
         type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
         !
         !************** WILLIAMS'S VERSION FOR IX, IY IZ **************
+        !* THIS NOW WORKS (AT LEAST WITH COMPATIBLE RESULTS AS SG GRID)
         !
-        call self%model_operator%metric%grid%numberOfEdges(nx, ny, nz)
+        call self%model_operator%metric%grid%numberOfEdges( nx, ny, nz )
         !**
         ! ix
         nEdgeT = 0
@@ -110,8 +111,8 @@ contains
         ! iz
         nEdgeT = nEdgeT+nEdge
         nEdge = 0
-        do i = 1, size(self%model_operator%metric%grid%EDGEi)
-            if (self%model_operator%metric%grid%EDGEi(i) > (nx + ny)) then
+        do i = 1, size( self%model_operator%metric%grid%EDGEi )
+            if( self%model_operator%metric%grid%EDGEi(i) > (nx + ny) ) then
                 nEdge = nEdge + 1
             end if
         end do
@@ -119,6 +120,7 @@ contains
         iz = (/ (j, j = nEdgeT + 1, nEdgeT + nEdge) /)
         !
         !************** GARY'S VERSION (needs iXYZinterior to be constructed- procedure in Grid3D_MR) **************
+        ! Solver QMR still give err= NaNs
         ! !
         ! !> Generate the index arrays ix, iy and iz from grid%iXYZinterior
         ! select type( grid => self%model_operator%metric%grid )

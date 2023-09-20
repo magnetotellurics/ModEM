@@ -225,7 +225,7 @@ contains
             call solveTx( sigma, Tx )
             !
             ! Verbose
-            write( *, * ) "               - Calculate Predicted Data"
+            write( *, * ) "                    - Calculate Predicted Data"
             !
             !> Loop for each Receiver related to this Transmitter
             do i_rx = 1, size( Tx%receiver_indexes )

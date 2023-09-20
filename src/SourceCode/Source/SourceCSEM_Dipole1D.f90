@@ -117,18 +117,18 @@ contains
         write( *, * ) "          - Extract CSEM Source from Dipole 1D"
         !
         call self%set1DModel
-		!
-		select type( grid => self%sigma%metric%grid )
-			!
-			class is( Grid3D_SG_t )
-				!
-				call initilize_1d_vectors( grid ) !> Initilize the 1D vectors where to compupte the e_field field
-				!
-			class default
-				call errStop( "createE_SourceCSEM_Dipole1D > grid must be Grid3D_SG_t" )
-			!
-		end select
-		!
+        !
+        select type( grid => self%sigma%metric%grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                call initilize_1d_vectors( grid ) !> Initilize the 1D vectors where to compupte the e_field field
+                !
+            class default
+                call errStop( "createE_SourceCSEM_Dipole1D > grid must be Grid3D_SG_t" )
+            !
+        end select
+        !
         call comp_dipole1D !> Calculate e_field-Field by Key's code
         !
         call self%create_Ep_from_Dipole1D( self%sigma%metric%grid )

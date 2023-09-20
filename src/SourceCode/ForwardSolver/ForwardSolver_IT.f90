@@ -157,22 +157,22 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), allocatable, intent( out ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_e, temp_vec
-        type( cVector3D_MR_t ) :: temp_e_mr
+        class( Vector_t ), allocatable :: source_e_vec, boundary_vec
+        type( cVector3D_MR_t ) :: source_e_vec_mr
         integer :: i
         !
-        !> Create proper SG or MR temp source vectors
+        !> Create proper SG or MR source_e_vec
         select type( grid => source%E( pol )%grid )
             !
             class is( Grid3D_SG_t )
                 !
-                allocate( temp_e, source = source%E( pol ) )
+                allocate( source_e_vec, source = source%E( pol ) )
             !
             class is( Grid3D_MR_t )
                 !
-                temp_e_mr = cVector3D_MR_t( grid, source%E( pol )%grid_type )
-                call temp_e_mr%fromSG( source%E( pol ) )
-                allocate( temp_e, source = temp_e_mr )
+                source_e_vec_mr = cVector3D_MR_t( grid, source%E( pol )%grid_type )
+                call source_e_vec_mr%fromSG( source%E( pol ) )
+                allocate( source_e_vec, source = source_e_vec_mr )
                 !
             class default
                call errStop( "createESolution_ForwardSolver_IT > Unclassified Source grid." )
@@ -227,17 +227,17 @@ contains
         !
         if( source%non_zero_bc ) then
             !
-            call source%rhs( pol )%v%boundary( temp_vec )
+            call source%rhs( pol )%v%boundary( boundary_vec )
             !
         else
             !
-            call temp_e%boundary( temp_vec )
+            call source_e_vec%boundary( boundary_vec )
             !
         endif
         !
-        call e_solution%add( temp_vec )
+        call e_solution%add( boundary_vec )
         !
-        deallocate( temp_vec )
+        deallocate( boundary_vec )
         !
     end subroutine createESolution_ForwardSolver_IT
     !
