@@ -152,8 +152,7 @@ contains
         !
     end subroutine ModelParameterCell_SG_dtor
     !
-    !> Map the entire model cells into a single edge Vector_t (e_vec).
-    !> Need to implement for VTI ????
+    !> Map cell_cond to nodes
     !
     subroutine nodeCond_ModelParameterCell_SG( self, sigma_node )
         implicit none

@@ -1747,6 +1747,7 @@ contains
         !
         !> FIND THE i_grid SUBGRID FROM location(3) THEN self%sub_vector(i_grid)%interpFunc( 
         !
+		write( *, * ) "location, xyz: :", location, xyz
         call self%sub_vector(1)%interpFunc( location, xyz, interp )
         !
         !allocate( interp, source = temp_interp )

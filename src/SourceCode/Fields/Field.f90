@@ -15,9 +15,9 @@ module Field
         !
         class( Grid_t ), pointer :: grid
         !
-        character( len=4 ) :: grid_type
-        !
         integer :: nx, ny, nz, store_state
+        !
+        character( len=4 ) :: grid_type
         !
         logical :: is_allocated
         !

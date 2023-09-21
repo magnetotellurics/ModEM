@@ -62,6 +62,10 @@ module Grid
             !
             procedure( interface_write_grid ), deferred, public :: write
             !
+            !> Miscellaneous
+            procedure( interface_copy_from_grid ), deferred, public :: copyFrom
+            generic :: assignment(=) => copyFrom
+            !
             !> Base Grid methods
             procedure, public :: baseInit => initialize_Grid
             procedure, public :: baseDealloc => deallocate_Grid
@@ -180,6 +184,14 @@ module Grid
             type( Grid2D_t ) :: g2D
         end function interface_slice_2d_grid
         !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_copy_from_grid( self, rhs )
+            import :: Grid_t
+            class( Grid_t ), intent( inout ) :: self
+            class( Grid_t ), intent( in ) :: rhs
+        end subroutine interface_copy_from_grid
+        !
         !> No interface function briefing
         !
         subroutine interface_write_grid( self )
@@ -214,6 +226,23 @@ contains
         !
         self%nzAir = 0
         self%nzEarth = 0
+        !
+        !> Indexes Arrays
+        self%EDGEf = 0
+        self%FACEf = 0
+        self%NODEf = 0
+        !
+        self%EDGEb = (/ 0 /)
+        self%FACEb = (/ 0 /)
+        self%NODEb = (/ 0 /)
+        !
+        self%EDGEi = (/ 0 /)
+        self%FACEi = (/ 0 /)
+        self%NODEi = (/ 0 /)
+        !
+        self%EDGEa = (/ 0 /)
+        self%FACEa = (/ 0 /)
+        self%NODEa = (/ 0 /)
         !
         self%is_allocated = .FALSE.
         !

@@ -66,6 +66,9 @@ module Grid3D_MR
             !
             procedure, public :: updateAirLayers => updateAirLayers_Grid3D_MR
             !
+            !> Miscellaneous
+            procedure, public :: copyFrom => copyFrom_Grid3D_MR
+            !
             procedure, public :: write => write_Grid3D_MR
             !
     end type Grid3D_MR_t
@@ -106,20 +109,24 @@ contains
         if( self%n_grids > 0 ) then
             !
             allocate( self%n_active_edge( 3, self%n_grids ) )
+            self%n_active_edge = 0
             !
             allocate( self%n_active_face( 3, self%n_grids ) )
+            self%n_active_face = 0
             !
             allocate( self%n_active_node( self%n_grids ) )
+            self%n_active_node = 0
             !
             allocate( self%n_active_cell( self%n_grids ) )
+            self%n_active_cell = 0
             !
             allocate( self%z_limits( 2, self%n_grids ) )
+            self%z_limits = 0
             !
             allocate( self%coarseness( self%n_grids, 4 ) )
+            self%coarseness = 0
             !
             allocate( self%sub_grid( self%n_grids ) )
-            !
-            self%coarseness = 0
             !
             do i = 0, self%n_grids - 1
                 !
@@ -538,6 +545,7 @@ contains
         enddo
         !
         !> integer array length of full vector (active and inactive edges)
+        if( allocated( self%iXYZfull ) ) deallocate( self%iXYZfull )
         allocate( self%iXYZfull( length_full ) )
         !
         write( *, * ) "setXYZ_Grid3D_MR FULL    : ", size( self%iXYZfull )
@@ -737,6 +745,84 @@ contains
         call self%setup
         !
     end subroutine updateAirLayers_Grid3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine copyFrom_Grid3D_MR( self, rhs )
+        implicit none
+        !
+        class( Grid3D_MR_t ), intent( inout ) :: self
+        class( Grid_t ), intent( in ) :: rhs
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "copyFrom_Grid3D_MR > rhs not allocated" )
+        endif
+        !
+        self%n_grids = rhs%n_grids
+        !
+        self%geometry = rhs%geometry
+        !
+        self%nx = rhs%nx
+        self%ny = rhs%ny
+        self%nz = rhs%nz
+        self%nzAir = rhs%nzAir
+        self%nzEarth = rhs%nzEarth
+        !
+        self%dx = rhs%dx
+        self%dy = rhs%dy
+        self%dz = rhs%dz
+        !
+        self%ox = rhs%ox
+        self%oy = rhs%oy
+        self%oz = rhs%oz
+        !
+        self%rotDeg = rhs%rotDeg
+        !
+        !> Indexes Arrays
+        self%EDGEf = rhs%EDGEf
+        self%FACEf = rhs%FACEf
+        self%NODEf = rhs%NODEf
+        !
+        self%EDGEb = rhs%EDGEb
+        self%FACEb = rhs%FACEb
+        self%NODEb = rhs%NODEb
+        !
+        self%EDGEi = rhs%EDGEi
+        self%FACEi = rhs%FACEi
+        self%NODEi = rhs%NODEi
+        !
+        self%EDGEa = rhs%EDGEa
+        self%FACEa = rhs%FACEa
+        self%NODEa = rhs%NODEa
+        !
+        select type( rhs )
+            !
+            class is( Grid3D_MR_t )
+                !
+                self%coarseness = rhs%coarseness
+                self%z_limits = rhs%z_limits
+                !
+                self%n_active_edge = rhs%n_active_edge
+                self%n_active_face = rhs%n_active_face
+                !
+                self%n_active_node = rhs%n_active_node
+                self%n_active_cell = rhs%n_active_cell
+                self%cs = rhs%cs
+                !
+                self%iXYZfull = rhs%iXYZfull
+                self%iXYZinterior = rhs%iXYZinterior
+                self%iXYZactive = rhs%iXYZactive
+                !
+                self%sub_grid = rhs%sub_grid
+                !
+            class default
+                call errStop( "copyFrom_Grid3D_MR > Unclassified rhs" )
+            !
+        end select
+        !
+        self%is_allocated = .TRUE.
+        !
+    end subroutine copyFrom_Grid3D_MR
     !
     !
     !
