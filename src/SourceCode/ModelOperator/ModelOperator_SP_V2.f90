@@ -78,6 +78,8 @@ contains
         call deall_spMatCSR( self%topology%T )
         call deall_spMatCSR( self%topology%G )
         !
+        if( allocated( self%topology ) ) deallocate( self%topology )
+        !
         call deall_spMatCSR( self%Gd )
         call deall_spMatCSR( self%D )
         call deall_spMatCSR( self%VDiv )
@@ -91,7 +93,7 @@ contains
     end subroutine deallocate_ModelOperator_SP_V2
     !
     !> ModelOperator_SP_V2 destructor
-	!
+    !
     subroutine ModelOperator_SP_V2_dtor( self )
         implicit none
         !

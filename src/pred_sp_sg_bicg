@@ -1,0 +1,509 @@
+--------------------------------------------------------------------------
+WARNING: Linux kernel CMA support was requested via the
+btl_vader_single_copy_mechanism MCA variable, but CMA support is
+not available due to restrictive ptrace settings.
+
+The vader shared memory BTL will fall back on another single-copy
+mechanism if one is available. This may result in lower performance.
+
+  Local host: capricorn
+--------------------------------------------------------------------------
+
+Start ModEM-OO at 20230925_165523.
+
+      < FWD control File: [control_sp2_sg_bicg.txt]
+                  model_operator_type =         SparseMatrix
+                            Grid Type =         StandardGrid
+                               Solver =                 BICG
+                           FWD Solver =     ForwardSolver_IT
+                            MT Source =          SourceMT_1D
+                          CSEM Source =  SourceCSEM_Dipole1D
+                          Get 1D from =       Geometric_mean
+                         Model Method =         fixed height
+                         N Air Layers =                   10
+                     Model Max Height =               200.00
+                         Solver Iters =                   80
+                     Max Solver Calls =                   20
+                         Divcor Iters =                  100
+                     Solver Tolerance =             1.00E-07
+                     Divcor Tolerance =             1.00E-05
+      - Start jobForwardModeling
+      < Model File: [../../modem_inputs/MR_test/m_fixed.ws]
+           Model Air Layers [i, dz(i)]:
+                  10             131.980
+                   9             277.136
+                   8             581.940
+                   7            1221.976
+                   6            2565.947
+                   5            5388.062
+                   4           11314.034
+                   3           23757.588
+                   2           49886.980
+                   1          104754.356
+           Air layers from the method [fixed height]
+           Top of the air layers is at      199.880 km.
+           Air layers Max Height   200000.000
+           dim(x,y,z):(    48,     48,     50)
+           o(x,y,z) * rotDeg:(           0.000,            0.000,            0.000) *            0.000
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+      < Data File: [../../modem_inputs/MR_test/d0_fixed.dat]
+           Header       1 -> (      Full_Impedance,       [V/m]/[T]):       12 Txs and       30 Rxs.
+           Read         1440  MT Entries
+      - Create All Measured Data
+           Checked           30  Receivers.
+           Checked           12  Transmitters.
+                 TransmitterMT       1, Period=     1.00000E-01, NRx=      30
+                 TransmitterMT       2, Period=     2.31013E-01, NRx=      30
+                 TransmitterMT       3, Period=     5.33670E-01, NRx=      30
+                 TransmitterMT       4, Period=     1.23285E+00, NRx=      30
+                 TransmitterMT       5, Period=     2.84804E+00, NRx=      30
+                 TransmitterMT       6, Period=     6.57933E+00, NRx=      30
+                 TransmitterMT       7, Period=     1.51991E+01, NRx=      30
+                 TransmitterMT       8, Period=     3.51119E+01, NRx=      30
+                 TransmitterMT       9, Period=     8.11131E+01, NRx=      30
+                 TransmitterMT      10, Period=     1.87382E+02, NRx=      30
+                 TransmitterMT      11, Period=     4.32876E+02, NRx=      30
+                 TransmitterMT      12, Period=     1.00000E+03, NRx=      30
+           Checked          360  DataGroups.
+      - Creating Rx evaluation vectors
+                 Component's memory in bytes:
+                                 Main Grid =  3347801
+                        Transmitters Array =     2112
+                           Receivers Array =    59100
+                                     Total =  3409206
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+ setGridIndexArrays_MetricElements_SG:
+ EDGE:       359954       28416      331538
+ FACE:       352704       14208      338496
+ NODE:       122451       14210      108241
+                - Solving MT e_sol_0 for period=  3.51E+01, pol= 1
+                - Solving MT e_sol_0 for period=  1.52E+01, pol= 1
+                - Solving MT e_sol_0 for period=  2.31E-01, pol= 1
+                - Solving MT e_sol_0 for period=  1.00E-01, pol= 1
+                - Solving MT e_sol_0 for period=  4.33E+02, pol= 1
+                - Solving MT e_sol_0 for period=  1.00E+03, pol= 1
+                - Solving MT e_sol_0 for period=  1.87E+02, pol= 1
+                - Solving MT e_sol_0 for period=  5.34E-01, pol= 1
+                - Solving MT e_sol_0 for period=  6.58E+00, pol= 1
+                - Solving MT e_sol_0 for period=  2.85E+00, pol= 1
+                - Solving MT e_sol_0 for period=  8.11E+01, pol= 1
+                - Solving MT e_sol_0 for period=  1.23E+00, pol= 1
+                     ->Solver BICG not converged in     80: err=    4.272E-05
+                     ->Solver BICG not converged in     80: err=    4.454E-05
+                     ->Solver BICG not converged in     80: err=    5.110E-06
+                     ->Solver BICG not converged in     80: err=    1.583E-04
+                     ->Solver BICG not converged in     80: err=    1.676E-06
+                     ->Solver BICG not converged in     80: err=    2.124E-04
+                     ->Solver BICG not converged in     80: err=    1.376E-04
+                     ->Solver BICG not converged in     80: err=    1.767E-05
+                     ->Solver BICG not converged in     80: err=    9.344E-05
+                     ->Solver BICG not converged in     80: err=    4.507E-06
+                     ->Solver BICG not converged in     80: err=    8.164E-06
+                     ->Solver BICG not converged in     80: err=    1.096E-06
+                     ->Solver BICG not converged in     80: err=    4.913E-06
+                     ->Solver BICG not converged in     80: err=    2.059E-05
+                     ->Solver BICG converged within     56: err=    8.944E-08
+                          IT converged within    136: err=    8.944E-08
+                - Solving MT e_sol_0 for period=  1.00E-01, pol= 2
+                     ->Solver BICG converged within     62: err=    8.041E-08
+                          IT converged within    142: err=    8.041E-08
+                - Solving MT e_sol_0 for period=  2.31E-01, pol= 2
+                     ->Solver BICG not converged in     80: err=    3.776E-05
+                     ->Solver BICG not converged in     80: err=    2.527E-07
+                     ->Solver BICG not converged in     80: err=    2.953E-05
+                     ->Solver BICG not converged in     80: err=    6.659E-05
+                     ->Solver BICG not converged in     80: err=    3.968E-05
+                     ->Solver BICG not converged in     80: err=    3.496E-06
+                     ->Solver BICG not converged in     80: err=    1.092E-06
+                     ->Solver BICG not converged in     80: err=    1.964E-06
+                     ->Solver BICG not converged in     80: err=    1.669E-06
+                     ->Solver BICG not converged in     80: err=    3.499E-06
+                     ->Solver BICG converged within     40: err=    9.432E-08
+                          IT converged within    200: err=    9.432E-08
+                - Solving MT e_sol_0 for period=  5.34E-01, pol= 2
+                     ->Solver BICG not converged in     80: err=    9.439E-06
+                     ->Solver BICG not converged in     80: err=    1.741E-06
+                     ->Solver BICG not converged in     80: err=    1.654E-05
+                     ->Solver BICG not converged in     80: err=    1.392E-06
+                     ->Solver BICG not converged in     80: err=    6.287E-07
+                     ->Solver BICG not converged in     80: err=    1.963E-05
+                     ->Solver BICG not converged in     80: err=    1.950E-05
+                     ->Solver BICG not converged in     80: err=    2.375E-05
+                     ->Solver BICG not converged in     80: err=    1.318E-06
+                     ->Solver BICG not converged in     80: err=    4.599E-06
+                     ->Solver BICG not converged in     80: err=    5.224E-06
+                     ->Solver BICG converged within     49: err=    9.941E-08
+                          IT converged within    129: err=    9.941E-08
+                     ->Solver BICG not converged in     80: err=    1.569E-06
+                     ->Solver BICG converged within     69: err=    8.116E-08
+                          IT converged within    149: err=    8.116E-08
+                     ->Solver BICG not converged in     80: err=    8.603E-07
+                     ->Solver BICG not converged in     80: err=    1.094E-06
+                     ->Solver BICG not converged in     80: err=    2.184E-04
+                     ->Solver BICG not converged in     80: err=    1.883E-07
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    1.697E-06
+                     ->Solver BICG not converged in     80: err=    2.005E-05
+                     ->Solver BICG not converged in     80: err=    3.329E-05
+                     ->Solver BICG not converged in     80: err=    2.119E-06
+                     ->Solver BICG not converged in     80: err=    1.315E-07
+                     ->Solver BICG not converged in     80: err=    1.028E-06
+                     ->Solver BICG converged within     56: err=    9.849E-08
+                          IT converged within    376: err=    9.849E-08
+                - Solving MT e_sol_0 for period=  1.23E+00, pol= 2
+                     ->Solver BICG not converged in     80: err=    9.887E-07
+                     ->Solver BICG not converged in     80: err=    2.077E-05
+                     ->Solver BICG converged within     32: err=    9.133E-08
+                          IT converged within    192: err=    9.133E-08
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    7.996E-06
+                     ->Solver BICG not converged in     80: err=    1.384E-06
+                     ->Solver BICG not converged in     80: err=    3.458E-07
+                     ->Solver BICG not converged in     80: err=    2.592E-05
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    7.395E-07
+                     ->Solver BICG not converged in     80: err=    3.911E-06
+                     ->Solver BICG not converged in     80: err=    2.958E-05
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    5.341E-06
+                     ->Solver BICG not converged in     80: err=    5.065E-07
+                     ->Solver BICG not converged in     80: err=    2.158E-07
+                     ->Solver BICG not converged in     80: err=    1.651E-05
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    6.045E-07
+                     ->Solver BICG not converged in     80: err=    9.837E-06
+                     ->Solver BICG not converged in     80: err=    7.154E-06
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    2.294E-07
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    1.678E-05
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    4.244E-07
+                     ->Solver BICG not converged in     80: err=    1.995E-05
+                     ->Solver BICG not converged in     80: err=    2.845E-06
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    2.435E-07
+                     ->Solver BICG converged within     42: err=    9.951E-08
+                          IT converged within    282: err=    9.951E-08
+                     ->Solver BICG not converged in     80: err=    6.160E-06
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    1.080E-05
+                     ->Solver BICG not converged in     80: err=    2.482E-06
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    9.145E-06
+                     ->Solver BICG not converged in     80: err=    9.172E-07
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    7.590E-06
+                     ->Solver BICG not converged in     80: err=    1.409E-06
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    6.685E-06
+                     ->Solver BICG not converged in     80: err=    1.409E-06
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    6.685E-06
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    1.409E-06
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    6.685E-06
+                     ->Solver BICG not converged in     80: err=    1.409E-06
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    6.685E-06
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    1.409E-06
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    6.685E-06
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    1.409E-06
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+                     ->Solver BICG not converged in     80: err=    6.685E-06
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    1.657E-06
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                - Solving MT e_sol_0 for period=  1.52E+01, pol= 2
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    1.409E-06
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+                     ->Solver BICG not converged in     80: err=    8.647E-07
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                - Solving MT e_sol_0 for period=  3.51E+01, pol= 2
+                     ->Solver BICG not converged in     80: err=    6.685E-06
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    6.415E-05
+                     ->Solver BICG not converged in     80: err=    1.409E-06
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+                     ->Solver BICG not converged in     80: err=    4.283E-05
+                     ->Solver BICG not converged in     80: err=    6.685E-06
+                     ->Solver BICG not converged in     80: err=    1.535E-05
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+                     ->Solver BICG not converged in     80: err=    1.409E-06
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+                     ->Solver BICG not converged in     80: err=    1.645E-05
+                     ->Solver BICG not converged in     80: err=    4.811E-06
+                     ->Solver BICG not converged in     80: err=    6.685E-06
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                - Solving MT e_sol_0 for period=  1.87E+02, pol= 2
+                     ->Solver BICG not converged in     80: err=    2.067E-07
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                - Solving MT e_sol_0 for period=  2.85E+00, pol= 2
+                     ->Solver BICG not converged in     80: err=    2.615E-05
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                - Solving MT e_sol_0 for period=  1.00E+03, pol= 2
+                     ->Solver BICG not converged in     80: err=    1.409E-06
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                - Solving MT e_sol_0 for period=  8.11E+01, pol= 2
+                     ->Solver BICG not converged in     80: err=    1.925E-07
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                - Solving MT e_sol_0 for period=  6.58E+00, pol= 2
+                     ->Solver BICG not converged in     80: err=    1.192E-05
+                     ->Solver BICG not converged in     80: err=    2.084E-05
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                - Solving MT e_sol_0 for period=  4.33E+02, pol= 2
+                     ->Solver BICG not converged in     80: err=    6.543E-06
+                     ->Solver BICG not converged in     80: err=    8.927E-05
+                     ->Solver BICG not converged in     80: err=    7.768E-06
+                     ->Solver BICG not converged in     80: err=    7.810E-05
+                     ->Solver BICG not converged in     80: err=    1.068E-04
+                     ->Solver BICG not converged in     80: err=    4.025E-06
+                     ->Solver BICG not converged in     80: err=    2.665E-05
+                     ->Solver BICG not converged in     80: err=    9.910E-05
+                     ->Solver BICG not converged in     80: err=    1.347E-06
+                     ->Solver BICG not converged in     80: err=    3.905E-05
+                     ->Solver BICG not converged in     80: err=    1.925E-06
+                     ->Solver BICG not converged in     80: err=    2.123E-06
+                     ->Solver BICG not converged in     80: err=    4.283E-05
+                     ->Solver BICG not converged in     80: err=    3.809E-05
+                     ->Solver BICG not converged in     80: err=    3.783E-06
+                     ->Solver BICG not converged in     80: err=    3.864E-05
+                     ->Solver BICG not converged in     80: err=    7.850E-07
+                     ->Solver BICG not converged in     80: err=    3.840E-05
+                     ->Solver BICG not converged in     80: err=    1.598E-06
+                     ->Solver BICG not converged in     80: err=    1.288E-06
+                     ->Solver BICG not converged in     80: err=    3.742E-05
+                     ->Solver BICG not converged in     80: err=    5.499E-05
+                     ->Solver BICG not converged in     80: err=    2.146E-06
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    2.216E-05
+                     ->Solver BICG not converged in     80: err=    1.448E-05
+                     ->Solver BICG not converged in     80: err=    1.213E-06
+                     ->Solver BICG not converged in     80: err=    8.475E-07
+                     ->Solver BICG not converged in     80: err=    1.666E-05
+                     ->Solver BICG not converged in     80: err=    2.518E-05
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    8.634E-07
+                     ->Solver BICG not converged in     80: err=    3.238E-05
+                     ->Solver BICG not converged in     80: err=    8.773E-06
+                     ->Solver BICG not converged in     80: err=    5.051E-07
+                     ->Solver BICG not converged in     80: err=    6.087E-07
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    1.050E-05
+                     ->Solver BICG not converged in     80: err=    1.925E-05
+                     ->Solver BICG not converged in     80: err=    8.663E-07
+                     ->Solver BICG not converged in     80: err=    1.683E-05
+                     ->Solver BICG not converged in     80: err=    6.561E-06
+                     ->Solver BICG not converged in     80: err=    5.638E-07
+                     ->Solver BICG not converged in     80: err=    2.142E-07
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    7.540E-06
+                     ->Solver BICG not converged in     80: err=    1.342E-05
+                     ->Solver BICG not converged in     80: err=    2.067E-06
+                     ->Solver BICG not converged in     80: err=    1.885E-05
+                     ->Solver BICG not converged in     80: err=    1.241E-05
+                     ->Solver BICG not converged in     80: err=    9.170E-07
+                     ->Solver BICG converged within     73: err=    9.759E-08
+                          IT converged within    553: err=    9.759E-08
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    4.467E-06
+                     ->Solver BICG not converged in     80: err=    1.529E-05
+                     ->Solver BICG not converged in     80: err=    2.549E-07
+                     ->Solver BICG not converged in     80: err=    8.558E-06
+                     ->Solver BICG not converged in     80: err=    1.101E-05
+                     ->Solver BICG not converged in     80: err=    1.200E-06
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    3.000E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    8.451E-07
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    4.248E-06
+                     ->Solver BICG not converged in     80: err=    3.959E-07
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    2.254E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    1.655E-07
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    5.385E-06
+                     ->Solver BICG not converged in     80: err=    3.426E-07
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    4.024E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    1.458E-07
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    5.385E-06
+                     ->Solver BICG converged within     18: err=    9.561E-08
+                          IT converged within    818: err=    9.561E-08
+                     ->Solver BICG not converged in     80: err=    2.780E-07
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    4.024E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    5.385E-06
+                     ->Solver BICG not converged in     80: err=    2.780E-07
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    4.024E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    5.385E-06
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    2.780E-07
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    4.024E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    5.385E-06
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    2.780E-07
+                     ->Solver BICG not converged in     80: err=    4.024E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    5.385E-06
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+                     ->Solver BICG not converged in     80: err=    2.780E-07
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    4.024E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    1.202E-06
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                     ->Solver BICG not converged in     80: err=    5.385E-06
+                     ->Solver BICG not converged in     80: err=    2.780E-07
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    4.024E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    5.385E-06
+                     ->Solver BICG not converged in     80: err=    2.780E-07
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    4.024E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    5.385E-06
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    4.024E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    5.385E-06
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    4.024E-06
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+                     ->Solver BICG not converged in     80: err=    5.385E-06
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+                     ->Solver BICG not converged in     80: err=    4.024E-06
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                     ->Solver BICG not converged in     80: err=    1.351E-05
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                     ->Solver BICG not converged in     80: err=    1.114E-05
+ [91m# Warning:[0m createESolution_ForwardSolver_IT failed to converge!
+                   Worker    8 finished: 24m,31s                                
+                   Worker    7 finished: 24m,32s                                
+                   Worker    9 finished: 24m,32s                                
+                   Worker   10 finished: 24m,32s                                
+                   Worker    2 finished: 24m,32s                                
+                   Worker    6 finished: 24m,32s                                
+                   Worker    1 finished: 24m,32s                                
+                   Worker    5 finished: 24m,32s                                
+                   Worker    4 finished: 24m,32s                                
+                   Worker    3 finished: 24m,32s                                
+                   Worker   12 finished: 24m,32s                                
+                   Worker   11 finished: 24m,32s                                
+      - Finish jobForwardModeling
+
+ Finish ModEM-OO: 24m,31s                                                    124
+

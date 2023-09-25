@@ -440,7 +440,7 @@ contains
                 !
             class is( Grid3D_MR_t )
                 !
-                call MPI_PACK_SIZE( 3, MPI_INTEGER, main_comm, nbytes(17), ierr )
+                call MPI_PACK_SIZE( 1, MPI_INTEGER, main_comm, nbytes(17), ierr )
                 !
                 call MPI_PACK_SIZE( 4 * grid%n_grids, MPI_INTEGER, main_comm, nbytes(18), ierr ) ! coarseness
                 call MPI_PACK_SIZE( 2 * grid%n_grids, MPI_INTEGER, main_comm, nbytes(19), ierr ) ! z_limits
@@ -450,9 +450,7 @@ contains
                 call MPI_PACK_SIZE( grid%n_grids, MPI_INTEGER, main_comm, nbytes(23), ierr )
                 call MPI_PACK_SIZE( grid%n_grids, MPI_INTEGER, main_comm, nbytes(24), ierr )
                 !
-                call MPI_PACK_SIZE( size( grid%iXYZfull ), MPI_INTEGER, main_comm, nbytes(25), ierr )
-                call MPI_PACK_SIZE( size( grid%iXYZinterior ), MPI_INTEGER, main_comm, nbytes(26), ierr )
-                call MPI_PACK_SIZE( size( grid%iXYZactive ), MPI_INTEGER, main_comm, nbytes(27), ierr )
+                call MPI_PACK_SIZE( size( grid%iXYZinterior ), MPI_INTEGER, main_comm, nbytes(25), ierr )
                 !
                 do i = 1, size( grid%sub_grid )
                     grid_buffer_size = grid_buffer_size + allocateGridBuffer( grid%sub_grid(i), .TRUE. )
@@ -607,9 +605,7 @@ contains
                 call MPI_PACK( grid%NODEi(1), size( grid%NODEi ), MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( grid%NODEa(1), size( grid%NODEa ), MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 !
-                call MPI_PACK( size( grid%iXYZfull ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( size( grid%iXYZinterior ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( size( grid%iXYZactive ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 !
                 !> coarseness
                 do j = 1, 4
@@ -651,9 +647,7 @@ contains
                 call MPI_PACK( grid%n_active_cell(1), grid%n_grids, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( grid%cs(1), grid%n_grids, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 !
-                call MPI_PACK( grid%iXYZfull(1), size( grid%iXYZfull ), MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( grid%iXYZinterior(1), size( grid%iXYZinterior ), MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( grid%iXYZactive(1), size( grid%iXYZactive ), MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 !
                 do i = 1, size( grid%sub_grid )
                     call packGridBuffer( grid%sub_grid(i), parent_buffer, parent_buffer_size, index )
@@ -678,12 +672,11 @@ contains
         !
         class( Grid_t ), allocatable :: aux_grid
         !
-        integer :: i, j, &
+        integer :: i, j, grid_iXYZinterior, &
         grid_dx, grid_dy, grid_dz, grid_dx_inv, grid_dy_inv, grid_dz_inv, &
         grid_del_x, grid_del_y, grid_del_z, grid_del_x_inv, grid_del_y_inv, grid_del_z_inv, &
         grid_x_edge, grid_y_edge, grid_z_edge, grid_x_center, grid_y_center, grid_z_center, &
-        grid_EDGEb, grid_EDGEi, grid_EDGEa, grid_FACEb, grid_FACEi, grid_FACEa, grid_NODEb, grid_NODEi, grid_NODEa, &
-        grid_iXYZfull, grid_iXYZinterior, grid_iXYZactive
+        grid_EDGEb, grid_EDGEi, grid_EDGEa, grid_FACEb, grid_FACEi, grid_FACEa, grid_NODEb, grid_NODEi, grid_NODEa
         !
         ! Commom Sizes
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid_dx, 1, MPI_INTEGER, main_comm, ierr )
@@ -896,9 +889,7 @@ contains
                         allocate( grid%NODEa( grid_NODEa ) )
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%NODEa(1), grid_NODEa, MPI_INTEGER, main_comm, ierr )
                         !
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid_iXYZfull, 1, MPI_INTEGER, main_comm, ierr )
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid_iXYZinterior, 1, MPI_INTEGER, main_comm, ierr )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid_iXYZactive, 1, MPI_INTEGER, main_comm, ierr )
                         !
                         !> coarseness
                         allocate( grid%coarseness( grid%n_grids, 4 ) )
@@ -949,14 +940,8 @@ contains
                         allocate( grid%cs( grid%n_grids ) )
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%cs(1), grid%n_grids, MPI_INTEGER, main_comm, ierr )
                         !
-                        allocate( grid%iXYZfull( grid_iXYZfull ) )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%iXYZfull(1), grid_iXYZfull, MPI_INTEGER, main_comm, ierr )
-                        !
                         allocate( grid%iXYZinterior( grid_iXYZinterior ) )
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%iXYZinterior(1), grid_iXYZinterior, MPI_INTEGER, main_comm, ierr )
-                        !
-                        allocate( grid%iXYZactive( grid_iXYZactive ) )
-                        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, grid%iXYZactive(1), grid_iXYZactive, MPI_INTEGER, main_comm, ierr )
                         !
                         allocate( grid%sub_grid( grid%n_grids ) )
                         do i = 1, grid%n_grids

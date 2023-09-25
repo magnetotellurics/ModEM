@@ -59,13 +59,15 @@ contains
         !layers = (/ 1, 11 /)
         !> MR AS ONE SUB-GRID
         layers = (/ 0, 40 /)
+        !layers = (/ 0, 20, 0, 20 /)
+        !layers = (/ 0, 10, 0, 10, 0, 10, 0, 10 /)
         !
         someChar = ""
         paramType = ""
         someIndex = 0
         ALPHA = 3.0
         !
-        open( newunit = ioPrm, file = trim(file_name),status = "old", iostat = io_stat )
+        open( newunit = ioPrm, file = trim( file_name ), status = "old", iostat = io_stat )
         !
         if( io_stat == 0 ) then
             !

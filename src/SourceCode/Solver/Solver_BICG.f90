@@ -335,7 +335,7 @@ contains
             !
             TT = T%dotProd( T )
             !
-            if( TT .eq. 0.0 ) then
+            if( TT .EQ. 0.0 ) then
                 !
                 call errStop( "solve_Solver_BICG > TT .eq. 0.0" )
                 !
@@ -389,13 +389,13 @@ contains
             !write( *, "( a36, i6, a3, es12.3 )" ) "BICG iter: ", self%iter, " : ", self%relErr( self%iter )
             !
         enddo
-        ! !
-        ! if( self%converged ) then
-            ! write( *, "( a52, i6, a7, es12.3 )" ) "->Solver BICG converged within ", self%iter, ": err= ", self%relErr( self%iter )
-        ! else
-            ! write( *, "( a52, i6, a7, es12.3 )" ) "->Solver BICG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
-        ! endif
-        ! !
+        !
+        if( self%converged ) then
+            write( *, "( a52, i6, a7, es12.3 )" ) "->Solver BICG converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        else
+            write( *, "( a52, i6, a7, es12.3 )" ) "->Solver BICG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        endif
+        !
         if( .NOT. self%converged ) then
             ! it should be noted that this is the way my matlab version works
             ! the bicg will return the 'best' (smallest residual) iteration

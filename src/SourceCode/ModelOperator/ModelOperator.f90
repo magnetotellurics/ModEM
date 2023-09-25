@@ -220,6 +220,8 @@ contains
         !
         class( ModelOperator_t ), intent( inout ) :: self
         !
+        if( associated( self%metric ) ) deallocate( self%metric )
+        !
     end subroutine baseDealloc_ModelOperator
     !
 end module ModelOperator

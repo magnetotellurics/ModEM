@@ -66,9 +66,7 @@ contains
         !
         nzAir = 0
         !
-        allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
-        ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
-        grid%dz( grid%nzAir+1:grid%nz ) ) )
+        allocate( self%param_grid, source = grid )
         !
         self%anisotropic_level = anisotropic_level
         !
@@ -113,9 +111,7 @@ contains
         !
         nzAir = 0
         !
-        allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
-                ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
-                grid%dz( grid%nzAir+1:grid%nz ) ) )
+        allocate( self%param_grid, source = grid )
         !
         self%anisotropic_level = size( cell_cond )
         !

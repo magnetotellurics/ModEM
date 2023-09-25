@@ -30,8 +30,6 @@ module rVector3D_MR
             procedure, public :: lengthFull => lengthFull_rVector3D_MR
             procedure, public :: findFull => findFull_rVector3D_MR
             !
-            procedure, public :: findValue => findValue_rVector3D_MR
-            !
             procedure, public :: MRtoSG => MRtoSG_rVector3D_MR
             procedure, public :: SGtoMRE0 => SGtoMRE0_rVector3D_MR
             !
@@ -148,11 +146,11 @@ contains
                     !
                     self%sub_vector(i) = rVector3D_SG_t( grid%sub_grid(i), self%grid_type )
                     !
-                    !write( *, * ) "SubVector", i, "-nx=", self%sub_vector(i)%nx, ", ny=", self%sub_vector(i)%ny, "nz=", self%sub_vector(i)%nz
+                    !write( *, * ) "rSubVector", i, "-nx=", self%sub_vector(i)%nx, ", ny=", self%sub_vector(i)%ny, "nz=", self%sub_vector(i)%nz
                     !
                 enddo
                 !
-                !write( *, * ) "MainVector-nx=", self%nx, ", ny=", self%ny, "nz=", self%nz, self%nx*self%ny*self%nz
+                !write( *, * ) "rMainVector-nx=", self%nx, ", ny=", self%ny, "nz=", self%nz, self%nx*self%ny*self%nz
                 !
             class default
                 call errStop( "initializeSub_rVector3D_MR > Unclassified grid" )
@@ -425,53 +423,16 @@ contains
         !
     end function findFull_rVector3D_MR
     !
-    !> No subroutine briefing
-    !
-    subroutine findValue_rVector3D_MR( self, I, c )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( in ) :: self
-        integer, allocatable, intent( out ) :: I(:)
-        real( kind=prec ), intent( in ) :: c
-        !
-        real( kind=prec ), allocatable :: v(:)
-        integer :: n, n_I, k
-        real( kind=prec ) :: TOL
-        !
-        TOL = 1E-5
-        !
-        n = self%length()
-        allocate( v(n))
-        v = self%getArray()
-        !
-        n_I = 0
-        do k = 1, n
-            if( abs( v(k) - c ) / abs(c) <= TOL ) n_I = n_I + 1
-        enddo
-        !
-        allocate( I( n_I ) )
-        !
-        n_I = 0
-        do k = 1, n
-            if( abs( v(k) - c ) / abs(c) <= TOL ) then
-                n_I = n_I + 1
-                I(n_I) = k
-            endif
-        enddo
-        !
-    end subroutine findValue_rVector3D_MR
-    !
     !> Convert an MR TVector to a full SG, filling in the full fine grid.
     !> Converts MR Vector object to SG
     !> copying from variable resolution sub-grids to completely fill in the
     !> underlying fine grid.
     !
-    subroutine MRtoSG_rVector3D_MR( self, sg_v, sg_grid )
+    subroutine MRtoSG_rVector3D_MR( self, sg_v )
         implicit none
         !
         class( rVector3D_MR_t ), intent( in ) :: self
         type( rVector3D_SG_t ), intent( inout ) :: sg_v
-        class( Grid_t ), pointer, intent( in ) :: sg_grid
         !
         type( rVector3D_SG_t ) :: temp
         integer :: x_nx, x_ny, x_nz
@@ -480,7 +441,7 @@ contains
         integer :: last, Cs, i1, i2, i, k
         real( kind=prec ) :: w1, w2
         !
-        temp = rVector3D_SG_t( sg_grid, self%grid_type )
+        temp = rVector3D_SG_t( self%grid, self%grid_type )
         !
         temp%x = 0; temp%y = 0; temp%z = 0
         !
@@ -556,7 +517,7 @@ contains
                             !
                             sg_v%x(:, :, i1:i2+1) = sg_v%x(:, :, i1:i2+1) + temp%x(:, :, i1:i2+1)
                             sg_v%y(:, :, i1:i2+1) = sg_v%y(:, :, i1:i2+1) + temp%y(:, :, i1:i2+1)
-                            sg_v%z(:, :, i1:i2)   = sg_v%z(:, :, i1:i2)
+                            sg_v%z(:, :, i1:i2)   = temp%z(:, :, i1:i2)
                             !
                         enddo
                         !
@@ -1225,97 +1186,97 @@ contains
         integer :: v_xend, v_yend, v_zend
         integer :: i, ix, iy, iz
         !
-        call errStop( "sumCell_rVector3D_MR > Under implementation" )
-        ! !
-        ! if( .NOT. self%is_allocated ) then
-             ! call errStop( "sumCell_rVector3D_MR > self not allocated." )
-        ! endif
-        ! !
-        ! if( .NOT. cell_in%is_allocated ) then
-             ! call errStop( "sumCell_rVector3D_MR > cell_in not allocated." )
-        ! endif
-        ! !
-        ! if( index( self%grid_type, CELL ) > 0 ) then
-            ! call errStop( "sumCell_rVector3D_MR > Only CELL type supported." )
-        ! endif
-        ! !
-        ! if( .NOT. present( ptype ) ) then
-            ! grid_type = EDGE
-        ! else
-            ! grid_type = ptype
-        ! endif
-        ! !
-        ! select type( cell_in )
-            ! !
-            ! class is( rScalar3D_MR_t )
-                ! !
-                ! call self%switchStoreState( compound )
-                ! !
-                ! do i = 1, self%grid%getNgrids()
-                    ! !
-                    ! cell_in_v = cell_in%sub_scalar(i)%v
-                    ! !
-                    ! v_xend = size( cell_in_v, 1 )
-                    ! v_yend = size( cell_in_v, 2 )
-                    ! v_zend = size( cell_in_v, 3 )
-                    ! !
-                    ! select case( grid_type )
-                        ! !
-                        ! case( EDGE )
-                            ! !
-                            ! !> for x-components inside the domain
-                            ! do ix = 1, self%sub_vector(i)%grid%nx
-                                ! do iy = 2, self%sub_vector(i)%grid%ny
-                                    ! do iz = 2, self%sub_vector(i)%grid%nz
-                                        ! self%sub_vector(i)%x(ix, iy, iz) = ( cell_in_v(ix, iy-1, iz-1) + cell_in_v(ix, iy, iz-1) + &
-                                        ! cell_in_v(ix, iy-1, iz) + cell_in_v(ix, iy, iz) ) / 4.0d0
-                                    ! enddo
-                                ! enddo
-                            ! enddo
-                            ! !
-                            ! !> for y-components inside the domain
-                            ! do ix = 2, self%sub_vector(i)%grid%nx
-                                ! do iy = 1, self%sub_vector(i)%grid%ny
-                                    ! do iz = 2, self%sub_vector(i)%grid%nz
-                                        ! self%sub_vector(i)%y(ix, iy, iz) = ( cell_in_v(ix-1, iy, iz-1) + cell_in_v(ix, iy, iz-1) + &
-                                        ! cell_in_v(ix-1, iy, iz) + cell_in_v(ix, iy, iz) ) / 4.0d0
-                                    ! enddo
-                                ! enddo
-                            ! enddo
-                            ! !
-                            ! !> for z-components inside the domain
-                            ! do ix = 2, self%sub_vector(i)%grid%nx
-                                ! do iy = 2, self%sub_vector(i)%grid%ny
-                                    ! do iz = 1, self%sub_vector(i)%grid%nz
-                                        ! self%sub_vector(i)%z(ix, iy, iz) = ( cell_in_v(ix-1, iy-1, iz) + cell_in_v(ix-1, iy, iz) + &
-                                        ! cell_in_v(ix, iy-1, iz) + cell_in_v(ix, iy, iz) ) / 4.0d0
-                                    ! enddo
-                                ! enddo
-                            ! enddo
-                            ! !
-                        ! case( FACE )
-                            ! !
-                            ! xend = size(self%sub_vector(i)%x, 1)
-                            ! self%sub_vector(i)%x(2:xend-1,:,:) = cell_in_v(1:v_xend-1,:,:) + cell_in_v(2:v_xend,:,:)
-                            ! !
-                            ! yend = size(self%sub_vector(i)%y, 1)
-                            ! self%sub_vector(i)%y(:, 2:yend-1, :) = cell_in_v(:, 1:v_yend-1, :) + cell_in_v(:, 2:v_yend, :)
-                            ! !
-                            ! zend = size(self%sub_vector(i)%z, 1) 
-                            ! self%sub_vector(i)%z(:, :, 2:zend-1) = cell_in_v(:, :, 1:v_zend-1) + cell_in_v(:, :, 2:v_zend)
-                            ! !
-                        ! case default
-                            ! call errStop( "sumCell_rVector3D_MR: Unknown type" )
-                        ! !
-                    ! end select !type
-                    ! !
-                ! enddo
-            ! !
-            ! class default
-                ! call errStop( "sumCell_rVector3D_MR > Unclassified cell_in" )
-            ! !
-        ! end select
-        ! !
+        !call errStop( "sumCell_rVector3D_MR > Under implementation" )
+        !
+        if( .NOT. self%is_allocated ) then
+             call errStop( "sumCell_rVector3D_MR > self not allocated." )
+        endif
+        !
+        if( .NOT. cell_in%is_allocated ) then
+             call errStop( "sumCell_rVector3D_MR > cell_in not allocated." )
+        endif
+        !
+        if( index( self%grid_type, CELL ) > 0 ) then
+            call errStop( "sumCell_rVector3D_MR > Only CELL type supported." )
+        endif
+        !
+        if( .NOT. present( ptype ) ) then
+            grid_type = EDGE
+        else
+            grid_type = ptype
+        endif
+        !
+        select type( cell_in )
+            !
+            class is( rScalar3D_MR_t )
+                !
+                call self%switchStoreState( compound )
+                !
+                do i = 1, self%grid%getNgrids()
+                    !
+                    cell_in_v = cell_in%sub_scalar(i)%v
+                    !
+                    v_xend = size( cell_in_v, 1 )
+                    v_yend = size( cell_in_v, 2 )
+                    v_zend = size( cell_in_v, 3 )
+                    !
+                    select case( grid_type )
+                        !
+                        case( EDGE )
+                            !
+                            !> for x-components inside the domain
+                            do ix = 1, self%sub_vector(i)%grid%nx
+                                do iy = 2, self%sub_vector(i)%grid%ny
+                                    do iz = 2, self%sub_vector(i)%grid%nz
+                                        self%sub_vector(i)%x(ix, iy, iz) = ( cell_in_v(ix, iy-1, iz-1) + cell_in_v(ix, iy, iz-1) + &
+                                        cell_in_v(ix, iy-1, iz) + cell_in_v(ix, iy, iz) )! / 4.0d0
+                                    enddo
+                                enddo
+                            enddo
+                            !
+                            !> for y-components inside the domain
+                            do ix = 2, self%sub_vector(i)%grid%nx
+                                do iy = 1, self%sub_vector(i)%grid%ny
+                                    do iz = 2, self%sub_vector(i)%grid%nz
+                                        self%sub_vector(i)%y(ix, iy, iz) = ( cell_in_v(ix-1, iy, iz-1) + cell_in_v(ix, iy, iz-1) + &
+                                        cell_in_v(ix-1, iy, iz) + cell_in_v(ix, iy, iz) )! / 4.0d0
+                                    enddo
+                                enddo
+                            enddo
+                            !
+                            !> for z-components inside the domain
+                            do ix = 2, self%sub_vector(i)%grid%nx
+                                do iy = 2, self%sub_vector(i)%grid%ny
+                                    do iz = 1, self%sub_vector(i)%grid%nz
+                                        self%sub_vector(i)%z(ix, iy, iz) = ( cell_in_v(ix-1, iy-1, iz) + cell_in_v(ix-1, iy, iz) + &
+                                        cell_in_v(ix, iy-1, iz) + cell_in_v(ix, iy, iz) )! / 4.0d0
+                                    enddo
+                                enddo
+                            enddo
+                            !
+                        case( FACE )
+                            !
+                            xend = size(self%sub_vector(i)%x, 1)
+                            self%sub_vector(i)%x(2:xend-1,:,:) = cell_in_v(1:v_xend-1,:,:) + cell_in_v(2:v_xend,:,:)
+                            !
+                            yend = size(self%sub_vector(i)%y, 1)
+                            self%sub_vector(i)%y(:, 2:yend-1, :) = cell_in_v(:, 1:v_yend-1, :) + cell_in_v(:, 2:v_yend, :)
+                            !
+                            zend = size(self%sub_vector(i)%z, 1) 
+                            self%sub_vector(i)%z(:, :, 2:zend-1) = cell_in_v(:, :, 1:v_zend-1) + cell_in_v(:, :, 2:v_zend)
+                            !
+                        case default
+                            call errStop( "sumCell_rVector3D_MR: Unknown type" )
+                        !
+                    end select !type
+                    !
+                enddo
+            !
+            class default
+                call errStop( "sumCell_rVector3D_MR > Unclassified cell_in" )
+            !
+        end select
+        !
     end subroutine sumCell_rVector3D_MR
     !
     !> No subroutine briefing
@@ -2058,44 +2019,48 @@ contains
             !
             call self%switchStoreState( rhs%store_state )
             !
-            select type( rhs )
+            do i = 1, self%grid%getNGrids()
                 !
-                class is( rVector3D_MR_t )
+                select type( rhs )
                     !
-                    if( rhs%store_state .EQ. compound ) then
+                    class is( rVector3D_MR_t )
                         !
-                        self%sub_vector(i)%x = self%sub_vector(i)%x / rhs%sub_vector(i)%x
-                        self%sub_vector(i)%y = self%sub_vector(i)%y / rhs%sub_vector(i)%y
-                        self%sub_vector(i)%z = self%sub_vector(i)%z / rhs%sub_vector(i)%z
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            self%sub_vector(i)%x = self%sub_vector(i)%x / rhs%sub_vector(i)%x
+                            self%sub_vector(i)%y = self%sub_vector(i)%y / rhs%sub_vector(i)%y
+                            self%sub_vector(i)%z = self%sub_vector(i)%z / rhs%sub_vector(i)%z
+                            !
+                        elseif( rhs%store_state .EQ. singleton ) then
+                            !
+                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_vector(i)%s_v
+                            !
+                        else
+                            call errStop( "divByField_rVector3D_MR > Unknown rhs store_state!" )
+                        endif
                         !
-                    elseif( rhs%store_state .EQ. singleton ) then
+                    class is( rScalar3D_MR_t )
                         !
-                        self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_vector(i)%s_v
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            self%sub_vector(i)%x = self%sub_vector(i)%x / rhs%sub_scalar(i)%v
+                            self%sub_vector(i)%y = self%sub_vector(i)%y / rhs%sub_scalar(i)%v
+                            self%sub_vector(i)%z = self%sub_vector(i)%z / rhs%sub_scalar(i)%v
+                            !
+                        elseif( rhs%store_state .EQ. singleton ) then
+                            !
+                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_scalar(i)%s_v
+                            !
+                        else
+                            call errStop( "divByField_rVector3D_MR > Unknown rhs store_state!" )
+                        endif
                         !
-                    else
-                        call errStop( "divByField_rVector3D_MR > Unknown rhs store_state!" )
-                    endif
+                    class default
+                        call errStop( "divByField_rVector3D_MR: undefined rhs" )
                     !
-                class is( rScalar3D_MR_t )
-                    !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%sub_vector(i)%x = self%sub_vector(i)%x / rhs%sub_scalar(i)%v
-                        self%sub_vector(i)%y = self%sub_vector(i)%y / rhs%sub_scalar(i)%v
-                        self%sub_vector(i)%z = self%sub_vector(i)%z / rhs%sub_scalar(i)%v
-                        !
-                    elseif( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_scalar(i)%s_v
-                        !
-                    else
-                        call errStop( "divByField_rVector3D_MR > Unknown rhs store_state!" )
-                    endif
-                    !
-                class default
-                    call errStop( "divByField_rVector3D_MR: undefined rhs" )
+                end select
                 !
-            end select
+            enddo
             !
         else
             call errStop( "divByField_rVector3D_MR: incompatible rhs" )
@@ -2113,15 +2078,7 @@ contains
         character, intent( in ) :: xyz
         class( Vector_t ), allocatable, intent( inout ) :: interp
         !
-        type( rVector3D_MR_t ) :: temp_interp
-        !
         call errStop( "interpFunc_rVector3D_MR still not implemented" )
-        !
-        !> FIND THE i_grid SUBGRID FROM location(3) THEN self%sub_vector(i_grid)%interpFunc( 
-        !
-        temp_interp = self
-        !
-        allocate( interp, source = temp_interp )
         !
     end subroutine interpFunc_rVector3D_MR
     !

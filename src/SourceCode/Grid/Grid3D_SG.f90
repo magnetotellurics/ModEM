@@ -64,33 +64,10 @@ module Grid3D_SG
     end type Grid3D_SG_t
     !
     interface Grid3D_SG_t
-        module procedure Grid3D_SG_t_ctor_n
         module procedure Grid3D_SG_t_ctor_n_d
     end interface Grid3D_SG_t
     !
 contains
-    !
-    !> Class constructor for simple tensor product grid
-    !> Usage obj = Grid_t3D(Dx,Dy,Dz,Nza)
-    !> Dx, Dy, Dz are cell dimensions for x, y, z direction
-    !> Nza is number of air layers to allow(included in Dz)
-    !
-    function Grid3D_SG_t_ctor_n( nx, ny, nzAir, nzEarth ) result( self )
-        implicit none
-        !
-        integer, intent( in ) :: nx, ny, nzAir, nzEarth
-        !
-        type( Grid3D_SG_t ) :: self
-        !
-        !write( *, * ) "Constructor_n Grid3D_SG_t"
-        !
-        self%n_grids = 1
-        !
-        call self%baseInit
-        !
-        call self%create( nx, ny, nzAir, nzEarth )
-        !
-    end function Grid3D_SG_t_ctor_n
     !
     !> Class constructor for simple tensor product grid
     !> Usage obj = Grid_t3D(Dx,Dy,Dz,Nza)
@@ -234,7 +211,7 @@ contains
         !
         self%x_edge(1) = ox
         self%y_edge(1) = oy
-        self%z_edge(1) = 0.0 !> ALWAYS BE ZERO ???? BEFORE WAS oz
+        self%z_edge(1) = oz !> ALWAYS BE ZERO ???? BEFORE WAS oz
         !
         xCum = R_ZERO
         yCum = R_ZERO
@@ -428,6 +405,8 @@ contains
         class( Grid3D_SG_t ), intent( inout ) :: self
         class( Grid_t ), intent( in ) :: rhs
         !
+        write( *, * ) "copyFrom_Grid3D_SG"
+        !
         if( .NOT. rhs%is_allocated ) then
             call errStop( "copyFrom_Grid3D_SG > rhs not allocated" )
         endif
@@ -504,7 +483,7 @@ contains
         !
     end subroutine copyFrom_Grid3D_SG
     !
-    !
+    !> No subroutine briefing
     !
     subroutine write_Grid3D_SG( self )
         implicit none
@@ -545,3 +524,4 @@ contains
     end subroutine write_Grid3D_SG
     !
 end module Grid3D_SG
+!

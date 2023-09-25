@@ -77,6 +77,8 @@ module Field
             !
             procedure, public :: isCompatible => isCompatible_Field
             !
+            procedure, public :: findValue => findValue_Field
+            !
             procedure, public :: setIndexArrays => setIndexArrays_Field
             !
             procedure, public :: indInterior => indInterior_Field
@@ -393,6 +395,40 @@ contains
         endif
         !
     end function isCompatible_Field
+    !
+    !> No function briefing
+    !
+    function findValue_Field( self, c ) result( I )
+        implicit none
+        !
+        class( Field_t ), intent( in ) :: self
+        real( kind=prec ), intent( in ) :: c
+        !
+        integer, allocatable, dimension(:) :: I
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: v
+        integer :: n, n_I, k
+        !
+        n = self%length()
+        allocate( v(n) )
+        v = self%getArray()
+        !
+        n_I = 0
+        do k = 1, n
+            if( real( v(k), kind=prec ) == c ) n_I = n_I + 1
+        enddo
+        !
+        allocate( I(n_I) )
+        !
+        n_I = 0
+        do k = 1, n
+            if( real( v(k), kind=prec ) == c ) then
+                n_I = n_I + 1
+                I(n_I) = k
+            endif
+        enddo
+        !
+    end function findValue_Field
     !
     !> Defines the index arrays: ind_interior and ind_boundary.
     !>     Create copy with zeros and value boundaries with C_ONE.

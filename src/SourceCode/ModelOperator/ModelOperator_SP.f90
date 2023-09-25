@@ -18,7 +18,7 @@ module ModelOperator_SP
         !
         type( spMatCSR_Real ) :: VDiv ! div : edges->nodes (interior only)
         type( spMatCSR_Real ) :: VDsG ! operator for div correction
-        type( spMatCSR_Real ) :: Ds  ! divergence of current operator
+        type( spMatCSR_Real ) :: Ds ! divergence of current operator
         !
         type( spMatCSR_Real ) :: VDsG_L, VDsG_U
         !
@@ -602,6 +602,8 @@ contains
         !> and the curl and grad self%topology matrices
         call deall_spMatCSR( self%topology%T )
         call deall_spMatCSR( self%topology%G )
+        !
+        if( allocated( self%topology ) ) deallocate( self%topology )
         !
         call deall_spMatCSR( self%Gd )
         call deall_spMatCSR( self%D )

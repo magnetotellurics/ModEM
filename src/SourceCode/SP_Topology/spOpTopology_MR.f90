@@ -426,8 +426,8 @@ contains
         !
         !> First do the edges that coincide with coarse(active) edges.
         !
-        call vecC1%findValue( indXcoarse, 1.0_prec )
-        call vecC1%findValue( indYcoarse, 2.0_prec )
+        indXcoarse = vecC1%findValue( 1.0_prec )
+        indYcoarse = vecC1%findValue( 2.0_prec )
         !
         n = size(C) + 2 * size( indXcoarse ) + 2 * size( indYcoarse )
         allocate(Ctmp(n))
@@ -455,10 +455,10 @@ contains
         !
         !> Next fill in fine grid edges that subdivide coarse face.
         !
-        call vecC2%findValue( indXcoarse1, 1.0_prec )
-        call vecC3%findValue( indXcoarse2, 1.0_prec )
-        call vecC2%findValue( indYcoarse1, 2.0_prec )
-        call vecC3%findValue( indYcoarse2, 2.0_prec )
+        indXcoarse1 = vecC2%findValue( 1.0_prec )
+        indXcoarse2 = vecC3%findValue( 1.0_prec )
+        indYcoarse1 = vecC2%findValue( 2.0_prec )
+        indYcoarse2 = vecC3%findValue( 2.0_prec )
         !
         n = size(C) + 2 * ( size( indXcoarse1 ) + size( indXcoarse2 ) ) + &
         2 * ( size( indYcoarse1 ) + size( indYcoarse2 ) )
@@ -524,7 +524,7 @@ contains
         ! Local variables
         type(spMatIJS_Real) :: G1_ijs
         type(rScalar3D_MR_t) :: vecR, vecC(9)
-
+        !
         integer, dimension(:), allocatable :: R, C
         real(kind=prec), dimension(:), allocatable :: S
         integer, dimension(:), allocatable :: Rtmp, Ctmp

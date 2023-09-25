@@ -492,7 +492,7 @@ contains
         !
         integer :: n
         !
-        stop "Error: length_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "length_cVectorSparse3D_SG not implemented yet!" )
         !
     end function length_cVectorSparse3D_SG
     !

@@ -29,8 +29,6 @@ module cScalar3D_MR
             procedure, public :: lengthFull => lengthFull_cScalar3D_MR
             procedure, public :: findFull => findFull_cScalar3D_MR
             !
-            procedure, public :: findValue => findValue_cScalar3D_MR
-            !
             procedure, public :: MRtoSG => MRtoSG_cScalar3D_MR
             procedure, public :: divFine => divFine_cScalar3D_MR
             !
@@ -96,7 +94,7 @@ contains
         !
         type( cScalar3D_MR_t ) :: self
         !
-        integer :: i, nx, ny, nz, nzAir, nz_earth, alloc_stat
+        integer :: nzAir
         !
         call self%baseInit
         !
@@ -104,12 +102,7 @@ contains
         self%grid_type = grid_type
         !
         !> Grid dimensions
-        call self%grid%getDimensions( nx, ny, nz, nzAir )
-        nz_earth = nz - nzAir
-        !
-        self%nx = nx
-        self%ny = ny
-        self%nz = nz
+        call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
         !
         call self%initializeSub
         !
@@ -140,11 +133,11 @@ contains
                     !
                     self%sub_scalar(i) = rScalar3D_SG_t( grid%sub_grid(i), self%grid_type )
                     !
-                    !write( *, * ) "SubScalar", i, "-nx=", self%sub_scalar(i)%nx, ", ny=", self%sub_scalar(i)%ny, "nz=", self%sub_scalar(i)%nz
+                    !write( *, * ) "cSubScalar", i, "-nx=", self%sub_scalar(i)%nx, ", ny=", self%sub_scalar(i)%ny, "nz=", self%sub_scalar(i)%nz
                     !
                 enddo
                 !
-                !write( *, * ) "MainScalar-nx=", self%nx, ", ny=", self%ny, "nz=", self%nz, self%nx*self%ny*self%nz
+                !write( *, * ) "cMainScalar-nx=", self%nx, ", ny=", self%ny, "nz=", self%nz, self%nx*self%ny*self%nz
                 !
             class default
                 call errStop( "initializeSub_cScalar3D_MR > Unclassified grid" )
@@ -405,39 +398,6 @@ contains
         !
     end function findFull_cScalar3D_MR
     !
-    !> No function briefing
-    !
-    function findValue_cScalar3D_MR(self, c) result( I )
-        implicit none
-        !
-        class( cScalar3D_MR_t ), intent( in ) :: self
-        real( kind=prec ), intent( in ) :: c
-        !
-        integer, dimension(:), allocatable :: I
-        real( kind=prec ), dimension(:), allocatable :: v
-        integer :: n, n_I, k
-        !
-        n = self%length()
-        allocate( v(n) )
-        v = self%getArray()
-        !
-        n_I = 0
-        do k = 1, n
-            if( v(k) == c ) n_I = n_I + 1
-        enddo
-        !
-        allocate( I(n_I) )
-        !
-        n_I = 0
-        do k = 1, n
-            if( v(k) == c ) then
-                n_I = n_I + 1
-                I(n_I) = k
-            endif
-        enddo
-        !
-    end function findValue_cScalar3D_MR
-    !
     !> MRtoSG
     !
     !> input self is of class rScalar3D_MR , output SGscalar isi of class rScalar3D_SG
@@ -452,7 +412,7 @@ contains
         integer :: i_grid, i, j, k, z, cs
         integer :: i1, i2, j1, j2, k1, k2
         !
-        scalar_sg = cScalar3D_SG_t( self%grid, NODE )
+        scalar_sg = cScalar3D_SG_t( self%grid, self%grid_type )
         !
         select type( grid => self%grid )
             !
