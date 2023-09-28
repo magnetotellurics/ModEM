@@ -1,32 +1,32 @@
 !
-!> Derived class to define a SourceInteriorForce
+!> Derived class to define a SourceAdjoint
 !> Based on a pre-determined Eletric Field (E)
 !
-module SourceInteriorForce
+module SourceAdjoint
     !
     use Source
     !
-    type, extends( Source_t ) :: SourceInteriorForce_t
+    type, extends( Source_t ) :: SourceAdjoint_t
         !
         !> No derived properties
         !
         contains
             !
-            procedure, public :: createE => createE_SourceInteriorForce
+            procedure, public :: createE => createE_SourceAdjoint
             !
-            procedure, public :: createRHS => createRHS_SourceInteriorForce
+            procedure, public :: createRHS => createRHS_SourceAdjoint
             !
-    end type SourceInteriorForce_t
+    end type SourceAdjoint_t
     !
-    interface SourceInteriorForce_t
-        module procedure SourceInteriorForce_ctor
-    end interface SourceInteriorForce_t
+    interface SourceAdjoint_t
+        module procedure SourceAdjoint_ctor
+    end interface SourceAdjoint_t
     !
 contains
     !
-    !> SourceInteriorForce constructor
+    !> SourceAdjoint constructor
     !
-    function SourceInteriorForce_ctor( model_operator, sigma, period, for_transpose ) result( self )
+    function SourceAdjoint_ctor( model_operator, sigma, period, for_transpose ) result( self )
         implicit none
         !
         class( ModelOperator_t ), target, intent( in ) :: model_operator
@@ -34,9 +34,9 @@ contains
         real( kind=prec ), intent( in ) :: period
         logical, optional, intent( in ) :: for_transpose
         !
-        type( SourceInteriorForce_t ) :: self
+        type( SourceAdjoint_t ) :: self
         !
-        !write( *, * ) "Constructor SourceInteriorForce_t"
+        !write( *, * ) "Constructor SourceAdjoint_t"
         !
         call self%baseInit
         !
@@ -60,26 +60,26 @@ contains
         !
         self%non_zero_bc = .TRUE.
         !
-    end function SourceInteriorForce_ctor
+    end function SourceAdjoint_ctor
     !
     !> Dummy subroutine
     !> not to be implemented for this Source type
     !
-    subroutine createE_SourceInteriorForce( self )
+    subroutine createE_SourceAdjoint( self )
         implicit none
         !
-        class( SourceInteriorForce_t ), intent( inout ) :: self
+        class( SourceAdjoint_t ), intent( inout ) :: self
         !
-        call errStop( "createE_SourceInteriorForce not to be implemented" )
+        call errStop( "createE_SourceAdjoint not to be implemented" )
         !
-    end subroutine createE_SourceInteriorForce
+    end subroutine createE_SourceAdjoint
     !
     !> Build the proper Source RHS from its E
     !
-    subroutine createRHS_SourceInteriorForce( self )
+    subroutine createRHS_SourceAdjoint( self )
         implicit none
         !
-        class( SourceInteriorForce_t ), intent( inout ) :: self
+        class( SourceAdjoint_t ), intent( inout ) :: self
         !
         integer :: pol
         type( cVector3D_MR_t ) :: temp_vec_mr
@@ -106,7 +106,7 @@ contains
                     allocate( self%rhs( pol )%v, source = temp_vec_mr )
                     !
                 class default
-                    call errStop( "createRHS_SourceInteriorForce > model_operator must be SP V1 or V2" )
+                    call errStop( "createRHS_SourceAdjoint > model_operator must be SP V1 or V2" )
                 !
             end select
             !
@@ -123,6 +123,6 @@ contains
             !
         enddo
         !
-    end subroutine createRHS_SourceInteriorForce
+    end subroutine createRHS_SourceAdjoint
     !
-end module SourceInteriorForce
+end module SourceAdjoint

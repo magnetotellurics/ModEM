@@ -1098,7 +1098,6 @@ contains
         !
         integer :: i, param_type_size
         class( Scalar_t ), allocatable :: cell_cond
-        class( Grid_t ), allocatable :: aux_grid
         !
         param_type_size = 0
         !
@@ -1127,9 +1126,7 @@ contains
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%air_cond, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                         !
-                        call unpackGridBuffer( aux_grid, parent_buffer, parent_buffer_size, index )
-                        !
-                        allocate( model%param_grid, source = aux_grid )
+                        call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                         !
                         allocate( model%cell_cond( model%anisotropic_level ) )
                         !
@@ -1169,9 +1166,7 @@ contains
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%air_cond, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
                         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, model%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                         !
-                        call unpackGridBuffer( aux_grid, parent_buffer, parent_buffer_size, index )
-                        !
-                        allocate( model%param_grid, source = aux_grid )
+                        call unpackGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
                         !
                         allocate( model%cell_cond( model%anisotropic_level ) )
                         !

@@ -21,7 +21,7 @@ module CoreComponents
     use SourceMT_2D
     use SourceCSEM_EM1D
     use SourceCSEM_Dipole1D
-    use SourceInteriorForce
+    use SourceAdjoint
     !
     use ReceiverFullImpedance
     use ReceiverFullVerticalMagnetic
@@ -794,7 +794,7 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A36)" ) "solver_type [QMR|BICG]      : QMR"
+            write( ioFwdTmp, "(A36)" ) "solver_type [QMR|BICG]         : QMR"
             write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A35)" ) "max_solver_iters [80]          : 80"
             write( ioFwdTmp, "(A35)" ) "max_solver_calls [20]          : 20"

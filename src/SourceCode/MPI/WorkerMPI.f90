@@ -177,7 +177,7 @@ contains
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
-        !> Switch Transmitter's source to SourceInteriorForce from PMult
+        !> Switch Transmitter's source to SourceAdjoint from PMult
         call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
         !
         !> Solve e_sens with the new Source
@@ -201,7 +201,7 @@ contains
     !> Receive data_tx from master process
     !> Calculate tx_dsigma for the data_tx's transmitter with JMult_T_Tx
     !>     Create a rhs from LRows * residual data for all receivers related to the transmitter.
-    !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
+    !>     Solve ESens on the transmitter using a transpose SourceAdjoint, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
     !> Send dsigma%cell_cond_h to master process
     !> Require previous call of workerSolve or masterSolveAll

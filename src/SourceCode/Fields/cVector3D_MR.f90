@@ -585,15 +585,15 @@ contains
                     i1 = grid%coarseness( i_grid, 3 )
                     i2 = grid%coarseness( i_grid, 4 )
                     !
-                    sx1 = size( self%sub_vector(i_grid)%x, 1 )
-                    sx2 = size( self%sub_vector(i_grid)%x, 2 )
-                    sx3 = size( self%sub_vector(i_grid)%x, 3 )
+                    sx1 = size( self%sub_vector( i_grid )%x, 1 )
+                    sx2 = size( self%sub_vector( i_grid )%x, 2 )
+                    sx3 = size( self%sub_vector( i_grid )%x, 3 )
                     allocate( x_length( sx1, sx2, sx3 ) )
                     x_length = 0.0
                     !
-                    sy1 = size( self%sub_vector(i_grid)%y, 1 )
-                    sy2 = size( self%sub_vector(i_grid)%y, 2 )
-                    sy3 = size( self%sub_vector(i_grid)%y, 3 )
+                    sy1 = size( self%sub_vector( i_grid )%y, 1 )
+                    sy2 = size( self%sub_vector( i_grid )%y, 2 )
+                    sy3 = size( self%sub_vector( i_grid )%y, 3 )
                     allocate( y_length( sy1, sy2, sy3 ) )
                     y_length = 0.0
                     !
@@ -601,7 +601,7 @@ contains
                         !
                         s1 = size( sg_vector_el%x, 1 )
                         s2 = size( sg_vector_el%x, 2 )
-                        self%sub_vector(i_grid)%x = self%sub_vector(i_grid)%x + &
+                        self%sub_vector(i_grid)%x = self%sub_vector( i_grid )%x + &
                         sg_vector_el%x( i:s1:Cs, 1:s2:Cs, i1:i2+1 )
                         !
                         s1 = size( sg_vector_el%y, 1 )
@@ -619,8 +619,8 @@ contains
                         !
                     enddo
                     !
-                    self%sub_vector(i_grid)%x = self%sub_vector(i_grid)%x / x_length
-                    self%sub_vector(i_grid)%y = self%sub_vector(i_grid)%y / y_length
+                    self%sub_vector( i_grid )%x = self%sub_vector( i_grid )%x / x_length
+                    self%sub_vector( i_grid )%y = self%sub_vector( i_grid )%y / y_length
                     !
                     s1 = size( vector_sg%z, 1 )
                     s2 = size( vector_sg%z, 2 )

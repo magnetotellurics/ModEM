@@ -92,6 +92,7 @@ contains
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
         !
         complex( kind=prec ) :: i_omega_mu
+        integer :: ix, iy, iz
         !
         !> Get the Transmitter setting:
         xTx1D = self%location(1)
@@ -140,6 +141,16 @@ contains
         !
         self%E(1) = E_p
         !
+        do ix = 1, E_p%NdX(1)
+             do iy = 1, E_p%NdX(2)
+                do iz = 1, E_p%NdX(3)
+                        write(6666,*) sqrt( real( E_p%x( ix, iy, iz ), kind=prec )**2 + real( aimag( E_p%x( ix, iy, iz ) ), kind=prec )**2 )
+                enddo
+             enddo
+        enddo
+        !
+        stop
+        !
         call self%E(1)%mult( self%cond_anomaly )
         !
         i_omega_mu = cmplx( 0., real( -1.0d0 * isign * mu_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
@@ -157,8 +168,43 @@ contains
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
         !
+        integer :: i, k
+        real( kind=prec ), dimension( nlay1D ):: sig, zlay0
+        !
         call self%setCondAnomally( self%cond_anomaly, 1 )
         !
+        ! WORKS FINE WITH EM1D, BUT NOT HERE
+        !
+        ! !
+        ! !> Merge Layers (Michael Commer)
+        ! i = nlay1D
+        ! !
+        ! k = 1
+        ! sig(1) = SIGMA_AIR
+        ! zlay0(1) = 0d0
+        ! !
+        ! ! air layer
+        ! do i = self%sigma%metric%grid%nzAir + 1, nlay1D
+            ! ! if either sig_H or sig_V change from layer k to k+1, add new layer
+            ! if( abs( sig1D(i) - sig( k ) ) > SIGMA_MIN ) then
+                ! !
+                ! k = k + 1
+                ! sig( k ) = sig1D(i)
+                ! zlay0( k ) = zlay1D(i)
+                ! !
+            ! endif
+        ! enddo
+        ! !
+        ! ! reset temp. 1D-model arrays
+        ! do i = 1, k ! new layers
+            ! !
+            ! sig1D(i) = sig(i)
+            ! zlay1D(i) = zlay0(i)
+            ! !
+        ! enddo
+        ! !
+        ! nlay1D = k
+        ! !
     end subroutine set1DModel_SourceCSEM_Dipole1D
     !
     !> No subroutine briefing

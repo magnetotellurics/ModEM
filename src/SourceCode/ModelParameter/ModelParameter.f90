@@ -15,7 +15,7 @@ module ModelParameter
         !
         class( MetricElements_t ), pointer :: metric
         !
-        class( Grid_t ), pointer :: param_grid
+        class( Grid_t ), allocatable :: param_grid
         !
         integer :: anisotropic_level, mKey(8)
         !
@@ -30,7 +30,9 @@ module ModelParameter
         contains
             !
             !> Base procedures
+            !
             procedure, public :: baseInit => initialize_ModelParameter
+            procedure, public :: baseDealloc => deallocate_ModelParameter
             !
             procedure, public :: sigMap => sigMap_ModelParameter
             procedure, public :: setSigMap => setSigMap_ModelParameter
@@ -387,6 +389,8 @@ contains
         !
         self%metric => null()
         !
+        self%anisotropic_level = 0
+        !
         call date_and_time( values=self%mKey )
         !
         self%air_cond = SIGMA_AIR
@@ -398,5 +402,19 @@ contains
         self%sigmap_ptr => null()
         !
     end subroutine initialize_ModelParameter
-
+    !
+    !
+    !
+    subroutine deallocate_ModelParameter( self )
+        implicit none
+        !
+        class( ModelParameter_t ), intent( inout ) :: self
+        !
+        if( allocated( self%param_grid ) ) deallocate( self%param_grid )
+        !
+        self%sigmap_ptr => null()
+        !
+    end subroutine deallocate_ModelParameter
+    !
 end module ModelParameter
+!

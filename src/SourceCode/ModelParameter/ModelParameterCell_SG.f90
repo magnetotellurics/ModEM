@@ -45,7 +45,7 @@ contains
     function ModelParameterCell_SG_ctor_one_cond( grid, cell_cond, anisotropic_level, param_type ) result( self )
         implicit none
         !
-        class( Grid_t ), intent( in ) :: grid
+        class( Grid_t ), target, intent( in ) :: grid
         type( rScalar3D_SG_t ), intent( in ) :: cell_cond
         integer, intent( in ) :: anisotropic_level
         character(:), allocatable, optional, intent( in ) :: param_type
@@ -66,7 +66,9 @@ contains
         !
         nzAir = 0
         !
-        allocate( self%param_grid, source = grid )
+        allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
+        ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+        grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
         self%anisotropic_level = anisotropic_level
         !
@@ -74,12 +76,12 @@ contains
         !
         self%cell_cond(1) = cell_cond
         !
-        self%cell_cond(1)%grid => self%param_grid
+        self%cell_cond(1)%grid => grid
         !
         if( present( param_type ) ) then
             !
             call self%setSigMap( param_type )
-        !
+            !
         endif
         !
         self%is_allocated = .TRUE.
@@ -91,7 +93,7 @@ contains
     function ModelParameterCell_SG_ctor_all_conds( grid, cell_cond, param_type ) result( self )
         implicit none
         !
-        class( Grid_t ), intent( in ) :: grid
+        class( Grid_t ), target, intent( in ) :: grid
         type( rScalar3D_SG_t ), dimension(:), intent( in ) :: cell_cond
         character(:), allocatable, optional, intent( in ) :: param_type
         !
@@ -111,7 +113,9 @@ contains
         !
         nzAir = 0
         !
-        allocate( self%param_grid, source = grid )
+        allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
+        ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+        grid%dz( grid%nzAir+1:grid%nz ) ) )
         !
         self%anisotropic_level = size( cell_cond )
         !
@@ -119,7 +123,7 @@ contains
         !
         do i = 1, size( self%cell_cond )
             !
-            self%cell_cond(i)%grid => self%param_grid
+            self%cell_cond(i)%grid => grid
             !
         enddo
         !
@@ -144,7 +148,7 @@ contains
         !
         call self%baseDealloc
         !
-        if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
+        call self%deallocCell
         !
     end subroutine ModelParameterCell_SG_dtor
     !

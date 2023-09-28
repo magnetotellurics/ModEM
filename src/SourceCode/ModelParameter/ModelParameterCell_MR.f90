@@ -48,7 +48,7 @@ contains
     function ModelParameterCell_MR_ctor_one_cond( grid, cell_cond, anisotropic_level, param_type ) result( self )
         implicit none
         !
-        class( Grid_t ), intent( in ) :: grid
+        class( Grid3D_MR_t ), target, intent( in ) :: grid
         type( rScalar3D_SG_t ), intent( in ) :: cell_cond
         integer, intent( in ) :: anisotropic_level
         character(:), allocatable, optional, intent( in ) :: param_type
@@ -69,7 +69,9 @@ contains
         !
         nzAir = 0
         !
-        allocate( self%param_grid, source = grid )
+        allocate( self%param_grid, source = Grid3D_MR_t( grid%nx, grid%ny, nzAir, &
+        ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+        grid%dz( grid%nzAir+1:grid%nz ), grid%cs ) )
         !
         self%anisotropic_level = anisotropic_level
         !
@@ -77,7 +79,7 @@ contains
         !
         self%cell_cond(1) = cell_cond
         !
-        self%cell_cond(1)%grid => self%param_grid
+        self%cell_cond(1)%grid => grid
         !
         if( present( param_type ) ) then
             !
@@ -94,7 +96,7 @@ contains
     function ModelParameterCell_MR_ctor_all_conds( grid, cell_cond, param_type ) result( self )
         implicit none
         !
-        class( Grid_t ), intent( in ) :: grid
+        class( Grid3D_MR_t ), target, intent( in ) :: grid
         type( rScalar3D_SG_t ), dimension(:), intent( in ) :: cell_cond
         character(:), allocatable, optional, intent( in ) :: param_type
         !
@@ -114,7 +116,9 @@ contains
         !
         nzAir = 0
         !
-        allocate( self%param_grid, source = grid )
+        allocate( self%param_grid, source = Grid3D_MR_t( grid%nx, grid%ny, nzAir, &
+        ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+        grid%dz( grid%nzAir+1:grid%nz ), grid%cs ) )
         !
         self%anisotropic_level = size( cell_cond )
         !
@@ -122,7 +126,7 @@ contains
         !
         do i = 1, size( self%cell_cond )
             !
-            self%cell_cond(i)%grid => self%param_grid
+            self%cell_cond(i)%grid => grid
             !
         enddo
         !
@@ -147,9 +151,7 @@ contains
         !
         call self%baseDealloc
         !
-        if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
-        !
-        if( associated( self%param_grid ) ) deallocate( self%param_grid )
+        call self%deallocCell
         !
     end subroutine ModelParameterCell_MR_dtor
     !
@@ -238,8 +240,6 @@ contains
         integer :: i_grid, k0, k1, k2
         type( rScalar3D_MR_t ) :: sigma_cell_mr, sigma_cell_mr_with_al
         !
-		write( *, * ) "PDEmapping_ModelParameterCell_MR"
-		!
         if( .NOT. self%is_allocated ) then
             call errStop( "PDEmapping_ModelParameterCell_SG > self not allocated" )
         endif
@@ -260,7 +260,7 @@ contains
                 !
                 do i_grid = 1, size( sigma_cell_mr_with_al%sub_scalar )
                     !
-                    !if( i_grid == 1 ) then
+                    if( i_grid == 1 ) then
                         !
                         k0 = grid%sub_grid( i_grid )%NzAir
                         k1 = k0 + 1
@@ -270,11 +270,11 @@ contains
                         !
                         sigma_cell_mr_with_al%sub_scalar( i_grid )%v( :, :, k1:k2 ) = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
                         !
-                    !else
+                    else
                         !
-                        !sigma_cell_mr_with_al%sub_scalar( i_grid )%v = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
+                        sigma_cell_mr_with_al%sub_scalar( i_grid )%v = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
                         !
-                    !endif
+                    endif
                     !
                 enddo
                 !
