@@ -8,10 +8,13 @@ module ModelOperator_SP_V2
     !
     type, extends( ModelOperator_SP_t ) :: ModelOperator_SP_V2_t
         !
-        type( spMatCSR_Real ) :: AAii !> sparse matrix representation
-                                      !> of the modified system equation
-                                      !> int.-int.
-        type( spMatCSR_Real ) :: GDii !> save only the Earth part of GD
+        !> sparse matrix representation
+        !> of the modified system equation
+        !> int.-int.
+        type( spMatCSR_Real ) :: AAii, AAit
+        !
+        !> save only the Earth part of GD
+        type( spMatCSR_Real ) :: GDii
         !
         contains
             !
@@ -66,6 +69,9 @@ contains
         call self%baseDealloc
         !
         call deall_spMatCSR( self%AAii )
+        call deall_spMatCSR( self%AAit )
+        !
+        !> save only the Earth part of GD
         call deall_spMatCSR( self%GDii )
         !
         call deall_spMatCSR( self%CCii )
@@ -173,7 +179,6 @@ contains
         real( kind=prec ), intent( in ) :: omega
         logical, intent( in ) :: adjoint
         !
-        type( spMatCSR_Real ) :: AAit
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
         !
@@ -193,13 +198,9 @@ contains
         !
         if( adjoint ) then
             !
-            call RMATtrans( self%AAii, AAit )
+            !write(*,*) "amult_ModelOperator_SP_V2: ", self%AAit%nCol, AAit%nRow, size( in_e_v_int ), size( out_e_v_int ), adjoint
             !
-            !write(*,*) "amult_ModelOperator_SP_V2: ", AAit%nCol, AAit%nRow, size( in_e_v_int ), size( out_e_v_int ), adjoint
-            !
-            call RMATxCVEC( AAit, in_e_v_int, out_e_v_int )
-            !
-            call deall_spMATcsr( AAit )
+            call RMATxCVEC( self%AAit, in_e_v_int, out_e_v_int )
             !
             out_e_v_int = out_e_v_int - ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%indInterior() )
             !
@@ -314,6 +315,8 @@ contains
         !
         call RMATplusRMAT( self%CCii, self%GDii, self%AAii )
         !
+        call RMATtrans( self%AAii, self%AAit )
+        !
         ! build the GradDiv matrix for additional terms in RHS...
         call DIAGxRMAT( M3earth, self%topology%G, GDe )
         !
@@ -364,7 +367,7 @@ contains
         !
         call RMATtrans( self%topology%G, Dt )
         !
-        Dt%val = abs(Dt%val)
+        Dt%val = abs( Dt%val )
         !
         !> set edge indices
         allocate( Eair( Ne ) )

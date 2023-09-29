@@ -17,8 +17,6 @@ module SourceCSEM_Dipole1D
             !
             procedure, public :: createE => createE_SourceCSEM_Dipole1D
             !
-            procedure, public :: createRHS => createRHS_SourceCSEM_Dipole1D
-            !
             procedure, public :: set1DModel => set1DModel_SourceCSEM_Dipole1D
             !
             procedure, private :: create_Ep_from_Dipole1D
@@ -98,6 +96,7 @@ contains
         xTx1D = self%location(1)
         yTx1D = self%location(2)
         zTx1D = self%location(3)
+        !
         ftx1D = 1.0d0/self%period
         sdm1D = self%moment        !> (Am), dipole moment. Normalize to unit source moment
         azimuthTx1D = self%azimuth !> (degrees) 
@@ -140,16 +139,6 @@ contains
         allocate( self%E( 1 ) )
         !
         self%E(1) = E_p
-        !
-        do ix = 1, E_p%NdX(1)
-             do iy = 1, E_p%NdX(2)
-                do iz = 1, E_p%NdX(3)
-                        write(6666,*) sqrt( real( E_p%x( ix, iy, iz ), kind=prec )**2 + real( aimag( E_p%x( ix, iy, iz ) ), kind=prec )**2 )
-                enddo
-             enddo
-        enddo
-        !
-        stop
         !
         call self%E(1)%mult( self%cond_anomaly )
         !
@@ -340,42 +329,5 @@ contains
         deallocate( bx1D, by1D, bz1D )
         !
     end subroutine create_Ep_from_Dipole1D
-    !
-    !> Set RHS from self%E
-    !
-    subroutine createRHS_SourceCSEM_Dipole1D( self )
-        implicit none
-        !
-        class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
-        !
-        type( cVector3D_MR_t ) :: temp_vec_mr
-        !
-        !if( allocated( self%rhs ) ) deallocate( self%rhs )
-        allocate( self%rhs(1) )
-        !
-        !> Check if grid is MR 
-        !> RHS calculated as MR vector
-        select type( grid => self%model_operator%metric%grid )
-            !
-            class is( Grid3D_SG_t )
-                !
-                allocate( self%rhs(1)%v, source = self%E(1) )
-                !
-            class is( Grid3D_MR_t )
-                !
-                temp_vec_mr = cVector3D_MR_t( grid, self%E(1)%grid_type )
-                !
-                call temp_vec_mr%fromSG( self%E(1) )
-                !
-                allocate( self%rhs(1)%v, source = temp_vec_mr )
-                !
-            class default
-                call errStop( "createRHS_SourceCSEM_Dipole1D > model_operator must be SP V1 or V2" )
-            !
-        end select
-        !
-        call self%rhs(1)%v%mult( self%model_operator%metric%v_edge )
-        !
-    end subroutine createRHS_SourceCSEM_Dipole1D
     !
 end module SourceCSEM_Dipole1D
