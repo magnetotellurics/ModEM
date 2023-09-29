@@ -112,10 +112,74 @@ contains
             !
             if( self%for_transpose ) then
                 !
+                !> Check if model_operator is SP2
+                select type( model_operator => self%model_operator )
+                    !
+                    class is( ModelOperator_SP_V2_t )
+                        !
+                        iOmegaMuInv = isign / ( cmplx( 0.0, real( 2.0 * ( PI / self%period ) * MU_0, kind=prec ), kind=prec ) )
+                        !
+                        in_e = self%E(1)%getArray()
+                        !
+                        v_edge_v = self%model_operator%metric%v_edge%getArray()
+                        !
+                        in_e_int = in_e( self%E(1)%indInterior() ) / v_edge_v( self%model_operator%metric%v_edge%indInterior() )
+                        !
+                        out_e = in_e_int
+                        out_e = C_ZERO
+                        !
+                        call RMATxCVEC( model_operator%GDii, in_e_int, out_e )
+                        !
+                        out_e = out_e * iOmegaMuInv * v_edge_v( self%model_operator%metric%v_edge%indInterior() )
+                        !
+                        rhs_v = self%rhs(1)%v%getArray()
+                        !
+                        rhs_v_int = ( rhs_v( self%rhs(1)%v%indInterior() ) + out_e )
+                        !
+                        rhs_v = C_ZERO
+                        rhs_v( self%rhs(1)%v%indInterior() ) = rhs_v_int
+                        !
+                        call self%rhs(1)%v%setArray( rhs_v )
+                        !
+                end select
+                !
                 !> E = E / V_E
                 call self%E( pol )%div( self%model_operator%metric%v_edge )
                 !
             else
+                !
+                !> Check if model_operator is SP2
+                select type( model_operator => self%model_operator )
+                    !
+                    class is( ModelOperator_SP_V2_t )
+                        !
+                        !RHS = RHS + (i omega mu)^-1 GDii* E(EDGEi)
+                        iOmegaMuInv = isign / ( cmplx( 0.0, real( 2.0 * ( PI / self%period ) * MU_0, kind=prec ), kind=prec ) )
+                        !
+                        in_e = self%E(1)%getArray()
+                        !
+                        in_e_int = in_e( self%E(1)%indInterior() )
+                        !
+                        out_e = in_e_int
+                        out_e = C_ZERO
+                        !
+                        call RMATxCVEC( model_operator%GDii, in_e_int, out_e )
+                        !
+                        v_edge_v = self%model_operator%metric%v_edge%getArray()
+                        !
+                        out_e = out_e * iOmegaMuInv
+                        !
+                        rhs_v = self%rhs(1)%v%getArray()
+                        !
+                        rhs_v_int = ( rhs_v( self%rhs(1)%v%indInterior() ) + out_e )
+                        !
+                        rhs_v = C_ZERO
+                        rhs_v( self%rhs(1)%v%indInterior() ) = rhs_v_int
+                        !
+                        call self%rhs(1)%v%setArray( rhs_v )
+                        !
+                end select
+                !
                 !> RHS = RHS * V_E
                 call self%rhs( pol )%v%mult( self%model_operator%metric%v_edge )
                 !
