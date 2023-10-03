@@ -1,0 +1,48 @@
+WIlliams has some examples of MR fields classes, but looking at them I 
+I think we want to make some changes.
+
+Basic idea: MR fields will consist of an array of SG fields of the same type-- 
+one for each subgrid (i.e., each layer in the vertical stack of grids)
+
+Complication: not all of the elements in a field are "active" -- adjacent sub-fields
+are overlapping (but grid resolution differs by a factor of 2) and only the
+edges in the coarser of the two grids are active.   It is convenient to store the full
+set of components in each subField, but we need to manage the active/inactive distinction,
+as discussed below.  Note that the distinciton between mr_grid and mr_grid_b is in which
+edges are assumed to be active.
+
+For example, there will be a cVector3D_MR class, a polymorph of the SG version.   i
+All of the methods in the base classes will need to be definedi in each of the instantiable
+field classes.
+
+One slightly non-obvious thing: in addition to the array of SG fields, 
+there will be a single column vector (cALL -- column vector storage of the WHOLE
+MR-field for all subgrids).  There need to be routines getArray and setArray (and 
+corresponding change of storage state).  Roughly, going from 3D array storage 
+(in each of the subgrids) to column vector we allocate a single vector to 
+store all values from all subgrids, then loop over subgrids, converting 
+each to a column (using getArray for the component CS subvectors, 
+concatenating results and storing in cAllr.  As we loop we deallocate 
+the 3D array storaga in the sub-vectors;
+Note the column vectors in the subfields are never usedi for an MR-Field!   
+Going the other way reverses this, taking blocks of values from cAll
+and passing this vector to setArray for each subvector in turn.
+BUT it is not quite this simple--we only want the "active" components of a field
+stored in cAll!  Williams deals with this (as we did in matlab) by
+adding some integer arrays "ind_active", "ind_interior", "ind_boundaries"    The first
+is relevant here (but I guess maybe all are used--need to look more carefully).
+Then the code from Williams gets ALL the edges (active and inactive) from each subvector
+and pulls out the ones that are active to make a shorter vector.
+I think a different approach would be better--just extract the parts of the arrays that are active
+and concatenate for GetArray; for SetArray (going back to the 3D array representations)
+the inactive field elements would be interpolated from the corresponding
+active (coarser grid) field elements.   Maybe simplest if I sketch out code, since it would be
+very different from what Williams did!
+
+The vector space operations (dotprod, add, mult) are simple: loop over subgrids and
+call the corresponding CG operations for each.  But if storage state is coolumn vector,
+just do the operations on cAll.
+
+There are probably a bunch of other operations about boundary and interior indices 
+(and related) that I need to look at more carefully.  Lots of this is implemented in Williams
+version, but it was never thought through all the way in matlab even.   So better to think first.
