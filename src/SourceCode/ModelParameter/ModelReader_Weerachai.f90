@@ -167,9 +167,9 @@ contains
                     select type( grid )
                         !
                         class is( Grid3D_SG_t )
-                            allocate( model, source = ModelParameterCell_SG_t( grid, cell_cond, 1, paramType ) )
+                            allocate( model, source = ModelParameterCell_SG_t( cell_cond, 1, paramType ) )
                         class is( Grid3D_MR_t )
-                            allocate( model, source = ModelParameterCell_MR_t( grid, cell_cond, 1, paramType ) )
+                            allocate( model, source = ModelParameterCell_MR_t( cell_cond, 1, paramType ) )
                         class default
                             call errStop( "readModelReaderWeerachai > Unknow grid for ModelParameter" )
                         !
@@ -186,9 +186,9 @@ contains
                         select type( grid )
                             !
                             class is( Grid3D_SG_t )
-                                allocate( model, source = ModelParameterCell_SG_t( grid, cell_cond, 2, paramType ) )
+                                allocate( model, source = ModelParameterCell_SG_t( cell_cond, 2, paramType ) )
                             class is( Grid3D_MR_t )
-                                allocate( model, source = ModelParameterCell_MR_t( grid, cell_cond, 2, paramType ) )
+                                allocate( model, source = ModelParameterCell_MR_t( cell_cond, 2, paramType ) )
                             class default
                                 call errStop( "readModelReaderWeerachai > Unknow grid for VTI ModelParameter" )
                             !

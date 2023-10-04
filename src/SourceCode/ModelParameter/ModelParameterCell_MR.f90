@@ -45,17 +45,14 @@ contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_MR_ctor_one_cond( grid, cell_cond, anisotropic_level, param_type ) result( self )
+    function ModelParameterCell_MR_ctor_one_cond( cell_cond, anisotropic_level, param_type ) result( self )
         implicit none
         !
-        class( Grid3D_MR_t ), target, intent( in ) :: grid
         type( rScalar3D_SG_t ), intent( in ) :: cell_cond
         integer, intent( in ) :: anisotropic_level
         character(:), allocatable, optional, intent( in ) :: param_type
         !
         type( ModelParameterCell_MR_t ) :: self
-        !
-        integer :: nzAir
         !
         !write( *, * ) "Constructor ModelParameterCell_SG_ctor_one_cond"
         !
@@ -67,19 +64,13 @@ contains
             self%param_type = trim( param_type )
         endif
         !
-        nzAir = 0
-        !
-        allocate( self%param_grid, source = Grid3D_MR_t( grid%nx, grid%ny, nzAir, &
-        ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
-        grid%dz( grid%nzAir+1:grid%nz ), grid%cs ) )
+        allocate( self%param_grid, source = cell_cond%grid )
         !
         self%anisotropic_level = anisotropic_level
         !
         allocate( self%cell_cond( anisotropic_level ) )
         !
         self%cell_cond(1) = cell_cond
-        !
-        self%cell_cond(1)%grid => grid
         !
         if( present( param_type ) ) then
             !
@@ -93,16 +84,15 @@ contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_MR_ctor_all_conds( grid, cell_cond, param_type ) result( self )
+    function ModelParameterCell_MR_ctor_all_conds( cell_cond, param_type ) result( self )
         implicit none
         !
-        class( Grid3D_MR_t ), target, intent( in ) :: grid
         type( rScalar3D_SG_t ), dimension(:), intent( in ) :: cell_cond
         character(:), allocatable, optional, intent( in ) :: param_type
         !
         type( ModelParameterCell_MR_t ) :: self
         !
-        integer :: i, nzAir
+        integer :: i
         !
         !write( *, * ) "Constructor ModelParameterCell_SG_ctor_all_conds"
         !
@@ -114,21 +104,11 @@ contains
             self%param_type = trim( param_type )
         endif
         !
-        nzAir = 0
-        !
-        allocate( self%param_grid, source = Grid3D_MR_t( grid%nx, grid%ny, nzAir, &
-        ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
-        grid%dz( grid%nzAir+1:grid%nz ), grid%cs ) )
+        allocate( self%param_grid, source = cell_cond(1)%grid )
         !
         self%anisotropic_level = size( cell_cond )
         !
         self%cell_cond = cell_cond
-        !
-        do i = 1, size( self%cell_cond )
-            !
-            self%cell_cond(i)%grid => grid
-            !
-        enddo
         !
         if( present( param_type ) ) then
             !

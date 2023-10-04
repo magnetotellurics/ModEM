@@ -5,6 +5,7 @@
 module SourceAdjoint
     !
     use Source
+    use ModelOperator_SP_V2
     !
     type, extends( Source_t ) :: SourceAdjoint_t
         !
@@ -83,6 +84,8 @@ contains
         !
         integer :: pol
         type( cVector3D_MR_t ) :: temp_vec_mr
+        complex( kind=prec ) :: iOmegaMuInv
+        complex( kind=prec ), allocatable, dimension(:) :: v_edge_v, rhs_v, rhs_v_int, in_e, in_e_int, out_e
         !
         !> RHS = E
         allocate( self%rhs( size( self%E ) ) )
