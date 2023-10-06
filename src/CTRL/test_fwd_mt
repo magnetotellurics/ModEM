@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# mf_sg_qmr
+#
+mpirun -np 13 --hostfile ../../hostfile_13.txt ./ModEM_MPI -f -m ../../modem_inputs/MT_5BLOCKS/m_VTI.rho -d ../../modem_inputs/MT_5BLOCKS/d0.dat -cf CTRL/fwd_control_mf_sg_qmr.txt -pd fwd_mt_mf_sg_qmr.dat | tee -a fwd_mt_mf_sg_qmr.txt
+#
+# mf_sg_bicg
+#
+mpirun -np 13 --hostfile ../../hostfile_13.txt ./ModEM_MPI -f -m ../../modem_inputs/MT_5BLOCKS/m_VTI.rho -d ../../modem_inputs/MT_5BLOCKS/d0.dat -cf CTRL/fwd_control_mf_sg_bicg.txt -pd fwd_mt_mf_sg_bicg.dat | tee -a fwd_mt_mf_sg_bicg.txt
+#
+# sp_sg_qmr
+#
+mpirun -np 13 --hostfile ../../hostfile_13.txt ./ModEM_MPI -f -m ../../modem_inputs/MT_5BLOCKS/m_VTI.rho -d ../../modem_inputs/MT_5BLOCKS/d0.dat -cf CTRL/fwd_control_sp_sg_qmr.txt -pd fwd_mt_sp_sg_qmr.dat | tee -a fwd_mt_sp_sg_qmr.txt
+#
+# sp_sg_bicg
+#
+mpirun -np 13 --hostfile ../../hostfile_13.txt ./ModEM_MPI -f -m ../../modem_inputs/MT_5BLOCKS/m_VTI.rho -d ../../modem_inputs/MT_5BLOCKS/d0.dat -cf CTRL/fwd_control_sp_sg_bicg.txt -pd fwd_mt_sp_sg_bicg.dat | tee -a fwd_mt_sp_sg_bicg.txt
+#
+# sp2_sg_qmr
+#
+mpirun -np 13 --hostfile ../../hostfile_13.txt ./ModEM_MPI -f -m ../../modem_inputs/MT_5BLOCKS/m_VTI.rho -d ../../modem_inputs/MT_5BLOCKS/d0.dat -cf CTRL/fwd_control_sp2_sg_qmr.txt -pd fwd_mt_sp2_sg_qmr.dat | tee -a fwd_mt_sp2_sg_qmr.txt
+#
+# sp2_sg_bicg
+#
+mpirun -np 13 --hostfile ../../hostfile_13.txt ./ModEM_MPI -f -m ../../modem_inputs/MT_5BLOCKS/m_VTI.rho -d ../../modem_inputs/MT_5BLOCKS/d0.dat -cf CTRL/fwd_control_sp2_sg_bicg.txt -pd fwd_mt_sp2_sg_bicg.dat | tee -a fwd_mt_sp2_sg_bicg.txt
+#

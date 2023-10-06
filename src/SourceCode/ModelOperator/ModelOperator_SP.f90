@@ -49,8 +49,6 @@ module ModelOperator_SP
             !
             procedure, public :: grad => grad_ModelOperator_SP
             !
-            procedure, public :: disposeMem => disposeMem_ModelOperator_SP
-            !
             !> Alloc/Dealloc
             procedure, public :: dealloc => deallocate_ModelOperator_SP
             !
@@ -571,19 +569,6 @@ contains
         !
     end subroutine grad_ModelOperator_SP
     !
-    !> Deallocate Matrices that will no longer be used
-    !
-    subroutine disposeMem_ModelOperator_SP( self )
-        implicit none
-        !
-        class( ModelOperator_SP_t ), intent( inout ) :: self
-        !
-        !> interior and edge indexes
-        call deall_spMatCSR( self%TCC )
-        !
-    end subroutine disposeMem_ModelOperator_SP
-    !
-    !
     !> No subroutine briefing
     !
     subroutine deallocate_ModelOperator_SP( self )
@@ -605,6 +590,7 @@ contains
         !
         if( allocated( self%topology ) ) deallocate( self%topology )
         !
+        call deall_spMatCSR( self%TCC )
         call deall_spMatCSR( self%Gd )
         call deall_spMatCSR( self%D )
         call deall_spMatCSR( self%VDiv )

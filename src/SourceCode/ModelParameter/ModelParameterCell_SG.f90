@@ -61,7 +61,7 @@ contains
             self%param_type = trim( param_type )
         endif
         !
-        allocate( self%param_grid, source = cell_cond%grid )
+        self%param_grid = cell_cond%grid
         !
         self%anisotropic_level = anisotropic_level
         !
@@ -101,7 +101,7 @@ contains
             self%param_type = trim( param_type )
         endif
         !
-        allocate( self%param_grid, source = cell_cond(1)%grid )
+        self%param_grid = cell_cond(1)%grid
         !
         self%anisotropic_level = size( cell_cond )
         !

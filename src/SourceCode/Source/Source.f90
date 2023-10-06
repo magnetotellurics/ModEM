@@ -25,6 +25,9 @@ module Source
         !
         logical :: non_zero_source, non_zero_bc, calc_sens, for_transpose
         !
+        !> Global primary electrical Field
+        type( cVector3D_SG_t ) :: E_p
+        !
         contains
             !
             procedure, public :: baseInit => initialize_Source

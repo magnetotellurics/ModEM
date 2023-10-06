@@ -13,6 +13,8 @@ module ModelParameterCell
         !
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
         !
+        type( Grid3D_SG_t ) :: param_grid
+        !
         contains
             !
             !> Procedures

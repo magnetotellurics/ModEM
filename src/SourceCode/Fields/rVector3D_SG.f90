@@ -689,8 +689,12 @@ contains
                             do iy = 2, self%grid%ny
                                 do iz = 2, self%grid%nz
                                     self%x(ix, iy, iz) = ( cell_in%v(ix, iy-1, iz-1) + cell_in%v(ix, iy, iz-1) + &
-                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz) )! / 4.0d0
+                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz) )
                                 enddo
+                                !
+                                self%x(ix, iy, 1) =  cell_in%v(ix, iy-1, 1) + cell_in%v(ix, iy, 1 )
+                                self%x(ix, iy, self%grid%nz+1) =  cell_in%v(ix, iy-1, self%grid%nz) + cell_in%v(ix, iy, self%grid%nz )
+                                !
                             enddo
                         enddo
                         !
@@ -699,8 +703,12 @@ contains
                             do iy = 1, self%grid%ny
                                 do iz = 2, self%grid%nz
                                     self%y(ix, iy, iz) = ( cell_in%v(ix-1, iy, iz-1) + cell_in%v(ix, iy, iz-1) + &
-                                    cell_in%v(ix-1, iy, iz) + cell_in%v(ix, iy, iz) )! / 4.0d0
+                                    cell_in%v(ix-1, iy, iz) + cell_in%v(ix, iy, iz) )
                                 enddo
+                                !
+                                self%y(ix, iy, 1) =  cell_in%v(ix-1, iy, 1) + cell_in%v(ix, iy, 1)
+                                self%y(ix, iy, self%grid%nz+1) =  cell_in%v(ix-1, iy, self%grid%nz) + cell_in%v(ix, iy, self%grid%nz )
+                                !
                             enddo
                         enddo
                         !
@@ -709,7 +717,7 @@ contains
                             do iy = 2, self%grid%ny
                                 do iz = 1, self%grid%nz
                                     self%z(ix, iy, iz) = ( cell_in%v(ix-1, iy-1, iz) + cell_in%v(ix-1, iy, iz) + &
-                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz) )! / 4.0d0
+                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz) )
                                 enddo
                             enddo
                         enddo
@@ -798,6 +806,10 @@ contains
                                             self%x(ix, iy, iz) = ( cell_h_in%v(ix, iy-1, iz-1) + cell_h_in%v(ix, iy, iz-1) + &
                                             cell_h_in%v(ix, iy-1, iz) + cell_h_in%v(ix, iy, iz) )! / 4.0d0
                                         enddo
+                                        !
+                                        self%x(ix, iy, 1) =  cell_h_in%v(ix, iy-1, 1) + cell_h_in%v(ix, iy, 1 )
+                                        self%x(ix, iy, self%grid%nz+1) =  cell_h_in%v(ix, iy-1, self%grid%nz) + cell_h_in%v(ix, iy, self%grid%nz )
+                                        !
                                     enddo
                                 enddo
                                 !
@@ -808,6 +820,10 @@ contains
                                             self%y(ix, iy, iz) = ( cell_h_in%v(ix-1, iy, iz-1) + cell_h_in%v(ix, iy, iz-1) + &
                                             cell_h_in%v(ix-1, iy, iz) + cell_h_in%v(ix, iy, iz) )! / 4.0d0
                                         enddo
+                                        !
+                                        self%y(ix, iy, 1) =  cell_h_in%v(ix-1, iy, 1) + cell_h_in%v(ix, iy, 1)
+                                        self%y(ix, iy, self%grid%nz+1) =  cell_h_in%v(ix-1, iy, self%grid%nz) + cell_h_in%v(ix, iy, self%grid%nz )
+                                        !
                                     enddo
                                 enddo
                                 !

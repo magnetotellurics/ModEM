@@ -64,7 +64,9 @@ contains
             self%param_type = trim( param_type )
         endif
         !
-        allocate( self%param_grid, source = cell_cond%grid )
+        self%param_grid = Grid3D_SG_t( cell_cond%grid%nx, cell_cond%grid%ny, 0, &
+        ( cell_cond%grid%nz - cell_cond%grid%nzAir ), cell_cond%grid%dx, cell_cond%grid%dy, &
+        cell_cond%grid%dz( cell_cond%grid%nzAir+1 : cell_cond%grid%nz ) )
         !
         self%anisotropic_level = anisotropic_level
         !
@@ -92,8 +94,6 @@ contains
         !
         type( ModelParameterCell_MR_t ) :: self
         !
-        integer :: i
-        !
         !write( *, * ) "Constructor ModelParameterCell_SG_ctor_all_conds"
         !
         call self%baseInit
@@ -104,7 +104,9 @@ contains
             self%param_type = trim( param_type )
         endif
         !
-        allocate( self%param_grid, source = cell_cond(1)%grid )
+        self%param_grid = Grid3D_SG_t( cell_cond(1)%grid%nx, cell_cond(1)%grid%ny, 0, &
+        ( cell_cond(1)%grid%nz - cell_cond(1)%grid%nzAir ), cell_cond(1)%grid%dx, cell_cond(1)%grid%dy, &
+        cell_cond(1)%grid%dz( cell_cond(1)%grid%nzAir+1 : cell_cond(1)%grid%nz ) )
         !
         self%anisotropic_level = size( cell_cond )
         !

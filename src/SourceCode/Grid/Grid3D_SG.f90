@@ -405,8 +405,6 @@ contains
         class( Grid3D_SG_t ), intent( inout ) :: self
         class( Grid_t ), intent( in ) :: rhs
         !
-        write( *, * ) "copyFrom_Grid3D_SG"
-        !
         if( .NOT. rhs%is_allocated ) then
             call errStop( "copyFrom_Grid3D_SG > rhs not allocated" )
         endif

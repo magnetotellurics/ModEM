@@ -131,13 +131,13 @@ contains
         allocate( self%E( 1 ) )
         !
         !> Construct E from E_p
-        self%E(1) = E_p
+        self%E(1) = self%E_p
         !
-        self%E(1)%x = self%cond_anomaly_h%getAxis("x") * E_P%x
+        self%E(1)%x = self%cond_anomaly_h%getAxis("x") * self%E_P%x
         !
-        self%E(1)%y = self%cond_anomaly_h%getAxis("y") * E_P%y
+        self%E(1)%y = self%cond_anomaly_h%getAxis("y") * self%E_P%y
         !
-        self%E(1)%z = self%cond_anomaly_v%getAxis("z") * E_P%z
+        self%E(1)%z = self%cond_anomaly_v%getAxis("z") * self%E_P%z
         !
         call self%E(1)%mult( i_omega_mu )
         !
@@ -169,7 +169,7 @@ contains
         !
         integer ix, iy, iz, counter
         !
-        E_p = cVector3D_SG_t( grid, EDGE )
+        self%E_p = cVector3D_SG_t( grid, EDGE )
         !
         !> Fill e_vector (cVector3D_SG) from E2D (Esoln2DTM_t)
         !
@@ -178,7 +178,7 @@ contains
         do iz = 1,grid%Nz+1    !Edge Z
             do iy = 1,grid%Ny+1     !Edge Y
                 do ix = 1,grid%Nx       !Center X
-                    E_p%x(ix,iy,iz) = bgdat%Ex(counter)
+                    self%E_p%x(ix,iy,iz) = bgdat%Ex(counter)
                     counter = counter + 1
                 enddo
             enddo
@@ -189,7 +189,7 @@ contains
         do iz = 1, grid%Nz+1    !Edge Z
             do iy = 1, grid%Ny      !Center y
                 do ix = 1, grid%Nx+1    !Edge x
-                    E_p%y(ix,iy,iz) = bgdat%Ey(counter)
+                    self%E_p%y(ix,iy,iz) = bgdat%Ey(counter)
                     counter = counter + 1
                 enddo
             enddo
@@ -200,7 +200,7 @@ contains
         do iz = 1,grid%Nz !Center Z
             do iy = 1,grid%Ny+1 !Edge y
                 do ix = 1,grid%Nx+1 !Edge x
-                    E_p%z(ix,iy,iz) = bgdat%Ez(counter)
+                    self%E_p%z(ix,iy,iz) = bgdat%Ez(counter)
                     counter = counter + 1
                 enddo
             enddo

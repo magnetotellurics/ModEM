@@ -224,16 +224,6 @@ contains
             !
         enddo
         !
-        !> Free TCC matrix used for evaluationFunction
-        !> Just for SP case
-        select type( model_operator )
-            !
-            class is( ModelOperator_SP_t )
-                !
-                call model_operator%disposeMEM
-                !
-        end select
-        !
     end subroutine handleDataFile
     !
     !> Read Forward Modeling Control File: 

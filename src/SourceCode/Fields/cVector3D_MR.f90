@@ -95,6 +95,9 @@ module cVector3D_MR
         module procedure cVector3D_MR_ctor
     end interface cVector3D_MR_t
     !
+    public :: setInactiveEdge_cVector3D_MR
+    public :: setInactiveEdgeT_cVector3D_MR
+    !
 contains
     !
     !> No function briefing
@@ -499,13 +502,13 @@ contains
                             do i = 2, Cs
                                 w1 = 1. -( i - 1.)/Cs
                                 w2 = 1. - w1
-								!
+                                !
                                 temp%x(:, i:x_ny:Cs, i1:i2+1) = temp%x(:, 1:x_ny-Cs:Cs, i1:i2+1)*w1 + &
                                 temp%x(:, Cs+1:x_ny:Cs, i1:i2+1)*w2
-								!
+                                !
                                 temp%y(i:y_nx:Cs, :, i1:i2+1) = temp%y(1:y_nx-Cs:Cs, :, i1:i2+1)*w1 + &
                                 temp%y(Cs+1:y_nx:Cs, :, i1:i2+1)*w2
-								!
+                                !
                                 ! added by zhhq, 2017
                                 temp%z(:, i:z_ny:Cs, i1:i2) = temp%z(:, 1:z_ny-Cs:Cs, i1:i2)*w1 + &
                                 temp%z(:, Cs+1:z_ny:Cs, i1:i2) * w2
@@ -954,7 +957,63 @@ contains
         class( Scalar_t ), allocatable, intent( out ) :: cell_out
         logical, intent( in ), optional :: interior_only
         !
-        call errStop( "sumEdge_cVector3D_MR > not implemented" )
+        integer :: i
+        logical :: is_interior_only
+        class( Scalar_t ), allocatable :: aux_scalar
+        !
+        if( .NOT. self%is_allocated ) then
+             call errStop( "sumEdge_cVector3D_MR > self not allocated." )
+        endif
+        !
+        call self%switchStoreState( compound )
+        !
+        is_interior_only = .FALSE.
+        !
+        if( present( interior_only ) ) is_interior_only = interior_only
+        !
+        if( is_interior_only ) then
+            call self%setAllBoundary( C_ZERO )
+        endif
+        !
+        allocate( cell_out, source = cScalar3D_MR_t( self%grid, CELL ) )
+        !
+        select type( cell_out )
+            !
+            class is( cScalar3D_MR_t )
+                !
+                select case( self%grid_type )
+                    !
+                    case( EDGE )
+                        !
+                        !> loop over INTERFACES (one less than n_grids) and fill in inactive edges
+                        do i = 1, self%grid%n_grids-1
+                            call setInactiveEdge_cVector3D_MR( self%sub_vector(i), self%sub_vector(i+1) )
+                        enddo
+                        !
+                        !> loop over sub-vectors and sum edges onto cells
+                        do i = 1, self%grid%n_grids
+                            !
+                            call self%sub_vector(i)%sumEdges( aux_scalar )
+                            !
+                            cell_out%sub_scalar(i) = aux_scalar
+                            !
+                            deallocate( aux_scalar )
+                            !
+                        enddo
+                        !
+                    case( FACE )
+                        !
+                        call errStop( "sumEdge_cVector3D_MR: Unknown type FACE not implemented" )
+                        !
+                    case default
+                        call errStop( "sumEdge_cVector3D_MR: Unknown type" )
+                    !
+                end select !type
+                !
+            class default
+                call errStop( "sumEdge_cVector3D_MR > Unclassified cell_in" )
+            !
+        end select
         !
     end subroutine sumEdge_cVector3D_MR
     !
@@ -965,11 +1024,22 @@ contains
         class( Scalar_t ), allocatable, intent( out ) :: cell_h_out, cell_v_out
         logical, optional, intent( in ) :: interior_only
         !
-        call errStop( "sumEdgeVTI_cVector3D_MR > not implemented" )
+        call errStop( "sumEdgeVTI_cVector3D_MR > Under implementation" )
         !
     end subroutine sumEdgeVTI_cVector3D_MR
     !
-    !> No subroutine briefing
+    !> need to sort out face type (not really used as far as I recall!)
+    !> this should not be too hard, but I need to think about it for now
+    !> could just code for ptype = EDGE
+    !> NOTE: MAKE EVERYTHING sumCells -- get rid of the divide by 4 (etc.)
+    !> 
+    !> algorithm -- details (declarations, allocation, etc.)  need to be filled in
+    !> 
+    !> self is of class cScalar3D_MR (or rSscalar3D_MR); edge_obj (output)
+    !> is Vector of corresponding type
+    !> 
+    !> This is adjoint of sumEdges -- so reverse order of operations i
+    !> (e.g., for matrix multiplies (AB)' = B'A')
     !
     subroutine sumCell_cVector3D_MR( self, cell_in, ptype )
         implicit none
@@ -978,7 +1048,58 @@ contains
         class( Scalar_t ), intent( in ) :: cell_in
         character(*), intent( in ), optional :: ptype
         !
-        call errStop( "sumCell_cVector3D_MR > not implemented" )
+        integer :: i
+        character(10) :: grid_type
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "sumCell_cVector3D_MR > self not allocated." )
+        endif
+        !
+        if( .NOT. cell_in%is_allocated ) then
+            call errStop( "sumCell_cVector3D_MR > cell_in not allocated." )
+        endif
+        !
+        if( index( self%grid_type, CELL ) > 0 ) then
+            call errStop( "sumCell_cVector3D_MR > Only CELL type supported." )
+        endif
+        !
+        if( .NOT. present( ptype ) ) then
+            grid_type = EDGE
+        else
+            grid_type = ptype
+        endif
+        !
+        select type( cell_in )
+            !
+            class is( cScalar3D_MR_t )
+                !
+                select case( grid_type )
+                    !
+                    case( EDGE )
+                        !
+                        !> loop over sub-sclars and sum cells onto edge for each
+                        do i = 1, self%grid%n_grids
+                            call self%sub_vector(i)%sumCells( cell_in%sub_scalar(i) )
+                        enddo
+                        !
+                        !> then loop over INTERFACES (one less than n_grids) and fill in inactive edges
+                        do i = 1, cell_in%grid%n_grids-1
+                            call setInactiveEdgeT_cVector3D_MR( self%sub_vector(i), self%sub_vector(i+1) )
+                        enddo
+                        !
+                    case( FACE )
+                        !
+                        call errStop( "sumCell_cVector3D_MR: Unknown type FACE not implemented" )
+                        !
+                    case default
+                        call errStop( "sumCell_cVector3D_MR: Unknown type" )
+                    !
+                end select !type
+                !
+            class default
+                call errStop( "sumCell_cVector3D_MR > Unclassified cell_in" )
+            !
+        end select
         !
     end subroutine sumCell_cVector3D_MR
     !
@@ -991,7 +1112,7 @@ contains
         class( Scalar_t ), intent( in ) :: cell_h_in, cell_v_in
         character(*), intent( in ), optional :: ptype
         !
-        call errStop( "sumCellVTI_cVector3D_MR > not implemented" )
+        call errStop( "sumCellVTI_cVector3D_MR > Under implementation" )
         !
     end subroutine sumCellVTI_cVector3D_MR
     !
@@ -1977,5 +2098,227 @@ contains
         enddo
         !
     end subroutine print_cVector3D_MR
+    !
+    !> vec1 and vec2 are both SG cVectors
+    !> vec1 represents layers on top.   vec1 and vec2 have resolutions difffering
+    !> by a factor of 2 -- the coarser resolution could be the upper layers or
+    !> lower -- the routine can figure this out by comparing grid parameters for
+    !> vec1%grid and vec2%grid.
+    !> assume for now that vec1 is coarser grid -- then on the interface
+    !> (bottom of vec1, top of vec2)  the x/y edges of vec1 are active those of vec2
+    !> inactive.   The routine  loops over fine grid x and y edges on the interface:
+    !>     1) generates x,y,z coordinates of centers for each interface edge.  In the case
+    !>     we consider explicitly here, z will be 0 since these points are at top of the vec2 grid.
+    !>     2) change z to z_bottom when the fine gris is on top, and the coarse grid below.
+    !>     3) call vec1%interpFunc(x,y,z, ...) to get the (sparse vector)
+    !>     interpolation functional, form dot product with vec1, and set
+    !>     appropriate edge component of vec2
+    !> 
+    !> Afer call vec1 is unchanged, and vec_2 has interface x/y edges filled in
+    !> by interpolation of  coarse grid x/y edeges from vec1
+    !
+    subroutine setInactiveEdge_cVector3D_MR( vec_1, vec_2 )
+        implicit none
+        !
+        type( cVector3D_SG_t ), intent( inout ) :: vec_1, vec_2
+        !
+        integer :: i, j
+        real( kind=prec ) :: location(3)
+        class( Vector_t ), allocatable :: interp
+        type( Grid3D_SG_t ) :: sub_grid_1, sub_grid_2
+        !
+        sub_grid_1 = vec_1%grid
+        sub_grid_2 = vec_2%grid
+        !
+        !> vec1 is coarser (by factor of two)
+        if( vec_2%nx .GT. vec_1%nx ) then
+            !
+            !> fill in inactive edges (top boundary) of vec_2 first x-edges
+            do i = 1, vec_2%nx
+                do j = 1, vec_2%ny+1
+                    !
+                    !> these are supposed to be coordinates of centers of x-edges
+                    !> in vec_2, but at bottom of vec_1
+                    location(1) = sub_grid_2%x_center(i)
+                    location(2) = sub_grid_2%y_edge(j)
+                    !
+                    !> yes, use vec_1 to compute vertical position
+                    location(3) = sub_grid_1%z_edge( vec_1%nz+1 )
+                    !
+                    !> interpolate to location (in vec_1 grid) and store in top x/y layer of vec_2
+                    call vec_1%interpFunc( location, 'x', interp )
+                    !
+                    vec_2%x(i,j,1) = vec_1%dotProd( interp )
+                    !
+                enddo
+            enddo
+            !
+            !  then y-edges
+            do i = 1, vec_2%nx+1
+                do j = 1, vec_2%ny
+                    !
+                    !> these are supposed to be coordinates of centers of y-edges
+                    !> in vec_2, but at bottom of vec_1
+                    location(1) = sub_grid_2%x_edge(i)
+                    location(2) = sub_grid_2%y_center(j)
+                    !
+                    !> yes, use vec_1 to compute vertical position
+                    location(3) = sub_grid_1%z_edge( vec_1%nz + 1 )
+                    !
+                    !> interpolate to location (in vec_1 grid) and store in top x/y layer of vec_2
+                    call vec_1%interpFunc( location, 'y', interp )
+                    !
+                    vec_2%y(i,j,1) = vec_1%dotProd( interp )
+                    !
+                enddo
+            enddo
+        !
+        !> vec_2 is coarser
+        else
+            !If vec_2 is coarser
+            !--> switch vec_2, vec_2 
+            location(3) = 0
+            !last line of x-edge block is vec_2%x(i,j,vec_2%nz+1) = vec_2%dot(interp)
+            !and analaously for y block, etc.
+            !
+            !> fill in inactive edges (top boundary) of vec_2 first x-edges
+            do i = 1, vec_1%nx
+                do j = 1, vec_1%ny+1
+                    !
+                    !> these are supposed to be coordinates of centers of x-edges
+                    !> in vec_1, but at bottom of vec_2
+                    location(1) = sub_grid_1%x_center(i)
+                    location(2) = sub_grid_1%y_edge(j)
+                    !
+                    !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
+                    call vec_2%interpFunc( location, 'x', interp )
+                    !
+                    vec_1%x( i, j, vec_1%nz+1 ) = vec_2%dotProd( interp )
+                    !
+                enddo
+            enddo
+            !
+            !  then y-edges
+            do i = 1, vec_1%nx+1
+                do j = 1, vec_1%ny
+                    !
+                    !> these are supposed to be coordinates of centers of y-edges
+                    !> in vec_1, but at bottom of vec_2
+                    location(1) = sub_grid_1%x_edge(i)
+                    location(2) = sub_grid_1%y_center(j)
+                    !
+                    !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
+                    call vec_2%interpFunc( location, 'y', interp )
+                    !
+                    vec_1%x( i, j, vec_1%nz+1 ) = vec_2%dotProd( interp )
+                    !
+                enddo
+            enddo
+            !
+        endif
+        !
+    end subroutine setInactiveEdge_cVector3D_MR
+    !
+    !
+    !
+    subroutine setInactiveEdgeT_cVector3D_MR( vec_1, vec_2 )
+        implicit none
+        !
+        type( cVector3D_SG_t ), intent( inout ) :: vec_1, vec_2
+        !
+        integer :: i, j
+        real( kind=prec ) :: location(3)
+        class( Vector_t ), allocatable :: interp
+        type( Grid3D_SG_t ) :: sub_grid_1, sub_grid_2
+        !
+        sub_grid_1 = vec_1%grid
+        sub_grid_2 = vec_2%grid
+        !
+        !> vec1 is coarser (by factor of two)
+        if( vec_2%nx .GT. vec_1%nx ) then
+            !
+            !> fill in inactive edges (top boundary) of vec_2 first x-edges
+            do i = 1, vec_2%nx
+                do j = 1, vec_2%ny+1
+                    !
+                    !> these are supposed to be coordinates of centers of x-edges
+                    !> in vec2, but at bottom of vec1
+                    location(1) = sub_grid_2%x_center(i)
+                    location(2) = sub_grid_2%y_edge(j)
+                    !> yes, use vec1 to compute vertical position
+                    location(3) = sub_grid_1%z_edge( vec_1%nz+1 )
+                    !> interpolate to location (in vec1 grid) and store in top x/y layer of vec2
+                    call vec_1%interpFunc( location, 'x', interp )
+                    !> now that we have the interpolation coefficients, the adjoint uses these
+                    !> in a different way!
+                    call vec_1%multAdd( vec_2%x(i,j,1), interp )
+                    !
+                enddo
+            enddo
+            !
+            !  then y-edges
+            do i = 1, vec_2%nx+1
+                do j = 1, vec_2%ny
+                    !
+                    !> these are supposed to be coordinates of centers of y-edges
+                    !> in vec2, but at bottom of vec1
+                    location(1) = sub_grid_2%x_edge(i)
+                    location(2) = sub_grid_2%y_center(j)
+                    !> yes, use vec1 to compute vertical position
+                    location(3) = sub_grid_1%z_edge( vec_1%nz+1 )
+                    !> interpolate to location (in vec1 grid) and store in top x/y layer of vec2
+                    call vec_1%interpFunc( location, 'y', interp )
+                    !> now that we have the interpolation coefficients, the adjoint uses these
+                    !> in a different way!
+                    call vec_1%multAdd( vec_2%y(i,j,1), interp )
+                    !
+                enddo
+            enddo
+        !
+        !> vec_2 is coarser
+        else
+            !If vec_2 is coarser
+            !--> switch vec_2, vec_2 
+            location(3) = 0
+            !last line of x-edge block is vec_2%x(i,j,vec_2%nz+1) = vec_2%dot(interp)
+            !and analaously for y block, etc.
+            !
+            !> fill in inactive edges (top boundary) of vec_2 first x-edges
+            do i = 1, vec_1%nx
+                do j = 1, vec_1%ny+1
+                    !
+                    !> these are supposed to be coordinates of centers of x-edges
+                    !> in vec_1, but at bottom of vec_2
+                    location(1) = sub_grid_1%x_center(i)
+                    location(2) = sub_grid_1%y_edge(j)
+                    !
+                    !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
+                    call vec_2%interpFunc( location, 'x', interp )
+                    !
+                    call vec_2%multAdd( vec_1%x( i, j, vec_1%nz+1 ), interp )
+                    !
+                enddo
+            enddo
+            !
+            !  then y-edges
+            do i = 1, vec_1%nx+1
+                do j = 1, vec_1%ny
+                    !
+                    !> these are supposed to be coordinates of centers of y-edges
+                    !> in vec_1, but at bottom of vec_2
+                    location(1) = sub_grid_1%x_edge(i)
+                    location(2) = sub_grid_1%y_center(j)
+                    !
+                    !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
+                    call vec_2%interpFunc( location, 'y', interp )
+                    !
+                    call vec_2%multAdd( vec_1%y( i, j, vec_1%nz+1 ), interp )
+                    !
+                enddo
+            enddo
+            !
+        endif
+        !
+    end subroutine setInactiveEdgeT_cVector3D_MR
     !
 end module cVector3D_MR

@@ -138,7 +138,7 @@ contains
         !>
         allocate( self%E( 1 ) )
         !
-        self%E(1) = E_p
+        self%E(1) = self%E_p
         !
         call self%E(1)%mult( self%cond_anomaly )
         !
@@ -288,7 +288,7 @@ contains
         !
         integer ix, iy, iz, counter
         !
-        E_p = cVector3D_SG_t( grid, EDGE )
+        self%E_p = cVector3D_SG_t( grid, EDGE )
         !
         counter = 1
         !
@@ -297,7 +297,7 @@ contains
             do iy = 1, grid%Ny+1 !Edge Y
                 do ix = 1, grid%Nx !Center X
                     !
-                    E_p%x(ix,iy,iz) = ex1D(counter)
+                    self%E_p%x(ix,iy,iz) = ex1D(counter)
                     counter = counter + 1
                     !
                 enddo
@@ -308,7 +308,7 @@ contains
         do iz = 1, grid%Nz+1 !Edge Z
             do iy = 1, grid%Ny !Center y
                 do ix = 1, grid%Nx+1 !Edge x
-                    E_p%y(ix,iy,iz) = ey1D(counter)
+                    self%E_p%y(ix,iy,iz) = ey1D(counter)
                     counter = counter + 1
                 enddo
             enddo
@@ -318,7 +318,7 @@ contains
         do iz = 1, grid%Nz !Center Z
             do iy = 1, grid%Ny+1 !Edge y
                 do ix = 1, grid%Nx+1 !Edge x
-                    E_p%z(ix,iy,iz) = jz1D(counter)
+                    self%E_p%z(ix,iy,iz) = jz1D(counter)
                     counter = counter + 1
                 enddo
             enddo

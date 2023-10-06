@@ -15,8 +15,6 @@ module ModelParameter
         !
         class( MetricElements_t ), pointer :: metric
         !
-        class( Grid_t ), allocatable :: param_grid
-        !
         integer :: anisotropic_level, mKey(8)
         !
         real( kind=prec ) :: air_cond
@@ -409,8 +407,6 @@ contains
         implicit none
         !
         class( ModelParameter_t ), intent( inout ) :: self
-        !
-        if( allocated( self%param_grid ) ) deallocate( self%param_grid )
         !
         self%sigmap_ptr => null()
         !
