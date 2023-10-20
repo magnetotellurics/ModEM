@@ -680,7 +680,7 @@ contains
         !
         select case( node_type )
         !
-            case( CELL, CELL_EARTH )
+            case( CELL )
                  nx = self%nx
                  ny = self%ny
                  nz = self%nz

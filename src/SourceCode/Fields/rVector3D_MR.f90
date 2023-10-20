@@ -643,7 +643,7 @@ contains
         end select
         !
     end subroutine fromSG_rVector3D_MR
-	!
+    !
     !> Converts SG Vector object to MR by averaging
     !> used only for e0
     !
@@ -1079,11 +1079,17 @@ contains
                         !
                         !> loop over sub-sclars and sum cells onto edge for each
                         do i = 1, self%grid%n_grids
+                            !
+                            write( *, * ) "#1 sumCell_rVector3D_MR: ", i
+                            !
                             call self%sub_vector(i)%sumCells( cell_in%sub_scalar(i) )
                         enddo
                         !
                         !> then loop over INTERFACES (one less than n_grids) and fill in inactive edges
                         do i = 1, cell_in%grid%n_grids-1
+                            !
+                            write( *, * ) "#2 sumCell_rVector3D_MR: ", i
+                            !
                             call setInactiveEdgeT_rVector3D_MR( self%sub_vector(i), self%sub_vector(i+1) )
                         enddo
                         !
@@ -1092,8 +1098,9 @@ contains
                         call errStop( "sumCell_rVector3D_MR: Unknown type FACE not implemented" )
                         !
                     case default
+                        !
                         call errStop( "sumCell_rVector3D_MR: Unknown type" )
-                    !
+                        !
                 end select !type
                 !
             class default
@@ -2185,7 +2192,7 @@ contains
         sub_grid_2 = vec_2%grid
         !
         !> vec1 is coarser (by factor of two)
-        if( vec_2%nx .GT. vec_1%nx ) then
+        if( vec_1%nx .LT. vec_2%nx ) then
             !
             !> fill in inactive edges (top boundary) of vec_2 first x-edges
             do i = 1, vec_2%nx
@@ -2197,6 +2204,7 @@ contains
                     location(2) = sub_grid_2%y_edge(j)
                     !> yes, use vec1 to compute vertical position
                     location(3) = sub_grid_1%z_edge( vec_1%nz+1 )
+                    !
                     !> interpolate to location (in vec1 grid) and store in top x/y layer of vec2
                     call vec_1%interpFunc( location, 'x', interp )
                     !> now that we have the interpolation coefficients, the adjoint uses these
@@ -2226,7 +2234,7 @@ contains
             enddo
         !
         !> vec_2 is coarser
-        else
+        else if( vec_2%nx .LT. vec_1%nx ) then
             !If vec_2 is coarser
             !--> switch vec_2, vec_2 
             location(3) = 0
@@ -2247,6 +2255,8 @@ contains
                     !
                     call vec_2%multAdd( cmplx( vec_1%x( i, j, vec_1%nz+1 ), 0.0, kind=prec ), interp )
                     !
+					deallocate( interp )
+					!
                 enddo
             enddo
             !
@@ -2267,8 +2277,11 @@ contains
                 enddo
             enddo
             !
+        else
+            call errStop( "setInactiveEdgeT_rVector3D_MR > sub-grids must differ coarse by 2" )
         endif
         !
     end subroutine setInactiveEdgeT_rVector3D_MR
     !
 end module rVector3D_MR
+!

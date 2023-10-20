@@ -86,7 +86,7 @@ contains
         !
         type( cScalar3D_SG_t ) :: self
         !
-        integer :: nx, ny, nz, nzAir, nz_earth
+        integer :: nx, ny, nz, nzAir
         integer :: status
         !
         !write( *, * ) "Constructor cScalar3D_SG"
@@ -98,7 +98,6 @@ contains
         !
         !> Grid dimensions
         call grid%getDimensions( nx, ny, nz, nzAir )
-        nz_earth = nz - nzAir
         !
         self%nx = nx
         self%ny = ny
@@ -118,12 +117,6 @@ contains
              !
              allocate(self%v(nx, ny, nz), stat=status) 
              self%NdV = (/self%nx, self%ny, self%nz/)
-             !
-        elseif( grid_type == CELL_EARTH ) then
-             !
-             self%nz = nz_earth
-             allocate(self%v(nx, ny, nz_earth), stat=status)
-             self%NdV = (/nx, ny, nz_earth/)
              !
         else
             call errStop( "cScalar3D_SG_ctor > unrecognized grid type: ["//grid_type//"]" )
@@ -185,7 +178,7 @@ contains
         !
         select case( self%grid_type )
             !
-            case( NODE, CELL, CELL_EARTH ) 
+            case( NODE, CELL ) 
                 !
                 self%v((/1, self%NdV(1)/), :, :) = cvalue
                 self%v(:, (/1, self%NdV(2)/), :) = cvalue

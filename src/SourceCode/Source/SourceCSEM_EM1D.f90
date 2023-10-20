@@ -220,7 +220,7 @@ contains
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
         !
         type( rScalar3D_SG_t ) :: sigma_cell
-        real( kind=prec ), dimension( nlay1D ):: sig_h, sig_v, zlay0
+        !real( kind=prec ), dimension( nlay1D ):: sig_h, sig_v, zlay0
         integer :: i, k
         !
         if( self%sigma%anisotropic_level == 1 .OR. self%sigma%anisotropic_level == 2 ) then
@@ -244,39 +244,39 @@ contains
             call self%setCondAnomally( self%cond_anomaly_v, self%sigma%anisotropic_level )
             !
             self%sig1D_v = sig1D
-            !
-            !> Merge Layers (Michael Commer)
-            i = nlay1D
-            !
-            k = 1
-            sig_h(1) = SIGMA_AIR
-            sig_v(1) = sig_h(1)
-            zlay0(1) = 0d0
-            !
-            ! air layer
-            do i = sigma_cell%grid%nzAir + 1, nlay1D
-                ! if either sig_H or sig_V change from layer k to k+1, add new layer
-                if( abs( self%sig1D_h(i) - sig_h( k ) ) > SIGMA_MIN .OR. abs( self%sig1D_v(i) - sig_v( k ) ) > SIGMA_MIN ) then
-                    !
-                    k = k + 1
-                    sig_h( k ) = self%sig1D_h(i)
-                    sig_v( k ) = self%sig1D_v(i)
-                    zlay0( k ) = zlay1D(i)
-                    !
-                endif
-            enddo
-            !
-            ! reset temp. 1D-model arrays
-            do i = 1, k ! new layers
-                !
-                self%sig1D_h(i) = sig_h(i)
-                self%sig1D_v(i) = sig_v(i)
-                zlay1D(i) = zlay0(i)
-                !
-            enddo
-            !
-            nlay1D = k
-            !
+            ! !
+            ! !> Merge Layers (Michael Commer)
+            ! i = nlay1D
+            ! !
+            ! k = 1
+            ! sig_h(1) = SIGMA_AIR
+            ! sig_v(1) = sig_h(1)
+            ! zlay0(1) = 0d0
+            ! !
+            ! ! air layer
+            ! do i = sigma_cell%grid%nzAir + 1, nlay1D
+                ! ! if either sig_H or sig_V change from layer k to k+1, add new layer
+                ! if( abs( self%sig1D_h(i) - sig_h( k ) ) > SIGMA_MIN .OR. abs( self%sig1D_v(i) - sig_v( k ) ) > SIGMA_MIN ) then
+                    ! !
+                    ! k = k + 1
+                    ! sig_h( k ) = self%sig1D_h(i)
+                    ! sig_v( k ) = self%sig1D_v(i)
+                    ! zlay0( k ) = zlay1D(i)
+                    ! !
+                ! endif
+            ! enddo
+            ! !
+            ! ! reset temp. 1D-model arrays
+            ! do i = 1, k ! new layers
+                ! !
+                ! self%sig1D_h(i) = sig_h(i)
+                ! self%sig1D_v(i) = sig_v(i)
+                ! zlay1D(i) = zlay0(i)
+                ! !
+            ! enddo
+            ! !
+            ! nlay1D = k
+            ! !
         else
             call errStop( "set1DModel_SourceCSEM_EM1D > Anisotropy with level above 2 not yet supported" )
         endif

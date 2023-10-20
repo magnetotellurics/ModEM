@@ -56,7 +56,7 @@ contains
         !> Benchmarcking
         !layers = (/ 1, 11 /)
         !> MR AS ONE SU!B-GRID
-        !layers = (/ 0, 40 /)
+        layers = (/ 0, 40 /)
         !layers = (/ 0, 20, 0, 20 /)
         layers = (/ 0, 20, 1, 20 /)
         !layers = (/ 0, 20, 1, 10, 2, 10 /)
@@ -146,7 +146,7 @@ contains
                     enddo
                 enddo
                 !
-                cell_cond = rScalar3D_SG_t( grid, CELL_EARTH )
+                cell_cond = rScalar3D_SG_t( grid, CELL )
                 !
                 if( index( paramType, "LOGE" ) > 0 .OR. &
                     index( paramType, "LOG10" ) > 0 ) then

@@ -1521,7 +1521,6 @@ contains
         character, intent( in ) :: xyz
         class( Vector_t ), allocatable, intent( inout ) :: interp
         !
-        type( rVector3D_SG_t ) :: temp_interp
         real( kind=prec ), allocatable, dimension(:) :: xC, yC, zC
         integer :: ix, iy, iz, i
         real( kind=prec ) :: wx, wy, wz
@@ -1539,7 +1538,7 @@ contains
                     !
                     case( EDGE )
                         !
-                        temp_interp = rVector3D_SG_t( grid, EDGE )
+                        allocate( interp, source = rVector3D_SG_t( grid, EDGE ) )
                         !
                         select case( xyz )
                             !
@@ -1580,7 +1579,7 @@ contains
                         !
                     case( FACE )
                         !
-                        temp_interp = rVector3D_SG_t( grid, FACE )
+                        allocate( interp, source = rVector3D_SG_t( grid, FACE ) )
                         !
                         select case( xyz )
                             !
@@ -1685,47 +1684,54 @@ contains
         !
         deallocate( zC )
         !
-        select case( xyz )
+        select type( interp )
             !
-            case("x")
+            class is( rVector3D_SG_t )
                 !
-                temp_interp%x(ix,iy,iz) = wx*wy*wz
-                temp_interp%x(ix+1,iy,iz) = (1-wx)*wy*wz
-                temp_interp%x(ix,iy+1,iz) = wx*(1-wy)*wz
-                temp_interp%x(ix,iy,iz+1) = wx*wy*(1-wz)
-                temp_interp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                temp_interp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                temp_interp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                temp_interp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                select case( xyz )
+                    !
+                    case("x")
+                        !
+                        interp%x(ix,iy,iz) = wx*wy*wz
+                        interp%x(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%x(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%x(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                        !
+                    case("y")
+                        !
+                        interp%y(ix,iy,iz) = wx*wy*wz
+                        interp%y(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%y(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%y(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                        !
+                    case("z")
+                        !
+                        interp%z(ix,iy,iz) = wx*wy*wz
+                        interp%z(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%z(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%z(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                        !
+                    case default
+                        call errStop( "interpFunc_rVector3D_SG: Unknown xyz" )
+                        !
+                end select !XYZ
                 !
-            case("y")
-                !
-                temp_interp%y(ix,iy,iz) = wx*wy*wz
-                temp_interp%y(ix+1,iy,iz) = (1-wx)*wy*wz
-                temp_interp%y(ix,iy+1,iz) = wx*(1-wy)*wz
-                temp_interp%y(ix,iy,iz+1) = wx*wy*(1-wz)
-                temp_interp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                temp_interp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                temp_interp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                temp_interp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                !
-            case("z")
-                !
-                temp_interp%z(ix,iy,iz) = wx*wy*wz
-                temp_interp%z(ix+1,iy,iz) = (1-wx)*wy*wz
-                temp_interp%z(ix,iy+1,iz) = wx*(1-wy)*wz
-                temp_interp%z(ix,iy,iz+1) = wx*wy*(1-wz)
-                temp_interp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                temp_interp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                temp_interp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                temp_interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                !
-            case default
-                call errStop( "interpFunc_rVector3D_SG: Unknown xyz" )
+            class default
+                call errStop( "interpFunc_rVector3D_SG: Unknown interp" )
             !
         end select !XYZ
-        !
-        allocate( interp, source = temp_interp )
         !
     end subroutine interpFunc_rVector3D_SG
     !

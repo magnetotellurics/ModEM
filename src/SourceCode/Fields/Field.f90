@@ -513,9 +513,9 @@ contains
                 !
                 ind_boundary = self%grid%NODEb
                 !
-            case( CELL, CELL_EARTH )
+            case( CELL )
                 !
-                call errStop( "CELL/CELL_EARTH indBoundary need to be implement" )
+                call errStop( "CELL indBoundary need to be implement" )
                 !
             case default
                 call errStop( "indBoundary > Invalid grid type ["//self%grid_type//"]" )
@@ -546,9 +546,9 @@ contains
                 !
                 ind_interior = self%grid%NODEi
                 !
-            case( CELL, CELL_EARTH )
+            case( CELL )
                 !
-                call errStop( "CELL/CELL_EARTH indInterior need to be implement" )
+                call errStop( "CELL indInterior need to be implement" )
                 !
             case default
                 call errStop( "indInterior > Invalid grid type ["//self%grid_type//"]" )
@@ -579,9 +579,9 @@ contains
                 !
                 ind_active = self%grid%NODEa
                 !
-            case( CELL, CELL_EARTH )
+            case( CELL )
                 !
-                call errStop( "CELL/CELL_EARTH indActive need to be implement" )
+                call errStop( "CELL indActive need to be implement" )
                 !
             case default
                 call errStop( "indActive > Invalid grid type ["//self%grid_type//"]" )

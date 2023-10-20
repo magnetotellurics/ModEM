@@ -1098,7 +1098,7 @@ contains
         !
         integer :: i, param_type_size
         class( Scalar_t ), allocatable :: cell_cond
-        class( Grid_t ), allocatable :: aux_grid
+        class( Grid_t ), allocatable, target :: aux_grid
         !
         param_type_size = 0
         !
@@ -1129,7 +1129,7 @@ contains
                         !
                         call unpackGridBuffer( aux_grid, parent_buffer, parent_buffer_size, index )
                         !
-                        model%param_grid = aux_grid
+                        model%param_grid => aux_grid
                         !
                         deallocate( aux_grid )
                         !
@@ -1173,7 +1173,7 @@ contains
                         !
                         call unpackGridBuffer( aux_grid, parent_buffer, parent_buffer_size, index )
                         !
-                        model%param_grid = aux_grid
+                        model%param_grid => aux_grid
                         !
                         deallocate( aux_grid )
                         !

@@ -184,7 +184,7 @@ contains
                 ! Loop over interfaces: set redundant interface edges to 2
                 select case( temp_scalar%grid_type )
                     !
-                    case( CELL, CELL_EARTH )
+                    case( CELL )
                         int_only = .FALSE.
                     case( NODE )
                         int_only = .TRUE.
@@ -520,7 +520,7 @@ contains
         !
         select case( self%grid_type )
             !
-            case( CELL, CELL_EARTH )
+            case( CELL )
                 !
                 select type( grid => self%grid )
                     !

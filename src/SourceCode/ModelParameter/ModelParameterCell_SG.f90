@@ -61,13 +61,17 @@ contains
             self%param_type = trim( param_type )
         endif
         !
-        self%param_grid = cell_cond%grid
+        allocate( self%param_grid, source = Grid3D_SG_t( cell_cond%grid%nx, cell_cond%grid%ny, 0, &
+        ( cell_cond%grid%nz - cell_cond%grid%nzAir ), cell_cond%grid%dx, cell_cond%grid%dy, &
+        cell_cond%grid%dz( cell_cond%grid%nzAir+1 : cell_cond%grid%nz ) ) )
         !
         self%anisotropic_level = anisotropic_level
         !
         allocate( self%cell_cond( anisotropic_level ) )
         !
         self%cell_cond(1) = cell_cond
+        !
+        self%cell_cond(1)%grid => self%param_grid
         !
         if( present( param_type ) ) then
             !
@@ -101,11 +105,17 @@ contains
             self%param_type = trim( param_type )
         endif
         !
-        self%param_grid = cell_cond(1)%grid
+        allocate( self%param_grid, source = Grid3D_SG_t( cell_cond(1)%grid%nx, cell_cond(1)%grid%ny, 0, &
+        ( cell_cond(1)%grid%nz - cell_cond(1)%grid%nzAir ), cell_cond(1)%grid%dx, cell_cond(1)%grid%dy, &
+        cell_cond(1)%grid%dz( cell_cond(1)%grid%nzAir+1 : cell_cond(1)%grid%nz ) ) )
         !
         self%anisotropic_level = size( cell_cond )
         !
         self%cell_cond = cell_cond
+        !
+        do i = 1, self%anisotropic_level
+            self%cell_cond(i)%grid => self%param_grid
+        enddo
         !
         if( present( param_type ) ) then
             !

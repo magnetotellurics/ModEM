@@ -536,8 +536,8 @@ contains
         character( len=4 ), intent( in ) :: grid_type
         class( Scalar_t ), allocatable, intent( out ) :: scalar
         !
-        if( grid_type /= NODE .AND. grid_type /= CELL .AND. grid_type /= CELL_EARTH ) then
-            call errStop( "createScalar_MetricElements_SG > grid_type must be NODE, CELL or CELL_EARTH" )
+        if( grid_type /= NODE .AND. grid_type /= CELL ) then
+            call errStop( "createScalar_MetricElements_SG > grid_type must be NODE or CELL" )
         else
             !
             if( scalar_type == real_t ) then

@@ -533,7 +533,7 @@ contains
         class( InversionNLCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma
-        class( ModelParameter_t ), allocatable, intent( inout ) :: mHat, grad
+		class( ModelParameter_t ), allocatable, intent( inout ) :: mHat, grad
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: dHat
         integer, intent( in ) :: i_sol
         !
@@ -670,13 +670,14 @@ contains
     !> systems in optimisation research (Pronzato et al [2000, 2001]).
     !> To the best of my knowledge, it is not useful for NLCG.
     !
-    subroutine lineSearchCubic( self, all_data, sigma, h, mHat, f, grad, niter, dHat, gamma )
+    subroutine lineSearchCubic( self, all_data, sigma, h, mHat, &
+                                f, grad, niter, dHat, gamma )
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma
-        class( ModelParameter_t ), allocatable, intent( inout ) :: h, mHat
+		class( ModelParameter_t ), allocatable, intent( inout ) :: h, mHat
         real( kind=prec ), intent( inout ) :: f
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
         integer, intent( out ) :: niter
@@ -749,11 +750,13 @@ contains
             starting_guess = .TRUE.
             self%alpha = alpha_1
             dHat = dHat_1
-            mHat = mHat_1
-            self%rms = rms_1
-            f = f_1
+            i_sol = 1
             !
-            i_sol = 0
+            mHat = mHat_1
+            !
+            self%rms = rms_1
+            !
+            f = f_1
             !
             ! compute the gradient and exit
             if( relaxation ) then
@@ -761,6 +764,8 @@ contains
                 mHat = mHat_0
                 !
                 call mHat%linComb( ONE, gamma * self%alpha, h )
+                !
+                i_sol = 0
                 !
                 call self%func( all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
                 !
@@ -780,6 +785,7 @@ contains
             !
         endif
         !
+        ! otherwise compute the functional at the minimizer of the quadratic
         self%alpha = -b / ( TWO * a )
         !
         mHat = mHat_0
@@ -804,10 +810,10 @@ contains
                 starting_guess = .TRUE.
                 self%alpha = alpha_1
                 dHat = dHat_1
-                !
                 i_sol = 1
                 !
                 mHat = mHat_1
+                !
                 self%rms = rms_1
                 f = f_1
                 !
@@ -924,7 +930,6 @@ contains
             !
             self%alpha = alpha_1
             dHat = dHat_1
-            !
             i_sol = 1
             !
             mHat = mHat_1

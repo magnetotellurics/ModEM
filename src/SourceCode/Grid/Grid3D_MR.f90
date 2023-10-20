@@ -203,7 +203,9 @@ contains
         integer :: i, i1, i2, last
         real( kind=prec ) :: ddz_interface
         !
-        ! Check if coarseness parameters are consistent with
+        write( *, * ) sum( self%coarseness(:, 2) ), size( self%dz )
+        !
+        !> Check if coarseness parameters are consistent with
         if( sum( self%coarseness(:, 2) ) /= size( self%dz ) ) then
             call errStop( "setupMR > Inconsistent grid coarseness parameter!" )
         endif
@@ -761,7 +763,7 @@ contains
         write( *, * ) "CoarseMAT Row4 ( iEnd ): [", self%coarseness(:,4), "]"
         !
         call self%setupMR
-        !
+        
     end subroutine updateAirLayers_Grid3D_MR
     !
     !> No subroutine briefing
