@@ -1129,7 +1129,7 @@ contains
                         !
                         call unpackGridBuffer( aux_grid, parent_buffer, parent_buffer_size, index )
                         !
-                        model%param_grid => aux_grid
+                        allocate( model%param_grid, source = aux_grid )
                         !
                         deallocate( aux_grid )
                         !
@@ -1173,7 +1173,7 @@ contains
                         !
                         call unpackGridBuffer( aux_grid, parent_buffer, parent_buffer_size, index )
                         !
-                        model%param_grid => aux_grid
+                        allocate( model%param_grid, source = aux_grid )
                         !
                         deallocate( aux_grid )
                         !
