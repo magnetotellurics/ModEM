@@ -228,8 +228,7 @@ contains
         class( Vector_t ), intent( inout ) :: e_vec
         !
         integer :: i_grid, k0, k1, k2
-        type( rScalar3D_SG_t ) :: sigma_cell_sg
-        type( rScalar3D_MR_t ) :: sigma_cell_mr_with_al
+        type( rScalar3D_MR_t ) :: sigma_cell_mr, sigma_cell_mr_with_al
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "PDEmapping_ModelParameterCell_SG > self not allocated" )
@@ -239,27 +238,36 @@ contains
             call errStop( "PDEmapping_ModelParameterCell_SG > e_vec not allocated" )
         endif
         !
-        if( .NOT. self%cell_cond(1)%is_allocated ) then
-            call errStop( "PDEmapping_ModelParameterCell_SG > self%cell_cond(1) not allocated" )
-        endif
+        !sigma_cell_mr = rScalar3D_MR_t( self%cell_cond(1)%grid, self%cell_cond(1)%grid_type )
         !
-        sigma_cell_mr_with_al = rScalar3D_MR_t( self%metric%grid, self%cell_cond(1)%grid_type )
+        !call sigma_cell_mr%fromSG( self%cell_cond(1) )
+        !
+        sigma_cell_mr_with_al = rScalar3D_MR_t( self%metric%grid, CELL )
         !
         select type( grid => self%metric%grid )
             !
             class is( Grid3D_MR_t )
                 !
-                k0 = self%metric%grid%nzAir
-                k1 = k0 + 1
-                k2 = self%metric%grid%Nz
-                !
-                sigma_cell_sg = rScalar3D_SG_t( self%metric%grid, CELL )
-                !
-                sigma_cell_sg%v( :, :, 1:k0 ) = self%air_cond
-                !
-                sigma_cell_sg%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v, kind=prec ) )
-                !
-                call sigma_cell_mr_with_al%fromSG( sigma_cell_sg )
+                do i_grid = 1, size( sigma_cell_mr_with_al%sub_scalar )
+                    !
+					k0 = grid%sub_grid( i_grid )%NzAir
+					k1 = grid%coarseness( i_grid, 3 )
+					k2 = grid%coarseness( i_grid, 4 )
+					!
+					write( *, * ) k0, k1, k2
+					!
+                    if( i_grid == 1 ) then
+						!
+                        sigma_cell_mr_with_al%sub_scalar( i_grid )%v( :, :, 1:k0 ) = self%air_cond
+						!
+						sigma_cell_mr_with_al%sub_scalar( i_grid )%v( :, :, k0+1:k2 ) = self%sigMap( real( self%cell_cond(1)%v( :, :, 1:k2-k0 ), kind=prec ) )
+						!
+                    else
+						!
+						sigma_cell_mr_with_al%sub_scalar( i_grid )%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v( :, :, k1-k0:k2-k0 ), kind=prec ) )
+						!
+					endif
+                enddo
                 !
                 call sigma_cell_mr_with_al%mult( self%metric%v_cell )
                 !
@@ -271,7 +279,7 @@ contains
                 !
             class default
                 call errStop( "PDEmapping_ModelParameterCell_MR > Unclassified grid" )
-				!
+            !
         end select
         !
         ! ************************************************************************
