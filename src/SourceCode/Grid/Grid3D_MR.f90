@@ -831,7 +831,7 @@ contains
                 self%n_active_cell = rhs%n_active_cell
                 self%cs = rhs%cs
                 !
-                self%iXYZinterior = rhs%iXYZinterior
+				if( allocated( rhs%iXYZinterior ) ) self%iXYZinterior = rhs%iXYZinterior
                 !
                 self%sub_grid(:) = rhs%sub_grid(:)
                 !

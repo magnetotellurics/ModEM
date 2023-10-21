@@ -184,6 +184,7 @@ contains
         real( kind=prec ), intent( in ) :: omega_in
         !
         class( Vector_t ), allocatable:: sig_temp
+        class( Grid_t ), allocatable :: temp_grid_mr
         complex( kind=prec ), allocatable, dimension(:) :: sig_vec_v, v_edge_v
         !
         call self%metric%createVector( real_t, EDGE, sig_temp )

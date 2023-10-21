@@ -13,7 +13,7 @@ module ModelParameterCell
         !
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
         !
-        class( Grid_t ), pointer :: param_grid
+        !class( Grid_t ), pointer :: param_grid
         !
         contains
             !

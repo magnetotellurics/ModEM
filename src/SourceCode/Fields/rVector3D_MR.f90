@@ -1086,12 +1086,12 @@ contains
                         enddo
                         !
                         !> then loop over INTERFACES (one less than n_grids) and fill in inactive edges
-                        do i = 1, self%grid%n_grids-1
+                        do i = 1, cell_in%grid%n_grids-1
                             !
                             write( *, * ) "#2 sumCell_rVector3D_MR: ", i, size( self%sub_vector(i)%x ), size( self%sub_vector(i+1)%x )
                             !
                             call setInactiveEdgeT_rVector3D_MR( self%sub_vector(i), self%sub_vector(i+1) )
-							!
+                            !
                         enddo
                         !
                     case( FACE )
@@ -2199,6 +2199,8 @@ contains
             do i = 1, vec_2%nx
                 do j = 1, vec_2%ny+1
                     !
+                    write( *, * ) "i, j :", i, j
+                    !
                     !> these are supposed to be coordinates of centers of x-edges
                     !> in vec2, but at bottom of vec1
                     location(1) = sub_grid_2%x_center(i)
@@ -2211,6 +2213,8 @@ contains
                     !> now that we have the interpolation coefficients, the adjoint uses these
                     !> in a different way!
                     call vec_1%multAdd( cmplx( vec_2%x(i,j,1), 0.0, kind=prec ), interp )
+                    !
+                    deallocate( interp )
                     !
                 enddo
             enddo
@@ -2230,6 +2234,8 @@ contains
                     !> now that we have the interpolation coefficients, the adjoint uses these
                     !> in a different way!
                     call vec_1%multAdd( cmplx( vec_2%y(i,j,1), 0.0, kind=prec ), interp )
+                    !
+                    deallocate( interp )
                     !
                 enddo
             enddo
@@ -2254,10 +2260,10 @@ contains
                     !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
                     call vec_2%interpFunc( location, 'x', interp )
                     !
-                    !call vec_2%multAdd( cmplx( vec_1%x( i, j, vec_1%nz+1 ), 0.0, kind=prec ), interp )
+                    call vec_2%multAdd( cmplx( vec_1%x( i, j, vec_1%nz+1 ), 0.0, kind=prec ), interp )
                     !
-					deallocate( interp )
-					!
+                    deallocate( interp )
+                    !
                 enddo
             enddo
             !
@@ -2274,6 +2280,8 @@ contains
                     call vec_2%interpFunc( location, 'y', interp )
                     !
                     call vec_2%multAdd( cmplx( vec_1%y( i, j, vec_1%nz+1 ), 0.0, kind=prec ), interp )
+                    !
+                    deallocate( interp )
                     !
                 enddo
             enddo

@@ -21,6 +21,8 @@ module ModelParameter
         !
         character(:), allocatable :: param_type
         !
+        class( Grid_t ), pointer :: param_grid
+        !
         logical :: is_allocated
         !
         procedure( interface_sigmap_model_parameter ), pointer, nopass :: sigmap_ptr

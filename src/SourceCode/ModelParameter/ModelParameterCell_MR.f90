@@ -169,15 +169,7 @@ contains
         !
         call sigma_cell_mr%fromSG( self%cell_cond(1) )
         !
-        write( *, * )  "sigma_cell_mr after: "
-        !
-        call sigma_cell_mr%write(0)
-        !
-        write( *, * )  "cell_cond(1): ", self%cell_cond(1)%nx, self%cell_cond(1)%ny, self%cell_cond(1)%nz
-        !
         sigma_cell_mr_with_al = rScalar3D_MR_t( self%metric%grid, CELL )
-        !
-        write( *, * )  "sigma_cell_mr_with_al: "
         !
         call sigma_cell_mr_with_al%write(0)
         !
@@ -197,10 +189,7 @@ contains
                         !
                         sigma_cell_mr_with_al%sub_scalar( i_grid )%v( :, :, k1:k2 ) = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
                         !
-                        write( *, * ) i_grid, size( sigma_cell_mr_with_al%sub_scalar( i_grid )%v( :, :, k1:k2 ) ), size( sigma_cell_mr%sub_scalar( i_grid )%v )
                     else
-                        !
-                        write( *, * ) i_grid, size( sigma_cell_mr_with_al%sub_scalar( i_grid )%v ), size( sigma_cell_mr%sub_scalar( i_grid )%v )
                         !
                         sigma_cell_mr_with_al%sub_scalar( i_grid )%v = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
                         !
@@ -227,8 +216,8 @@ contains
         class( ModelParameterCell_MR_t ), intent( in ) :: self
         class( Vector_t ), intent( inout ) :: e_vec
         !
-        integer :: i_grid, k0, k1, k2
-        type( rScalar3D_MR_t ) :: sigma_cell_mr, sigma_cell_mr_with_al
+        integer :: i_grid, nz_air
+        type( rScalar3D_MR_t ) :: sigma_cell_mr
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "PDEmapping_ModelParameterCell_SG > self not allocated" )
@@ -238,40 +227,28 @@ contains
             call errStop( "PDEmapping_ModelParameterCell_SG > e_vec not allocated" )
         endif
         !
-        !sigma_cell_mr = rScalar3D_MR_t( self%cell_cond(1)%grid, self%cell_cond(1)%grid_type )
-        !
-        !call sigma_cell_mr%fromSG( self%cell_cond(1) )
-        !
-        sigma_cell_mr_with_al = rScalar3D_MR_t( self%metric%grid, CELL )
-        !
         select type( grid => self%metric%grid )
             !
             class is( Grid3D_MR_t )
                 !
-                do i_grid = 1, size( sigma_cell_mr_with_al%sub_scalar )
+                sigma_cell_mr = rScalar3D_MR_t( grid, self%cell_cond(1)%grid_type )
+                !
+                nz_air = grid%sub_grid(1)%NzAir
+                !
+                sigma_cell_mr%sub_scalar(1)%v( :, :, 1:nz_air ) = self%air_cond
+                !
+                sigma_cell_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) = self%sigMap( real( self%cell_cond(1)%v( :, :, 1:sigma_cell_mr%sub_scalar(1)%nz-nz_air ), kind=prec ) )
+                !
+                do i_grid = 2, size( sigma_cell_mr%sub_scalar )
                     !
-					k0 = grid%sub_grid( i_grid )%NzAir
-					k1 = grid%coarseness( i_grid, 3 )
-					k2 = grid%coarseness( i_grid, 4 )
-					!
-					write( *, * ) k0, k1, k2
-					!
-                    if( i_grid == 1 ) then
-						!
-                        sigma_cell_mr_with_al%sub_scalar( i_grid )%v( :, :, 1:k0 ) = self%air_cond
-						!
-						sigma_cell_mr_with_al%sub_scalar( i_grid )%v( :, :, k0+1:k2 ) = self%sigMap( real( self%cell_cond(1)%v( :, :, 1:k2-k0 ), kind=prec ) )
-						!
-                    else
-						!
-						sigma_cell_mr_with_al%sub_scalar( i_grid )%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v( :, :, k1-k0:k2-k0 ), kind=prec ) )
-						!
-					endif
+					sigma_cell_mr%sub_scalar( i_grid )%v = R_ZERO
+                    sigma_cell_mr%sub_scalar( i_grid )%v( :, :, : ) = self%sigMap( real( self%cell_cond(1)%v( :, :, sigma_cell_mr%sub_scalar(i_grid-1)%nz-nz_air+1:sigma_cell_mr%sub_scalar(i_grid)%nz ), kind=prec ) )
+                    !
                 enddo
                 !
-                call sigma_cell_mr_with_al%mult( self%metric%v_cell )
+                call sigma_cell_mr%mult( self%metric%v_cell )
                 !
-                call e_vec%sumCells( sigma_cell_mr_with_al )
+                call e_vec%sumCells( sigma_cell_mr )
                 !
                 call e_vec%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
                 !

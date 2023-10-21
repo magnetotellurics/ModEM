@@ -56,10 +56,11 @@ contains
         !> Benchmarcking
         !layers = (/ 1, 11 /)
         !> MR AS ONE SU!B-GRID
-        layers = (/ 0, 40 /)
+        !layers = (/ 0, 40 /)
         !layers = (/ 0, 20, 0, 20 /)
         !layers = (/ 0, 20, 1, 20 /)
-        !layers = (/ 0, 20, 1, 10, 2, 10 /)
+        !layers = (/ 1, 20, 0, 20 /)
+        layers = (/ 0, 20, 1, 10, 2, 10 /)
         !layers = (/ 0, 10, 0, 10, 0, 10, 0, 10 /)
         !
         someChar = ""
