@@ -833,7 +833,7 @@ contains
                 !
 				if( allocated( rhs%iXYZinterior ) ) self%iXYZinterior = rhs%iXYZinterior
                 !
-                self%sub_grid(:) = rhs%sub_grid(:)
+                self%sub_grid = rhs%sub_grid
                 !
             class default
                 call errStop( "copyFrom_Grid3D_MR > Unclassified rhs" )

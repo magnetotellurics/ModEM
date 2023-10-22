@@ -14,7 +14,8 @@ module ModelParameterCell_MR
         !
         !> No derived properties
         !
-        !> cell_cond treated as rScalar3D_SG array here (base class property)
+        !> Base rScalar cell_cond treated initialezed
+        !> as rScalar3D_MR array here (base class property)
         !
         contains
             !
@@ -45,12 +46,13 @@ contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_MR_ctor_one_cond( cell_cond, anisotropic_level, param_type ) result( self )
+    function ModelParameterCell_MR_ctor_one_cond( cell_cond, anisotropic_level, param_type, layers ) result( self )
         implicit none
         !
         type( rScalar3D_SG_t ), intent( in ) :: cell_cond
         integer, intent( in ) :: anisotropic_level
         character(:), allocatable, optional, intent( in ) :: param_type
+        integer, allocatable, dimension(:), intent( in ) :: layers
         !
         type( ModelParameterCell_MR_t ) :: self
         !
@@ -88,11 +90,12 @@ contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_MR_ctor_all_conds( cell_cond, param_type ) result( self )
+    function ModelParameterCell_MR_ctor_all_conds( cell_cond, param_type, layers ) result( self )
         implicit none
         !
         type( rScalar3D_SG_t ), dimension(:), intent( in ) :: cell_cond
         character(:), allocatable, optional, intent( in ) :: param_type
+        integer, allocatable, dimension(:), intent( in ) :: layers
         !
         type( ModelParameterCell_MR_t ) :: self
         !
@@ -154,57 +157,53 @@ contains
         class( ModelParameterCell_MR_t ), intent( in ) :: self
         class( Scalar_t ), intent( inout ) :: sigma_node
         !
-        integer :: i_grid, k0, k1, k2
-        type( rScalar3D_MR_t ) :: sigma_cell_mr, sigma_cell_mr_with_al
+        integer :: i_grid, nz_air
+        type( Grid3D_MR_t ) :: temp_grid_mr, temp_grid_al_mr
+        type( rScalar3D_MR_t ) :: sigma_cell_mr, sigma_cell_al_mr
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "nodeCond_ModelParameterCell_SG > self not allocated" )
+            call errStop( "PDEmapping_ModelParameterCell_SG > self not allocated" )
         endif
         !
         if( .NOT. sigma_node%is_allocated ) then
             call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
         endif
         !
-        sigma_cell_mr = rScalar3D_MR_t( self%param_grid, self%cell_cond(1)%grid_type )
+        !> Grid MR with AirLayers
+        temp_grid_al_mr = self%metric%grid
+        !
+        !> Grid MR without AirLayers
+        temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
+        self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
+        self%param_grid%dy, self%param_grid%dz, temp_grid_al_mr%cs )
+        !
+        call self%metric%setGridIndexArrays( temp_grid_mr )
+        !
+        !> cell cond as MR
+        sigma_cell_mr = rScalar3D_MR_t( temp_grid_mr, CELL )
         !
         call sigma_cell_mr%fromSG( self%cell_cond(1) )
         !
-        sigma_cell_mr_with_al = rScalar3D_MR_t( self%metric%grid, CELL )
+        !> cell cond as MR with AirLayers
+        sigma_cell_al_mr = rScalar3D_MR_t( self%metric%grid, CELL )
         !
-        call sigma_cell_mr_with_al%write(0)
+        !> Considering AirLayers just for the first sub_grid
+        nz_air = temp_grid_al_mr%NzAir
         !
-        select type( grid => self%metric%grid )
+        sigma_cell_al_mr%sub_scalar(1)%v( :, :, 1:nz_air ) = self%air_cond
+        !
+        sigma_cell_al_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) = self%sigMap( real( sigma_cell_mr%sub_scalar(1)%v( :, :, : ), kind=prec ) )
+        !
+        !> sigMapping for the next sub-grids
+        do i_grid = 2, size( sigma_cell_mr%sub_scalar )
             !
-            class is( Grid3D_MR_t )
-                !
-                do i_grid = 1, size( grid%sub_grid )
-                    !
-                    if( i_grid == 1 ) then
-                        !
-                        k0 = grid%sub_grid(i_grid)%NzAir
-                        k1 = k0 + 1
-                        k2 = grid%sub_grid(i_grid)%Nz
-                        !
-                        sigma_cell_mr_with_al%sub_scalar( i_grid )%v( :, :, 1:k0 ) = self%air_cond
-                        !
-                        sigma_cell_mr_with_al%sub_scalar( i_grid )%v( :, :, k1:k2 ) = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
-                        !
-                    else
-                        !
-                        sigma_cell_mr_with_al%sub_scalar( i_grid )%v = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
-                        !
-                    endif
-                    !
-                enddo
-                !
-                call sigma_cell_mr_with_al%mult( self%metric%v_cell )
-                !
-                call sigma_cell_mr_with_al%toNode( sigma_node, .TRUE. )
-                !
-            class default
-                call errStop( "nodeCond_ModelParameterCell_MR > Unclassified grid" )
+            sigma_cell_al_mr%sub_scalar( i_grid )%v = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
             !
-        end select
+        enddo
+        !
+        call sigma_cell_al_mr%mult( self%metric%v_cell )
+        !
+        call sigma_cell_al_mr%toNode( sigma_node, .TRUE. )
         !
     end subroutine nodeCond_ModelParameterCell_MR
     !
@@ -217,7 +216,9 @@ contains
         class( Vector_t ), intent( inout ) :: e_vec
         !
         integer :: i_grid, nz_air
-        type( rScalar3D_MR_t ) :: sigma_cell_mr
+        type( Grid3D_MR_t ) :: temp_grid_mr, temp_grid_al_mr
+        type( rScalar3D_MR_t ) :: sigma_cell_mr, sigma_cell_al_mr
+        class( Vector_t ), allocatable :: e_vol
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "PDEmapping_ModelParameterCell_SG > self not allocated" )
@@ -227,161 +228,54 @@ contains
             call errStop( "PDEmapping_ModelParameterCell_SG > e_vec not allocated" )
         endif
         !
-        select type( grid => self%metric%grid )
-            !
-            class is( Grid3D_MR_t )
-                !
-                sigma_cell_mr = rScalar3D_MR_t( grid, self%cell_cond(1)%grid_type )
-                !
-                nz_air = grid%sub_grid(1)%NzAir
-                !
-                sigma_cell_mr%sub_scalar(1)%v( :, :, 1:nz_air ) = self%air_cond
-                !
-                sigma_cell_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) = self%sigMap( real( self%cell_cond(1)%v( :, :, 1:sigma_cell_mr%sub_scalar(1)%nz-nz_air ), kind=prec ) )
-                !
-                do i_grid = 2, size( sigma_cell_mr%sub_scalar )
-                    !
-					sigma_cell_mr%sub_scalar( i_grid )%v = R_ZERO
-                    sigma_cell_mr%sub_scalar( i_grid )%v( :, :, : ) = self%sigMap( real( self%cell_cond(1)%v( :, :, sigma_cell_mr%sub_scalar(i_grid-1)%nz-nz_air+1:sigma_cell_mr%sub_scalar(i_grid)%nz ), kind=prec ) )
-                    !
-                enddo
-                !
-                call sigma_cell_mr%mult( self%metric%v_cell )
-                !
-                call e_vec%sumCells( sigma_cell_mr )
-                !
-                call e_vec%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
-                !
-                call e_vec%div( self%metric%v_edge )
-                !
-            class default
-                call errStop( "PDEmapping_ModelParameterCell_MR > Unclassified grid" )
-            !
-        end select
+        !> Grid MR with AirLayers
+        temp_grid_al_mr = self%metric%grid
+		!
+        !> Grid MR without AirLayers
+        temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
+        self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
+        self%param_grid%dy, self%param_grid%dz, temp_grid_al_mr%cs )
         !
-        ! ************************************************************************
-        ! ***** WILLIMAS IMPLEMENTATION *******
-        ! !
-        ! k0 = self%metric%grid%nzAir
-        ! k1 = k0 + 1
-        ! k2 = self%metric%grid%Nz
-        ! !
-        ! temp_scalar_sg = rScalar3D_SG_t( self%metric%grid, CELL )
-        ! !
-        ! temp_scalar_sg%v( :, :, 1:k0 ) = self%air_cond
-        ! !
-        ! temp_scalar_sg%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v, kind=prec ) )
-        ! !
-        ! select type( grid => self%metric%grid )
-            ! !
-            ! class is( Grid3D_MR_t )
-                ! !
-                ! k1 = 1
-                ! k2 = 0
-                ! !
-                ! do k = 1, grid%n_grids
-                    ! !
-                    ! ! First extract relevant part of cellcond
-                    ! !(including cells on both sides of any fine interface)
-                    ! sub_grid = grid%sub_grid(k)
-                    ! k1 = k2 + 1
-                    ! k2 = k2 + sub_grid%nz
-                    ! kUp = k1
-                    ! kk1 = 1
-                    ! !
-                    ! if( k > 1 ) then
-                        ! !
-                        ! if( grid%Coarseness( k-1, 1 ) < grid%Coarseness( k, 1 ) ) then
-                            ! !
-                            ! ! switch polarity of if test, relative to MR case
-                            ! kUp = kUp - 1
-                            ! kk1 = 2
-                            ! !
-                        ! endif
-                        ! !
-                    ! endif
-                    ! !
-                    ! kk2 = kk1 + sub_grid%nz
-                    ! kDown = k2
-                    ! !
-                    ! if( k < grid%n_grids ) then
-                        ! !
-                        ! if( grid%Coarseness( k, 1 ) > grid%Coarseness( k+1, 1 ) ) then
-                            ! !
-                            ! ! switch polarity of if test, relative to MR case
-                            ! kDown = kDown + 1
-                            ! !
-                        ! end if
-                        ! !
-                    ! end if
-                    ! !
-                    ! Nz = kDown - kUp + 1
-                    ! !
-                    ! allocate( temp_v( sub_grid%nx, sub_grid%ny, Nz ) )
-                    ! temp_v = R_ZERO
-                    ! !
-                    ! Cs = 2 ** grid%Coarseness(k, 1)
-                    ! !
-                    ! s1 = size( temp_scalar_sg%v, 1 )
-                    ! s2 = size( temp_scalar_sg%v, 2 )
-                    ! !
-                    ! do i = 1, Cs
-                        ! !
-                        ! do j = 1, Cs
-                            ! temp_v = temp_v + temp_scalar_sg%v( i:s1:Cs, j:s2:Cs, kUp:kDown )
-                        ! enddo
-                        ! !
-                    ! enddo
-                    ! !
-                    ! !> Create grid object for extended sub-grid
-                    ! temp_grid = Grid3D_SG_t( size(sub_grid%dx), size(sub_grid%dy), 0, &
-                    ! size( self%metric%grid%dz( kUp:kDown ) ) )
-                    ! !
-                    ! temp_grid%dx = sub_grid%dx
-                    ! temp_grid%dy = sub_grid%dy
-                    ! temp_grid%dz = self%metric%grid%dz( kUp:kDown )
-                    ! !
-                    ! call temp_grid%setup
-                    ! !
-                    ! !> then scalar field object containing averaged
-                    ! !> conductivities.
-                    ! paramType = LINEAR
-                    ! sub_model = ModelParameterCell_SG_t( temp_grid, self%cell_cond(1), 1, paramType )
-                    ! !
-                    ! sub_model%cell_cond(1)%v = temp_v / (Cs*Cs)
-                    ! !
-                    ! deallocate( temp_v )
-                    ! !
-                    ! sub_metric = MetricElements_SG_t( temp_grid )
-                    ! !
-                    ! call sub_model%setMetric( sub_metric )
-                    ! !
-                    ! !> Finally average onto edges of extended subgrid
-                    ! temp_vector_sg = rVector3D_SG_t( temp_grid, EDGE )
-                    ! !
-                    ! call sub_model%PDEmapping( temp_vector_sg )
-                    ! !
-                    ! !> ... and then extract appropriate part into
-                    ! !> appropriate subgrid of MR vector object.
-                    ! !> (NOTE: redundant edges will not be set(correctly at least)
-                    ! !> ... but these are not used in the equations!
-                    ! temp_vector_mr = e_vec
-                    ! !
-                    ! temp_vector_mr%sub_vector(k)%x = temp_vector_sg%x(:,:, kk1:kk2)
-                    ! temp_vector_mr%sub_vector(k)%y = temp_vector_sg%y(:,:, kk1:kk2)
-                    ! temp_vector_mr%sub_vector(k)%z = temp_vector_sg%z(:,:, kk1:kk2)
-                    ! !
-                    ! e_vec = temp_vector_mr
-                    ! !
-                ! enddo
-                ! !
-                ! !mr_m = e_vec%get_array() !????
-                ! !
-            ! class default
-                ! call errStop( "fromSG_rScalar3D_MR > Unclassified grid" )
-            ! !
-        ! end select
-        ! !
+        call self%metric%setGridIndexArrays( temp_grid_mr )
+        !
+        !> cell cond as MR without AirLayers
+        sigma_cell_mr = rScalar3D_MR_t( temp_grid_mr, CELL )
+        !
+        call sigma_cell_mr%fromSG( self%cell_cond(1) )
+        !
+        !> cell cond as MR with AirLayers
+        sigma_cell_al_mr = rScalar3D_MR_t( temp_grid_al_mr, CELL )
+        !
+        !> Considering AirLayers just for the first sub_grid
+        nz_air = temp_grid_al_mr%NzAir
+        !
+        sigma_cell_al_mr%sub_scalar(1)%v( :, :, 1:nz_air ) = self%air_cond
+        !
+        sigma_cell_al_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) = self%sigMap( real( sigma_cell_mr%sub_scalar(1)%v, kind=prec ) )
+        !
+        !> sigMapping for the next sub-grids
+        do i_grid = 2, size( sigma_cell_mr%sub_scalar )
+            !
+            sigma_cell_al_mr%sub_scalar( i_grid )%v = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
+            !
+        enddo
+        !
+        call sigma_cell_al_mr%mult( self%metric%v_cell )
+        !
+        call e_vec%sumCells( sigma_cell_al_mr )
+        !
+        call self%metric%createVector( real_t, EDGE, e_vol )
+        !
+        call e_vol%sumCells( self%metric%v_cell )
+        !
+        !call e_vec%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
+        !
+        !call e_vec%div( self%metric%v_edge )
+        !
+        call e_vec%div( e_vol )
+        !
+        deallocate( e_vol )
+        !
     end subroutine PDEmapping_ModelParameterCell_MR
     !
     !> Map the perturbation between two models onto a single Vector_t(e_vec).

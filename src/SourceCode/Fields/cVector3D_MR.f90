@@ -1830,9 +1830,7 @@ contains
         !
         integer :: i_sub
         class( Vector_t ), allocatable :: sub_interp
-        type( cVector3D_MR_t ) :: temp_vector_mr
-        type( cVector3D_SG_t ) :: temp_vector_sg
-        type( Grid3D_SG_t ) :: temp_grid_sg
+        type( cVector3D_MR_t ) :: interp_mr
         !
         !call errStop( "interpFunc_cVector3D_MR still not implemented" )
         !
@@ -1842,11 +1840,13 @@ contains
         !> Do the interpFunc for this sub_vector
         call self%sub_vector( i_sub )%interpFunc( location, xyz, sub_interp )
         !
-        temp_vector_mr = self
+        interp_mr = self
         !
-        temp_vector_mr%sub_vector( i_sub ) = sub_interp
+        call interp_mr%zeros
         !
-        allocate( interp, source = temp_vector_mr )
+        interp_mr%sub_vector( i_sub ) = sub_interp
+        !
+        allocate( interp, source = interp_mr )
         !
     end subroutine interpFunc_cVector3D_MR
     !

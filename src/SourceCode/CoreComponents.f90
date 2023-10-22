@@ -285,7 +285,7 @@ contains
                 class is( Grid3D_SG_t )
                     allocate( aux_model, source = ModelParameterCell_SG_t( cell_cond, 1, model%param_type ) )
                 class is( Grid3D_MR_t )
-                    allocate( aux_model, source = ModelParameterCell_MR_t( cell_cond, 1, model%param_type ) )
+                    allocate( aux_model, source = ModelParameterCell_MR_t( cell_cond, 1, model%param_type, grid%cs ) )
                 class default
                     call errStop( "jobSplitModel > Unknow grid for ModelParameter" )
                 !
