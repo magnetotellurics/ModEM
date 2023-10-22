@@ -1336,6 +1336,8 @@ contains
         !
         allocate( vFull( self%lengthFull() ) )
         !
+        vFull = C_ZERO
+        !
         vFull( self%indActive() ) = array
         !
         call self%setFullArray( vFull )

@@ -219,6 +219,7 @@ contains
         type( Grid3D_MR_t ) :: temp_grid_mr, temp_grid_al_mr
         type( rScalar3D_MR_t ) :: sigma_cell_mr, sigma_cell_al_mr
         class( Vector_t ), allocatable :: e_vol
+        complex( kind=prec ), allocatable, dimension(:) :: e_vol_v
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "PDEmapping_ModelParameterCell_SG > self not allocated" )
@@ -230,7 +231,7 @@ contains
         !
         !> Grid MR with AirLayers
         temp_grid_al_mr = self%metric%grid
-		!
+        !
         !> Grid MR without AirLayers
         temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
         self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
@@ -264,9 +265,23 @@ contains
         !
         call e_vec%sumCells( sigma_cell_al_mr )
         !
+        !e_vol_v = e_vec%getArray()
+		!
+		!write( 2023, * ) e_vol_v
+        !
         call self%metric%createVector( real_t, EDGE, e_vol )
         !
         call e_vol%sumCells( self%metric%v_cell )
+        !
+        e_vol_v = e_vol%getArray()
+		!
+		!write( 2024, * ) e_vol_v
+        !
+        e_vol_v( self%metric%grid%EDGEb ) = C_ONE
+		!
+		!write( 2025, * ) e_vol_v
+        !
+        call e_vol%setArray( e_vol_v )
         !
         !call e_vec%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
         !
@@ -274,6 +289,8 @@ contains
         !
         call e_vec%div( e_vol )
         !
+        !e_vol_v = e_vec%getArray()
+		!
         deallocate( e_vol )
         !
     end subroutine PDEmapping_ModelParameterCell_MR

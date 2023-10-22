@@ -96,7 +96,7 @@ module cVector3D_MR
     end interface cVector3D_MR_t
     !
     public :: setInactiveEdge_cVector3D_MR
-    public :: setInactiveEdgeT_cVector3D_MR
+    public :: addCellFromAdjacentGrid_cVector3D_MR
     !
 contains
     !
@@ -1050,6 +1050,7 @@ contains
         !
         integer :: i
         character(10) :: grid_type
+        logical :: top_coarser
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "sumCell_cVector3D_MR > self not allocated." )
@@ -1084,7 +1085,19 @@ contains
                         !
                         !> then loop over INTERFACES (one less than n_grids) and fill in inactive edges
                         do i = 1, cell_in%grid%n_grids-1
-                            call setInactiveEdgeT_cVector3D_MR( self%sub_vector(i), self%sub_vector(i+1) )
+                            !
+                            !> 
+                            top_coarser = cell_in%sub_scalar(i)%grid%nx .LT.  & 
+                            cell_in%sub_scalar(i+1)%grid%nx
+                            !
+                            if( top_coarser ) then
+                                call addCellFromAdjacentGrid_cVector3D_MR( self%sub_vector(i), &
+                                cell_in%sub_scalar(i+1), top_coarser )
+                            else
+                                call addCellFromAdjacentGrid_cVector3D_MR( self%sub_vector(i+1), &
+                                cell_in%sub_scalar(i), top_coarser )
+                            endif
+                            !
                         enddo
                         !
                     case( FACE )
@@ -1935,6 +1948,8 @@ contains
         !
         allocate( vFull( self%lengthFull() ) )
         !
+		vFull = C_ZERO
+		!
         vFull( self%indActive() ) = array
         !
         call self%setFullArray( vFull )
@@ -2219,106 +2234,65 @@ contains
         !
     end subroutine setInactiveEdge_cVector3D_MR
     !
+    !> Now inputs are an SG vector (vec) and and SG scalar (scalar) and a logical "topCoarser"
+    !> the vector is always on the coarser grid -- sitting above or below the finer grid
+    !> depending on the value of topCoarser (obviously if .true., the vector is defined on
+    !> the upper, coarser subgrid.  In this routine the vector will be modified, using values
+    !> from the scalar (not modified)
+    !> This is the routine needed for PDEmapping
     !
-    !
-    subroutine setInactiveEdgeT_cVector3D_MR( vec_1, vec_2 )
+    subroutine addCellFromAdjacentGrid_cVector3D_MR( CoarseGridVector, FineGridScalar, topCoarser )
         implicit none
         !
-        type( cVector3D_SG_t ), intent( inout ) :: vec_1, vec_2
+        type( cVector3D_SG_t ), intent( inout ) :: CoarseGridVector
+        type( cScalar3D_SG_t ), intent( in ) :: FineGridScalar
+        logical, intent( in ) :: topCoarser
         !
-        integer :: i, j
-        real( kind=prec ) :: location(3)
-        class( Vector_t ), allocatable :: interp
-        type( Grid3D_SG_t ) :: sub_grid_1, sub_grid_2
+        integer :: i, j, k, kFine, iFine(2), jFine(2), ii, jj
         !
-        sub_grid_1 = vec_1%grid
-        sub_grid_2 = vec_2%grid
-        !
-        !> vec1 is coarser (by factor of two)
-        if( vec_2%nx .GT. vec_1%nx ) then
-            !
-            !> fill in inactive edges (top boundary) of vec_2 first x-edges
-            do i = 1, vec_2%nx
-                do j = 1, vec_2%ny+1
-                    !
-                    !> these are supposed to be coordinates of centers of x-edges
-                    !> in vec2, but at bottom of vec1
-                    location(1) = sub_grid_2%x_center(i)
-                    location(2) = sub_grid_2%y_edge(j)
-                    !> yes, use vec1 to compute vertical position
-                    location(3) = sub_grid_1%z_edge( vec_1%nz+1 )
-                    !> interpolate to location (in vec1 grid) and store in top x/y layer of vec2
-                    call vec_1%interpFunc( location, 'x', interp )
-                    !> now that we have the interpolation coefficients, the adjoint uses these
-                    !> in a different way!
-                    call vec_1%multAdd( vec_2%x(i,j,1), interp )
-                    !
-                enddo
-            enddo
-            !
-            !  then y-edges
-            do i = 1, vec_2%nx+1
-                do j = 1, vec_2%ny
-                    !
-                    !> these are supposed to be coordinates of centers of y-edges
-                    !> in vec2, but at bottom of vec1
-                    location(1) = sub_grid_2%x_edge(i)
-                    location(2) = sub_grid_2%y_center(j)
-                    !> yes, use vec1 to compute vertical position
-                    location(3) = sub_grid_1%z_edge( vec_1%nz+1 )
-                    !> interpolate to location (in vec1 grid) and store in top x/y layer of vec2
-                    call vec_1%interpFunc( location, 'y', interp )
-                    !> now that we have the interpolation coefficients, the adjoint uses these
-                    !> in a different way!
-                    call vec_1%multAdd( vec_2%y(i,j,1), interp )
-                    !
-                enddo
-            enddo
-        !
-        !> vec_2 is coarser
+        if( topCoarser ) then
+            !   vertical layer index for fine scalar/vector
+            kFine = 1
+            k = CoarseGridVector%grid%nz+1
         else
-            !If vec_2 is coarser
-            !--> switch vec_2, vec_2 
-            location(3) = 0
-            !last line of x-edge block is vec_2%x(i,j,vec_2%nz+1) = vec_2%dot(interp)
-            !and analaously for y block, etc.
-            !
-            !> fill in inactive edges (top boundary) of vec_2 first x-edges
-            do i = 1, vec_1%nx
-                do j = 1, vec_1%ny+1
-                    !
-                    !> these are supposed to be coordinates of centers of x-edges
-                    !> in vec_1, but at bottom of vec_2
-                    location(1) = sub_grid_1%x_center(i)
-                    location(2) = sub_grid_1%y_edge(j)
-                    !
-                    !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
-                    call vec_2%interpFunc( location, 'x', interp )
-                    !
-                    call vec_2%multAdd( vec_1%x( i, j, vec_1%nz+1 ), interp )
-                    !
-                enddo
-            enddo
-            !
-            !  then y-edges
-            do i = 1, vec_1%nx+1
-                do j = 1, vec_1%ny
-                    !
-                    !> these are supposed to be coordinates of centers of y-edges
-                    !> in vec_1, but at bottom of vec_2
-                    location(1) = sub_grid_1%x_edge(i)
-                    location(2) = sub_grid_1%y_center(j)
-                    !
-                    !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
-                    call vec_2%interpFunc( location, 'y', interp )
-                    !
-                    call vec_2%multAdd( vec_1%y( i, j, vec_1%nz+1 ), interp )
-                    !
-                enddo
-            enddo
-            !
+            kFine = FineGridScalar%grid%nz
+            k = 1
         endif
+
+        !  modify interior x-edges of coarse grid vector on interface
+        do i = 1, CoarseGridVector%grid%nx
+            iFine(2) = 2*i
+            iFine(1) = iFine(2)-1
+            !   exclude boundary of MR grid
+            do j = 2, CoarseGridvector%grid%ny
+                jFine(1) = (j-1)*2
+                jFine(2) = jFine(1)+1
+                do ii = 1, 2
+                    do jj = 1, 2
+                        CoarseGridVector%x(i,j,k) = CoarseGridVector%x(i,j,k)+  &
+                        FineGridScalar%v(iFine(ii),jFine(jj),kFine)
+                    enddo
+                enddo
+            enddo
+        enddo
         !
-    end subroutine setInactiveEdgeT_cVector3D_MR
+        !  modify interior y-edges of coarse grid vector on interface
+        do j = 1,CoarseGridVector%grid%ny
+            jFine(2) = 2*j
+            jFine(1) = jFine(2)-1
+            !   exclude boundary of MR grid
+            do i = 2,CoarseGridVector%grid%nx
+                iFine(1) = (i-1)*2
+                iFine(2) = iFine(1)+1
+                do ii = 1,2
+                    do jj  = 1,2
+                        CoarseGridVector%y(i,j,k) = CoarseGridVector%y(i,j,k)+   &
+                        FineGridScalar%v(iFine(ii),jFine(jj),kFine)
+                    enddo
+                enddo
+            enddo
+        enddo
+        !
+    end subroutine addCellFromAdjacentGrid_cVector3D_MR
     !
 end module cVector3D_MR

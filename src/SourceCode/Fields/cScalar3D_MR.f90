@@ -613,7 +613,7 @@ contains
         !
         do i_grid = 1, self%grid%getNGrids()
             !
-            call self%sub_scalar(i_grid)%setAllBoundary( cvalue )
+            call self%sub_scalar( i_grid )%setAllBoundary( cvalue )
             !
         enddo
         !
@@ -1357,7 +1357,7 @@ contains
         class( cScalar3D_MR_t ), intent( in ) :: self
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
-        real( kind=prec ), allocatable :: v_full(:)
+        real( kind=prec ), allocatable, dimension(:) :: v_full
         !
         v_full = self%getFullArray()
         !
@@ -1378,6 +1378,8 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: vFull
         !
         allocate( vFull( self%lengthFull() ) )
+        !
+        vFull = C_ZERO
         !
         vFull( self%indActive() ) = array
         !
