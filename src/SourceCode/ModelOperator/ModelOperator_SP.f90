@@ -187,12 +187,12 @@ contains
         class( Grid_t ), allocatable :: temp_grid_mr
         real( kind=prec ), allocatable, dimension(:) :: sig_vec_v, v_edge_v
         !
-        call self%metric%createVector( real_t, EDGE, sig_temp )
-		!
+        call sigma%metric%createVector( real_t, EDGE, sig_temp )
+        !
         call sigma%PDEmapping( sig_temp )
         !
         sig_vec_v = sig_temp%getArray()
-		!
+        !
         deallocate( sig_temp )
         !
         v_edge_v = self%metric%v_edge%getArray()

@@ -757,34 +757,7 @@ contains
         class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        integer :: i
-        !
-        call self%switchStoreState( compound )
-        !
-        do i = 1, self%grid%getNGrids()
-            !
-            select case( self%grid_type )
-                !
-                case( EDGE )
-                    !
-                    self%sub_vector(i)%x(:,(/1, self%sub_vector(i)%NdX(2)/), :) = cvalue
-                    self%sub_vector(i)%x(:, :,(/1, self%sub_vector(i)%NdX(3)/)) = cvalue
-                    self%sub_vector(i)%y((/1, self%sub_vector(i)%NdY(1)/), :, :) = cvalue
-                    self%sub_vector(i)%y(:, :,(/1, self%sub_vector(i)%NdY(3)/)) = cvalue
-                    self%sub_vector(i)%z(:,(/1, self%sub_vector(i)%NdZ(2)/), :) = cvalue
-                    self%sub_vector(i)%z((/1, self%sub_vector(i)%NdZ(1)/), :, :) = cvalue
-                    !
-                case( FACE )
-                    !
-                    self%sub_vector(i)%x((/1, self%sub_vector(i)%NdX(1)/), :, :) = cvalue
-                    self%sub_vector(i)%y(:,(/1, self%sub_vector(i)%NdY(2)/), :) = cvalue
-                    self%sub_vector(i)%z(:, :,(/1, self%sub_vector(i)%NdZ(3)/)) = cvalue
-                    !
-                case default
-                    call errStop( "setAllBoundary_cVector3D_MR > Invalid grid type." )
-            end select
-            !
-        enddo
+        call errStop( "setAllBoundary_cVector3D_MR just implemented for SG!" )
         !
     end subroutine setAllBoundary_cVector3D_MR
     !

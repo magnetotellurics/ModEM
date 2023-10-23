@@ -606,17 +606,7 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        integer :: i_grid
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setAllBoundary_rScalar3D_MR > self not allocated." )
-        endif
-        !
-        do i_grid = 1, self%grid%getNGrids()
-            !
-            call self%sub_scalar(i_grid)%setAllBoundary( cvalue )
-            !
-        enddo
+        call errStop( "setAllBoundary_rScalar3D_MR just implemented for SG!" )
         !
     end subroutine setAllBoundary_rScalar3D_MR
     !

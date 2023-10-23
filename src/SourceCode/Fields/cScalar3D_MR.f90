@@ -605,17 +605,7 @@ contains
         class( cScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        integer :: i_grid
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setAllBoundary_cScalar3D_MR > self not allocated." )
-        endif
-        !
-        do i_grid = 1, self%grid%getNGrids()
-            !
-            call self%sub_scalar( i_grid )%setAllBoundary( cvalue )
-            !
-        enddo
+        call errStop( "setAllBoundary_cScalar3D_MR just implemented for SG!" )
         !
     end subroutine setAllBoundary_cScalar3D_MR
     !
@@ -629,86 +619,15 @@ contains
         complex( kind=prec ), intent( in ) :: cvalue
         logical, intent( in ), optional :: int_only
         !
-        integer :: i
-        logical :: int_only_p
+        integer :: i_grid
         !
-        call self%switchStoreState( compound )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setAllBoundary_cScalar3D_MR > self not allocated." )
+        endif
         !
-        do i = 1, self%grid%getNGrids()
+        do i_grid = 1, self%grid%getNGrids()
             !
-            if( .NOT. present(int_only)) then
-                 int_only_p = .FALSE.
-            else 
-                 int_only_p = int_only
-            endif
-            !
-            select case( self%sub_scalar(i)%grid_type )
-                !
-                case( NODE )
-                    !
-                    if( int_only_p ) then
-                        !
-                        select case( bdry )
-                            !
-                            case("x1")
-                                self%sub_scalar(i)%v(1, 2:self%sub_scalar(i)%NdV(2)-1, 2:self%sub_scalar(i)%NdV(3)-1) = real( cvalue, kind=prec ) 
-                            case("x2")
-                                self%sub_scalar(i)%v(self%sub_scalar(i)%NdV(1), 2:self%sub_scalar(i)%NdV(2)-1, 2:self%sub_scalar(i)%NdV(3)-1) = real( cvalue, kind=prec )
-                            case("y1")
-                                self%sub_scalar(i)%v(2:self%sub_scalar(i)%NdV(1)-1, 1, 2:self%sub_scalar(i)%NdV(3)-1) = real( cvalue, kind=prec )
-                            case("y2")
-                                self%sub_scalar(i)%v(2:self%sub_scalar(i)%NdV(1)-1, self%sub_scalar(i)%NdV(2), 2:self%sub_scalar(i)%NdV(3)-1) = real( cvalue, kind=prec )
-                            case("z1")
-                                self%sub_scalar(i)%v(2:self%sub_scalar(i)%NdV(1)-1, 2:self%sub_scalar(i)%NdV(2)-1, 1) = real( cvalue, kind=prec )
-                            case("z2")
-                                self%sub_scalar(i)%v(2:self%sub_scalar(i)%NdV(1)-1, 2:self%sub_scalar(i)%NdV(2)-1, self%sub_scalar(i)%NdV(3)) = real( cvalue, kind=prec )
-                            !
-                        end select
-                        !
-                    else
-                        !
-                        select case( bdry )
-                            !
-                            case("x1")
-                                self%sub_scalar(i)%v(1, :, :) = real( cvalue, kind=prec )
-                            case("x2")
-                                self%sub_scalar(i)%v(self%sub_scalar(i)%NdV(1), :, :) = real( cvalue, kind=prec )
-                            case("y1")
-                                self%sub_scalar(i)%v(:, 1, :) = real( cvalue, kind=prec )
-                            case("y2")
-                                self%sub_scalar(i)%v(:, self%sub_scalar(i)%NdV(2), :) = real( cvalue, kind=prec )
-                            case("z1")
-                                self%sub_scalar(i)%v(:, :, 1) = real( cvalue, kind=prec )
-                            case("z2")
-                                self%sub_scalar(i)%v(:, :, self%sub_scalar(i)%NdV(3)) = real( cvalue, kind=prec )
-                            !
-                        end select
-                        !
-                    endif
-                    !
-                case( FACE )
-                    !
-                    select case( bdry )
-                        !
-                        case("x1")
-                            self%sub_scalar(i)%v(1, :, :) = real( cvalue, kind=prec )
-                        case("x2")
-                            self%sub_scalar(i)%v(self%sub_scalar(i)%NdV(1), :, :) = real( cvalue, kind=prec )
-                        case("y1")
-                            self%sub_scalar(i)%v(:, 1, :) = real( cvalue, kind=prec )
-                        case("y2")
-                            self%sub_scalar(i)%v(:, self%sub_scalar(i)%NdV(2), :) = real( cvalue, kind=prec )
-                        case("z1")
-                            self%sub_scalar(i)%v(:, :, 1) = real( cvalue, kind=prec )
-                        case("z2")
-                            self%sub_scalar(i)%v(:, :, self%sub_scalar(i)%NdV(3)) = real( cvalue, kind=prec )
-                        !
-                    end select
-                    !
-                case default
-                    call errStop( "setOneBoundary_cScalar3D_MR > Invalid grid type" )
-                !
-            end select
+            call self%sub_scalar( i_grid )%setOneBoundary( bdry, cvalue, int_only )
             !
         enddo
         !

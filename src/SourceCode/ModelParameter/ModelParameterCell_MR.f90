@@ -216,10 +216,10 @@ contains
         class( Vector_t ), intent( inout ) :: e_vec
         !
         integer :: i_grid, nz_air
-        type( Grid3D_MR_t ) :: temp_grid_mr, temp_grid_al_mr
+        type( Grid3D_MR_t ) :: temp_grid_mr
         type( rScalar3D_MR_t ) :: sigma_cell_mr, sigma_cell_al_mr
         class( Vector_t ), allocatable :: e_vol
-        complex( kind=prec ), allocatable, dimension(:) :: e_vol_v
+        complex( kind=prec ), allocatable, dimension(:) :: e_vec_v, e_vol_v
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "PDEmapping_ModelParameterCell_SG > self not allocated" )
@@ -229,15 +229,18 @@ contains
             call errStop( "PDEmapping_ModelParameterCell_SG > e_vec not allocated" )
         endif
         !
-        !> Grid MR with AirLayers
-        temp_grid_al_mr = self%metric%grid
-        !
-        !> Grid MR without AirLayers
-        temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
-        self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
-        self%param_grid%dy, self%param_grid%dz, temp_grid_al_mr%cs )
-        !
-        call self%metric%setGridIndexArrays( temp_grid_mr )
+        select type( grid => self%metric%grid )
+            !
+            class is( Grid3D_MR_t )
+                !
+                temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
+                self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
+                self%param_grid%dy, self%param_grid%dz, grid%cs )
+                !
+            class default
+                call errStop( "PDEmapping_ModelParameterCell_MR > Grid must be MR!" )
+            !
+        end select
         !
         !> cell cond as MR without AirLayers
         sigma_cell_mr = rScalar3D_MR_t( temp_grid_mr, CELL )
@@ -245,10 +248,10 @@ contains
         call sigma_cell_mr%fromSG( self%cell_cond(1) )
         !
         !> cell cond as MR with AirLayers
-        sigma_cell_al_mr = rScalar3D_MR_t( temp_grid_al_mr, CELL )
+        sigma_cell_al_mr = rScalar3D_MR_t( self%metric%grid, CELL )
         !
         !> Considering AirLayers just for the first sub_grid
-        nz_air = temp_grid_al_mr%NzAir
+        nz_air = self%metric%grid%NzAir
         !
         sigma_cell_al_mr%sub_scalar(1)%v( :, :, 1:nz_air ) = self%air_cond
         !
@@ -261,36 +264,30 @@ contains
             !
         enddo
         !
+        !> E_VEC: Boundaries set to zero.
         call sigma_cell_al_mr%mult( self%metric%v_cell )
         !
         call e_vec%sumCells( sigma_cell_al_mr )
         !
-        !e_vol_v = e_vec%getArray()
-		!
-		!write( 2023, * ) e_vol_v
+        e_vec_v = e_vec%getArray()
         !
+        e_vec_v( e_vec%indBoundary() ) = C_ZERO
+        !
+        call e_vec%setArray( e_vec_v )
+        !
+        !> E_VOL: Boundaries set to one to avoid NaNs at the division in the end.
         call self%metric%createVector( real_t, EDGE, e_vol )
         !
         call e_vol%sumCells( self%metric%v_cell )
         !
         e_vol_v = e_vol%getArray()
-		!
-		!write( 2024, * ) e_vol_v
         !
-        e_vol_v( self%metric%grid%EDGEb ) = C_ONE
-		!
-		!write( 2025, * ) e_vol_v
+        e_vol_v( e_vol%indBoundary() ) = C_ONE
         !
         call e_vol%setArray( e_vol_v )
         !
-        !call e_vec%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
-        !
-        !call e_vec%div( self%metric%v_edge )
-        !
         call e_vec%div( e_vol )
         !
-        !e_vol_v = e_vec%getArray()
-		!
         deallocate( e_vol )
         !
     end subroutine PDEmapping_ModelParameterCell_MR

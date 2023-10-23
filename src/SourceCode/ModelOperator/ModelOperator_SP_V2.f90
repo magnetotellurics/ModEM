@@ -133,8 +133,6 @@ contains
         call sigma%PDEmapping( sigma_edge )
         !
         sigma_edge_array = sigma_edge%getArray()
-		!
-		write( 2023, * ) sigma_edge_array
         !
         deallocate( sigma_edge )
         !
@@ -147,10 +145,7 @@ contains
         call sigma%nodeCond( sigma_node )
         !
         sigma_node_array = sigma_node%getArray()
-		!
-		write( 2024, * ) sigma_node_array
         !
-		stop
         deallocate( sigma_node )
         !
         !> force the boundary to be zeros
