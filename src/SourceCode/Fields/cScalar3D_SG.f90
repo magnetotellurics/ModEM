@@ -809,15 +809,15 @@ contains
                 v_zend = size( self%v, 3 )
                 !
                 !> Interior
-                temp_node%v( 2:v_xend-1, 2:v_yend-1, 2:v_zend-1 ) = &
-                self%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
-                self%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
-                self%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
-                self%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
-                self%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
-                self%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
-                self%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
-                self%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
+                temp_node%v( 2:v_xend,   2:v_yend,   2:v_zend   ) = &
+                     self%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
+                     self%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
+                     self%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
+                     self%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
+                     self%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
+                     self%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
+                     self%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
+                     self%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
                 !
                 node_scalar = temp_node
                 !

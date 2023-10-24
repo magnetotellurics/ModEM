@@ -1207,7 +1207,7 @@ contains
         !
         integer :: v_xend, v_yend, v_zend
         logical :: is_interior_only
-        integer :: i
+        integer :: i, nxF, nyF, nzF, nxC, nyC, nzC
         !
         if( .NOT. self%is_allocated ) then
              call errStop( "toNode_rScalar3D_MR > self not allocated." )
@@ -1216,10 +1216,6 @@ contains
         if( .NOT. node_scalar%is_allocated ) then
              call errStop( "toNode_rScalar3D_MR > node_scalar not allocated." )
         endif
-        !
-        !>
-        write( *, * ) "toNode_rScalar3D_MR CELL: ", self%grid%nx, self%grid%ny, self%grid%nz, self%grid%n_grids
-        write( *, * ) "                    NODE: ", node_scalar%grid%nx, node_scalar%grid%ny, node_scalar%grid%nz, node_scalar%grid%n_grids
         !
         call self%switchStoreState( compound )
         !
@@ -1231,35 +1227,62 @@ contains
                     !
                     case( CELL )
                         !
-                        do i = 1, self%grid%getNGrids()
+                        !> set nodes for interior of all sub-scalars
+                        do i = 1, self%grid%n_grids
                             !
-                            is_interior_only = .FALSE.
+                            call self%sub_scalar(i)%toNode( node_scalar%sub_scalar(i) )
                             !
-                            if( present( interior_only ) ) is_interior_only = interior_only
+                        enddo
+                        !
+                        !>set coarse grid nodes on interfaces
+                        do i = 1, self%grid%n_grids-1
                             !
-                            if( is_interior_only ) then
-                                call self%sub_scalar(i)%setAllBoundary( C_ZERO )
+                            if( self%sub_scalar(i)%grid%nx .LT. self%sub_scalar(i+1)%grid%nx ) then
+                                !
+                                !> upper layer is coarser  -- fill in bottom level nodes
+                                nxC = self%sub_scalar(i)%grid%nx
+                                nyC = self%sub_scalar(i)%grid%ny
+                                nzC = self%sub_scalar(i)%grid%nz
+                                nxF = self%sub_scalar(i+1)%grid%nx
+                                nyF = self%sub_scalar(i+1)%grid%ny
+                                nzF = self%sub_scalar(i+1)%grid%nz
+                                !
+                                node_scalar%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC+1 ) = &
+                                       self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
+                                       self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                       self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
+                                       self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
+                                !
+                            else
+                                !
+                                nxF = self%sub_scalar(i)%grid%nx
+                                nyF = self%sub_scalar(i)%grid%ny
+                                nzF = self%sub_scalar(i)%grid%nz
+                                nxC = self%sub_scalar(i+1)%grid%nx
+                                nyC = self%sub_scalar(i+1)%grid%ny
+                                nzC = self%sub_scalar(i+1)%grid%nz
+                                !
+                                node_scalar%sub_scalar(i+1)%v( 2:nxC,     2:nyC,     1   ) = &
+                                       self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
+                                       self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                       self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
+                                       self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                         self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
+                                         self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
+                                         self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
+                                         self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
+                                !
                             endif
-                            !
-                            v_xend = size( self%sub_scalar(i)%v, 1 )
-                            v_yend = size( self%sub_scalar(i)%v, 2 )
-                            v_zend = size( self%sub_scalar(i)%v, 3 )
-                            !
-                            !> Interior
-                            node_scalar%sub_scalar(i)%v( 2:v_xend-1, 2:v_yend-1, 2:v_zend-1 ) = &
-                            self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
-                            self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
-                            self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
-                            self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
-                            self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
-                            self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
-                            self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
-                            self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
                             !
                         enddo
                         !
                     case default
                         call errStop( "toNode_rScalar3D_MR just for CELL type" )
+                    !
                 end select
                 !
             class default
@@ -1267,6 +1290,50 @@ contains
             !
         end select
         !
+        ! select type( node_scalar )
+            ! !
+            ! class is( rScalar3D_MR_t )
+                ! !
+                ! select case( self%grid_type )
+                    ! !
+                    ! case( CELL )
+                        ! !
+                        ! do i = 1, self%grid%getNGrids()
+                            ! !
+                            ! is_interior_only = .FALSE.
+                            ! !
+                            ! if( present( interior_only ) ) is_interior_only = interior_only
+                            ! !
+                            ! if( is_interior_only ) then
+                                ! call self%sub_scalar(i)%setAllBoundary( C_ZERO )
+                            ! endif
+                            ! !
+                            ! v_xend = size( self%sub_scalar(i)%v, 1 )
+                            ! v_yend = size( self%sub_scalar(i)%v, 2 )
+                            ! v_zend = size( self%sub_scalar(i)%v, 3 )
+                            ! !
+                            ! !> Interior
+                            ! node_scalar%sub_scalar(i)%v( 2:v_xend, 2:v_yend, 2:v_zend ) = &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
+                            ! !
+                        ! enddo
+                        ! !
+                    ! case default
+                        ! call errStop( "toNode_rScalar3D_MR just for CELL type" )
+                ! end select
+                ! !
+            ! class default
+                ! call errStop( "toNode_rScalar3D_MR > Unclassified node_scalar" )
+            ! !
+        ! end select
+        ! !
     end subroutine toNode_rScalar3D_MR
     !
     !> No subroutine briefing

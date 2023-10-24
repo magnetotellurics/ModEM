@@ -43,27 +43,6 @@ contains
         real( kind=prec ) :: ALPHA
         character(len=200), dimension(20) :: args
         !
-        integer, allocatable, dimension(:) :: layers
-        !
-        !layers = (/ 0, 12 /)
-        !layers = (/ 1, 12 /)
-        !layers = (/ 2, 12 /)
-        !layers = (/ 0, 6, 1, 6 /)
-        !layers = (/ 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 /)
-        !layers = (/ 0, 4, 1, 4, 0, 4 /)
-        !layers = (/ 0, 20, 0, 20 /)
-        !layers = (/ 0, 6, 1, 14, 2, 10, 3, 10 /)
-        !layers = (/ 0, 4, 1, 4, 2, 4 /)
-        !> Benchmarcking
-        !layers = (/ 1, 11 /)
-        !> MR AS ONE SU!B-GRID
-        !layers = (/ 0, 40 /)
-        !layers = (/ 0, 20, 0, 20 /)
-        layers = (/ 0, 20, 1, 20 /)
-        !layers = (/ 0, 20, 1, 20 /)
-        !layers = (/ 0, 20, 1, 10, 2, 10 /)
-        !layers = (/ 0, 10, 0, 10, 0, 10, 0, 10 /)
-        !
         someChar = ""
         paramType = ""
         someIndex = 0

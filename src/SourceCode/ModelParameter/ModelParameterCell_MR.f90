@@ -158,28 +158,31 @@ contains
         class( Scalar_t ), intent( inout ) :: sigma_node
         !
         integer :: i_grid, nz_air
-        type( Grid3D_MR_t ) :: temp_grid_mr, temp_grid_al_mr
+        type( Grid3D_MR_t ) :: temp_grid_mr
         type( rScalar3D_MR_t ) :: sigma_cell_mr, sigma_cell_al_mr
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "PDEmapping_ModelParameterCell_SG > self not allocated" )
+            call errStop( "nodeCond_ModelParameterCell_MR > self not allocated" )
         endif
         !
         if( .NOT. sigma_node%is_allocated ) then
-            call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
+            call errStop( "nodeCond_ModelParameterCell_MR > sigma_node not allocated" )
         endif
         !
-        !> Grid MR with AirLayers
-        temp_grid_al_mr = self%metric%grid
+        select type( grid => self%metric%grid )
+            !
+            class is( Grid3D_MR_t )
+                !
+                temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
+                self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
+                self%param_grid%dy, self%param_grid%dz, grid%cs )
+                !
+            class default
+                call errStop( "nodeCond_ModelParameterCell_MR > Grid must be MR!" )
+            !
+        end select
         !
-        !> Grid MR without AirLayers
-        temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
-        self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
-        self%param_grid%dy, self%param_grid%dz, temp_grid_al_mr%cs )
-        !
-        call self%metric%setGridIndexArrays( temp_grid_mr )
-        !
-        !> cell cond as MR
+        !> cell cond as MR without AirLayers
         sigma_cell_mr = rScalar3D_MR_t( temp_grid_mr, CELL )
         !
         call sigma_cell_mr%fromSG( self%cell_cond(1) )
@@ -188,11 +191,11 @@ contains
         sigma_cell_al_mr = rScalar3D_MR_t( self%metric%grid, CELL )
         !
         !> Considering AirLayers just for the first sub_grid
-        nz_air = temp_grid_al_mr%NzAir
+        nz_air = self%metric%grid%NzAir
         !
         sigma_cell_al_mr%sub_scalar(1)%v( :, :, 1:nz_air ) = self%air_cond
         !
-        sigma_cell_al_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) = self%sigMap( real( sigma_cell_mr%sub_scalar(1)%v( :, :, : ), kind=prec ) )
+        sigma_cell_al_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) = self%sigMap( real( sigma_cell_mr%sub_scalar(1)%v, kind=prec ) )
         !
         !> sigMapping for the next sub-grids
         do i_grid = 2, size( sigma_cell_mr%sub_scalar )
@@ -275,7 +278,7 @@ contains
         !
         call e_vec%setArray( e_vec_v )
         !
-        !> E_VOL: Boundaries set to one to avoid NaNs at the division in the end.
+        !> E_VOL: Boundaries set to one, to avoid NaNs at the last division.
         call self%metric%createVector( real_t, EDGE, e_vol )
         !
         call e_vol%sumCells( self%metric%v_cell )

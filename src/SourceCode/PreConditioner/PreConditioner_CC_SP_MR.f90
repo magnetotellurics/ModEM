@@ -81,46 +81,7 @@ contains
         integer :: nEdge, nEdgeT, n, i, j
         type( spMatCSR_real ) :: Mii, CCxx
         type( spMatCSR_Cmplx ) :: Axx
-        type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
-        !
-        !************** WILLIAMS'S VERSION FOR IX, IY IZ **************
-        !* THIS NOW WORKS (AT LEAST WITH COMPATIBLE RESULTS AS SG GRID)
-        ! !
-        ! call self%model_operator%metric%grid%numberOfEdges( nx, ny, nz )
-        ! !**
-        ! ! ix
-        ! nEdgeT = 0
-        ! nEdge = 0
-        ! do i = 1, size(self%model_operator%metric%grid%EDGEi)
-            ! if (self%model_operator%metric%grid%EDGEi(i) <= nx) nEdge = nEdge + 1
-        ! end do
-        ! allocate(ix(nEdge))
-        ! ix = (/ (j, j = nEdgeT + 1, nEdgeT + nEdge) /)
-        ! !**
-        ! ! iy
-        ! nEdgeT = nEdgeT + nEdge
-        ! nEdge = 0
-        ! do i = 1, size(self%model_operator%metric%grid%EDGEi)
-            ! if ((self%model_operator%metric%grid%EDGEi(i) > nx).and.(self%model_operator%metric%grid%EDGEi(i) <= (nx + ny))) then
-                ! nEdge = nEdge + 1
-            ! end if
-        ! end do
-        ! allocate(iy(nEdge))
-        ! iy = (/ (j,j = nEdgeT + 1, nEdgeT + nEdge) /)
-        ! !**
-        ! ! iz
-        ! nEdgeT = nEdgeT+nEdge
-        ! nEdge = 0
-        ! do i = 1, size( self%model_operator%metric%grid%EDGEi )
-            ! if( self%model_operator%metric%grid%EDGEi(i) > (nx + ny) ) then
-                ! nEdge = nEdge + 1
-            ! end if
-        ! end do
-        ! allocate(iz(nEdge))
-        ! iz = (/ (j, j = nEdgeT + 1, nEdgeT + nEdge) /)
-        ! !
-        !************** GARY'S VERSION (needs iXYZinterior to be constructed- procedure in Grid3D_MR) **************
-        ! Solver QMR still give err= NaNs
+        type( spMatCSR_Cmplx ), pointer, dimension(:)  :: Lblk, Ublk
         !
         !> Generate the index arrays ix, iy and iz from grid%iXYZinterior
         select type( grid => self%model_operator%metric%grid )
@@ -171,7 +132,6 @@ contains
             !
         end select
         !
-        !******************************************************************************
         !> Construct submatrices for x, y, z components
         allocate( Lblk(3) )
         allocate( Ublk(3) )

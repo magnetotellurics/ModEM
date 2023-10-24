@@ -1,19 +1,4 @@
 !
-!> This file is part of the ModEM modeling and inversion package.
-!>
-!> LICENSING information
-!
-!> Copyright(C) 2020 ModEM research group.
-!> Contact: http://
-!>
-!> GNU General Public License Usage
-!> This file may be used under the terms of the GNU
-!> General Public License version 3.0 as published by the Free Software
-!> Foundation and appearing in the file LICENSE.GPL included in the
-!> packaging of this file.  Please review the following information to
-!> ensure the GNU General Public License version 3.0 requirements will be
-!> met: http://www.gnu.org/copyleft/gpl.html.
-!>
 !> SUMMARY
 !>
 !> No module briefing
@@ -74,6 +59,8 @@ module Grid3D_MR
     end type Grid3D_MR_t
     !
     public :: repMat
+    !
+    integer, allocatable, dimension(:) :: layers
     !
     interface Grid3D_MR_t
         module procedure Grid3D_MR_t_ctor
@@ -140,11 +127,6 @@ contains
             !
             call self%setupMR
             !
-            write( *, * ) "CoarseMAT Row1 (Coarse): [", self%coarseness(:,1), "]"
-            write( *, * ) "CoarseMAT Row2 (Layers): [", self%coarseness(:,2), "]"
-            write( *, * ) "CoarseMAT Row3 (iStart): [", self%coarseness(:,3), "]"
-            write( *, * ) "CoarseMAT Row4 ( iEnd ): [", self%coarseness(:,4), "]"
-            !
         else
             call errStop( "Grid3D_MR_t_ctor > n_grids equal 0" )
         endif
@@ -152,6 +134,7 @@ contains
     end function Grid3D_MR_t_ctor
     !
     !> No subroutine briefing
+    !
     subroutine allocateDim_Grid3D_MR( self )
         implicit none
         !
@@ -167,7 +150,7 @@ contains
         !
     end subroutine allocateDim_Grid3D_MR
     !
-    !> setup does calculations for grid geometry, which cannot be done
+    !> Setup does calculations for grid geometry, which cannot be done
     !> until dx, dy, dz, and the origin are set.
     !
     subroutine setup_Grid3D_MR( self, origin )
@@ -268,13 +251,16 @@ contains
         self%sub_grid(k)%dz = Dz
         !
         ! Origin correction for spherical grid
-        if(i1 < nz_air) then
-            ! Whole sub-grid in the air
-            self%sub_grid(k)%oz = sum(self%dz(i2 + 1 : self%nzAir))
+        if( i1 < nz_air ) then
             !
-        elseif(i1 > self%nzAir + 1) then
-            self%sub_grid(k)%oz = -1.0*&
-            sum(self%dz(self%nzAir + 1 : i1 - 1))
+            !> Whole sub-grid in the air
+            self%sub_grid(k)%oz = sum( self%dz(i2 + 1 : self%nzAir) )
+            !
+        elseif( i1 > self%nzAir + 1 ) then
+            !
+            self%sub_grid(k)%oz = -1.0 * &
+            sum( self%dz(self%nzAir + 1 : i1 - 1) )
+            !
         else
             self%sub_grid(k)%oz = 0.0
         endif
@@ -286,7 +272,7 @@ contains
             subroutine Redimension_cells( cs_in, D_in, D_out )
                 implicit none
                 !
-                integer, intent(in) :: cs_in
+                integer, intent( in ) :: cs_in
                 real( kind=prec ), intent( in ) :: D_in(:)
                 real( kind=prec ), allocatable :: D_out(:)
                 !
@@ -630,6 +616,8 @@ contains
         !
     end function slice2D_Grid3D_MR
     !
+    !> No function briefing
+    !
     function repMat( m_in, nx, ny, nz, transp ) result( m_out )
         implicit none
         !
@@ -666,7 +654,7 @@ contains
             !
         else
             !
-            allocate(m_out(n_in*nx, ny, nz))
+            allocate( m_out(n_in*nx, ny, nz) )
             !
             ! Copy along 1st dimension.
             i1 = 1; i2 = n_in
@@ -757,10 +745,10 @@ contains
             !
         enddo
         !
-        write( *, * ) "CoarseMAT Row1 (Coarse): [", self%coarseness(:,1), "]"
-        write( *, * ) "CoarseMAT Row2 (Layers): [", self%coarseness(:,2), "]"
-        write( *, * ) "CoarseMAT Row3 (iStart): [", self%coarseness(:,3), "]"
-        write( *, * ) "CoarseMAT Row4 ( iEnd ): [", self%coarseness(:,4), "]"
+        write( *, * ) "Coarse Matrix Row1 (Coarse): [", self%coarseness(:,1), "]"
+        write( *, * ) "Coarse Matrix Row2 (Layers): [", self%coarseness(:,2), "]"
+        write( *, * ) "Coarse Matrix Row3 (iStart): [", self%coarseness(:,3), "]"
+        write( *, * ) "Coarse Matrix Row4 ( iEnd ): [", self%coarseness(:,4), "]"
         !
         call self%setupMR
         

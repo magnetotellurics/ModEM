@@ -10,7 +10,6 @@ module ModelOperator_SP_V2
         !
         !> sparse matrix representation
         !> of the modified system equation
-        !> int.-int.
         type( spMatCSR_Real ) :: AAii, AAit
         !
         !> save only the Earth part of GD
@@ -139,7 +138,6 @@ contains
         sigma_edge_b0_array = sigma_edge_array
         !
         !> SigNode
-        !
         call self%metric%createScalar( real_t, NODE, sigma_node )
         !
         call sigma%nodeCond( sigma_node )
@@ -149,8 +147,8 @@ contains
         deallocate( sigma_node )
         !
         !> force the boundary to be zeros
-        sigma_edge_b0_array( self%metric%grid%EDGEb ) = 0.0
-        sigma_node_array( self%metric%grid%NODEb ) = 0.0
+        sigma_edge_b0_array( self%metric%grid%EDGEb ) = R_ZERO
+        sigma_node_array( self%metric%grid%NODEb ) = R_ZERO
         !
         !> modify the system equation here,
         !> as the GD should be updated whenever the omega or the conductivity
@@ -243,7 +241,7 @@ contains
         implicit none
         !
         class( ModelOperator_SP_V2_t ), intent( inout ) :: self
-        real( kind=prec ),intent( in ) :: SigEdge(:), SigNode(:)
+        real( kind=prec ), dimension(:), intent( in ) :: SigEdge, SigNode
         !
         type( spMatCSR_Real ) :: Dt, GDa, GDe, GD
         real( kind=prec ), allocatable, dimension(:) :: M1air, M2air
@@ -273,11 +271,14 @@ contains
         call self%airNIndex( SigEdge, SIGMA_AIR, Nair, Nearth )
         !
         dual_face_area_v = self%metric%dual_face_area%getArray()
+        !
         v_node_v = self%metric%v_node%getArray()
+        !
         edge_length_v = self%metric%edge_length%getArray()
         !
         !> (for Air sigma is not nececery as it is constant everywhere)
         M1air = dual_face_area_v
+        !
         M2air = Nair / v_node_v
         !
         ! rescale earth part with lambda = 1./SigNode
@@ -285,8 +286,14 @@ contains
         ! scaling factor (as node is either air or earth)
         M0earth = dual_face_area_v
         M1earth = SigEdge * dual_face_area_v
-        M2earth = 1.0 / SigNode * Nearth / v_node_v
+        !
+		!> WORKAROUND FOR LINE 295 DIV ????
+        !SigNode( self%metric%grid%NODEb ) = R_ONE
+        !
+        M2earth = ( 1.0 / SigNode ) * ( Nearth / v_node_v )
+        !
         M3earth = 1.0 / edge_length_v
+        !
         M4earth = dual_face_area_v
         !
         call RMATtrans( self%topology%G, Dt )
@@ -335,13 +342,8 @@ contains
         !
         !> no need to keep this if GDii is symmetric
         !> call RMATtrans(AAii,ATii)
-        deallocate( M1air )
-        deallocate( M2air )
-        deallocate( M0earth )
-        deallocate( M1earth )
-        deallocate( M2earth )
-        deallocate( M3earth )
-        deallocate( M4earth )
+        deallocate( M1air, M2air )
+        deallocate( M0earth, M1earth, M2earth, M3earth, M4earth )
         deallocate( Nearth )
         deallocate( Nair)
         !

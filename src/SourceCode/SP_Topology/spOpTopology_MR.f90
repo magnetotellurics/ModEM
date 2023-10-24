@@ -1,19 +1,4 @@
 !
-!> This file is part of the ModEM modeling and inversion package.
-!> 
-!> LICENSING information
-!
-!> Copyright(C) 2020 ModEM research group.
-!> Contact: http://
-!
-!> GNU General Public License Usage
-!> This file may be used under the terms of the GNU
-!> General Public License version 3.0 as published by the Free Software
-!> Foundation and appearing in the file LICENSE.GPL included in the
-!> packaging of this file.  Please review the following information to
-!> ensure the GNU General Public License version 3.0 requirements will be
-!> met: http://www.gnu.org/copyleft/gpl.html.
-!> 
 !> SUMMARY
 !> 
 !> Defines differential operators of 3D rectangular grid
@@ -31,7 +16,7 @@ module SpOpTopology_MR
     !
     use rVector3D_MR
     use rScalar3D_MR
-
+    !
     type, extends( SpOpTopology_t ) :: SpOpTopology_MR_t
         !
         type( Grid3D_MR_t ), pointer :: grid
