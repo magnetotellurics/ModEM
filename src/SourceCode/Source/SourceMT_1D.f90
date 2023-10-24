@@ -152,7 +152,7 @@ contains
                     !
                     call self%E( pol )%boundary( e_boundary )
                     !
-                    allocate( self%rhs( pol )%v, source = cVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
+                    allocate( self%rhs( pol )%v, source = cVector3D_SG_t( grid, EDGE ) )
                     !
                 class is( Grid3D_MR_t )
                     !
@@ -162,7 +162,7 @@ contains
                     !
                     call temp_vec_mr%boundary( e_boundary )
                     !
-                    allocate( self%rhs( pol )%v, source = cVector3D_MR_t( self%sigma%metric%grid, EDGE ) )
+                    allocate( self%rhs( pol )%v, source = cVector3D_MR_t( grid, EDGE ) )
                     !
                 class default
                     call errStop( "createRHS_SourceMT_1D > model_operator must be SP V1 or V2" )

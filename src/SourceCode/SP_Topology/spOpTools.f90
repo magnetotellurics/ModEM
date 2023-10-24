@@ -138,7 +138,7 @@ contains
         !
         do i = 1, matrix_ijs%nCol
             !
-			!write( *, * ) matrix_ijs%nRow, matrix_ijs%nCol, size( matrix_csr%row ), size( matrix_csr%col ), size( matrix_csr%val )
+            !write( *, * ) matrix_ijs%nRow, matrix_ijs%nCol, size( matrix_csr%row ), size( matrix_csr%col ), size( matrix_csr%val )
             write( i_unit, * ) matrix_ijs%I(i), matrix_ijs%J(i), matrix_ijs%S(i)
             !
         enddo
@@ -401,16 +401,16 @@ contains
         integer :: ij, i, j
         ! for now no error checking
         if(.NOT.S%is_allocated) then
-			stop "Error: CSR2IJS_Real > allocate output matrix before call"
+            stop "Error: CSR2IJS_Real > allocate output matrix before call"
         endif
         ij = 0
         do i=1, C%nRow
-			do j = C%row(i), C%row(i+1)-1
-				ij = ij + 1
-				S%I(ij) = i
-				S%J(ij) = C%col(j)
-				S%S(ij) = C%val(j)
-			enddo
+            do j = C%row(i), C%row(i+1)-1
+                ij = ij + 1
+                S%I(ij) = i
+                S%J(ij) = C%col(j)
+                S%S(ij) = C%val(j)
+            enddo
         enddo
         !
     end subroutine CSR2IJS_Real

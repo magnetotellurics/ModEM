@@ -277,8 +277,9 @@ contains
             call self%contructMeasuredDataGroupTxArray()
             !
         else
-            write( *, * ) "Error opening [", fname, "] in DataFileStandard_ctor"
-            stop
+            !
+            call errStop( "Error opening ["//fname//"] in DataFileStandard_ctor" )
+            !
         endif
         !
     end function DataFileStandard_ctor

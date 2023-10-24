@@ -117,13 +117,13 @@ contains
         !
         if( self%grid_type == EDGE ) then
             !
-            allocate( self%x(self%nx, self%ny + 1, self%nz + 1), stat=alloc_stat )
+            allocate( self%x( self%nx, self%ny + 1, self%nz + 1 ), stat=alloc_stat )
             self%is_allocated = alloc_stat .EQ. 0
             !
-            allocate( self%y(self%nx + 1, self%ny, self%nz + 1), stat=alloc_stat )
+            allocate( self%y( self%nx + 1, self%ny, self%nz + 1 ), stat=alloc_stat )
             self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
-            allocate( self%z(self%nx + 1, self%ny + 1, self%nz), stat=alloc_stat )
+            allocate( self%z( self%nx + 1, self%ny + 1, self%nz ), stat=alloc_stat )
             self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
             self%NdX = (/self%nx, self%ny + 1, self%nz + 1/)
@@ -132,13 +132,13 @@ contains
             !
         elseif( self%grid_type == FACE ) then
             !
-            allocate( self%x(self%nx + 1, self%ny, self%nz), stat=alloc_stat )
+            allocate( self%x( self%nx + 1, self%ny, self%nz), stat=alloc_stat )
             self%is_allocated = alloc_stat .EQ. 0
             !
-            allocate( self%y(self%nx, self%ny + 1, self%nz), stat=alloc_stat )
+            allocate( self%y( self%nx, self%ny + 1, self%nz), stat=alloc_stat )
             self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
-            allocate( self%z(self%nx, self%ny, self%nz + 1), stat=alloc_stat)
+            allocate( self%z( self%nx, self%ny, self%nz + 1), stat=alloc_stat)
             self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
             self%NdX = (/self%nx + 1, self%ny, self%nz/)
@@ -691,6 +691,10 @@ contains
                                     self%x(ix, iy, iz) = ( cell_in%v(ix, iy-1, iz-1) + cell_in%v(ix, iy, iz-1) + &
                                     cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz) )! / 4.0d0
                                 enddo
+                                !
+                                self%x(ix, iy, 1) =  cell_in%v(ix, iy-1, 1) + cell_in%v(ix, iy, 1 )
+                                self%x(ix, iy, self%grid%nz+1) =  cell_in%v(ix, iy-1, self%grid%nz) + cell_in%v(ix, iy, self%grid%nz )
+                                !
                             enddo
                         enddo
                         !
@@ -701,6 +705,10 @@ contains
                                     self%y(ix, iy, iz) = ( cell_in%v(ix-1, iy, iz-1) + cell_in%v(ix, iy, iz-1) + &
                                     cell_in%v(ix-1, iy, iz) + cell_in%v(ix, iy, iz) )! / 4.0d0
                                 enddo
+                                !
+                                self%y(ix, iy, 1) =  cell_in%v(ix-1, iy, 1) + cell_in%v(ix, iy, 1)
+                                self%y(ix, iy, self%grid%nz+1) =  cell_in%v(ix-1, iy, self%grid%nz) + cell_in%v(ix, iy, self%grid%nz )
+                                !
                             enddo
                         enddo
                         !
@@ -798,6 +806,10 @@ contains
                                             self%x(ix, iy, iz) = ( cell_h_in%v(ix, iy-1, iz-1) + cell_h_in%v(ix, iy, iz-1) + &
                                             cell_h_in%v(ix, iy-1, iz) + cell_h_in%v(ix, iy, iz) )! / 4.0d0
                                         enddo
+                                        !
+                                        self%x(ix, iy, 1) =  cell_h_in%v(ix, iy-1, 1) + cell_h_in%v(ix, iy, 1 )
+                                        self%x(ix, iy, self%grid%nz+1) =  cell_h_in%v(ix, iy-1, self%grid%nz) + cell_h_in%v(ix, iy, self%grid%nz )
+                                        !
                                     enddo
                                 enddo
                                 !
@@ -808,6 +820,10 @@ contains
                                             self%y(ix, iy, iz) = ( cell_h_in%v(ix-1, iy, iz-1) + cell_h_in%v(ix, iy, iz-1) + &
                                             cell_h_in%v(ix-1, iy, iz) + cell_h_in%v(ix, iy, iz) )! / 4.0d0
                                         enddo
+                                        !
+                                        self%y(ix, iy, 1) =  cell_h_in%v(ix-1, iy, 1) + cell_h_in%v(ix, iy, 1)
+                                        self%y(ix, iy, self%grid%nz+1) =  cell_h_in%v(ix-1, iy, self%grid%nz) + cell_h_in%v(ix, iy, self%grid%nz )
+                                        !
                                     enddo
                                 enddo
                                 !
@@ -1654,10 +1670,11 @@ contains
                 !
                 xC = xC + grid%ox
                 yC = yC + grid%oy
-                zC = zC - sum(grid%dz(1:grid%nzAir)) - grid%oz
+                zC = zC - sum( grid%dz(1:grid%nzAir) ) - grid%oz
                 !
             class default
                 call errStop( "interpFunc_cVector3D_SG > Undefined grid" )
+            !
         end select
         !
         tmp = location(1) > xC
@@ -1701,15 +1718,15 @@ contains
         !iz = findloc( location(3) > zC, .TRUE., back = .TRUE., dim = 1 )
         !
         ! Find weights
-        wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))
+        wx = ( xC(ix + 1) - location(1)) / (xC(ix + 1) - xC(ix) )
         !
         deallocate( xC )
         !
-        wy = (yC(iy + 1) - location(2))/(yC(iy + 1) - yC(iy))
+        wy = ( yC(iy + 1) - location(2) ) / ( yC(iy + 1) - yC(iy) )
         !
         deallocate( yC )
         !
-        wz = (zC(iz + 1) - location(3))/(zC(iz + 1) - zC(iz))
+        wz = ( zC(iz + 1) - location(3) ) / ( zC(iz + 1) - zC(iz) )
         !
         deallocate( zC )
         !

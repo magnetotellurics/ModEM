@@ -91,6 +91,8 @@ contains
         !
         call self%baseDealloc()
         !
+        !if( associated( self%metric_sg ) ) deallocate( self%metric_sg )
+        !
     end subroutine ModelOperator_MF_SG_dtor
     !
     !> No subroutine briefing

@@ -1,19 +1,4 @@
 !
-!> This file is part of the ModEM modeling and inversion package.
-!> 
-!> LICENSING information
-!
-!> Copyright(C) 2020 ModEM research group.
-!> Contact: http://
-!
-!> GNU General Public License Usage
-!> This file may be used under the terms of the GNU
-!> General Public License version 3.0 as published by the Free Software
-!> Foundation and appearing in the file LICENSE.GPL included in the
-!> packaging of this file.  Please review the following information to
-!> ensure the GNU General Public License version 3.0 requirements will be
-!> met: http://www.gnu.org/copyleft/gpl.html.
-!> 
 !> SUMMARY
 !> 
 !> Defines differential operators of 3D rectangular grid
@@ -31,7 +16,7 @@ module SpOpTopology_MR
     !
     use rVector3D_MR
     use rScalar3D_MR
-
+    !
     type, extends( SpOpTopology_t ) :: SpOpTopology_MR_t
         !
         type( Grid3D_MR_t ), pointer :: grid
@@ -426,8 +411,8 @@ contains
         !
         !> First do the edges that coincide with coarse(active) edges.
         !
-        call vecC1%findValue( indXcoarse, 1.0_prec )
-        call vecC1%findValue( indYcoarse, 2.0_prec )
+        indXcoarse = vecC1%findValue( 1.0_prec )
+        indYcoarse = vecC1%findValue( 2.0_prec )
         !
         n = size(C) + 2 * size( indXcoarse ) + 2 * size( indYcoarse )
         allocate(Ctmp(n))
@@ -455,10 +440,10 @@ contains
         !
         !> Next fill in fine grid edges that subdivide coarse face.
         !
-        call vecC2%findValue( indXcoarse1, 1.0_prec )
-        call vecC3%findValue( indXcoarse2, 1.0_prec )
-        call vecC2%findValue( indYcoarse1, 2.0_prec )
-        call vecC3%findValue( indYcoarse2, 2.0_prec )
+        indXcoarse1 = vecC2%findValue( 1.0_prec )
+        indXcoarse2 = vecC3%findValue( 1.0_prec )
+        indYcoarse1 = vecC2%findValue( 2.0_prec )
+        indYcoarse2 = vecC3%findValue( 2.0_prec )
         !
         n = size(C) + 2 * ( size( indXcoarse1 ) + size( indXcoarse2 ) ) + &
         2 * ( size( indYcoarse1 ) + size( indYcoarse2 ) )
@@ -524,7 +509,7 @@ contains
         ! Local variables
         type(spMatIJS_Real) :: G1_ijs
         type(rScalar3D_MR_t) :: vecR, vecC(9)
-
+        !
         integer, dimension(:), allocatable :: R, C
         real(kind=prec), dimension(:), allocatable :: S
         integer, dimension(:), allocatable :: Rtmp, Ctmp

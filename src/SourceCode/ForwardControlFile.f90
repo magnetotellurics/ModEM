@@ -6,7 +6,7 @@ module ForwardControlFile
     !
     use Utilities
     use String
-    use Grid
+    use Grid3D_MR
     use ForwardSolver
     use Solver
     use SourceCSEM
@@ -41,7 +41,7 @@ contains
     !
     !> Procedure ForwardControlFile_ctor
     !> Read line by line of the data file, create Data Entry objects(MT, MT_REF or CSEM)
-	!
+    !
     function ForwardControlFile_ctor( funit, fname ) result( self )
         implicit none
         !
@@ -51,9 +51,9 @@ contains
         type( ForwardControlFile_t ) :: self
         !
         character(1000) :: full_line_text
-        character(len=200), dimension(20) :: args
+        character( len=200 ), dimension(20) :: args
         character(:), allocatable :: line_text
-        integer :: line_counter, io_stat, p_nargs
+        integer :: i, line_counter, io_stat, p_nargs
         !
         !write( *,* ) "Constructor ForwardControlFile_t"
         !
@@ -141,19 +141,31 @@ contains
             ! Grid type
             if( allocated( self%grid_format ) ) then
                 !
-                select case( self%grid_format )
-                    case( "SG" )
-                        grid_format = GRID_SG
-                    case( "MR" )
-                        grid_format = GRID_MR
-                    case default
-                        !
-                        call errStop( "ForwardControlFile_ctor > Wrong grid_format control, use [SG|MR]" )
-                end select
+                line_text = trim( self%grid_format )
                 !
-                write( *, "( A40, A20)" ) "Grid Type = ", grid_format
+                call Parse( line_text, ",", args, p_nargs )
                 !
+                write( *, * ) "args: ", args
+                !
+                write( *, * ) "p_nargs: ", p_nargs
+                !
+                allocate( layers( p_nargs ) )
+                !
+                do i = 1, p_nargs
+                    !
+                    read( args(i), "(I8)" ) layers(i)
+                    !
+                enddo
+                !
+                write( *, * ) "layers: ", layers
+                !
+                grid_format = GRID_MR
+                !
+            else
+                grid_format = GRID_SG
             endif
+            !
+            write( *, "( A40, A20)" ) "Grid format = ", grid_format
             !
             ! Grid reader
             if( allocated( self%grid_reader_type ) ) then

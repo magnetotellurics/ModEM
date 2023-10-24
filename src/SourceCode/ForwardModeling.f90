@@ -211,6 +211,8 @@ contains
         !> Set i_sol if present
         if( present( i_sol ) ) sol_index = i_sol
         !
+        call model_operator%metric%setGridIndexArrays( model_operator%metric%grid )
+        !
         !>
         n_tx = size( transmitters )
         !

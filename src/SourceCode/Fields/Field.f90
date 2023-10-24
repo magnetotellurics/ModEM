@@ -15,9 +15,9 @@ module Field
         !
         class( Grid_t ), pointer :: grid
         !
-        character( len=4 ) :: grid_type
-        !
         integer :: nx, ny, nz, store_state
+        !
+        character( len=4 ) :: grid_type
         !
         logical :: is_allocated
         !
@@ -76,6 +76,8 @@ module Field
             procedure, public :: switchStoreState => switchStoreState_Field
             !
             procedure, public :: isCompatible => isCompatible_Field
+            !
+            procedure, public :: findValue => findValue_Field
             !
             procedure, public :: setIndexArrays => setIndexArrays_Field
             !
@@ -394,6 +396,40 @@ contains
         !
     end function isCompatible_Field
     !
+    !> No function briefing
+    !
+    function findValue_Field( self, c ) result( I )
+        implicit none
+        !
+        class( Field_t ), intent( in ) :: self
+        real( kind=prec ), intent( in ) :: c
+        !
+        integer, allocatable, dimension(:) :: I
+        !
+        complex( kind=prec ), allocatable, dimension(:) :: v
+        integer :: n, n_I, k
+        !
+        n = self%length()
+        allocate( v(n) )
+        v = self%getArray()
+        !
+        n_I = 0
+        do k = 1, n
+            if( real( v(k), kind=prec ) == c ) n_I = n_I + 1
+        enddo
+        !
+        allocate( I(n_I) )
+        !
+        n_I = 0
+        do k = 1, n
+            if( real( v(k), kind=prec ) == c ) then
+                n_I = n_I + 1
+                I(n_I) = k
+            endif
+        enddo
+        !
+    end function findValue_Field
+    !
     !> Defines the index arrays: ind_interior and ind_boundary.
     !>     Create copy with zeros and value boundaries with C_ONE.
     !>     Take two sizes and allocate the two arrays.
@@ -477,9 +513,9 @@ contains
                 !
                 ind_boundary = self%grid%NODEb
                 !
-            case( CELL, CELL_EARTH )
+            case( CELL )
                 !
-                call errStop( "CELL/CELL_EARTH indBoundary need to be implement" )
+                call errStop( "CELL indBoundary need to be implement" )
                 !
             case default
                 call errStop( "indBoundary > Invalid grid type ["//self%grid_type//"]" )
@@ -510,9 +546,9 @@ contains
                 !
                 ind_interior = self%grid%NODEi
                 !
-            case( CELL, CELL_EARTH )
+            case( CELL )
                 !
-                call errStop( "CELL/CELL_EARTH indInterior need to be implement" )
+                call errStop( "CELL indInterior need to be implement" )
                 !
             case default
                 call errStop( "indInterior > Invalid grid type ["//self%grid_type//"]" )
@@ -543,9 +579,9 @@ contains
                 !
                 ind_active = self%grid%NODEa
                 !
-            case( CELL, CELL_EARTH )
+            case( CELL )
                 !
-                call errStop( "CELL/CELL_EARTH indActive need to be implement" )
+                call errStop( "CELL indActive need to be implement" )
                 !
             case default
                 call errStop( "indActive > Invalid grid type ["//self%grid_type//"]" )

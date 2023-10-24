@@ -1,19 +1,4 @@
 !
-!> This file is part of the ModEM modeling and inversion package.
-!> 
-!> LICENSING information
-!
-!> Copyright (C) 2020 ModEM research group.
-!> Contact: http://
-!
-!> GNU General Public License Usage
-!> This file may be used under the terms of the GNU
-!> General Public License version 3.0 as published by the Free Software
-!> Foundation and appearing in the file LICENSE.GPL included in the
-!> packaging of this file.  Please review the following information to
-!> ensure the GNU General Public License version 3.0 requirements will be
-!> met: http://www.gnu.org/copyleft/gpl.html.
-!> 
 !> SUMMARY
 !> 
 !> No Module briefing
@@ -41,6 +26,8 @@ module SpOpTopology_SG
     !
 contains
     !
+    !> No function briefing
+    !
     function SpOpTopology_SG_ctor( grid ) result( self )
         implicit none
         !
@@ -51,6 +38,8 @@ contains
         self%grid => grid
         !
     end function SpOpTopology_SG_ctor
+    !
+    !> No subroutine briefing
     !
     subroutine curl_SpOpTopology_SG( self, curl ) 
         implicit none
@@ -235,7 +224,9 @@ contains
         deallocate( IndVec, I, J, K )
         !
     end subroutine curl_SpOpTopology_SG
-
+    !
+    !> No subroutine briefing
+    !
     subroutine grad_SpOpTopology_SG( self, grad )
         implicit none
         !
@@ -266,10 +257,10 @@ contains
         enddo
         !
         ! xedges
-        allocate(IndVec(nXedge))
-        allocate(I(nXedge))
-        allocate(J(nXedge))
-        allocate(K(nXedge))
+        allocate( IndVec(nXedge) )
+        allocate( I(nXedge) )
+        allocate( J(nXedge) )
+        allocate( K(nXedge) )
         !
         do ii = 1, nXedge
             IndVec(ii) = ii
@@ -293,30 +284,30 @@ contains
         deallocate( IndVec, I, J, K )
         !
         ! yedges
-        allocate(IndVec(nYedge))
-        allocate(I(nYedge))
-        allocate(J(nYedge))
-        allocate(K(nYedge))
+        allocate( IndVec(nYedge) )
+        allocate( I(nYedge) )
+        allocate( J(nYedge) )
+        allocate( K(nYedge) )
         !
         do ii = 1, nYedge
-        IndVec(ii) = ii
+            IndVec(ii) = ii
         enddo
         !
         call self%grid%gridIndex( YEDGE, IndVec, I, J, K )
         call self%grid%vectorIndex( NODE, I, J, K, IndVec )
         !
         do ii = 1, nYedge
-        jj = ii + nXedge
-        grad%col(2*jj - 1) = IndVec(ii)
+            jj = ii + nXedge
+            grad%col(2*jj - 1) = IndVec(ii)
         enddo
         !
         J = J + 1
         !
-        call self%grid%vectorIndex(NODE, I, J, K, IndVec)
+        call self%grid%vectorIndex( NODE, I, J, K, IndVec )
         !
         do ii = 1, nYedge
-        jj = ii + nXedge
-        grad%col(2*jj) = IndVec(ii)
+            jj = ii + nXedge
+            grad%col(2*jj) = IndVec(ii)
         enddo
         !
         deallocate( IndVec, I, J, K )
@@ -341,7 +332,7 @@ contains
         !
         K = K + 1
         !
-        call self%grid%vectorIndex(NODE, I, J, K, IndVec)
+        call self%grid%vectorIndex( NODE, I, J, K, IndVec )
         !
         do ii = 1, nZedge
             jj = ii + nXedge + nYedge
@@ -351,5 +342,5 @@ contains
         deallocate( IndVec, I, J, K )
         !
     end subroutine grad_SpOpTopology_SG
-
+    !
 end module SpOpTopology_SG

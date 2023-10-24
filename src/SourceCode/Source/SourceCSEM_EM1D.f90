@@ -24,8 +24,6 @@ module SourceCSEM_EM1D
             !
             procedure, public :: createE => createE_SourceCSEM_EM1D
             !
-            procedure, public :: createRHS => createRHS_SourceCSEM_EM1D
-            !
             procedure, public :: set1DModel => set1DModel_SourceCSEM_EM1D
             !
             procedure, private :: create_Ep_from_EM1D, createBackgroundData, createSourceData
@@ -133,13 +131,13 @@ contains
         allocate( self%E( 1 ) )
         !
         !> Construct E from E_p
-        self%E(1) = E_p
+        self%E(1) = self%E_p
         !
-        self%E(1)%x = self%cond_anomaly_h%getAxis("x") * E_P%x
+        self%E(1)%x = self%cond_anomaly_h%getAxis("x") * self%E_P%x
         !
-        self%E(1)%y = self%cond_anomaly_h%getAxis("y") * E_P%y
+        self%E(1)%y = self%cond_anomaly_h%getAxis("y") * self%E_P%y
         !
-        self%E(1)%z = self%cond_anomaly_v%getAxis("z") * E_P%z
+        self%E(1)%z = self%cond_anomaly_v%getAxis("z") * self%E_P%z
         !
         call self%E(1)%mult( i_omega_mu )
         !
@@ -171,7 +169,7 @@ contains
         !
         integer ix, iy, iz, counter
         !
-        E_p = cVector3D_SG_t( grid, EDGE )
+        self%E_p = cVector3D_SG_t( grid, EDGE )
         !
         !> Fill e_vector (cVector3D_SG) from E2D (Esoln2DTM_t)
         !
@@ -180,7 +178,7 @@ contains
         do iz = 1,grid%Nz+1    !Edge Z
             do iy = 1,grid%Ny+1     !Edge Y
                 do ix = 1,grid%Nx       !Center X
-                    E_p%x(ix,iy,iz) = bgdat%Ex(counter)
+                    self%E_p%x(ix,iy,iz) = bgdat%Ex(counter)
                     counter = counter + 1
                 enddo
             enddo
@@ -191,7 +189,7 @@ contains
         do iz = 1, grid%Nz+1    !Edge Z
             do iy = 1, grid%Ny      !Center y
                 do ix = 1, grid%Nx+1    !Edge x
-                    E_p%y(ix,iy,iz) = bgdat%Ey(counter)
+                    self%E_p%y(ix,iy,iz) = bgdat%Ey(counter)
                     counter = counter + 1
                 enddo
             enddo
@@ -202,50 +200,13 @@ contains
         do iz = 1,grid%Nz !Center Z
             do iy = 1,grid%Ny+1 !Edge y
                 do ix = 1,grid%Nx+1 !Edge x
-                    E_p%z(ix,iy,iz) = bgdat%Ez(counter)
+                    self%E_p%z(ix,iy,iz) = bgdat%Ez(counter)
                     counter = counter + 1
                 enddo
             enddo
         enddo
         !
     end subroutine create_Ep_from_EM1D
-    !
-    !> Set RHS from self%E
-    !
-    subroutine createRHS_SourceCSEM_EM1D( self )
-        implicit none
-        !
-        class( SourceCSEM_EM1D_t ), intent( inout ) :: self
-        !
-        type( cVector3D_MR_t ) :: temp_vec_mr
-        !
-        !if( allocated( self%rhs ) ) deallocate( self%rhs )
-        allocate( self%rhs(1) )
-        !
-        !> Check if grid is MR 
-        !> RHS calculated as MR vector
-        select type( grid => self%model_operator%metric%grid )
-            !
-            class is( Grid3D_SG_t )
-                !
-                allocate( self%rhs(1)%v, source = self%E(1) )
-                !
-            class is( Grid3D_MR_t )
-                !
-                temp_vec_mr = cVector3D_MR_t( grid, self%E(1)%grid_type )
-                !
-                call temp_vec_mr%fromSG( self%E(1) )
-                !
-                allocate( self%rhs(1)%v, source = temp_vec_mr )
-                !
-            class default
-                call errStop( "createRHS_SourceCSEM_EM1D > model_operator must be SP V1 or V2" )
-            !
-        end select
-        !
-        call self%rhs(1)%v%mult( self%model_operator%metric%v_edge )
-        !
-    end subroutine createRHS_SourceCSEM_EM1D
     !
     !> this is a private routine, used to extract layer averages from
     !> a 3D conductivity parameter (sigma) and set up
@@ -259,6 +220,8 @@ contains
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
         !
         type( rScalar3D_SG_t ) :: sigma_cell
+        !real( kind=prec ), dimension( nlay1D ):: sig_h, sig_v, zlay0
+        integer :: i, k
         !
         if( self%sigma%anisotropic_level == 1 .OR. self%sigma%anisotropic_level == 2 ) then
             !
@@ -281,7 +244,39 @@ contains
             call self%setCondAnomally( self%cond_anomaly_v, self%sigma%anisotropic_level )
             !
             self%sig1D_v = sig1D
-            !
+            ! !
+            ! !> Merge Layers (Michael Commer)
+            ! i = nlay1D
+            ! !
+            ! k = 1
+            ! sig_h(1) = SIGMA_AIR
+            ! sig_v(1) = sig_h(1)
+            ! zlay0(1) = 0d0
+            ! !
+            ! ! air layer
+            ! do i = sigma_cell%grid%nzAir + 1, nlay1D
+                ! ! if either sig_H or sig_V change from layer k to k+1, add new layer
+                ! if( abs( self%sig1D_h(i) - sig_h( k ) ) > SIGMA_MIN .OR. abs( self%sig1D_v(i) - sig_v( k ) ) > SIGMA_MIN ) then
+                    ! !
+                    ! k = k + 1
+                    ! sig_h( k ) = self%sig1D_h(i)
+                    ! sig_v( k ) = self%sig1D_v(i)
+                    ! zlay0( k ) = zlay1D(i)
+                    ! !
+                ! endif
+            ! enddo
+            ! !
+            ! ! reset temp. 1D-model arrays
+            ! do i = 1, k ! new layers
+                ! !
+                ! self%sig1D_h(i) = sig_h(i)
+                ! self%sig1D_v(i) = sig_v(i)
+                ! zlay1D(i) = zlay0(i)
+                ! !
+            ! enddo
+            ! !
+            ! nlay1D = k
+            ! !
         else
             call errStop( "set1DModel_SourceCSEM_EM1D > Anisotropy with level above 2 not yet supported" )
         endif

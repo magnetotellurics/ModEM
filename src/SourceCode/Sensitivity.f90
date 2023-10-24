@@ -107,7 +107,7 @@ contains
             !
             call Tx%forward_solver%setFrequency( sigma, Tx%period )
             !
-            !> Switch Transmitter's source to SourceInteriorForce
+            !> Switch Transmitter's source to SourceAdjoint
             call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
             !
             call Tx%solve
@@ -307,7 +307,7 @@ contains
     !
     !> Calculate dsigma for the data_tx's transmitter:
     !>     Create a rhs from LRows * residual data for all receivers related to the transmitter.
-    !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
+    !>     Solve ESens on the transmitter using a transpose SourceAdjoint, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
     !
     subroutine JMult_T_Tx( sigma, tx_data, tx_dsigma, i_sol )
@@ -405,14 +405,14 @@ contains
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
-        !> Switch Transmitter's source to SourceInteriorForce, with transpose = .TRUE.
-        call Tx%setSource( SourceInteriorForce_t( model_operator, sigma, Tx%period, .TRUE. ) )
+        !> Switch Transmitter's source to SourceAdjoint, with transpose = .TRUE.
+        call Tx%setSource( SourceAdjoint_t( model_operator, sigma, Tx%period, .TRUE. ) )
         !
         call Tx%source%setE( bSrc )
         !
         deallocate( bSrc )
         !
-        !> Solve Transmitter's e_sens with the new SourceInteriorForce
+        !> Solve Transmitter's e_sens with the new SourceAdjoint
         call Tx%solve
         !
         call Tx%PMult_t( sigma, tx_dsigma )

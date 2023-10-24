@@ -18,7 +18,7 @@ module ModelOperator_SP
         !
         type( spMatCSR_Real ) :: VDiv ! div : edges->nodes (interior only)
         type( spMatCSR_Real ) :: VDsG ! operator for div correction
-        type( spMatCSR_Real ) :: Ds  ! divergence of current operator
+        type( spMatCSR_Real ) :: Ds ! divergence of current operator
         !
         type( spMatCSR_Real ) :: VDsG_L, VDsG_U
         !
@@ -48,8 +48,6 @@ module ModelOperator_SP
             procedure, public :: divCGrad => divCGrad_ModelOperator_SP
             !
             procedure, public :: grad => grad_ModelOperator_SP
-            !
-            procedure, public :: disposeMem => disposeMem_ModelOperator_SP
             !
             !> Alloc/Dealloc
             procedure, public :: dealloc => deallocate_ModelOperator_SP
@@ -186,9 +184,10 @@ contains
         real( kind=prec ), intent( in ) :: omega_in
         !
         class( Vector_t ), allocatable:: sig_temp
-        complex( kind=prec ), allocatable, dimension(:) :: sig_vec_v, v_edge_v
+        class( Grid_t ), allocatable :: temp_grid_mr
+        real( kind=prec ), allocatable, dimension(:) :: sig_vec_v, v_edge_v
         !
-        call self%metric%createVector( real_t, EDGE, sig_temp )
+        call sigma%metric%createVector( real_t, EDGE, sig_temp )
         !
         call sigma%PDEmapping( sig_temp )
         !
@@ -571,19 +570,6 @@ contains
         !
     end subroutine grad_ModelOperator_SP
     !
-    !> Deallocate Matrices that will no longer be used
-    !
-    subroutine disposeMem_ModelOperator_SP( self )
-        implicit none
-        !
-        class( ModelOperator_SP_t ), intent( inout ) :: self
-        !
-        !> interior and edge indexes
-        call deall_spMatCSR( self%TCC )
-        !
-    end subroutine disposeMem_ModelOperator_SP
-    !
-    !
     !> No subroutine briefing
     !
     subroutine deallocate_ModelOperator_SP( self )
@@ -603,6 +589,9 @@ contains
         call deall_spMatCSR( self%topology%T )
         call deall_spMatCSR( self%topology%G )
         !
+        if( allocated( self%topology ) ) deallocate( self%topology )
+        !
+        call deall_spMatCSR( self%TCC )
         call deall_spMatCSR( self%Gd )
         call deall_spMatCSR( self%D )
         call deall_spMatCSR( self%VDiv )
@@ -626,3 +615,4 @@ contains
     end subroutine print_ModelOperator_SP
     !
 end module ModelOperator_SP
+!

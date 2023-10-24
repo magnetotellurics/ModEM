@@ -218,7 +218,7 @@ contains
             call warning( "createESolution_ForwardSolver_IT failed to converge!" )
         endif
         !
-        !> Just for the serialJMult_T SourceInteriorForce case
+        !> Just for the serialJMult_T SourceAdjoint case
         if( source%for_transpose ) then
             !
             call e_solution%mult( self%solver%preconditioner%model_operator%metric%v_edge )

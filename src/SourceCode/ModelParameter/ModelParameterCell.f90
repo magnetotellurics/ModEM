@@ -13,10 +13,12 @@ module ModelParameterCell
         !
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
         !
+        class( Grid_t ), pointer :: param_grid
+        !
         contains
             !
             !> Procedures
-            procedure, public :: baseDealloc => baseDealloc_ModelParameterCell
+            procedure, public :: deallocCell => deallocCell_ModelParameterCell
             !
             procedure, public :: setMetric => setMetric_ModelParameterCell
             !
@@ -46,14 +48,14 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine baseDealloc_ModelParameterCell( self )
+    subroutine deallocCell_ModelParameterCell( self )
         implicit none
         !
         class( ModelParameterCell_t ), intent( inout ) :: self
         !
-        !if( associated( self%param_grid ) ) deallocate( self%param_grid )
+        if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
         !
-    end subroutine baseDealloc_ModelParameterCell
+    end subroutine deallocCell_ModelParameterCell
     !
     !> No subroutine briefing
     !

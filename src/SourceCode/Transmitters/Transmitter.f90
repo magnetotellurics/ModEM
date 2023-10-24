@@ -9,7 +9,7 @@ module Transmitter
     use ModelParameter
     use ModelOperator
     use SourceCSEM
-    use SourceInteriorForce
+    use SourceAdjoint
     use rVector3D_SG
     !
     type, abstract :: Transmitter_t
@@ -105,13 +105,63 @@ module Transmitter
             !
             class( Transmitter_t ), intent( inout ) :: self
             !
+            integer :: itx, ntx
+            !
             if( allocated( self%source ) ) deallocate( self%source )
             !
-            if( allocated( self%e_sol_0 ) ) deallocate( self%e_sol_0 )
+            if( allocated( self%e_sol_0 ) ) then
+                !
+                ntx = size( self%e_sol_0 )
+                !
+                if( ntx == 1 ) then
+                    if( allocated( self%e_sol_0(1)%v ) ) deallocate( self%e_sol_0(1)%v )
+                else
+                    do itx = ntx, 1, -(1)
+                        !
+                        if( allocated( self%e_sol_0( itx )%v ) ) deallocate( self%e_sol_0( itx )%v )
+                        !
+                    enddo
+                endif
+                !
+                deallocate( self%e_sol_0 )
+                !
+            endif
             !
-            if( allocated( self%e_sol_1 ) ) deallocate( self%e_sol_1 )
+            if( allocated( self%e_sol_1 ) ) then
+                !
+                ntx = size( self%e_sol_1 )
+                !
+                if( ntx == 1 ) then
+                    if( allocated( self%e_sol_1(1)%v ) ) deallocate( self%e_sol_1(1)%v )
+                else
+                    do itx = ntx, 1, -(1)
+                        !
+                        if( allocated( self%e_sol_1( itx )%v ) ) deallocate( self%e_sol_1( itx )%v )
+                        !
+                    enddo
+                endif
+                !
+                deallocate( self%e_sol_1 )
+                !
+            endif
             !
-            if( allocated( self%e_sens ) ) deallocate( self%e_sens )
+            if( allocated( self%e_sens ) ) then
+                !
+                ntx = size( self%e_sens )
+                !
+                if( ntx == 1 ) then
+                    if( allocated( self%e_sens(1)%v ) ) deallocate( self%e_sens(1)%v )
+                else
+                    do itx = ntx, 1, -(1)
+                        !
+                        if( allocated( self%e_sens( itx )%v ) ) deallocate( self%e_sens( itx )%v )
+                        !
+                    enddo
+                endif
+                !
+                deallocate( self%e_sens )
+                !
+            endif
             !
             if( allocated( self%receiver_indexes ) ) deallocate( self%receiver_indexes )
             !
@@ -208,7 +258,7 @@ module Transmitter
             !
         end subroutine getSolutionVectorTx
         !
-        !> Returns a SourceInteriorForce from two distinct models, with the same ModelOperator.
+        !> Returns a SourceAdjoint from two distinct models, with the same ModelOperator.
         !
         function PMult_Tx( self, sigma, dsigma, model_operator ) result( source_int_force )
             implicit none
@@ -218,7 +268,7 @@ module Transmitter
             class( ModelParameter_t ), intent( in ) :: dsigma
             class( ModelOperator_t ), intent( in ) :: model_operator
             !
-            type( SourceInteriorForce_t ) :: source_int_force
+            type( SourceAdjoint_t ) :: source_int_force
             !
             type( cVector3D_SG_t ), allocatable, dimension(:) :: bSrc
             class( Vector_t ), allocatable :: solution, map_e_vector
@@ -253,7 +303,7 @@ module Transmitter
             enddo
             !
             !> Instantiates the source and sets its E, creating Rhs from it.
-            source_int_force = SourceInteriorForce_t( model_operator, sigma, self%period )
+            source_int_force = SourceAdjoint_t( model_operator, sigma, self%period )
             !
             call source_int_force%setE( bSrc )
             !

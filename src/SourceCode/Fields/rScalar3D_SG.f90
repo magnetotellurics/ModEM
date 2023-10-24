@@ -86,8 +86,8 @@ contains
         !
         type( rScalar3D_SG_t ) :: self
         !
-        integer :: nx, ny, nz, nzAir, nz_earth
-        integer :: status
+        integer :: nx, ny, nz, nzAir
+        integer :: alloc_stat
         !
         !write( *, * ) "Constructor rScalar3D_SG"
         !
@@ -98,7 +98,6 @@ contains
         !
         !> Grid dimensions
         call grid%getDimensions( nx, ny, nz, nzAir )
-        nz_earth = nz - nzAir
         !
         self%nx = nx
         self%ny = ny
@@ -111,25 +110,19 @@ contains
         !
         if( grid_type == NODE ) then
              !
-             allocate( self%v(nx + 1, ny + 1, nz + 1), stat=status )
+             allocate( self%v(nx + 1, ny + 1, nz + 1), stat = alloc_stat )
              self%NdV = (/self%nx + 1, self%ny + 1, self%nz + 1/)
              !
         elseif( grid_type == CELL ) then
              !
-             allocate(self%v(nx, ny, nz), stat=status) 
+             allocate( self%v( nx, ny, nz ), stat = alloc_stat ) 
              self%NdV = (/self%nx, self%ny, self%nz/)
-             !
-        elseif( grid_type == CELL_EARTH ) then
-             !
-             self%nz = nz_earth
-             allocate(self%v(nx, ny, nz_earth), stat=status)
-             self%NdV = (/nx, ny, nz_earth/)
              !
         else
             call errStop( "rScalar3D_SG_ctor > unrecognized grid type: ["//grid_type//"]" )
         endif
         !
-        self%is_allocated = self%is_allocated .AND. ( status .EQ. 0 )
+        self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
         !
         if( self%is_allocated ) then
             !
@@ -185,7 +178,7 @@ contains
         !
         select case( self%grid_type )
             !
-            case( NODE, CELL, CELL_EARTH ) 
+            case( NODE, CELL ) 
                 !
                 self%v((/1, self%NdV(1)/), :, :) = cvalue
                 self%v(:, (/1, self%NdV(2)/), :) = cvalue
@@ -788,15 +781,15 @@ contains
                 v_zend = size( self%v, 3 )
                 !
                 !> Interior
-                temp_node%v( 2:v_xend-1, 2:v_yend-1, 2:v_zend-1 ) = &
-                self%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
-                self%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
-                self%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
-                self%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
-                self%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
-                self%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
-                self%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
-                self%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
+                temp_node%v( 2:v_xend,   2:v_yend,   2:v_zend ) = &
+                     self%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
+                     self%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
+                     self%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
+                     self%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
+                     self%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
+                     self%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
+                     self%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
+                     self%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
                 !
                 node_scalar = temp_node
                 !

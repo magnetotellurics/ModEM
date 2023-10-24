@@ -17,8 +17,6 @@ module SourceCSEM_Dipole1D
             !
             procedure, public :: createE => createE_SourceCSEM_Dipole1D
             !
-            procedure, public :: createRHS => createRHS_SourceCSEM_Dipole1D
-            !
             procedure, public :: set1DModel => set1DModel_SourceCSEM_Dipole1D
             !
             procedure, private :: create_Ep_from_Dipole1D
@@ -92,11 +90,13 @@ contains
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
         !
         complex( kind=prec ) :: i_omega_mu
+        integer :: ix, iy, iz
         !
         !> Get the Transmitter setting:
         xTx1D = self%location(1)
         yTx1D = self%location(2)
         zTx1D = self%location(3)
+        !
         ftx1D = 1.0d0/self%period
         sdm1D = self%moment        !> (Am), dipole moment. Normalize to unit source moment
         azimuthTx1D = self%azimuth !> (degrees) 
@@ -138,7 +138,7 @@ contains
         !>
         allocate( self%E( 1 ) )
         !
-        self%E(1) = E_p
+        self%E(1) = self%E_p
         !
         call self%E(1)%mult( self%cond_anomaly )
         !
@@ -157,8 +157,43 @@ contains
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
         !
+        integer :: i, k
+        real( kind=prec ), dimension( nlay1D ):: sig, zlay0
+        !
         call self%setCondAnomally( self%cond_anomaly, 1 )
         !
+        ! WORKS FINE WITH EM1D, BUT NOT HERE
+        !
+        ! !
+        ! !> Merge Layers (Michael Commer)
+        ! i = nlay1D
+        ! !
+        ! k = 1
+        ! sig(1) = SIGMA_AIR
+        ! zlay0(1) = 0d0
+        ! !
+        ! ! air layer
+        ! do i = self%sigma%metric%grid%nzAir + 1, nlay1D
+            ! ! if either sig_H or sig_V change from layer k to k+1, add new layer
+            ! if( abs( sig1D(i) - sig( k ) ) > SIGMA_MIN ) then
+                ! !
+                ! k = k + 1
+                ! sig( k ) = sig1D(i)
+                ! zlay0( k ) = zlay1D(i)
+                ! !
+            ! endif
+        ! enddo
+        ! !
+        ! ! reset temp. 1D-model arrays
+        ! do i = 1, k ! new layers
+            ! !
+            ! sig1D(i) = sig(i)
+            ! zlay1D(i) = zlay0(i)
+            ! !
+        ! enddo
+        ! !
+        ! nlay1D = k
+        ! !
     end subroutine set1DModel_SourceCSEM_Dipole1D
     !
     !> No subroutine briefing
@@ -253,7 +288,7 @@ contains
         !
         integer ix, iy, iz, counter
         !
-        E_p = cVector3D_SG_t( grid, EDGE )
+        self%E_p = cVector3D_SG_t( grid, EDGE )
         !
         counter = 1
         !
@@ -262,7 +297,7 @@ contains
             do iy = 1, grid%Ny+1 !Edge Y
                 do ix = 1, grid%Nx !Center X
                     !
-                    E_p%x(ix,iy,iz) = ex1D(counter)
+                    self%E_p%x(ix,iy,iz) = ex1D(counter)
                     counter = counter + 1
                     !
                 enddo
@@ -273,7 +308,7 @@ contains
         do iz = 1, grid%Nz+1 !Edge Z
             do iy = 1, grid%Ny !Center y
                 do ix = 1, grid%Nx+1 !Edge x
-                    E_p%y(ix,iy,iz) = ey1D(counter)
+                    self%E_p%y(ix,iy,iz) = ey1D(counter)
                     counter = counter + 1
                 enddo
             enddo
@@ -283,7 +318,7 @@ contains
         do iz = 1, grid%Nz !Center Z
             do iy = 1, grid%Ny+1 !Edge y
                 do ix = 1, grid%Nx+1 !Edge x
-                    E_p%z(ix,iy,iz) = jz1D(counter)
+                    self%E_p%z(ix,iy,iz) = jz1D(counter)
                     counter = counter + 1
                 enddo
             enddo
@@ -294,42 +329,5 @@ contains
         deallocate( bx1D, by1D, bz1D )
         !
     end subroutine create_Ep_from_Dipole1D
-    !
-    !> Set RHS from self%E
-    !
-    subroutine createRHS_SourceCSEM_Dipole1D( self )
-        implicit none
-        !
-        class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
-        !
-        type( cVector3D_MR_t ) :: temp_vec_mr
-        !
-        !if( allocated( self%rhs ) ) deallocate( self%rhs )
-        allocate( self%rhs(1) )
-        !
-        !> Check if grid is MR 
-        !> RHS calculated as MR vector
-        select type( grid => self%model_operator%metric%grid )
-            !
-            class is( Grid3D_SG_t )
-                !
-                allocate( self%rhs(1)%v, source = self%E(1) )
-                !
-            class is( Grid3D_MR_t )
-                !
-                temp_vec_mr = cVector3D_MR_t( grid, self%E(1)%grid_type )
-                !
-                call temp_vec_mr%fromSG( self%E(1) )
-                !
-                allocate( self%rhs(1)%v, source = temp_vec_mr )
-                !
-            class default
-                call errStop( "createRHS_SourceCSEM_Dipole1D > model_operator must be SP V1 or V2" )
-            !
-        end select
-        !
-        call self%rhs(1)%v%mult( self%model_operator%metric%v_edge )
-        !
-    end subroutine createRHS_SourceCSEM_Dipole1D
     !
 end module SourceCSEM_Dipole1D

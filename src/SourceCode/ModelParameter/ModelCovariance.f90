@@ -93,7 +93,7 @@ contains
         !
         self%S%is_allocated = .FALSE.
         !
-        self%mask = iScalar3D_SG_t( m%metric%grid, CELL_EARTH )
+        self%mask = iScalar3D_SG_t( m%metric%grid, CELL )
         self%mask%v = FREE
         !
         self%N = 1

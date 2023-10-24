@@ -81,97 +81,57 @@ contains
         integer :: nEdge, nEdgeT, n, i, j
         type( spMatCSR_real ) :: Mii, CCxx
         type( spMatCSR_Cmplx ) :: Axx
-        type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
+        type( spMatCSR_Cmplx ), pointer, dimension(:)  :: Lblk, Ublk
         !
-        !************** WILLIAMS'S VERSION FOR IX, IY IZ **************
-        !* THIS NOW WORKS (AT LEAST WITH COMPATIBLE RESULTS AS SG GRID)
+        !> Generate the index arrays ix, iy and iz from grid%iXYZinterior
+        select type( grid => self%model_operator%metric%grid )
+            !
+            class is( Grid3D_MR_t )
+                !
+                !> Find and sum all x=1, y=2, z=3; for ix, iy, iz allocation sizes
+                sum_x = 0; sum_y = 0; sum_z = 0
+                !
+                do i = 1, size( grid%iXYZinterior )
+                    !
+                    if( grid%iXYZinterior(i) == 1 ) sum_x = sum_x + 1
+                    !
+                    if( grid%iXYZinterior(i) == 2 ) sum_y = sum_y + 1
+                    !
+                    if( grid%iXYZinterior(i) == 3 ) sum_z = sum_z + 1
+                    !
+                enddo
+                !
+                allocate( ix( sum_x ) )
+                allocate( iy( sum_y ) )
+                allocate( iz( sum_z ) )
+                !
+                !> Populate ix, iy, iz
+                sum_x = 1; sum_y = 1; sum_z = 1
+                !
+                do i = 1, size( grid%iXYZinterior )
+                    !
+                    if( grid%iXYZinterior(i) == 1 ) then
+                        ix(sum_x) = i
+                        sum_x = sum_x + 1
+                    endif
+                    !
+                    if( grid%iXYZinterior(i) == 2 ) then
+                        iy(sum_y) = i
+                        sum_y = sum_y + 1
+                    endif
+                    !
+                    if( grid%iXYZinterior(i) == 3 ) then
+                        iz(sum_z) = i
+                        sum_z = sum_z + 1
+                    endif
+                    !
+                enddo
+                !
+            class default
+                call errStop( "setPreConditioner_CC_SP_MR > Grid must be MR" )
+            !
+        end select
         !
-        call self%model_operator%metric%grid%numberOfEdges( nx, ny, nz )
-        !**
-        ! ix
-        nEdgeT = 0
-        nEdge = 0
-        do i = 1, size(self%model_operator%metric%grid%EDGEi)
-            if (self%model_operator%metric%grid%EDGEi(i) <= nx) nEdge = nEdge + 1
-        end do
-        allocate(ix(nEdge))
-        ix = (/ (j, j = nEdgeT + 1, nEdgeT + nEdge) /)
-        !**
-        ! iy
-        nEdgeT = nEdgeT + nEdge
-        nEdge = 0
-        do i = 1, size(self%model_operator%metric%grid%EDGEi)
-            if ((self%model_operator%metric%grid%EDGEi(i) > nx).and.(self%model_operator%metric%grid%EDGEi(i) <= (nx + ny))) then
-                nEdge = nEdge + 1
-            end if
-        end do
-        allocate(iy(nEdge))
-        iy = (/ (j,j = nEdgeT + 1, nEdgeT + nEdge) /)
-        !**
-        ! iz
-        nEdgeT = nEdgeT+nEdge
-        nEdge = 0
-        do i = 1, size( self%model_operator%metric%grid%EDGEi )
-            if( self%model_operator%metric%grid%EDGEi(i) > (nx + ny) ) then
-                nEdge = nEdge + 1
-            end if
-        end do
-        allocate(iz(nEdge))
-        iz = (/ (j, j = nEdgeT + 1, nEdgeT + nEdge) /)
-        !
-        !************** GARY'S VERSION (needs iXYZinterior to be constructed- procedure in Grid3D_MR) **************
-        ! Solver QMR still give err= NaNs
-        ! !
-        ! !> Generate the index arrays ix, iy and iz from grid%iXYZinterior
-        ! select type( grid => self%model_operator%metric%grid )
-            ! !
-            ! class is( Grid3D_MR_t )
-                ! !
-                ! !> Find and sum all x=1, y=2, z=3; for ix, iy, iz allocation sizes
-                ! sum_x = 0; sum_y = 0; sum_z = 0
-                ! !
-                ! do i = 1, size( grid%iXYZinterior )
-                    ! !
-                    ! if( grid%iXYZinterior(i) == 1 ) sum_x = sum_x + 1
-                    ! !
-                    ! if( grid%iXYZinterior(i) == 2 ) sum_y = sum_y + 1
-                    ! !
-                    ! if( grid%iXYZinterior(i) == 3 ) sum_z = sum_z + 1
-                    ! !
-                ! enddo
-                ! !
-                ! allocate( ix( sum_x ) )
-                ! allocate( iy( sum_y ) )
-                ! allocate( iz( sum_z ) )
-                ! !
-                ! !> Populate ix, iy, iz
-                ! sum_x = 1; sum_y = 1; sum_z = 1
-                ! !
-                ! do i = 1, size( grid%iXYZinterior )
-                    ! !
-                    ! if( grid%iXYZinterior(i) == 1 ) then
-                        ! ix(sum_x) = grid%iXYZinterior(i)
-                        ! sum_x = sum_x + 1
-                    ! endif
-                    ! !
-                    ! if( grid%iXYZinterior(i) == 2 ) then
-                        ! iy(sum_y) = grid%iXYZinterior(i)
-                        ! sum_y = sum_y + 1
-                    ! endif
-                    ! !
-                    ! if( grid%iXYZinterior(i) == 3 ) then
-                        ! iz(sum_z) = grid%iXYZinterior(i)
-                        ! sum_z = sum_z + 1
-                    ! endif
-                    ! !
-                ! enddo
-                ! !
-            ! class default
-                ! call errStop( "setPreConditioner_CC_SP_MR > Grid must be MR" )
-            ! !
-        ! end select
-        ! !
-        !******************************************************************************
         !> Construct submatrices for x, y, z components
         allocate( Lblk(3) )
         allocate( Ublk(3) )
@@ -275,7 +235,8 @@ contains
         class( Vector_t ), intent( inout ) :: out_e
         logical, intent( in ) :: adjoint
         !
-        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v, out_e_v_int
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
+        complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "LTSolvePreConditioner_CC_SP_MR > in_e not allocated yet" )
@@ -286,19 +247,21 @@ contains
         endif
         !
         in_e_v = in_e%getArray()
+        in_e_v_int = in_e_v( in_e%indInterior() )
+        !
         !
         out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%indInterior() )
         !
         if( adjoint ) then
             !
-            call UTsolve_Cmplx( self%LH, in_e_v( in_e%indInterior() ), out_e_v_int )
+            call UTsolve_Cmplx( self%LH, in_e_v_int, out_e_v_int )
             !
         else
             !
             out_e_v_int = C_ZERO
             !
-            call LTsolve_Cmplx( self%L, in_e_v( in_e%indInterior() ), out_e_v_int )
+            call LTsolve_Cmplx( self%L, in_e_v_int, out_e_v_int )
             !
         endif
         !

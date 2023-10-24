@@ -1,0 +1,59 @@
+Things that were not in Williams version, but were added to rVector_3D_MR just copied algorithms
+in the SG version -- these need to be developed for the MR case, algorithms are generally wrong.
+
+sumEdges   and sumCells
+   1)  Please replace avgCells with sumCells in SG Vectors -- makes more sense to do these
+      consistently!   Note that this will require changes in some other places where avgCells is used --
+      or retain avgCells?   But I prefer to get rid of  this routine--call sumCells, and then
+      multiply the output EDGE vector by 0.25.   This is same for SG and MR, so reduces redundent code!
+   2)  these routines are declared in abstract Fields -- but only implemented in Vectors!  Since they
+      map between Vectors and Scalars, why not just make these an abstract method in Vector class
+      instead?  Then you don't need to implement a dummy in the Scalar classes! 
+   3) Implementation of sumEdges and sumCells for MR case ia described in a separate docs text file,
+      Cell2EdgeMR.txt 
+
+
+conjugate  -- whether MR or SG, for real vectors it makes more sense to just retrun the input,
+    rather than stop the program with an error?   But OK as is.
+
+
+All of the arithmetic and dot product routines are WRONG.
+For example, add should just use the SG version of ADD, as in
+
+select type( rhs )
+                 !
+                 class is( rVector3D_MR_t )
+                     !
+                     if( rhs%store_state .EQ. compound ) then
+                         do i = 1,rhs%n_grids    ! or get n_grids from grid -- but maybe useful to add
+                                                 !   as a property to all MR fields classes
+                             call self%sub_vetors(i)%add(rhs%sub_vectors(i))
+                         enddo
+                         !
+                     else if( rhs%store_state .EQ. singleton ) then
+                         !
+                         self%sv = self%sv + rhs%sv
+                         !
+                     else
+                         stop "Error: addRVector3D_MR > Unknown rhs store_state!"
+                     endif
+                     !
+                 class default
+
+
+dot product is different; still use dotProd from SG, but now need to accumulate (sum) over sub-vectors
+                 result = 0.0
+                 if( rhs%store_state .EQ. compound ) then
+                     do i = 1,rhs%n_grids    ! or get n_grids from grid -- but maybe useful to add
+                                            !   as a property to all MR fields classes
+                         result = result + self%sub_vectors(i)%dotProd(rhs%sub_vetors(i))
+                     enddo
+
+AND please explain why we need this aux_vec  -- this makes no sense to me at all, and since dotProd
+   is used in the inner loop of the solver, it would be good to get rid of this overhead!  (if not
+   really necessary--but if it is please explain!
+
+sg2MR and mr2SG are either too complicated, or flat-out incorrect.   See bettetr implementations
+in SG2MR.txt.   AND NOTE: really we need this most for rScalar (to deal with existing fine-grid
+model parameter representation), and utility of the routines for Vectors is minimal (so maybe those can
+just be left alone for now -- I think they are functional).

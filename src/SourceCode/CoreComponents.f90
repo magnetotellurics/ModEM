@@ -21,7 +21,7 @@ module CoreComponents
     use SourceMT_2D
     use SourceCSEM_EM1D
     use SourceCSEM_Dipole1D
-    use SourceInteriorForce
+    use SourceAdjoint
     !
     use ReceiverFullImpedance
     use ReceiverFullVerticalMagnetic
@@ -224,16 +224,6 @@ contains
             !
         enddo
         !
-        !> Free TCC matrix used for evaluationFunction
-        !> Just for SP case
-        select type( model_operator )
-            !
-            class is( ModelOperator_SP_t )
-                !
-                call model_operator%disposeMEM
-                !
-        end select
-        !
     end subroutine handleDataFile
     !
     !> Read Forward Modeling Control File: 
@@ -293,9 +283,9 @@ contains
             select type( grid => model%metric%grid )
                 !
                 class is( Grid3D_SG_t )
-                    allocate( aux_model, source = ModelParameterCell_SG_t( grid, cell_cond, 1, model%param_type ) )
+                    allocate( aux_model, source = ModelParameterCell_SG_t( cell_cond, 1, model%param_type ) )
                 class is( Grid3D_MR_t )
-                    allocate( aux_model, source = ModelParameterCell_MR_t( grid, cell_cond, 1, model%param_type ) )
+                    allocate( aux_model, source = ModelParameterCell_MR_t( cell_cond, 1, model%param_type, grid%cs ) )
                 class default
                     call errStop( "jobSplitModel > Unknow grid for ModelParameter" )
                 !
@@ -778,7 +768,13 @@ contains
             write( ioFwdTmp, "(A19)" ) "# <Grid parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A33)" ) "#grid_header [ModEM|HDF5] : ModEM"
-            write( ioFwdTmp, "(A30)" ) "grid_format [SG|MR]       : SG"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A55)" ) "#Coarsened Grid: Describe an array of 2*layers in size,"
+            write( ioFwdTmp, "(A98)" ) "#                containing comma separated integer pairs, like <Coarse Factor, Number of Layers>."
+            write( ioFwdTmp, "(A81)" ) "#                Ex.: 0,a,1,b,2,c => For 3 Layers, each with sizes a, b and c and"
+            write( ioFwdTmp, "(A79)" ) "#                                    coarse factors of 0, 1 and 2 respectively."
+            write( ioFwdTmp, "(A64)" ) "#Standard Grid : Remove or leave the grid_format line commented."
+            write( ioFwdTmp, "(A48)" ) "#grid_format                       : 0,a,1,b,2,c"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A20)" ) "# <Model parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
@@ -794,7 +790,7 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A36)" ) "solver_type [QMR|BICG]      : QMR"
+            write( ioFwdTmp, "(A36)" ) "solver_type [QMR|BICG]         : QMR"
             write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A35)" ) "max_solver_iters [80]          : 80"
             write( ioFwdTmp, "(A35)" ) "max_solver_calls [20]          : 20"

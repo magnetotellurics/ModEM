@@ -42,17 +42,14 @@ contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_SG_ctor_one_cond( grid, cell_cond, anisotropic_level, param_type ) result( self )
+    function ModelParameterCell_SG_ctor_one_cond( cell_cond, anisotropic_level, param_type ) result( self )
         implicit none
         !
-        class( Grid_t ), intent( in ) :: grid
         type( rScalar3D_SG_t ), intent( in ) :: cell_cond
         integer, intent( in ) :: anisotropic_level
         character(:), allocatable, optional, intent( in ) :: param_type
         !
         type( ModelParameterCell_SG_t ) :: self
-        !
-        integer :: nzAir
         !
         !write( *, * ) "Constructor ModelParameterCell_SG_ctor_one_cond"
         !
@@ -64,11 +61,9 @@ contains
             self%param_type = trim( param_type )
         endif
         !
-        nzAir = 0
-        !
-        allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
-        ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
-        grid%dz( grid%nzAir+1:grid%nz ) ) )
+        allocate( self%param_grid, source = Grid3D_SG_t( cell_cond%grid%nx, cell_cond%grid%ny, 0, &
+        ( cell_cond%grid%nz - cell_cond%grid%nzAir ), cell_cond%grid%dx, cell_cond%grid%dy, &
+        cell_cond%grid%dz( cell_cond%grid%nzAir+1 : cell_cond%grid%nz ) ) )
         !
         self%anisotropic_level = anisotropic_level
         !
@@ -81,7 +76,7 @@ contains
         if( present( param_type ) ) then
             !
             call self%setSigMap( param_type )
-        !
+            !
         endif
         !
         self%is_allocated = .TRUE.
@@ -90,16 +85,15 @@ contains
     !
     !> No subroutine briefing
     !
-    function ModelParameterCell_SG_ctor_all_conds( grid, cell_cond, param_type ) result( self )
+    function ModelParameterCell_SG_ctor_all_conds( cell_cond, param_type ) result( self )
         implicit none
         !
-        class( Grid_t ), intent( in ) :: grid
         type( rScalar3D_SG_t ), dimension(:), intent( in ) :: cell_cond
         character(:), allocatable, optional, intent( in ) :: param_type
         !
         type( ModelParameterCell_SG_t ) :: self
         !
-        integer :: i, nzAir
+        integer :: i
         !
         !write( *, * ) "Constructor ModelParameterCell_SG_ctor_all_conds"
         !
@@ -111,26 +105,22 @@ contains
             self%param_type = trim( param_type )
         endif
         !
-        nzAir = 0
-        !
-        allocate( self%param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, nzAir, &
-                ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
-                grid%dz( grid%nzAir+1:grid%nz ) ) )
+        allocate( self%param_grid, source = Grid3D_SG_t( cell_cond(1)%grid%nx, cell_cond(1)%grid%ny, 0, &
+        ( cell_cond(1)%grid%nz - cell_cond(1)%grid%nzAir ), cell_cond(1)%grid%dx, cell_cond(1)%grid%dy, &
+        cell_cond(1)%grid%dz( cell_cond(1)%grid%nzAir+1 : cell_cond(1)%grid%nz ) ) )
         !
         self%anisotropic_level = size( cell_cond )
         !
         self%cell_cond = cell_cond
         !
-        do i = 1, size( self%cell_cond )
-            !
+        do i = 1, self%anisotropic_level
             self%cell_cond(i)%grid => self%param_grid
-            !
         enddo
         !
         if( present( param_type ) ) then
             !
             call self%setSigMap( param_type )
-        !
+            !
         endif
         !
         self%is_allocated = .TRUE.
@@ -148,12 +138,11 @@ contains
         !
         call self%baseDealloc
         !
-        if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
+        call self%deallocCell
         !
     end subroutine ModelParameterCell_SG_dtor
     !
-    !> Map the entire model cells into a single edge Vector_t (e_vec).
-    !> Need to implement for VTI ????
+    !> Map cell_cond to nodes
     !
     subroutine nodeCond_ModelParameterCell_SG( self, sigma_node )
         implicit none

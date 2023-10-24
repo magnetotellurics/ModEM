@@ -62,6 +62,10 @@ module Grid
             !
             procedure( interface_write_grid ), deferred, public :: write
             !
+            !> Miscellaneous
+            procedure( interface_copy_from_grid ), deferred, public :: copyFrom
+            generic :: assignment(=) => copyFrom
+            !
             !> Base Grid methods
             procedure, public :: baseInit => initialize_Grid
             procedure, public :: baseDealloc => deallocate_Grid
@@ -180,6 +184,14 @@ module Grid
             type( Grid2D_t ) :: g2D
         end function interface_slice_2d_grid
         !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_copy_from_grid( self, rhs )
+            import :: Grid_t
+            class( Grid_t ), intent( inout ) :: self
+            class( Grid_t ), intent( in ) :: rhs
+        end subroutine interface_copy_from_grid
+        !
         !> No interface function briefing
         !
         subroutine interface_write_grid( self )
@@ -214,6 +226,23 @@ contains
         !
         self%nzAir = 0
         self%nzEarth = 0
+        !
+        !> Indexes Arrays
+        self%EDGEf = 0
+        self%FACEf = 0
+        self%NODEf = 0
+        !
+        self%EDGEb = (/ 0 /)
+        self%FACEb = (/ 0 /)
+        self%NODEb = (/ 0 /)
+        !
+        self%EDGEi = (/ 0 /)
+        self%FACEi = (/ 0 /)
+        self%NODEi = (/ 0 /)
+        !
+        self%EDGEa = (/ 0 /)
+        self%FACEa = (/ 0 /)
+        self%NODEa = (/ 0 /)
         !
         self%is_allocated = .FALSE.
         !
@@ -271,7 +300,7 @@ contains
     subroutine setOrigin_Grid( self, ox, oy, oz )
         implicit none
         !
-        class( Grid_t ), intent(inout) :: self
+        class( Grid_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: ox, oy, oz
         !
         self%ox = ox
@@ -333,7 +362,7 @@ contains
     !
     !> No function briefing
     !
-    function getGeometry_Grid( self ) result(s)
+    function getGeometry_Grid( self ) result( s )
         implicit none
         !
         class( Grid_t ), intent( in ) :: self
@@ -494,7 +523,7 @@ contains
             enddo
             !
             !> The topmost air layer has to be at least 30 km
-            if(airLayers%dz(1).lt.airLayers%minTopDz) then
+            if( airLayers%dz(1).lt.airLayers%minTopDz ) then
                 airLayers%dz(1) = airLayers%minTopDz
             endif
 
@@ -611,13 +640,13 @@ contains
         integer :: nx, ny, nz
 
         call self%setLimits( XEDGE, nx, ny, nz )
-        n_xedge = nx*ny*nz
+        n_xedge = nx * ny * nz
         !
         call self%setLimits( YEDGE, nx, ny, nz )
-        n_yedge = nx*ny*nz
+        n_yedge = nx * ny * nz
         !
         call self%setLimits( ZEDGE, nx, ny, nz )
-        n_zedge = nx*ny*nz
+        n_zedge = nx * ny * nz
         !
     end subroutine nEdges_Grid
     !
@@ -631,13 +660,13 @@ contains
         integer :: nx, ny, nz
         !
         call self%setLimits( XFACE, nx, ny, nz )
-        n_xface = nx*ny*nz
+        n_xface = nx * ny * nz
         !
         call self%setLimits( YFACE, nx, ny, nz )
-        n_yface = nx*ny*nz
+        n_yface = nx * ny * nz
         !
         call self%setLimits( ZFACE, nx, ny, nz )
-        n_zface = nx*ny*nz
+        n_zface = nx * ny * nz
         !
     end subroutine nFaces_Grid
     !
@@ -651,7 +680,7 @@ contains
         !
         select case( node_type )
         !
-            case( CELL, CELL_EARTH )
+            case( CELL )
                  nx = self%nx
                  ny = self%ny
                  nz = self%nz

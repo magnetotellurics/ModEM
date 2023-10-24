@@ -1,19 +1,4 @@
 !
-!> This file is part of the ModEM modeling and inversion package.
-!>
-!> LICENSING information
-!
-!> Copyright(C) 2020 ModEM research group.
-!> Contact: http://
-!>
-!> GNU General Public License Usage
-!> This file may be used under the terms of the GNU
-!> General Public License version 3.0 as published by the Free Software
-!> Foundation and appearing in the file LICENSE.GPL included in the
-!> packaging of this file.  Please review the following information to
-!> ensure the GNU General Public License version 3.0 requirements will be
-!> met: http://www.gnu.org/copyleft/gpl.html.
-!>
 !> SUMMARY
 !>
 !> No module briefing
@@ -34,7 +19,7 @@ module Grid3D_MR
         !
         integer, allocatable, dimension(:) :: n_active_node, n_active_cell, cs
         !
-        integer, allocatable, dimension(:) :: iXYZfull, iXYZinterior, iXYZactive
+        integer, allocatable, dimension(:) :: iXYZinterior
         !
         !real( kind=prec ), allocatable, dimension(n_grids) :: z_top
         !
@@ -66,11 +51,16 @@ module Grid3D_MR
             !
             procedure, public :: updateAirLayers => updateAirLayers_Grid3D_MR
             !
+            !> Miscellaneous
+            procedure, public :: copyFrom => copyFrom_Grid3D_MR
+            !
             procedure, public :: write => write_Grid3D_MR
             !
     end type Grid3D_MR_t
     !
     public :: repMat
+    !
+    integer, allocatable, dimension(:) :: layers
     !
     interface Grid3D_MR_t
         module procedure Grid3D_MR_t_ctor
@@ -106,20 +96,24 @@ contains
         if( self%n_grids > 0 ) then
             !
             allocate( self%n_active_edge( 3, self%n_grids ) )
+            self%n_active_edge = 0
             !
             allocate( self%n_active_face( 3, self%n_grids ) )
+            self%n_active_face = 0
             !
             allocate( self%n_active_node( self%n_grids ) )
+            self%n_active_node = 0
             !
             allocate( self%n_active_cell( self%n_grids ) )
+            self%n_active_cell = 0
             !
             allocate( self%z_limits( 2, self%n_grids ) )
+            self%z_limits = 0
             !
             allocate( self%coarseness( self%n_grids, 4 ) )
+            self%coarseness = 0
             !
             allocate( self%sub_grid( self%n_grids ) )
-            !
-            self%coarseness = 0
             !
             do i = 0, self%n_grids - 1
                 !
@@ -133,11 +127,6 @@ contains
             !
             call self%setupMR
             !
-            !write( *, * ) "CoarseMAT Row1 (Coarse): [", self%coarseness(:,1), "]"
-            !write( *, * ) "CoarseMAT Row2 (Layers): [", self%coarseness(:,2), "]"
-            !write( *, * ) "CoarseMAT Row3 (iStart): [", self%coarseness(:,3), "]"
-            !write( *, * ) "CoarseMAT Row4 ( iEnd ): [", self%coarseness(:,4), "]"
-            !
         else
             call errStop( "Grid3D_MR_t_ctor > n_grids equal 0" )
         endif
@@ -145,6 +134,7 @@ contains
     end function Grid3D_MR_t_ctor
     !
     !> No subroutine briefing
+    !
     subroutine allocateDim_Grid3D_MR( self )
         implicit none
         !
@@ -160,8 +150,9 @@ contains
         !
     end subroutine allocateDim_Grid3D_MR
     !
-    !> setup does calculations for grid geometry, which cannot be done
+    !> Setup does calculations for grid geometry, which cannot be done
     !> until dx, dy, dz, and the origin are set.
+    !
     subroutine setup_Grid3D_MR( self, origin )
         implicit none
         !
@@ -195,7 +186,9 @@ contains
         integer :: i, i1, i2, last
         real( kind=prec ) :: ddz_interface
         !
-        ! Check if coarseness parameters are consistent with
+        write( *, * ) sum( self%coarseness(:, 2) ), size( self%dz )
+        !
+        !> Check if coarseness parameters are consistent with
         if( sum( self%coarseness(:, 2) ) /= size( self%dz ) ) then
             call errStop( "setupMR > Inconsistent grid coarseness parameter!" )
         endif
@@ -213,8 +206,8 @@ contains
         do i = 2, self%n_grids
             !
             last = size( self%sub_grid(i - 1)%dz )
-            ddz_interface =(self%sub_grid(i - 1)%dz(last) + &
-            self%sub_grid(i)%dz(1)) / 2
+            ddz_interface = ( self%sub_grid(i - 1)%dz(last) + &
+            self%sub_grid(i)%dz(1) ) / 2
             !
             last = size( self%sub_grid(i - 1)%del_z)
             self%sub_grid(i - 1)%del_z(last) = ddz_interface
@@ -233,9 +226,7 @@ contains
         integer, intent( in ) :: k, i1, i2
         !
         integer :: cs
-        real( kind=prec ), dimension(:), allocatable :: dx
-        real( kind=prec ), dimension(:), allocatable :: dy
-        real( kind=prec ), dimension(:), allocatable :: dz
+        real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         integer :: nx, ny, nz_air, nz_earth
         !
         cs = 2 ** self%coarseness( k, 1 )
@@ -253,20 +244,23 @@ contains
         nz_air = min( max( 0, self%nzAir - i1 + 1 ), self%coarseness( k, 2 ) )
         nz_earth = size(Dz) - nz_air
         !
-        self%sub_grid(k) = Grid3D_SG_t( nx, ny, nz_air, nz_earth )
+        self%sub_grid(k) = Grid3D_SG_t( nx, ny, nz_air, nz_earth, dx, dy, dz )
         !
         self%sub_grid(k)%dx = Dx
         self%sub_grid(k)%dy = Dy
         self%sub_grid(k)%dz = Dz
         !
         ! Origin correction for spherical grid
-        if(i1 < nz_air) then
-            ! Whole sub-grid in the air
-            self%sub_grid(k)%oz = sum(self%dz(i2 + 1 : self%nzAir))
+        if( i1 < nz_air ) then
             !
-        elseif(i1 > self%nzAir + 1) then
-            self%sub_grid(k)%oz = -1.0*&
-            sum(self%dz(self%nzAir + 1 : i1 - 1))
+            !> Whole sub-grid in the air
+            self%sub_grid(k)%oz = sum( self%dz(i2 + 1 : self%nzAir) )
+            !
+        elseif( i1 > self%nzAir + 1 ) then
+            !
+            self%sub_grid(k)%oz = -1.0 * &
+            sum( self%dz(self%nzAir + 1 : i1 - 1) )
+            !
         else
             self%sub_grid(k)%oz = 0.0
         endif
@@ -278,7 +272,7 @@ contains
             subroutine Redimension_cells( cs_in, D_in, D_out )
                 implicit none
                 !
-                integer, intent(in) :: cs_in
+                integer, intent( in ) :: cs_in
                 real( kind=prec ), intent( in ) :: D_in(:)
                 real( kind=prec ), allocatable :: D_out(:)
                 !
@@ -526,51 +520,52 @@ contains
         !
         integer :: i_grid, i0, i1
         integer :: n_xedge, n_yedge, n_zedge, length_full
+        integer, allocatable, dimension(:) :: iXYZfull, iXYZactive
         !
         length_full = 0
         !
         do i_grid = 1, self%n_grids
             !
-            call self%sub_grid(i_grid)%numberOfEdges( n_xedge, n_yedge, n_zedge )
+            call self%sub_grid( i_grid )%numberOfEdges( n_xedge, n_yedge, n_zedge )
             !
             length_full = length_full + n_xedge + n_yedge + n_zedge
             !
         enddo
         !
         !> integer array length of full vector (active and inactive edges)
-        allocate( self%iXYZfull( length_full ) )
+        allocate( iXYZfull( length_full ) )
         !
-        write( *, * ) "setXYZ_Grid3D_MR FULL    : ", size( self%iXYZfull )
+        write( *, * ) "setXYZ_Grid3D_MR FULL: ", size( iXYZfull )
         !
         i0 = 0
         !
         do i_grid = 1, self%n_grids
             !
-            call self%sub_grid(i_grid)%numberOfEdges( n_xedge, n_yedge, n_zedge )
+            call self%sub_grid( i_grid )%numberOfEdges( n_xedge, n_yedge, n_zedge )
             !
             i1 = i0 + n_xedge
-            self%iXYZfull( i0+1:i1 ) = 1
+            iXYZfull( i0+1:i1 ) = 1
             !
             i0 = i1
             i1 = i0 + n_yedge
-            self%iXYZfull( i0+1:i1 ) = 2
+            iXYZfull( i0+1:i1 ) = 2
             !
             i0 = i1
             i1 = i0 + n_zedge
-            self%iXYZfull( i0+1:i1 ) = 3
+            iXYZfull( i0+1:i1 ) = 3
             !
             i0 = i1
             !
         enddo
         !
         !   now reduce to active edges
-        self%iXYZactive = self%iXYZfull( self%EDGEa )
+        iXYZactive = iXYZfull( self%EDGEa )
         !
-        write( *, * ) "ACTIVE  : ", size( self%iXYZactive )
+        write( *, * ) "               ACTIVE: ", size( iXYZactive )
         !
-        self%iXYZinterior = self%iXYZactive( self%EDGEi )
+        self%iXYZinterior = iXYZactive( self%EDGEi )
         !
-        write( *, * ) "INTERIOR: ", size( self%iXYZinterior )
+        write( *, * ) "             INTERIOR: ", size( self%iXYZinterior )
         !
     end subroutine setXYZ_Grid3D_MR
     !
@@ -621,6 +616,8 @@ contains
         !
     end function slice2D_Grid3D_MR
     !
+    !> No function briefing
+    !
     function repMat( m_in, nx, ny, nz, transp ) result( m_out )
         implicit none
         !
@@ -657,7 +654,7 @@ contains
             !
         else
             !
-            allocate(m_out(n_in*nx, ny, nz))
+            allocate( m_out(n_in*nx, ny, nz) )
             !
             ! Copy along 1st dimension.
             i1 = 1; i2 = n_in
@@ -692,7 +689,7 @@ contains
         integer, intent( in ) :: nzAir
         real( kind=prec ), intent( in ) :: dzAir(:)
         !
-        integer :: nzAir_old, nzEarth_old
+        integer :: i, j, nzAir_old, nzEarth_old
         integer :: nx_old, ny_old, nz_old
         real( kind=prec ), allocatable :: dx_old(:), dy_old(:), dz_old(:)
         real( kind=prec ) :: ox_old, oy_old, oz_old
@@ -736,9 +733,106 @@ contains
         !
         call self%setup
         !
+        do i = 1, self%n_grids
+            !
+            if( i .EQ. 1 ) then
+                self%coarseness(i,2) = self%coarseness(i,2) + self%nzAir
+            else
+                self%coarseness(i,3) = self%coarseness(i,3) + self%nzAir
+            endif
+            !
+            self%coarseness(i,4) = self%coarseness(i,4) + self%nzAir
+            !
+        enddo
+        !
+        write( *, * ) "Coarse Matrix Row1 (Coarse): [", self%coarseness(:,1), "]"
+        write( *, * ) "Coarse Matrix Row2 (Layers): [", self%coarseness(:,2), "]"
+        write( *, * ) "Coarse Matrix Row3 (iStart): [", self%coarseness(:,3), "]"
+        write( *, * ) "Coarse Matrix Row4 ( iEnd ): [", self%coarseness(:,4), "]"
+        !
+        call self%setupMR
+        
     end subroutine updateAirLayers_Grid3D_MR
     !
+    !> No subroutine briefing
     !
+    subroutine copyFrom_Grid3D_MR( self, rhs )
+        implicit none
+        !
+        class( Grid3D_MR_t ), intent( inout ) :: self
+        class( Grid_t ), intent( in ) :: rhs
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "copyFrom_Grid3D_MR > rhs not allocated" )
+        endif
+        !
+        write( *, * ) "copyFrom_Grid3D_MR"
+        !
+        self%n_grids = rhs%n_grids
+        !
+        self%geometry = rhs%geometry
+        !
+        self%nx = rhs%nx
+        self%ny = rhs%ny
+        self%nz = rhs%nz
+        self%nzAir = rhs%nzAir
+        self%nzEarth = rhs%nzEarth
+        !
+        self%dx = rhs%dx
+        self%dy = rhs%dy
+        self%dz = rhs%dz
+        !
+        self%ox = rhs%ox
+        self%oy = rhs%oy
+        self%oz = rhs%oz
+        !
+        self%rotDeg = rhs%rotDeg
+        !
+        !> Indexes Arrays
+        self%EDGEf = rhs%EDGEf
+        self%FACEf = rhs%FACEf
+        self%NODEf = rhs%NODEf
+        !
+        self%EDGEb = rhs%EDGEb
+        self%FACEb = rhs%FACEb
+        self%NODEb = rhs%NODEb
+        !
+        self%EDGEi = rhs%EDGEi
+        self%FACEi = rhs%FACEi
+        self%NODEi = rhs%NODEi
+        !
+        self%EDGEa = rhs%EDGEa
+        self%FACEa = rhs%FACEa
+        self%NODEa = rhs%NODEa
+        !
+        select type( rhs )
+            !
+            class is( Grid3D_MR_t )
+                !
+                self%coarseness = rhs%coarseness
+                self%z_limits = rhs%z_limits
+                !
+                self%n_active_edge = rhs%n_active_edge
+                self%n_active_face = rhs%n_active_face
+                !
+                self%n_active_node = rhs%n_active_node
+                self%n_active_cell = rhs%n_active_cell
+                self%cs = rhs%cs
+                !
+                if( allocated( rhs%iXYZinterior ) ) self%iXYZinterior = rhs%iXYZinterior
+                !
+                self%sub_grid = rhs%sub_grid
+                !
+            class default
+                call errStop( "copyFrom_Grid3D_MR > Unclassified rhs" )
+            !
+        end select
+        !
+        self%is_allocated = .TRUE.
+        !
+    end subroutine copyFrom_Grid3D_MR
+    !
+    !> No subroutine briefing
     !
     subroutine write_Grid3D_MR( self )
         implicit none
@@ -776,3 +870,4 @@ contains
     end subroutine write_Grid3D_MR
     !
 end module Grid3D_MR
+!

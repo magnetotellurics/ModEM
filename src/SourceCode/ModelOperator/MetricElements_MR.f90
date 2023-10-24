@@ -79,10 +79,6 @@ contains
         !
         self%grid => grid_mr
         !
-        write( *, * ) "EDGE: ", size( self%grid%EDGEa ), self%grid%EDGEf, size( self%grid%EDGEb ), size( self%grid%EDGEi )
-        write( *, * ) "FACE: ", size( self%grid%FACEa ), self%grid%FACEf, size( self%grid%FACEb ), size( self%grid%FACEi )
-        write( *, * ) "NODE: ", size( self%grid%NODEa ), self%grid%NODEf, size( self%grid%NODEb ), size( self%grid%NODEi )
-        !
     end function MetricElements_MR_Ctor
     !
     !> No subroutine briefing
@@ -328,28 +324,13 @@ contains
                 call temp_field%setIndexArrays( grid%NODEf, grid%NODEb, grid%NODEi, grid%NODEa )
                 deallocate( temp_field )
                 !
-                do i_grid = 1, grid%n_grids
-                    !
-                    call self%setGridIndexArrays( grid%sub_grid(i_grid) )
-                    !
-                enddo
-                !
-            class is( Grid3D_SG_t )
-                !
-                allocate( temp_field, source = rVector3D_SG_t( grid, EDGE ) )
-                call temp_field%setIndexArrays( grid%EDGEf, grid%EDGEb, grid%EDGEi )
-                deallocate( temp_field )
-                !
-                allocate( temp_field, source = rVector3D_SG_t( grid, FACE ) )
-                call temp_field%setIndexArrays( grid%FACEf, grid%FACEb, grid%FACEi )
-                deallocate( temp_field )
-                !
-                allocate( temp_field, source = rScalar3D_SG_t( grid, NODE ) )
-                call temp_field%setIndexArrays( grid%NODEf, grid%NODEb, grid%NODEi )
-                deallocate( temp_field )
+                write( *, * ) "setGridIndexArrays_MetricElements_MR:"
+                write( *, * ) "EDGE: ", size( grid%EDGEa ), grid%EDGEf, size( grid%EDGEb ), size( grid%EDGEi )
+                write( *, * ) "FACE: ", size( grid%FACEa ), grid%FACEf, size( grid%FACEb ), size( grid%FACEi )
+                write( *, * ) "NODE: ", size( grid%NODEa ), grid%NODEf, size( grid%NODEb ), size( grid%NODEi )
                 !
             class default
-                call errStop( "setGridIndexArrays_MetricElements_MR > Unclassified v_cell" )
+                call errStop( "setGridIndexArrays_MetricElements_MR > grid must be MR" )
             !
         end select
         !
@@ -559,8 +540,8 @@ contains
         character( len=4 ), intent( in ) :: grid_type
         class( Scalar_t ), allocatable, intent( out ) :: scalar
         !
-        if( grid_type /= NODE .AND. grid_type /= CELL .AND. grid_type /= CELL_EARTH ) then
-            call errStop( "createScalar_MetricElements_MR > grid_type must be NODE, CELL or CELL_EARTH" )
+        if( grid_type /= NODE .AND. grid_type /= CELL ) then
+            call errStop( "createScalar_MetricElements_MR > grid_type must be NODE or CELL" )
         else
             !
             if( scalar_type == real_t ) then
@@ -614,3 +595,4 @@ contains
     end subroutine createVector_MetricElements_MR
     !
 end Module MetricElements_MR
+!

@@ -56,38 +56,18 @@ module Grid3D_SG
             procedure, public :: slice1D => slice1D_Grid3D_SG
             procedure, public :: slice2D => slice2D_Grid3D_SG
             !
+            !> Miscellaneous
+            procedure, public :: copyFrom => copyFrom_Grid3D_SG
+            !
             procedure, public :: write => write_Grid3D_SG
             !
     end type Grid3D_SG_t
     !
     interface Grid3D_SG_t
-        module procedure Grid3D_SG_t_ctor_n
         module procedure Grid3D_SG_t_ctor_n_d
     end interface Grid3D_SG_t
     !
 contains
-    !
-    !> Class constructor for simple tensor product grid
-    !> Usage obj = Grid_t3D(Dx,Dy,Dz,Nza)
-    !> Dx, Dy, Dz are cell dimensions for x, y, z direction
-    !> Nza is number of air layers to allow(included in Dz)
-    !
-    function Grid3D_SG_t_ctor_n( nx, ny, nzAir, nzEarth ) result( self )
-        implicit none
-        !
-        integer, intent( in ) :: nx, ny, nzAir, nzEarth
-        !
-        type( Grid3D_SG_t ) :: self
-        !
-        !write( *, * ) "Constructor_n Grid3D_SG_t"
-        !
-        self%n_grids = 1
-        !
-        call self%baseInit
-        !
-        call self%create( nx, ny, nzAir, nzEarth )
-        !
-    end function Grid3D_SG_t_ctor_n
     !
     !> Class constructor for simple tensor product grid
     !> Usage obj = Grid_t3D(Dx,Dy,Dz,Nza)
@@ -231,7 +211,7 @@ contains
         !
         self%x_edge(1) = ox
         self%y_edge(1) = oy
-        self%z_edge(1) = 0.0 !> ALWAYS BE ZERO ???? BEFORE WAS oz
+        self%z_edge(1) = oz !> ALWAYS BE ZERO ???? BEFORE WAS oz
         !
         xCum = R_ZERO
         yCum = R_ZERO
@@ -417,7 +397,91 @@ contains
         !
     end function slice2D_Grid3D_SG
     !
+    !> No subroutine briefing
     !
+    subroutine copyFrom_Grid3D_SG( self, rhs )
+        implicit none
+        !
+        class( Grid3D_SG_t ), intent( inout ) :: self
+        class( Grid_t ), intent( in ) :: rhs
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "copyFrom_Grid3D_SG > rhs not allocated" )
+        endif
+        !
+        self%n_grids = rhs%n_grids
+        !
+        self%geometry = rhs%geometry
+        !
+        self%nx = rhs%nx
+        self%ny = rhs%ny
+        self%nz = rhs%nz
+        self%nzAir = rhs%nzAir
+        self%nzEarth = rhs%nzEarth
+        !
+        self%dx = rhs%dx
+        self%dy = rhs%dy
+        self%dz = rhs%dz
+        !
+        self%ox = rhs%ox
+        self%oy = rhs%oy
+        self%oz = rhs%oz
+        !
+        self%rotDeg = rhs%rotDeg
+        !
+        !> Indexes Arrays
+        self%EDGEf = rhs%EDGEf
+        self%FACEf = rhs%FACEf
+        self%NODEf = rhs%NODEf
+        !
+        self%EDGEb = rhs%EDGEb
+        self%FACEb = rhs%FACEb
+        self%NODEb = rhs%NODEb
+        !
+        self%EDGEi = rhs%EDGEi
+        self%FACEi = rhs%FACEi
+        self%NODEi = rhs%NODEi
+        !
+        self%EDGEa = rhs%EDGEa
+        self%FACEa = rhs%FACEa
+        self%NODEa = rhs%NODEa
+        !
+        select type( rhs )
+            !
+            class is( Grid3D_SG_t )
+                !
+                self%dx_inv = rhs%dx_inv
+                self%dy_inv = rhs%dy_inv
+                self%dz_inv = rhs%dz_inv
+                !
+                self%del_x = rhs%del_x
+                self%del_y = rhs%del_y
+                self%del_z = rhs%del_z
+                !
+                self%del_x_inv = rhs%del_x_inv
+                self%del_y_inv = rhs%del_y_inv
+                self%del_z_inv = rhs%del_z_inv
+                !
+                self%x_center = rhs%x_center
+                self%y_center = rhs%y_center
+                self%z_center = rhs%z_center
+                !
+                self%x_edge = rhs%x_edge
+                self%y_edge = rhs%y_edge
+                self%z_edge = rhs%z_edge
+                !
+                self%zAirThick = rhs%zAirThick
+                !
+            class default
+                call errStop( "copyFrom_Grid3D_SG > Unclassified rhs" )
+            !
+        end select
+        !
+        self%is_allocated = .TRUE.
+        !
+    end subroutine copyFrom_Grid3D_SG
+    !
+    !> No subroutine briefing
     !
     subroutine write_Grid3D_SG( self )
         implicit none
@@ -458,3 +522,4 @@ contains
     end subroutine write_Grid3D_SG
     !
 end module Grid3D_SG
+!

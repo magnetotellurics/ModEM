@@ -167,6 +167,10 @@ contains
         call self%preconditioner%LTsolve( VT, Y, ilu_adjoint )
         RHO = SQRT( Y%dotProd( Y ) )
         !
+        write( *, * ) RHO
+        !
+        !stop
+        !
         WT = R 
         ilu_adjoint = .TRUE.
         call self%preconditioner%UTsolve( WT, Z, ilu_adjoint )

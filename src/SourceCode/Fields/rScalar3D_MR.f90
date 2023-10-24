@@ -29,8 +29,6 @@ module rScalar3D_MR
             procedure, public :: lengthFull => lengthFull_rScalar3D_MR
             procedure, public :: findFull => findFull_rScalar3D_MR
             !
-            procedure, public :: findValue => findValue_rScalar3D_MR
-            !
             procedure, public :: MRtoSG => MRtoSG_rScalar3D_MR
             procedure, public :: divFine => divFine_rScalar3D_MR
             !
@@ -96,20 +94,14 @@ contains
         !
         type( rScalar3D_MR_t ) :: self
         !
-        integer :: i, nx, ny, nz, nzAir, nz_earth, alloc_stat
+        integer :: nzAir
         !
         call self%baseInit
         !
         self%grid => grid
         self%grid_type = grid_type
         !
-        !> Grid dimensions
-        call self%grid%getDimensions( nx, ny, nz, nzAir )
-        nz_earth = nz - nzAir
-        !
-        self%nx = nx
-        self%ny = ny
-        self%nz = nz
+        call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
         !
         call self%initializeSub
         !
@@ -140,11 +132,11 @@ contains
                     !
                     self%sub_scalar(i) = rScalar3D_SG_t( grid%sub_grid(i), self%grid_type )
                     !
-                    !write( *, * ) "SubScalar", i, "-nx=", self%sub_scalar(i)%nx, ", ny=", self%sub_scalar(i)%ny, "nz=", self%sub_scalar(i)%nz
+                    !write( *, * ) "rSubScalar", i, "-nx=", self%sub_scalar(i)%nx, ", ny=", self%sub_scalar(i)%ny, "nz=", self%sub_scalar(i)%nz
                     !
                 enddo
                 !
-                !write( *, * ) "MainScalar-nx=", self%nx, ", ny=", self%ny, "nz=", self%nz, self%nx*self%ny*self%nz
+                !write( *, * ) "rMainScalar-nx=", self%nx, ", ny=", self%ny, "nz=", self%nz, self%nx*self%ny*self%nz
                 !
             class default
                 call errStop( "initializeSub_rScalar3D_MR > Unclassified grid" )
@@ -166,8 +158,7 @@ contains
         !
         type( rScalar3D_MR_t ) :: temp_scalar
         logical :: xy, int_only
-        integer :: i, k
-        integer :: n_active, n_interior, n_boundaries
+        integer :: i, k, n_active, n_interior, n_boundaries
         real( kind=prec ), dimension(:), allocatable :: v_1, v_2
         !
         if( .NOT. present( xy_in ) ) then
@@ -191,7 +182,7 @@ contains
                 ! Loop over interfaces: set redundant interface edges to 2
                 select case( temp_scalar%grid_type )
                     !
-                    case( CELL, CELL_EARTH )
+                    case( CELL )
                         int_only = .FALSE.
                     case( NODE )
                         int_only = .TRUE.
@@ -405,39 +396,6 @@ contains
         !
     end function findFull_rScalar3D_MR
     !
-    !> No function briefing
-    !
-    function findValue_rScalar3D_MR(self, c) result( I )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( in ) :: self
-        real( kind=prec ), intent( in ) :: c
-        !
-        integer, dimension(:), allocatable :: I
-        real( kind=prec ), dimension(:), allocatable :: v
-        integer :: n, n_I, k
-        !
-        n = self%length()
-        allocate( v(n) )
-        v = self%getArray()
-        !
-        n_I = 0
-        do k = 1, n
-            if( v(k) == c ) n_I = n_I + 1
-        enddo
-        !
-        allocate( I(n_I) )
-        !
-        n_I = 0
-        do k = 1, n
-            if( v(k) == c ) then
-                n_I = n_I + 1
-                I(n_I) = k
-            endif
-        enddo
-        !
-    end function findValue_rScalar3D_MR
-    !
     !> MRtoSG
     !
     !> input self is of class rScalar3D_MR , output SGscalar isi of class rScalar3D_SG
@@ -452,7 +410,7 @@ contains
         integer :: i_grid, i, j, k, z, cs
         integer :: i1, i2, j1, j2, k1, k2
         !
-        scalar_sg = rScalar3D_SG_t( self%grid, NODE )
+        scalar_sg = rScalar3D_SG_t( self%grid, self%grid_type )
         !
         select type( grid => self%grid )
             !
@@ -560,7 +518,7 @@ contains
         !
         select case( self%grid_type )
             !
-            case( CELL, CELL_EARTH )
+            case( CELL )
                 !
                 select type( grid => self%grid )
                     !
@@ -648,17 +606,7 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        integer :: i_grid
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setAllBoundary_rScalar3D_MR > self not allocated." )
-        endif
-        !
-        do i_grid = 1, self%grid%getNGrids()
-            !
-            call self%sub_scalar(i_grid)%setAllBoundary( cvalue )
-            !
-        enddo
+        call errStop( "setAllBoundary_rScalar3D_MR just implemented for SG!" )
         !
     end subroutine setAllBoundary_rScalar3D_MR
     !
@@ -1259,7 +1207,7 @@ contains
         !
         integer :: v_xend, v_yend, v_zend
         logical :: is_interior_only
-        integer :: i
+        integer :: i, nxF, nyF, nzF, nxC, nyC, nzC
         !
         if( .NOT. self%is_allocated ) then
              call errStop( "toNode_rScalar3D_MR > self not allocated." )
@@ -1268,10 +1216,6 @@ contains
         if( .NOT. node_scalar%is_allocated ) then
              call errStop( "toNode_rScalar3D_MR > node_scalar not allocated." )
         endif
-        !
-        !>
-        write( *, * ) "toNode_rScalar3D_MR CELL: ", self%grid%nx, self%grid%ny, self%grid%nz, self%grid%n_grids
-        write( *, * ) "                    NODE: ", node_scalar%grid%nx, node_scalar%grid%ny, node_scalar%grid%nz, node_scalar%grid%n_grids
         !
         call self%switchStoreState( compound )
         !
@@ -1283,35 +1227,62 @@ contains
                     !
                     case( CELL )
                         !
-                        do i = 1, self%grid%getNGrids()
+                        !> set nodes for interior of all sub-scalars
+                        do i = 1, self%grid%n_grids
                             !
-                            is_interior_only = .FALSE.
+                            call self%sub_scalar(i)%toNode( node_scalar%sub_scalar(i) )
                             !
-                            if( present( interior_only ) ) is_interior_only = interior_only
+                        enddo
+                        !
+                        !>set coarse grid nodes on interfaces
+                        do i = 1, self%grid%n_grids-1
                             !
-                            if( is_interior_only ) then
-                                call self%sub_scalar(i)%setAllBoundary( C_ZERO )
+                            if( self%sub_scalar(i)%grid%nx .LT. self%sub_scalar(i+1)%grid%nx ) then
+                                !
+                                !> upper layer is coarser  -- fill in bottom level nodes
+                                nxC = self%sub_scalar(i)%grid%nx
+                                nyC = self%sub_scalar(i)%grid%ny
+                                nzC = self%sub_scalar(i)%grid%nz
+                                nxF = self%sub_scalar(i+1)%grid%nx
+                                nyF = self%sub_scalar(i+1)%grid%ny
+                                nzF = self%sub_scalar(i+1)%grid%nz
+                                !
+                                node_scalar%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC+1 ) = &
+                                       self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
+                                       self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                       self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
+                                       self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
+                                !
+                            else
+                                !
+                                nxF = self%sub_scalar(i)%grid%nx
+                                nyF = self%sub_scalar(i)%grid%ny
+                                nzF = self%sub_scalar(i)%grid%nz
+                                nxC = self%sub_scalar(i+1)%grid%nx
+                                nyC = self%sub_scalar(i+1)%grid%ny
+                                nzC = self%sub_scalar(i+1)%grid%nz
+                                !
+                                node_scalar%sub_scalar(i+1)%v( 2:nxC,     2:nyC,     1   ) = &
+                                       self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
+                                       self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                       self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
+                                       self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                         self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
+                                         self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
+                                         self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
+                                         self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
+                                !
                             endif
-                            !
-                            v_xend = size( self%sub_scalar(i)%v, 1 )
-                            v_yend = size( self%sub_scalar(i)%v, 2 )
-                            v_zend = size( self%sub_scalar(i)%v, 3 )
-                            !
-                            !> Interior
-                            node_scalar%sub_scalar(i)%v( 2:v_xend-1, 2:v_yend-1, 2:v_zend-1 ) = &
-                            self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
-                            self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
-                            self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
-                            self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
-                            self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
-                            self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
-                            self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
-                            self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
                             !
                         enddo
                         !
                     case default
                         call errStop( "toNode_rScalar3D_MR just for CELL type" )
+                    !
                 end select
                 !
             class default
@@ -1319,6 +1290,50 @@ contains
             !
         end select
         !
+        ! select type( node_scalar )
+            ! !
+            ! class is( rScalar3D_MR_t )
+                ! !
+                ! select case( self%grid_type )
+                    ! !
+                    ! case( CELL )
+                        ! !
+                        ! do i = 1, self%grid%getNGrids()
+                            ! !
+                            ! is_interior_only = .FALSE.
+                            ! !
+                            ! if( present( interior_only ) ) is_interior_only = interior_only
+                            ! !
+                            ! if( is_interior_only ) then
+                                ! call self%sub_scalar(i)%setAllBoundary( C_ZERO )
+                            ! endif
+                            ! !
+                            ! v_xend = size( self%sub_scalar(i)%v, 1 )
+                            ! v_yend = size( self%sub_scalar(i)%v, 2 )
+                            ! v_zend = size( self%sub_scalar(i)%v, 3 )
+                            ! !
+                            ! !> Interior
+                            ! node_scalar%sub_scalar(i)%v( 2:v_xend, 2:v_yend, 2:v_zend ) = &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
+                            ! !
+                        ! enddo
+                        ! !
+                    ! case default
+                        ! call errStop( "toNode_rScalar3D_MR just for CELL type" )
+                ! end select
+                ! !
+            ! class default
+                ! call errStop( "toNode_rScalar3D_MR > Unclassified node_scalar" )
+            ! !
+        ! end select
+        ! !
     end subroutine toNode_rScalar3D_MR
     !
     !> No subroutine briefing
@@ -1377,6 +1392,8 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: vFull
         !
         allocate( vFull( self%lengthFull() ) )
+        !
+        vFull = C_ZERO
         !
         vFull( self%indActive() ) = array
         !

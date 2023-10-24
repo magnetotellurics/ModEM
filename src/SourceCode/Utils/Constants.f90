@@ -30,7 +30,7 @@ module Constants
     character( len=4 ), parameter :: NODE = "NODE"
     character( len=4 ), parameter :: CELL = "CELL"
     !
-    character( len=4 ), parameter :: CELL_EARTH = "EART"
+    !character( len=4 ), parameter :: CELL_EARTH = "EART"
     !
     !> Possible node types:
     character( len=5 ), parameter :: XFACE = "XFACE"
