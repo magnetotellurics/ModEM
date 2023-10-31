@@ -5,7 +5,8 @@
 module PreConditioner_CC_SP_SG
     !
     use PreConditioner
-    use ModelOperator_SP
+    use ModelOperator_SP_V1
+    use ModelOperator_SP_V2
     !
     type, extends( PreConditioner_t ) :: PreConditioner_CC_SP_SG_t
         !
@@ -77,7 +78,7 @@ contains
         real( kind=prec ), allocatable, dimension(:) :: d
         integer :: nx, ny, na, nz
         integer :: nEdge, nEdgeT, n, j
-        type( spMatCSR_real ) :: CCxx
+        type( spMatCSR_real ) :: Mii, CCxx
         type( spMatCSR_Cmplx ) :: Axx
         type( spMatCSR_Cmplx ), pointer  :: Lblk(:), Ublk(:)
         !
@@ -123,7 +124,27 @@ contains
             !
             class is( ModelOperator_SP_t )
                 !
-                call SubMatrix_Real( model_operator%CCii, ix, ix, CCxx )
+                !> Differentiation between SP1 (CCii) and SP2 (AAii)
+                select type( model_operator )
+                    !
+                    class is( ModelOperator_SP_V1_t )
+                        !
+                        Mii = model_operator%CCii
+                        !
+                        write(6666,*) "##### setPreConditioner_CC_SP_SG_V1"
+                        !
+                    class is( ModelOperator_SP_V2_t )
+                        !
+                        Mii = model_operator%AAii
+                        !
+                        write(6666,*) "##### setPreConditioner_CC_SP_SG_V2"
+                        !
+                    class default
+                        call errStop( "setPreConditioner_CC_SP_SG > model_operator must be SP V1 or V2" )
+                    !
+                end select
+                !
+                call SubMatrix_Real( Mii, ix, ix, CCxx )
                 !
                 n = size(ix)
                 !
@@ -137,7 +158,7 @@ contains
                 !
                 deallocate(d)
                 !
-                call SubMatrix_Real( model_operator%CCii, iy, iy, CCxx )
+                call SubMatrix_Real( Mii, iy, iy, CCxx )
                 !
                 n = size(iy)
                 !
@@ -151,7 +172,7 @@ contains
                 !
                 deallocate(d)
                 !
-                call SubMatrix_Real( model_operator%CCii, iz, iz, CCxx )
+                call SubMatrix_Real( Mii, iz, iz, CCxx )
                 !
                 n = size(iz)
                 !

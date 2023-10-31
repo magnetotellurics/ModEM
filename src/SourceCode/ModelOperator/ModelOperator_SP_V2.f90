@@ -50,7 +50,7 @@ contains
         !
         type( ModelOperator_SP_V2_t ) :: self
         !
-        !write( *, * ) "Constructor ModelOperator_SP_V2"
+        write(6666,*) "##### ModelOperator_SP_V2_ctor"
         !
         call self%baseInit
         !
@@ -64,6 +64,8 @@ contains
         implicit none
         !
         class( ModelOperator_SP_V2_t ), intent( inout ) :: self
+        !
+        write(6666,*) "##### deallocate_ModelOperator_SP_V2"
         !
         call self%baseDealloc
         !
@@ -104,7 +106,7 @@ contains
         !
         type( ModelOperator_SP_V2_t ), intent( inout ) :: self
         !
-        !write( *, * ) "Destructor ModelOperator_SP_V2_t"
+        write(6666,*) "##### ModelOperator_SP_V2_dtor"
         !
         call self%baseDealloc
         !
@@ -125,6 +127,8 @@ contains
         class( Scalar_t ), allocatable :: sigma_node
         real( kind=prec ), allocatable, dimension(:) :: sigma_edge_array, sigma_edge_b0_array
         real( kind=prec ), allocatable, dimension(:) :: v_edge_array, sigma_node_array
+        !
+        write(6666,*) "##### setCond_ModelOperator_SP_V2"
         !
         !> SigEdge
         call self%metric%createVector( real_t, EDGE, sigma_edge )
@@ -179,6 +183,8 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
+        !
+        write(6666,*) "##### amult_ModelOperator_SP_V2"
         !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "amult_ModelOperator_SP_V2 > in_e not allocated" )
@@ -252,6 +258,8 @@ contains
         real( kind=prec ) :: tol
         integer :: Ne, Nei, Nn, fid, i
         !
+        write(6666,*) "##### GradDivSetup2"
+        !
         Nn = size( self%metric%grid%NODEi ) + size( self%metric%grid%NODEb )
         Nei = size( self%metric%grid%EDGEi )
         Ne = Nei + size( self%metric%grid%EDGEb )
@@ -276,7 +284,7 @@ contains
         !
         edge_length_v = self%metric%edge_length%getArray()
         !
-        !> (for Air sigma is not nececery as it is constant everywhere)
+        !> (for Air sigma is not necessary as it is constant everywhere)
         M1air = dual_face_area_v
         !
         M2air = Nair / v_node_v
@@ -287,7 +295,7 @@ contains
         M0earth = dual_face_area_v
         M1earth = SigEdge * dual_face_area_v
         !
-		!> WORKAROUND FOR LINE 295 DIV ????
+        !> WORKAROUND FOR LINE 295 DIV ????
         !SigNode( self%metric%grid%NODEb ) = R_ONE
         !
         M2earth = ( 1.0 / SigNode ) * ( Nearth / v_node_v )
@@ -364,6 +372,8 @@ contains
         type( spMatCSR_Real ) :: Dt
         integer :: Ne,Nn,i
         !
+        write(6666,*) "##### airNIndex"
+        !
         Ne = size( SigEdge )
         Nn = size( self%metric%grid%NODEi ) + size( self%metric%grid%NODEb )
         !
@@ -424,7 +434,7 @@ contains
         !
         class( ModelOperator_SP_V2_t ), intent( in ) :: self
         !
-        stop "Subroutine print not implemented for ModelOperator_SP_V2"
+        call errStop( "print_ModelOperator_SP_V2 not implemented" )
         !
     end subroutine print_ModelOperator_SP_V2
     !

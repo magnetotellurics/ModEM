@@ -31,7 +31,7 @@ contains
         !
         type( ModelOperator_SP_V1_t ) :: self
         !
-        !write( *, * ) "Constructor ModelOperator_SP_V1"
+        write(6666,*) "##### ModelOperator_SP_V1_ctor"
         !
         call self%baseInit
         !
@@ -45,7 +45,7 @@ contains
         !
         type( ModelOperator_SP_V1_t ), intent( inout ) :: self
         !
-        !write( *, * ) "Destructor ModelOperator_SP_V1_t"
+        write(6666,*) "##### ModelOperator_SP_V1_dtor"
         !
         call self%baseDealloc
         !
@@ -60,7 +60,7 @@ contains
         !
         class( ModelOperator_SP_V1_t ), intent( in ) :: self
         !
-        stop "Subroutine print not implemented for ModelOperator_SP_V1"
+        call errStop( "print_ModelOperator_SP_V1 not implemented" )
         !
     end subroutine print_ModelOperator_SP_V1
     !

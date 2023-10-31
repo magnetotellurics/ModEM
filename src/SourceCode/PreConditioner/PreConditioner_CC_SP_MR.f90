@@ -148,9 +148,13 @@ contains
                         !
                         Mii = model_operator%CCii
                         !
+                        write(6666,*) "##### setPreConditioner_CC_SP_MR_V1"
+                        !
                     class is( ModelOperator_SP_V2_t )
                         !
                         Mii = model_operator%AAii
+                        !
+                        write(6666,*) "##### setPreConditioner_CC_SP_MR_V2"
                         !
                     class default
                         call errStop( "setPreConditioner_CC_SP_MR > model_operator must be SP V1 or V2" )
