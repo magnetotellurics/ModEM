@@ -1725,8 +1725,6 @@ contains
         !
         integer :: i
         !
-		write( *, * ) "divByField_rVector3D_MR"
-		!
         if( self%isCompatible( rhs ) ) then
             !
             call self%switchStoreState( rhs%store_state )

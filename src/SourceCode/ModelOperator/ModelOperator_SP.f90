@@ -76,8 +76,6 @@ contains
         class( ModelOperator_SP_t ), intent( inout ) :: self
         class( Grid_t ), target, intent( in ) :: grid
         !
-        write(6666,*) "##### create_ModelOperator_SP"
-        !
         self%is_allocated = .FALSE.
         !
         !> Instantiation of the specific object MetricElements
@@ -131,8 +129,6 @@ contains
         integer :: m, n, nz
         real( kind=prec ), allocatable, dimension(:) :: temp_array
         integer :: fid
-        !
-        write(6666,*) "##### setEquations_ModelOperator_SP"
         !
         m = self%topology%T%nRow
         n = self%topology%T%nCol
@@ -191,8 +187,6 @@ contains
         class( Grid_t ), allocatable :: temp_grid_mr
         real( kind=prec ), allocatable, dimension(:) :: sig_vec_v, v_edge_v
         !
-        write(6666,*) "##### setCond_ModelOperator_SP"
-        !
         call sigma%metric%createVector( real_t, EDGE, sig_temp )
         !
         call sigma%PDEmapping( sig_temp )
@@ -221,8 +215,6 @@ contains
         real( kind=prec ), allocatable, dimension(:) :: d, aux_vec, aux_vec_int
         integer, allocatable, dimension(:) :: all_nodes
         integer :: i, m
-        !
-        write(6666,*) "##### divCorInit_ModelOperator_SP"
         !
         !> #Part 1. Construction of VDiv (pre-Vds matrix) and D (div operator)
         !
@@ -290,8 +282,6 @@ contains
         integer, allocatable, dimension(:) :: all_nodes
         integer :: i
         !
-        write(6666,*) "##### divCorSetUp_ModelOperator_SP"
-        !
         d = ( self%VomegaMuSig / ( mu_0 * self%omega ) )
         !
         v_edge_v = self%metric%v_edge%getArray()
@@ -340,8 +330,6 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
         !
-        write(6666,*) "##### amult_ModelOperator_SP"
-        !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "amult_ModelOperator_SP > in_e not allocated" )
         endif
@@ -355,8 +343,6 @@ contains
         !
         out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%indInterior() )
-        !
-        !write(*,*) "amult_ModelOperator_SP: ", self%CCii%nCol, self%CCii%nRow, size( in_e_v_int ), size( out_e_v_int ), adjoint
         !
         call RMATxCVEC( self%CCii, in_e_v_int, out_e_v_int )
         !
@@ -386,8 +372,6 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v_bry, out_e_v_int
         !
-        write(6666,*) "##### multAib_ModelOperator_SP"
-        !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "multAib_ModelOperator_SP > in_e not allocated" )
         endif
@@ -401,8 +385,6 @@ contains
         !
         out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%indInterior() )
-        !
-        !write(*,*) "multAib_ModelOperator_SP: ", self%CCib%nCol, self%CCib%nRow, size( in_e_v_bry ), size( out_e_v_int )
         !
         call RMATxCVEC( self%CCib, in_e_v_bry, out_e_v_int )
         !
@@ -423,8 +405,6 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: in_b_v, out_e_v
         !
-        write(6666,*) "##### multCurlT_ModelOperator_SP"
-        !
         if( .NOT. in_b%is_allocated ) then
             call errStop( "multAib_ModelOperator_SP > in_b not allocated" )
         endif
@@ -435,8 +415,6 @@ contains
         in_b_v = in_b%getArray()
         !
         out_e_v = out_e%getArray()
-        !
-        !write(*,*) "multCurlT_ModelOperator_SP: ", self%TCC%nCol, self%TCC%nRow, size( in_b_v ), size( out_e_v )
         !
         call RMATxCVEC( self%TCC, in_b_v, out_e_v )
         !
@@ -455,8 +433,6 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_phi_int
         !
-        write(6666,*) "##### div_ModelOperator_SP"
-        !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "div_ModelOperator_SP > in_e not allocated" )
         endif
@@ -470,8 +446,6 @@ contains
         !
         out_phi_v = out_phi%getArray()
         out_phi_int = out_phi_v( out_phi%indInterior() )
-        !
-        !write(*,*) "div_ModelOperator_SP: ", self%D%nCol, self%D%nRow, size( in_e_v_int ), size( out_phi_int )
         !
         call RMATxCVEC( self%D, in_e_v_int, out_phi_int )
         !
@@ -493,8 +467,6 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_phi_v
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_phi_v_int
         !
-        write(6666,*) "##### divC_ModelOperator_SP"
-        !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "divC_ModelOperator_SP > in_e not allocated" )
         endif
@@ -508,8 +480,6 @@ contains
         !
         out_phi_v = out_phi%getArray()
         out_phi_v_int = out_phi_v( out_phi%indInterior() )
-        !
-        !write(*,*) "divC_ModelOperator_SP: ", self%Ds%nCol, self%Ds%nRow, size( in_e_v_int ), size( out_phi_v_int )
         !
         call RMATxCVEC( self%Ds, in_e_v_int, out_phi_v_int )
         !
@@ -531,8 +501,6 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_phi_v
         complex( kind=prec ), allocatable, dimension(:) :: in_phi_v_int, out_phi_v_int
         !
-        write(6666,*) "##### divCGrad_ModelOperator_SP"
-        !
         if( .NOT. in_phi%is_allocated ) then
             call errStop( "divCGrad_ModelOperator_SP > in_phi not allocated" )
         endif
@@ -546,8 +514,6 @@ contains
         !
         out_phi_v = out_phi%getArray()
         out_phi_v_int = out_phi_v( out_phi%indInterior() )
-        !
-        !write(*,*) "divCGrad_ModelOperator_SP: ", self%VDsG%nCol, self%VDsG%nRow, size( in_phi_v_int ), size( out_phi_v_int )
         !
         call RMATxCVEC( self%VDsG, in_phi_v_int, out_phi_v_int )
         !
@@ -569,8 +535,6 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_phi_v, out_e_v
         complex( kind=prec ), allocatable, dimension(:) :: in_phi_v_int, out_e_v_int
         !
-        write(6666,*) "##### grad_ModelOperator_SP"
-        !
         if( .NOT. in_phi%is_allocated ) then
             call errStop( "grad_ModelOperator_SP > in_phi not allocated" )
         endif
@@ -583,8 +547,6 @@ contains
         !
         out_e_v = out_e%getArray()
         out_e_v_int = out_e_v( out_e%indInterior() )
-        !
-        !write(*,*) "grad_ModelOperator_SP: ", self%Gd%nCol, self%Gd%nRow, size( in_phi_v ), size( out_e_v_int )
         !
         call RMATxCVEC( self%Gd, in_phi_v, out_e_v_int )
         !
@@ -600,8 +562,6 @@ contains
         implicit none
         !
         class( ModelOperator_SP_t ), intent( inout ) :: self
-        !
-        write(6666,*) "##### deallocate_ModelOperator_SP"
         !
         call self%baseDealloc
         !
@@ -636,7 +596,7 @@ contains
         !
         class( ModelOperator_SP_t ), intent( in ) :: self
         !
-        stop "Subroutine print not implemented for ModelOperator_SP"
+        call errStop( "print_ModelOperator_SP not implemented" )
         !
     end subroutine print_ModelOperator_SP
     !

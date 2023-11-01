@@ -31,8 +31,6 @@ contains
         !
         type( ModelOperator_SP_V1_t ) :: self
         !
-        write(6666,*) "##### ModelOperator_SP_V1_ctor"
-        !
         call self%baseInit
         !
         call self%create( grid )
@@ -44,8 +42,6 @@ contains
         implicit none
         !
         type( ModelOperator_SP_V1_t ), intent( inout ) :: self
-        !
-        write(6666,*) "##### ModelOperator_SP_V1_dtor"
         !
         call self%baseDealloc
         !

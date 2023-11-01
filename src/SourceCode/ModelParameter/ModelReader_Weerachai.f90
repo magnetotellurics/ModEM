@@ -93,8 +93,6 @@ contains
                     !
                 case( GRID_MR )
                     !
-                    write( *, * ) "Input layers: [", layers, "]"
-                    !
                     allocate( grid, source = Grid3D_MR_t( nx, ny, nzAir, nzEarth, dx, dy, dz, layers ) )
                     !
                 case default

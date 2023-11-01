@@ -513,9 +513,6 @@ contains
             call errStop( "fromSG_rScalar3D_MR > scalar_sg not allocated" )
         endif
         !
-        write( *, * ) "#fromSG_rScalar3D_MR SG: ", scalar_sg%grid_type, scalar_sg%nx, scalar_sg%ny, scalar_sg%nz, scalar_sg%grid%getNGrids()
-        write( *, * ) "#                    MR: ", self%grid_type, self%nx, self%ny, self%nz, self%grid%getNGrids()
-        !
         select case( self%grid_type )
             !
             case( CELL )
@@ -546,8 +543,6 @@ contains
                                         !
                                         j1 = (j-1) * cs + 1
                                         j2 = j * cs
-                                        !
-                                        !write( *, * ) "SG: x=(", i1, ", ", i2, ") y=(", j1, ", ", j2, ") z=", k 
                                         !
                                         self%sub_scalar( i_grid )%v(i,j,z) = sum( scalar_sg%v( i1:i2, j1:j2, k ) )
                                         !

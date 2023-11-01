@@ -81,7 +81,7 @@ contains
         !  
         integer :: i
         !
-        !write( *, * ) "Constructor Grid3D_MR_t", size(dx), size(dy), size(dz)
+        write( *, * ) "Constructor Grid3D_MR_t", size(dx), size(dy), size(dz)
         !
         call self%baseInit
         !
@@ -185,9 +185,14 @@ contains
         !
         integer :: i, i1, i2, last
         real( kind=prec ) :: ddz_interface
-        !
-        write( *, * ) sum( self%coarseness(:, 2) ), size( self%dz )
-        !
+        ! !
+        ! write( *, * ) sum( self%coarseness(:, 2) ), size( self%dz )
+        ! !
+        ! write( *, * ) "Coarse Matrix Row1 (Coarse): [", self%coarseness(:,1), "]"
+        ! write( *, * ) "Coarse Matrix Row2 (Layers): [", self%coarseness(:,2), "]"
+        ! write( *, * ) "Coarse Matrix Row3 (iStart): [", self%coarseness(:,3), "]"
+        ! write( *, * ) "Coarse Matrix Row4 ( iEnd ): [", self%coarseness(:,4), "]"
+        ! !
         !> Check if coarseness parameters are consistent with
         if( sum( self%coarseness(:, 2) ) /= size( self%dz ) ) then
             call errStop( "setupMR > Inconsistent grid coarseness parameter!" )
@@ -535,8 +540,6 @@ contains
         !> integer array length of full vector (active and inactive edges)
         allocate( iXYZfull( length_full ) )
         !
-        write( *, * ) "setXYZ_Grid3D_MR FULL: ", size( iXYZfull )
-        !
         i0 = 0
         !
         do i_grid = 1, self%n_grids
@@ -561,11 +564,7 @@ contains
         !   now reduce to active edges
         iXYZactive = iXYZfull( self%EDGEa )
         !
-        write( *, * ) "               ACTIVE: ", size( iXYZactive )
-        !
         self%iXYZinterior = iXYZactive( self%EDGEi )
-        !
-        write( *, * ) "             INTERIOR: ", size( self%iXYZinterior )
         !
     end subroutine setXYZ_Grid3D_MR
     !
@@ -697,7 +696,7 @@ contains
         character( len=80 ) :: geometry_old
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "updateAirLayers_Grid > Grid not allocated." )
+            call errStop( "updateAirLayers_Grid > Grid not allocated." )
         endif
         !
         nx_old = self%nx
@@ -745,13 +744,8 @@ contains
             !
         enddo
         !
-        write( *, * ) "Coarse Matrix Row1 (Coarse): [", self%coarseness(:,1), "]"
-        write( *, * ) "Coarse Matrix Row2 (Layers): [", self%coarseness(:,2), "]"
-        write( *, * ) "Coarse Matrix Row3 (iStart): [", self%coarseness(:,3), "]"
-        write( *, * ) "Coarse Matrix Row4 ( iEnd ): [", self%coarseness(:,4), "]"
-        !
         call self%setupMR
-        
+        !
     end subroutine updateAirLayers_Grid3D_MR
     !
     !> No subroutine briefing
@@ -765,8 +759,6 @@ contains
         if( .NOT. rhs%is_allocated ) then
             call errStop( "copyFrom_Grid3D_MR > rhs not allocated" )
         endif
-        !
-        write( *, * ) "copyFrom_Grid3D_MR"
         !
         self%n_grids = rhs%n_grids
         !

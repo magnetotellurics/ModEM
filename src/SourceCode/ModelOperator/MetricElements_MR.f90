@@ -324,10 +324,10 @@ contains
                 call temp_field%setIndexArrays( grid%NODEf, grid%NODEb, grid%NODEi, grid%NODEa )
                 deallocate( temp_field )
                 !
-                write( *, * ) "setGridIndexArrays_MetricElements_MR:"
-                write( *, * ) "EDGE: ", size( grid%EDGEa ), grid%EDGEf, size( grid%EDGEb ), size( grid%EDGEi )
-                write( *, * ) "FACE: ", size( grid%FACEa ), grid%FACEf, size( grid%FACEb ), size( grid%FACEi )
-                write( *, * ) "NODE: ", size( grid%NODEa ), grid%NODEf, size( grid%NODEb ), size( grid%NODEi )
+                !write( *, * ) "setGridIndexArrays_MetricElements_MR:"
+                !write( *, * ) "EDGE: ", size( grid%EDGEa ), grid%EDGEf, size( grid%EDGEb ), size( grid%EDGEi )
+                !write( *, * ) "FACE: ", size( grid%FACEa ), grid%FACEf, size( grid%FACEb ), size( grid%FACEi )
+                !write( *, * ) "NODE: ", size( grid%NODEa ), grid%NODEf, size( grid%NODEb ), size( grid%NODEi )
                 !
             class default
                 call errStop( "setGridIndexArrays_MetricElements_MR > grid must be MR" )

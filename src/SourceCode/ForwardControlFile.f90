@@ -145,10 +145,6 @@ contains
                 !
                 call Parse( line_text, ",", args, p_nargs )
                 !
-                write( *, * ) "args: ", args
-                !
-                write( *, * ) "p_nargs: ", p_nargs
-                !
                 allocate( layers( p_nargs ) )
                 !
                 do i = 1, p_nargs

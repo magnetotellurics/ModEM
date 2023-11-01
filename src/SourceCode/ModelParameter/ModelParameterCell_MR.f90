@@ -236,6 +236,8 @@ contains
             !
             class is( Grid3D_MR_t )
                 !
+                write( *, * ) "###### grid%coarseness:", grid%coarseness
+                !
                 temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
                 self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
                 self%param_grid%dy, self%param_grid%dz, grid%cs )

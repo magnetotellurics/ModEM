@@ -50,8 +50,6 @@ contains
         !
         type( ModelOperator_SP_V2_t ) :: self
         !
-        write(6666,*) "##### ModelOperator_SP_V2_ctor"
-        !
         call self%baseInit
         !
         call self%create( grid )
@@ -64,8 +62,6 @@ contains
         implicit none
         !
         class( ModelOperator_SP_V2_t ), intent( inout ) :: self
-        !
-        write(6666,*) "##### deallocate_ModelOperator_SP_V2"
         !
         call self%baseDealloc
         !
@@ -106,8 +102,6 @@ contains
         !
         type( ModelOperator_SP_V2_t ), intent( inout ) :: self
         !
-        write(6666,*) "##### ModelOperator_SP_V2_dtor"
-        !
         call self%baseDealloc
         !
         call self%dealloc
@@ -127,8 +121,6 @@ contains
         class( Scalar_t ), allocatable :: sigma_node
         real( kind=prec ), allocatable, dimension(:) :: sigma_edge_array, sigma_edge_b0_array
         real( kind=prec ), allocatable, dimension(:) :: v_edge_array, sigma_node_array
-        !
-        write(6666,*) "##### setCond_ModelOperator_SP_V2"
         !
         !> SigEdge
         call self%metric%createVector( real_t, EDGE, sigma_edge )
@@ -184,8 +176,6 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v, out_e_v
         complex( kind=prec ), allocatable, dimension(:) :: in_e_v_int, out_e_v_int
         !
-        write(6666,*) "##### amult_ModelOperator_SP_V2"
-        !
         if( .NOT. in_e%is_allocated ) then
             call errStop( "amult_ModelOperator_SP_V2 > in_e not allocated" )
         endif
@@ -202,15 +192,11 @@ contains
         !
         if( adjoint ) then
             !
-            !write(*,*) "amult_ModelOperator_SP_V2: ", self%AAit%nCol, AAit%nRow, size( in_e_v_int ), size( out_e_v_int ), adjoint
-            !
             call RMATxCVEC( self%AAit, in_e_v_int, out_e_v_int )
             !
             out_e_v_int = out_e_v_int - ONE_I * ISIGN * self%VomegaMuSig * in_e_v( in_e%indInterior() )
             !
         else
-            !
-            !write(*,*) "amult_ModelOperator_SP_V2: ", self%AAii%nCol, self%AAii%nRow, size( in_e_v_int ), size( out_e_v_int ), adjoint
             !
             call RMATxCVEC( self%AAii, in_e_v_int, out_e_v_int )
             !
@@ -258,8 +244,6 @@ contains
         real( kind=prec ) :: tol
         integer :: Ne, Nei, Nn, fid, i
         !
-        write(6666,*) "##### GradDivSetup2"
-        !
         Nn = size( self%metric%grid%NODEi ) + size( self%metric%grid%NODEb )
         Nei = size( self%metric%grid%EDGEi )
         Ne = Nei + size( self%metric%grid%EDGEb )
@@ -298,9 +282,9 @@ contains
         !> WORKAROUND FOR LINE 295 DIV ????
         !SigNode( self%metric%grid%NODEb ) = R_ONE
         !
-        M2earth = ( 1.0 / SigNode ) * ( Nearth / v_node_v )
+        M2earth = ( R_ONE / SigNode ) * ( Nearth / v_node_v )
         !
-        M3earth = 1.0 / edge_length_v
+        M3earth = R_ONE / edge_length_v
         !
         M4earth = dual_face_area_v
         !
@@ -353,13 +337,13 @@ contains
         deallocate( M1air, M2air )
         deallocate( M0earth, M1earth, M2earth, M3earth, M4earth )
         deallocate( Nearth )
-        deallocate( Nair)
+        deallocate( Nair )
         !
     end subroutine GradDivSetup2
     !
     !> this generate the air/earth domain index for Nodes only,
-    !> these indice will be used to construct distinct air/earth grad and div
-    !> operatiors, with "node-based" scaling factors
+    !> these indexes will be used to construct distinct air/earth grad and div
+    !> operators, with "node-based" scaling factors
     !
     subroutine airNIndex( self, SigEdge, AirCond, Nair, Nearth )
         implicit none
@@ -372,8 +356,6 @@ contains
         type( spMatCSR_Real ) :: Dt
         integer :: Ne,Nn,i
         !
-        write(6666,*) "##### airNIndex"
-        !
         Ne = size( SigEdge )
         Nn = size( self%metric%grid%NODEi ) + size( self%metric%grid%NODEb )
         !
@@ -381,44 +363,46 @@ contains
         !
         Dt%val = abs( Dt%val )
         !
-        !> set edge indices
+        !> set edge indexes
         allocate( Eair( Ne ) )
         allocate( Eearth( Ne ) )
         !
-        Eair = 0.0
-        Eearth = 0.0
+        Eair = R_ZERO
+        Eearth = R_ZERO
         !
-        do i = 1,Ne
-            if (SigEdge(i).lt.1.1*AirCond) then
-                Eair(i) = 1.0
+        do i = 1, Ne
+            !
+            if( SigEdge(i) .LT. 1.1 * AirCond ) then
+                Eair(i) = R_ONE
             else
-                Eearth(i) = 1.0
+                Eearth(i) = R_ONE
             endif
             !
-            if (SigEdge(i).eq.0.0) then ! boundary should always be zero
-                Eair(i) = 0.0
-                Eearth(i) = 0.0
+            if( SigEdge(i) .EQ. R_ZERO ) then ! boundary should always be zero
+                Eair(i) = R_ZERO
+                Eearth(i) = R_ZERO
             endif
             !
         enddo
         !
-        !> set node indices
+        !> set node indexes
         call RMATxRVEC( Dt, Eearth, Nair )
         !
-        Nearth = 0.0
+        Nearth = R_ZERO
         ! any node that connects to at least one earth edge is an earth node
-        do i = 1,Nn
+        do i = 1, Nn
             !
-            if (Nair(i).gt.0.0) then
-                Nearth(i) = 1.0
-                Nair(i) = 0.0
+            if( Nair(i) .GT. R_ZERO ) then
+                Nearth(i) = R_ONE
+                Nair(i) = R_ZERO
             else
-                Nair(i) = 1.0
+                Nair(i) = R_ONE
             endif
+            !
         enddo
         !
-        Nearth( self%metric%grid%NODEb ) = 0.0
-        Nair( self%metric%grid%NODEb ) = 0.0
+        Nearth( self%metric%grid%NODEb ) = R_ZERO
+        Nair( self%metric%grid%NODEb ) = R_ZERO
         !
         call deall_spMatCSR_Real( Dt )
         !

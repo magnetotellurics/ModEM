@@ -113,7 +113,7 @@ contains
                 allocate( self%metric_sg, source = MetricElements_SG_t( grid ) )
                 !
             class default
-                call errStop( "create_ModelOperator_MF_SG > grid must be Grid3D_SG" )
+                call errStop( "create_ModelOperator_MF_SG > for MF the grid must be SG" )
                 !
         end select
         !
@@ -336,8 +336,6 @@ contains
         !
         integer :: ix, iy, iz
         complex( kind=prec ) :: cvalue
-        !
-        !write(*,*) "amult_ModelOperator_MF_SG: ", adjoint
         !
         if( adjoint ) then
             cvalue = -ONE_I * omega * isign * mu_0
