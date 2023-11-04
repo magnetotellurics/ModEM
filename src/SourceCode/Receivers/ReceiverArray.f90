@@ -29,18 +29,16 @@ contains
         !
         integer :: i, n_rx
         type( Rx_t ), allocatable, dimension(:) :: temp_array
-        type( Rx_t ), allocatable :: temp_rx
         !
         if( .NOT. allocated( receivers ) ) then
             !
             allocate( receivers(1) )
-            allocate( Rx_t :: temp_rx )
-            temp_rx%Rx = new_rx
-            i_rx = 1
-            temp_rx%Rx%i_rx = 1
-            receivers(1) = temp_rx
             !
-            deallocate( temp_rx )
+            allocate( receivers(1)%Rx, source = new_rx )
+            !
+            i_rx = 1
+            !
+            receivers(1)%Rx%i_rx = 1
             !
         else
             !
@@ -54,19 +52,20 @@ contains
             enddo
             !
             allocate( temp_array( n_rx + 1 ) )
-            temp_array( 1 : n_rx ) = receivers
-            allocate( Rx_t :: temp_rx )
-            temp_rx%Rx = new_rx
-            temp_rx%Rx%i_rx = n_rx + 1
-            i_rx = n_rx + 1
             !
-            temp_array( n_rx + 1 ) = temp_rx
+            temp_array( 1 : n_rx ) = receivers
+            !
+            allocate( temp_array( n_rx + 1 )%Rx, source = new_rx )
+            !
+            temp_array( n_rx + 1 )%Rx%i_rx = n_rx + 1
+            !
+            i_rx = n_rx + 1
             !
             call deallocateReceiverArray()
             !
             allocate( receivers, source = temp_array )
             !
-            deallocate( temp_rx, temp_array )
+            deallocate( temp_array )
             !
         endif
         !
