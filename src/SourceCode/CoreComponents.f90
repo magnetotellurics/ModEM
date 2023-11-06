@@ -86,9 +86,9 @@ contains
         ! Verbose
         write( *, * ) "     < Model File: [", model_file_name, "]"
         !
-        !> Initialize main_grid and sigma0 with ModelReader
+        !> Initialize main_grid, param_grid and sigma0 with ModelReader
         !> Only ModelReader_Weerachai by now ????
-        call model_reader%read( model_file_name, main_grid, sigma0 ) 
+        call model_reader%read( model_file_name, main_grid, sigma0, param_grid ) 
         !
         call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
         !
@@ -154,15 +154,15 @@ contains
         class( ModelParameter_t ), allocatable, intent( out ) :: pmodel
         !
         type( ModelReader_Weerachai_t ) :: model_reader
-        class( Grid_t ), allocatable :: prior_grid
+        class( Grid_t ), allocatable :: temp_grid
         !
         ! Verbose
         write( *, * ) "     < PModel File: [", pmodel_file_name, "]"
         !
-        !> Read prior_grid and pmodel with ModelReader_Weerachai
-        call model_reader%Read( pmodel_file_name, prior_grid, pmodel ) 
+        !> Read temp_grid and pmodel with ModelReader_Weerachai
+        call model_reader%Read( pmodel_file_name, temp_grid, pmodel ) 
         !
-        deallocate( prior_grid )
+        deallocate( temp_grid )
         !
     end subroutine handlePModelFile
     !
@@ -641,6 +641,7 @@ contains
         if( allocated( forward_solver ) ) deallocate( forward_solver )
         if( allocated( model_operator ) ) deallocate( model_operator )
         if( allocated( main_grid ) ) deallocate( main_grid )
+        if( allocated( param_grid ) ) deallocate( param_grid )
         !
         !> Deallocate global model_cov, if its the case
         if( allocated( model_cov ) ) deallocate( model_cov )

@@ -27,9 +27,6 @@ module ModelOperator_SP_V2
             !> Operations
             procedure, public :: amult => amult_ModelOperator_SP_V2
             !
-            !> Alloc/Dealloc
-            procedure :: dealloc => deallocate_ModelOperator_SP_V2
-            !
             !> Miscellaneous
             procedure, public :: print => print_ModelOperator_SP_V2
             !
@@ -56,45 +53,6 @@ contains
         !
     end function ModelOperator_SP_V2_ctor
     !
-    !> No subroutine briefing
-    !
-    subroutine deallocate_ModelOperator_SP_V2( self )
-        implicit none
-        !
-        class( ModelOperator_SP_V2_t ), intent( inout ) :: self
-        !
-        call self%baseDealloc
-        !
-        call deall_spMatCSR( self%AAii )
-        call deall_spMatCSR( self%AAit )
-        !
-        !> save only the Earth part of GD
-        call deall_spMatCSR( self%GDii )
-        !
-        call deall_spMatCSR( self%CCii )
-        call deall_spMatCSR( self%CCib )
-        !
-        !> and the edge conductivities
-        if( allocated( self%VomegaMuSig ) ) deallocate( self%VomegaMuSig )
-        !
-        !> and the curl and grad topology matrices
-        call deall_spMatCSR( self%topology%T )
-        call deall_spMatCSR( self%topology%G )
-        !
-        if( allocated( self%topology ) ) deallocate( self%topology )
-        !
-        call deall_spMatCSR( self%Gd )
-        call deall_spMatCSR( self%D )
-        call deall_spMatCSR( self%VDiv )
-        call deall_spMatCSR( self%VDsG )
-        call deall_spMatCSR( self%Ds )
-        call deall_spMatCSR( self%VDsG_L )
-        call deall_spMatCSR( self%VDsG_U )
-        !
-        self%is_allocated = .FALSE.
-        !
-    end subroutine deallocate_ModelOperator_SP_V2
-    !
     !> ModelOperator_SP_V2 destructor
     !
     subroutine ModelOperator_SP_V2_dtor( self )
@@ -105,6 +63,10 @@ contains
         call self%baseDealloc
         !
         call self%dealloc
+        !
+        call deall_spMatCSR( self%AAii )
+        call deall_spMatCSR( self%AAit )
+        call deall_spMatCSR( self%GDii )
         !
     end subroutine ModelOperator_SP_V2_dtor
     !

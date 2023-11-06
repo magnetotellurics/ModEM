@@ -160,7 +160,7 @@ contains
         !> Write func plot header
         open( unit = ioFuncPlot, file = trim( outdir_name )//"/"//trim( outdir_name )//".func_plot", action = "write", form = "formatted", iostat = ios )
         if( ios == 0 ) then
-            write( ioFuncPlot, * ) "SS, Ndata, mNorm, nModel, F, RMS"
+            write( ioFuncPlot, * ) "SS, n_data, mNorm, nModel, F, RMS"
             close( ioFuncPlot )
         else
             call errStop( "solve_InversionNLCG > cant open ["//trim( outdir_name )//".func_plot]." )
@@ -460,7 +460,7 @@ contains
         type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
         class( ModelParameter_t ), allocatable :: dsigma
         real( kind=prec ) :: SS
-        integer :: Ndata, n_model
+        integer :: n_data, n_model
         !
         ! compute the smoothed model parameter vector
         call model_cov%multBy_CmSqrt( mHat, dsigma )
@@ -494,14 +494,14 @@ contains
         !
         SS = dotProdData( res, Nres )
         !
-        Ndata = countValues( res )
+        n_data = countValues( res )
         !
         m_norm = mHat%dotProd( mHat )
         !
         n_model = mHat%countModel()
         !
         !> penalty functional = sum of squares + scaled model norm
-        F = SS / Ndata + ( self%lambda * m_norm / n_model )
+        F = SS / n_data + ( self%lambda * m_norm / n_model )
         !
         !> scale m_norm for output
         m_norm = m_norm / n_model
@@ -509,11 +509,11 @@ contains
         ! if required, compute the Root Mean Squared misfit
         if( present( rms ) ) then
             !
-            rms = sqrt( SS / Ndata )
+            rms = sqrt( SS / n_data )
             !
         endif
         !
-        call printFuncPlot( SS, Ndata, m_norm, n_model, F, rms )
+        call printFuncPlot( SS, n_data, m_norm, n_model, F, rms )
         !
     end subroutine func
     !
@@ -533,11 +533,11 @@ contains
         class( InversionNLCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma
-		class( ModelParameter_t ), allocatable, intent( inout ) :: mHat, grad
+        class( ModelParameter_t ), allocatable, intent( inout ) :: mHat, grad
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: dHat
         integer, intent( in ) :: i_sol
         !
-        real( kind=prec ) :: Ndata, n_model
+        real( kind=prec ) :: n_data, n_model
         type( DataGroupTx_t ), allocatable, dimension(:) :: res
         class( ModelParameter_t ), allocatable :: dsigma, JTd, CmJTd
         type( GenModelParameter_t ), allocatable, dimension(:) :: s_hat
@@ -551,7 +551,7 @@ contains
         ! initialize res
         res = all_data
         !
-        ! compute residual: res = (all_data-dHat)/Ndata
+        ! compute residual: res = (all_data-dHat)/n_data
         !call linCombData( ONE, all_data, MinusONE, dHat, res )
         call subData( res, dHat )
         !
@@ -577,13 +577,13 @@ contains
         !
         ! multiply by 2 (to be consistent with the formula)
         ! and add the gradient of the model norm
-        Ndata = countValues( dHat )
+        n_data = countValues( dHat )
         !
         grad = CmJTd
         !
         deallocate( CmJTd )
         !
-        call grad%linComb( MinusTWO / Ndata, TWO * self%lambda / n_model, mHat )
+        call grad%linComb( MinusTWO / n_data, TWO * self%lambda / n_model, mHat )
         !
     end subroutine gradient
     !
@@ -666,8 +666,8 @@ contains
     !>     f(alpha) < f(0) + c alpha f"(0).
     !
     !> The optional relaxation parameter gamma is needed for algorithms
-    !> like the Renormalised Steepest Descent (RSD). See the dynamical
-    !> systems in optimisation research (Pronzato et al [2000, 2001]).
+    !> like the Renormalized Steepest Descent (RSD). See the dynamical
+    !> systems in optimization research (Pronzato et al [2000, 2001]).
     !> To the best of my knowledge, it is not useful for NLCG.
     !
     subroutine lineSearchCubic( self, all_data, sigma, h, mHat, &
@@ -677,7 +677,7 @@ contains
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( in ) :: sigma
-		class( ModelParameter_t ), allocatable, intent( inout ) :: h, mHat
+        class( ModelParameter_t ), allocatable, intent( inout ) :: h, mHat
         real( kind=prec ), intent( inout ) :: f
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
         integer, intent( out ) :: niter
@@ -846,13 +846,13 @@ contains
             !
         endif
         !
-        ! this should not happen, but in practice it is possible to end up with
-        ! a function increase at this point (e.g. in the current global code).
-        ! Most likely, this is due to an inaccuracy in the gradient computations.
-        ! In this case, we avoid an infinite loop by exiting line search.
-        ! It is also possible that both f_1 and f are worse than the starting r_value!
-        ! Then, take whichever is smaller. Ideally, want to decrease the tolerance
-        ! for gradient computations if this happens.
+        !> this should not happen, but in practice it is possible to end up with
+        !> a function increase at this point (e.g. in the current global code).
+        !> Most likely, this is due to an inaccuracy in the gradient computations.
+        !> In this case, we avoid an infinite loop by exiting line search.
+        !> It is also possible that both f_1 and f are worse than the starting r_value!
+        !> Then, take whichever is smaller. Ideally, want to decrease the tolerance
+        !> for gradient computations if this happens.
         if( f > f_0 ) then
             !
             write( *, * ) "Unable to fit a quadratic due to bad gradient estimate, exiting line search"
@@ -1021,7 +1021,7 @@ contains
         ! type( DataGroupTx_t ), dimension(:), intent( in ) :: d, dHat
         ! class( ModelParameter_t ), intent( inout ) :: JTd
         ! !
-        ! integer :: Ndata, i, i_tx, n_tx, ios
+        ! integer :: n_data, i, i_tx, n_tx, ios
         ! class( Scalar_t ), allocatable, dimension(:) :: shat_cond, JTd_cond
         ! real( kind=prec ) :: grad_norm, rms, SS
         ! real( kind=prec ) :: sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
@@ -1112,9 +1112,9 @@ contains
             ! !
             ! SS = dotProdData( res, Nres )
             ! !
-            ! Ndata = countValues( res )
+            ! n_data = countValues( res )
             ! !
-            ! rms = sqrt( SS / Ndata )
+            ! rms = sqrt( SS / n_data )
             ! !
             ! write( *, * ) "RMS: ", rms
             ! !

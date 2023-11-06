@@ -377,6 +377,7 @@ contains
             endif
             !
             call dsigma%linComb( ONE, ONE, tx_dsigma )
+            dsigma%param_grid => param_grid
             !
             tx_received = tx_received + 1
             !

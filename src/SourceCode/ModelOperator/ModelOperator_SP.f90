@@ -565,26 +565,26 @@ contains
         !
         call self%baseDealloc
         !
-        call deall_spMatCSR( self%CCii )
-        call deall_spMatCSR( self%CCib )
-        !
-        !> and the edge conductivities
-        if( allocated( self%VomegaMuSig ) ) deallocate( self%VomegaMuSig )
-        !
         !> and the curl and grad self%topology matrices
         call deall_spMatCSR( self%topology%T )
         call deall_spMatCSR( self%topology%G )
         !
         if( allocated( self%topology ) ) deallocate( self%topology )
         !
-        call deall_spMatCSR( self%TCC )
-        call deall_spMatCSR( self%Gd )
         call deall_spMatCSR( self%D )
+        call deall_spMatCSR( self%Gd )
+        call deall_spMatCSR( self%TCC )
+        call deall_spMatCSR( self%CCii )
+        call deall_spMatCSR( self%CCib )
+        !
         call deall_spMatCSR( self%VDiv )
         call deall_spMatCSR( self%VDsG )
         call deall_spMatCSR( self%Ds )
         call deall_spMatCSR( self%VDsG_L )
         call deall_spMatCSR( self%VDsG_U )
+        !
+        !> and the edge conductivities
+        if( allocated( self%VomegaMuSig ) ) deallocate( self%VomegaMuSig )
         !
         self%is_allocated = .FALSE.
         !

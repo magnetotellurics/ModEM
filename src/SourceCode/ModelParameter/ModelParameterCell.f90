@@ -13,7 +13,7 @@ module ModelParameterCell
         !
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: cell_cond
         !
-        class( Grid_t ), pointer :: param_grid
+        !class( Grid_t ), pointer :: param_grid
         !
         contains
             !
@@ -200,8 +200,7 @@ contains
                 !
                 self%is_allocated = rhs%is_allocated
                 !
-                !if( allocated( self%param_grid ) ) deallocate( self%param_grid )
-                !allocate( self%param_grid, source = rhs%param_grid )
+                self%param_grid => rhs%param_grid
                 !
                 self%cell_cond = rhs%cell_cond
                 !
@@ -404,4 +403,3 @@ contains
     end subroutine print_ModelParameterCell
     !
 end Module ModelParameterCell
-!

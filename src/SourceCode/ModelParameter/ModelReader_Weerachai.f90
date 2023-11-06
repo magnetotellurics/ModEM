@@ -24,29 +24,26 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine readModelReaderWeerachai( self, file_name, grid, model ) 
+    subroutine readModelReaderWeerachai( self, file_name, grid, model, param_grid ) 
         implicit none
         !
         class( ModelReader_Weerachai_t ), intent( in ) :: self
         character(*), intent( in ) :: file_name
         class( Grid_t ), allocatable, intent( out ) :: grid
         class( ModelParameter_t ), allocatable, intent( out ) :: model
+        class( Grid_t ), allocatable, intent( out ), optional :: param_grid
         !
         character( len=80 ) :: someChar 
         character(:), allocatable :: paramType 
-        integer :: nx, ny, nzEarth, nzAir, someIndex, i, ii, j, k, ioPrm, io_stat, p_nargs, anisotropic_level
+        integer :: nx, ny, nzEarth, nzAir, someIndex, ii, i, j, k, ioPrm, io_stat, anisotropic_level
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         real( kind=prec ) :: ox, oy, oz, rotDeg
         real( kind=prec ), dimension(:,:,:), allocatable :: rho
         type( rScalar3D_SG_t ) :: cell_cond_sg
-        type( rScalar3D_MR_t ) :: cell_cond_mr
-        real( kind=prec ) :: ALPHA
-        character(len=200), dimension(20) :: args
         !
         someChar = ""
         paramType = ""
         someIndex = 0
-        ALPHA = 3.0
         !
         open( newunit = ioPrm, file = trim( file_name ), status = "old", iostat = io_stat )
         !
@@ -103,6 +100,14 @@ contains
                     !
             end select
             !
+            if( present( param_grid ) ) then
+                !
+                allocate( param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, 0, &
+                ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+                grid%dz( grid%nzAir+1 : grid%nz ) ) )
+                !
+            endif
+            !
             !> Consider isotropy at first
             anisotropic_level = 1
             !
@@ -125,7 +130,15 @@ contains
                     enddo
                 enddo
                 !
-                cell_cond_sg = rScalar3D_SG_t( grid, CELL )
+                if( present( param_grid ) ) then
+                    !
+                    cell_cond_sg = rScalar3D_SG_t( param_grid, CELL )
+                    !
+                else
+                    !
+                    cell_cond_sg = rScalar3D_SG_t( grid, CELL )
+                    !
+                endif
                 !
                 if( index( paramType, "LOGE" ) > 0 .OR. &
                     index( paramType, "LOG10" ) > 0 ) then
@@ -150,7 +163,7 @@ contains
                         class is( Grid3D_MR_t )
                             allocate( model, source = ModelParameterCell_MR_t( cell_cond_sg, 1, paramType, layers ) )
                         class default
-                            call errStop( "readModelReaderWeerachai > Unknow grid for ModelParameter" )
+                            call errStop( "readModelReaderWeerachai > Unknown grid for ModelParameter" )
                         !
                     end select
                     !

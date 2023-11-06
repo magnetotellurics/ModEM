@@ -302,7 +302,7 @@ contains
         if( ios == 0 ) then
             !
             !> skip the 16 lines header
-            do j = 1,16
+            do j = 1, 16
                 read( ioCovariance, * )
             enddo
             !
