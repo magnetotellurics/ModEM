@@ -25,8 +25,6 @@ module ModelParameter
         !
         procedure( interface_sigmap_model_parameter ), pointer, nopass :: sigmap_ptr
         !
-        class( Grid_t ), pointer :: param_grid
-        !
         contains
             !
             !> Base procedures

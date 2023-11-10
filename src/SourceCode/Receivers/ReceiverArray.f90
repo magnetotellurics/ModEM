@@ -61,7 +61,9 @@ contains
             !
             i_rx = n_rx + 1
             !
-            call deallocateReceiverArray()
+            !call deallocateReceiverArray()
+            !
+            deallocate( receivers )
             !
             allocate( receivers, source = temp_array )
             !

@@ -61,7 +61,9 @@ contains
             !
             i_tx = n_tx + 1
             !
-            call deallocateTransmitterArray()
+            !call deallocateTransmitterArray()
+            !
+            deallocate( transmitters )
             !
             allocate( transmitters, source = temp_array )
             !
