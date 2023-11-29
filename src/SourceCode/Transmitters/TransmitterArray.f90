@@ -16,7 +16,7 @@ module TransmitterArray
     type( Tx_t ), allocatable, dimension(:), target :: transmitters
     !
     public :: getTransmitter, printTransmitterArray, countTransmitterTypes
-    public :: updateTransmitterArray, deallocateTransmitterArray
+    public :: updateTransmitterArray!, deallocateTransmitterArray
     !
 contains
     !
@@ -85,33 +85,33 @@ contains
         tx => transmitters( iTx )%Tx
         !
     end function getTransmitter
-    !
-    !> No subroutine briefing
-    subroutine deallocateTransmitterArray()
-        implicit none
-        !
-        integer :: ntx, itx
-        !
-        if( allocated( transmitters ) ) then
-            !
-            ntx = size( transmitters )
-            !
-            if( ntx == 1 ) then
-                if( allocated( transmitters(1)%Tx ) ) deallocate( transmitters(1)%Tx )
-            else
-                do itx = ntx, 1, -(1)
-                    !
-                    if( allocated( transmitters( itx )%Tx ) ) deallocate( transmitters( itx )%Tx )
-                    !
-                enddo
-            endif
-            !
-            deallocate( transmitters )
-            !
-        endif
-        !
-    end subroutine deallocateTransmitterArray
-    !
+    ! !
+    ! !> No subroutine briefing
+    ! subroutine deallocateTransmitterArray()
+        ! implicit none
+        ! !
+        ! integer :: ntx, itx
+        ! !
+        ! if( allocated( transmitters ) ) then
+            ! !
+            ! ntx = size( transmitters )
+            ! !
+            ! if( ntx == 1 ) then
+                ! if( allocated( transmitters(1)%Tx ) ) deallocate( transmitters(1)%Tx )
+            ! else
+                ! do itx = ntx, 1, -(1)
+                    ! !
+                    ! if( allocated( transmitters( itx )%Tx ) ) deallocate( transmitters( itx )%Tx )
+                    ! !
+                ! enddo
+            ! endif
+            ! !
+            ! deallocate( transmitters )
+            ! !
+        ! endif
+        ! !
+    ! end subroutine deallocateTransmitterArray
+    ! !
     !> Prints the content of the transmitters on screen
     subroutine printTransmitterArray()
         implicit none

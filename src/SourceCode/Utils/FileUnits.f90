@@ -36,4 +36,6 @@ module FileUnits
     !
     integer, parameter :: ioWarning = 15
     !
+    integer, parameter :: ioNodeInfo = 16
+    !
 end module FileUnits

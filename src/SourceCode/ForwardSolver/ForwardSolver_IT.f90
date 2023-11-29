@@ -6,6 +6,7 @@ module ForwardSolver_IT
     use ForwardSolver
     use Solver_QMR
     use Solver_BICG
+	!use Solver_BICG_OMP
     !
     type, extends( ForwardSolver_t ) :: ForwardSolver_IT_t
         !

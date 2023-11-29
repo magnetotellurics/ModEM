@@ -16,7 +16,7 @@ module ReceiverArray
     type( Rx_t ), allocatable, target, dimension(:) :: receivers
     !
     public :: getReceiver, printReceiverArray
-    public :: updateReceiverArray, deallocateReceiverArray
+    public :: updateReceiverArray!, deallocateReceiverArray
     !
 contains
     !
@@ -85,33 +85,33 @@ contains
         rx => receivers( iRx )%Rx
         !
     end function getReceiver
-    !
-    !> No subroutine briefing
-    subroutine deallocateReceiverArray()
-        implicit none
-        !
-        integer :: nrx, irx
-        !
-        !write( *, * ) "deallocateReceiverArray:", size( receivers )
-        !
-        if( allocated( receivers ) ) then
-            !
-            nrx = size( receivers )
-            !
-            if( nrx == 1 ) then
-                if( allocated( receivers(1)%Rx ) ) deallocate( receivers(1)%Rx )
-            else
-                do irx = nrx, 1, -(1)
-                    if( allocated( receivers( irx )%Rx ) ) deallocate( receivers( irx )%Rx )
-                enddo
-            endif
-            !
-            deallocate( receivers )
-            !
-        endif
-        !
-    end subroutine deallocateReceiverArray
-    !
+    ! !
+    ! !> No subroutine briefing
+    ! subroutine deallocateReceiverArray()
+        ! implicit none
+        ! !
+        ! integer :: nrx, irx
+        ! !
+        ! !write( *, * ) "deallocateReceiverArray:", size( receivers )
+        ! !
+        ! if( allocated( receivers ) ) then
+            ! !
+            ! nrx = size( receivers )
+            ! !
+            ! if( nrx == 1 ) then
+                ! if( allocated( receivers(1)%Rx ) ) deallocate( receivers(1)%Rx )
+            ! else
+                ! do irx = nrx, 1, -(1)
+                    ! if( allocated( receivers( irx )%Rx ) ) deallocate( receivers( irx )%Rx )
+                ! enddo
+            ! endif
+            ! !
+            ! deallocate( receivers )
+            ! !
+        ! endif
+        ! !
+    ! end subroutine deallocateReceiverArray
+    ! !
     !> Prints the content of the receivers on screen
     subroutine printReceiverArray()
         implicit none

@@ -1,11 +1,11 @@
 !
 !> Derived class to define a Quasi-Minimal Residue Solver
 !
-!> Stablized version of BiConjugate Gradient, set up for solving
+!> Stabilized version of BiConjugate Gradient, set up for solving
 !> A x = b using routines in  mult_Aii.
 !> solves for the interior (edge) field
 !
-!> backported from the Sparse matrix version, which is modified from my matlab
+!> back-ported from the Sparse matrix version, which is modified from my matlab
 !> version of BICGstab...
 !> so the naming might sound a little different from conventional ones
 !
@@ -15,33 +15,33 @@
 !> in a staggered grid
 !
 !> NOTE: this has not been extensively tested! - I believe it feels a
-!> little unstable (dispite the name)...
+!> little unstable (despite the name)...
 !> if you have time reading this, test it!
 !
 module Solver_BICG
-    !
-    use Solver_CC
-    use ModelOperator_MF_SG
-    use ModelOperator_SP_V1
-    use ModelOperator_SP_V2
-    use PreConditioner_CC_MF_SG
-    use PreConditioner_CC_SP_SG
-    use PreConditioner_CC_SP_MR
-    !
-    type, extends( Solver_CC_t ) :: Solver_BICG_t
-        !
-        !> No derived properties
-        !
-        contains
-            !
-            procedure, public :: solve => solve_Solver_BICG
-            !
-     end type Solver_BICG_t
-     !
-     interface Solver_BICG_t
-         module procedure Solver_BICG_ctor
-     end interface Solver_BICG_t
-     !
+	!
+	use Solver_CC
+	use ModelOperator_MF_SG
+	use ModelOperator_SP_V1
+	use ModelOperator_SP_V2
+	use PreConditioner_CC_MF_SG
+	use PreConditioner_CC_SP_SG
+	use PreConditioner_CC_SP_MR
+	!
+	type, extends( Solver_CC_t ) :: Solver_BICG_t
+	!
+	!> No derived properties
+	!
+	contains
+		!
+		procedure, public :: solve => solve_Solver_BICG
+		!
+	end type Solver_BICG_t
+	!
+	interface Solver_BICG_t
+		module procedure Solver_BICG_ctor
+	end interface Solver_BICG_t
+	!
 contains
     !
     !> No subroutine briefing
@@ -49,7 +49,7 @@ contains
     function Solver_BICG_ctor( model_operator ) result( self )
         implicit none
         !
-        class( ModelOperator_t ), intent( in ) :: model_operator
+        class( ModelOperator_t ), intent(in) :: model_operator
         !
         type( Solver_BICG_t ) :: self
         !
@@ -116,12 +116,11 @@ contains
     !> matlab6 version of qmr)
     !
     subroutine solve_Solver_BICG( self, b, x )
-        !
         implicit none
         !
-        class( Solver_BICG_t ), intent( inout ) :: self
-        class( Vector_t ), intent( in ) :: b
-        class( Vector_t ), intent( inout ) :: x
+        class( Solver_BICG_t ), intent(inout) :: self
+        class( Vector_t ), intent(in) :: b
+        class( Vector_t ), intent(inout) :: x
         !
         class( Vector_t ), allocatable :: R, RT, V, T
         class( Vector_t ), allocatable :: P, PT, PH, S, ST, SH, AX
@@ -141,7 +140,7 @@ contains
         endif
         !
         call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, xhalf )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, xmin )
+        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, xmin)
         call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, AX )
         call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, R )
         call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, RT )
@@ -181,10 +180,10 @@ contains
         !> now calculate the (original) residual
         adjoint = .FALSE.
         !
-        !call self%preconditioner%model_operator%multA_N( x, R, adjoint )
+        !call self%preconditioned%model_operator%multA_N( x, R, adjoint )
         call self%preconditioner%model_operator%amult( x, R, self%omega, adjoint )
         !
-        !> R= b - Ax, for inital guess x, that has been inputted to the routine
+        !> R= b - Ax, for initial guess x, that has been inputted to the routine
         rnorm = CDSQRT( R%dotProd( R ) )
         !
         call R%linComb( b, C_MinusOne, C_ONE )
@@ -308,7 +307,7 @@ contains
                 !
             endif
             !
-            if( rnorm .LT. rnormin ) then
+            if( rnorm .LT. rnormin) then
                 !
                 rnormin = rnorm
                 xmin = xhalf
@@ -373,7 +372,7 @@ contains
                 !
             endif
             !
-            if( rnorm .LT. rnormin ) then
+            if( rnorm .LT. rnormin) then
                 !
                 rnormin = rnorm
                 xmin = x
@@ -401,7 +400,7 @@ contains
             ! the bicg will return the 'best' (smallest residual) iteration
             x = xmin; !comment this line
             self%n_iter = self%max_iters
-            self%relErr( self%max_iters ) = self%relErr( imin ) ! and this line
+            self%relErr( self%max_iters ) = self%relErr( imin) ! and this line
             ! to use the last iteration result instead of the 'best'
         endif
         !

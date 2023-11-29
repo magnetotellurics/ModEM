@@ -632,10 +632,10 @@ contains
         if( allocated( all_measured_data ) ) call deallocateData( all_measured_data )
         !
         !> Deallocate global array of Receivers
-        if( allocated( receivers ) ) call deallocateReceiverArray()
+        if( allocated( receivers ) ) deallocate( receivers )!call deallocateReceiverArray()
         !
         !> Deallocate global array of Transmitters
-        if( allocated( transmitters ) ) call deallocateTransmitterArray()
+        if( allocated( transmitters ) ) deallocate( transmitters )!call deallocateTransmitterArray()
         !
         !> Deallocate global components
         if( allocated( forward_solver ) ) deallocate( forward_solver )
