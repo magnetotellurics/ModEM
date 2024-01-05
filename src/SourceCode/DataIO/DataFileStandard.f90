@@ -31,8 +31,8 @@ contains
         !
         type( DataFileStandard_t ) :: self
         !
-        character(len=1000) :: full_line_text
-        character(len=200), dimension(20) :: args
+        character( len=1000 ) :: full_line_text
+        character( len=200 ), dimension(20) :: args
         !
         character(:), allocatable :: line_text, actual_type, code, code_ref, component, dipole
         integer :: iDe, io_stat, p_nargs, n_tx, n_rx

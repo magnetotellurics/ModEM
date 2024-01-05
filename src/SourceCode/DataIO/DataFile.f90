@@ -104,22 +104,22 @@ contains
             !
             class is ( DataEntryMT_t )
                 !
-				allocate( new_transmitter, source = TransmitterMT_t( data_entry%period ) )
+                allocate( new_transmitter, source = TransmitterMT_t( data_entry%period ) )
                 !
             class is ( DataEntryMT_REF_t )
                 !
-				allocate( new_transmitter, source = TransmitterMT_t( data_entry%period ) )
+                allocate( new_transmitter, source = TransmitterMT_t( data_entry%period ) )
                 !
             class is ( DataEntryCSEM_t )
                 !
-				allocate( new_transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%tx_azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
+                allocate( new_transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%tx_azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
                 !
         end select
         !
-		i_tx = updateTransmitterArray( new_transmitter )
-		!
-		deallocate( new_transmitter )
-		!
+        i_tx = updateTransmitterArray( new_transmitter )
+        !
+        deallocate( new_transmitter )
+        !
         rx_type = getIntReceiverType( data_entry%dtype )
         !
         select case( data_entry%dtype )
