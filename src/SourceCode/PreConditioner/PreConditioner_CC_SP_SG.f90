@@ -41,7 +41,7 @@ contains
         class( ModelOperator_t ), target, intent( in ) :: model_operator
         type( PreConditioner_CC_SP_SG_t ) :: self
         !
-        write( *, * ) "Constructor PreConditioner_CC_SP_SG_t"
+        !write( *, * ) "Constructor PreConditioner_CC_SP_SG_t"
         !
         self%omega = R_ZERO
         !
@@ -124,8 +124,6 @@ contains
             !
             class is( ModelOperator_SP_t )
                 !
-                write( *, * ) "setPreConditioner_CC_SP_SG"
-                !
                 !> Differentiation between SP1 (CCii) and SP2 (AAii)
                 select type( model_operator )
                     !
@@ -133,13 +131,9 @@ contains
                         !
                         Mii = model_operator%CCii
                         !
-                        write( *, * ) "setPreConditioner_CC_SP_SG_V1"
-                        !
                     class is( ModelOperator_SP_V2_t )
                         !
                         Mii = model_operator%AAii
-                        !
-                        write( *, * ) "setPreConditioner_CC_SP_SG_V2"
                         !
                     class default
                         call errStop( "setPreConditioner_CC_SP_SG > model_operator must be SP V1 or V2" )

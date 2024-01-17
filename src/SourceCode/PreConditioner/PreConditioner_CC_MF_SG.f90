@@ -36,7 +36,7 @@ contains
         class( ModelOperator_t ), target, intent( in ) :: model_operator
         type( PreConditioner_CC_MF_SG_t ) :: self
         !
-        write( *, * ) "Constructor PreConditioner_CC_MF_SG_t"
+        !write( *, * ) "Constructor PreConditioner_CC_MF_SG_t"
         !
         self%omega = R_ZERO
         !
