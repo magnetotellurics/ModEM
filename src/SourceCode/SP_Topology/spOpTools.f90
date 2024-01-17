@@ -122,6 +122,31 @@ contains
     !
     !> No subroutine briefing
     !
+    subroutine writeIJS_Matrix( matrix_csr, i_unit )
+        implicit none
+        !
+        type( spMatCSR_Real ), intent( in ) :: matrix_csr
+        
+        integer, intent( in ) :: i_unit
+        !
+        type( spMatIJS_Real ) :: matrix_ijs
+        integer :: i
+        !
+        call create_spMatIJS_Real( size( matrix_csr%row ), size( matrix_csr%col ), size( matrix_csr%val ), matrix_ijs )
+        !
+        call CSR2IJS( matrix_csr, matrix_ijs )
+        !
+        do i = 1, matrix_ijs%nCol
+            !
+            !write( *, * ) matrix_ijs%nRow, matrix_ijs%nCol, size( matrix_csr%row ), size( matrix_csr%col ), size( matrix_csr%val )
+            write( i_unit, * ) matrix_ijs%I(i), matrix_ijs%J(i), matrix_ijs%S(i)
+            !
+        enddo
+        !
+    end subroutine writeIJS_Matrix
+    !
+    !> No subroutine briefing
+    !
     subroutine create_spMatCSR_Real( m, n, nz, A )
         implicit none
         !
@@ -376,16 +401,16 @@ contains
         integer :: ij, i, j
         ! for now no error checking
         if(.NOT.S%is_allocated) then
-        stop "Error: CSR2IJS_Real > allocate output matrix before call"
+            stop "Error: CSR2IJS_Real > allocate output matrix before call"
         endif
         ij = 0
         do i=1, C%nRow
-        do j = C%row(i), C%row(i+1)-1
-        ij = ij + 1
-        S%I(ij) = i
-        S%J(ij) = C%col(j)
-        S%S(ij) = C%val(j)
-        enddo
+            do j = C%row(i), C%row(i+1)-1
+                ij = ij + 1
+                S%I(ij) = i
+                S%J(ij) = C%col(j)
+                S%S(ij) = C%val(j)
+            enddo
         enddo
         !
     end subroutine CSR2IJS_Real
@@ -416,42 +441,46 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine IJS2CSR_Real(S, C)
+    subroutine IJS2CSR_Real( S, C )
         implicit none
         !
-        type(spMatIJS_Real), intent( in ) :: S
+        type( spMatIJS_Real ), intent( in ) :: S
         type( spMatCSR_Real ), intent( inout ) :: C
+        !
         integer :: i, j, nz
         integer, allocatable, dimension(:) :: rowT
-
-
-        allocate(rowT(S%nRow+1))
-
+        !
+        allocate( rowT( S%nRow + 1 ) )
+        !
         if(.NOT.C%is_allocated) then
-        stop "Error: IJS2CSR_Real > allocate output matrix before call"
+            call errStop( "IJS2CSR_Real > allocate output matrix before call" )
         endif
-
-        !   first pass: find numbers of columns in each row of output
+        !
+        !> first pass: find numbers of columns in each row of output
         rowT = 0
         nz = size(S%I)
         do i = 1, nz
-        rowT(S%I(i)) = rowT(S%I(i))+1
+            rowT(S%I(i)) = rowT(S%I(i))+1
         enddo
-        !   set row array in output CSR matrix
+        !
+        !> set row array in output CSR matrix
         C%row(1) = 1
         do i = 1, C%nRow
-        C%row(i+1) = C%row(i)+rowT(i)
+            C%row(i+1) = C%row(i)+rowT(i)
         enddo
-
-        !    now fill in columns and values
+        !
+        !> now fill in columns and values
         rowT = 0
         do i = 1, nz
-        j = C%row(S%I(i)) +rowT(S%I(i))
-        C%col(j) = S%J(i)
-        C%val(j) = S%S(i) 
-        rowT(S%I(i)) = rowT(S%I(i))+1
+            !
+            j = C%row( S%I(i) ) +rowT( S%I(i) )
+            !
+            C%col(j) = S%J(i)
+            C%val(j) = S%S(i) 
+            !
+            rowT( S%I(i) ) = rowT( S%I(i) ) + 1
+            !
         enddo
-        deallocate(rowT)
         !
     end subroutine IJS2CSR_Real
     !
@@ -919,7 +948,7 @@ contains
         integer :: i, j, j1, j2, k, m, n, nz, nnz, nzero
         !
         if( A%nCol .NE. size( D ) ) then
-            stop "Error: RMATxDIAG > matrix sizes incompatible"
+            call errStop( "RMATxDIAG > matrix sizes incompatible" )
         endif
         !
         m = A%nRow
@@ -2372,7 +2401,7 @@ contains
         ! the diagonal element should be the last in each row 
         ! ONLY IF col is properly sorted
         L%val(L%row(i)-1) = C_ONE
-        end do
+        enddo
         call upperTri(Atmp, U)
         call deall_spMatCSR(Atmp)
         return
@@ -2630,294 +2659,5 @@ contains
         C%val = R%val
         !
     end subroutine
-    !
-    !> following subroutines depend only on grid, but are used for
-    !> converting between ModEM data structures/matrix-free operators
-    !> and simple column vectors/sparse matrices
-    !
-    subroutine setlimitsSP( node_type, grid, nx, ny, nz )
-        implicit none
-        !
-        character(*), intent( in ) :: node_type
-        class( Grid_t ), intent( in ) :: grid
-        integer, intent( out ) :: nx, ny, nz
-        !
-        selectcase(node_type)
-            !
-            case( CELL )
-                nx = grid%nx
-                ny = grid%ny
-                nz = grid%nz
-            case( NODE )
-                nx = grid%nx+1
-                ny = grid%ny+1
-                nz = grid%nz+1
-            case( XEDGE )
-                nx = grid%nx
-                ny = grid%ny+1
-                nz = grid%nz+1
-            case( XFACE )
-                nx = grid%nx+1
-                ny = grid%ny
-                nz = grid%nz
-            case( YEDGE )
-                nx = grid%nx+1
-                ny = grid%ny
-                nz = grid%nz+1
-            case( YFACE )
-                nx = grid%nx
-                ny = grid%ny+1
-                nz = grid%nz
-            case( ZEDGE )
-                nx = grid%nx+1
-                ny = grid%ny+1
-                nz = grid%nz
-            case( ZFACE )
-                nx = grid%nx
-                ny = grid%ny
-                nz = grid%nz+1
-                !
-        end select
-        !
-    end subroutine
-    !
-    !> No subroutine briefing
-    !
-    subroutine nEdgesSP(grid, n_xedge, n_yedge, n_zedge)
-        implicit none
-        !
-        class( Grid_t ), intent(in)    :: grid
-        integer, intent(out)  :: n_xedge, n_yedge, n_zedge
-        integer nx, ny, nz
-
-        call setlimitsSP( XEDGE, grid, nx, ny, nz )
-        n_xedge = nx*ny*nz
-        call setlimitsSP( YEDGE, grid, nx, ny, nz )
-        n_yedge = nx*ny*nz
-        call setlimitsSP( ZEDGE, grid, nx, ny, nz )
-        n_zedge = nx*ny*nz
-        !
-    end subroutine
-    !
-    !> No subroutine briefing
-    !
-    subroutine nFacesSP(grid, n_xface, n_yface, n_zface)
-        implicit none
-        !
-        class( Grid_t ), intent(in)    :: grid
-        integer, intent(out) :: n_xface, n_yface, n_zface
-        integer nx, ny, nz
-
-        call setlimitsSP( XFACE, grid, nx, ny, nz )
-        n_xface = nx*ny*nz
-        call setlimitsSP( YFACE, grid, nx, ny, nz )
-        n_yface = nx*ny*nz
-        call setlimitsSP( ZFACE, grid, nx, ny, nz )
-        n_zface = nx*ny*nz
-        !
-    end subroutine
-    !
-    !> Based on matlab method of same name in class TGrid3D
-    !> IndVec is the index within the list of nodes of a fixed type
-    !> e.g., among the list of y-Faces.   An offset needs to be
-    !> added to get index in list of all faces(for example)
-    !
-    subroutine gridIndexSP(node_type, grid, IndVec, I, J, K)
-        implicit none
-        !
-        character(*), intent(in)    :: node_type
-        class( Grid_t ), intent(in)    :: grid
-        integer, dimension(:), intent(in)        :: IndVec
-        integer, dimension(:), intent(out)        :: I, J, K
-        integer            :: nx, ny, nz, nxy, nVec, ii
-        real(4)           :: rNxy, rNx
-
-        call setlimitsSP(node_type, grid, nx, ny, nz)
-        nVec = size(IndVec)
-        if(nVec.NE.size(I)) then
-        stop "Error: gridIndexSP >size of IndVec and I do not agree"
-        endif
-        if(nVec.NE.size(J)) then
-        stop "Error: gridIndexSP >size of IndVec and J do not agree"
-        endif
-        if(nVec.NE.size(K)) then
-        stop "Error: gridIndexSP >size of IndVec and K do not agree"
-        endif
-        rNxy = float(nx*ny)
-        rNx = float(nx)
-        do ii = 1, nVec
-        I(ii) = mod(IndVec(ii), nx)
-        J(ii) = mod(ceiling(float(IndVec(ii))/rNx), ny)
-        K(ii) = ceiling(float(IndVec(ii))/rNxy)
-        enddo
-        where(I.EQ.0) I = nx
-        where(J.EQ.0) J = ny
-        where(K.EQ.0) K = nz
-        !
-    end subroutine gridIndexSP
-    !
-    !> Based on matlab method of same name in class TGrid3D
-    !> returned array IndVec gives numbering of nodes within
-    !> the list for node_type; need to add an offset for position
-    !> in full list of all faces or edges(not nodes and cells)
-    !
-    subroutine vectorIndexSP(node_type, grid, I, J, K, IndVec)
-        implicit none
-        !
-        character(*), intent(in)    :: node_type
-        class( Grid_t ), intent(in)    :: grid
-        integer, dimension(:), intent(out)        :: IndVec
-        integer, dimension(:), intent(in)        :: I, J, K
-        integer            :: nx, ny, nz, nxy, nVec, ii
-
-        call setlimitsSP(node_type, grid, nx, ny, nz)
-        nVec = size(IndVec)
-        if(nVec.NE.size(I)) then
-        stop "Error: vectorIndexSP >size of IndVec and I do not agree"
-        endif
-        if(nVec.NE.size(J)) then
-        stop "Error: vectorIndexSP >size of IndVec and J do not agree"
-        endif
-        if(nVec.NE.size(K)) then
-        stop "Error: vectorIndexSP >size of IndVec and K do not agree"
-        endif
-        nxy = nx*ny
-        !   IndVec =(K-1)*nxy+(J-1)*nx+I
-        do ii = 1, nVec
-        IndVec(ii) =(K(ii)-1)*nxy+(J(ii)-1)*nx + I(ii)
-        enddo
-        !
-    end subroutine
-    !
-    !> For a given type find indexes for boundary and interior nodes
-    !
-    subroutine boundaryIndexSP( grid_type, metric, INDb, INDi )
-        implicit none
-        !
-        character(*), intent( in ) :: grid_type
-        class( MetricElements_t ), intent( in ) :: metric
-        integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
-        !
-        integer :: nVec(3), nVecT, nBdry, nb, ni, i
-        class( Vector_t ), allocatable :: temp_vector
-        class( Scalar_t ), allocatable :: temp_scalar
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
-        complex( kind=prec ), allocatable, dimension(:) :: s_v
-        !
-        selectcase( grid_type )
-            !
-            case( EDGE )
-                !
-                call metric%createVector( real_t, EDGE, temp_vector )
-                !
-                x = temp_vector%getX()
-                y = temp_vector%getY()
-                z = temp_vector%getZ()
-                !
-                nVec(1) = size( x )
-                nVec(2) = size( y )
-                nVec(3) = size( z )
-                !
-                nVecT = nVec(1)+nVec(2)+nVec(3)
-                !
-                x(:, 1, :) = 1
-                x(:, temp_vector%ny+1, :) = 1
-                x(:, :, 1) = 1
-                x(:, :, temp_vector%nz+1) = 1
-                y(1, :, :) = 1
-                y(temp_vector%nx+1, :, :) = 1
-                y(:, :, 1) = 1
-                y(:, :, temp_vector%nz+1) = 1
-                z(1, :, :) = 1
-                z(temp_vector%nx+1, :, :) = 1
-                z(:, 1, :) = 1
-                z(:, temp_vector%ny+1, :) = 1
-                !
-                call temp_vector%setX( x )
-                call temp_vector%setY( y )
-                call temp_vector%setZ( z )
-                !
-                s_v = temp_vector%getArray()
-                !
-            case( FACE )
-                !
-                call metric%createVector( real_t, FACE, temp_vector )
-                !
-                x = temp_vector%getX()
-                y = temp_vector%getY()
-                z = temp_vector%getZ()
-                !
-                nVec(1) = size( x )
-                nVec(2) = size( y )
-                nVec(3) = size( z )
-                nVecT = nVec(1)+nVec(2)+nVec(3)
-                !
-                x(1, :, :) = 1
-                x(temp_vector%nx+1, :, :) = 1
-                y(:, 1, :) = 1
-                y(:, temp_vector%ny+1, :) = 1
-                z(:, :, 1) = 1
-                z(:, :, temp_vector%nz+1) = 1
-                !
-                call temp_vector%setX( x )
-                call temp_vector%setY( y )
-                call temp_vector%setZ( z )
-                !
-                s_v = temp_vector%getArray()
-                !
-            case( NODE )
-                !
-                call metric%createScalar( real_t, NODE, temp_scalar )
-                !
-                x = temp_scalar%getV()
-                !
-                nVecT = size( x )
-                !
-                x(1, :, :) = 1
-                x(temp_scalar%nx+1, :, :) = 1
-                x(:, 1, :) = 1
-                x(:, temp_scalar%ny+1, :) = 1
-                x(:, :, 1) = 1
-                x(:, :, temp_scalar%nz+1) = 1
-                !
-                call temp_scalar%setV( x )
-                !
-                s_v = temp_scalar%getArray()
-                !
-            case default
-                call errStop( "boundaryIndexSP > Invalid grid type ["//grid_type//"]" )
-        end select 
-        !
-        nBdry = 0
-        do i = 1, nVecT
-            nBdry = nBdry + nint( real( s_v(i), kind=prec ) )
-        enddo
-        !
-        if(allocated(INDi)) then
-            deallocate(INDi)
-        endif
-        !
-        allocate( INDi( nVecT - nBdry ) )
-        !
-        if(allocated(INDb)) then
-            deallocate(INDb)
-        endif
-        !
-        allocate( INDb( nBdry ) )
-        !
-        nb = 0
-        ni = 0
-        !
-        do i = 1, nVecT
-            if( nint( real( s_v(i), kind=prec ) ) .EQ. 1 ) then
-                nb = nb+1
-                INDb(nb) = i
-            else
-                ni = ni+1
-                INDi(ni) = i
-            endif
-        enddo
-        !
-    end subroutine boundaryIndexSP
     !
 end module SpOpTools

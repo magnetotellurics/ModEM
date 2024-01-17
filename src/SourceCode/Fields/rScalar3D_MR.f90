@@ -6,11 +6,9 @@ module rScalar3D_MR
     use rScalar3D_SG
     use Grid3D_MR
     !
-    type, extends( rScalar3D_SG_t ) :: rScalar3D_MR_t
+    type, extends( Scalar_t ) :: rScalar3D_MR_t
         !
-        type( rScalar3D_SG_t ), allocatable :: sub_scalars(:)
-        !
-        integer, dimension(:), allocatable :: ind_active
+        type( rScalar3D_SG_t ), allocatable, dimension(:) :: sub_scalar
         !
         contains
             !
@@ -22,24 +20,26 @@ module rScalar3D_MR
             !
             procedure, public :: setIndexArrays => setIndexArrays_rScalar3D_MR
             !
-            procedure, public :: setFull => setFull_rScalar3D_MR
-            procedure, public :: getFull => getFull_rScalar3D_MR
+            procedure, public :: getArray => getArray_rScalar3D_MR
+            procedure, public :: setArray => setArray_rScalar3D_MR
+            !
+            procedure, public :: getFullArray => getFullArray_rScalar3D_MR
+            procedure, public :: setFullArray => setFullArray_rScalar3D_MR
             !
             procedure, public :: lengthFull => lengthFull_rScalar3D_MR
             procedure, public :: findFull => findFull_rScalar3D_MR
             !
-            procedure, public :: findValue => findValue_rScalar3D_MR
+            procedure, public :: MRtoSG => MRtoSG_rScalar3D_MR
+            procedure, public :: divFine => divFine_rScalar3D_MR
             !
-            procedure, public :: sgToMR => sgTo_rScalar3D_MR
+            procedure, public :: fromSG => fromSG_rScalar3D_MR
             !
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundary_rScalar3D_MR
             procedure, public :: setOneBoundary => setOneBoundary_rScalar3D_MR
-            procedure, public :: intBdryIndices => intBdryIndices_rScalar3D_MR
             !
             !> Dimensioning operations
             procedure, public :: length => length_rScalar3D_MR
-            procedure, public :: setVecComponents => setVecComponents_rScalar3D_MR
             !
             !> Arithmetic/algebraic unary operations
             procedure, public :: zeros => zeros_rScalar3D_MR
@@ -64,15 +64,10 @@ module rScalar3D_MR
             procedure, public :: divByField => divByField_rScalar3D_MR
             procedure, public :: divByValue => divByValue_rScalar3D_MR
             !
+            procedure, public :: toNode => toNode_rScalar3D_MR
+            !
             !> Miscellaneous
-            procedure, public :: getV => getV_rScalar3D_MR
-            procedure, public :: setV => setV_rScalar3D_MR
-            !
-            procedure, public :: getSV => getSV_rScalar3D_MR
-            procedure, public :: setSV => setSV_rScalar3D_MR
-            !
-            procedure, public :: getArray => getArray_rScalar3D_MR
-            procedure, public :: setArray => setArray_rScalar3D_MR
+            procedure, public :: deallOtherState => deallOtherState_rScalar3D_MR
             !
             procedure, public :: copyFrom => copyFrom_rScalar3D_MR
             !
@@ -84,46 +79,14 @@ module rScalar3D_MR
     end type rScalar3D_MR_t
     !
     interface rScalar3D_MR_t
-        module procedure rScalar3D_MR_ctor_copy
-        module procedure rScalar3D_MR_ctor_default
+        module procedure rScalar3D_MR_ctor
     end interface rScalar3D_MR_t
     !
 contains
     !
     !> No function briefing
     !
-    function rScalar3D_MR_ctor_copy( E_in ) result ( self )
-        implicit none
-        !
-        type( rScalar3D_MR_t ), intent( in ) :: E_in
-        !
-        type( rScalar3D_MR_t ) :: self
-        !
-        integer :: i
-        !
-        self%grid => E_in%grid
-        self%grid_type = E_in%grid_type
-        !
-        call self%initializeSub
-        !
-        select type( grid => E_in%grid )
-            !
-            class is( Grid3D_MR_t )
-                !
-                do i = 1, grid%n_grids
-                    self%sub_scalars(i) = E_in%sub_scalars(i)
-                end do
-                !
-            class default
-                stop "Error: rScalar3D_MR_ctor_copy > Unclassified grid"
-            !
-        end select
-        !
-    end function rScalar3D_MR_ctor_copy
-    !
-    !> No function briefing
-    !
-    function rScalar3D_MR_ctor_default( grid, grid_type ) result ( self )
+    function rScalar3D_MR_ctor( grid, grid_type ) result( self )
         implicit none
         !
         class( Grid_t ), target, intent( in ) :: grid
@@ -131,12 +94,22 @@ contains
         !
         type( rScalar3D_MR_t ) :: self
         !
+        integer :: nzAir
+        !
+        call self%baseInit
+        !
         self%grid => grid
         self%grid_type = grid_type
         !
+        call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
+        !
         call self%initializeSub
         !
-    end function rScalar3D_MR_ctor_default
+        if( .NOT. self%is_allocated ) then
+            call errStop( "rScalar3D_MR_ctor > Unable to allocate self" )
+        endif
+        !
+    end function rScalar3D_MR_ctor
     !
     !> No subroutine briefing
     !
@@ -145,25 +118,28 @@ contains
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         !
-        integer :: i, status
+        integer :: i, alloc_stat
         !
         select type( grid => self%grid )
             !
             class is( Grid3D_MR_t )
                 !
                 self%is_allocated = .TRUE.
-                allocate( self%sub_scalars( grid%n_grids ), STAT = status )
-                self%is_allocated = self%is_allocated .AND. ( status .EQ. 0 )
+                allocate( self%sub_scalar( grid%n_grids ), stat = alloc_stat )
+                self%is_allocated = self%is_allocated .AND.( alloc_stat .EQ. 0 )
                 !
                 do i = 1, grid%n_grids
-                    self%sub_scalars(i) = rScalar3D_MR_t( grid%sub_grids(i), self%grid_type )
-                end do
+                    !
+                    self%sub_scalar(i) = rScalar3D_SG_t( grid%sub_grid(i), self%grid_type )
+                    !
+                    !write( *, * ) "rSubScalar", i, "-nx=", self%sub_scalar(i)%nx, ", ny=", self%sub_scalar(i)%ny, "nz=", self%sub_scalar(i)%nz
+                    !
+                enddo
                 !
-                call self%setIndexArrays
-                call self%zeros
+                !write( *, * ) "rMainScalar-nx=", self%nx, ", ny=", self%ny, "nz=", self%nz, self%nx*self%ny*self%nz
                 !
             class default
-                stop "Error: initializeSub_rScalar3D_MR > Unclassified grid"
+                call errStop( "initializeSub_rScalar3D_MR > Unclassified grid" )
             !
         end select
         !
@@ -171,15 +147,18 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine setIndexArrays_rScalar3D_MR( self, xy_in ) 
+    subroutine setIndexArrays_rScalar3D_MR( self, n_full, ind_boundary, ind_interior, ind_active, xy_in ) 
         implicit none
         !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
+        class( rScalar3D_MR_t ), intent( in ) :: self
+        integer, intent( inout ) :: n_full
+        integer, dimension(:), allocatable, intent( out ) :: ind_boundary, ind_interior
+        integer, dimension(:), allocatable, intent( out ), optional :: ind_active
         logical, intent( in ), optional :: xy_in
         !
+        type( rScalar3D_MR_t ) :: temp_scalar
         logical :: xy, int_only
-        integer :: i, k
-        integer :: n_full, n_active, n_interior, n_boundaries
+        integer :: i, k, n_active, n_interior, n_boundaries
         real( kind=prec ), dimension(:), allocatable :: v_1, v_2
         !
         if( .NOT. present( xy_in ) ) then
@@ -188,205 +167,183 @@ contains
             xy = xy_in
         endif
         !
-        select type( grid => self%grid )
+        temp_scalar = self
+        !
+        select type( grid => temp_scalar%grid )
             !
             class is( Grid3D_MR_t )
                 !
                 ! Loop over sub-grids, setting boundary edges to one,
                 ! interior to  zero
                 do k = 1, grid%n_grids
-                    call self%sub_scalars(k)%setAllBoundary( cmplx( 1._prec, 0.0, kind=prec ) )
-                end do
+                    call temp_scalar%sub_scalar(k)%setAllBoundary( cmplx( 1._prec, 0.0, kind=prec ) )
+                enddo
                 !
                 ! Loop over interfaces: set redundant interface edges to 2
-                select case( self%grid_type )
+                select case( temp_scalar%grid_type )
                     !
-                    case( EDGE )
-                        int_only = .TRUE.
-                    case( FACE )
+                    case( CELL )
                         int_only = .FALSE.
                     case( NODE )
                         int_only = .TRUE.
                     case default
                         !
-                        stop "Error: setIndexArrays_rScalar3D_MR > Invalid grid type option!"
+                        call errStop( "setIndexArrays_rScalar3D_MR > Invalid grid type option!" )
                     !
                 end select
                 !
                 do k = 2, grid%n_grids
                     !
-                    if( grid%Coarseness(k - 1, 1) < grid%Coarseness(k, 1) ) then
+                    if( grid%coarseness(k - 1, 1) < grid%coarseness(k, 1) ) then
+                        !
                         ! upper grid is finer: grid k-1 interface nodes are
                         ! not active; also reset interior part of interface
                         ! edges to 0
                         if( xy ) then
-                            call self%sub_scalars(k-1)%setOneBoundary( "z2_x", cmplx( -1.0_prec, 0.0, kind=prec ) )
-                            call self%sub_scalars(k-1)%setOneBoundary( "z2_y", cmplx( -10.0_prec, 0.0, kind=prec ) )
+                            call temp_scalar%sub_scalar(k-1)%setOneBoundary( "z2_x", cmplx( -1.0_prec, 0.0, kind=prec ) )
+                            call temp_scalar%sub_scalar(k-1)%setOneBoundary( "z2_y", cmplx( -10.0_prec, 0.0, kind=prec ) )
                         else
-                            call self%sub_scalars(k-1)%setOneBoundary( "z2", cmplx( -1.0_prec, 0.0, kind=prec ) )
+                            call temp_scalar%sub_scalar(k-1)%setOneBoundary( "z2", cmplx( -1.0_prec, 0.0, kind=prec ) )
                         endif
                         !
-                        call self%sub_scalars(k)%setOneBoundary( "z1", cmplx( 0._prec, 0.0, kind=prec ), int_only )
+                        call temp_scalar%sub_scalar(k)%setOneBoundary( "z1", cmplx( 0._prec, 0.0, kind=prec ), int_only )
                     else
                         if( xy ) then
-                            call self%sub_scalars(k)%setOneBoundary( "z1_x", cmplx( -1.0_prec, 0.0, kind=prec ) )
-                            call self%sub_scalars(k)%setOneBoundary( "z1_y", cmplx( -10.0_prec, 0.0, kind=prec ) )
+                            call temp_scalar%sub_scalar(k)%setOneBoundary( "z1_x", cmplx( -1.0_prec, 0.0, kind=prec ) )
+                            call temp_scalar%sub_scalar(k)%setOneBoundary( "z1_y", cmplx( -10.0_prec, 0.0, kind=prec ) )
                         else
-                            call self%sub_scalars(k)%setOneBoundary( "z1", cmplx( -1.0_prec, 0.0, kind=prec ) )
+                            call temp_scalar%sub_scalar(k)%setOneBoundary( "z1", cmplx( -1.0_prec, 0.0, kind=prec ) )
                         endif
                         !
-                        call self%sub_scalars(k-1)%setOneBoundary( "z2", cmplx( 0._prec, 0.0, kind=prec ), int_only )
+                        call temp_scalar%sub_scalar(k-1)%setOneBoundary( "z2", cmplx( 0._prec, 0.0, kind=prec ), int_only )
                         !
                     endif
                     !
-                end do
+                enddo
                 !
             class default
-                stop "Error: setIndexArrays_rScalar3D_MR > Unclassified grid"
+                call errStop( "setIndexArrays_rScalar3D_MR > Unclassified grid" )
             !
         end select
         !
         ! Set active, interior, and boundary edges. ***
         !
-        call self%getFull( v_1 )
+        v_1 = temp_scalar%getFullArray()
         !
         n_full = size( v_1 )
         !
         n_active = 0
         do k = 1, n_full
-            if(v_1(k) >= 0) then
+            if( v_1(k) >= 0 ) then
                 n_active = n_active + 1
             endif
-        end do
+        enddo
         !
-        if(allocated (self%ind_active)) then
-            deallocate (self%ind_active)
-        endif
-        !
-        allocate (self%ind_active(n_active))
+        allocate( ind_active( n_active ) )
         !
         i = 0
         do k = 1, n_full
-            if(v_1(k) >= 0) then
+            if( v_1(k) >= 0 ) then
                 i = i + 1
-                self%ind_active(i) = k
+                ind_active(i) = k
             endif
-        end do
+        enddo
         !
         n_interior = 0
         do k = 1, n_full
-            if(v_1(k) == 0) then
+            if( v_1(k) == 0 ) then
                 n_interior = n_interior + 1
             endif
-        end do
+        enddo
         !
-        allocate (v_2(n_active))
-        v_2 = v_1(self%ind_active)
+        allocate( v_2( n_active ) )
+        v_2 = v_1( ind_active )
         !
-        if( allocated( self%ind_interior ) ) then
-            deallocate( self%ind_interior )
-        endif
-        !
-        allocate( self%ind_interior( n_interior ) )
+        allocate( ind_interior( n_interior ) )
         !
         i = 0
         do k = 1, n_active
             if( v_2(k) == 0 ) then
                 i = i + 1
-                self%ind_interior(i) = k
+                ind_interior(i) = k
             endif
-        end do
-        !!
+        enddo
+        !
         n_boundaries = 0
         do k = 1, n_active
-            if(v_2(k) == 1) then
+            if( v_2(k) == 1 ) then
                 n_boundaries = n_boundaries + 1
             endif
-        end do
+        enddo
         !
-        if(allocated (self%ind_boundary)) then
-            deallocate (self%ind_boundary)
-        endif
-        !
-        allocate (self%ind_boundary(n_boundaries)) 
+        allocate( ind_boundary( n_boundaries ) ) 
         !
         i = 0
         do k = 1, n_active
-            if(v_2(k) == 1) then
+            if( v_2(k) == 1 ) then
                 i = i + 1
-                self%ind_boundary(i) = k
+                ind_boundary(i) = k
             endif
-        end do
+        enddo
         !
     end subroutine setIndexArrays_rScalar3D_MR
     !
-    !> No subroutine briefing
-    !
-    subroutine setFull_rScalar3D_MR( self, v )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        real( kind=prec ), intent (in) :: v(:)
-        !
-        integer :: i1, i2, k, n
-        !
-        select type( grid => self%grid )
-            !
-            class is( Grid3D_MR_t )
-                !
-                i1 = 1; i2 = 0;
-                do k = 1, grid%n_grids
-                    n = self%sub_scalars(k)%length ()
-                    i2 = i2 + n
-                    call self%sub_scalars(k)%setArray( cmplx( v(i1:i2), 0.0, kind=prec ) )
-                    i1 = i1 + n
-                end do
-                !
-            class default
-                stop "Error: setFull_rScalar3D_MR > Unclassified grid"
-            !
-        end select
-        !
-    end subroutine setFull_rScalar3D_MR
-    !
-    !> Creates standard (1-D array) for all sub-scalars,
+    !> Creates standard(1-D array) for all sub_scalar,
     !> INCLUDING redundant interface nodes.
     !
-    subroutine getFull_rScalar3D_MR( self, v )
+    function getFullArray_rScalar3D_MR( self ) result( array )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
-        real( kind=prec ), allocatable, intent( out ) :: v(:)
         !
-        real( kind=prec ), allocatable :: v_temp(:)
-        integer :: n, i1, i2, k
+        complex( kind=prec ), allocatable, dimension(:) :: array
+        !
+        integer :: n, i, i1, i2
         !
         n = self%lengthFull()
-        allocate( v(n) )
         !
-        v = R_ZERO
+        allocate( array(n) )
+        !
+        array = C_ZERO
         !
         i1 = 1
         i2 = 0
         !
-        select type( grid => self%grid )
+        do i = 1, self%grid%getNGrids()
             !
-            class is( Grid3D_MR_t )
-                !
-                do k = 1, grid%n_grids
-                    n = self%sub_scalars(k)%length()
-                    i2 = i2 + n
-                    v_temp = self%sub_scalars(k)%getArray()
-                    v(i1:i2) = v_temp
-                    i1 = i1 + n
-                end do
-                !
-            class default
-                stop "Error: getFull_rScalar3D_MR > Unclassified grid"
+            n = self%sub_scalar(i)%length()
             !
-        end select
+            i2 = i2 + n
+            array(i1:i2) = self%sub_scalar(i)%getArray()
+            i1 = i1 + n
+            !
+        enddo
         !
-    end subroutine getFull_rScalar3D_MR
+    end function getFullArray_rScalar3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine setFullArray_rScalar3D_MR( self, array )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( inout ) :: self
+        complex( kind=prec ), dimension(:), intent( in ) :: array
+        !
+        integer :: i, i1, i2, n
+        !
+        i1 = 1
+        i2 = 0
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            n = self%sub_scalar(i)%length()
+            i2 = i2 + n
+            call self%sub_scalar(i)%setArray( array(i1:i2) )
+            i1 = i1 + n
+            !
+        enddo
+        !
+    end subroutine setFullArray_rScalar3D_MR
     !
     !> No function briefing
     !
@@ -395,22 +352,15 @@ contains
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
         !
-        integer :: k
-        integer :: n
+        integer :: i, n
         !
-        select type( grid => self%grid )
+        n = 0
+        !
+        do i = 1, self%grid%getNGrids()
             !
-            class is( Grid3D_MR_t )
-                !
-                n = 0
-                do k = 1, grid%n_grids
-                    n = n + self%sub_scalars(k)%length()
-                end do
-                !
-            class default
-                stop "Error: lengthFull_rScalar3D_MR > Unclassified grid"
+            n = n + self%sub_scalar(i)%length()
             !
-        end select
+        enddo
         !
     end function lengthFull_rScalar3D_MR
     !
@@ -420,21 +370,21 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
-        real( kind=prec ), intent (in) :: c
+        real( kind=prec ), intent(in) :: c
         !
         integer, dimension(:), allocatable :: I
         real( kind=prec ), dimension(:), allocatable :: v
         integer :: n, n_I, k
         !
-        n = self%lengthFull ()
-        call self%getFull(v)
+        n = self%lengthFull()
+        v = self%getFullArray()
         !
         n_I = 0
         do k = 1, n
             if(v(k) == c) n_I = n_I + 1
-        end do
+        enddo
         !
-        allocate (I(n_I))
+        allocate(I(n_I))
         !
         n_I = 0
         do k = 1, n
@@ -442,95 +392,180 @@ contains
                 n_I = n_I + 1
                 I(n_I) = k
             endif
-        end do
+        enddo
         !
     end function findFull_rScalar3D_MR
     !
-    !> No function briefing
+    !> MRtoSG
     !
-    function findValue_rScalar3D_MR(self, c) result (I)
+    !> input self is of class rScalar3D_MR , output SGscalar isi of class rScalar3D_SG
+    !> this just copies contents of an MR cell into all subdividing fine grid cells
+    !
+    subroutine MRtoSG_rScalar3D_MR( self, scalar_sg )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
-        real( kind=prec ), intent( in ) :: c
+        type( rScalar3D_SG_t ), intent( out ) :: scalar_sg
         !
-        integer, dimension(:), allocatable :: I
-        real( kind=prec ), dimension(:), allocatable :: v
-        integer :: n, n_I, k
+        integer :: i_grid, i, j, k, z, cs
+        integer :: i1, i2, j1, j2, k1, k2
         !
-        n = self%length()
-        allocate (v(n))
-        v = self%getArray()
-        !
-        n_I = 0
-        do k = 1, n
-            if(v(k) == c) n_I = n_I + 1
-        end do
-        !
-        allocate (I(n_I))
-        !
-        n_I = 0
-        do k = 1, n
-            if(v(k) == c) then
-                n_I = n_I + 1
-                I(n_I) = k
-            endif
-        end do
-        !
-    end function findValue_rScalar3D_MR
-    !
-    subroutine sgTo_rScalar3D_MR( self, sg_v )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        type ( rScalar3D_SG_t ), intent( in ) :: sg_v
-        !
-        class( Grid_t ), pointer :: grid
-        !
-        integer :: x_nx, x_ny, x_nz
-        integer :: last, Cs, i1, i2, i, k
-        !
-        grid => sg_v%grid
-        !
-        x_nx = size(sg_v%v, 1)
-        x_ny = size(sg_v%v, 2)
-        x_nz = size(sg_v%v, 3)
+        scalar_sg = rScalar3D_SG_t( self%grid, self%grid_type )
         !
         select type( grid => self%grid )
             !
             class is( Grid3D_MR_t )
                 !
-                do k = 1, grid%n_grids
+                do i_grid = 1, grid%n_grids
                     !
-                    Cs = 2**grid%Coarseness(k, 1)
-                    i1 = grid%Coarseness(k, 3)
-                    i2 = grid%Coarseness(k, 4)
+                    !> vertical layers in fine grid
+                    k1 = grid%coarseness( i_grid, 3 )
+                    k2 = grid%coarseness( i_grid, 4 )
                     !
-                    do i = 1, Cs
+                    cs = 2 ** grid%coarseness( i_grid, 1 )
+                    !
+                    z = 1
+                    !
+                    do k = k1, k2
                         !
-                        last = size(grid%Dx)
-                        self%sub_scalars(k)%v = self%sub_scalars(k)%v + &
-                        sg_v%v(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) *    &
-                        repMat(grid%Dx(i:last:Cs), 1, &
-                        grid%sub_grids(k)%Ny + 1, &
-                        grid%sub_grids(k)%Nz + 1, .FALSE. )
+                        do i = 1, self%sub_scalar( i_grid )%nx
+                            !
+                            i1 = (i-1) * cs + 1
+                            i2 = i * cs
+                            !
+                            do j = 1, self%sub_scalar( i_grid )%ny
+                                !
+                                j1 = (j-1)*cs+1
+                                j2 = j * cs
+                                !
+                                scalar_sg%v( i1:i2, j1:j2, k ) = self%sub_scalar( i_grid )%v(i,j,z)
+                                !
+                            enddo
+                        enddo
                         !
-                    end do
-                    !
-                    self%sub_scalars(k)%v = self%sub_scalars(k)%v / &
-                    repMat(grid%sub_grids(k)%Dx, &
-                    1, &
-                    grid%sub_grids(k)%Ny + 1, &
-                    grid%sub_grids(k)%Nz + 1, .FALSE. )
-                    !
-                end do
+                        z = z + 1
+                        !
+                    enddo
+                enddo
                 !
             class default
-                stop "Error: lengthFull_rScalar3D_MR > Unclassified grid"
+                call errStop( "MRtoSG_rScalar3D_MR > Unclassified grid" )
             !
         end select
         !
-    end subroutine sgTo_rScalar3D_MR
+    end subroutine MRtoSG_rScalar3D_MR
+    !
+    !> divFine
+    !
+    !> Rescaling each sub_scalar by dividing by dividing each
+    !> coarsened cell by the number of fine-grid cells it contains.  This combined with MR2SG_T
+    !> can be used to compute average (of fine grid scalar) on the MR grid cells.   It will also
+    !> be needed in the PDEmapping routines (including transposes needed for inversion)
+    !
+    subroutine divFine_rScalar3D_MR( self )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( inout ) :: self
+        !
+        integer :: i_grid
+        real( kind=prec ) :: c
+        !
+        select type( grid => self%grid )
+            !
+            class is( Grid3D_MR_t )
+                !
+                do i_grid = 1, grid%n_grids
+                    !
+                    !> c*c is total number of fine grid cells in each cell in this subgrid
+                    c = 2 ** grid%coarseness( i_grid, 1 )
+                    !
+                    c = 1. / ( c * c )
+                    !
+                    call self%sub_scalar( i_grid )%mult( c )
+                    !
+                enddo
+                !
+            class default
+                call errStop( "divFine_rScalar3D_MR > Unclassified grid" )
+            !
+        end select
+        !
+    end subroutine divFine_rScalar3D_MR
+    !
+    !> fromSG
+    !> Gary's implementation
+    !
+    !> this is adjoint (transpose) of MR2SG
+    !
+    !> self is of class rScalar3D_MR (output/modified), SGscalar (input, not modified)
+    !> is of class rScalar3D_SG -- should be compatible
+    !
+    subroutine fromSG_rScalar3D_MR( self, scalar_sg )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( inout ) :: self
+        type( rScalar3D_SG_t ), intent( in ) :: scalar_sg
+        !
+        integer :: i_grid, i, j, k, cs, z
+        integer :: i1, i2, j1, j2, k1, k2
+        !
+        if( .NOT. scalar_sg%is_allocated ) then
+            call errStop( "fromSG_rScalar3D_MR > scalar_sg not allocated" )
+        endif
+        !
+        select case( self%grid_type )
+            !
+            case( CELL )
+                !
+                select type( grid => self%grid )
+                    !
+                    class is( Grid3D_MR_t )
+                        !
+                        do i_grid = 1, grid%n_grids
+                            !
+                            !> vertical layers in fine grid
+                            k1 = grid%coarseness( i_grid, 3 )
+                            k2 = grid%coarseness( i_grid, 4 )
+                            !
+                            cs = 2 ** grid%coarseness( i_grid, 1 )
+                            !
+                            z = 1
+                            !
+                            do k = k1, k2
+                                !
+                                do i = 1, self%sub_scalar( i_grid )%nx
+                                    !
+                                    i1 = (i-1) * cs + 1
+                                    i2 = i * cs
+                                    !
+
+                                    do j = 1, self%sub_scalar( i_grid )%ny
+                                        !
+                                        j1 = (j-1) * cs + 1
+                                        j2 = j * cs
+                                        !
+                                        self%sub_scalar( i_grid )%v(i,j,z) = sum( scalar_sg%v( i1:i2, j1:j2, k ) )
+                                        !
+                                    enddo
+                                    !
+                                enddo
+                                !
+                                z = z + 1
+                                !
+                            enddo
+                        enddo
+                        !
+                    class default
+                        call errStop( "fromSG_rScalar3D_MR > Unclassified grid" )
+                    !
+                end select
+                !
+            case default
+                call errStop( "fromSG_rScalar3D_MR > Implemented just for type CELL" )
+            !
+        end select
+        !
+    end subroutine fromSG_rScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -539,12 +574,15 @@ contains
         !
         type( rScalar3D_MR_t ), intent( inout ) :: self
         !
-        !write( *, * ) "Destructor rScalar3D_MR"
+        !write( *, * ) "Destructor rScalar3D_MR: ", self%grid_type, self%nx, self%ny, self%nz
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "rScalar3D_MR_dtor > self not allocated." )
+        endif
         !
         call self%baseDealloc
         !
-        if( allocated( self%v ) ) deallocate( self%v )
-        if( allocated( self%s_v ) ) deallocate( self%s_v )
+        if( allocated( self%sub_scalar ) ) deallocate( self%sub_scalar )
         !
         self%nx = 0
         self%ny = 0
@@ -563,7 +601,7 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: setAllBoundary_rScalar3D_MR not implemented!"
+        call errStop( "setAllBoundary_rScalar3D_MR just implemented for SG!" )
         !
     end subroutine setAllBoundary_rScalar3D_MR
     !
@@ -577,96 +615,90 @@ contains
         complex( kind=prec ), intent( in ) :: cvalue
         logical, intent( in ), optional :: int_only
         !
+        integer :: i
         logical :: int_only_p
         !
         call self%switchStoreState( compound )
         !
-        if( .NOT. present (int_only)) then
-             int_only_p = .FALSE.
-        else 
-             int_only_p = int_only
-        endif
-        !
-        select case( self%grid_type )
-            case( NODE )
+        do i = 1, self%grid%getNGrids()
+            !
+            if( .NOT. present(int_only)) then
+                 int_only_p = .FALSE.
+            else 
+                 int_only_p = int_only
+            endif
+            !
+            select case( self%sub_scalar(i)%grid_type )
                 !
-                if( int_only_p ) then
+                case( NODE )
                     !
-                    select case(bdry)
+                    if( int_only_p ) then
+                        !
+                        select case( bdry )
+                            !
+                            case("x1")
+                                self%sub_scalar(i)%v(1, 2:self%sub_scalar(i)%NdV(2)-1, 2:self%sub_scalar(i)%NdV(3)-1) = real( cvalue, kind=prec ) 
+                            case("x2")
+                                self%sub_scalar(i)%v(self%sub_scalar(i)%NdV(1), 2:self%sub_scalar(i)%NdV(2)-1, 2:self%sub_scalar(i)%NdV(3)-1) = real( cvalue, kind=prec )
+                            case("y1")
+                                self%sub_scalar(i)%v(2:self%sub_scalar(i)%NdV(1)-1, 1, 2:self%sub_scalar(i)%NdV(3)-1) = real( cvalue, kind=prec )
+                            case("y2")
+                                self%sub_scalar(i)%v(2:self%sub_scalar(i)%NdV(1)-1, self%sub_scalar(i)%NdV(2), 2:self%sub_scalar(i)%NdV(3)-1) = real( cvalue, kind=prec )
+                            case("z1")
+                                self%sub_scalar(i)%v(2:self%sub_scalar(i)%NdV(1)-1, 2:self%sub_scalar(i)%NdV(2)-1, 1) = real( cvalue, kind=prec )
+                            case("z2")
+                                self%sub_scalar(i)%v(2:self%sub_scalar(i)%NdV(1)-1, 2:self%sub_scalar(i)%NdV(2)-1, self%sub_scalar(i)%NdV(3)) = real( cvalue, kind=prec )
+                            !
+                        end select
+                        !
+                    else
+                        !
+                        select case( bdry )
+                            !
+                            case("x1")
+                                self%sub_scalar(i)%v(1, :, :) = real( cvalue, kind=prec )
+                            case("x2")
+                                self%sub_scalar(i)%v(self%sub_scalar(i)%NdV(1), :, :) = real( cvalue, kind=prec )
+                            case("y1")
+                                self%sub_scalar(i)%v(:, 1, :) = real( cvalue, kind=prec )
+                            case("y2")
+                                self%sub_scalar(i)%v(:, self%sub_scalar(i)%NdV(2), :) = real( cvalue, kind=prec )
+                            case("z1")
+                                self%sub_scalar(i)%v(:, :, 1) = real( cvalue, kind=prec )
+                            case("z2")
+                                self%sub_scalar(i)%v(:, :, self%sub_scalar(i)%NdV(3)) = real( cvalue, kind=prec )
+                            !
+                        end select
+                        !
+                    endif
+                    !
+                case( FACE )
+                    !
+                    select case( bdry )
+                        !
                         case("x1")
-                             self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec ) 
+                            self%sub_scalar(i)%v(1, :, :) = real( cvalue, kind=prec )
                         case("x2")
-                             self%v(self%NdV(1), 2:self%NdV(2)-1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                            self%sub_scalar(i)%v(self%sub_scalar(i)%NdV(1), :, :) = real( cvalue, kind=prec )
                         case("y1")
-                             self%v(2:self%NdV(1)-1, 1, 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                            self%sub_scalar(i)%v(:, 1, :) = real( cvalue, kind=prec )
                         case("y2")
-                             self%v(2:self%NdV(1)-1, self%NdV(2), 2:self%NdV(3)-1) = real( cvalue, kind=prec )
+                            self%sub_scalar(i)%v(:, self%sub_scalar(i)%NdV(2), :) = real( cvalue, kind=prec )
                         case("z1")
-                             self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, 1) = real( cvalue, kind=prec )
+                            self%sub_scalar(i)%v(:, :, 1) = real( cvalue, kind=prec )
                         case("z2")
-                             self%v(2:self%NdV(1)-1, 2:self%NdV(2)-1, self%NdV(3)) = real( cvalue, kind=prec )
+                            self%sub_scalar(i)%v(:, :, self%sub_scalar(i)%NdV(3)) = real( cvalue, kind=prec )
+                        !
                     end select
                     !
-                 else
-                    !
-                    select case(bdry)
-                        case("x1")
-                             self%v(1, :, :) = real( cvalue, kind=prec )
-                        case("x2")
-                             self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
-                        case("y1")
-                             self%v(:, 1, :) = real( cvalue, kind=prec )
-                        case("y2")
-                             self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
-                        case("z1")
-                             self%v(:, :, 1) = real( cvalue, kind=prec )
-                        case("z2")
-                             self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
-                    end select
-                 endif
-                 !
-            case( FACE )
-                 select case(bdry)
-                     case("x1")
-                        self%v(1, :, :) = real( cvalue, kind=prec )
-                     case("x2")
-                        self%v(self%NdV(1), :, :) = real( cvalue, kind=prec )
-                     case("y1")
-                        self%v(:, 1, :) = real( cvalue, kind=prec )
-                     case("y2")
-                        self%v(:, self%NdV(2), :) = real( cvalue, kind=prec )
-                     case("z1")
-                        self%v(:, :, 1) = real( cvalue, kind=prec )
-                     case("z2")
-                        self%v(:, :, self%NdV(3)) = real( cvalue, kind=prec )
-                 end select
-                 !
-            case default
-                 stop "Error: setOneBoundary_rScalar3D_MR > Invalid grid type"
-        end select
+                case default
+                    call errStop( "setOneBoundary_rScalar3D_MR > Invalid grid type" )
+                !
+            end select
+            !
+        enddo
         !
     end subroutine setOneBoundary_rScalar3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine intBdryIndices_rScalar3D_MR( self, ind_i, ind_b )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
-        !
-        integer :: m, n
-        !
-        m = size( self%ind_interior )
-        n = size( self%ind_boundary )
-        !
-        allocate( ind_i(m) )
-        allocate( ind_b(n) )
-        !
-        ind_i = self%ind_interior
-        ind_b = self%ind_boundary
-        !
-    end subroutine intBdryIndices_rScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -677,49 +709,9 @@ contains
         !
         integer :: field_length
         !
-        field_length = size( self%ind_active )
+        field_length = size( self%indActive() )
         !
     end function length_rScalar3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine setVecComponents_rScalar3D_MR( self, xyz, &
-                                             xmin, xstep, xmax, &
-                                             ymin, ystep, ymax, &
-                                             zmin, zstep, zmax, rvalue )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        character, intent( in ) :: xyz
-        integer, intent( in ) :: xmin, xstep, xmax
-        integer, intent( in ) :: ymin, ystep, ymax
-        integer, intent( in ) :: zmin, zstep, zmax
-        real( kind=prec ), intent( in ) :: rvalue
-        !
-        integer :: x1, x2
-        integer :: y1, y2
-        integer :: z1, z2
-        !
-        call self%switchStoreState( compound )
-        !
-        x1 = xmin; x2 = xmax
-        y1 = ymin; y2 = ymax
-        z1 = zmin; z2 = zmax
-        !
-        if( xmin == 0) x1 = self%NdV(1)
-        if( xmax <= 0) x2 = self%NdV(1) + xmax
-        !
-        if( ymin == 0) y1 = self%NdV(2)
-        if( ymax <= 0) y2 = self%NdV(2) + ymax
-        !
-        if( zmin == 0) z1 = self%NdV(3)
-        if( zmax <= 0) z2 = self%NdV(3) + zmax
-        !
-        self%v(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
-        !
-    end subroutine setVecComponents_rScalar3D_MR
-    !
-    !> No subroutine briefing
     !
     subroutine zeros_rScalar3D_MR( self )
         implicit none
@@ -733,11 +725,11 @@ contains
             class is( Grid3D_MR_t )
                 !
                 do i = 1, grid%n_grids
-                    call self%sub_scalars(i)%zeros()
-                end do
+                    call self%sub_scalar(i)%zeros()
+                enddo
                 !
             class default
-                stop "Error: zeros_rScalar3D_MR > Unclassified grid"
+                call errStop( "zeros_rScalar3D_MR > Unclassified grid" )
             !
         end select
         !
@@ -750,7 +742,7 @@ contains
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         !
-        stop "Error: conjugate_rScalar3D_MR: Do not try to conjugate a real scalar!"
+        call errStop( "conjugate_rScalar3D_MR: Do not try to conjugate a real scalar!" )
         !
     end subroutine conjugate_rScalar3D_MR
     !
@@ -762,7 +754,48 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: add_rScalar3D_MR not implemented!"
+        integer :: i
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "add_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "add_rScalar3D_MR > rhs not allocated." )
+        endif
+        !
+        call self%switchStoreState( rhs%store_state )
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            if( self%isCompatible( rhs ) ) then
+                !
+                select type( rhs )
+                    !
+                    class is( rScalar3D_MR_t )
+                        !
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            self%sub_scalar(i)%v = self%sub_scalar(i)%v + rhs%sub_scalar(i)%v
+                            !
+                        elseif( rhs%store_state .EQ. singleton ) then
+                            !
+                            self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v + rhs%sub_scalar(i)%s_v
+                            !
+                        else
+                            call errStop( "add_rScalar3D_MR > Unknown rhs store_state!" )
+                        endif
+                        !
+                    class default
+                        call errStop( "add_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    !
+                end select
+                !
+            else
+                call errStop( "add_rScalar3D_MR > Incompatible inputs." )
+            endif
+            !
+        enddo
         !
     end subroutine add_rScalar3D_MR
     !
@@ -775,7 +808,48 @@ contains
         class( Field_t ), intent( in ) :: rhs
         complex( kind=prec ), intent( in ) :: c1, c2
         !
-        stop "Error: linComb_rScalar3D_MR not implemented!"
+        integer :: i
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "linComb_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "linComb_rScalar3D_MR > rhs not allocated." )
+        endif
+        !
+        call self%switchStoreState( rhs%store_state )
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            if( self%isCompatible( rhs ) ) then
+                !
+                select type( rhs )
+                    !
+                    class is( rScalar3D_MR_t )
+                        !
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            self%sub_scalar(i)%v = c1 * self%sub_scalar(i)%v + c2 * rhs%sub_scalar(i)%v
+                            !
+                        elseif( rhs%store_state .EQ. singleton ) then
+                            !
+                            self%sub_scalar(i)%s_v = c1 * self%sub_scalar(i)%s_v + c2 * rhs%sub_scalar(i)%s_v
+                            !
+                        else
+                            call errStop( "linComb_rScalar3D_MR > Unknown rhs store_state!" )
+                        endif
+                        !
+                    class default
+                        call errStop( "linComb_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    !
+                end select
+                !
+            else
+                call errStop( "linComb_rScalar3D_MR > Incompatible inputs." )
+            endif
+            !
+        enddo
         !
     end subroutine linComb_rScalar3D_MR
     !
@@ -787,7 +861,23 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: subValue_rScalar3D_MR not implemented!"
+        integer :: i
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            if( self%store_state .EQ. compound ) then
+                !
+                self%sub_scalar(i)%v = self%sub_scalar(i)%v - cvalue
+                !
+            elseif( self%store_state .EQ. singleton ) then
+                !
+                self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v - cvalue
+                !
+            else
+                call errStop( "subValue_rScalar3D_MR > Unknown store_state!" )
+            endif
+            !
+        enddo
         !
     end subroutine subValue_rScalar3D_MR
     !
@@ -799,7 +889,40 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: subField_rScalar3D_MR not implemented!"
+        integer :: i
+        !
+        call self%switchStoreState( rhs%store_state )
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            if( self%isCompatible( rhs ) ) then
+                !
+                select type( rhs )
+                    !
+                    class is( rScalar3D_MR_t )
+                        !
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            self%sub_scalar(i)%v = self%sub_scalar(i)%v - rhs%sub_scalar(i)%v
+                            !
+                        elseif( rhs%store_state .EQ. singleton ) then
+                            !
+                            self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v - rhs%sub_scalar(i)%s_v
+                            !
+                        else
+                            call errStop( "subField_rScalar3D_MR > Unknown rhs store_state!" )
+                        endif
+                        !
+                    class default
+                        call errStop( "subField_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    !
+                end select
+                !
+            else
+                call errStop( "subField_rScalar3D_MR > Incompatible inputs." )
+            endif
+            !
+        enddo
         !
     end subroutine subField_rScalar3D_MR
     !
@@ -811,7 +934,23 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: rvalue
         !
-        stop "Error: multByReal_rScalar3D_MR not implemented!"
+        integer :: i
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            if( self%store_state .EQ. compound ) then
+                !
+                self%sub_scalar(i)%v = self%sub_scalar(i)%v * rvalue
+                !
+            elseif( self%store_state .EQ. singleton ) then
+                !
+                self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v * rvalue
+                !
+            else
+                call errStop( "multByReal_rScalar3D_MR > Unknown store_state!" )
+            endif
+            !
+        enddo
         !
     end subroutine multByReal_rScalar3D_MR
     !
@@ -823,7 +962,23 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: multByComplex_rScalar3D_MR not implemented!"
+        integer :: i
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            if( self%store_state .EQ. compound ) then
+                !
+                self%sub_scalar(i)%v = self%sub_scalar(i)%v * cvalue
+                !
+            elseif( self%store_state .EQ. singleton ) then
+                !
+                self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v * cvalue
+                !
+            else
+                call errStop( "multByComplex_rScalar3D_MR > Unknown store_state!" )
+            endif
+            !
+        enddo
         !
     end subroutine multByComplex_rScalar3D_MR
     !
@@ -835,7 +990,40 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: multByField_rScalar3D_MR not implemented!"
+        integer :: i
+        !
+        call self%switchStoreState( rhs%store_state )
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            if( self%isCompatible( rhs ) ) then
+                !
+                select type( rhs )
+                    !
+                    class is( rScalar3D_MR_t )
+                        !
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            self%sub_scalar(i)%v = self%sub_scalar(i)%v * rhs%sub_scalar(i)%v
+                            !
+                        elseif( rhs%store_state .EQ. singleton ) then
+                            !
+                            self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v * rhs%sub_scalar(i)%s_v
+                            !
+                        else
+                            call errStop( "multByField_rScalar3D_MR > Unknown rhs store_state!" )
+                        endif
+                        !
+                    class default
+                        call errStop( "multByField_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    !
+                end select
+                !
+            else
+                call errStop( "multByField_rScalar3D_MR > Incompatible inputs." )
+            endif
+            !
+        enddo
         !
     end subroutine multByField_rScalar3D_MR
     !
@@ -848,7 +1036,44 @@ contains
         complex( kind=prec ), intent( in ) :: cvalue
         class( Field_t ), intent( in ) :: rhs
         !
-        stop "Error: multAdd_rScalar3D_MR not implemented!"
+        integer :: i
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multAdd_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        call self%switchStoreState( rhs%store_state )
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            if( self%isCompatible( rhs ) ) then
+                !
+                select type( rhs )
+                    !
+                    class is( rScalar3D_MR_t )
+                        !
+                        if( rhs%sub_scalar(i)%store_state .EQ. compound ) then
+                            !
+                            self%sub_scalar(i)%v = self%sub_scalar(i)%v + cvalue * rhs%sub_scalar(i)%v
+                            !
+                        elseif( rhs%sub_scalar(i)%store_state .EQ. singleton ) then
+                            !
+                            self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v + cvalue * rhs%sub_scalar(i)%s_v
+                            !
+                        else
+                            call errStop( "multAdd_rScalar3D_MR > Unknown rhs store_state!" )
+                        endif
+                        !
+                    class default
+                        call errStop( "multAdd_rScalar3D_MR > rhs must be Scalar [try vec%mult(scl)]." )
+                    !
+                end select
+                !
+            else
+                call errStop( "multAdd_rScalar3D_MR > Incompatible inputs." )
+            endif
+            !
+        enddo
         !
     end subroutine multAdd_rScalar3D_MR
     !
@@ -862,7 +1087,34 @@ contains
         !
         complex( kind=prec ) :: cvalue
         !
-        call errStop( "dotProd_rScalar3D_MR still not implemented" )
+        integer :: i
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "dotProd_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        cvalue = C_ZERO
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            if( self%isCompatible( rhs ) ) then
+                !
+                select type( rhs )
+                    !
+                    class is( rScalar3D_MR_t )
+                        !
+                        cvalue = cvalue + self%sub_scalar(i)%dotProd( rhs%sub_scalar(i) )
+                        !
+                    class default
+                        call errStop( "dotProd_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    !
+                end select
+                !
+            else
+                call errStop( "dotProd_rScalar3D_MR > Incompatible rhs" )
+            endif
+            !
+        enddo
         !
     end function dotProd_rScalar3D_MR
     !
@@ -874,7 +1126,23 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        stop "Error: divByValue_rScalar3D_MR not implemented!"
+        integer :: i
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            if( self%store_state .EQ. compound ) then
+                !
+                self%sub_scalar(i)%v = self%sub_scalar(i)%v / cvalue
+                !
+            elseif( self%store_state .EQ. singleton ) then
+                !
+                self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v / cvalue
+                !
+            else
+                call errStop( "divByValue_rScalar3D_MR > Unknown store_state!" )
+            endif
+            !
+        enddo
         !
     end subroutine divByValue_rScalar3D_MR
     !
@@ -886,103 +1154,209 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        call errStop( "divByField_rScalar3D_MR not implemented!" )
+        integer :: i
+        !
+        call self%switchStoreState( rhs%store_state )
+        !
+        do i = 1, self%grid%getNGrids()
+            !
+            if( self%isCompatible( rhs ) ) then
+                !
+                select type( rhs )
+                    !
+                    class is( rScalar3D_MR_t )
+                        !
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            self%sub_scalar(i)%v = self%sub_scalar(i)%v / rhs%sub_scalar(i)%v
+                            !
+                        elseif( rhs%store_state .EQ. singleton ) then
+                            !
+                            self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v / rhs%sub_scalar(i)%s_v
+                            !
+                        else
+                            call errStop( "divByField_rScalar3D_MR > Unknown rhs store_state!" )
+                        endif
+                        !
+                    class default
+                        call errStop( "divByField_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    !
+                end select
+                !
+            else
+                call errStop( "divByField_rScalar3D_MR > Incompatible inputs." )
+            endif
+            !
+        enddo
         !
     end subroutine divByField_rScalar3D_MR
     !
-    !> No function briefing
-    !
-    function getV_rScalar3D_MR( self ) result( v )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "getV_rScalar3D_MR > self not allocated." )
-        endif
-        !
-        if( .NOT. allocated( v ) ) then
-            call errStop( "getV_rScalar3D_MR > v not allocated." )
-        else
-            !
-            v = cmplx( self%v, 0.0, kind=prec )
-            !
-        endif
-        !
-    end function getV_rScalar3D_MR
-    !
     !> No subroutine briefing
     !
-    subroutine setV_rScalar3D_MR( self, v )
+    subroutine toNode_rScalar3D_MR( self, node_scalar, interior_only )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:,:,:), intent( in ) :: v
+        class( Scalar_t ), intent( inout ) :: node_scalar
+        logical, intent( in ), optional :: interior_only
+        !
+        integer :: v_xend, v_yend, v_zend
+        logical :: is_interior_only
+        integer :: i, nxF, nyF, nzF, nxC, nyC, nzC
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "setV_rScalar3D_MR > self not allocated." )
+             call errStop( "toNode_rScalar3D_MR > self not allocated." )
         endif
         !
-        !if( .NOT. allocated( v ) ) then
-            !call errStop( "setV_rScalar3D_MR > v not allocated." )
-        !endif
+        if( .NOT. node_scalar%is_allocated ) then
+             call errStop( "toNode_rScalar3D_MR > node_scalar not allocated." )
+        endif
         !
         call self%switchStoreState( compound )
         !
-        if( allocated( self%s_v ) ) deallocate( self%s_v )
-        !
-        self%v = real( v, kind=prec )
-        !
-    end subroutine setV_rScalar3D_MR
-    !
-    !> No function briefing
-    !
-    function getSV_rScalar3D_MR( self ) result( s_v )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:) :: s_v
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "getSV_rScalar3D_MR > self not allocated." )
-        endif
-        !
-        if( .NOT. allocated( self%s_v ) ) then
-            call errStop( "getSV_rScalar3D_MR > self%s_v not allocated." )
-        else
+        select type( node_scalar )
             !
-            s_v = cmplx( self%s_v, 0.0, kind=prec )
+            class is( rScalar3D_MR_t )
+                !
+                select case( self%grid_type )
+                    !
+                    case( CELL )
+                        !
+                        !> set nodes for interior of all sub-scalars
+                        do i = 1, self%grid%n_grids
+                            !
+                            call self%sub_scalar(i)%toNode( node_scalar%sub_scalar(i) )
+                            !
+                        enddo
+                        !
+                        !>set coarse grid nodes on interfaces
+                        do i = 1, self%grid%n_grids-1
+                            !
+                            if( self%sub_scalar(i)%grid%nx .LT. self%sub_scalar(i+1)%grid%nx ) then
+                                !
+                                !> upper layer is coarser  -- fill in bottom level nodes
+                                nxC = self%sub_scalar(i)%grid%nx
+                                nyC = self%sub_scalar(i)%grid%ny
+                                nzC = self%sub_scalar(i)%grid%nz
+                                nxF = self%sub_scalar(i+1)%grid%nx
+                                nyF = self%sub_scalar(i+1)%grid%ny
+                                nzF = self%sub_scalar(i+1)%grid%nz
+                                !
+                                node_scalar%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC+1 ) = &
+                                       self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
+                                       self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                       self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
+                                       self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
+                                !
+                            else
+                                !
+                                nxF = self%sub_scalar(i)%grid%nx
+                                nyF = self%sub_scalar(i)%grid%ny
+                                nzF = self%sub_scalar(i)%grid%nz
+                                nxC = self%sub_scalar(i+1)%grid%nx
+                                nyC = self%sub_scalar(i+1)%grid%ny
+                                nzC = self%sub_scalar(i+1)%grid%nz
+                                !
+                                node_scalar%sub_scalar(i+1)%v( 2:nxC,     2:nyC,     1   ) = &
+                                       self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
+                                       self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                       self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
+                                       self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                         self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
+                                         self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
+                                         self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
+                                         self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
+                                !
+                            endif
+                            !
+                        enddo
+                        !
+                    case default
+                        call errStop( "toNode_rScalar3D_MR just for CELL type" )
+                    !
+                end select
+                !
+            class default
+                call errStop( "toNode_rScalar3D_MR > Unclassified node_scalar" )
             !
-        endif
+        end select
         !
-    end function getSV_rScalar3D_MR
+        ! select type( node_scalar )
+            ! !
+            ! class is( rScalar3D_MR_t )
+                ! !
+                ! select case( self%grid_type )
+                    ! !
+                    ! case( CELL )
+                        ! !
+                        ! do i = 1, self%grid%getNGrids()
+                            ! !
+                            ! is_interior_only = .FALSE.
+                            ! !
+                            ! if( present( interior_only ) ) is_interior_only = interior_only
+                            ! !
+                            ! if( is_interior_only ) then
+                                ! call self%sub_scalar(i)%setAllBoundary( C_ZERO )
+                            ! endif
+                            ! !
+                            ! v_xend = size( self%sub_scalar(i)%v, 1 )
+                            ! v_yend = size( self%sub_scalar(i)%v, 2 )
+                            ! v_zend = size( self%sub_scalar(i)%v, 3 )
+                            ! !
+                            ! !> Interior
+                            ! node_scalar%sub_scalar(i)%v( 2:v_xend, 2:v_yend, 2:v_zend ) = &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
+                            ! self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
+                            ! self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
+                            ! !
+                        ! enddo
+                        ! !
+                    ! case default
+                        ! call errStop( "toNode_rScalar3D_MR just for CELL type" )
+                ! end select
+                ! !
+            ! class default
+                ! call errStop( "toNode_rScalar3D_MR > Unclassified node_scalar" )
+            ! !
+        ! end select
+        ! !
+    end subroutine toNode_rScalar3D_MR
     !
     !> No subroutine briefing
     !
-    subroutine setSV_rScalar3D_MR( self, s_v )
+    subroutine deallOtherState_rScalar3D_MR( self )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:), intent( in ) :: s_v
         !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setSV_rScalar3D_MR > self not allocated." )
-        endif
-        !
-        !if( .NOT. allocated( s_v ) ) then
-            !call errStop( "setSV_rScalar3D_MR > s_v not allocated." )
-        !endif
-        !
-        call self%switchStoreState( singleton )
-        !
-        if( allocated( self%v ) ) deallocate( self%v )
-        !
-        self%s_v = s_v
-        !
-    end subroutine setSV_rScalar3D_MR
+        call errStop( "deallOtherState_rScalar3D_MR not implemented!" )
+        ! !
+        ! if( ( .NOT. self%is_allocated ) ) then
+            ! call errStop( "deallOtherState_rScalar3D_MR > Self not allocated." )
+        ! endif
+        ! !
+        ! if( self%store_state .EQ. compound ) then
+            ! !
+            ! if( allocated( self%s_v ) ) deallocate( self%s_v )
+            ! !
+        ! elseif( self%store_state .EQ. singleton ) then
+            ! !
+            ! if( allocated( self%v ) ) deallocate( self%v )
+            ! !
+        ! else
+            ! call errStop( "deallOtherState_rScalar3D_MR > Unknown store_state!" )
+        ! endif
+        ! !
+    end subroutine deallOtherState_rScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -994,11 +1368,9 @@ contains
         !
         real( kind=prec ), allocatable :: v_full(:)
         !
-        call self%getFull( v_full )
+        v_full = self%getFullArray()
         !
-        allocate( array( size( self%ind_active ) ) )
-        !
-        array = v_full( self%ind_active )
+        array = v_full( self%indActive() )
         !
         deallocate( v_full )
         !
@@ -1012,17 +1384,21 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        real( kind=prec ), allocatable :: vFull(:)
+        complex( kind=prec ), allocatable, dimension(:) :: vFull
         !
         allocate( vFull( self%lengthFull() ) )
         !
-        vFull( self%ind_active ) = array
+        vFull = C_ZERO
         !
-        call self%setFull( vFull )
+        vFull( self%indActive() ) = array
+        !
+        call self%setFullArray( vFull )
         !
         deallocate( vFull )
         !
     end subroutine setArray_rScalar3D_MR
+    !
+    !> No subroutine briefing
     !
     subroutine copyFrom_rScalar3D_MR( self, rhs )
         implicit none
@@ -1047,37 +1423,23 @@ contains
             !
             class is( rScalar3D_MR_t )
                 !
-                if( allocated( rhs%ind_active ) ) then
-                    self%ind_active = rhs%ind_active
-                else
-                    call errStop( "copyFrom_rScalar3D_MR > rhs%ind_active not allocated" )
-                endif
-                !
-                self%NdV = rhs%NdV
-                self%Nxyz = rhs%Nxyz
-                !
-                if( rhs%store_state .EQ. compound ) then
+                if( allocated( rhs%sub_scalar ) ) then
                     !
-                    self%v = rhs%v
-                    !
-                elseif( rhs%store_state .EQ. singleton ) then
-                    !
-                    self%s_v = rhs%s_v
+                    if( allocated( self%sub_scalar ) ) deallocate( self%sub_scalar )
+                    allocate( self%sub_scalar( size( rhs%sub_scalar ) ) )
                     !
                 else
-                    stop "Error: copyFrom_rScalar3D_MR > Unknown store_state!"
+                    call errStop( "copyFrom_rScalar3D_MR > rhs%sub_scalar not allocated" )
                 endif
                 !
-                do i = 1, size( self%sub_scalars )
-                    self%sub_scalars(i) = rhs%sub_scalars(i)
-                end do
+                do i = 1, size( self%sub_scalar )
+                    self%sub_scalar(i) = rhs%sub_scalar(i)
+                enddo
                 !
                 self%is_allocated = .TRUE.
                 !
-                call self%setIndexArrays
-                !
             class default
-                stop "Error: copyFrom_rScalar3D_MR > Unclassified rhs"
+                call errStop( "copyFrom_rScalar3D_MR > Unclassified rhs" )
             !
         end select
         !
@@ -1092,7 +1454,7 @@ contains
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        stop "Error: read_rScalar3D_MR not implemented!"
+        call errStop( "read_rScalar3D_MR not implemented!" )
         !
     end subroutine read_rScalar3D_MR
     !
@@ -1105,7 +1467,15 @@ contains
         integer, intent( in ) :: funit
         character(:), allocatable, intent( in ), optional :: ftype
         !
-        stop "Error: write_rScalar3D_MR not implemented!"
+        integer :: i_grid
+        !
+        write( *, * ) "rScalar3D_MR: ", self%nx, self%ny, self%nz
+        !
+        do i_grid = 1, size( self%sub_scalar )
+            !
+            write( *, * ) "   ", i_grid, ":", self%sub_scalar(i_grid)%nx, self%sub_scalar(i_grid)%ny, self%sub_scalar(i_grid)%nz
+            !
+        enddo
         !
     end subroutine write_rScalar3D_MR
     !
@@ -1114,14 +1484,21 @@ contains
     subroutine print_rScalar3D_MR( self, io_unit, title, append )
         implicit none
         !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
+        class( rScalar3D_MR_t ), intent( in ) :: self
         integer, intent( in ), optional :: io_unit
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append
         !
-        integer :: ix, iy, iz,funit
+        type( rScalar3D_MR_t ) :: copy
+        integer :: i, ix, iy, iz, funit
         !
-        call self%switchStoreState( compound )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "print_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        copy = self
+        !
+        call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit
@@ -1132,17 +1509,22 @@ contains
           write(funit,*) title
         endif
         !
-        write( funit, * ) self%nx, self%ny, self%nz
-        !
-        write(funit,*) "scalar field"
-        do ix = 1, self%nx
-            do iy = 1, self%ny
-                do iz = 1, self%nz
-                    if( self%v( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", self%v( ix, iy, iz ), "]"
-                    endif
+        write(funit,*) "rScalar3D_MR field"
+        do i = 1, copy%grid%getNGrids()
+            !
+            write( funit, * ) copy%sub_scalar(i)%nx, copy%sub_scalar(i)%ny, copy%sub_scalar(i)%nz
+            !
+            write(funit,*) "sub_scalar ", i
+            do ix = 1, copy%sub_scalar(i)%nx
+                do iy = 1, copy%sub_scalar(i)%ny
+                    do iz = 1, copy%sub_scalar(i)%nz
+                        if( copy%sub_scalar(i)%v( ix, iy, iz ) /= 0 ) then
+                            write(funit,*) ix,iy,iz, ":[", copy%sub_scalar(i)%v( ix, iy, iz ), "]"
+                        endif
+                    enddo
                 enddo
             enddo
+            !
         enddo
         !
     end subroutine print_rScalar3D_MR

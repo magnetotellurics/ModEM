@@ -7,6 +7,10 @@ module iScalar3D_SG
     !
     type, extends( Scalar_t ) :: iScalar3D_SG_t
         !
+        integer, dimension(3) :: NdV
+        !
+        integer :: Nxyz
+        !
         integer( kind=prec ), allocatable, dimension(:,:,:) :: v
         !
         integer( kind=prec ), allocatable, dimension(:) :: s_v
@@ -19,9 +23,9 @@ module iScalar3D_SG
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundary_iScalar3D_SG
             procedure, public :: setOneBoundary => setOneBoundary_iScalar3D_SG
-            procedure, public :: intBdryIndices => intBdryIndices_iScalar3D_SG
             !
             !> Dimensioning operations
+            procedure, public :: length => length_iScalar3D_SG
             procedure, public :: setVecComponents => setVecComponents_iScalar3D_SG
             !
             !> Arithmetic/algebraic unary operations
@@ -47,12 +51,12 @@ module iScalar3D_SG
             procedure, public :: divByField => divByField_iScalar3D_SG
             procedure, public :: divByValue => divByValue_iScalar3D_SG
             !
-            !> Getters & Setters
-            procedure, public :: getV => getV_iScalar3D_SG
-            procedure, public :: setV => setV_iScalar3D_SG
+            procedure, public :: toNode => toNode_iScalar3D_SG
             !
-            procedure, public :: getSV => getSV_iScalar3D_SG
-            procedure, public :: setSV => setSV_iScalar3D_SG
+            !> Getters & Setters
+            !
+            procedure, public :: getArray => getArray_iScalar3D_SG
+            procedure, public :: setArray => setArray_iScalar3D_SG
             !
             procedure, public :: deallOtherState => deallOtherState_iScalar3D_SG
             !
@@ -82,7 +86,7 @@ contains
         !
         type( iScalar3D_SG_t ) :: self
         !
-        integer :: nx, ny, nz, nzAir, nz_earth
+        integer :: nx, ny, nz, nzAir
         integer :: status
         !
         !write( *, * ) "Constructor iScalar3D_SG"
@@ -94,7 +98,6 @@ contains
         !
         !> Grid dimensions
         call grid%getDimensions( nx, ny, nz, nzAir )
-        nz_earth = nz - nzAir
         !
         self%nx = nx
         self%ny = ny
@@ -107,19 +110,13 @@ contains
         !
         if( grid_type == NODE ) then
              !
-             allocate( self%v(nx + 1, ny + 1, nz + 1), STAT = status )
+             allocate( self%v(nx + 1, ny + 1, nz + 1), stat=status )
              self%NdV = (/self%nx + 1, self%ny + 1, self%nz + 1/)
              !
         elseif( grid_type == CELL ) then
              !
-             allocate(self%v(nx, ny, nz), STAT = status) 
+             allocate(self%v(nx, ny, nz), stat=status) 
              self%NdV = (/self%nx, self%ny, self%nz/)
-             !
-        elseif( grid_type == CELL_EARTH ) then
-             !
-             self%nz = nz_earth
-             allocate(self%v(nx, ny, nz_earth), STAT = status)
-             self%NdV = (/nx, ny, nz_earth/)
              !
         else
             call errStop( "iScalar3D_SG_ctor > unrecognized grid type: ["//grid_type//"]" )
@@ -128,15 +125,14 @@ contains
         self%is_allocated = self%is_allocated .AND. ( status .EQ. 0 )
         !
         if( self%is_allocated ) then
-             self%v = R_ZERO
+            !
+            self%v = R_ZERO
+            !
+            self%Nxyz = product( self%NdV )
+            !
         else
             call errStop( "iScalar3D_SG_ctor > Unable to allocate rScalar - invalid grid supplied" )
         endif
-        !
-        self%Nxyz = product( self%NdV )
-        !
-        call self%setIndexArrays
-        call self%zeros
         !
     end function iScalar3D_SG_ctor
     !
@@ -153,9 +149,8 @@ contains
             call errStop( "iScalar3D_SG_dtor > self not allocated." )
         endif
         !
-        call self%baseDealloc
-        !
         if( allocated( self%v ) ) deallocate( self%v )
+        !
         if( allocated( self%s_v ) ) deallocate( self%s_v )
         !
         self%nx = 0
@@ -183,7 +178,7 @@ contains
         !
         select case( self%grid_type )
             !
-            case( NODE, CELL, CELL_EARTH ) 
+            case( NODE, CELL ) 
                 !
                 self%v((/1, self%NdV(1)/), :, :) = cvalue
                 self%v(:, (/1, self%NdV(2)/), :) = cvalue
@@ -280,69 +275,16 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine intBdryIndices_iScalar3D_SG( self, ind_i, ind_b )
+    function length_iScalar3D_SG( self ) result( field_length )
         implicit none
         !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
-        integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
+        class( iScalar3D_SG_t ), intent( in ) :: self
         !
-        integer :: nVecT, nBdry, nb, ni, i
-        real( kind=prec ), allocatable :: temp(:)
-        type( iScalar3D_SG_t ) :: phi
+        integer :: field_length
         !
-        if( self%is_allocated ) then
-            !
-            phi = iScalar3D_SG_t( self%grid, self%grid_type )
-            !
-        else
-            call errStop( "intBdryIndices_iScalar3D_SG > Not allocated. Exiting." )
-        endif
+        field_length = self%Nxyz
         !
-        select case( self%grid_type )
-            !
-            case( NODE )
-                 !
-                 phi%v(1,:,:) = 1
-                 phi%v(phi%nx+1,:,:) = 1
-                 phi%v(:,1,:) = 1
-                 phi%v(:,phi%ny+1,:) = 1
-                 phi%v(:,:,1) = 1
-                 phi%v(:,:,phi%nz+1) = 1
-                 !
-                 temp = phi%getArray()
-                 !
-            case default
-                call errStop( "intBdryIndices_iScalar3D_SG > Unknown self%grid_type" )
-                !
-        end select
-        !
-        nVecT = size( phi%v )
-        nBdry = 0
-        do i = 1, nVecT
-             nBdry = nBdry + nint( temp(i) )
-        enddo
-        !
-        if( allocated(ind_i)) deallocate(ind_i)
-        allocate(ind_i(nVecT - nBdry))
-        !
-        if( allocated(ind_b)) deallocate(ind_b)
-        allocate(ind_b(nBdry))
-        !
-        nb = 0
-        ni = 0
-        do i = 1, nVecT
-             if( nint( temp(i) ) .EQ. 1) then
-                nb = nb+1
-                ind_b(nb) = i
-             else
-                ni = ni+1
-                ind_i(ni) = i
-             endif
-        enddo
-        !
-        deallocate( temp )
-        !
-    end subroutine intBdryIndices_iScalar3D_SG
+    end function length_iScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -442,17 +384,17 @@ contains
             !
             select type( rhs )
                 !
-                class is( Scalar_t )
+                class is( iScalar3D_SG_t )
                     !
                     call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = self%v + rhs%getV()
+                        self%v = self%v + rhs%v
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = self%s_v + rhs%getSV()
+                        self%s_v = self%s_v + rhs%s_v
                         !
                     else
                         call errStop( "add_iScalar3D_SG > Unknown rhs store_state!" )
@@ -487,17 +429,17 @@ contains
             !
             select type( rhs )
                 !
-                class is( Scalar_t )
+                class is( iScalar3D_SG_t )
                     !
                     call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = c1 * self%v + c2 * rhs%getV()
+                        self%v = c1 * self%v + c2 * rhs%v
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = c1 * self%s_v + c2 * rhs%getSV()
+                        self%s_v = c1 * self%s_v + c2 * rhs%s_v
                         !
                     else
                         call errStop( "linComb_iScalar3D_SG > Unknown rhs store_state!" )
@@ -556,17 +498,17 @@ contains
             !
             select type( rhs )
                 !
-                class is( Scalar_t )
+                class is( iScalar3D_SG_t )
                     !
                     call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = self%v - rhs%getV()
+                        self%v = self%v - rhs%v
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = self%s_v - rhs%getSV()
+                        self%s_v = self%s_v - rhs%s_v
                         !
                     else
                         call errStop( "subField_iScalar3D_SG > Unknown rhs store_state!" )
@@ -651,17 +593,17 @@ contains
             !
             select type( rhs )
                 !
-                class is( Scalar_t )
+                class is( iScalar3D_SG_t )
                     !
                     call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = self%v * rhs%getV()
+                        self%v = self%v * rhs%v
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = self%s_v * rhs%getSV()
+                        self%s_v = self%s_v * rhs%s_v
                         !
                     else
                         call errStop( "multByField_iScalar3D_SG > Unknown rhs store_state!" )
@@ -695,17 +637,17 @@ contains
             !
             select type( rhs )
                 !
-                class is( Scalar_t )
+                class is( iScalar3D_SG_t )
                     !
                     call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = self%v + cvalue * rhs%getV()
+                        self%v = self%v + cvalue * rhs%v
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = self%s_v + cvalue * rhs%getSV()
+                        self%s_v = self%s_v + cvalue * rhs%s_v
                         !
                     else
                         call errStop( "multAdd_iScalar3D_SG > Unknown rhs store_state!" )
@@ -744,17 +686,17 @@ contains
             !
             select type( rhs )
                 !
-                class is( Scalar_t )
+                class is( iScalar3D_SG_t )
                     !
                     call copy%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        cvalue = sum( copy%v * rhs%getV() )
+                        cvalue = sum( copy%v * rhs%v )
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        cvalue = sum( copy%s_v * rhs%getSV() )
+                        cvalue = sum( copy%s_v * rhs%s_v )
                         !
                     else
                         call errStop( "dotProd_iScalar3D_SG > Unknown rhs store_state!" )
@@ -799,6 +741,68 @@ contains
     !
     !> No subroutine briefing
     !
+    subroutine toNode_iScalar3D_SG( self, node_scalar, interior_only )
+        implicit none
+        !
+        class( iScalar3D_SG_t ), intent( inout ) :: self
+        class( Scalar_t ), intent( inout ) :: node_scalar
+        logical, intent( in ), optional :: interior_only
+        !
+        type( iScalar3D_SG_t ) :: temp_node
+        integer :: v_xend, v_yend, v_zend
+        logical :: is_interior_only
+        !
+        if( .NOT. self%is_allocated ) then
+             call errStop( "toNode_iScalar3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. node_scalar%is_allocated ) then
+             call errStop( "toNode_iScalar3D_SG > node_scalar not allocated." )
+        endif
+        !
+        call self%switchStoreState( compound )
+        !
+        is_interior_only = .FALSE.
+        !
+        if( present( interior_only ) ) is_interior_only = interior_only
+        !
+        if( is_interior_only ) then
+            call self%setAllBoundary( C_ZERO )
+        endif
+        !
+        temp_node = iScalar3D_SG_t( self%grid, NODE )
+        !
+        select case( self%grid_type )
+            !
+            case( CELL )
+                !
+                v_xend = size( self%v, 1 )
+                v_yend = size( self%v, 2 )
+                v_zend = size( self%v, 3 )
+                !
+                !> Interior
+                temp_node%v( 2:v_xend-1, 2:v_yend-1, 2:v_zend-1 ) = &
+                self%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
+                self%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
+                self%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
+                self%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
+                self%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
+                self%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
+                self%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
+                self%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
+                !
+                node_scalar = temp_node
+                !
+                call node_scalar%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
+                !
+            case default
+                call errStop( "toNode_iScalar3D_SG: undefined self%grid_type" )
+        end select
+        !
+    end subroutine toNode_iScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
     subroutine divByField_iScalar3D_SG( self, rhs )
         implicit none
         !
@@ -813,17 +817,17 @@ contains
             !
             select type( rhs )
                 !
-                class is( Scalar_t )
+                class is( iScalar3D_SG_t )
                     !
                     call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
-                        self%v = self%v / rhs%getV()
+                        self%v = self%v / rhs%v
                         !
                     elseif( rhs%store_state .EQ. singleton ) then
                         !
-                        self%s_v = self%s_v / rhs%getSV()
+                        self%s_v = self%s_v / rhs%s_v
                         !
                     else
                         call errStop( "divByField_iScalar3D_SG > Unknown rhs store_state!" )
@@ -840,97 +844,72 @@ contains
         !
     end subroutine divByField_iScalar3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
     !
-    function getV_iScalar3D_SG( self ) result( v )
+    function getArray_iScalar3D_SG( self ) result( array )
         implicit none
         !
         class( iScalar3D_SG_t ), intent( in ) :: self
+        complex( kind=prec ), allocatable, dimension(:) :: array
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getArray_iScalar3D_SG > self not allocated." )
+        endif
+        !
+        if( self%store_state .EQ. compound ) then
+            !
+            allocate( array( self%length() ) )
+            ! !
+            ! write( *, * ) "getArray_Scalar: ", &
+            ! self%NdV(1), self%NdV(2), self%NdV(3), &
+            ! self%Nxyz, self%length()
+            ! !
+            array = (/reshape( self%v, (/self%Nxyz, 1/))/)
+            !
+        elseif( self%store_state .EQ. singleton ) then
+            !
+            array = self%s_v
+            !
+        else
+            call errStop( "getArray_iScalar3D_SG > Unknown store_state!" )
+        endif
+        !
+    end function getArray_iScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine setArray_iScalar3D_SG( self, array )
+        implicit none
+        !
+        class( iScalar3D_SG_t ), intent( inout ) :: self
+        complex( kind=prec ), dimension(:), intent( in ) :: array
         !
         complex( kind=prec ), allocatable, dimension(:,:,:) :: v
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "getV_iScalar3D_SG > self not allocated." )
+            call errStop( "setArray_iScalar3D_SG > self not allocated." )
         endif
         !
-        if( .NOT. allocated( self%v ) ) then
-            call errStop( "getV_iScalar3D_SG > self%v not allocated." )
+        call self%deallOtherState
+        !
+        if( self%store_state .EQ. compound ) then
+            !
+            !write( *, * ) "setArray_Scalar: ", self%NdV(1), self%NdV(2), self%NdV(3), &
+            !self%NdV(1)*self%NdV(2)*self%NdV(3), size( array )
+            !
+            v = reshape( array, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
+            !
+            self%v = v
+            !
+        elseif( self%store_state .EQ. singleton ) then
+            !
+            self%s_v = array
+            !
         else
-            !
-            v = cmplx( self%v, 0.0, kind=prec )
-            !
+            call errStop( "setArray_iScalar3D_SG > Unknown store_state!" )
         endif
         !
-    end function getV_iScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setV_iScalar3D_SG( self, v )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:,:,:), intent( in ) :: v
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setV_iScalar3D_SG > self not allocated." )
-        endif
-        !
-        !if( .NOT. allocated( v ) ) then
-            !call errStop( "setV_iScalar3D_SG > v not allocated." )
-        !endif
-        !
-        call self%switchStoreState( compound )
-        !
-        if( allocated( self%s_v ) ) deallocate( self%s_v )
-        !
-        self%v = real( v, kind=prec )
-        !
-    end subroutine setV_iScalar3D_SG
-    !
-    !> No function briefing
-    !
-    function getSV_iScalar3D_SG( self ) result( s_v )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable :: s_v(:)
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "getSV_iScalar3D_SG > self not allocated." )
-        endif
-        !
-        if( .NOT. allocated( self%s_v ) ) then
-            call errStop( "getSV_iScalar3D_SG > self%s_v not allocated." )
-        else
-            !
-            s_v = cmplx( self%s_v, 0.0, kind=prec )
-            !
-        endif
-        !
-    end function getSV_iScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setSV_iScalar3D_SG( self, s_v )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:), intent( in ) :: s_v
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setSV_iScalar3D_SG > self not allocated." )
-        endif
-        !
-        !if( .NOT. allocated( s_v ) ) then
-            !call errStop( "setSV_iScalar3D_SG > s_v not allocated." )
-        !endif
-        !
-        call self%switchStoreState( singleton )
-        !
-        self%s_v = real( s_v, kind=prec )
-        !
-    end subroutine setSV_iScalar3D_SG
+    end subroutine setArray_iScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -976,12 +955,6 @@ contains
         self%nz = rhs%nz
         self%store_state = rhs%store_state
         !
-        if( allocated( rhs%ind_interior ) ) &
-        self%ind_interior = rhs%ind_interior
-        !
-        if( allocated( rhs%ind_boundary ) ) &
-        self%ind_boundary = rhs%ind_boundary
-        !
         select type( rhs )
             !
             class is( iScalar3D_SG_t )
@@ -1002,8 +975,6 @@ contains
                 endif
                 !
                 self%is_allocated = .TRUE.
-                !
-                call self%setIndexArrays
                 !
             class default
                     call errStop( "copyFrom_iScalar3D_SG > Unclassified rhs" )
@@ -1203,18 +1174,21 @@ contains
     subroutine print_iScalar3D_SG( self, io_unit, title, append )
         implicit none
         !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
+        class( iScalar3D_SG_t ), intent( in ) :: self
         integer, intent( in ), optional :: io_unit
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append
         !
+        type( iScalar3D_SG_t ) :: copy
         integer :: ix, iy, iz,funit
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "print_iScalar3D_SG > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        copy = self
+        !
+        call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit
@@ -1226,14 +1200,14 @@ contains
             write(funit,*) title
         endif
         !
-        write( funit, * ) self%nx, self%ny, self%nz
+        write( funit, * ) copy%nx, copy%ny, copy%nz
         !
         write(funit,*) "iScalar3D_SG"
-        do ix = 1, self%nx
-             do iy = 1, self%ny
-                  do iz = 1, self%nz
-                        if( self%v( ix, iy, iz ) /= 0 ) then
-                            write(funit,*) ix,iy,iz, ":[", self%v( ix, iy, iz ), "]"
+        do ix = 1, copy%nx
+             do iy = 1, copy%ny
+                  do iz = 1, copy%nz
+                        if( copy%v( ix, iy, iz ) /= 0 ) then
+                            write(funit,*) ix,iy,iz, ":[", copy%v( ix, iy, iz ), "]"
                         endif
                   enddo
              enddo

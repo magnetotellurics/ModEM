@@ -5,8 +5,9 @@ module Solver_PCG
     !
     use Solver
     use ModelOperator_MF_SG
-    use ModelOperator_SP
-    use PreConditioner_DC_MF
+    use ModelOperator_SP_V1
+    use ModelOperator_SP_V2
+    use PreConditioner_DC_MF_SG
     use PreConditioner_DC_SP
     !
     !> Solver used only for Divergence Correction
@@ -44,8 +45,8 @@ contains
             !
             class is( ModelOperator_MF_SG_t )
                 !
-                allocate( self%preconditioner, source = PreConditioner_DC_MF_t( model_operator ) )
-            !
+                allocate( self%preconditioner, source = PreConditioner_DC_MF_SG_t( model_operator ) )
+                !
             class is( ModelOperator_SP_t )
                 !
                 allocate( self%preconditioner, source = PreConditioner_DC_SP_t( model_operator ) )
@@ -149,13 +150,13 @@ contains
         enddo solver_loop
         !
         self%converged = self%relErr( self%iter ) .LE. self%tolerance
-        !
-        if( self%converged ) then
-            write( *, "( a51, i6, a7, es12.3 )" ) "->divCor PCG converged within ", self%iter, ": err= ", self%relErr( self%iter )
-        else
-            write( *, "( a51, i6, a7, es12.3 )" ) "->divCor PCG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
-        endif
-        !
+        ! !
+        ! if( self%converged ) then
+            ! write( *, "( a51, i6, a7, es12.3 )" ) "->divCor PCG converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        ! else
+            ! write( *, "( a51, i6, a7, es12.3 )" ) "->divCor PCG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        ! endif
+        ! !
         deallocate( r )
         deallocate( s )
         deallocate( p )

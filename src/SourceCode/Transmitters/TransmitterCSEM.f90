@@ -160,7 +160,7 @@ contains
                 !
                 call self%forward_solver%createESolution( 1, self%source, self%e_sol_0(1)%v )
                 !
-                call self%e_sol_0(1)%v%add( E_p )
+                call self%e_sol_0(1)%v%add( self%source%E_p )
                 !
             else
                 !
@@ -168,7 +168,7 @@ contains
                 !
                 call self%forward_solver%createESolution( 1, self%source, self%e_sol_1(1)%v )
                 !
-                call self%e_sol_1(1)%v%add( E_p )
+                call self%e_sol_1(1)%v%add( self%source%E_p )
                 !
             endif
             !

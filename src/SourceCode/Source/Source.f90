@@ -19,9 +19,14 @@ module Source
         !
         real( kind=prec ) :: period
         !
-        type( GenVector_t ), allocatable, dimension(:) :: rhs, E
+        type( cVector3D_SG_t ), allocatable, dimension(:) :: E
+        !
+        type( GenVector_t ), allocatable, dimension(:) :: rhs
         !
         logical :: non_zero_source, non_zero_bc, calc_sens, for_transpose
+        !
+        !> Global primary electrical Field
+        type( cVector3D_SG_t ) :: E_p
         !
         contains
             !
@@ -63,9 +68,7 @@ module Source
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
-        type( GenVector_t ), dimension(:), intent( in ) :: E
-        !
-        integer :: pol
+        type( cVector3D_SG_t ), dimension(:), intent( in ) :: E
         !
         self%E = E
         !
@@ -78,9 +81,7 @@ module Source
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
-        type( GenVector_t ), dimension(:), intent( in ) :: rhs
-        !
-        integer :: pol
+        type( GenVector_t ), allocatable, dimension(:) :: rhs
         !
         self%rhs = rhs
         !

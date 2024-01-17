@@ -5,9 +5,11 @@ module Solver_QMR
     !
     use Solver_CC
     use ModelOperator_MF_SG
-    use ModelOperator_SP
-    use PreConditioner_CC_MF
-    use PreConditioner_CC_SP
+    use ModelOperator_SP_V1
+    use ModelOperator_SP_V2
+    use PreConditioner_CC_MF_SG
+    use PreConditioner_CC_SP_SG
+    use PreConditioner_CC_SP_MR
     !
     type, extends( Solver_CC_t ) :: Solver_QMR_t
         !
@@ -38,19 +40,46 @@ contains
         !
         call self%baseInit
         !
-        !> Instantiate the PreConditioner object according to the ModelOperator type
-        select type( model_operator )
+        !> Instantiate the PreConditioner CC object
+        !> According to the Grid (SG/MR) and ModelOperator (MF_SG/SP)
+        select type( grid => model_operator%metric%grid )
             !
-            class is( ModelOperator_MF_SG_t )
+            class is( Grid3D_SG_t )
                 !
-                allocate( self%preconditioner, source = PreConditioner_CC_MF_t( model_operator ) )
+                select type( model_operator )
+                    !
+                    class is( ModelOperator_MF_SG_t )
+                        !
+                        allocate( self%preconditioner, source = PreConditioner_CC_MF_SG_t( model_operator ) )
+                        !
+                    class is( ModelOperator_SP_t )
+                        !
+                        allocate( self%preconditioner, source = PreConditioner_CC_SP_SG_t( model_operator ) )
+                        !
+                    class default
+                        call errStop( "Solver_QMR_ctor > Unclassified SG model_operator" )
+                    !
+                end select
                 !
-            class is( ModelOperator_SP_t )
+            class is( Grid3D_MR_t )
                 !
-                allocate( self%preconditioner, source = PreConditioner_CC_SP_t( model_operator ) )
+                select type( model_operator )
+                    !
+                    class is( ModelOperator_MF_SG_t )
+                        !
+                        call errStop( "Solver_QMR_ctor > For MR use a model_operator_SP" )
+                        !
+                    class is( ModelOperator_SP_t )
+                        !
+                        allocate( self%preconditioner, source = PreConditioner_CC_SP_MR_t( model_operator ) )
+                        !
+                    class default
+                        call errStop( "Solver_QMR_ctor > Unclassified MR model_operator" )
+                    !
+                end select
                 !
             class default
-                call errStop( "Solver_QMR_ctor > Unclassified ModelOperator" )
+                call errStop( "Solver_QMR_ctor > Unclassified grid" )
             !
         end select
         !

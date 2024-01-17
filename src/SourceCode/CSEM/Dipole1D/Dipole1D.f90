@@ -794,7 +794,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         / real ( k, kind = 8 )
       pkm1 = pk
       pk = pkp1
-    end do
+    enddo
     
     d1 = real ( order, kind = 8 ) * ( pkm1 - x0 * pk )
     
@@ -834,7 +834,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
     weight(mp1mi) = 2.0D+00 * ( 1.0D+00 - xtemp * xtemp ) / ( fx * fx )
     
-    end do
+    enddo
     
     if( mod ( order, 2 ) == 1 ) then
     xtab(1) = 0.0D+00
@@ -849,14 +849,14 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     iback = order + 1 - i
     xtab(iback) = xtab(iback-ncopy)
     weight(iback) = weight(iback-ncopy)
-    end do
+    enddo
     !
     !  Reflect values for the negative abscissas.
     !
     do i = 1, order - nmove
     xtab(i) = - xtab(order+1-i)
     weight(i) = weight(order+1-i)
-    end do
+    enddo
     
     return
     end subroutine 

@@ -107,7 +107,7 @@ contains
             !
             call Tx%forward_solver%setFrequency( sigma, Tx%period )
             !
-            !> Switch Transmitter's source to SourceInteriorForce
+            !> Switch Transmitter's source to SourceAdjoint
             call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
             !
             call Tx%solve
@@ -250,7 +250,7 @@ contains
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         integer, intent( in ), optional :: i_sol
-        class( ModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
+        type( GenModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
         !
         class( ModelParameter_t ), allocatable :: dsigma_tx
         integer :: i_tx, sol_index
@@ -278,7 +278,7 @@ contains
         !> Allocate s_hat array
         if( present( s_hat ) ) then
             !
-            allocate( ModelParameterCell_t :: s_hat( size( transmitters ) ) )
+            allocate( s_hat( size( transmitters ) ) )
             !
         endif
         !
@@ -289,7 +289,7 @@ contains
             !
             if( present( s_hat ) ) then
                 !
-                s_hat( i_tx ) = dsigma_tx
+                allocate( s_hat( i_tx )%m, source = dsigma_tx )
                 !
             endif
             !
@@ -307,19 +307,19 @@ contains
     !
     !> Calculate dsigma for the data_tx's transmitter:
     !>     Create a rhs from LRows * residual data for all receivers related to the transmitter.
-    !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
+    !>     Solve ESens on the transmitter using a transpose SourceAdjoint, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
     !
     subroutine JMult_T_Tx( sigma, tx_data, tx_dsigma, i_sol )
         implicit none
         !
-        class( ModelParameter_t ), intent( inout ) :: sigma
+        class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), intent( in ) :: tx_data
-        class( ModelParameter_t ), allocatable, intent( inout ) :: tx_dsigma
+        class( ModelParameter_t ), allocatable, intent( out ) :: tx_dsigma
         integer, intent( in ), optional :: i_sol
         !
         class( Vector_t ), allocatable :: lrows
-        class( GenVector_t ), allocatable, dimension(:) :: bSrc
+        type( cVector3D_SG_t ), allocatable, dimension(:) :: bSrc
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
         type( DataGroup_t ) :: data_group
@@ -346,8 +346,9 @@ contains
         !
         do i_pol = 1, Tx%n_pol
             !
-            call sigma%metric%createVector( complex_t, EDGE, bSrc( i_pol )%v )
-            call bSrc( i_pol )%v%zeros
+            bSrc( i_pol ) = cVector3D_SG_t( model_operator%metric%grid, EDGE )
+            !
+            call bSrc( i_pol )%zeros
             !
         enddo
         !
@@ -385,7 +386,7 @@ contains
                     !
                     call lrows%mult( tx_data_cvalue )
                     !
-                    call bSrc( i_pol )%v%add( lrows )
+                    call bSrc( i_pol )%add( lrows )
                     !
                     deallocate( lrows )
                     !
@@ -398,20 +399,20 @@ contains
         !> NECESSARY FOR FULL VECTOR LROWS ????
         do i_pol = 1, Tx%n_pol
             !
-            call bSrc( i_pol )%v%mult( C_MinusOne )
+            call bSrc( i_pol )%mult( C_MinusOne )
             !
         enddo
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
-        !> Switch Transmitter's source to SourceInteriorForce, with transpose = .TRUE.
-        call Tx%setSource( SourceInteriorForce_t( model_operator, sigma, Tx%period, .TRUE. ) )
+        !> Switch Transmitter's source to SourceAdjoint, with transpose = .TRUE.
+        call Tx%setSource( SourceAdjoint_t( model_operator, sigma, Tx%period, .TRUE. ) )
         !
         call Tx%source%setE( bSrc )
         !
         deallocate( bSrc )
         !
-        !> Solve Transmitter's e_sens with the new SourceInteriorForce
+        !> Solve Transmitter's e_sens with the new SourceAdjoint
         call Tx%solve
         !
         call Tx%PMult_t( sigma, tx_dsigma )

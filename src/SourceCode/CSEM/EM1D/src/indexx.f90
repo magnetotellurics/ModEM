@@ -29,7 +29,7 @@ REAL(kind=real64)   :: a
 
 DO  j=1,n
   indx(j) = j
-END DO
+enddo
 
 jstack = 0
 l = 1
@@ -42,10 +42,10 @@ ir = n
     DO  i=j-1,1,-1
       IF(arr(indx(i)) <= a) GO TO 2
       indx(i+1) = indx(i)
-    END DO
+    enddo
     i=0
     2         indx(i+1) = indxt
-  END DO
+  enddo
   if(jstack == 0) RETURN
   ir = istack(jstack)
   l = istack(jstack-1)

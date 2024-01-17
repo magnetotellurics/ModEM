@@ -70,7 +70,7 @@ real(kind=real64) function bessj0(x) result (bj0)
       r = -0.25_real64 * r * x2 / (k*k)
       bj0 = bj0 + r
       if(ABS(r) < ABS(bj0)*relerrbes) EXIT
-    END DO
+    enddo
   ELSE
 
     z=8./x  
@@ -154,7 +154,7 @@ real(kind=real64) function bessj1(x) result(bj1)
       r = -0.25_real64 * r * x2 / (k*(k+1))
       bj1 = bj1 + r
       if(ABS(r) < ABS(bj1)*relerrbes) EXIT
-    END DO
+    enddo
     bj1 = 0.5_real64 * x * bj1
   ELSE
 

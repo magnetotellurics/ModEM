@@ -5,9 +5,11 @@
 module ModelOperator_MF_SG
     !
     use ModelOperator
-    use MetricElements_CSG
+    use MetricElements_SG
     !
     type, extends( ModelOperator_t ) :: ModelOperator_MF_SG_t
+        !
+        type( MetricElements_SG_t ), pointer :: metric_sg
         !
         real( kind=prec ), allocatable, dimension(:,:) :: xXY, xXZ
         real( kind=prec ), allocatable, dimension(:,:) :: xY, xZ
@@ -28,6 +30,8 @@ module ModelOperator_MF_SG
             final :: ModelOperator_MF_SG_dtor
             !
             !> Setup
+            procedure, public :: create => create_ModelOperator_MF_SG 
+            !
             procedure, public :: setEquations => setEquations_ModelOperator_MF_SG
             procedure, public :: setCond => setCond_ModelOperator_MF_SG
             !
@@ -37,6 +41,8 @@ module ModelOperator_MF_SG
             procedure, public :: amult => amult_ModelOperator_MF_SG
             procedure, public :: multAib => multAib_ModelOperator_MF_SG
             !
+            procedure, public :: multCurlT => multCurlT_ModelOperator_MF_SG
+            !
             procedure, public :: div => div_ModelOperator_MF_SG
             procedure, public :: divC => divC_ModelOperator_MF_SG
             procedure, public :: divCGrad => divCGrad_ModelOperator_MF_SG
@@ -44,9 +50,8 @@ module ModelOperator_MF_SG
             procedure, public :: grad => grad_ModelOperator_MF_SG
             !
             !> Alloc/Dealloc
-            procedure :: create => create_ModelOperator_MF_SG 
-            procedure :: alloc => allocate_ModelOperator_MF_SG
-            procedure :: dealloc => deallocate_ModelOperator_MF_SG
+            procedure, public :: alloc => allocate_ModelOperator_MF_SG
+            procedure, public :: dealloc => deallocate_ModelOperator_MF_SG
             !
             !> Miscellaneous
             procedure, public :: print => print_ModelOperator_MF_SG
@@ -68,12 +73,7 @@ contains
         !
         type( ModelOperator_MF_SG_t ) :: self
         !
-        !write( *, * ) "Constructor ModelOperator_MF_SG"
-        !
         call self%baseInit
-        !
-        !> Instantiation of the specific object MetricElements
-        allocate( self%metric, source = MetricElements_CSG_t( grid ) )
         !
         call self%create( grid )
         !
@@ -89,7 +89,37 @@ contains
         !
         call self%baseDealloc()
         !
+        !if( associated( self%metric_sg ) ) deallocate( self%metric_sg )
+        !
     end subroutine ModelOperator_MF_SG_dtor
+    !
+    !> No subroutine briefing
+    !
+    subroutine create_ModelOperator_MF_SG( self, grid )
+        implicit none
+        !
+        class( ModelOperator_MF_SG_t ), intent( inout ) :: self
+        class( Grid_t ), target, intent( in ) :: grid
+        !
+        self%is_allocated = .FALSE.
+        !
+        select type( grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                !> Instantiation of the specific object MetricElements
+                allocate( self%metric_sg, source = MetricElements_SG_t( grid ) )
+                !
+            class default
+                call errStop( "create_ModelOperator_MF_SG > for MF the grid must be SG" )
+                !
+        end select
+        !
+        self%metric => self%metric_sg
+        !
+        call self%alloc
+        !
+    end subroutine create_ModelOperator_MF_SG
     !
     !> No subroutine briefing
     !
@@ -100,90 +130,90 @@ contains
         !
         integer :: ix, iy, iz 
         !
-        do iy = 2, self%metric%grid%ny
-            self%xXY(iy, 2) = -1.0 / (self%metric%grid%del_y(iy) * self%metric%grid%dy(iy))
-            self%xXY(iy, 1) = -1.0 / (self%metric%grid%del_y(iy) * self%metric%grid%dy(iy-1))
+        do iy = 2, self%metric_sg%grid_sg%ny
+            self%xXY(iy, 2) = -1.0 / (self%metric_sg%grid_sg%del_y(iy) * self%metric_sg%grid_sg%dy(iy))
+            self%xXY(iy, 1) = -1.0 / (self%metric_sg%grid_sg%del_y(iy) * self%metric_sg%grid_sg%dy(iy-1))
         enddo
         !
-        do iz = 2, self%metric%grid%nz
-            self%xXZ(iz, 2) = -1.0 / (self%metric%grid%del_z(iz) * self%metric%grid%dz(iz))
-            self%xXZ(iz, 1) = -1.0 / (self%metric%grid%del_z(iz) * self%metric%grid%dz(iz-1))
+        do iz = 2, self%metric_sg%grid_sg%nz
+            self%xXZ(iz, 2) = -1.0 / (self%metric_sg%grid_sg%del_z(iz) * self%metric_sg%grid_sg%dz(iz))
+            self%xXZ(iz, 1) = -1.0 / (self%metric_sg%grid_sg%del_z(iz) * self%metric_sg%grid_sg%dz(iz-1))
         enddo
         !
-        do iy = 2, self%metric%grid%ny
-            do iz = 2, self%metric%grid%nz
+        do iy = 2, self%metric_sg%grid_sg%ny
+            do iz = 2, self%metric_sg%grid_sg%nz
                 self%xXO(iy, iz) = -(self%xXY(iy,1) + self%xXY(iy,2) + &
                 self%xXZ(iz,1) + self%xXZ(iz,2))
             enddo
         enddo
         !
-        do ix = 1, self%metric%grid%nx
-            do iy = 2, self%metric%grid%ny
-                self%xY(ix, iy) = 1.0 / (self%metric%grid%del_y(iy)*self%metric%grid%dx(ix))
+        do ix = 1, self%metric_sg%grid_sg%nx
+            do iy = 2, self%metric_sg%grid_sg%ny
+                self%xY(ix, iy) = 1.0 / (self%metric_sg%grid_sg%del_y(iy)*self%metric_sg%grid_sg%dx(ix))
             enddo
         enddo
         !
-        do ix = 1, self%metric%grid%nx
-            do iz = 2, self%metric%grid%nz
-                self%xZ(ix, iz) = 1.0 / (self%metric%grid%del_z(iz)*self%metric%grid%dx(ix))
+        do ix = 1, self%metric_sg%grid_sg%nx
+            do iz = 2, self%metric_sg%grid_sg%nz
+                self%xZ(ix, iz) = 1.0 / (self%metric_sg%grid_sg%del_z(iz)*self%metric_sg%grid_sg%dx(ix))
             enddo
         enddo
         !
-        do iz = 2, self%metric%grid%nz
-            self%yYZ(iz, 2) = -1.0 / (self%metric%grid%del_z(iz)*self%metric%grid%dz(iz))
-            self%yYZ(iz, 1) = -1.0 / (self%metric%grid%del_z(iz)*self%metric%grid%dz(iz-1))
+        do iz = 2, self%metric_sg%grid_sg%nz
+            self%yYZ(iz, 2) = -1.0 / (self%metric_sg%grid_sg%del_z(iz)*self%metric_sg%grid_sg%dz(iz))
+            self%yYZ(iz, 1) = -1.0 / (self%metric_sg%grid_sg%del_z(iz)*self%metric_sg%grid_sg%dz(iz-1))
         enddo
         !
-        do ix = 2, self%metric%grid%nx
-            self%yYX(ix, 2) = -1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dx(ix))
-            self%yYX(ix, 1) = -1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dx(ix-1))
+        do ix = 2, self%metric_sg%grid_sg%nx
+            self%yYX(ix, 2) = -1.0 / (self%metric_sg%grid_sg%del_x(ix)*self%metric_sg%grid_sg%dx(ix))
+            self%yYX(ix, 1) = -1.0 / (self%metric_sg%grid_sg%del_x(ix)*self%metric_sg%grid_sg%dx(ix-1))
         enddo
         !
-        do ix = 2, self%metric%grid%nx
-            do iz = 2, self%metric%grid%nz
+        do ix = 2, self%metric_sg%grid_sg%nx
+            do iz = 2, self%metric_sg%grid_sg%nz
                 self%yYO(ix, iz) = -(self%yYX(ix,1) + self%yYX(ix,2) + &
                 self%yYZ(iz,1) + self%yYZ(iz,2))
             enddo
         enddo
         !
-        do iy = 1, self%metric%grid%ny
-            do iz = 2, self%metric%grid%nz
-                self%yZ(iy, iz) = 1.0 / (self%metric%grid%del_z(iz)*self%metric%grid%dy(iy))
+        do iy = 1, self%metric_sg%grid_sg%ny
+            do iz = 2, self%metric_sg%grid_sg%nz
+                self%yZ(iy, iz) = 1.0 / (self%metric_sg%grid_sg%del_z(iz)*self%metric_sg%grid_sg%dy(iy))
             enddo
         enddo
         !
-        do ix = 2, self%metric%grid%nx
-            do iy = 1, self%metric%grid%ny
-                self%yX(ix, iy) = 1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dy(iy))
+        do ix = 2, self%metric_sg%grid_sg%nx
+            do iy = 1, self%metric_sg%grid_sg%ny
+                self%yX(ix, iy) = 1.0 / (self%metric_sg%grid_sg%del_x(ix)*self%metric_sg%grid_sg%dy(iy))
             enddo
         enddo
         !
-        do ix = 2, self%metric%grid%nx
-            self%zZX(ix, 2) = -1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dx(ix))
-            self%zZX(ix, 1) = -1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dx(ix-1))
+        do ix = 2, self%metric_sg%grid_sg%nx
+            self%zZX(ix, 2) = -1.0 / (self%metric_sg%grid_sg%del_x(ix)*self%metric_sg%grid_sg%dx(ix))
+            self%zZX(ix, 1) = -1.0 / (self%metric_sg%grid_sg%del_x(ix)*self%metric_sg%grid_sg%dx(ix-1))
         enddo
         !
-        do iy = 2, self%metric%grid%ny
-            self%zZY(iy, 2) = -1.0 / (self%metric%grid%del_y(iy)*self%metric%grid%dy(iy))
-            self%zZY(iy, 1) = -1.0 / (self%metric%grid%del_y(iy)*self%metric%grid%dy(iy-1))
+        do iy = 2, self%metric_sg%grid_sg%ny
+            self%zZY(iy, 2) = -1.0 / (self%metric_sg%grid_sg%del_y(iy)*self%metric_sg%grid_sg%dy(iy))
+            self%zZY(iy, 1) = -1.0 / (self%metric_sg%grid_sg%del_y(iy)*self%metric_sg%grid_sg%dy(iy-1))
         enddo
         !
-        do ix = 2, self%metric%grid%nx
-            do iy = 2, self%metric%grid%ny
+        do ix = 2, self%metric_sg%grid_sg%nx
+            do iy = 2, self%metric_sg%grid_sg%ny
                 self%zZO(ix, iy) = -(self%zZX(ix,1) + self%zZX(ix,2) + &
                 self%zZY(iy,1) + self%zZY(iy,2))
             enddo
         enddo
         !
-        do ix = 2, self%metric%grid%nx
-             do iz = 1, self%metric%grid%nz
-                 self%zX(ix, iz) = 1.0 / (self%metric%grid%del_x(ix)*self%metric%grid%dz(iz))
+        do ix = 2, self%metric_sg%grid_sg%nx
+             do iz = 1, self%metric_sg%grid_sg%nz
+                 self%zX(ix, iz) = 1.0 / (self%metric_sg%grid_sg%del_x(ix)*self%metric_sg%grid_sg%dz(iz))
              enddo
         enddo
         !
-        do iy = 2, self%metric%grid%ny
-            do iz = 1, self%metric%grid%nz
-                self%zY(iy, iz) = 1.0 / (self%metric%grid%del_y(iy)*self%metric%grid%dz(iz))
+        do iy = 2, self%metric_sg%grid_sg%ny
+            do iz = 1, self%metric_sg%grid_sg%nz
+                self%zY(iy, iz) = 1.0 / (self%metric_sg%grid_sg%del_y(iy)*self%metric_sg%grid_sg%dz(iz))
             enddo
         enddo
         !
@@ -211,27 +241,27 @@ contains
         !
         integer :: ix, iy, iz
         !
-        do iz = 2, self%metric%grid%nz
-            do iy = 2, self%metric%grid%ny
-                do ix = 2, self%metric%grid%nx
+        do iz = 2, self%metric_sg%grid_sg%nz
+            do iy = 2, self%metric_sg%grid_sg%ny
+                do ix = 2, self%metric_sg%grid_sg%nx
                     !
                     self%db1%x(ix, iy, iz) = self%sigma_e%x(ix - 1, iy, iz)/ &
-                    (self%metric%grid%dx(ix - 1)*self%metric%grid%del_x(ix))
+                    (self%metric_sg%grid_sg%dx(ix - 1)*self%metric_sg%grid_sg%del_x(ix))
                     !
                     self%db2%x(ix, iy, iz) = self%sigma_e%x(ix, iy, iz)/ &
-                    (self%metric%grid%dx(ix)*self%metric%grid%del_x(ix))
+                    (self%metric_sg%grid_sg%dx(ix)*self%metric_sg%grid_sg%del_x(ix))
                     !
                     self%db1%y(ix, iy, iz) = self%sigma_e%y(ix, iy - 1, iz)/ &
-                    (self%metric%grid%dy(iy - 1)*self%metric%grid%del_y(iy))
+                    (self%metric_sg%grid_sg%dy(iy - 1)*self%metric_sg%grid_sg%del_y(iy))
                     !
                     self%db2%y(ix, iy, iz) = self%sigma_e%y(ix, iy, iz)/ &
-                    (self%metric%grid%dy(iy)*self%metric%grid%del_y(iy))
+                    (self%metric_sg%grid_sg%dy(iy)*self%metric_sg%grid_sg%del_y(iy))
                     !
                     self%db1%z(ix, iy, iz) = self%sigma_e%z(ix, iy, iz - 1)/ &
-                    (self%metric%grid%dz(iz - 1)*self%metric%grid%del_z(iz))
+                    (self%metric_sg%grid_sg%dz(iz - 1)*self%metric_sg%grid_sg%del_z(iz))
                     !
                     self%db2%z(ix, iy, iz) = self%sigma_e%z(ix, iy, iz)/ &
-                    (self%metric%grid%dz(iz)*self%metric%grid%del_z(iz))
+                    (self%metric_sg%grid_sg%dz(iz)*self%metric_sg%grid_sg%del_z(iz))
                     !
                     self%c%v(ix, iy, iz) = -(self%db1%x(ix, iy, iz) + &
                     self%db2%x(ix, iy, iz) + &
@@ -244,13 +274,13 @@ contains
             enddo
         enddo
         !
-        select type( v_node => self%metric%v_node )
+        select type( v_node => self%metric_sg%v_node )
             !
             class is( rScalar3D_SG_t )
                 !
-                do iz = 2, self%metric%grid%nz
-                    do iy = 2, self%metric%grid%ny
-                        do ix = 2, self%metric%grid%nx
+                do iz = 2, self%metric_sg%grid_sg%nz
+                    do iy = 2, self%metric_sg%grid_sg%ny
+                        do ix = 2, self%metric_sg%grid_sg%nx
                             !
                             self%db1%x(ix, iy, iz) = self%db1%x(ix, iy, iz) * &
                             v_node%v(ix,iy,iz)
@@ -279,15 +309,15 @@ contains
                 !
         end select
         !
-        call self%c%mult( self%metric%v_node )
+        call self%c%mult( self%metric_sg%v_node )
         !
         self%db1%x(2, :, :) = R_ZERO
         self%db1%y(:, 2, :) = R_ZERO
         self%db1%z(:, :, 2) = R_ZERO
         !
-        self%db2%x(self%metric%grid%nx, :, :) = R_ZERO
-        self%db2%y(:, self%metric%grid%ny, :) = R_ZERO
-        self%db2%z(:, :, self%metric%grid%nz) = R_ZERO
+        self%db2%x(self%metric_sg%grid_sg%nx, :, :) = R_ZERO
+        self%db2%y(:, self%metric_sg%grid_sg%ny, :) = R_ZERO
+        self%db2%z(:, :, self%metric_sg%grid_sg%nz) = R_ZERO
         !
     end subroutine divCorSetUp_ModelOperator_MF_SG
     !
@@ -304,8 +334,6 @@ contains
         !
         integer :: ix, iy, iz
         complex( kind=prec ) :: cvalue
-        !
-        !write(*,*) "amult_ModelOperator_MF_SG: ", adjoint
         !
         if( adjoint ) then
             cvalue = -ONE_I * omega * isign * mu_0
@@ -376,7 +404,7 @@ contains
                             enddo
                         enddo
                         !
-                        call out_e%mult( self%metric%v_edge )
+                        call out_e%mult( self%metric_sg%v_edge )
                         !
                     class default
                         call errStop( "amult_ModelOperator_MF_SG > Undefined out_e." )
@@ -389,6 +417,86 @@ contains
         end select
         !
     end subroutine amult_ModelOperator_MF_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine multCurlT_ModelOperator_MF_SG( self, in_b, out_e )
+        implicit none
+        !
+        class( ModelOperator_MF_SG_t ), intent( in ) :: self
+        class( Vector_t ), intent( inout ) :: in_b
+        class( Vector_t ), allocatable, intent( out ) :: out_e
+        !
+        integer :: ix, iy, iz
+        !
+        if( .NOT. in_b%is_allocated ) then
+            call errStop( "multCurlT_ModelOperator_MF_SG > in_b not allocated" )
+        endif
+        !
+        call self%metric_sg%createVector( complex_t, EDGE, out_e )
+        call out_e%zeros
+        !
+        call in_b%div( self%metric_sg%face_area )
+        !
+        select type( in_b )
+            !
+            class is( cVector3D_SG_t )
+                !
+                select type( out_e )
+                    !
+                    class is( cVector3D_SG_t )
+                        !
+                        do iy = 2, in_b%Ny
+                            !
+                            do iz = 2, in_b%Nz
+                                !
+                                out_e%x(:, iy, iz) = (in_b%z(:, iy, iz) - &
+                                in_b%z(:, iy - 1, iz)) - &
+                                (in_b%y(:, iy, iz) - in_b%y(:, iy, iz - 1))
+                                !
+                            enddo
+                            !
+                        enddo
+                        !
+                        !> Ey
+                        do iz = 2, in_b%Nz
+                            !
+                            do ix = 2, in_b%Nx
+                                !
+                                out_e%y(ix, :, iz) = (in_b%x(ix, :, iz) - &
+                                in_b%x(ix, :, iz - 1)) - &
+                                (in_b%z(ix, :, iz) - in_b%z(ix - 1, :, iz))
+                                !
+                            enddo
+                            !
+                        enddo
+                        !
+                        !> Ez
+                        do ix = 2, in_b%Nx
+                            !
+                            do iy = 2, in_b%Ny
+                                !
+                                out_e%z(ix,iy,:) = (in_b%y(ix, iy, :) - &
+                                in_b%y(ix - 1, iy, :)) - &
+                                (in_b%x(ix, iy, :) - in_b%x(ix, iy - 1, :))
+                                !
+                            enddo
+                            !
+                        enddo
+                        !
+                        call out_e%mult( self%metric_sg%edge_length )
+                        !
+                    class default
+                        call errStop( "multCurlT_ModelOperator_MF_SG > Unclassified out_e." )
+                    !
+                end select
+                !
+            class default
+                call errStop( "multCurlT_ModelOperator_MF_SG > Unclassified in_b." )
+            !
+        end select
+        !
+    end subroutine multCurlT_ModelOperator_MF_SG
     !
     !> No subroutine briefing
     !
@@ -441,11 +549,11 @@ contains
                                 do iz = 2, out_phi%grid%nz
                                     out_phi%v(ix, iy, iz) = &
                                     (in_e%x(ix, iy, iz) - in_e%x(ix - 1, iy, iz)) * &
-                                    in_e%grid%del_x_inv(ix) + &
+                                    self%metric_sg%grid_sg%del_x_inv(ix) + &
                                     (in_e%y(ix, iy, iz) - in_e%y(ix, iy - 1, iz)) * &
-                                    in_e%grid%del_y_inv(iy) + &
+                                    self%metric_sg%grid_sg%del_y_inv(iy) + &
                                     (in_e%z(ix, iy, iz) - in_e%z(ix, iy, iz - 1)) * &
-                                    in_e%grid%del_z_inv(iz)
+                                    self%metric_sg%grid_sg%del_z_inv(iz)
                                 enddo
                             enddo
                         enddo
@@ -492,11 +600,11 @@ contains
                                 do iz = 2, out_phi%grid%nzAir
                                     out_phi%v(ix, iy, iz) = &
                                     SIGMA_AIR * (in_e%x(ix, iy, iz) - in_e%x(ix - 1, iy, iz)) * &
-                                    in_e%grid%del_x_inv(ix) + &
+                                    self%metric_sg%grid_sg%del_x_inv(ix) + &
                                     SIGMA_AIR * (in_e%y(ix, iy, iz) - in_e%y(ix, iy - 1, iz)) * &
-                                    in_e%grid%del_y_inv(iy) + &
+                                    self%metric_sg%grid_sg%del_y_inv(iy) + &
                                     SIGMA_AIR * (in_e%z(ix, iy, iz) - in_e%z(ix, iy, iz - 1)) * &
-                                    in_e%grid%del_z_inv(iz)
+                                    self%metric_sg%grid_sg%del_z_inv(iz)
                                 enddo
                                 !
                                 !> FOR NODES AT THE AIR-EARTH INTERFACE
@@ -505,13 +613,13 @@ contains
                                 out_phi%v(ix, iy, iz) = &
                                 (self%sigma_e%x(ix, iy, iz) * in_e%x(ix, iy, iz) -         &
                                 self%sigma_e%x(ix - 1, iy, iz) * in_e%x(ix - 1, iy, iz)) * &
-                                in_e%grid%del_x_inv(ix) + &
+                                self%metric_sg%grid_sg%del_x_inv(ix) + &
                                 (self%sigma_e%y(ix, iy, iz) * in_e%y(ix, iy, iz) -         &
                                 self%sigma_e%y(ix, iy - 1, iz) * in_e%y(ix, iy - 1, iz)) * &
-                                in_e%grid%del_y_inv(iy) + &
+                                self%metric_sg%grid_sg%del_y_inv(iy) + &
                                 (self%sigma_e%z(ix, iy, iz) * in_e%z(ix, iy, iz) -         &
                                 SIGMA_AIR * in_e%z(ix, iy, iz - 1)) * &
-                                in_e%grid%del_z_inv(iz)
+                                self%metric_sg%grid_sg%del_z_inv(iz)
                                 !
                                 !> FOR NODES INSIDE THE EARTH ONLY
                                 !> THE TOP MOST EARTH NODE HAS AN INTERFACE WITH
@@ -520,13 +628,13 @@ contains
                                     out_phi%v(ix, iy, iz) = &
                                     (self%sigma_e%x(ix,iy,iz)*in_e%x(ix, iy, iz) -                 &
                                     self%sigma_e%x(ix - 1,iy,iz)*in_e%x(ix - 1, iy, iz)) * &
-                                    in_e%grid%del_x_inv(ix)            &
+                                    self%metric_sg%grid_sg%del_x_inv(ix)            &
                                     +    (self%sigma_e%y(ix,iy,iz)*in_e%y(ix, iy, iz) -            &
                                     self%sigma_e%y(ix,iy - 1,iz)*in_e%y(ix, iy - 1, iz)) * &
-                                    in_e%grid%del_y_inv(iy)            &
+                                    self%metric_sg%grid_sg%del_y_inv(iy)            &
                                     +    (self%sigma_e%z(ix,iy,iz)*in_e%z(ix, iy, iz) -            &
                                     self%sigma_e%z(ix,iy,iz - 1)*in_e%z(ix, iy, iz - 1)) * &
-                                    in_e%grid%del_z_inv(iz)
+                                    self%metric_sg%grid_sg%del_z_inv(iz)
                                 enddo
                             enddo
                         enddo
@@ -620,29 +728,29 @@ contains
                         !
                         call out_e%Zeros
                         !
-                        do ix = 1, self%metric%grid%nx 
-                            do iy = 2, self%metric%grid%ny
-                                do iz = 2, self%metric%grid%nz
+                        do ix = 1, self%metric_sg%grid_sg%nx 
+                            do iy = 2, self%metric_sg%grid_sg%ny
+                                do iz = 2, self%metric_sg%grid_sg%nz
                                     out_e%x(ix, iy, iz) = (in_phi%v(ix + 1, iy, iz) - &
-                                    in_phi%v(ix, iy, iz)) / self%metric%grid%dx(ix)
+                                    in_phi%v(ix, iy, iz)) / self%metric_sg%grid_sg%dx(ix)
                                 enddo
                             enddo
                         enddo
                         !
-                        do ix = 2, self%metric%grid%nx 
-                            do iy = 1, self%metric%grid%ny
-                                do iz = 2, self%metric%grid%nz
+                        do ix = 2, self%metric_sg%grid_sg%nx 
+                            do iy = 1, self%metric_sg%grid_sg%ny
+                                do iz = 2, self%metric_sg%grid_sg%nz
                                     out_e%y(ix, iy, iz) = (in_phi%v(ix, iy + 1, iz) - &
-                                    in_phi%v(ix, iy, iz)) / self%metric%grid%dy(iy)
+                                    in_phi%v(ix, iy, iz)) / self%metric_sg%grid_sg%dy(iy)
                                 enddo
                             enddo
                         enddo
                         !
-                        do ix = 2, self%metric%grid%nx 
-                            do iy = 2, self%metric%grid%ny
-                                do iz = 1, self%metric%grid%nz    
+                        do ix = 2, self%metric_sg%grid_sg%nx 
+                            do iy = 2, self%metric_sg%grid_sg%ny
+                                do iz = 1, self%metric_sg%grid_sg%nz    
                                     out_e%z(ix, iy, iz) = (in_phi%v(ix, iy, iz + 1) - &
-                                    in_phi%v(ix, iy, iz)) / self%metric%grid%dz(iz)
+                                    in_phi%v(ix, iy, iz)) / self%metric_sg%grid_sg%dz(iz)
                                 enddo
                             enddo
                         enddo
@@ -659,44 +767,28 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine create_ModelOperator_MF_SG( self, grid )
-        implicit none
-        !
-        class( ModelOperator_MF_SG_t ), intent( inout ) :: self
-        class( Grid_t ), target, intent( in ) :: grid
-        !
-        self%is_allocated = .FALSE.
-        !
-        self%metric%grid => grid
-        !
-        call self%alloc
-        !
-    end subroutine create_ModelOperator_MF_SG
-    !
-    !> No subroutine briefing
-    !
     subroutine allocate_ModelOperator_MF_SG( self )
         implicit none
         !
         class( ModelOperator_MF_SG_t ), intent( inout ) :: self
         !
-        allocate( self%xXY( self%metric%grid%ny + 1, 2 ) )
-        allocate( self%xXZ( self%metric%grid%nz + 1, 2 ) )
-        allocate( self%xY( self%metric%grid%nx, self%metric%grid%ny + 1 ) )
-        allocate( self%xZ( self%metric%grid%nx, self%metric%grid%nz + 1 ) )
-        allocate( self%xXO( self%metric%grid%ny, self%metric%grid%nz) )
+        allocate( self%xXY( self%metric_sg%grid_sg%ny + 1, 2 ) )
+        allocate( self%xXZ( self%metric_sg%grid_sg%nz + 1, 2 ) )
+        allocate( self%xY( self%metric_sg%grid_sg%nx, self%metric_sg%grid_sg%ny + 1 ) )
+        allocate( self%xZ( self%metric_sg%grid_sg%nx, self%metric_sg%grid_sg%nz + 1 ) )
+        allocate( self%xXO( self%metric_sg%grid_sg%ny, self%metric_sg%grid_sg%nz) )
         !
-        allocate( self%yYZ( self%metric%grid%nz + 1, 2) )
-        allocate( self%yYX( self%metric%grid%nx + 1, 2) )
-        allocate( self%yZ( self%metric%grid%ny, self%metric%grid%nz + 1 ) )
-        allocate( self%yX( self%metric%grid%nx + 1, self%metric%grid%ny ) )
-        allocate( self%yYO( self%metric%grid%nx, self%metric%grid%nz ) )
+        allocate( self%yYZ( self%metric_sg%grid_sg%nz + 1, 2) )
+        allocate( self%yYX( self%metric_sg%grid_sg%nx + 1, 2) )
+        allocate( self%yZ( self%metric_sg%grid_sg%ny, self%metric_sg%grid_sg%nz + 1 ) )
+        allocate( self%yX( self%metric_sg%grid_sg%nx + 1, self%metric_sg%grid_sg%ny ) )
+        allocate( self%yYO( self%metric_sg%grid_sg%nx, self%metric_sg%grid_sg%nz ) )
         !
-        allocate( self%zZX( self%metric%grid%nx + 1, 2 ) )
-        allocate( self%zZY( self%metric%grid%ny + 1, 2) )
-        allocate( self%zX( self%metric%grid%nx + 1, self%metric%grid%nz ) )
-        allocate( self%zY( self%metric%grid%ny + 1, self%metric%grid%nz ) )
-        allocate( self%zZO( self%metric%grid%nx, self%metric%grid%ny ) )
+        allocate( self%zZX( self%metric_sg%grid_sg%nx + 1, 2 ) )
+        allocate( self%zZY( self%metric_sg%grid_sg%ny + 1, 2) )
+        allocate( self%zX( self%metric_sg%grid_sg%nx + 1, self%metric_sg%grid_sg%nz ) )
+        allocate( self%zY( self%metric_sg%grid_sg%ny + 1, self%metric_sg%grid_sg%nz ) )
+        allocate( self%zZO( self%metric_sg%grid_sg%nx, self%metric_sg%grid_sg%ny ) )
         !
         self%xXY = R_ZERO
         self%xXZ = R_ZERO
@@ -713,16 +805,17 @@ contains
         self%zY = R_ZERO
         self%zZO = R_ZERO
         !
-        self%sigma_e = rVector3D_SG_t( self%metric%grid, EDGE )
-        self%db1 = rVector3D_SG_t( self%metric%grid, EDGE )
-        self%db2 = rVector3D_SG_t( self%metric%grid, EDGE )
-        self%c = rScalar3D_SG_t( self%metric%grid, NODE )
+        self%sigma_e = rVector3D_SG_t( self%metric_sg%grid_sg, EDGE )
+        self%db1 = rVector3D_SG_t( self%metric_sg%grid_sg, EDGE )
+        self%db2 = rVector3D_SG_t( self%metric_sg%grid_sg, EDGE )
+        self%c = rScalar3D_SG_t( self%metric_sg%grid_sg, NODE )
         !
         self%is_allocated = .TRUE.
         !
     end subroutine allocate_ModelOperator_MF_SG
     !
     !> No subroutine briefing
+    !
     subroutine deallocate_ModelOperator_MF_SG( self )
         implicit none
         !

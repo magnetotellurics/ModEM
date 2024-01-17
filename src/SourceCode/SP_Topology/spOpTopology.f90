@@ -1,45 +1,43 @@
 !
-!> Abstract Base class to define a spOpTopology
+!> Abstract Base class to define a SpOpTopology
 !
-module spOpTopology
+module SpOpTopology
     !
     use SpOpTools
     !
-    !> Sparse grad topology : maps from all nodes to all edges
-    type( spMatCSR_Real ) :: G
-    !
-    !> Sparse curl topology : maps from all edges to all faces
-    type( spMatCSR_Real ) :: T
-    !
-    type, abstract :: spOpTopology_t
+    type, abstract :: SpOpTopology_t
         !
-        !> No base properties
+        !> Sparse grad topology : maps from all nodes to all edges
+        type( spMatCSR_Real ) :: G
+        !
+        !> Sparse curl topology : maps from all edges to all faces
+        type( spMatCSR_Real ) :: T
         !
         contains
             !
-            procedure( interface_curl_spoptopology ), deferred, public :: curl
-            procedure( interface_grad_spoptopology ), deferred, public :: grad
+            procedure( interface_curl_SpOpTopology ), deferred, public :: curl
+            procedure( interface_grad_SpOpTopology ), deferred, public :: grad
             !
-    end type spOpTopology_t
+    end type SpOpTopology_t
     !
     abstract interface
         !
         !> No interface subroutine briefing
-        subroutine interface_curl_spoptopology( self, T ) 
-            import :: spOpTopology_t, spMatCSR_Real
+        subroutine interface_curl_SpOpTopology( self, curl ) 
+            import :: SpOpTopology_t, spMatCSR_Real
             !
-            class( spOpTopology_t ), intent( inout ) :: self
-            type( spMatCSR_Real ), intent( inout ) :: T
-        end subroutine interface_curl_spoptopology
+            class( SpOpTopology_t ), intent( in ) :: self
+            type( spMatCSR_Real ), intent( inout ) :: curl
+        end subroutine interface_curl_SpOpTopology
         !
         !> No interface subroutine briefing
-        subroutine interface_grad_spoptopology( self, G ) 
-            import :: spOpTopology_t, spMatCSR_Real
+        subroutine interface_grad_SpOpTopology( self, grad ) 
+            import :: SpOpTopology_t, spMatCSR_Real
             !
-            class( spOpTopology_t ), intent( inout ) :: self
-            type( spMatCSR_Real ), intent( inout ) :: G
-        end subroutine interface_grad_spoptopology
+            class( SpOpTopology_t ), intent( in ) :: self
+            type( spMatCSR_Real ), intent( inout ) :: grad
+        end subroutine interface_grad_SpOpTopology
         !
     end interface
     !
-end module spOpTopology
+end module SpOpTopology

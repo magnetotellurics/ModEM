@@ -90,7 +90,8 @@ contains
         class( DataEntry_t ), intent( in ) :: data_entry
         !
         class( Receiver_t ), allocatable :: receiver
-        class( Transmitter_t ), pointer :: transmitter
+        class( Transmitter_t ), allocatable :: new_transmitter
+        class( Transmitter_t ), pointer :: ptr_transmitter
         class( DataGroup_t ), pointer :: data_group
         integer :: i_tx, n_tx, i_rx, rx_type, i_dg
         real( kind=prec ) :: azimuth, SI_factor, r_error
@@ -103,17 +104,21 @@ contains
             !
             class is ( DataEntryMT_t )
                 !
-                i_tx = updateTransmitterArray( TransmitterMT_t( data_entry%period ) )
+                allocate( new_transmitter, source = TransmitterMT_t( data_entry%period ) )
                 !
             class is ( DataEntryMT_REF_t )
                 !
-                i_tx = updateTransmitterArray( TransmitterMT_t( data_entry%period ) )
+                allocate( new_transmitter, source = TransmitterMT_t( data_entry%period ) )
                 !
             class is ( DataEntryCSEM_t )
                 !
-                i_tx = updateTransmitterArray( TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%tx_azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
+                allocate( new_transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%tx_azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
                 !
         end select
+        !
+        i_tx = updateTransmitterArray( new_transmitter )
+        !
+        deallocate( new_transmitter )
         !
         rx_type = getIntReceiverType( data_entry%dtype )
         !
@@ -263,9 +268,9 @@ contains
         !> Loop over transmitters
         do i_tx = 1, n_tx
             !
-            transmitter => getTransmitter( i_tx )
+            ptr_transmitter => getTransmitter( i_tx )
             !
-            select type( transmitter )
+            select type( ptr_transmitter )
                 !
                 class is( TransmitterMT_t )
                     !
@@ -273,9 +278,9 @@ contains
                         !
                         class is( DataEntryMT_t )
                             !
-                            if( ABS( transmitter%period - data_entry%period ) < TOL6 ) then
+                            if( ABS( ptr_transmitter%period - data_entry%period ) < TOL6 ) then
                                 !
-                                call transmitter%updateReceiverIndexesArray( i_rx )
+                                call ptr_transmitter%updateReceiverIndexesArray( i_rx )
                                 !
                                 exit
                                 !
@@ -289,12 +294,12 @@ contains
                         !
                         class is( DataEntryCSEM_t )
                             !
-                            if( ABS( transmitter%period - data_entry%period ) < TOL6      .AND.   &
-                                     transmitter%location(1) == data_entry%tx_location(1) .AND.   &
-                                     transmitter%location(2) == data_entry%tx_location(2) .AND.   &
-                                     transmitter%location(3) == data_entry%tx_location(3) ) then
+                            if( ABS( ptr_transmitter%period - data_entry%period ) < TOL6      .AND.   &
+                                     ptr_transmitter%location(1) == data_entry%tx_location(1) .AND.   &
+                                     ptr_transmitter%location(2) == data_entry%tx_location(2) .AND.   &
+                                     ptr_transmitter%location(3) == data_entry%tx_location(3) ) then
                                 !
-                                call transmitter%updateReceiverIndexesArray( i_rx )
+                                call ptr_transmitter%updateReceiverIndexesArray( i_rx )
                                 !
                                 exit
                                 !
@@ -401,7 +406,7 @@ contains
         !
         class( DataFile_t ), intent( inout ) :: self
         !
-        !> Auxiliary variable to group data under a single transmitter index
+        !> Auxiliary variable to group data under a single ptr_transmitter index
         class( DataGroupTx_t ), allocatable :: tx_data
         !
         !> Local indexes

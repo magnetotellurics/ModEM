@@ -4,7 +4,7 @@
 module cVectorSparse3D_SG
     !
     use Field
-    use cVector3D_SG
+    use cVector3D_MR
     !
     type, extends( Field_t ) :: cVectorSparse3D_SG_t
         !
@@ -57,9 +57,6 @@ module cVectorSparse3D_SG
             !> Miscellaneous
             procedure, public :: getReal => getReal_cVectorSparse3D_SG
             !
-            procedure, public :: getSV => getSV_cVectorSparse3D_SG
-            procedure, public :: setSV => setSV_cVectorSparse3D_SG
-            !
             procedure, public :: deallOtherState => deallOtherState_cVectorSparse3D_SG
             !
             procedure, public :: getArray => getArray_cVectorSparse3D_SG
@@ -106,11 +103,11 @@ contains
         !
         ! the old baggage is out of the door
         if(self%is_allocated) then
-            deallocate(self%i, STAT = status)
-            deallocate(self%j, STAT = status)
-            deallocate(self%k, STAT = status)
-            deallocate(self%xyz, STAT = status)
-            deallocate(self%c, STAT = status)
+            deallocate(self%i, stat=status)
+            deallocate(self%j, stat=status)
+            deallocate(self%k, stat=status)
+            deallocate(self%xyz, stat=status)
+            deallocate(self%c, stat=status)
             self%grid_type = ''
             self%is_allocated = .FALSE.
         endif
@@ -214,7 +211,7 @@ contains
     !
     !> No subroutine briefing
     !
-    function dotProd_cVectorSparse3D_SG( self, rhs ) result( cvalue )
+    RECURSIVE function dotProd_cVectorSparse3D_SG( self, rhs ) result( cvalue )
         implicit none
         !
         class( cVectorSparse3D_SG_t ), intent( in ) :: self
@@ -223,6 +220,7 @@ contains
         complex( kind=prec ) :: cvalue
         !
         integer :: i, xi, yi, zi
+        type( cVector3D_SG_t ) :: temp_cvector_sg
         !
         cvalue = C_ZERO
         !
@@ -281,6 +279,14 @@ contains
                     endif
                     !
                 enddo
+            !
+            class is( cVector3D_MR_t )
+                !
+                temp_cvector_sg = cVector3D_SG_t( rhs%grid, rhs%grid_type )
+                !
+                call rhs%MRtoSG( temp_cvector_sg )
+                !
+                cvalue = self%dotProd( temp_cvector_sg )
                 !
             class default
                 call errStop( "dotProd_cVectorSparse3D_SG > undefined rhs" )
@@ -365,8 +371,8 @@ contains
         integer, allocatable, dimension(:,:,:) :: Ix, Jx, Kx, XYZ1
         integer, allocatable, dimension(:,:,:) :: Iy, Jy, Ky, XYZ2
         integer, allocatable, dimension(:,:,:) :: Iz, Jz, Kz, XYZ3
-        !
         integer :: i, j, k, Nx, Ny, Nz
+        type( cVector3D_SG_t ) :: temp_cvector_sg
         !
         select type( cvector )
             !
@@ -461,7 +467,18 @@ contains
                 deallocate( Ix, Jx, Kx, XYZ1 )
                 deallocate( Iy, Jy, Ky, XYZ2 )
                 deallocate( Iz, Jz, Kz, XYZ3 )
+            !
+            class is( cVector3D_MR_t )
                 !
+                temp_cvector_sg = cVector3D_SG_t( cvector%grid, cvector%grid_type )
+                !
+                call cvector%MRtoSG( temp_cvector_sg )
+                !
+                call self%fromFullVector( temp_cvector_sg )
+                !
+            class default
+                call errStop( "fromFullVector_cVectorSparse3D_SG > rhs must be cVector3D_SG_t" )
+            !
         end select
         !
     end subroutine fromFullVector_cVectorSparse3D_SG
@@ -475,34 +492,9 @@ contains
         !
         integer :: n
         !
-        stop "Error: length_cVectorSparse3D_SG not implemented yet!"
+        call errStop( "length_cVectorSparse3D_SG not implemented yet!" )
         !
     end function length_cVectorSparse3D_SG
-    !
-    !> No function briefing
-    !
-    function getSV_cVectorSparse3D_SG( self ) result( s_v )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:) :: s_v
-        !
-        call errStop( "getSV_cVectorSparse3D_SG not implemented!" )
-        !
-    end function getSV_cVectorSparse3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setSV_cVectorSparse3D_SG( self, s_v )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:), intent( in ) :: s_v
-        !
-        call errStop( "setSV_cVectorSparse3D_SG not implemented!" )
-        !
-    end subroutine setSV_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !
@@ -880,7 +872,7 @@ contains
     subroutine print_cVectorSparse3D_SG( self, io_unit, title, append )
         implicit none
         !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
+        class( cVectorSparse3D_SG_t ), intent( in ) :: self
         integer, intent( in ), optional :: io_unit
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append

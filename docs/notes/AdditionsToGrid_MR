@@ -1,0 +1,162 @@
+Properties:   these should as properties of the MR grid -- 
+integer, dimension(3,Ngrids)    :: NxyzActiveEdge,NxyzActiveFace
+integer, dimension(Ngrids)      :: NactiveNode, NactiveCell
+Integer		:: zLims(2,nGrids)
+These define total number of active edges, faces, nodes in each sub_grid,
+and array limits of active edges, faces, nodes   The interpretation/use vary
+with the type (EDGE/FACE for Vector, NODE/CELL for scalar) but the numbers needed are
+same for all cases.  Having these saved in the grid streamlines changing storageState
+
+Useful routines that should be in Grid_MR
+
+    function Active(self,iGrid), result( TopBottom ) 
+         !  for subgridd iGrid, returns logical array indicating if top/bottom boundaries    
+         !    are active--TopBottom(1) is for top, TopBottom(2) is for bottom
+         !  exactly same function needed for all MR fields!
+        logical :: TopBottom(2)
+        integer :: iGrid
+         
+         !  perhaps some error checking
+         !   e.g., 0<iGrid<nGrid
+         if(iGrid.eq.1) then
+            TopBottom(1) = .true.
+         else
+            TopBottom(1) = self%cs(iGrid) .lt. self%cs(iGrid-1)
+         end
+         if (iGrid.eq.self%nGrids) then
+            TopBottom(2) = .true.
+         else
+            TopBottom(2) = self&cs(iGrid) .lt. self%cs(iGrid+1)
+         end
+     end function
+
+!      Function to calculate total number of active elements for vectors/scalars of some type
+!   In each sub grid
+     Function Nactive(self,TYPE) result(n)
+
+       TYPE is EDGE FACE NODE
+
+       integer(n_grid)   :: n
+
+
+       do iGrid = 1,self%n_grids
+          Switch TYPE
+             Case EDGE
+                n(iGrid) = self%NxyzActiveEdge(1,iGrid) + self%NxyzActiveEdge(2,iGrid) +  &
+                   self%NxyzActiveEdge(3,iGrid)
+             Case FACE
+                n(iGrid) = self%NxyzActiveFace(1,iGrid) + self%NxyzActiveFace(2,iGrid) +   &
+                      self%NxyzActiveFace(3,iGrid)
+             Case NODE
+                N(iGrid) = self%NxyzActiveFace(iGrid)
+             Case CELL
+                N(iGrid) = self%NxyzActiveCell(iGrid)
+         End
+        Enddo
+     End function
+
+
+!     Routine to set those new properties
+
+	subroutine setActiveLimits(self)
+
+      ...
+
+       !  just the algorithm here
+       self%Nactive = 0
+       do iGrid = 1,self%n_grids
+          !  this sets limits (in vertical) of active faces, edges, nodes
+          !  First set total--active + inactive for subgrid
+          !
+          call self%sub_grids(iGrid)%numberOfEdges(nX,nY,nZ)
+          self%NxyzActiveEdge(1,iGrid) = nX
+          self%NxyzActiveEdge(2,iGrid) = nY
+          self%NxyzActiveEdge(3,iGrid) = nZ
+          !
+          call self%sub_grids(iGrid)%numberOfFaces(nX,nY,nZ)
+          self%NxyzActiveFace(1,iGrid) = nX
+          self%NxyzActiveFace(2,iGrid) = nY
+          self%NxyzActiveFace(3,iGrid) = nZ
+          self%NxyzActiveFace(3,iGrid) = nZ
+          !
+          self%NactiveNode(iGrid) = self%sub_grid(iGrid)%numberOfNodes()
+          !  not sure this function is defined -- value his nx*ny*nz
+          self%NactiveCells(iGrid) = self%sub_grid(iGrid)%numberOfCells()
+          !
+          TopBottom = Active(self,iGrid)
+          if(TopBottom(1)) then
+             self%zLims(1,iGrid) = 1
+          else
+             self%zLims(1,iGrid) = 2
+             self&ReduceActive()
+          endif
+          if(TopBottom(2)) then
+             self%zLims(2,iGrid) = self%sub_grids(iGrid)%nz+1
+          else
+             self%zLims(2,iGrid) = self%sub_grids(iGrid)%nz
+             self%ReduceActive()
+          endif
+        enddo
+
+       end subroutine
+
+!   ***********************
+        subroutine ReduceActive(self)
+             .... just algorithm. -- reduce number of active edges/faces/nodes
+                For one vertical layer in the sub_grid
+
+           self%NxyzActiveEdge(1,iGrid) = self%NxyzActiveEdge(1,iGrid) -  &
+                   self%sub_grids(iGrid)%nx * (self%sub_grids(iGrid)%ny+1)
+
+           self%NxyzActiveEdge(2,iGrid) = self%NxyzActiveEdge(2,iGrid) -  &
+                   (self%sub_grids(iGrid)%nx+1) * self%sub_grids(iGrid)%ny
+
+           self%NxyzActiveFace(3,iGrid) = self%NxyzActiveFace(3,iGrid) -  &
+                   self%sub_grids(iGrid)%nx * self%sub_grids(iGrid)%ny
+
+           self%NactiveNode(iGrid) = self%NactiveNode(iGrid) -  &
+                   (self%sub_grids(iGrid)%ny+1) * (self%sub_grids(iGrid)%nx+1)
+        end subroutine
+
+
+
+The following is not essential -- a question that arises is whether some of the
+properties for the SG grid that are somehow similar to the those that I suggest adding
+to MR, might also be put into the grid, and removed from the Fields classes.   Read, we can
+discuss.
+
+NOTE that arrays NdX, etc are declared in Vector, and are set
+depending on whether cVector is FACE or EDGE (and similarly for scalars with
+NdV etc.    For both SG and MR it might be cleaner and more efficient to
+put these in the grid (but have versions for edge and face), 
+and just access through pointer.    These are then eliminated from Vector (and Scalar).
+I am suggesting here
+to implement the MR grid and MR fields with this approach, and later go back 
+and modify SG in the same way.  The main point is that these are really
+things that depend on grid only and can be computed once and stored with grid.
+For MR things are more complicated and so there is more of an efficiency in
+just storing these with grid.   Note that in MR case NdXedge, etc. will be 
+number of *active* x-edges, etc.
+
+NOTE: there are abstract procedure interfaces declared in abstract Grid class:
+these should return nXedge, nYedge, nZedge, etc.  These should be total number
+of active edges for each component -- e.g., nXedge = sum(NxyzEdge(1,:))
+Thus NxyzEdge gives number of active x-edges in each grid.   We then store these in 
+cVector, etc.   The advantage of that approach is that you don't have to distinguish 
+FACE and EDGE vectors -- if we move to the Grid object, then to use NdX etc. in 
+Something like cVector we need to check whether it is a FACE or EDGE vector and use
+grid%NdXedge etc.   In fact many of the uses of NdX are already different for FACE and
+EDGE, so easy.  There are a few places (getArray and setArray I think) where we would have
+to add case statements to use the appropriate NdX.   Also things like copy would just
+Eliminate NdX etc., and just copy the pointer to the grid.
+
+Another idea -- leave NdX etc. in Vector, but make this NdX(:).  In the case of SG the dimension is 1; for MR it is nGrids.  This also requires a lot of tiny changes to all SG fields to refer to NdX(1) instead of NdX!   So probably not easier.   If we leave as is
+I think NdX (declared in Vector abstract object) becomes a "dead" property in the MR case.
+
+Another option: don't store NdX etc anywhere.  Use the grid object function to set when needed (not very often).  
+
+In any case, here are some other things to add to the MR grid:
+
+Properties (one way to do):   
+
+

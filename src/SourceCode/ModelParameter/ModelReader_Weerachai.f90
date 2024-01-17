@@ -6,8 +6,8 @@ module ModelReader_Weerachai
     use ModelReader
     use Utilities
     use rScalar3D_SG
-    use rScalar3D_MR
-    use ModelParameterCell
+    use ModelParameterCell_SG
+    use ModelParameterCell_MR
     use ForwardControlFile
     !
     type, extends( ModelReader_t ), public :: ModelReader_Weerachai_t
@@ -23,35 +23,29 @@ module ModelReader_Weerachai
 contains
     !
     !> No subroutine briefing
-    subroutine readModelReaderWeerachai( self, file_name, grid, model ) 
+    !
+    subroutine readModelReaderWeerachai( self, file_name, grid, model, param_grid ) 
         implicit none
         !
         class( ModelReader_Weerachai_t ), intent( in ) :: self
         character(*), intent( in ) :: file_name
         class( Grid_t ), allocatable, intent( out ) :: grid
         class( ModelParameter_t ), allocatable, intent( out ) :: model
+        class( Grid_t ), allocatable, intent( out ), optional :: param_grid
         !
         character( len=80 ) :: someChar 
         character(:), allocatable :: paramType 
-        integer :: nx, ny, nzEarth, nzAir, someIndex, i, ii, j, k, ioPrm, io_stat, p_nargs, anisotropic_level
+        integer :: nx, ny, nzEarth, nzAir, someIndex, ii, i, j, k, ioPrm, io_stat, anisotropic_level
         real( kind=prec ), dimension(:), allocatable :: dx, dy, dz
         real( kind=prec ) :: ox, oy, oz, rotDeg
         real( kind=prec ), dimension(:,:,:), allocatable :: rho
-        complex( kind=prec ), dimension(:,:,:), allocatable :: cond_v
-        class( Scalar_t ), allocatable :: ccond
-        real( kind=prec ) :: ALPHA
-        character(len=200), dimension(20) :: args
-        !
-        integer, allocatable, dimension(:) :: layers, levels
-        !
-        layers = (/ 0, 3, 1, 4, 2, 4 /)
+        type( rScalar3D_SG_t ) :: cell_cond_sg
         !
         someChar = ""
         paramType = ""
         someIndex = 0
-        ALPHA = 3.0
         !
-        open( newunit = ioPrm, file = trim(file_name),status = "old", iostat = io_stat)
+        open( newunit = ioPrm, file = trim( file_name ), status = "old", iostat = io_stat )
         !
         if( io_stat == 0 ) then
             !
@@ -65,9 +59,9 @@ contains
             !> Now read the second line with the grid dimensions
             nzAir = 0
             !
-            allocate(dx(nx))
-            allocate(dy(ny))
-            allocate(dz(nzAir + nzEarth))
+            allocate( dx(nx) )
+            allocate( dy(ny) )
+            allocate( dz(nzAir + nzEarth) )
             !
             read(ioPrm, *) (dx(j), j = 1, nx)
             read(ioPrm, *) (dy(j), j = 1, ny)
@@ -87,33 +81,45 @@ contains
                 paramType = LINEAR
             endif
             !
-            !> The default method for creating air layers in the grid has been deleted
-            !
+            !> Create Grid according to the control format
             select case( grid_format )
                 !
                 case( GRID_SG )
+                    !
                     allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
+                    !
                 case( GRID_MR )
+                    !
                     allocate( grid, source = Grid3D_MR_t( nx, ny, nzAir, nzEarth, dx, dy, dz, layers ) )
+                    !
                 case default
-					!
-					call warning( "readModelReaderWeerachai > grid_format not provided, using Grid3D_SG_t." )
-					!
-					allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
-					!
+                    !
+                    call warning( "readModelReaderWeerachai > grid_format not provided, using Grid3D_SG_t." )
+                    !
+                    allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
+                    !
             end select
             !
-            !> Consider isotope at first
+            if( present( param_grid ) ) then
+                !
+                allocate( param_grid, source = Grid3D_SG_t( grid%nx, grid%ny, 0, &
+                ( grid%nz - grid%nzAir ), grid%dx, grid%dy, &
+                grid%dz( grid%nzAir+1 : grid%nz ) ) )
+                !
+            endif
+            !
+            !> Consider isotropy at first
             anisotropic_level = 1
             !
-            !> Read conductivity values in a model parameter object.
+            !> Read tag, check if it is VTI
             if( index( someChar, "VTI" ) > 0 ) then
                 !
                 anisotropic_level = 2
                 !
-            end if
+            endif
             !
-            !>
+            !> Read conductivity values,
+            !> create rScalar3D_SG cell_cond_sg with them
             do ii = 1, anisotropic_level
                 !
                 allocate( rho( nx, ny, nzEarth ) )
@@ -124,54 +130,67 @@ contains
                     enddo
                 enddo
                 !
-                select type( grid )
+                if( present( param_grid ) ) then
                     !
-                    class is( Grid3D_SG_t )
-                        allocate( ccond, source = rScalar3D_SG_t( grid, CELL_EARTH ) )
-                    class is( Grid3D_MR_t )
-                        allocate( ccond, source = rScalar3D_MR_t( grid, CELL_EARTH ) )
-                    class default
-                        call errStop( "readModelReaderWeerachai > Unknow grid" )
+                    cell_cond_sg = rScalar3D_SG_t( param_grid, CELL )
                     !
-                end select
-                !
-
-                if( index( paramType, "LOGE" ) > 0 .OR. &
-                    index( paramType, "LOG10" ) > 0 ) then
+                else
                     !
-                    cond_v = cmplx( -rho, 0.0, kind=prec )
-                    !
-                elseif( index( paramType, "LINEAR" ) > 0 ) then
-                    !
-                    cond_v = cmplx( ONE/rho, 0.0, kind=prec )
+                    cell_cond_sg = rScalar3D_SG_t( grid, CELL )
                     !
                 endif
                 !
-                call ccond%setV( cond_v )
+                if( index( paramType, "LOGE" ) > 0 .OR. &
+                    index( paramType, "LOG10" ) > 0 ) then
+                    !
+                    cell_cond_sg%v = cmplx( -rho, 0.0, kind=prec )
+                    !
+                elseif( index( paramType, "LINEAR" ) > 0 ) then
+                    !
+                    cell_cond_sg%v = cmplx( ONE/rho, 0.0, kind=prec )
+                    !
+                endif
                 !
-                deallocate( rho, cond_v )
+                deallocate( rho )
                 !
+                !> Create the proper SG or MR model
                 if( anisotropic_level == 1 ) then
                     !
-                    allocate( model, source = ModelParameterCell_t( grid, ccond, 1, paramType ) )
+                    select type( grid )
+                        !
+                        class is( Grid3D_SG_t )
+                            allocate( model, source = ModelParameterCell_SG_t( cell_cond_sg, 1, paramType ) )
+                        class is( Grid3D_MR_t )
+                            allocate( model, source = ModelParameterCell_MR_t( cell_cond_sg, 1, paramType, layers ) )
+                        class default
+                            call errStop( "readModelReaderWeerachai > Unknown grid for ModelParameter" )
+                        !
+                    end select
                     !
                 else
                     !
                     if( allocated( model ) ) then
                         !
-                        call model%setCond( ccond, ii )
+                        call model%setCond( cell_cond_sg, ii )
                         !
                     else
                         !
-                        allocate( model, source = ModelParameterCell_t( grid, ccond, 2, paramType ) )
+                        select type( grid )
+                            !
+                            class is( Grid3D_SG_t )
+                                allocate( model, source = ModelParameterCell_SG_t( cell_cond_sg, 2, paramType ) )
+                            class is( Grid3D_MR_t )
+                                allocate( model, source = ModelParameterCell_MR_t( cell_cond_sg, 2, paramType, layers ) )
+                            class default
+                                call errStop( "readModelReaderWeerachai > Unknow grid for VTI ModelParameter" )
+                            !
+                        end select
                         !
                     endif
                     !
                 endif
                 !
-                deallocate( ccond )
-                !
-            end do
+            enddo
             !
             !> ALWAYS convert modelParam to natural log for computations ????
             paramType = LOGE
@@ -179,7 +198,7 @@ contains
             !
             !> End - Reading cells conductivity values.
             !
-            !> In case the grid origin is stored next (in metres!)...
+            !> In case the grid origin is stored next (in meters!)...
             read(ioPrm, *, iostat = io_stat) ox, oy, oz
             !
             !> Defaults to the grid center at the Earth"s surface
@@ -207,3 +226,4 @@ contains
     end subroutine readModelReaderWeerachai
     !
 end module ModelReader_Weerachai
+!

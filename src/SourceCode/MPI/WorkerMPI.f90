@@ -177,7 +177,7 @@ contains
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
-        !> Switch Transmitter's source to SourceInteriorForce from PMult
+        !> Switch Transmitter's source to SourceAdjoint from PMult
         call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
         !
         !> Solve e_sens with the new Source
@@ -201,7 +201,7 @@ contains
     !> Receive data_tx from master process
     !> Calculate tx_dsigma for the data_tx's transmitter with JMult_T_Tx
     !>     Create a rhs from LRows * residual data for all receivers related to the transmitter.
-    !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
+    !>     Solve ESens on the transmitter using a transpose SourceAdjoint, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
     !> Send dsigma%cell_cond_h to master process
     !> Require previous call of workerSolve or masterSolveAll
@@ -258,11 +258,11 @@ contains
                 !
             case( MODELOP_SP )
                 !
-                allocate( model_operator, source = ModelOperator_SP_t( main_grid ) )
+                allocate( model_operator, source = ModelOperator_SP_V1_t( main_grid ) )
                 !
             case( MODELOP_SP2 )
                 !
-                call errStop( "handleModelFile > MODELOP_SP2 not implemented" )
+                allocate( model_operator, source = ModelOperator_SP_V2_t( main_grid ) )
                 !
             case( "" )
                 !

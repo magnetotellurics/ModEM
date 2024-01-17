@@ -16,7 +16,7 @@ module ReceiverArray
     type( Rx_t ), allocatable, target, dimension(:) :: receivers
     !
     public :: getReceiver, printReceiverArray
-    public :: updateReceiverArray, deallocateReceiverArray
+    public :: updateReceiverArray!, deallocateReceiverArray
     !
 contains
     !
@@ -29,18 +29,16 @@ contains
         !
         integer :: i, n_rx
         type( Rx_t ), allocatable, dimension(:) :: temp_array
-        type( Rx_t ), allocatable :: temp_rx
         !
         if( .NOT. allocated( receivers ) ) then
             !
             allocate( receivers(1) )
-            allocate( Rx_t :: temp_rx )
-            temp_rx%Rx = new_rx
-            i_rx = 1
-            temp_rx%Rx%i_rx = 1
-            receivers(1) = temp_rx
             !
-            deallocate( temp_rx )
+            allocate( receivers(1)%Rx, source = new_rx )
+            !
+            i_rx = 1
+            !
+            receivers(1)%Rx%i_rx = 1
             !
         else
             !
@@ -54,19 +52,22 @@ contains
             enddo
             !
             allocate( temp_array( n_rx + 1 ) )
+            !
             temp_array( 1 : n_rx ) = receivers
-            allocate( Rx_t :: temp_rx )
-            temp_rx%Rx = new_rx
-            temp_rx%Rx%i_rx = n_rx + 1
+            !
+            allocate( temp_array( n_rx + 1 )%Rx, source = new_rx )
+            !
+            temp_array( n_rx + 1 )%Rx%i_rx = n_rx + 1
+            !
             i_rx = n_rx + 1
             !
-            temp_array( n_rx + 1 ) = temp_rx
+            !call deallocateReceiverArray()
             !
-            call deallocateReceiverArray()
+            deallocate( receivers )
             !
             allocate( receivers, source = temp_array )
             !
-            deallocate( temp_rx, temp_array )
+            deallocate( temp_array )
             !
         endif
         !
@@ -84,33 +85,33 @@ contains
         rx => receivers( iRx )%Rx
         !
     end function getReceiver
-    !
-    !> No subroutine briefing
-    subroutine deallocateReceiverArray()
-        implicit none
-        !
-        integer :: nrx, irx
-        !
-        !write( *, * ) "deallocateReceiverArray:", size( receivers )
-        !
-        if( allocated( receivers ) ) then
-            !
-            nrx = size( receivers )
-            !
-            if( nrx == 1 ) then
-                if( allocated( receivers(1)%Rx ) ) deallocate( receivers(1)%Rx )
-            else
-                do irx = nrx, 1, -(1)
-                    if( allocated( receivers( irx )%Rx ) ) deallocate( receivers( irx )%Rx )
-                enddo
-            endif
-            !
-            deallocate( receivers )
-            !
-        endif
-        !
-    end subroutine deallocateReceiverArray
-    !
+    ! !
+    ! !> No subroutine briefing
+    ! subroutine deallocateReceiverArray()
+        ! implicit none
+        ! !
+        ! integer :: nrx, irx
+        ! !
+        ! !write( *, * ) "deallocateReceiverArray:", size( receivers )
+        ! !
+        ! if( allocated( receivers ) ) then
+            ! !
+            ! nrx = size( receivers )
+            ! !
+            ! if( nrx == 1 ) then
+                ! if( allocated( receivers(1)%Rx ) ) deallocate( receivers(1)%Rx )
+            ! else
+                ! do irx = nrx, 1, -(1)
+                    ! if( allocated( receivers( irx )%Rx ) ) deallocate( receivers( irx )%Rx )
+                ! enddo
+            ! endif
+            ! !
+            ! deallocate( receivers )
+            ! !
+        ! endif
+        ! !
+    ! end subroutine deallocateReceiverArray
+    ! !
     !> Prints the content of the receivers on screen
     subroutine printReceiverArray()
         implicit none

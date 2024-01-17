@@ -6,6 +6,7 @@ module ForwardSolver_IT
     use ForwardSolver
     use Solver_QMR
     use Solver_BICG
+	!use Solver_BICG_OMP
     !
     type, extends( ForwardSolver_t ) :: ForwardSolver_IT_t
         !
@@ -86,7 +87,7 @@ contains
         implicit none
         !
         class( ForwardSolver_IT_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( inout ) :: sigma
+        class( ModelParameter_t ), intent( in ) :: sigma
         real( kind=prec ), intent( in ) :: period
         !
         !> Set omega for this ForwardSolver solver
@@ -157,8 +158,27 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), allocatable, intent( out ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_vec
+        class( Vector_t ), allocatable :: source_e_vec, boundary_vec
+        type( cVector3D_MR_t ) :: source_e_vec_mr
         integer :: i
+        !
+        !> Create proper SG or MR source_e_vec
+        select type( grid => source%E( pol )%grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                allocate( source_e_vec, source = source%E( pol ) )
+            !
+            class is( Grid3D_MR_t )
+                !
+                source_e_vec_mr = cVector3D_MR_t( grid, source%E( pol )%grid_type )
+                call source_e_vec_mr%fromSG( source%E( pol ) )
+                allocate( source_e_vec, source = source_e_vec_mr )
+                !
+            class default
+               call errStop( "createESolution_ForwardSolver_IT > Unclassified Source grid." )
+            !
+        end select
         !
         !> Create e_solution Vector
         call self%solver%preconditioner%model_operator%metric%createVector( complex_t, EDGE, e_solution )
@@ -173,7 +193,6 @@ contains
         !> 
         fwd_solver_loop: do
             !
-            !> 
             call self%solver%solve( source%rhs( pol )%v, e_solution )
             !
             do i = 1, self%solver%n_iter
@@ -200,7 +219,7 @@ contains
             call warning( "createESolution_ForwardSolver_IT failed to converge!" )
         endif
         !
-        !> Just for the serialJMult_T SourceInteriorForce case
+        !> Just for the serialJMult_T SourceAdjoint case
         if( source%for_transpose ) then
             !
             call e_solution%mult( self%solver%preconditioner%model_operator%metric%v_edge )
@@ -209,17 +228,17 @@ contains
         !
         if( source%non_zero_bc ) then
             !
-            call source%rhs( pol )%v%boundary( temp_vec )
+            call source%rhs( pol )%v%boundary( boundary_vec )
             !
         else
             !
-            call source%E( pol )%v%boundary( temp_vec )
+            call source_e_vec%boundary( boundary_vec )
             !
         endif
         !
-        call e_solution%add( temp_vec )
+        call e_solution%add( boundary_vec )
         !
-        deallocate( temp_vec )
+        deallocate( boundary_vec )
         !
     end subroutine createESolution_ForwardSolver_IT
     !

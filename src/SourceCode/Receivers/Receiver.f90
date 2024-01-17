@@ -48,6 +48,8 @@ module Receiver
             !
             procedure, public :: baseDealloc => deallocate_Receiver
             !
+            procedure, private :: deallocateLRows
+            !
     end type Receiver_t
     !
     !> Module routines
@@ -109,6 +111,7 @@ module Receiver
 contains
     !
     !> No subroutine briefing
+    !
     subroutine initialize_Receiver( self )
         implicit none
         !
@@ -131,6 +134,7 @@ contains
     end subroutine initialize_Receiver
     !
     !> No subroutine briefing
+    !
     subroutine deallocate_Receiver( self )
         implicit none
         !
@@ -158,31 +162,39 @@ contains
         !
         if( allocated( self%response ) ) deallocate( self%response )
         !
-        if( allocated( self%lrows ) ) deallocate( self%lrows )
+        call self%deallocateLRows
         !
     end subroutine deallocate_Receiver
-    ! !
-    ! !> No subroutine briefing
-    ! subroutine deallocateLRows( transmitter )
-        ! implicit none
-        ! !
-        ! class( Transmitter_t ), intent( in ) :: transmitter
-        ! integer :: i_pol, i_comp, nrx, irx
-        ! !
-        ! if( allocated( self%lrows ) ) then
-            ! !
-            ! asize = size( self%EHxy )
-            ! do i_comp = asize, 1, -(1)
-                ! if( allocated( self%lrows( i_pol, i_comp )%v ) ) deallocate( self%lrows( i_pol, i_comp )%v )
-            ! enddo
-            ! !
-            ! deallocate( self%EHxy )
-            ! !
-        ! endif
-        ! !
-    ! end subroutine deallocateLRows
-    ! !
+    !
     !> No subroutine briefing
+    !
+    subroutine deallocateLRows( self )
+        implicit none
+        !
+        class( Receiver_t ), intent( inout ) :: self
+        !
+        integer :: ntx, i, j
+        !
+        if( allocated( self%lrows ) ) then
+            !
+            do j = size( self%lrows, 2 ), 1, -(1)
+                !
+                do i = size( self%lrows, 1 ), 1, -(1)
+                    !
+                    if( allocated( self%lrows( i, j )%v ) ) deallocate( self%lrows( i, j )%v )
+                    !
+                enddo
+                !
+            enddo
+            !
+            deallocate( self%lrows )
+            !
+        endif
+        !
+    end subroutine deallocateLRows
+    !
+    !> No subroutine briefing
+    !
     subroutine evaluationFunction_Receiver( self, model_operator )
         implicit none
         !
@@ -196,6 +208,8 @@ contains
         !
         do k = 1, size( self%EHxy )
             !
+            !> Create e_h vector with proper type
+            !> Eletrical(E) - EDGE and Magnetic(B) - FACE
             select case( self%EHxy(k)%str )
                 !
                 case( "Ex", "Ey", "Ez" )
@@ -208,8 +222,10 @@ contains
                     !
                 case default
                     call errStop( "evaluationFunction_Receiver > Unknown EHxy" )
+                !
             end select
             !
+            !> Different behaviour for E and B components
             select case( self%EHxy(k)%str )
                 !
                 case( "Ex" )
@@ -275,6 +291,7 @@ contains
     end subroutine evaluationFunction_Receiver
     !
     !> No subroutine briefing
+    !
     subroutine savePredictedData_Receiver( self, transmitter, data_group )
         implicit none
         !

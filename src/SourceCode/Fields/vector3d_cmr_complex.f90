@@ -25,7 +25,7 @@ module Vector3d_cmr_complex
   use GridCalc, only : edgeLength
   use sg_vector, only : cvector, create_cvector
   use sg_vector, only : rvector, create_rvector
-  use vecTranslate, only : getRVector, setRVector, setlimits
+  use vecTranslate, only : getRVector, setRVector, setLimits
   use vecTranslate, only : getCVector, setCVector
 
   use MR_constants
@@ -62,7 +62,7 @@ module Vector3d_cmr_complex
      ! pointer to parent grid
      class (Grid3d_cmr_t), pointer :: grid_ptr
 
-     class (Vector3d_csg_complex_t), allocatable :: sub_vectors(:)
+     class (Vector3d_csg_complex_t), allocatable :: sub_vector(:)
 
      ! List of all active (interior + boundary) indices
      integer, dimension (:), allocatable :: ind_active
@@ -191,8 +191,8 @@ contains
     E%ind_boundary = E_in%ind_boundary
     
     do i = 1, E_in%grid_ptr%ngrids
-       E%sub_vectors(i) = E_in%sub_vectors(i)
-    end do
+       E%sub_vector(i) = E_in%sub_vector(i)
+    enddo
  
   end function Vector3d_cmr_complex_t_ctor_copy
 
@@ -242,13 +242,13 @@ contains
     self%grid_type = grid_type
 
     self%is_allocated = .TRUE.
-    allocate (self%sub_vectors(self%grid_ptr%ngrids), STAT = status)
+    allocate (self%sub_vector(self%grid_ptr%ngrids), stat=status)
     self%is_allocated = self%is_allocated .AND. (status.EQ.0)
 
     do i = 1, self%grid_ptr%ngrids
-       self%sub_vectors(i) = Vector3d_csg_complex_t (&
-            igrid%sub_grids(i), grid_type)
-    end do
+       self%sub_vector(i) = Vector3d_csg_complex_t (&
+            igrid%sub_grid(i), grid_type)
+    enddo
 
     call self%set_active_int_boundary ()
     call self%Zero ()
@@ -361,7 +361,7 @@ contains
 
     if(int_only) then
        ctmp = self%grid_type
-    end if
+    endif
     
     ctmp = bdry
     rtmp = c
@@ -392,13 +392,13 @@ contains
        xy = .false.
     else
        xy = xy_in
-    end if
+    endif
 
     ! Loop over subgrids, setting boundary edges to one,
     ! interior to  zero
     do k = 1, self%grid_ptr%ngrids
-       call self%sub_vectors(k)%set_all_boundary (cmplx(1._prec, 0._prec, prec))
-    end do
+       call self%sub_vector(k)%set_all_boundary (cmplx(1._prec, 0._prec, prec))
+    enddo
 
     ! Loop over interfaces: set redundant interface edges to 2
     select case (self%grid_type)
@@ -419,35 +419,35 @@ contains
     end select
 
     do k = 2, self%grid_ptr%ngrids
-       if(self%grid_ptr%Coarseness(k - 1, 1) < self%grid_ptr%Coarseness(k, 1)) then
+       if(self%grid_ptr%coarseness(k - 1, 1) < self%grid_ptr%coarseness(k, 1)) then
           ! upper grid is finer: grid k-1 interface nodes are
           ! not active; also reset interior part of interface
           ! edges to 0
           if(xy) then
-             call self%sub_vectors(k-1)%set_one_boundary('z2_x', &
+             call self%sub_vector(k-1)%set_one_boundary('z2_x', &
                   cmplx(-1._prec, 0._prec, prec))
-             call self%sub_vectors(k-1)%set_one_boundary('z2_y', &
+             call self%sub_vector(k-1)%set_one_boundary('z2_y', &
                   cmplx(-10._prec, 0._prec, prec))
           else
-             call self%sub_vectors(k-1)%set_one_boundary('z2', &
+             call self%sub_vector(k-1)%set_one_boundary('z2', &
                   cmplx(-1._prec, 0._prec, prec))
-          end if
-          call self%sub_vectors(k)%set_one_boundary('z1', &
+          endif
+          call self%sub_vector(k)%set_one_boundary('z1', &
                cmplx(0._prec, 0._prec, prec), int_only)
        else
           if(xy) then
-             call self%sub_vectors(k)%set_one_boundary('z1_x', &
+             call self%sub_vector(k)%set_one_boundary('z1_x', &
                   cmplx(-1.0_prec, 0._prec, prec))
-             call self%sub_vectors(k)%set_one_boundary('z1_y', &
+             call self%sub_vector(k)%set_one_boundary('z1_y', &
                   cmplx(-10.0_prec, 0._prec, prec))
           else                
-             call self%sub_vectors(k)%set_one_boundary('z1', &
+             call self%sub_vector(k)%set_one_boundary('z1', &
                   cmplx(-1.0_prec, 0._prec, prec))
-          end if
-          call self%sub_vectors(k-1)%set_one_boundary('z2', &
+          endif
+          call self%sub_vector(k-1)%set_one_boundary('z2', &
                cmplx(0._prec, 0._prec, prec), int_only)
-       end if
-    end do
+       endif
+    enddo
 
     !******                                        ******
     ! ***  Set active, interior, and boundary edges. ***
@@ -463,8 +463,8 @@ contains
     do k = 1, n_full
        if(real (v_1(k)) >= 0) then
           n_active = n_active + 1
-       end if
-    end do
+       endif
+    enddo
 
     allocate (self%ind_active(n_active))
 
@@ -473,8 +473,8 @@ contains
        if(real (v_1(k)) >= 0) then
           i = i + 1
           self%ind_active(i) = k
-       end if
-    end do
+       endif
+    enddo
     !
     ! End - Set indices of active edges
 
@@ -484,8 +484,8 @@ contains
     do k = 1, n_full
        if(real (v_1(k)) == 0) then
           n_interior = n_interior + 1
-       end if
-    end do
+       endif
+    enddo
 
     allocate (v_2(n_active))
     v_2 = v_1(self%ind_active)
@@ -497,8 +497,8 @@ contains
        if(real (v_2(k)) == 0) then
           i = i + 1
           self%ind_interior(i) = k               
-       end if
-    end do
+       endif
+    enddo
     !
     ! End - Set indices of interior edges
 
@@ -508,8 +508,8 @@ contains
     do k = 1, n_active
        if(real (v_2(k)) == 1) then
           n_boundaries = n_boundaries + 1
-       end if
-    end do
+       endif
+    enddo
 
     allocate (self%ind_boundary(n_boundaries)) 
 
@@ -518,8 +518,8 @@ contains
        if(real(v_2(k)) == 1) then
           i = i + 1
           self%ind_boundary(i) = k             
-       end if
-    end do
+       endif
+    enddo
     !
     ! End - Set indices of boundary edges
 
@@ -635,7 +635,7 @@ contains
        write(*, *) '      Input vector not allocated.'
 
        STOP
-    end if
+    endif
 
     select type (rhs)
     class is (Vector3d_cmr_complex_t)  
@@ -647,13 +647,13 @@ contains
              write(*, *) '      Grid types not compatible.'
 
              STOP       
-          end if
-       end if
+          endif
+       endif
 
-       nvecs = size (self%sub_vectors)
+       nvecs = size (self%sub_vector)
        do i = 1, nvecs
-          call self%sub_vectors(i)%copy_from (rhs%sub_vectors(i))
-       end do
+          call self%sub_vector(i)%copy_from (rhs%sub_vector(i))
+       enddo
 
        class default
        write(*, *) 'ERROR:Vector3d_cmr_complex_t::copy_from: '
@@ -691,12 +691,12 @@ contains
     i2 = 0
 
     do k = 1, self%grid_ptr%ngrids
-       n = self%sub_vectors(k)%length()         
+       n = self%sub_vector(k)%length()         
        i2 = i2 + n
-       call self%sub_vectors(k)%Get_array (v_temp)
+       call self%sub_vector(k)%Get_array (v_temp)
        v(i1:i2) = v_temp
        i1 = i1 + n
-    end do
+    enddo
 
   end subroutine Get_full_
 
@@ -714,11 +714,11 @@ contains
     !
     i1 = 1; i2 = 0;
     do k = 1, self%grid_ptr%ngrids
-       n = self%sub_vectors(k)%length ()
+       n = self%sub_vector(k)%length ()
        i2 = i2 + n
-       call self%sub_vectors(k)%set_array (v(i1:i2))
+       call self%sub_vector(k)%set_array (v(i1:i2))
        i1 = i1 + n
-    end do
+    enddo
   end subroutine Set_full_
 
   !**
@@ -740,8 +740,8 @@ contains
     !
     n = 0
     do k = 1, self%grid_ptr%ngrids
-       n = n + self%sub_vectors(k)%length()
-    end do
+       n = n + self%sub_vector(k)%length()
+    enddo
 
   end function length_full_
 
@@ -768,7 +768,7 @@ contains
   !   n_I = 0
   !   do k = 1, n
   !      if(v(k) == c) n_I = n_I + 1
-  !   end do
+  !   enddo
 
   !   allocate (I(n_I))
 
@@ -777,8 +777,8 @@ contains
   !      if(v(k) == c) then
   !         n_I = n_I + 1
   !         I(n_I) = k
-  !      end if
-  !   end do
+  !      endif
+  !   enddo
 
   !   !**
   !   ! Clean up
@@ -811,7 +811,7 @@ contains
   !   n_I = 0
   !   do k = 1, n
   !      if(abs (v(k) - c)/abs (c) <= TOL) n_I = n_I + 1
-  !   end do
+  !   enddo
 
   !   allocate (I(n_I))
 
@@ -820,8 +820,8 @@ contains
   !      if(abs (v(k) - c)/abs (c) <= TOL) then
   !         n_I = n_I + 1
   !         I(n_I) = k
-  !      end if
-  !   end do
+  !      endif
+  !   enddo
 
   ! end subroutine Find_
 
@@ -847,8 +847,8 @@ contains
     !***********************
     !
     do i = 1, self%grid_ptr%NGrids
-       call self%sub_vectors(i)%Zero ()
-    end do
+       call self%sub_vector(i)%Zero ()
+    enddo
 
   end subroutine Zero_
 
@@ -1139,27 +1139,27 @@ contains
     select case (self%grid_type)
     case (EDGE)
        do k = 1, self%grid_ptr%NGrids
-          Cs = 2**self%grid_ptr%Coarseness(k, 1)
-          i1 = self%grid_ptr%Coarseness(k, 3)
-          i2 = self%grid_ptr%Coarseness(k, 4)
+          Cs = 2**self%grid_ptr%coarseness(k, 1)
+          i1 = self%grid_ptr%coarseness(k, 3)
+          i2 = self%grid_ptr%coarseness(k, 4)
           ! Copy  x and y components in x and y directions
           ! edges that aligned with subgrid edge.
           do i = 1, Cs 
-             temp%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) = self%sub_vectors(k)%x
-             temp%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) = self%sub_vectors(k)%y
+             temp%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) = self%sub_vector(k)%x
+             temp%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) = self%sub_vector(k)%y
              
              w1 = 1. - (i - 1.)/Cs
              w2 = 1. - w1
              
              if(i == 1) then
-                temp%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2) = self%sub_vectors(k)%z
+                temp%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2) = self%sub_vector(k)%z
              else
-                last = size(self%sub_vectors(k)%z, 1)
+                last = size(self%sub_vector(k)%z, 1)
                 temp%z(i:z_nx:Cs, 1:z_ny:Cs, i1:i2) = &
-                     self%sub_vectors(k)%z(1:last-1, :, :) * w1 +&
-                     self%sub_vectors(k)%z(2:last, :, :) * w2
-             end if
-          end do
+                     self%sub_vector(k)%z(1:last-1, :, :) * w1 +&
+                     self%sub_vector(k)%z(2:last, :, :) * w2
+             endif
+          enddo
           ! edges that subdivide the subgrid
           ! interpolate  in y and x direxctions
           ! copy/interpolate x in y direction
@@ -1181,13 +1181,13 @@ contains
              ! temp.z(i:Cs:end,i:Cs:end,i1:i2) = temp.z(:,1:Cs:end-Cs,i1:i2)*w1+ ...
              ! temp.z(:,Cs+1:Cs:end,i1:i2)*w2;
              ! added by zhhq, 2017
-          end do
+          enddo
           
           sg_v%x(:, :, i1:i2+1) = sg_v%x(:, :, i1:i2+1) + temp%x(:, :, i1:i2+1)
           sg_v%y(:, :, i1:i2+1) = sg_v%y(:, :, i1:i2+1) + temp%y(:, :, i1:i2+1)
           sg_v%z(:, :, i1:i2)   = temp%z(:, :, i1:i2)
           
-       end do
+       enddo
 
     case default
        STOP 'ERROR:mr_to_cvector: Unrecognized grid type.'
@@ -1240,31 +1240,31 @@ contains
     call setCVector(temple, tempEL)
 
     do k = 1, self%grid_ptr%NGrids
-       Cs = 2**self%grid_ptr%Coarseness(k, 1)
-       i1 = self%grid_ptr%Coarseness(k, 3)
-       i2 = self%grid_ptr%Coarseness(k, 4)
+       Cs = 2**self%grid_ptr%coarseness(k, 1)
+       i1 = self%grid_ptr%coarseness(k, 3)
+       i2 = self%grid_ptr%coarseness(k, 4)
 
-       sx1 = size(self%sub_vectors(k)%x, 1)
-       sx2 = size(self%sub_vectors(k)%x, 2)
-       sx3 = size(self%sub_vectors(k)%x, 3)
+       sx1 = size(self%sub_vector(k)%x, 1)
+       sx2 = size(self%sub_vector(k)%x, 2)
+       sx3 = size(self%sub_vector(k)%x, 3)
        allocate (lengthx(sx1, sx2, sx3))
        lengthx = 0.0
        
-       sy1 = size(self%sub_vectors(k)%y, 1)
-       sy2 = size(self%sub_vectors(k)%y, 2)
-       sy3 = size(self%sub_vectors(k)%y, 3)
+       sy1 = size(self%sub_vector(k)%y, 1)
+       sy2 = size(self%sub_vector(k)%y, 2)
+       sy3 = size(self%sub_vector(k)%y, 3)
        allocate (lengthy(sy1, sy2, sy3))
        lengthy = 0.0
 
        do i = 1, Cs
           s1 = size(tempEL%x, 1)
           s2 = size(tempEL%x, 2)
-          self%sub_vectors(k)%x = self%sub_vectors(k)%x + &
+          self%sub_vector(k)%x = self%sub_vector(k)%x + &
                tempEL%x(i:s1:Cs, 1:s2:Cs, i1:i2+1)
 
           s1 = size(tempEL%y, 1)
           s2 = size(tempEL%y, 2)
-          self%sub_vectors(k)%y = self%sub_vectors(k)%y + &
+          self%sub_vector(k)%y = self%sub_vector(k)%y + &
                tempEL%y(1:s1:Cs,i:s2:Cs, i1:i2+1)
 
           s1 = size(temp_L%x, 1)
@@ -1273,16 +1273,16 @@ contains
           s1 = size(temp_L%y, 1)
           s2 = size(temp_L%y, 2)
           lengthy = lengthy + temp_L%y(1:s1:Cs, i:s2:Cs, i1:i2+1);
-       end do
+       enddo
        
-       self%sub_vectors(k)%x = self%sub_vectors(k)%x/lengthx
-       self%sub_vectors(k)%y = self%sub_vectors(k)%y/lengthy
+       self%sub_vector(k)%x = self%sub_vector(k)%x/lengthx
+       self%sub_vector(k)%y = self%sub_vector(k)%y/lengthy
        s1 = size(sg_v%z, 1)
        s2 = size(sg_v%z, 2)
-       self%sub_vectors(k)%z = sg_v%z(1:s1:Cs, 1:s2:Cs, i1:i2)
+       self%sub_vector(k)%z = sg_v%z(1:s1:Cs, 1:s2:Cs, i1:i2)
 
        deallocate (lengthx, lengthy)
-    end do    
+    enddo    
     
   end subroutine cvector_to_mr_
 
@@ -1326,42 +1326,42 @@ contains
     z_nz = size(sg_v%z, 3)
     
     do k = 1, self%grid_ptr%NGrids
-       Cs = 2**self%grid_ptr%Coarseness(k, 1)
-       i1 = self%grid_ptr%Coarseness(k, 3)
-       i2 = self%grid_ptr%Coarseness(k, 4)
+       Cs = 2**self%grid_ptr%coarseness(k, 1)
+       i1 = self%grid_ptr%coarseness(k, 3)
+       i2 = self%grid_ptr%coarseness(k, 4)
        
        do i = 1, Cs
           last = size(grid%Dx)
-          self%sub_vectors(k)%x = self%sub_vectors(k)%x + &
+          self%sub_vector(k)%x = self%sub_vector(k)%x + &
                sg_v%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) *    &
                rep_mat(grid%Dx(i:last:Cs), &
                1, &
-               self%grid_ptr%sub_grids(k)%Ny + 1, &
-               self%grid_ptr%sub_grids(k)%Nz + 1, .false.)
+               self%grid_ptr%sub_grid(k)%Ny + 1, &
+               self%grid_ptr%sub_grid(k)%Nz + 1, .false.)
           
           last = size(grid%Dy)
-          self%sub_vectors(k)%y = self%sub_vectors(k)%y + &
+          self%sub_vector(k)%y = self%sub_vector(k)%y + &
                sg_v%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) *  & 
                rep_mat(grid%Dy(i:last:Cs), &
-               self%grid_ptr%sub_grids(k)%Nx + 1, &
+               self%grid_ptr%sub_grid(k)%Nx + 1, &
                1, &
-               self%grid_ptr%sub_grids(k)%Nz + 1, .TRUE.)
-       end do
+               self%grid_ptr%sub_grid(k)%Nz + 1, .TRUE.)
+       enddo
        
-       self%sub_vectors(k)%x = self%sub_vectors(k)%x / &
-            rep_mat(self%grid_ptr%sub_grids(k)%Dx, &
+       self%sub_vector(k)%x = self%sub_vector(k)%x / &
+            rep_mat(self%grid_ptr%sub_grid(k)%Dx, &
             1, &
-            self%grid_ptr%sub_grids(k)%Ny + 1, &
-            self%grid_ptr%sub_grids(k)%Nz + 1, .false.)
+            self%grid_ptr%sub_grid(k)%Ny + 1, &
+            self%grid_ptr%sub_grid(k)%Nz + 1, .false.)
        
-       self%sub_vectors(k)%y = self%sub_vectors(k)%y / &
-            rep_mat(self%grid_ptr%sub_grids(k)%Dy, &
-            self%grid_ptr%sub_grids(k)%Nx + 1, &
+       self%sub_vector(k)%y = self%sub_vector(k)%y / &
+            rep_mat(self%grid_ptr%sub_grid(k)%Dy, &
+            self%grid_ptr%sub_grid(k)%Nx + 1, &
             1, &
-            self%grid_ptr%sub_grids(k)%Nz + 1, .TRUE.)
+            self%grid_ptr%sub_grid(k)%Nz + 1, .TRUE.)
        
-       self%sub_vectors(k)%z = sg_v%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2)
-    end do
+       self%sub_vector(k)%z = sg_v%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2)
+    enddo
     
   end subroutine cvector_to_mr_b_
   
@@ -1391,19 +1391,19 @@ contains
           m_out(1, i1:i2, 1) = m_in
           i1 = i2 + 1
           i2 = i2 + n_in
-       end do
+       enddo
 
        !*
        ! Copy along 1st dimension.
        do i = 1, nx
           m_out(i, :, 1) = m_out(1, :, 1)
-       end do
+       enddo
 
        !*
        ! Copy along 3rd dimension
        do i = 1, nz
           m_out(:, :, i) = m_out(:, :, 1)
-       end do
+       enddo
        
     else
        allocate(m_out(n_in*nx, ny, nz))
@@ -1415,21 +1415,21 @@ contains
           m_out(i1:i2, 1, 1) = m_in
           i1 = i2 + 1
           i2 = i2 + n_in
-       end do
+       enddo
 
        !*
        ! Copy along 2nd dimension.
        do i = 1, ny
           m_out(:, i, 1) = m_out(:, 1, 1)
-       end do
+       enddo
 
        !*
        ! Copy along 3rd dimension
        do i = 1, nz
           m_out(:, :, i) = m_out(:, :, 1)
-       end do
+       enddo
        
-    end if
+    endif
 
   end function rep_mat
   

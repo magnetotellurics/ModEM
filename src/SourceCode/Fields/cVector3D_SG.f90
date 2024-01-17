@@ -3,9 +3,13 @@
 !
 module cVector3D_SG
     !
+    use Grid3D_SG
     use rVector3D_SG
+    use cScalar3D_SG
     !
     type, extends( Vector_t ) :: cVector3D_SG_t
+        !
+        integer, dimension(3) :: NdX, NdY, NdZ, Nxyz
         !
         complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
@@ -18,9 +22,9 @@ module cVector3D_SG
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundary_cVector3D_SG
             procedure, public :: setOneBoundary => setOneBoundary_cVector3D_SG
-            procedure, public :: intBdryIndices => intBdryIndices_cVector3D_SG
             !
             !> Dimensioning operations
+            procedure, public :: length => length_cVector3D_SG
             procedure, public :: setVecComponents => setVecComponents_cVector3D_SG
             !
             !> Arithmetic/algebraic unary operations
@@ -29,8 +33,8 @@ module cVector3D_SG
             procedure, public :: sumEdge => sumEdge_cVector3D_SG
             procedure, public :: sumEdgeVTI => sumEdgeVTI_cVector3D_SG
             !
-            procedure, public :: avgCell => avgCell_cVector3D_SG
-            procedure, public :: avgCellVTI => avgCellVTI_cVector3D_SG
+            procedure, public :: sumCell => sumCell_cVector3D_SG
+            procedure, public :: sumCellVTI => sumCellVTI_cVector3D_SG
             !
             procedure, public :: conjugate => conjugate_cVector3D_SG
             !
@@ -62,19 +66,14 @@ module cVector3D_SG
             !
             procedure, public :: getReal => getReal_cVector3D_SG
             !
-            procedure, public :: getX => getX_cVector3D_SG
-            procedure, public :: setX => setX_cVector3D_SG
-            procedure, public :: getY => getY_cVector3D_SG
-            procedure, public :: setY => setY_cVector3D_SG
-            procedure, public :: getZ => getZ_cVector3D_SG
-            procedure, public :: setZ => setZ_cVector3D_SG
-            !
-            procedure, public :: getSV => getSV_cVector3D_SG
-            procedure, public :: setSV => setSV_cVector3D_SG
+            procedure, public :: getArray => getArray_cVector3D_SG
+            procedure, public :: setArray => setArray_cVector3D_SG
             !
             procedure, public :: deallOtherState => deallOtherState_cVector3D_SG
             !
             procedure, public :: copyFrom => copyFrom_cVector3D_SG
+            !
+            procedure, public :: edgeLength => edgeLength_cVector3D_SG
             !
             !> I/O operations
             procedure, public :: read => read_cVector3D_SG
@@ -101,7 +100,7 @@ contains
         !
         type( cVector3D_SG_t ) :: self
         !
-        integer :: status
+        integer :: alloc_stat
         !
         !write( *, * ) "Constructor cVector3D_SG"
         !
@@ -118,14 +117,14 @@ contains
         !
         if( self%grid_type == EDGE ) then
             !
-            allocate(self%x(self%nx, self%ny + 1, self%nz + 1), STAT = status)
-            self%is_allocated = status.EQ.0
+            allocate( self%x( self%nx, self%ny + 1, self%nz + 1 ), stat=alloc_stat )
+            self%is_allocated = alloc_stat .EQ. 0
             !
-            allocate(self%y(self%nx + 1, self%ny, self%nz + 1), STAT = status)
-            self%is_allocated = self%is_allocated.AND.(status.EQ.0)
+            allocate( self%y( self%nx + 1, self%ny, self%nz + 1 ), stat=alloc_stat )
+            self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
-            allocate(self%z(self%nx + 1, self%ny + 1, self%nz), STAT = status)
-            self%is_allocated = self%is_allocated.AND.(status.EQ.0)
+            allocate( self%z( self%nx + 1, self%ny + 1, self%nz ), stat=alloc_stat )
+            self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
             self%NdX = (/self%nx, self%ny + 1, self%nz + 1/)
             self%NdY = (/self%nx + 1, self%ny, self%nz + 1/)
@@ -133,14 +132,14 @@ contains
             !
         elseif( self%grid_type == FACE ) then
             !
-            allocate(self%x(self%nx + 1, self%ny, self%nz), STAT = status)
-            self%is_allocated = status.EQ.0
+            allocate( self%x( self%nx + 1, self%ny, self%nz), stat=alloc_stat )
+            self%is_allocated = alloc_stat .EQ. 0
             !
-            allocate(self%y(self%nx, self%ny + 1, self%nz), STAT = status)
-            self%is_allocated = self%is_allocated.AND.(status.EQ.0)
+            allocate( self%y( self%nx, self%ny + 1, self%nz), stat=alloc_stat )
+            self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
-            allocate(self%z(self%nx, self%ny, self%nz + 1), STAT = status)
-            self%is_allocated = self%is_allocated.AND.(status.EQ.0)
+            allocate( self%z( self%nx, self%ny, self%nz + 1), stat=alloc_stat)
+            self%is_allocated = self%is_allocated .AND. ( alloc_stat .EQ. 0 )
             !
             self%NdX = (/self%nx + 1, self%ny, self%nz/)
             self%NdY = (/self%nx, self%ny + 1, self%nz/)
@@ -150,18 +149,17 @@ contains
             call errStop( "cVector3D_SG_ctor > Only EDGE or FACE types allowed." )
         endif
         !
-        if(self%is_allocated) then
+        if( self%is_allocated ) then
+            !
             self%x = C_ZERO
             self%y = C_ZERO
             self%z = C_ZERO
+            !
+            self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
+            !
         else
             call errStop( "cVector3D_SG_ctor > Unable to allocate vector." )
         endif
-        !
-        self%Nxyz = (/product(self%NdX), product(self%NdY), product(self%NdZ)/)
-        !
-        call self%setIndexArrays
-        call self%zeros
         !
     end function cVector3D_SG_ctor
     !
@@ -350,84 +348,18 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine intBdryIndices_cVector3D_SG( self, ind_i, ind_b )
+    function length_cVector3D_SG( self ) result( field_length )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
+        class( cVector3D_SG_t ), intent( in ) :: self
         !
-        integer :: nVecT, nBdry, nb, ni, i
-        real( kind=prec ), dimension(:), allocatable :: temp
-        type( cVector3D_SG_t ) :: E
+        integer :: field_length
         !
-        if( self%is_allocated ) then
-            !
-            E = cVector3D_SG_t( self%grid, self%grid_type )
-            !
-        else
-            call errStop( "intBdryIndices_cVector3D_SG > Not allocated. Exiting." )
-        endif
+        field_length = self%Nxyz(1) + self%Nxyz(2) + self%Nxyz(3)
         !
-        select case( self%grid_type )
-            !
-            case( EDGE )
-                !
-                E%x(:, 1, :) = 1
-                E%x(:, E%ny + 1, :) = 1
-                E%x(:, :, 1) = 1
-                E%x(:, :, E%nz + 1) = 1
-                E%y(1, :, :) = 1
-                E%y(E%nx + 1, :, :) = 1
-                E%y(:, :, 1) = 1
-                E%y(:, :, E%nz + 1) = 1
-                E%z(1, :, :) = 1
-                E%z(E%nx + 1, :, :) = 1
-                E%z(:, 1, :) = 1
-                E%z(:, E%ny + 1, :) = 1
-                !
-            case( FACE )
-                !
-                E%x(1, :, :) = 1
-                E%x(E%nx + 1, :, :) = 1
-                E%y(:, 1, :) = 1
-                E%y(:, E%ny + 1, :) = 1
-                E%z(:, :, 1) = 1
-                E%z(:, :, E%nz + 1) = 1
-                !
-            case default
-                call errStop( "intBdryIndices_cVector3D_SG > Undefined self%grid_type" )
-                !
-        end select
-        !
-        temp = E%getArray()
-        !
-        nVecT = size( E%x ) + size( E%y ) + size( E%z )
-        nBdry = 0
-        do i = 1, nVecT
-            nBdry = nBdry + nint( temp(i) )
-        enddo
-        !
-        if( allocated( ind_i ) ) deallocate( ind_i )
-        allocate( ind_i( nVecT - nBdry ) )
-        !
-        if( allocated( ind_b ) ) deallocate( ind_b )
-        allocate( ind_b( nBdry ) )
-        !
-        nb = 0
-        ni = 0
-        do i = 1, nVecT
-            if( nint( temp(i) ) .EQ. 1 ) then
-                nb = nb + 1
-                ind_b(nb) = i
-            else
-                ni = ni + 1
-                ind_i(ni) = i
-            endif
-        enddo
-        !
-        deallocate( temp )
-        !
-    end subroutine intBdryIndices_cVector3D_SG
+    end function length_cVector3D_SG
+    !
+    !> No subroutine briefing
     !
     subroutine setVecComponents_cVector3D_SG( self, xyz, &
             &                                 xmin, xstep, xmax, &
@@ -535,7 +467,6 @@ contains
         class( Scalar_t ), allocatable, intent( out ) :: cell_out
         logical, intent( in ), optional :: interior_only
         !
-        type( rScalar3D_SG_t ) :: cell_out_temp
         integer :: x_xend, x_yend, x_zend
         integer :: y_xend, y_yend, y_zend
         integer :: z_xend, z_yend, z_zend
@@ -555,52 +486,59 @@ contains
             call self%setAllBoundary( C_ZERO )
         endif
         !
-        cell_out_temp = rScalar3D_SG_t( self%grid, CELL )
+        allocate( cell_out, source = rScalar3D_SG_t( self%grid, CELL ) )
         !
-        select case( self%grid_type )
+        select type( cell_out )
             !
-            case( EDGE )
+            class is( rScalar3D_SG_t )
                 !
-                x_xend = size(self%x, 1)
-                x_yend = size(self%x, 2)
-                x_zend = size(self%x, 3)
+                select case( self%grid_type )
+                    !
+                    case( EDGE )
+                        !
+                        x_xend = size(self%x, 1)
+                        x_yend = size(self%x, 2)
+                        x_zend = size(self%x, 3)
+                        !
+                        y_xend = size(self%y, 1)
+                        y_yend = size(self%y, 2)
+                        y_zend = size(self%y, 3)
+                        !
+                        z_xend = size(self%z, 1)
+                        z_yend = size(self%z, 2)
+                        z_zend = size(self%z, 3)
+                        !
+                        cell_out%v = self%x(:,1:x_yend-1,1:x_zend-1) + &
+                                          self%x(:,2:x_yend,1:x_zend-1)   + &
+                                          self%x(:,1:x_yend-1,2:x_zend)   + &
+                                          self%x(:,2:x_yend,2:x_zend)     + &
+                                          self%y(1:y_xend-1,:,1:y_zend-1) + &
+                                          self%y(2:y_xend,:,1:y_zend-1)   + &
+                                          self%y(1:y_xend-1,:,2:y_zend)   + &
+                                          self%y(2:y_xend,:,2:y_zend)     + &
+                                          self%z(1:z_xend-1,1:z_yend-1,:) + &
+                                          self%z(2:z_xend,1:z_yend-1,:)   + &
+                                          self%z(1:z_xend-1,2:z_yend,:)   + &
+                                          self%z(2:z_xend,2:z_yend,:)
+                        !
+                    case( FACE )
+                        !
+                        x_xend = size(self%x, 1)
+                        y_xend = size(self%y, 1)
+                        z_xend = size(self%z, 1)
+                        !
+                        cell_out%v = self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
+                                          self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:) + &
+                                          self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
+                        !
+                    case default
+                        call errStop( "sumEdge_cVector3D_SG: undefined self%grid_type" )
+                end select
                 !
-                y_xend = size(self%y, 1)
-                y_yend = size(self%y, 2)
-                y_zend = size(self%y, 3)
-                !
-                z_xend = size(self%z, 1)
-                z_yend = size(self%z, 2)
-                z_zend = size(self%z, 3)
-                !
-                cell_out_temp%v = self%x(:,1:x_yend-1,1:x_zend-1) + &
-                                  self%x(:,2:x_yend,1:x_zend-1)   + &
-                                  self%x(:,1:x_yend-1,2:x_zend)   + &
-                                  self%x(:,2:x_yend,2:x_zend)     + &
-                                  self%y(1:y_xend-1,:,1:y_zend-1) + &
-                                  self%y(2:y_xend,:,1:y_zend-1)   + &
-                                  self%y(1:y_xend-1,:,2:y_zend)   + &
-                                  self%y(2:y_xend,:,2:y_zend)     + &
-                                  self%z(1:z_xend-1,1:z_yend-1,:) + &
-                                  self%z(2:z_xend,1:z_yend-1,:)   + &
-                                  self%z(1:z_xend-1,2:z_yend,:)   + &
-                                  self%z(2:z_xend,2:z_yend,:)
-                !
-            case( FACE )
-                !
-                x_xend = size(self%x, 1)
-                y_xend = size(self%y, 1)
-                z_xend = size(self%z, 1)
-                !
-                cell_out_temp%v = self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
-                                  self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:) + &
-                                  self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
-                !
-            case default
-                call errStop( "sumEdge_cVector3D_SG: undefined self%grid_type" )
+            class default
+                call errStop( "sumEdge_cVector3D_SG > Unclassified cell_out" )
+            !
         end select
-        !
-        allocate( cell_out, source = cell_out_temp )
         !
     end subroutine sumEdge_cVector3D_SG
     !
@@ -611,7 +549,6 @@ contains
         class( Scalar_t ), allocatable, intent( out ) :: cell_h_out, cell_v_out
         logical, optional, intent( in ) :: interior_only
         !
-        type( rScalar3D_SG_t ) :: cell_h_out_temp, cell_v_out_temp
         integer :: x_xend, x_yend, x_zend
         integer :: y_xend, y_yend, y_zend
         integer :: z_xend, z_yend, z_zend
@@ -631,87 +568,100 @@ contains
             call self%setAllBoundary( C_ZERO )
         endif
         !
-        cell_h_out_temp = rScalar3D_SG_t( self%grid, CELL )
+        allocate( cell_h_out, source = rScalar3D_SG_t( self%grid, CELL ) )
         !
-        cell_v_out_temp = rScalar3D_SG_t( self%grid, CELL )
+        allocate( cell_v_out, source = rScalar3D_SG_t( self%grid, CELL ) )
         !
-        select case( self%grid_type )
+        select type( cell_h_out )
             !
-            case( EDGE )
+            class is( rScalar3D_SG_t )
                 !
-                x_xend = size( self%x, 1 )
-                x_yend = size( self%x, 2 )
-                x_zend = size( self%x, 3 )
+                select type( cell_v_out )
+                    !
+                    class is( rScalar3D_SG_t )
+                        !
+                        select case( self%grid_type )
+                            !
+                            case( EDGE )
+                                !
+                                x_xend = size( self%x, 1 )
+                                x_yend = size( self%x, 2 )
+                                x_zend = size( self%x, 3 )
+                                !
+                                y_xend = size( self%y, 1 )
+                                y_yend = size( self%y, 2 )
+                                y_zend = size( self%y, 3 )
+                                !
+                                z_xend = size( self%z, 1 )
+                                z_yend = size( self%z, 2 )
+                                z_zend = size( self%z, 3 )
+                                !
+                                cell_h_out%v = self%x(:,1:x_yend-1,1:x_zend-1) + &
+                                                    self%x(:,2:x_yend,1:x_zend-1)   + &
+                                                    self%x(:,1:x_yend-1,2:x_zend)   + &
+                                                    self%x(:,2:x_yend,2:x_zend)     + &
+                                                    self%y(1:y_xend-1,:,1:y_zend-1) + &
+                                                    self%y(2:y_xend,:,1:y_zend-1)   + &
+                                                    self%y(1:y_xend-1,:,2:y_zend)   + &
+                                                    self%y(2:y_xend,:,2:y_zend)
+                                !
+                                cell_v_out%v = self%z(1:z_xend-1,1:z_yend-1,:) + &
+                                                    self%z(2:z_xend,1:z_yend-1,:)   + &
+                                                    self%z(1:z_xend-1,2:z_yend,:)   + &
+                                                    self%z(2:z_xend,2:z_yend,:)
+                                !
+                            case( FACE )
+                                !
+                                x_xend = size( self%x, 1 )
+                                y_xend = size( self%y, 1 )
+                                z_xend = size( self%z, 1 )
+                                !
+                                cell_h_out%v = self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
+                                                    self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:)
+                                !
+                                cell_v_out%v = self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
+                                !
+                            case default
+                                call errStop( "sumEdgeVTI_cVector3D_SG: undefined self%grid_type" )
+                            !
+                        end select
+                        !
+                    class default
+                        call errStop( "sumEdgeVTI_cVector3D_SG > Unclassified cell_v_out" )
+                    !
+                end select
                 !
-                y_xend = size( self%y, 1 )
-                y_yend = size( self%y, 2 )
-                y_zend = size( self%y, 3 )
-                !
-                z_xend = size( self%z, 1 )
-                z_yend = size( self%z, 2 )
-                z_zend = size( self%z, 3 )
-                !
-                cell_h_out_temp%v = self%x(:,1:x_yend-1,1:x_zend-1) + &
-                                    self%x(:,2:x_yend,1:x_zend-1)   + &
-                                    self%x(:,1:x_yend-1,2:x_zend)   + &
-                                    self%x(:,2:x_yend,2:x_zend)     + &
-                                    self%y(1:y_xend-1,:,1:y_zend-1) + &
-                                    self%y(2:y_xend,:,1:y_zend-1)   + &
-                                    self%y(1:y_xend-1,:,2:y_zend)   + &
-                                    self%y(2:y_xend,:,2:y_zend)
-                !
-                cell_v_out_temp%v = self%z(1:z_xend-1,1:z_yend-1,:) + &
-                                    self%z(2:z_xend,1:z_yend-1,:)   + &
-                                    self%z(1:z_xend-1,2:z_yend,:)   + &
-                                    self%z(2:z_xend,2:z_yend,:)
-                !
-            case( FACE )
-                !
-                x_xend = size( self%x, 1 )
-                y_xend = size( self%y, 1 )
-                z_xend = size( self%z, 1 )
-                !
-                cell_h_out_temp%v = self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
-                                    self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:)
-                !
-                cell_v_out_temp%v = self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
-                !
-            case default
-                call errStop( "sumEdgeVTI_cVector3D_SG: undefined self%grid_type" )
+            class default
+                call errStop( "sumEdgeVTI_cVector3D_SG > Unclassified cell_h_out" )
             !
         end select
-        !
-        allocate( cell_h_out, source = cell_h_out_temp )
-        !
-        allocate( cell_v_out, source = cell_v_out_temp )
         !
     end subroutine sumEdgeVTI_cVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine avgCell_cVector3D_SG( self, cell_in, ptype )
+    subroutine sumCell_cVector3D_SG( self, cell_in, ptype )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
         class( Scalar_t ), intent( in ) :: cell_in
         character(*), intent( in ), optional :: ptype
         !
-        complex( kind=prec ), allocatable :: cell_in_v(:,:,:)
         character(10) :: grid_type
         integer :: xend, yend, zend
         integer :: v_xend, v_yend, v_zend
         integer :: ix, iy, iz
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "avgCell_cVector3D_SG > self not allocated." )
+             call errStop( "sumCell_cVector3D_SG > self not allocated." )
         endif
         !
         if( .NOT. cell_in%is_allocated ) then
-             call errStop( "avgCell_cVector3D_SG > cell_in not allocated." )
+             call errStop( "sumCell_cVector3D_SG > cell_in not allocated." )
         endif
         !
         if( index( self%grid_type, CELL ) > 0 ) then
-            call errStop( "avgCell_cVector3D_SG > Only CELL type supported." )
+            call errStop( "sumCell_cVector3D_SG > Only CELL type supported." )
         endif
         !
         if( .NOT. present( ptype ) ) then
@@ -720,95 +670,109 @@ contains
             grid_type = ptype
         endif
         !
-        cell_in_v = cell_in%getV()
-        !
         call self%switchStoreState( compound )
         !
-        v_xend = size( cell_in_v, 1 )
-        v_yend = size( cell_in_v, 2 )
-        v_zend = size( cell_in_v, 3 )
-        !
-        select case( grid_type )
+        select type( cell_in )
             !
-            case( EDGE )
+            class is( rScalar3D_SG_t )
                 !
-                !> for x-components inside the domain
-                do ix = 1, self%grid%nx
-                    do iy = 2, self%grid%ny
-                        do iz = 2, self%grid%nz
-                            self%x(ix, iy, iz) = (cell_in_v(ix, iy-1, iz-1) + cell_in_v(ix, iy, iz-1) + &
-                            cell_in_v(ix, iy-1, iz) + cell_in_v(ix, iy, iz))/4.0d0
+                v_xend = size( cell_in%v, 1 )
+                v_yend = size( cell_in%v, 2 )
+                v_zend = size( cell_in%v, 3 )
+                !
+                select case( grid_type )
+                    !
+                    case( EDGE )
+                        !
+                        !> for x-components inside the domain
+                        do ix = 1, self%grid%nx
+                            do iy = 2, self%grid%ny
+                                do iz = 2, self%grid%nz
+                                    self%x(ix, iy, iz) = ( cell_in%v(ix, iy-1, iz-1) + cell_in%v(ix, iy, iz-1) + &
+                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz) )! / 4.0d0
+                                enddo
+                                !
+                                self%x(ix, iy, 1) =  cell_in%v(ix, iy-1, 1) + cell_in%v(ix, iy, 1 )
+                                self%x(ix, iy, self%grid%nz+1) =  cell_in%v(ix, iy-1, self%grid%nz) + cell_in%v(ix, iy, self%grid%nz )
+                                !
+                            enddo
                         enddo
-                    enddo
-                enddo
-                !
-                !> for y-components inside the domain
-                do ix = 2, self%grid%nx
-                    do iy = 1, self%grid%ny
-                        do iz = 2, self%grid%nz
-                            self%y(ix, iy, iz) = (cell_in_v(ix-1, iy, iz-1) + cell_in_v(ix, iy, iz-1) + &
-                            cell_in_v(ix-1, iy, iz) + cell_in_v(ix, iy, iz))/4.0d0
+                        !
+                        !> for y-components inside the domain
+                        do ix = 2, self%grid%nx
+                            do iy = 1, self%grid%ny
+                                do iz = 2, self%grid%nz
+                                    self%y(ix, iy, iz) = ( cell_in%v(ix-1, iy, iz-1) + cell_in%v(ix, iy, iz-1) + &
+                                    cell_in%v(ix-1, iy, iz) + cell_in%v(ix, iy, iz) )! / 4.0d0
+                                enddo
+                                !
+                                self%y(ix, iy, 1) =  cell_in%v(ix-1, iy, 1) + cell_in%v(ix, iy, 1)
+                                self%y(ix, iy, self%grid%nz+1) =  cell_in%v(ix-1, iy, self%grid%nz) + cell_in%v(ix, iy, self%grid%nz )
+                                !
+                            enddo
                         enddo
-                    enddo
-                enddo
-                !
-                !> for z-components inside the domain
-                do ix = 2, self%grid%nx
-                    do iy = 2, self%grid%ny
-                        do iz = 1, self%grid%nz
-                            self%z(ix, iy, iz) = (cell_in_v(ix-1, iy-1, iz) + cell_in_v(ix-1, iy, iz) + &
-                            cell_in_v(ix, iy-1, iz) + cell_in_v(ix, iy, iz))/4.0d0
+                        !
+                        !> for z-components inside the domain
+                        do ix = 2, self%grid%nx
+                            do iy = 2, self%grid%ny
+                                do iz = 1, self%grid%nz
+                                    self%z(ix, iy, iz) = ( cell_in%v(ix-1, iy-1, iz) + cell_in%v(ix-1, iy, iz) + &
+                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz) )! / 4.0d0
+                                enddo
+                            enddo
                         enddo
-                    enddo
-                enddo
+                        !
+                    case( FACE )
+                        !
+                        xend = size(self%x, 1)
+                        self%x(2:xend-1,:,:) = cell_in%v(1:v_xend-1,:,:) + cell_in%v(2:v_xend,:,:)
+                        !
+                        yend = size(self%y, 1)
+                        self%y(:, 2:yend-1, :) = cell_in%v(:, 1:v_yend-1, :) + cell_in%v(:, 2:v_yend, :)
+                        !
+                        zend = size(self%z, 1) 
+                        self%z(:, :, 2:zend-1) = cell_in%v(:, :, 1:v_zend-1) + cell_in%v(:, :, 2:v_zend)
+                        !
+                    case default
+                        call errStop( "sumCell_cVector3D_SG: Unknown type" )
+                    !
+                end select !type
                 !
-            case( FACE )
-                !
-                xend = size(self%x, 1)
-                self%x(2:xend-1,:,:) = cell_in_v(1:v_xend-1,:,:) + cell_in_v(2:v_xend,:,:)
-                !
-                yend = size(self%y, 1)
-                self%y(:, 2:yend-1, :) = cell_in_v(:, 1:v_yend-1, :) + cell_in_v(:, 2:v_yend, :)
-                !
-                zend = size(self%z, 1) 
-                self%z(:, :, 2:zend-1) = cell_in_v(:, :, 1:v_zend-1) + cell_in_v(:, :, 2:v_zend)
-                !
-            case default
-                call errStop( "avgCell_cVector3D_SG: Unknown type" )
+            class default
+                call errStop( "sumCell_cVector3D_SG > Unclassified cell_in" )
             !
-        end select !type
+        end select
         !
-    end subroutine avgCell_cVector3D_SG
+    end subroutine sumCell_cVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine avgCellVTI_cVector3D_SG( self, cell_h_in, cell_v_in, ptype )
+    subroutine sumCellVTI_cVector3D_SG( self, cell_h_in, cell_v_in, ptype )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
         class( Scalar_t ), intent( in ) :: cell_h_in, cell_v_in
         character(*), intent( in ), optional :: ptype
         !
-        complex( kind=prec ), allocatable :: v_h(:,:,:), v_v(:,:,:)
         character(10) :: grid_type
         integer :: xend, yend, zend
         integer :: v_xend, v_yend, v_zend
         integer :: ix, iy, iz
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "avgCellVTI_cVector3D_SG > self not allocated." )
+             call errStop( "sumCellVTI_cVector3D_SG > self not allocated." )
         endif
         !
         if( .NOT. cell_h_in%is_allocated ) then
-             call errStop( "avgCellVTI_cVector3D_SG > cell_h_in not allocated." )
+             call errStop( "sumCellVTI_cVector3D_SG > cell_h_in not allocated." )
         endif
         !
         if( .NOT. cell_v_in%is_allocated ) then
-             call errStop( "avgCellVTI_cVector3D_SG > cell_v_in not allocated." )
+             call errStop( "sumCellVTI_cVector3D_SG > cell_v_in not allocated." )
         endif
         !
         if( index( self%grid_type, CELL ) > 0 ) then
-            call errStop( "avgCellVTI_cVector3D_SG > Only CELL type supported." )
+            call errStop( "sumCellVTI_cVector3D_SG > Only CELL type supported." )
         endif
         !
         if( .NOT. present( ptype ) ) then
@@ -819,64 +783,87 @@ contains
         !
         call self%switchStoreState( compound )
         !
-        v_h = cell_h_in%getV()
-        v_v = cell_v_in%getV()
-        !
-        v_xend = size( v_h, 1 )
-        v_yend = size( v_h, 2 )
-        v_zend = size( v_v, 3 )
-        !
-        select case( grid_type )
+        select type( cell_h_in )
             !
-            case( EDGE )
+            class is( rScalar3D_SG_t )
                 !
-                !> for x-components inside the domain
-                do ix = 1, self%grid%nx
-                    do iy = 2, self%grid%ny
-                        do iz = 2, self%grid%nz
-                            self%x(ix, iy, iz) = ( v_h(ix, iy-1, iz-1) + v_h(ix, iy, iz-1) + &
-                            v_h(ix, iy-1, iz) + v_h(ix, iy, iz) ) / 4.0d0
-                        enddo
-                    enddo
-                enddo
+                select type( cell_v_in )
+                    !
+                    class is( rScalar3D_SG_t )
+                        !
+                        v_xend = size( cell_h_in%v, 1 )
+                        v_yend = size( cell_h_in%v, 2 )
+                        v_zend = size( cell_v_in%v, 3 )
+                        !
+                        select case( grid_type )
+                            !
+                            case( EDGE )
+                                !
+                                !> for x-components inside the domain
+                                do ix = 1, self%grid%nx
+                                    do iy = 2, self%grid%ny
+                                        do iz = 2, self%grid%nz
+                                            self%x(ix, iy, iz) = ( cell_h_in%v(ix, iy-1, iz-1) + cell_h_in%v(ix, iy, iz-1) + &
+                                            cell_h_in%v(ix, iy-1, iz) + cell_h_in%v(ix, iy, iz) )! / 4.0d0
+                                        enddo
+                                        !
+                                        self%x(ix, iy, 1) =  cell_h_in%v(ix, iy-1, 1) + cell_h_in%v(ix, iy, 1 )
+                                        self%x(ix, iy, self%grid%nz+1) =  cell_h_in%v(ix, iy-1, self%grid%nz) + cell_h_in%v(ix, iy, self%grid%nz )
+                                        !
+                                    enddo
+                                enddo
+                                !
+                                !> for y-components inside the domain
+                                do ix = 2, self%grid%nx
+                                    do iy = 1, self%grid%ny
+                                        do iz = 2, self%grid%nz
+                                            self%y(ix, iy, iz) = ( cell_h_in%v(ix-1, iy, iz-1) + cell_h_in%v(ix, iy, iz-1) + &
+                                            cell_h_in%v(ix-1, iy, iz) + cell_h_in%v(ix, iy, iz) )! / 4.0d0
+                                        enddo
+                                        !
+                                        self%y(ix, iy, 1) =  cell_h_in%v(ix-1, iy, 1) + cell_h_in%v(ix, iy, 1)
+                                        self%y(ix, iy, self%grid%nz+1) =  cell_h_in%v(ix-1, iy, self%grid%nz) + cell_h_in%v(ix, iy, self%grid%nz )
+                                        !
+                                    enddo
+                                enddo
+                                !
+                                !> for z-components inside the domain
+                                do ix = 2, self%grid%nx
+                                    do iy = 2, self%grid%ny
+                                        do iz = 1, self%grid%nz
+                                            self%z(ix, iy, iz) = ( cell_v_in%v(ix-1, iy-1, iz) + cell_v_in%v(ix-1, iy, iz) + &
+                                            cell_v_in%v(ix, iy-1, iz) + cell_v_in%v(ix, iy, iz) )! / 4.0d0
+                                        enddo
+                                    enddo
+                                enddo
+                                !
+                            case( FACE )
+                                !
+                                xend = size(self%x, 1)
+                                self%x(2:xend-1,:,:) = cell_h_in%v(1:v_xend-1,:,:) + cell_h_in%v(2:v_xend,:,:)
+                                !
+                                yend = size(self%y, 1)
+                                self%y(:, 2:yend-1, :) = cell_h_in%v(:, 1:v_yend-1, :) + cell_h_in%v(:, 2:v_yend, :)
+                                !
+                                zend = size(self%z, 1) 
+                                self%z(:, :, 2:zend-1) = cell_v_in%v(:, :, 1:v_zend-1) + cell_v_in%v(:, :, 2:v_zend)
+                                !
+                            case default
+                                call errStop( "sumCellVTI_cVector3D_SG: Unknown type" )
+                            !
+                        end select !grid_type
+                        !
+                    class default
+                        call errStop( "sumCellVTI_cVector3D_SG > Unclassified cell_v_in" )
+                    !
+                end select
                 !
-                !> for y-components inside the domain
-                do ix = 2, self%grid%nx
-                    do iy = 1, self%grid%ny
-                        do iz = 2, self%grid%nz
-                            self%y(ix, iy, iz) = ( v_h(ix-1, iy, iz-1) + v_h(ix, iy, iz-1) + &
-                            v_h(ix-1, iy, iz) + v_h(ix, iy, iz) ) / 4.0d0
-                        enddo
-                    enddo
-                enddo
-                !
-                !> for z-components inside the domain
-                do ix = 2, self%grid%nx
-                    do iy = 2, self%grid%ny
-                        do iz = 1, self%grid%nz
-                            self%z(ix, iy, iz) = ( v_v(ix-1, iy-1, iz) + v_v(ix-1, iy, iz) + &
-                            v_v(ix, iy-1, iz) + v_v(ix, iy, iz) ) / 4.0d0
-                        enddo
-                    enddo
-                enddo
-                !
-            case( FACE )
-                !
-                xend = size(self%x, 1)
-                self%x(2:xend-1,:,:) = v_h(1:v_xend-1,:,:) + v_h(2:v_xend,:,:)
-                !
-                yend = size(self%y, 1)
-                self%y(:, 2:yend-1, :) = v_h(:, 1:v_yend-1, :) + v_h(:, 2:v_yend, :)
-                !
-                zend = size(self%z, 1) 
-                self%z(:, :, 2:zend-1) = v_v(:, :, 1:v_zend-1) + v_v(:, :, 2:v_zend)
-                !
-            case default
-                call errStop( "avgCellVTI_cVector3D_SG: Unknown type" )
+            class default
+                call errStop( "sumCellVTI_cVector3D_SG > Unclassified cell_h_in" )
             !
-        end select !grid_type
+        end select
         !
-    end subroutine avgCellVTI_cVector3D_SG
+    end subroutine sumCellVTI_cVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -925,17 +912,17 @@ contains
                 !
                 select type( rhs )
                     !
-                    class is( Vector_t )
+                    class is( cVector3D_SG_t )
                         !
-                        self%x = self%x + rhs%getX()
-                        self%y = self%y + rhs%getY()
-                        self%z = self%z + rhs%getZ()
+                        self%x = self%x + rhs%x
+                        self%y = self%y + rhs%y
+                        self%z = self%z + rhs%z
                         !
-                    class is( Scalar_t )
+                    class is( cScalar3D_SG_t )
                         !
-                        self%x = self%x + rhs%getV()
-                        self%y = self%y + rhs%getV()
-                        self%z = self%z + rhs%getV()
+                        self%x = self%x + rhs%v
+                        self%y = self%y + rhs%v
+                        self%z = self%z + rhs%v
                         !
                     class default
                         call errStop( "add_cVector3D_SG > Undefined rhs" )
@@ -944,7 +931,20 @@ contains
                 !
             elseif( rhs%store_state .EQ. singleton ) then
                 !
-                self%s_v = self%s_v + rhs%getSV()
+                select type( rhs )
+                    !
+                    class is( cVector3D_SG_t )
+                        !
+                        self%s_v = self%s_v + rhs%s_v
+                        !
+                    class is( cScalar3D_SG_t )
+                        !
+                        self%s_v = self%s_v + rhs%s_v
+                        !
+                    class default
+                        call errStop( "add_cVector3D_SG > Undefined compound rhs" )
+                        !
+                end select
                 !
             else
                 call errStop( "add_cVector3D_SG > Unknow store_state." )
@@ -1003,17 +1003,17 @@ contains
                 !
                 select type( rhs )
                     !
-                    class is( Vector_t )
+                    class is( cVector3D_SG_t )
                         !
-                        self%x = self%x - rhs%getX()
-                        self%y = self%y - rhs%getY()
-                        self%z = self%z - rhs%getZ()
+                        self%x = self%x - rhs%x
+                        self%y = self%y - rhs%y
+                        self%z = self%z - rhs%z
                         !
-                    class is( Scalar_t )
+                    class is( cScalar3D_SG_t )
                         !
-                        self%x = self%x - rhs%getV()
-                        self%y = self%y - rhs%getV()
-                        self%z = self%z - rhs%getV()
+                        self%x = self%x - rhs%v
+                        self%y = self%y - rhs%v
+                        self%z = self%z - rhs%v
                         !
                     class default
                         call errStop( "subField_cVector3D_SG > Undefined rhs" )
@@ -1022,7 +1022,24 @@ contains
                 !
             elseif( rhs%store_state .EQ. singleton ) then
                 !
-                self%s_v = self%s_v - rhs%getSV()
+                select type( rhs )
+                    !
+                    class is( cVector3D_SG_t )
+                        !
+                        self%x = self%x - rhs%x
+                        self%y = self%y - rhs%y
+                        self%z = self%z - rhs%z
+                        !
+                    class is( cScalar3D_SG_t )
+                        !
+                        self%x = self%x - rhs%v
+                        self%y = self%y - rhs%v
+                        self%z = self%z - rhs%v
+                        !
+                    class default
+                        call errStop( "subField_cVector3D_SG > Undefined rhs" )
+                        !
+                end select
                 !
             else
                 call errStop( "subField_cVector3D_SG > Unknow store_state." )
@@ -1055,17 +1072,17 @@ contains
                 !
                 select type( rhs )
                     !
-                    class is( Vector_t )
+                    class is( cVector3D_SG_t )
                         !
-                        self%x = c1 * self%x + c2 * rhs%getX()
-                        self%y = c1 * self%y + c2 * rhs%getY()
-                        self%z = c1 * self%z + c2 * rhs%getZ()
+                        self%x = c1 * self%x + c2 * rhs%x
+                        self%y = c1 * self%y + c2 * rhs%y
+                        self%z = c1 * self%z + c2 * rhs%z
                         !
-                    class is( Scalar_t )
+                    class is( cScalar3D_SG_t )
                         !
-                        self%x = c1 * self%x + c2 * rhs%getV()
-                        self%y = c1 * self%y + c2 * rhs%getV()
-                        self%z = c1 * self%z + c2 * rhs%getV()
+                        self%x = c1 * self%x + c2 * rhs%v
+                        self%y = c1 * self%y + c2 * rhs%v
+                        self%z = c1 * self%z + c2 * rhs%v
                         !
                     class default
                         call errStop( "linComb_cVector3D_SG > Undefined rhs" )
@@ -1074,7 +1091,20 @@ contains
                 !
             elseif( rhs%store_state .EQ. singleton ) then
                 !
-                self%s_v = c1 * self%s_v + c2 * rhs%getSV()
+                select type( rhs )
+                    !
+                    class is( cVector3D_SG_t )
+                        !
+                        self%s_v = c1 * self%s_v + c2 * rhs%s_v
+                        !
+                    class is( cScalar3D_SG_t )
+                        !
+                        self%s_v = c1 * self%s_v + c2 * rhs%s_v
+                        !
+                    class default
+                        call errStop( "linComb_cVector3D_SG > Undefined compound rhs" )
+                        !
+                end select
                 !
             else
                 call errStop( "linComb_cVector3D_SG > Unknow store_state." )
@@ -1154,17 +1184,29 @@ contains
                 !
                 select type( rhs )
                     !
-                    class is( Vector_t )
+                    class is( cVector3D_SG_t )
                         !
-                        self%x = self%x * rhs%getX()
-                        self%y = self%y * rhs%getY()
-                        self%z = self%z * rhs%getZ()
+                        self%x = self%x * rhs%x
+                        self%y = self%y * rhs%y
+                        self%z = self%z * rhs%z
+                    !
+                    class is( rVector3D_SG_t )
                         !
-                    class is( Scalar_t )
+                        self%x = self%x * rhs%x
+                        self%y = self%y * rhs%y
+                        self%z = self%z * rhs%z
                         !
-                        self%x = self%x * rhs%getV()
-                        self%y = self%y * rhs%getV()
-                        self%z = self%z * rhs%getV()
+                    class is( cScalar3D_SG_t )
+                        !
+                        self%x = self%x * rhs%v
+                        self%y = self%y * rhs%v
+                        self%z = self%z * rhs%v
+                        !
+                    class is( rScalar3D_SG_t )
+                        !
+                        self%x = self%x * rhs%v
+                        self%y = self%y * rhs%v
+                        self%z = self%z * rhs%v
                         !
                     class default
                         call errStop( "multByField_cVector3D_SG > Undefined rhs" )
@@ -1173,7 +1215,20 @@ contains
                 !
             elseif( rhs%store_state .EQ. singleton ) then
                 !
-                self%s_v = self%s_v * rhs%getSV()
+                select type( rhs )
+                    !
+                    class is( rVector3D_SG_t )
+                        !
+                        self%s_v = self%s_v * rhs%s_v
+                        !
+                    class is( rScalar3D_SG_t )
+                        !
+                        self%s_v = self%s_v * rhs%s_v
+                        !
+                    class default
+                        call errStop( "multByField_cVector3D_SG > Undefined compound rhs" )
+                        !
+                end select
                 !
             else
                 call errStop( "multByField_cVector3D_SG > Unknow store_state." )
@@ -1213,17 +1268,17 @@ contains
                 !
                 select type( rhs )
                     !
-                    class is( Vector_t )
+                    class is( cVector3D_SG_t )
                         !
-                        diag_mult_temp%x = self%x * rhs%getX()
-                        diag_mult_temp%y = self%y * rhs%getY()
-                        diag_mult_temp%z = self%z * rhs%getZ()
+                        diag_mult_temp%x = self%x * rhs%x
+                        diag_mult_temp%y = self%y * rhs%y
+                        diag_mult_temp%z = self%z * rhs%z
                         !
-                    class is( Scalar_t )
+                    class is( cScalar3D_SG_t )
                         !
-                        diag_mult_temp%x = self%x * rhs%getV()
-                        diag_mult_temp%y = self%y * rhs%getV()
-                        diag_mult_temp%z = self%z * rhs%getV()
+                        diag_mult_temp%x = self%x * rhs%v
+                        diag_mult_temp%y = self%y * rhs%v
+                        diag_mult_temp%z = self%z * rhs%v
                         !
                     class default
                         call errStop( "diagMult_cVector3D_SG > Undefined rhs" )
@@ -1232,7 +1287,20 @@ contains
                 !
             elseif( rhs%store_state .EQ. singleton ) then
                 !
-                diag_mult_temp%s_v = self%s_v * rhs%getSV()
+                select type( rhs )
+                    !
+                    class is( cVector3D_SG_t )
+                        !
+                        diag_mult_temp%s_v = self%s_v * rhs%s_v
+                        !
+                    class is( cScalar3D_SG_t )
+                        !
+                        diag_mult_temp%s_v = self%s_v * rhs%s_v
+                        !
+                    class default
+                        call errStop( "diagMult_cVector3D_SG > Undefined compound rhs" )
+                        !
+                end select
                 !
             else
                 call errStop( "diagMult_cVector3D_SG > Unknow store_state." )
@@ -1267,17 +1335,17 @@ contains
                 !
                 select type( rhs )
                     !
-                    class is( Vector_t )
+                    class is( cVector3D_SG_t )
                         !
-                        self%x = self%x + cvalue * rhs%getX()
-                        self%y = self%y + cvalue * rhs%getY()
-                        self%z = self%z + cvalue * rhs%getZ()
+                        self%x = self%x + cvalue * rhs%x
+                        self%y = self%y + cvalue * rhs%y
+                        self%z = self%z + cvalue * rhs%z
                         !
-                    class is( Scalar_t )
+                    class is( cScalar3D_SG_t )
                         !
-                        self%x = self%x + cvalue * rhs%getV()
-                        self%y = self%y + cvalue * rhs%getV()
-                        self%z = self%z + cvalue * rhs%getV()
+                        self%x = self%x + cvalue * rhs%v
+                        self%y = self%y + cvalue * rhs%v
+                        self%z = self%z + cvalue * rhs%v
                         !
                     class default
                         call errStop( "multAdd_cVector3D_SG > Undefined rhs" )
@@ -1286,7 +1354,20 @@ contains
                 !
             elseif( rhs%store_state .EQ. singleton ) then
                 !
-                self%s_v = self%s_v + cvalue * rhs%getSV()
+                select type( rhs )
+                    !
+                    class is( cVector3D_SG_t )
+                        !
+                        self%s_v = self%s_v + cvalue * rhs%s_v
+                        !
+                    class is( cScalar3D_SG_t )
+                        !
+                        self%s_v = self%s_v + cvalue * rhs%s_v
+                        !
+                    class default
+                        call errStop( "multAdd_cVector3D_SG > Undefined compound rhs" )
+                        !
+                end select
                 !
             else
                 call errStop( "multAdd_cVector3D_SG > Unknow store_state." )
@@ -1326,17 +1407,17 @@ contains
                 !
                 select type( rhs )
                     !
-                    class is( Vector_t )
+                    class is( cVector3D_SG_t )
                         !
-                        cvalue = cvalue + sum( conjg( copy%x ) * rhs%getX() )
-                        cvalue = cvalue + sum( conjg( copy%y ) * rhs%getY() )
-                        cvalue = cvalue + sum( conjg( copy%z ) * rhs%getZ() )
+                        cvalue = cvalue + sum( conjg( copy%x ) * rhs%x )
+                        cvalue = cvalue + sum( conjg( copy%y ) * rhs%y )
+                        cvalue = cvalue + sum( conjg( copy%z ) * rhs%z )
                         !
-                    class is( Scalar_t )
+                    class is( cScalar3D_SG_t )
                         !
-                        cvalue = cvalue + sum( conjg( copy%x ) * rhs%getV() )
-                        cvalue = cvalue + sum( conjg( copy%y ) * rhs%getV() )
-                        cvalue = cvalue + sum( conjg( copy%z ) * rhs%getV() )
+                        cvalue = cvalue + sum( conjg( copy%x ) * rhs%v )
+                        cvalue = cvalue + sum( conjg( copy%y ) * rhs%v )
+                        cvalue = cvalue + sum( conjg( copy%z ) * rhs%v )
                         !
                     class default
                         call errStop( "dotProd_cVector3D_SG > Undefined rhs" )
@@ -1345,7 +1426,20 @@ contains
                 !
             elseif( rhs%store_state .EQ. singleton ) then
                 !
-                cvalue = cvalue + sum( conjg( copy%s_v ) * rhs%getSV() )
+                select type( rhs )
+                    !
+                    class is( cVector3D_SG_t )
+                        !
+                        cvalue = cvalue + sum( conjg( copy%s_v ) * rhs%s_v )
+                        !
+                    class is( cScalar3D_SG_t )
+                        !
+                        cvalue = cvalue + sum( conjg( copy%s_v ) * rhs%s_v )
+                        !
+                    class default
+                        call errStop( "dotProd_cVector3D_SG > Undefined compound rhs" )
+                        !
+                end select
                 !
             else
                 call errStop( "dotProd_cVector3D_SG > Unknow store_state." )
@@ -1405,17 +1499,29 @@ contains
                 !
                 select type( rhs )
                     !
-                    class is( Vector_t )
+                    class is( cVector3D_SG_t )
                         !
-                        self%x = self%x / rhs%getX()
-                        self%y = self%y / rhs%getY()
-                        self%z = self%z / rhs%getZ()
+                        self%x = self%x / rhs%x
+                        self%y = self%y / rhs%y
+                        self%z = self%z / rhs%z
+                    !
+                    class is( rVector3D_SG_t )
                         !
-                    class is( Scalar_t )
+                        self%x = self%x / rhs%x
+                        self%y = self%y / rhs%y
+                        self%z = self%z / rhs%z
                         !
-                        self%x = self%x / rhs%getV()
-                        self%y = self%y / rhs%getV()
-                        self%z = self%z / rhs%getV()
+                    class is( cScalar3D_SG_t )
+                        !
+                        self%x = self%x / rhs%v
+                        self%y = self%y / rhs%v
+                        self%z = self%z / rhs%v
+                        !
+                    class is( rScalar3D_SG_t )
+                        !
+                        self%x = self%x / rhs%v
+                        self%y = self%y / rhs%v
+                        self%z = self%z / rhs%v
                         !
                     class default
                         call errStop( "divByField_cVector3D_SG > Undefined rhs" )
@@ -1424,7 +1530,20 @@ contains
                 !
             elseif( rhs%store_state .EQ. singleton ) then
                 !
-                self%s_v = self%s_v / rhs%getSV()
+                select type( rhs )
+                    !
+                    class is( cVector3D_SG_t )
+                        !
+                        self%s_v = self%s_v / rhs%s_v
+                        !
+                    class is( cScalar3D_SG_t )
+                        !
+                        self%s_v = self%s_v / rhs%s_v
+                        !
+                    class default
+                        call errStop( "multAdd_rVector3D_SG > Undefined compound rhs" )
+                        !
+                end select
                 !
             else
                 call errStop( "divByField_cVector3D_SG > Unknow store_state." )
@@ -1446,7 +1565,7 @@ contains
         character, intent( in ) :: xyz
         class( Vector_t ), allocatable, intent( inout ) :: interp
         !
-        type( cVector3D_SG_t ) :: interp_temp
+        type( cVector3D_SG_t ) :: temp_interp
         real( kind=prec ), allocatable, dimension(:) :: xC, yC, zC
         integer :: ix, iy, iz, i
         real( kind=prec ) :: wx, wy, wz
@@ -1456,98 +1575,107 @@ contains
             call errStop( "interpFunc_cVector3D_SG > Self not allocated." )
         endif
         !
-        select case( self%grid_type )
+        select type( grid => self%grid )
             !
-            case( EDGE )
+            class is( Grid3D_SG_t )
                 !
-                interp_temp = cVector3D_SG_t( self%grid, EDGE )
-                !
-                select case( xyz )
+                select case( self%grid_type )
                     !
-                    case("x")
+                    case( EDGE )
                         !
-                        allocate(xC(size(self%grid%del_x)))
-                        allocate(yC(size(self%grid%dy + 1)))
-                        allocate(zC(size(self%grid%dz + 1)))
+                        temp_interp = cVector3D_SG_t( grid, EDGE )
                         !
-                        xC = CumSum(self%grid%del_x)
-                        yC = CumSum([0._prec, self%grid%dy])
-                        zC = CumSum([0._prec, self%grid%dz])
+                        select case( xyz )
+                            !
+                            case("x")
+                                !
+                                allocate(xC(size(grid%del_x)))
+                                allocate(yC(size(grid%dy + 1)))
+                                allocate(zC(size(grid%dz + 1)))
+                                !
+                                xC = CumSum(grid%del_x)
+                                yC = CumSum([0._prec, grid%dy])
+                                zC = CumSum([0._prec, grid%dz])
+                                !
+                            case("y")
+                                !
+                                allocate(xC(size(grid%dx + 1)))
+                                allocate(yC(size(grid%del_y)))
+                                allocate(zC(size(grid%dz)))
+                                
+                                xC = CumSum([0._prec, grid%dx])
+                                yC = CumSum([grid%del_y])
+                                zC = CumSum([0._prec, grid%dz])
+                                !
+                            case("z")
+                                !
+                                allocate(xC(size(grid%dx + 1)))
+                                allocate(yC(size(grid%dy + 1)))
+                                allocate(zC(size(grid%del_z)))
+                                !
+                                xC = CumSum([0._prec, grid%dx])
+                                yC = CumSum([0._prec, grid%dy])
+                                zC = CumSum([grid%del_z])
+                                !
+                            case default
+                                call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
+                            !
+                        end select
                         !
-                    case("y")
+                    case( FACE )
                         !
-                        allocate(xC(size(self%grid%dx + 1)))
-                        allocate(yC(size(self%grid%del_y)))
-                        allocate(zC(size(self%grid%dz)))
-                        
-                        xC = CumSum([0._prec, self%grid%dx])
-                        yC = CumSum([self%grid%del_y])
-                        zC = CumSum([0._prec, self%grid%dz])
+                        temp_interp = cVector3D_SG_t( grid, FACE )
                         !
-                    case("z")
-                        !
-                        allocate(xC(size(self%grid%dx + 1)))
-                        allocate(yC(size(self%grid%dy + 1)))
-                        allocate(zC(size(self%grid%del_z)))
-                        !
-                        xC = CumSum([0._prec, self%grid%dx])
-                        yC = CumSum([0._prec, self%grid%dy])
-                        zC = CumSum([self%grid%del_z])
+                        select case( xyz )
+                            !
+                            case( "x" )
+                                !
+                                allocate(xC(size(grid%dx + 1)))
+                                allocate(yC(size(grid%del_y)))
+                                allocate(zC(size(grid%del_z)))
+                                !
+                                xC = CumSum([0._prec, grid%dx])
+                                yC = CumSum([grid%del_y])
+                                zC = CumSum([grid%del_z])
+                                !
+                            case( "y" )
+                                !
+                                allocate(xC(size(grid%del_x)))
+                                allocate(yC(size(grid%dy + 1)))
+                                allocate(zC(size(grid%del_z)))
+                                !
+                                xC = CumSum([grid%del_x])
+                                yC = CumSum([0._prec, grid%dy])
+                                zC = CumSum([grid%del_z])
+                                !
+                            case( "z" )
+                                !
+                                allocate(xC(size(grid%del_x)))
+                                allocate(yC(size(grid%del_y)))
+                                allocate(zC(size(grid%dz + 1)))
+                                !
+                                xC = CumSum([grid%del_x])
+                                yC = CumSum([grid%del_y])
+                                zC = CumSum([0._prec, grid%dz])
+                                !
+                            case default
+                                call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
+                            !
+                        end select
                         !
                     case default
-                        call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
+                        call errStop( "interpFunc_cVector3D_SG: Unknown grid_type" )
                     !
                 end select
                 !
-            case( FACE )
+                xC = xC + grid%ox
+                yC = yC + grid%oy
+                zC = zC - sum( grid%dz(1:grid%nzAir) ) - grid%oz
                 !
-                interp_temp = cVector3D_SG_t( self%grid, FACE )
-                !
-                select case( xyz )
-                    !
-                    case( "x" )
-                        !
-                        allocate(xC(size(self%grid%dx + 1)))
-                        allocate(yC(size(self%grid%del_y)))
-                        allocate(zC(size(self%grid%del_z)))
-                        !
-                        xC = CumSum([0._prec, self%grid%dx])
-                        yC = CumSum([self%grid%del_y])
-                        zC = CumSum([self%grid%del_z])
-                        !
-                    case( "y" )
-                        !
-                        allocate(xC(size(self%grid%del_x)))
-                        allocate(yC(size(self%grid%dy + 1)))
-                        allocate(zC(size(self%grid%del_z)))
-                        !
-                        xC = CumSum([self%grid%del_x])
-                        yC = CumSum([0._prec, self%grid%dy])
-                        zC = CumSum([self%grid%del_z])
-                        !
-                    case( "z" )
-                        !
-                        allocate(xC(size(self%grid%del_x)))
-                        allocate(yC(size(self%grid%del_y)))
-                        allocate(zC(size(self%grid%dz + 1)))
-                        !
-                        xC = CumSum([self%grid%del_x])
-                        yC = CumSum([self%grid%del_y])
-                        zC = CumSum([0._prec, self%grid%dz])
-                        !
-                    case default
-                        call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
-                    !
-                end select
-                !
-            case default
-                call errStop( "interpFunc_cVector3D_SG: Unknown grid_type" )
+            class default
+                call errStop( "interpFunc_cVector3D_SG > Undefined grid" )
             !
         end select
-        !
-        xC = xC + self%grid%ox
-        yC = yC + self%grid%oy
-        zC = zC - sum(self%grid%dz(1:self%grid%nzAir)) - self%grid%oz
         !
         tmp = location(1) > xC
         !
@@ -1590,15 +1718,15 @@ contains
         !iz = findloc( location(3) > zC, .TRUE., back = .TRUE., dim = 1 )
         !
         ! Find weights
-        wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))
+        wx = ( xC(ix + 1) - location(1)) / (xC(ix + 1) - xC(ix) )
         !
         deallocate( xC )
         !
-        wy = (yC(iy + 1) - location(2))/(yC(iy + 1) - yC(iy))
+        wy = ( yC(iy + 1) - location(2) ) / ( yC(iy + 1) - yC(iy) )
         !
         deallocate( yC )
         !
-        wz = (zC(iz + 1) - location(3))/(zC(iz + 1) - zC(iz))
+        wz = ( zC(iz + 1) - location(3) ) / ( zC(iz + 1) - zC(iz) )
         !
         deallocate( zC )
         !
@@ -1606,43 +1734,43 @@ contains
             !
             case("x")
                 !
-                interp_temp%x(ix,iy,iz) = wx*wy*wz
-                interp_temp%x(ix+1,iy,iz) = (1-wx)*wy*wz
-                interp_temp%x(ix,iy+1,iz) = wx*(1-wy)*wz
-                interp_temp%x(ix,iy,iz+1) = wx*wy*(1-wz)
-                interp_temp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                interp_temp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                interp_temp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                interp_temp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                temp_interp%x(ix,iy,iz) = wx*wy*wz
+                temp_interp%x(ix+1,iy,iz) = (1-wx)*wy*wz
+                temp_interp%x(ix,iy+1,iz) = wx*(1-wy)*wz
+                temp_interp%x(ix,iy,iz+1) = wx*wy*(1-wz)
+                temp_interp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                temp_interp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                temp_interp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                temp_interp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
                 !
             case("y")
                 !
-                interp_temp%y(ix,iy,iz) = wx*wy*wz
-                interp_temp%y(ix+1,iy,iz) = (1-wx)*wy*wz
-                interp_temp%y(ix,iy+1,iz) = wx*(1-wy)*wz
-                interp_temp%y(ix,iy,iz+1) = wx*wy*(1-wz)
-                interp_temp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                interp_temp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                interp_temp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                interp_temp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                temp_interp%y(ix,iy,iz) = wx*wy*wz
+                temp_interp%y(ix+1,iy,iz) = (1-wx)*wy*wz
+                temp_interp%y(ix,iy+1,iz) = wx*(1-wy)*wz
+                temp_interp%y(ix,iy,iz+1) = wx*wy*(1-wz)
+                temp_interp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                temp_interp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                temp_interp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                temp_interp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
                 !
             case("z")
                 !
-                interp_temp%z(ix,iy,iz) = wx*wy*wz
-                interp_temp%z(ix+1,iy,iz) = (1-wx)*wy*wz
-                interp_temp%z(ix,iy+1,iz) = wx*(1-wy)*wz
-                interp_temp%z(ix,iy,iz+1) = wx*wy*(1-wz)
-                interp_temp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                interp_temp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                interp_temp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                interp_temp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                temp_interp%z(ix,iy,iz) = wx*wy*wz
+                temp_interp%z(ix+1,iy,iz) = (1-wx)*wy*wz
+                temp_interp%z(ix,iy+1,iz) = wx*(1-wy)*wz
+                temp_interp%z(ix,iy,iz+1) = wx*wy*(1-wz)
+                temp_interp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                temp_interp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                temp_interp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                temp_interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
                 !
             case default
                 call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
             !
         end select !XYZ
         !
-        allocate( interp, source = interp_temp )
+        allocate( interp, source = temp_interp )
         !
     end subroutine interpFunc_cVector3D_SG
     !
@@ -1688,195 +1816,83 @@ contains
         !
     end subroutine getReal_cVector3D_SG
     !
-    !> No function briefing
+    !> No subroutine briefing
     !
-    function getX_cVector3D_SG( self ) result( x )
+    function getArray_cVector3D_SG( self ) result( array )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: x
+        complex( kind=prec ), allocatable, dimension(:) :: array
         !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "getX_cVector3D_SG > self not allocated." )
+        if( ( .NOT. self%is_allocated ) ) then
+            call errStop( "getArray_cVector3D_SG > Self not allocated." )
         endif
         !
-        if( .NOT. allocated( self%x ) ) then
-            call errStop( "getX_cVector3D_SG > self%x not allocated." )
+        if( self%store_state .EQ. compound ) then
+            ! !
+            ! write( *, * ) "getArray_Vector: ", &
+            ! self%Nxyz(1), self%Nxyz(2), self%Nxyz(3), &
+            ! self%Nxyz(1)+self%Nxyz(2)+self%Nxyz(3), self%length()
+            ! !
+            allocate( array( self%length() ) )
+            !
+            array = (/reshape(self%x, (/self%Nxyz(1), 1/)), &
+            reshape(self%y, (/self%Nxyz(2), 1/)), &
+            reshape(self%z, (/self%Nxyz(3), 1/))/)
+            !
+        elseif( self%store_state .EQ. singleton ) then
+            !
+            array = self%s_v
+            !
         else
-            !
-            x = self%x
-            !
+            call errStop( "getArray_cVector3D_SG > Unknown store_state!" )
         endif
         !
-    end function getX_cVector3D_SG
+    end function getArray_cVector3D_SG
     !
     !> No subroutine briefing
     !
-    subroutine setX_cVector3D_SG( self, x )
+    subroutine setArray_cVector3D_SG( self, array )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:,:,:), intent( in ) :: x
+        complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setX_cVector3D_SG > self not allocated." )
+        integer :: i1, i2
+        !
+        if( ( .NOT. self%is_allocated ) ) then
+            call errStop( "setArray_cVector3D_SG > Self not allocated." )
         endif
         !
-        !if( .NOT. allocated( x ) ) then
-            !call errStop( "setX_cVector3D_SG > x not allocated." )
-        !endif
+        call self%deallOtherState
         !
-        call self%switchStoreState( compound )
-        !
-        if( allocated( self%s_v ) ) deallocate( self%s_v )
-        !
-        self%x = x
-        !
-    end subroutine setX_cVector3D_SG
-    !
-    !> No function briefing
-    !
-    function getY_cVector3D_SG( self ) result( y )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: y
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "getY_cVector3D_SG > self not allocated." )
-        endif
-        !
-        if( .NOT. allocated( self%y ) ) then
-            call errStop( "getY_cVector3D_SG > self%y not allocated." )
+        if( self%store_state .EQ. compound ) then
+            !
+            !> Ex
+            i1 = 1; i2 = self%Nxyz(1)
+            !
+            self%x = reshape( array(i1:i2), self%NdX )
+            !
+            !> Ey
+            i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
+            !
+            self%y = reshape( array(i1:i2), self%NdY )
+            !
+            !> Ez
+            i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
+            !
+            self%z = reshape(array(i1:i2), self%NdZ)
+            !
+        elseif( self%store_state .EQ. singleton ) then
+            !
+            self%s_v = array
+            !
         else
-            !
-            y = self%y
-            !
+            call errStop( "setArray_cVector3D_SG > Unknown store_state!" )
         endif
         !
-    end function getY_cVector3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setY_cVector3D_SG( self, y )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:,:,:), intent( in ) :: y
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setY_cVector3D_SG > self not allocated." )
-        endif
-        !
-        !if( .NOT. allocated( y ) ) then
-            !call errStop( "setY_cVector3D_SG > y not allocated." )
-        !endif
-        !
-        call self%switchStoreState( compound )
-        !
-        if( allocated( self%s_v ) ) deallocate( self%s_v )
-        !
-        self%y = y
-        !
-    end subroutine setY_cVector3D_SG
-    !
-    !> No function briefing
-    !
-    function getZ_cVector3D_SG( self ) result( z )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: z
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "getZ_cVector3D_SG > self not allocated." )
-        endif
-        !
-        if( .NOT. allocated( self%z ) ) then
-            call errStop( "getZ_cVector3D_SG > self%z not allocated." )
-        else
-            !
-            z = self%z
-            !
-        endif
-        !
-    end function getZ_cVector3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setZ_cVector3D_SG( self, z )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:,:,:), intent( in ) :: z
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setZ_cVector3D_SG > self not allocated." )
-        endif
-        !
-        !if( .NOT. allocated( z ) ) then
-            !call errStop( "setZ_cVector3D_SG > z not allocated." )
-        !endif
-        !
-        call self%switchStoreState( compound )
-        !
-        if( allocated( self%s_v ) ) deallocate( self%s_v )
-        !
-        self%z = z
-        !
-    end subroutine setZ_cVector3D_SG
-    !
-    !> No function briefing
-    !
-    function getSV_cVector3D_SG( self ) result( s_v )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        !
-        complex( kind=prec ), allocatable, dimension(:) :: s_v
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "getSV_cVector3D_SG > self not allocated." )
-        endif
-        !
-        if( .NOT. allocated( self%s_v ) ) then
-            call errStop( "getSV_cVector3D_SG > self%s_v not allocated." )
-        else
-            !
-            s_v = self%s_v
-            !
-        endif
-        !
-    end function getSV_cVector3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setSV_cVector3D_SG( self, s_v )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:), intent( in ) :: s_v(:)
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "setSV_cVector3D_SG > self not allocated." )
-        endif
-        !
-        !if( .NOT. allocated( s_v ) ) then
-            !call errStop( "setSV_cVector3D_SG > s_v not allocated." )
-        !endif
-        !
-        call self%switchStoreState( singleton )
-        !
-        if( allocated( self%x ) ) deallocate( self%x )
-        if( allocated( self%y ) ) deallocate( self%y )
-        if( allocated( self%z ) ) deallocate( self%z )
-        !
-        self%s_v = s_v
-        !
-    end subroutine setSV_cVector3D_SG
+    end subroutine setArray_cVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -1949,14 +1965,41 @@ contains
                 !
                 self%is_allocated = .TRUE.
                 !
-                call self%setIndexArrays
-                !
             class default
                 call errStop( "copyFrom_cVector3D_SG > Different type of rhs" )
             !
         end select
         !
     end subroutine copyFrom_cVector3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine edgeLength_cVector3D_SG( self, edge_length )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in ) :: self
+        type( cVector3D_SG_t ), intent( inout ) :: edge_length
+        !
+        integer :: ix, iy, iz
+        !
+        edge_length = self
+        !
+        ! x-component edge length elements
+        do ix = 1, self%grid%nx
+            edge_length%x(ix, :, :) = self%grid%dx(ix)
+        enddo
+        !
+        ! y-component edge length elements
+        do iy = 1, self%grid%ny
+            edge_length%y(:, iy, :) = self%grid%dy(iy)
+        enddo
+        !
+        ! z-component edge length elements
+        do iz = 1, self%grid%nz
+            edge_length%z(:, :, iz) = self%grid%dz(iz)
+        enddo
+        !
+    end subroutine edgeLength_cVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -2043,10 +2086,10 @@ contains
                 call errStop( "write_cVector3D_SG > Unable to write to formatted file ["//trim(fname)//"]." )
             endif
             !
-            write(funit) self%nx, self%ny, self%nz, self%grid_type
-            write(funit) self%x
-            write(funit) self%y
-            write(funit) self%z
+            write( funit ) self%nx, self%ny, self%nz, self%grid_type
+            write( funit ) self%x
+            write( funit ) self%y
+            write( funit ) self%z
             !
         else
             call errStop( "write_cVector3D_SG > unable to open file" )
@@ -2059,14 +2102,17 @@ contains
     subroutine print_cVector3D_SG( self, io_unit, title, append )
         implicit none
         !
-        class( cVector3D_SG_t ), intent( inout ) :: self
+        class( cVector3D_SG_t ), intent( in ) :: self
         integer, intent( in ), optional :: io_unit
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append
         !
+        type( cVector3D_SG_t ) :: copy
         integer :: ix, iy, iz, funit
         !
-        call self%switchStoreState( compound )
+        copy = self
+        !
+        call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit
@@ -2076,35 +2122,35 @@ contains
         !
         if( present( title ) ) write( funit, * ) title
         !
-        write( funit, * ) self%nx, self%ny, self%nz
-        write(funit, * ) "x-component",self%NdX
-        do ix = 1, self%NdX(1)
-             do iy = 1, self%NdX(2)
-                do iz = 1, self%NdX(3)
-                     if( self%x( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
+        write( funit, * ) copy%nx, copy%ny, copy%nz
+        write(funit, * ) "x-component",copy%NdX
+        do ix = 1, copy%NdX(1)
+             do iy = 1, copy%NdX(2)
+                do iz = 1, copy%NdX(3)
+                     if( copy%x( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", copy%x( ix, iy, iz ), "]"
                      endif
                 enddo
              enddo
         enddo
         !
-        write(funit,*) "y-component",self%NdY
-        do ix = 1, self%NdY(1)
-             do iy = 1, self%NdY(2)
-                do iz = 1, self%NdY(3)
-                     if( self%y( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", self%y( ix, iy, iz ), "]"
+        write(funit,*) "y-component",copy%NdY
+        do ix = 1, copy%NdY(1)
+             do iy = 1, copy%NdY(2)
+                do iz = 1, copy%NdY(3)
+                     if( copy%y( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", copy%y( ix, iy, iz ), "]"
                      endif
                 enddo
              enddo
         enddo
         !
-        write(funit,*) "z-component",self%NdZ
-        do ix = 1, self%NdZ(1)
-             do iy = 1, self%NdZ(2)
-                do iz = 1, self%NdZ(3)
-                     if( self%z( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", self%z( ix, iy, iz ), "]"
+        write(funit,*) "z-component",copy%NdZ
+        do ix = 1, copy%NdZ(1)
+             do iy = 1, copy%NdZ(2)
+                do iz = 1, copy%NdZ(3)
+                     if( copy%z( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", copy%z( ix, iy, iz ), "]"
                      endif
                 enddo
              enddo

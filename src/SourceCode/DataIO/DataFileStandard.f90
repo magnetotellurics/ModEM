@@ -31,8 +31,8 @@ contains
         !
         type( DataFileStandard_t ) :: self
         !
-        character(len=1000) :: full_line_text
-        character(len=200), dimension(20) :: args
+        character( len=1000 ) :: full_line_text
+        character( len=200 ), dimension(20) :: args
         !
         character(:), allocatable :: line_text, actual_type, code, code_ref, component, dipole
         integer :: iDe, io_stat, p_nargs, n_tx, n_rx
@@ -69,138 +69,137 @@ contains
                 call Parse( line_text, " ", args, p_nargs )
                 !
                 if( index( line_text, "#" ) == 0 .AND. index( line_text, ">" ) == 0 ) then
-                     !
-                     iDe = size( self%data_entries ) + 1
-                     !
-                     selectcase( actual_type )
-                          !
-                          !> MT file line
-                          case( "Full_Impedance", "Off_Diagonal_Impedance", "Full_Vertical_Components", &
-                          "Off_Diagonal_Rho_Phase", "Phase_Tensor" )
-                                !
-                                !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
-                                !
-                                read( args(1), * )  period
-                                code = trim( args(2) )
-                                read( args(3), * )  latitude
-                                read( args(4), * )  longitude
-                                read( args(5), * )  xyz(1)
-                                read( args(6), * )  xyz(2)
-                                read( args(7), * )  xyz(3)
-                                component = trim( args(8) )
-                                read( args(9), * )  rvalue
-                                read( args(10), * ) imaginary
-                                read( args(11), * ) error
-                                !
-                                allocate( data_entry, source = DataEntryMT_t( iDe, actual_type, period, code, &
-                                latitude, longitude, xyz, component, rvalue, imaginary, error ) )
-                                !
-                                call self%loadReceiversAndTransmitters( data_entry )
-                                !
-                                mt_counter = mt_counter + 1
-                                !
-                          !> MT REF file line
-                          case( "Full_Interstation_TF" )
-                                !
-                                !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Code_REF GG_Lat_REF GG_Lon_REF X(m)_REF Y(m)_REF Z(m)_REF Component Real Imag Error
-                                !
-                                read( args(1), * )  period
-                                code = trim( args(2) )
-                                read( args(3), * )  latitude
-                                read( args(4), * )  longitude
-                                read( args(5), * )  xyz(1)
-                                read( args(6), * )  xyz(2)
-                                read( args(7), * )  xyz(3)
-                                code_ref = trim( args(8) )
-                                read( args(9), * )  latitude_ref
-                                read( args(10), * ) longitude_ref
-                                read( args(11), * ) xyz_ref(1)
-                                read( args(12), * ) xyz_ref(2)
-                                read( args(13), * ) xyz_ref(3)
-                                component = trim( args(14) )
-                                read( args(15), * ) rvalue
-                                read( args(16), * ) imaginary
-                                read( args(17), * ) error
-                                !
-                                allocate( data_entry, source = DataEntryMT_REF_t( iDe, actual_type,    &
-                                period, code, latitude, longitude, xyz, code_ref,    &
-                                latitude_ref, longitude_ref, xyz_ref, component, rvalue, imaginary, error ) )
-                                !
-                                call self%loadReceiversAndTransmitters( data_entry )
-                                !
-                                mt_counter = mt_counter + 1
-                                !
-                          !> SingleField file line
-                          case( "Ex_Field", "Ey_Field", "Bx_Field", "By_Field", "Bz_Field" )
-                                !
-                                !# Dipole Period(s) Moment(Am) Azi Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag, Error
-                                !
-                                dipole = args(1)
-                                read( args(2), * ) period
-                                read( args(3), * ) moment
-                                read( args(4), * ) tx_azimuth
-                                read( args(5), * ) dip
-                                read( args(6), * ) tx_xyz(1)
-                                read( args(7), * ) tx_xyz(2)
-                                read( args(8), * ) tx_xyz(3)
-                                code = trim( args(9) )
-                                read( args(10), * ) xyz(1)
-                                read( args(11), * ) xyz(2)
-                                read( args(12), * ) xyz(3)
-                                component = trim( args(13) )
-                                read( args(14), * ) rvalue
-                                read( args(15), * ) imaginary
-                                read( args(16), * ) error
-                                !
-                                allocate( data_entry, source = DataEntryCSEM_t( iDe, actual_type,    &
-                                dipole, period, moment, tx_azimuth, dip, tx_xyz,    &
-                                code, xyz, component, rvalue, imaginary, error ) )
-                                !
-                                call self%loadReceiversAndTransmitters( data_entry )
-                                !
-                                csem_counter = csem_counter + 1
-                                !
-                          !> Exy_Ampli_Phase file line
-                          case( "Exy_Ampli_Phase" )
-                                !
-                                !# Dipole Period(s) Moment(Am) Azi Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Ampli Error tx_azimuth
-                                !
-                                dipole = args(1)
-                                read( args(2), * ) period
-                                read( args(3), * ) moment
-                                read( args(4), * ) tx_azimuth
-                                read( args(5), * ) dip
-                                read( args(6), * ) tx_xyz(1)
-                                read( args(7), * ) tx_xyz(2)
-                                read( args(8), * ) tx_xyz(3)
-                                code = trim( args(9) )
-                                read( args(10), * ) xyz(1)
-                                read( args(11), * ) xyz(2)
-                                read( args(12), * ) xyz(3)
-                                component = trim( args(13) )
-                                read( args(14), * ) rvalue
-                                read( args(15), * ) error
-                                read( args(16), * ) azimuth
-                                !
-                                allocate( data_entry, source = DataEntryCSEM_t( iDe, actual_type,    &
-                                dipole, period, moment, tx_azimuth, dip, tx_xyz,    &
-                                code, xyz, component, rvalue, R_ZERO, error, azimuth ) )
-                                !
-                                call self%loadReceiversAndTransmitters( data_entry )
-                                !
-                                csem_counter = csem_counter + 1
-                                !
-                          case default
-                                !
-                                write( *, * ) "Unknown type :[", actual_type, "]"
-                                stop "DataFileStandard.f08: DataFileStandard_ctor()"
-                                !
-                     end select
-                     !
-                     deallocate( data_entry )
-                     !
-                     header_line_counter = 0
-                     !
+                    !
+                    iDe = size( self%data_entries ) + 1
+                    !
+                    select case( actual_type )
+                        !
+                        !> MT file line
+                        case( "Full_Impedance", "Off_Diagonal_Impedance", "Full_Vertical_Components", &
+                        "Off_Diagonal_Rho_Phase", "Phase_Tensor" )
+                            !
+                            !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
+                            !
+                            read( args(1), * )  period
+                            code = trim( args(2) )
+                            read( args(3), * )  latitude
+                            read( args(4), * )  longitude
+                            read( args(5), * )  xyz(1)
+                            read( args(6), * )  xyz(2)
+                            read( args(7), * )  xyz(3)
+                            component = trim( args(8) )
+                            read( args(9), * )  rvalue
+                            read( args(10), * ) imaginary
+                            read( args(11), * ) error
+                            !
+                            allocate( data_entry, source = DataEntryMT_t( iDe, actual_type, period, code, &
+                            latitude, longitude, xyz, component, rvalue, imaginary, error ) )
+                            !
+                            call self%loadReceiversAndTransmitters( data_entry )
+                            !
+                            mt_counter = mt_counter + 1
+                            !
+                        !> MT REF file line
+                        case( "Full_Interstation_TF" )
+                            !
+                            !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Code_REF GG_Lat_REF GG_Lon_REF X(m)_REF Y(m)_REF Z(m)_REF Component Real Imag Error
+                            !
+                            read( args(1), * )  period
+                            code = trim( args(2) )
+                            read( args(3), * )  latitude
+                            read( args(4), * )  longitude
+                            read( args(5), * )  xyz(1)
+                            read( args(6), * )  xyz(2)
+                            read( args(7), * )  xyz(3)
+                            code_ref = trim( args(8) )
+                            read( args(9), * )  latitude_ref
+                            read( args(10), * ) longitude_ref
+                            read( args(11), * ) xyz_ref(1)
+                            read( args(12), * ) xyz_ref(2)
+                            read( args(13), * ) xyz_ref(3)
+                            component = trim( args(14) )
+                            read( args(15), * ) rvalue
+                            read( args(16), * ) imaginary
+                            read( args(17), * ) error
+                            !
+                            allocate( data_entry, source = DataEntryMT_REF_t( iDe, actual_type,    &
+                            period, code, latitude, longitude, xyz, code_ref,    &
+                            latitude_ref, longitude_ref, xyz_ref, component, rvalue, imaginary, error ) )
+                            !
+                            call self%loadReceiversAndTransmitters( data_entry )
+                            !
+                            mt_counter = mt_counter + 1
+                            !
+                        !> SingleField file line
+                        case( "Ex_Field", "Ey_Field", "Bx_Field", "By_Field", "Bz_Field" )
+                            !
+                            !# Dipole Period(s) Moment(Am) Azi Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag, Error
+                            !
+                            dipole = args(1)
+                            read( args(2), * ) period
+                            read( args(3), * ) moment
+                            read( args(4), * ) tx_azimuth
+                            read( args(5), * ) dip
+                            read( args(6), * ) tx_xyz(1)
+                            read( args(7), * ) tx_xyz(2)
+                            read( args(8), * ) tx_xyz(3)
+                            code = trim( args(9) )
+                            read( args(10), * ) xyz(1)
+                            read( args(11), * ) xyz(2)
+                            read( args(12), * ) xyz(3)
+                            component = trim( args(13) )
+                            read( args(14), * ) rvalue
+                            read( args(15), * ) imaginary
+                            read( args(16), * ) error
+                            !
+                            allocate( data_entry, source = DataEntryCSEM_t( iDe, actual_type,    &
+                            dipole, period, moment, tx_azimuth, dip, tx_xyz,    &
+                            code, xyz, component, rvalue, imaginary, error ) )
+                            !
+                            call self%loadReceiversAndTransmitters( data_entry )
+                            !
+                            csem_counter = csem_counter + 1
+                            !
+                        !> Exy_Ampli_Phase file line
+                        case( "Exy_Ampli_Phase" )
+                            !
+                            !# Dipole Period(s) Moment(Am) Azi Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Ampli Error tx_azimuth
+                            !
+                            dipole = args(1)
+                            read( args(2), * ) period
+                            read( args(3), * ) moment
+                            read( args(4), * ) tx_azimuth
+                            read( args(5), * ) dip
+                            read( args(6), * ) tx_xyz(1)
+                            read( args(7), * ) tx_xyz(2)
+                            read( args(8), * ) tx_xyz(3)
+                            code = trim( args(9) )
+                            read( args(10), * ) xyz(1)
+                            read( args(11), * ) xyz(2)
+                            read( args(12), * ) xyz(3)
+                            component = trim( args(13) )
+                            read( args(14), * ) rvalue
+                            read( args(15), * ) error
+                            read( args(16), * ) azimuth
+                            !
+                            allocate( data_entry, source = DataEntryCSEM_t( iDe, actual_type,    &
+                            dipole, period, moment, tx_azimuth, dip, tx_xyz,    &
+                            code, xyz, component, rvalue, R_ZERO, error, azimuth ) )
+                            !
+                            call self%loadReceiversAndTransmitters( data_entry )
+                            !
+                            csem_counter = csem_counter + 1
+                            !
+                        case default
+                            !
+                            call errStop( "DataFileStandard_ctor > Unknown type :["//actual_type//"]" )
+                            !
+                    end select
+                    !
+                    deallocate( data_entry )
+                    !
+                    header_line_counter = 0
+                    !
                 else
                      !# Synthetic 3D MT data written in Matlab
                      !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
@@ -255,13 +254,12 @@ contains
                              self%n_rx = self%n_rx + n_rx
                              self%n_tx = self%n_tx + n_tx
                              !
-                         case default
-                             !
-                             write( *, * ) "Unknown header format in line :[", header_line_counter, "]"
-                             stop "DataFileStandard.f08: DataFileStandard_ctor()"
-                             !
-                     end select
-                     !
+                        case default
+                            !
+                            call errStop( "DataFileStandard_ctor > Unknown header format in line :["//line_text//"]" )
+                            !
+                    end select
+                    !
                 endif
                 !
             enddo
@@ -277,8 +275,9 @@ contains
             call self%contructMeasuredDataGroupTxArray()
             !
         else
-            write( *, * ) "Error opening [", fname, "] in DataFileStandard_ctor"
-            stop
+            !
+            call errStop( "DataFileStandard_ctor > can´t open ["//fname//"]" )
+            !
         endif
         !
     end function DataFileStandard_ctor

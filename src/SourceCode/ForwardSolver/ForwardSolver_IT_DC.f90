@@ -79,7 +79,7 @@ contains
         implicit none
         !
         class( ForwardSolver_IT_DC_t ), intent( inout ) :: self
-        class( ModelParameter_t ), intent( inout ) :: sigma
+        class( ModelParameter_t ), intent( in ) :: sigma
         real( kind=prec ), intent( in ) :: period
         !
         !> Set omega for this ForwardSolver solver
@@ -111,9 +111,28 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), allocatable, intent( out ) :: e_solution
         !
-        class( Vector_t ), allocatable :: boundary
+        class( Vector_t ), allocatable :: temp_e, temp_vec
+        type( cVector3D_MR_t ) :: temp_e_mr
         class( Scalar_t ), allocatable :: phi0
         integer :: i
+        !
+        !> Create proper SG or MR temp source vectors
+        select type( grid => source%E( pol )%grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                allocate( temp_e, source = source%E( pol ) )
+                !
+            class is( Grid3D_MR_t )
+                !
+                temp_e_mr = cVector3D_MR_t( grid, source%E( pol )%grid_type )
+                call temp_e_mr%fromSG( source%E( pol ) )
+                allocate( temp_e, source = temp_e_mr )
+                !
+            class default
+               call errStop( "createESolution_ForwardSolver_IT > Unclassified Source grid." )
+            !
+        end select
         !
         !> Create e_solution Vector
         call self%solver%preconditioner%model_operator%metric%createVector( complex_t, EDGE, e_solution )
@@ -122,7 +141,7 @@ contains
         if( source%non_zero_source ) then
             !
             !> Create phi0
-            call self%divergence_correction%rhsDivCor( self%solver%omega, source%E( pol )%v, phi0 )
+            call self%divergence_correction%rhsDivCor( self%solver%omega, temp_e, phi0 )
             !
         endif
         !
@@ -186,17 +205,17 @@ contains
         !
         if( source%non_zero_bc ) then
             !
-            call source%rhs( pol )%v%boundary( boundary )
+            call source%rhs( pol )%v%boundary( temp_vec )
             !
         else
             !
-            call source%E( pol )%v%boundary( boundary )
+            call temp_e%boundary( temp_vec )
             !
         endif
         !
-        call e_solution%add( boundary )
+        call e_solution%add( temp_vec )
         !
-        deallocate( boundary )
+        deallocate( temp_vec )
         !
     end subroutine createESolution_ForwardSolver_IT_DC
     !

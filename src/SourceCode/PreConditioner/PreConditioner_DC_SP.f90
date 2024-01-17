@@ -77,7 +77,7 @@ contains
                 !
                 if( allocated( self%phi ) ) deallocate( self%phi )
                 !
-                allocate( self%phi( size( model_operator%NODEi ) ) )
+                allocate( self%phi( size( model_operator%metric%grid%NODEi ) ) )
                 !
             class default
                 call errStop( "setPreConditioner_DC_SP > Unclassified ModelOperator" )
@@ -143,17 +143,17 @@ contains
         !
         call out_phi%zeros
         out_phi_v = out_phi%getArray()
-        out_phi_v_int = out_phi_v( out_phi%ind_interior )
+        out_phi_v_int = out_phi_v( out_phi%indInterior() )
         !
         select type( model_operator => self%model_operator )
             !
             class is( ModelOperator_SP_t )
                 !
-                call LTsolve_Real( model_operator%VDsG_L, in_phi_v( in_phi%ind_interior ), self%phi )
+                call LTsolve_Real( model_operator%VDsG_L, in_phi_v( in_phi%indInterior() ), self%phi )
                 !
                 call UTsolve_Real( model_operator%VDsG_U, self%phi, out_phi_v_int )
                 !
-                out_phi_v( out_phi%ind_interior ) = out_phi_v_int
+                out_phi_v( out_phi%indInterior() ) = out_phi_v_int
                 !
                 call out_phi%setArray( out_phi_v )
                 !

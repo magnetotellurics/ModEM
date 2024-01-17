@@ -280,7 +280,7 @@ contains
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         integer, intent( in ), optional :: i_sol
-        class( ModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
+        type( GenModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
         !
         class( ModelParameter_t ), allocatable :: tx_dsigma
         !
@@ -335,7 +335,7 @@ contains
         !
         !> Allocate s_hat array
         if( present( s_hat ) ) then
-            allocate( ModelParameterCell_t :: s_hat( size( transmitters ) ) )
+            allocate( s_hat( size( transmitters ) ) )
         endif
         !
         !> Send 1 transmitter to first available worker
@@ -346,7 +346,7 @@ contains
             call receiveModel( tx_dsigma, job_info%worker_rank )
             !
             if( present( s_hat ) ) then
-                s_hat( job_info%i_tx ) = tx_dsigma
+                allocate( s_hat( job_info%i_tx )%m, source = tx_dsigma )
             endif
             !
             call dsigma%linComb( ONE, ONE, tx_dsigma )
@@ -373,7 +373,7 @@ contains
             call receiveModel( tx_dsigma, job_info%worker_rank )
             !
             if( present( s_hat ) ) then
-                s_hat( job_info%i_tx ) = tx_dsigma
+                allocate( s_hat( job_info%i_tx )%m, source = tx_dsigma )
             endif
             !
             call dsigma%linComb( ONE, ONE, tx_dsigma )

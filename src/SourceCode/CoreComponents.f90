@@ -7,9 +7,11 @@ module CoreComponents
     use InversionControlFile
     !
     use ModelOperator_MF_SG
-    use ModelOperator_SP
+    use ModelOperator_SP_V1
+    use ModelOperator_SP_V2
     !
-    use ModelParameterCell
+    use ModelParameterCell_SG
+    use ModelParameterCell_MR
     !
     use ModelCovariance
     !
@@ -19,7 +21,7 @@ module CoreComponents
     use SourceMT_2D
     use SourceCSEM_EM1D
     use SourceCSEM_Dipole1D
-    use SourceInteriorForce
+    use SourceAdjoint
     !
     use ReceiverFullImpedance
     use ReceiverFullVerticalMagnetic
@@ -39,10 +41,8 @@ module CoreComponents
     !
     character(:), allocatable :: modem_job
     !
-    character(:), allocatable :: fwd_control_file_name
-    character(:), allocatable :: inv_control_file_name
-    character(:), allocatable :: model_file_name
-    character(:), allocatable :: pmodel_file_name
+    character(:), allocatable :: fwd_control_file_name, inv_control_file_name
+    character(:), allocatable :: model_file_name, pmodel_file_name
     character(:), allocatable :: data_file_name
     character(:), allocatable :: dsigma_file_name
     character(:), allocatable :: cov_file_name
@@ -50,28 +50,22 @@ module CoreComponents
     !
     !> Program Control Flags
     logical :: has_outdir_name
-    logical :: has_fwd_control_file
-    logical :: has_inv_control_file
-    logical :: has_model_file
+    logical :: has_fwd_control_file, has_inv_control_file
+    logical :: has_model_file, has_pmodel_file
     logical :: has_cov_file
-    logical :: has_pmodel_file
     logical :: has_data_file
     logical :: has_e_solution_file
     logical :: verbosis
     !
     !> Public Module Routines
-    public :: handleModelFile
-    public :: handlePModelFile
-    public :: handleDataFile
-    public :: handleForwardControlFile
-    public :: handleInversionControlFile
+    public :: handleModelFile, handlePModelFile, handleDataFile
+    public :: handleForwardControlFile, handleInversionControlFile
     public :: handleArguments
     public :: setupDefaultParameters
     public :: createOutputDirectory
     public :: getLiteralTime
     public :: garbageCollector
-    public :: printUsage
-    public :: printHelp
+    public :: printUsage, printHelp
     public :: printForwardControlFileTemplate
     public :: printInversionControlFileTemplate
     !
@@ -92,9 +86,9 @@ contains
         ! Verbose
         write( *, * ) "     < Model File: [", model_file_name, "]"
         !
-        !> Initialize main_grid and sigma0 with ModelReader
+        !> Initialize main_grid, param_grid and sigma0 with ModelReader
         !> Only ModelReader_Weerachai by now ????
-        call model_reader%read( model_file_name, main_grid, sigma0 ) 
+        call model_reader%read( model_file_name, main_grid, sigma0, param_grid ) 
         !
         call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
         !
@@ -127,11 +121,11 @@ contains
                 !
             case( MODELOP_SP )
                 !
-                allocate( model_operator, source = ModelOperator_SP_t( main_grid ) )
+                allocate( model_operator, source = ModelOperator_SP_V1_t( main_grid ) )
                 !
             case( MODELOP_SP2 )
                 !
-                call errStop( "handleModelFile > MODELOP_SP2 not implemented" )
+                allocate( model_operator, source = ModelOperator_SP_V2_t( main_grid ) )
                 !
             case( "" )
                 !
@@ -160,15 +154,15 @@ contains
         class( ModelParameter_t ), allocatable, intent( out ) :: pmodel
         !
         type( ModelReader_Weerachai_t ) :: model_reader
-        class( Grid_t ), allocatable :: prior_grid
+        class( Grid_t ), allocatable :: temp_grid
         !
         ! Verbose
         write( *, * ) "     < PModel File: [", pmodel_file_name, "]"
         !
-        !> Read prior_grid and pmodel with ModelReader_Weerachai
-        call model_reader%Read( pmodel_file_name, prior_grid, pmodel ) 
+        !> Read temp_grid and pmodel with ModelReader_Weerachai
+        call model_reader%Read( pmodel_file_name, temp_grid, pmodel ) 
         !
-        deallocate( prior_grid )
+        deallocate( temp_grid )
         !
     end subroutine handlePModelFile
     !
@@ -199,7 +193,7 @@ contains
             !
         else
             !
-            write( str_msg, "(A55, I2, A5, I2, A1 )") "handleDataFile > Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
+            write( str_msg, "( A55, I2, A5, I2, A1 )") "handleDataFile > Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
             call errStop( str_msg )
             !
         endif
@@ -214,7 +208,7 @@ contains
             !
         else
             !
-            write( str_msg, "(A54, I2, A5, I2, A1 )") "handleDataFile > Number of Tx mismatched from Header :[", n_tx, " and ", data_file_standard%n_tx, "]"
+            write( str_msg, "( A54, I2, A5, I2, A1 )") "handleDataFile > Number of Tx mismatched from Header :[", n_tx, " and ", data_file_standard%n_tx, "]"
             call errStop( str_msg )
             !
         endif
@@ -263,7 +257,7 @@ contains
         implicit none
         !
         class( ModelParameter_t ), allocatable :: model, aux_model
-        class( Scalar_t ), allocatable :: cell_cond
+        type( rScalar3D_SG_t ) :: cell_cond
         !
         ! Verbose
         write( *, * ) "     - Start jobSplitModel"
@@ -284,9 +278,18 @@ contains
         else
             !
             !> Create new isotropic model with target horizontal cond
-            allocate( cell_cond, source = model%getCond(1) )
+            cell_cond = model%getCond(1)
             !
-            allocate( aux_model, source = ModelParameterCell_t( model%metric%grid, cell_cond, 1, model%param_type ) )
+            select type( grid => model%metric%grid )
+                !
+                class is( Grid3D_SG_t )
+                    allocate( aux_model, source = ModelParameterCell_SG_t( cell_cond, 1, model%param_type ) )
+                class is( Grid3D_MR_t )
+                    allocate( aux_model, source = ModelParameterCell_MR_t( cell_cond, 1, model%param_type, grid%cs ) )
+                class default
+                    call errStop( "jobSplitModel > Unknow grid for ModelParameter" )
+                !
+            end select
             !
             call aux_model%setMetric( model_operator%metric )
             !
@@ -629,15 +632,16 @@ contains
         if( allocated( all_measured_data ) ) call deallocateData( all_measured_data )
         !
         !> Deallocate global array of Receivers
-        if( allocated( receivers ) ) call deallocateReceiverArray()
+        if( allocated( receivers ) ) deallocate( receivers )!call deallocateReceiverArray()
         !
         !> Deallocate global array of Transmitters
-        if( allocated( transmitters ) ) call deallocateTransmitterArray()
+        if( allocated( transmitters ) ) deallocate( transmitters )!call deallocateTransmitterArray()
         !
         !> Deallocate global components
         if( allocated( forward_solver ) ) deallocate( forward_solver )
         if( allocated( model_operator ) ) deallocate( model_operator )
         if( allocated( main_grid ) ) deallocate( main_grid )
+        if( allocated( param_grid ) ) deallocate( param_grid )
         !
         !> Deallocate global model_cov, if its the case
         if( allocated( model_cov ) ) deallocate( model_cov )
@@ -765,7 +769,13 @@ contains
             write( ioFwdTmp, "(A19)" ) "# <Grid parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A33)" ) "#grid_header [ModEM|HDF5] : ModEM"
-            write( ioFwdTmp, "(A30)" ) "grid_format [SG|MR]       : SG"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A55)" ) "#Coarsened Grid: Describe an array of 2*layers in size,"
+            write( ioFwdTmp, "(A98)" ) "#                containing comma separated integer pairs, like <Coarse Factor, Number of Layers>."
+            write( ioFwdTmp, "(A81)" ) "#                Ex.: 0,a,1,b,2,c => For 3 Layers, each with sizes a, b and c and"
+            write( ioFwdTmp, "(A79)" ) "#                                    coarse factors of 0, 1 and 2 respectively."
+            write( ioFwdTmp, "(A64)" ) "#Standard Grid : Remove or leave the grid_format line commented."
+            write( ioFwdTmp, "(A48)" ) "#grid_format                       : 0,a,1,b,2,c"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A20)" ) "# <Model parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
@@ -781,7 +791,7 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A36)" ) "solver_type [QMR|BICG]      : QMR"
+            write( ioFwdTmp, "(A36)" ) "solver_type [QMR|BICG]         : QMR"
             write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A35)" ) "max_solver_iters [80]          : 80"
             write( ioFwdTmp, "(A35)" ) "max_solver_calls [20]          : 20"
