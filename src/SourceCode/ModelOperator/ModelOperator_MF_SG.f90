@@ -73,8 +73,6 @@ contains
         !
         type( ModelOperator_MF_SG_t ) :: self
         !
-        !write( *, * ) "Constructor ModelOperator_MF_SG"
-        !
         call self%baseInit
         !
         call self%create( grid )
