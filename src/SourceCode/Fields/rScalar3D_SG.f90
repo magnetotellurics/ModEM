@@ -1093,7 +1093,7 @@ contains
         call self%switchStoreState( compound )
         !
         if(  .NOT. present( ftype ) ) then
-             binary = .FALSE.
+             binary = .TRUE.
         elseif( index( ftype, "b" ) > 0) then
              binary = .TRUE.
         else

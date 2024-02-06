@@ -75,9 +75,9 @@ contains
         !
         class( DataFile_t ), intent( inout ) :: self
         !
-        deallocate( self%data_entries )
+        if(allocated(self%data_entries)) deallocate( self%data_entries )
         !
-        deallocate( self%measured_data )
+        if(allocated(self%measured_data)) deallocate( self%measured_data )
         !
     end subroutine deallocateDataFile
     !

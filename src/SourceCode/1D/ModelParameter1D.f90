@@ -80,7 +80,7 @@ contains
         !
         !write( *, * ) "Destructor ModelParameter1D_t"
         !
-        deallocate( self%cellCond )
+        if(allocated(self%cellCond)) deallocate( self%cellCond )
         !
     end subroutine ModelParameter1D_dtor
     !

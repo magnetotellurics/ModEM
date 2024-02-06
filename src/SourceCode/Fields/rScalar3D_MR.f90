@@ -544,7 +544,8 @@ contains
                                         j1 = (j-1) * cs + 1
                                         j2 = j * cs
                                         !
-                                        self%sub_scalar( i_grid )%v(i,j,z) = sum( scalar_sg%v( i1:i2, j1:j2, k ) )
+                                        self%sub_scalar( i_grid )%v(i,j,z) = &
+                                          sum( scalar_sg%v( i1:i2, j1:j2, k ) )/(cs*cs)
                                         !
                                     enddo
                                     !
@@ -1469,13 +1470,15 @@ contains
         !
         integer :: i_grid
         !
-        write( *, * ) "rScalar3D_MR: ", self%nx, self%ny, self%nz
+        write( funit )  self%nx, self%ny, self%nz, self%grid%n_grids
         !
-        do i_grid = 1, size( self%sub_scalar )
+        do i_grid = 1, self%grid%n_grids
             !
-            write( *, * ) "   ", i_grid, ":", self%sub_scalar(i_grid)%nx, self%sub_scalar(i_grid)%ny, self%sub_scalar(i_grid)%nz
+            !   then write out each sub_vector
+            call self%sub_scalar(i_grid)%write(funit)
             !
         enddo
+
         !
     end subroutine write_rScalar3D_MR
     !

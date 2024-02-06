@@ -241,6 +241,11 @@ contains
         sigma_cell_mr = rScalar3D_MR_t( temp_grid_mr, CELL )
         !
         call sigma_cell_mr%fromSG( self%cell_cond(1) )
+       ! open(unit = 6666,file = 'cellCondSG.bin',form = 'unformatted')
+       ! call self%cell_cond(1)%write( 6666)
+       ! close(6666)
+        open(unit = 6666,file = 'cellCondMR.bin',form = 'unformatted')
+        call sigma_cell_mr%write( 6666)
         !
         !> cell cond as MR with AirLayers
         sigma_cell_al_mr = rScalar3D_MR_t( self%metric%grid, CELL )

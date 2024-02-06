@@ -1962,11 +1962,13 @@ contains
         !
         integer :: i_grid
         !
-        write( *, * ) "rVector3D_MR: ", self%nx, self%ny, self%nz
+        !    header for base fine grid
+        write( funit )  self%nx, self%ny, self%nz, self%grid%n_grids
         !
-        do i_grid = 1, size( self%sub_vector)
+        do i_grid = 1, self%grid%n_grids
             !
-            write( *, * ) "   ", i_grid, ":", self%sub_vector(i_grid)%nx, self%sub_vector(i_grid)%ny, self%sub_vector(i_grid)%nz
+            !   then write out each sub_vector
+            call self%sub_vector(i_grid)%write(funit)
             !
         enddo
         !

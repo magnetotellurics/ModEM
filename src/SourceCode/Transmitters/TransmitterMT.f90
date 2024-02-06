@@ -132,6 +132,13 @@ module TransmitterMT
             !
         enddo
         !
+        open(unit = 6666,file = 'Esol1.bin',form = 'unformatted')
+        call self%e_sol_0(1)%v%write( 6666)
+        close(6666)
+        open(unit = 6666,file = 'Esol2.bin',form = 'unformatted')
+        call self%e_sol_0(2)%v%write( 6666)
+        close(6666)
+        !
     end subroutine solveTransmitterMT
     !
     !> No subroutine briefing

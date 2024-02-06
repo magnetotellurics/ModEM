@@ -530,28 +530,28 @@ contains
         elseif( index(airLayers%method, "fixed height") > 0 ) then 
             !
             !> ON IMPLEMENTATION
-            z1_log = log10( self%Dz( self%NzAir + 1 ) )
-            dlogz = ( log10( airlayers%maxHeight ) - z1_log ) / ( airlayers%Nz )
+            !z1_log = log10( self%Dz( self%NzAir + 1 ) )
+            !dlogz = ( log10( airlayers%maxHeight ) - z1_log ) / ( airlayers%Nz )
             !
-            z_log = z1_log
-            do iz = airlayers%Nz, 1, -1
-                airlayers%Dz(iz) = 10.**(z_log+dlogz) - 10.**(z_log)
-                z_log = z_log + dlogz
-            enddo
+            !z_log = z1_log
+            !do iz = airlayers%Nz, 1, -1
+            !    airlayers%Dz(iz) = 10.**(z_log+dlogz) - 10.**(z_log)
+            !    z_log = z_log + dlogz
+            !enddo
             !
-            !> OTHER IMPLEMENTATION
+            !> OTHER IMPLEMENTATION -- by GDE, same as what is in matlab
             !
-            ! z1_log = log10(self%dz(self%nzAir + 1) )
-            ! dlogz = (log10(airLayers%maxHeight) - z1_log)/(airLayers%nz-1)
-            ! z_log = z1_log
-            ! height1 = 10.**z1log
-            ! airLayers%dz(airLayers%Nz) = height1
-            ! do iz = airLayers%Nz-1, 1, -1
-                ! z_log = z_log + dlogz
-                ! height2 = 10.**z_log 
-                ! airLayers%dz(iz) = height2-height1
-                ! height1 = height2
-            ! enddo
+             z1_log = log10(self%dz(self%nzAir + 1) )
+             dlogz = (log10(airLayers%maxHeight) - z1_log)/(airLayers%nz-1)
+             z_log = z1_log
+             height1 = 10.**z1_log
+             airLayers%dz(airLayers%Nz) = height1
+             do iz = airLayers%Nz-1, 1, -1
+                 z_log = z_log + dlogz
+                 height2 = 10.**z_log 
+                 airLayers%dz(iz) = height2-height1
+                 height1 = height2
+             enddo
             !
         elseif( index( airLayers%method, "read from file" ) > 0 ) then
             !

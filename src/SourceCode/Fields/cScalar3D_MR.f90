@@ -1446,11 +1446,13 @@ contains
         !
         integer :: i_grid
         !
-        write( *, * ) "cScalar3D_MR: ", self%nx, self%ny, self%nz
+        !    header for base fine grid
+        write( funit )  self%nx, self%ny, self%nz, self%grid%n_grids
         !
-        do i_grid = 1, size( self%sub_scalar )
+        do i_grid = 1, self%grid%n_grids
             !
-            write( *, * ) "   ", i_grid, ":", self%sub_scalar(i_grid)%nx, self%sub_scalar(i_grid)%ny, self%sub_scalar(i_grid)%nz
+            !   then write out each sub_vector
+            call self%sub_scalar(i_grid)%write(funit)
             !
         enddo
         !

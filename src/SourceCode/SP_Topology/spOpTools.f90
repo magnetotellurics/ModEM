@@ -1272,7 +1272,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine write_CSRasIJS_Real(fid, A)
+    subroutine write_CSRasIJS_Real(A,fid)
         implicit none
         !
         integer, intent( in ) :: fid
@@ -1294,7 +1294,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine write_CSRasIJS_Cmplx(fid, A)
+    subroutine write_CSRasIJS_Cmplx(A,fid)
         implicit none
         !
         integer, intent( in ) :: fid
