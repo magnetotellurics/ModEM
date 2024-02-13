@@ -154,6 +154,8 @@ contains
                 call UTsolve_Real( model_operator%VDsG_U, self%phi, out_phi_v_int )
                 !
                 out_phi_v( out_phi%indInterior() ) = out_phi_v_int
+!                  uncomment following line to disable pre-conditioner
+!                out_phi_v( out_phi%indInterior() ) = in_phi_v( in_phi%indInterior())
                 !
                 call out_phi%setArray( out_phi_v )
                 !

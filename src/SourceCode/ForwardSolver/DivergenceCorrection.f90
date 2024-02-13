@@ -130,10 +130,12 @@ contains
         call phiRHS%mult( self%solver%preconditioner%model_operator%metric%v_node )
         !
         call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phiSol )
+!        call phiSol%zeros
         !
         !> solve system of equations -- solver will have to know about
         !>     (a) the equations to solve -- the Divergence Correction operator is modOp%divCGrad
         !>     (b) preconditioner: object, and preconditioner matrix
+
         call self%solver%solve( phiRHS, phiSol )
         !
         !> Temporary Solution - Must be zeroed!????

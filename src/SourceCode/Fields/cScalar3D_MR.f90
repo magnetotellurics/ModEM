@@ -1343,7 +1343,7 @@ contains
         class( cScalar3D_MR_t ), intent( in ) :: self
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
-        real( kind=prec ), allocatable, dimension(:) :: v_full
+        complex( kind=prec ), allocatable, dimension(:) :: v_full
         !
         v_full = self%getFullArray()
         !

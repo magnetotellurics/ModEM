@@ -74,11 +74,11 @@ contains
         class( PreConditioner_CC_SP_MR_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: omega
         !
-        integer, allocatable, dimension(:) :: ix, iy, iz
+        integer, allocatable, dimension(:) :: ix, iy, iz, ir
         integer :: sum_x, sum_y, sum_z
         real( kind=prec ), allocatable, dimension(:) :: d
         integer :: nx, ny, na, nz
-        integer :: nEdge, nEdgeT, n, i, j
+        integer :: nEdge, nEdgeT, n, i, j, kk
         type( spMatCSR_real ) :: Mii, CCxx
         type( spMatCSR_Cmplx ) :: Axx
         type( spMatCSR_Cmplx ), pointer, dimension(:)  :: Lblk, Ublk
@@ -89,6 +89,8 @@ contains
             class is( Grid3D_MR_t )
                 !
                 !> Find and sum all x=1, y=2, z=3; for ix, iy, iz allocation sizes
+                !   NOTE:  at least some of the following can be extracted from MR grid
+                !          and does not need to be recomputed here!
                 sum_x = 0; sum_y = 0; sum_z = 0
                 !
                 do i = 1, size( grid%iXYZinterior )
@@ -104,6 +106,7 @@ contains
                 allocate( ix( sum_x ) )
                 allocate( iy( sum_y ) )
                 allocate( iz( sum_z ) )
+                allocate( ir( size(grid%iXYZinterior ) ) )
                 !
                 !> Populate ix, iy, iz
                 sum_x = 1; sum_y = 1; sum_z = 1
@@ -126,11 +129,27 @@ contains
                     endif
                     !
                 enddo
+                !    make inverse permutation or row/column indices to map back to original
+                !    order (sorted by sub-grids)
+                kk = 0
+                do i = 1,sum_x-1
+                  kk = kk+1
+                  ir(ix(i)) = kk;
+                enddo
+                do i = 1,sum_y-1
+                  kk = kk+1
+                  ir(iy(i)) = kk;
+                enddo
+                do i = 1,sum_z-1
+                  kk = kk+1
+                  ir(iz(i)) = kk;
+                enddo
                 !
             class default
                 call errStop( "setPreConditioner_CC_SP_MR > Grid must be MR" )
             !
         end select
+        !
         !
         !> Construct submatrices for x, y, z components
         allocate( Lblk(3) )
@@ -200,8 +219,31 @@ contains
                 deallocate(d)
                 !
                 ! Could merge into a single LT and UT matrix, or solve systems individually
-                call BlkDiag_Cmplx( Lblk, self%L )
-                call BlkDiag_Cmplx( Ublk, self%U )
+!                call BlkDiag_Cmplx( Lblk, self%L )
+!                call BlkDiag_Cmplx( Ublk, self%U )
+!
+!                MAJOR MODIFICATION (BUG FIX!)   after making full block diagonal matrix,
+!                  need to permute rows and columns back to original order (sorted by subgrids)
+!                   using Axx` as temp sparse matrix to form block diagonal -- then call SubMatrix to
+!                   permute rows and columns
+                call BlkDiag_Cmplx( Lblk, Axx)
+                open(unit=6666,file='Lblk.bin',form='unformatted')
+                call write_CSRasIJS_Cmplx(Axx,6666)
+                close(6666)
+                call SubMatrix_Cmplx(Axx, ir, ir, self%L)
+                self%L%lower= .TRUE.   !   the reordering used here does keeps this LT matrix
+                open(unit=6666,file='L_sort.bin',form='unformatted')
+                call write_CSRasIJS_Cmplx(self%L,6666)
+                close(6666)
+                call BlkDiag_Cmplx( Ublk, Axx )
+                open(unit=6666,file='Ublk.bin',form='unformatted')
+                call write_CSRasIJS_Cmplx(Axx,6666)
+                close(6666)
+                call SubMatrix_Cmplx(Axx, ir, ir, self%U)
+                self%U%upper= .TRUE.   !   the reordering used here does keeps this UT matrix
+                open(unit=6666,file='U_sort.bin',form='unformatted')
+                call write_CSRasIJS_Cmplx(self%U,6666)
+                close(6666)
                 !
                 call CMATtrans( self%L, self%LH )
                 call CMATtrans( self%U, self%UH )

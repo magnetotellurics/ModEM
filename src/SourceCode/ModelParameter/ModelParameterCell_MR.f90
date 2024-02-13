@@ -246,6 +246,7 @@ contains
        ! close(6666)
         open(unit = 6666,file = 'cellCondMR.bin',form = 'unformatted')
         call sigma_cell_mr%write( 6666)
+        close(6666)
         !
         !> cell cond as MR with AirLayers
         sigma_cell_al_mr = rScalar3D_MR_t( self%metric%grid, CELL )

@@ -36,7 +36,7 @@ contains
         !
         type( Solver_PCG_t ) :: self
         !
-        !write( *, * ) "Constructor Solver_PCG_t"
+        write( *, * ) "Constructor Solver_PCG_t"
         !
         call self%baseInit
         !
@@ -62,8 +62,116 @@ contains
         !
     end function Solver_PCG_ctor
     !
-    !> No subroutine briefing
+    !!> No subroutine briefing
     subroutine solve_Solve_PCG( self, b, x )
+      !   New version of PCG -- mimics my matlab code
+      !    that exactlty reproduces standard matlab PCG
+        implicit none
+        !
+        class( Solver_PCG_t ), intent( inout ) :: self
+        class( Scalar_t ), intent( in ) :: b
+        class( Scalar_t ), intent( inout ) :: x
+        !
+        !>    these will have to be created in a way to match
+        !>     the specific type of the input Scalar_t ...
+        !>    Can we just declare these to be of the abstract type?
+        class ( Scalar_t ), allocatable :: r, s, p, q
+        complex( kind=prec ) :: beta, alpha, delta, deltaOld
+        complex( kind=prec ) :: bnorm, rnorm
+        !
+        if( .NOT. x%is_allocated ) then
+            call errStop( "solve_Solve_PCG > x not allocated yet" )
+        endif
+        !
+        if( .NOT. b%is_allocated ) then
+            call errStop( "solve_Solve_PCG > b not allocated yet" )
+        endif
+        !
+        !>  create local cScalar objects -- could we also use modOp%createCScalar?
+        allocate( r, source = x )    !> cannot zero x, since it is first guess
+        call r%zeros
+        allocate( s, source = r )
+        allocate( q, source = r )
+        !
+        !> just like
+        !call self%preconditioner%model_operator%Amult( x, r )
+        !>    if we can make AMult generic, with versions that operate on cScalar/cVector
+        !>     this could be more generic ...    also could change the name of this operator
+        !>      to make this more obvious
+        call self%preconditioner%model_operator%divCGrad( x, r )
+        !
+        !>     r = b-r
+        call r%linComb( b, C_MinusOne, C_ONE )
+
+        call self%preconditioner%LUsolve( r, s )
+        !s = r; !  comment above line and uncomment this to disable preconditioner--for debugging
+        allocate( p, source = s )
+        delta = r%dotProd(s)
+        !
+        bnorm = SQRT( b%dotProd(b) )
+        rnorm = SQRT( r%dotProd(r) )
+        self%iter = 1
+        self%relErr( self%iter ) = rnorm / bnorm
+        !
+        !> Main solver loop
+        solver_loop: do
+            !
+            call self%preconditioner%model_operator%divCGrad( p, q )
+            !
+            alpha = delta / p%dotProd(q)
+            !
+            call x%multAdd( alpha, p )
+            !
+            call r%multAdd( -alpha, q )
+            !
+            rnorm = SQRT( r%dotProd(r) )
+            !
+            self%iter = self%iter + 1
+            !
+            self%relErr( self%iter ) = rnorm / bnorm
+            !
+            !write( *, "( a36, i6, a3, es12.3 )" ) "PCG iter: ", self%iter, " : ", self%relErr( self%iter )
+            !
+            !> Stop Conditions -- as soon as new relErr is computed can decide whether to stop
+            if( ( self%relErr( self%iter ) .LE. self%tolerance ) .OR. ( self%iter .GE. self%max_iters ) ) then
+                exit
+            endif
+            !
+            call self%preconditioner%LUsolve( r, s )
+            !s = r; !  comment above line and uncomment this to disable preconditioner--for debugging
+            !
+            deltaOld = delta
+            !
+            delta = r%dotProd(s)
+            !
+            beta = delta / deltaOld
+            !
+            call p%linComb( s, beta, C_ONE )
+            !
+            !
+        enddo solver_loop
+        !
+        self%converged = self%relErr( self%iter ) .LE. self%tolerance
+        ! !
+        ! if( self%converged ) then
+            ! write( *, "( a51, i6, a7, es12.3 )" ) "->divCor PCG converged within ", self%iter, ": err= ", self%relErr( self%iter )
+        ! else
+            ! write( *, "( a51, i6, a7, es12.3 )" ) "->divCor PCG not converged in ", self%max_iters, ": err= ", self%relErr( self%max_iters )
+        ! endif
+        ! !
+        deallocate( r )
+        deallocate( s )
+        deallocate( p )
+        deallocate( q )
+        !
+        self%n_iter = self%iter
+        !
+    end subroutine solve_Solve_PCG !> PCG
+    !
+    !!> No subroutine briefing
+    subroutine solve_Solve_PCG_old( self, b, x )
+      !   Old version of PCG -- rewritting slightly to mimic my matlab code
+      !    that exactlty reproduces standard matlab PCG
         implicit none
         !
         class( Solver_PCG_t ), intent( inout ) :: self
@@ -136,7 +244,7 @@ contains
             !
             rnorm = SQRT( r%dotProd(r) )
             !
-            !write( *, "( a36, i6, a3, es12.3 )" ) "PCG iter: ", self%iter, " : ", self%relErr( self%iter )
+            write( *, "( a36, i6, a3, es12.3 )" ) "PCG iter: ", self%iter, " : ", self%relErr( self%iter )
             !
             self%iter = self%iter + 1
             !
@@ -164,6 +272,5 @@ contains
         !
         self%n_iter = self%iter
         !
-    end subroutine solve_Solve_PCG !> PCG
-    !
+    end subroutine solve_Solve_PCG_old !> PCG
 end module Solver_PCG
