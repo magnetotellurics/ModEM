@@ -325,7 +325,7 @@ module Transmitter
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
             class( GenVector_t ), allocatable, dimension(:) :: eSens
-            class( Vector_t ), allocatable :: solution, real_sens
+            class( Vector_t ), allocatable :: solution
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
             !
@@ -366,15 +366,11 @@ module Transmitter
             !
             call eSens(1)%v%mult( minus_i_omega_mu )
             !
-            call eSens(1)%v%getReal( real_sens )
+            !> Get dsigma from dPDEmapping_T, using first position of eSens
+            call sigma%dPDEmapping_T( eSens(1)%v, dsigma )
             !
             !> Free up local memory
             deallocate( eSens )
-            !
-            !> Get dsigma from dPDEmapping_T, using first position of eSens
-            call sigma%dPDEmapping_T( real_sens, dsigma )
-            !
-            deallocate( real_sens )
             !
         end subroutine PMult_t_Tx
         !

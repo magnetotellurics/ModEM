@@ -163,7 +163,12 @@ contains
         !
         call sigma_cell%mult( self%metric%v_cell )
         !
-        call sigma_cell%toNode( sigma_node, .TRUE. )
+        call sigma_cell%sumToNode( sigma_node, .TRUE. )
+        !
+        !> Later fix for SP2 - 27/02/2024!!!!
+        call sigma_node%div( self%metric%v_node )
+        !
+        call sigma_node%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
         !
     end subroutine nodeCond_ModelParameterCell_SG
     !
@@ -234,7 +239,6 @@ contains
         !
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: sigma_cells
         type( rScalar3D_SG_t ) :: dsigma_cond
-        character( len=5 ), parameter :: JOB = "DERIV"
         integer :: i, k0, k1, k2
         !
         if( .NOT. self%is_allocated ) then
@@ -262,7 +266,7 @@ contains
             !> Create and initialize sigma_cells with zeros
             sigma_cells(i) = rScalar3D_SG_t( self%metric%grid, CELL )
             !
-            sigma_cells(i)%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(i)%v, kind=prec ), JOB )
+            sigma_cells(i)%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(i)%v, kind=prec ), DERIV )
             !
             dsigma_cond = dsigma%getCond(i)
             !
@@ -304,7 +308,6 @@ contains
         type( rScalar3D_SG_t ) :: dsigma_cond, sigma_cell
         type( GenScalar_t ), allocatable, dimension(:) :: sigma_cells
         complex( kind=prec ), allocatable, dimension(:,:,:) :: sigma_cell_v
-        character( len=5 ), parameter :: JOB = "DERIV"
         integer :: i, k0, k1, k2
         !
         if( .NOT. self%is_allocated ) then
@@ -357,7 +360,7 @@ contains
             !
             call dsigma_cond%zeros
             !
-            dsigma_cond%v = self%sigMap( real( self%cell_cond(i)%v, kind=prec ), JOB )
+            dsigma_cond%v = self%sigMap( real( self%cell_cond(i)%v, kind=prec ), DERIV )
             !
             call sigma_cells(i)%s%mult( self%metric%v_cell )
             !

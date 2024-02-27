@@ -166,10 +166,10 @@ module ModelParameter
         !> No interface subroutine briefing
         !
         subroutine interface_set_one_cond_model_parameter( self, cond, i_cond )
-            import :: ModelParameter_t, Scalar_t
+            import :: ModelParameter_t, rScalar3D_SG_t
             !
             class( ModelParameter_t ), intent( inout ) :: self
-            class( Scalar_t ), intent( in ) :: cond
+            type( rScalar3D_SG_t ), intent( in ) :: cond
             integer, intent( in ) :: i_cond
             !
         end subroutine interface_set_one_cond_model_parameter
@@ -359,21 +359,23 @@ contains
         character(*), intent( in ), optional :: p_job
         real( kind=prec ) :: y
         !
-        character(30) :: job
+        character(:), allocatable :: job
         !
-        if(.NOT.present( p_job ) ) then
+        if( .NOT. present( p_job ) ) then
             job = FORWARD
         else
             job = p_job
         endif
         !
         select case( job )
-           case( FORWARD )
-               y = exp( x )
-           case( DERIV )
-               y = exp( x )
-           case( INVERSE )
-               y = log( x )
+            !
+            case( FORWARD )
+                y = exp( x )
+            case( DERIV )
+                y = exp( x )
+            case( INVERSE )
+                y = log( x )
+            !
         end select
         !
     end function sigMap_Log

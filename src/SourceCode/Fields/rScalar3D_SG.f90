@@ -51,7 +51,7 @@ module rScalar3D_SG
             procedure, public :: divByField => divByField_rScalar3D_SG
             procedure, public :: divByValue => divByValue_rScalar3D_SG
             !
-            procedure, public :: toNode => toNode_rScalar3D_SG
+            procedure, public :: sumToNode => sumToNode_rScalar3D_SG
             !
             !> Getters & Setters
             !
@@ -741,7 +741,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine toNode_rScalar3D_SG( self, node_scalar, interior_only )
+    subroutine sumToNode_rScalar3D_SG( self, node_scalar, interior_only )
         implicit none
         !
         class( rScalar3D_SG_t ), intent( inout ) :: self
@@ -753,11 +753,11 @@ contains
         logical :: is_interior_only
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "toNode_rScalar3D_SG > self not allocated." )
+             call errStop( "sumToNode_rScalar3D_SG > self not allocated." )
         endif
         !
         if( .NOT. node_scalar%is_allocated ) then
-             call errStop( "toNode_rScalar3D_SG > node_scalar not allocated." )
+             call errStop( "sumToNode_rScalar3D_SG > node_scalar not allocated." )
         endif
         !
         call self%switchStoreState( compound )
@@ -793,13 +793,13 @@ contains
                 !
                 node_scalar = temp_node
                 !
-                call node_scalar%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
+                !call node_scalar%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
                 !
             case default
-                call errStop( "toNode_rScalar3D_SG: undefined self%grid_type" )
+                call errStop( "sumToNode_rScalar3D_SG: undefined self%grid_type" )
         end select
         !
-    end subroutine toNode_rScalar3D_SG
+    end subroutine sumToNode_rScalar3D_SG
     !
     !> No subroutine briefing
     !

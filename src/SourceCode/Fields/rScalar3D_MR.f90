@@ -64,7 +64,7 @@ module rScalar3D_MR
             procedure, public :: divByField => divByField_rScalar3D_MR
             procedure, public :: divByValue => divByValue_rScalar3D_MR
             !
-            procedure, public :: toNode => toNode_rScalar3D_MR
+            procedure, public :: sumToNode => sumToNode_rScalar3D_MR
             !
             !> Miscellaneous
             procedure, public :: deallOtherState => deallOtherState_rScalar3D_MR
@@ -1194,7 +1194,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine toNode_rScalar3D_MR( self, node_scalar, interior_only )
+    subroutine sumToNode_rScalar3D_MR( self, node_scalar, interior_only )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -1206,11 +1206,11 @@ contains
         integer :: i, nxF, nyF, nzF, nxC, nyC, nzC
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "toNode_rScalar3D_MR > self not allocated." )
+             call errStop( "sumToNode_rScalar3D_MR > self not allocated." )
         endif
         !
         if( .NOT. node_scalar%is_allocated ) then
-             call errStop( "toNode_rScalar3D_MR > node_scalar not allocated." )
+             call errStop( "sumToNode_rScalar3D_MR > node_scalar not allocated." )
         endif
         !
         call self%switchStoreState( compound )
@@ -1226,7 +1226,7 @@ contains
                         !> set nodes for interior of all sub-scalars
                         do i = 1, self%grid%n_grids
                             !
-                            call self%sub_scalar(i)%toNode( node_scalar%sub_scalar(i) )
+                            call self%sub_scalar(i)%sumToNode( node_scalar%sub_scalar(i) )
                             !
                         enddo
                         !
@@ -1244,14 +1244,14 @@ contains
                                 nzF = self%sub_scalar(i+1)%grid%nz
                                 !
                                 node_scalar%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC+1 ) = &
-                                       self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
-                                       self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
-                                       self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
-                                       self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
-                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
-                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
-                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
-                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
+									self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
+									self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+									self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
+									self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+									self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
+									self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
+									self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
+									self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
                                 !
                             else
                                 !
@@ -1263,26 +1263,26 @@ contains
                                 nzC = self%sub_scalar(i+1)%grid%nz
                                 !
                                 node_scalar%sub_scalar(i+1)%v( 2:nxC,     2:nyC,     1   ) = &
-                                       self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
-                                       self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
-                                       self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
-                                       self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
-                                         self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
-                                         self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
-                                         self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
-                                         self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
+									self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
+									self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+									self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
+									self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+									self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
+									self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
+									self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
+									self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
                                 !
                             endif
                             !
                         enddo
                         !
                     case default
-                        call errStop( "toNode_rScalar3D_MR just for CELL type" )
+                        call errStop( "sumToNode_rScalar3D_MR just for CELL type" )
                     !
                 end select
                 !
             class default
-                call errStop( "toNode_rScalar3D_MR > Unclassified node_scalar" )
+                call errStop( "sumToNode_rScalar3D_MR > Unclassified node_scalar" )
             !
         end select
         !
@@ -1322,15 +1322,15 @@ contains
                         ! enddo
                         ! !
                     ! case default
-                        ! call errStop( "toNode_rScalar3D_MR just for CELL type" )
+                        ! call errStop( "sumToNode_rScalar3D_MR just for CELL type" )
                 ! end select
                 ! !
             ! class default
-                ! call errStop( "toNode_rScalar3D_MR > Unclassified node_scalar" )
+                ! call errStop( "sumToNode_rScalar3D_MR > Unclassified node_scalar" )
             ! !
         ! end select
         ! !
-    end subroutine toNode_rScalar3D_MR
+    end subroutine sumToNode_rScalar3D_MR
     !
     !> No subroutine briefing
     !

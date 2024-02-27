@@ -13,7 +13,7 @@ module Scalar
     contains
             !
             !> Scalar Interfaces
-            procedure( interface_to_node_scalar ), deferred, public :: toNode
+            procedure( interface_sum_to_node_scalar ), deferred, public :: sumToNode
             !
             !> Scalar Routines
             !
@@ -34,13 +34,13 @@ module Scalar
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_to_node_scalar( self, node_scalar, interior_only )
+        subroutine interface_sum_to_node_scalar( self, node_scalar, interior_only )
             import :: Scalar_t
             !
             class( Scalar_t ), intent( inout ) :: self, node_scalar
             logical, intent( in ), optional :: interior_only
             !
-        end subroutine interface_to_node_scalar
+        end subroutine interface_sum_to_node_scalar
         !
     end interface
     !
@@ -80,7 +80,7 @@ contains
         !
         c_array = interior%getArray()
         !
-        c_array( self%indBoundary()) = C_ZERO
+        c_array( self%indBoundary() ) = C_ZERO
         !
         call interior%setArray( c_array )
         !

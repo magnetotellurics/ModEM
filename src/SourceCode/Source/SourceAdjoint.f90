@@ -84,6 +84,7 @@ contains
         !
         integer :: pol
         type( cVector3D_MR_t ) :: temp_vec_mr
+        type( rVector3D_SG_t ) :: temp_vec_sg
         complex( kind=prec ) :: iOmegaMuInv
         complex( kind=prec ), allocatable, dimension(:) :: v_edge_v, rhs_v, rhs_v_int, in_e, in_e_int, out_e
         !
@@ -147,7 +148,24 @@ contains
                 end select
                 !
                 !> E = E / V_E
-                call self%E( pol )%div( self%model_operator%metric%v_edge )
+                select type( v_edge => self%model_operator%metric%v_edge )
+                    !
+                    class is( rVector3D_SG_t )
+                        !
+                        call self%E( pol )%div( v_edge )
+                        !
+                    class is( rVector3D_MR_t )
+                        !
+                        temp_vec_sg = rVector3D_SG_t( self%model_operator%metric%grid, EDGE )
+                        !
+                        call v_edge%MRtoSG( temp_vec_sg )
+                        !
+                        call self%E( pol )%div( temp_vec_sg )
+                        !
+                    class default
+                        call errStop( "createRHS_SourceAdjoint > Undefined v_edge" )
+                    !
+                end select
                 !
             else
                 !

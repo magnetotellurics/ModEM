@@ -70,9 +70,15 @@ module Source
         class( Source_t ), intent( inout ) :: self
         type( cVector3D_SG_t ), dimension(:), intent( in ) :: E
         !
+        write( *, * ) "setE_Source 1"
+        !
         self%E = E
         !
+        write( *, * ) "setE_Source 2"
+        !
         call self%createRHS
+        !
+        write( *, * ) "setE_Source 3"
         !
     end subroutine setE_Source
     !

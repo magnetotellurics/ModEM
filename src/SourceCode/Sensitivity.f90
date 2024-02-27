@@ -256,7 +256,7 @@ contains
         integer :: i_tx, sol_index
         !
         ! Verbose
-        !write( *, * ) "          - Start serialJMult_T"
+        write( *, * ) "          - Start serialJMult_T"
         !
         sol_index = 0
         !
@@ -325,6 +325,8 @@ contains
         type( DataGroup_t ) :: data_group
         complex( kind=prec ) :: tx_data_cvalue
         integer :: i_data, i_comp, i_pol, sol_index
+        !
+        write( *, * ) "JMult_T_Tx 1"
         !
         sol_index = 0
         !
@@ -403,19 +405,31 @@ contains
             !
         enddo
         !
+        write( *, * ) "JMult_T_Tx 2"
+        !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
+        !
+        write( *, * ) "JMult_T_Tx 3"
         !
         !> Switch Transmitter's source to SourceAdjoint, with transpose = .TRUE.
         call Tx%setSource( SourceAdjoint_t( model_operator, sigma, Tx%period, .TRUE. ) )
         !
+        write( *, * ) "JMult_T_Tx 4"
+        !
         call Tx%source%setE( bSrc )
+        !
+        write( *, * ) "JMult_T_Tx 5"
         !
         deallocate( bSrc )
         !
         !> Solve Transmitter's e_sens with the new SourceAdjoint
         call Tx%solve
         !
+        write( *, * ) "JMult_T_Tx 6"
+        !
         call Tx%PMult_t( sigma, tx_dsigma )
+        !
+        write( *, * ) "JMult_T_Tx 7"
         !
     end subroutine JMult_T_Tx
     !
@@ -433,7 +447,8 @@ contains
             !
             do i_comp = 1, Rx%n_comp
                 do i_pol = 1, Tx%n_pol
-                    call model_operator%metric%createVector( complex_t, EDGE, Rx%lrows( i_pol, i_comp )%v )
+                    allocate( Rx%lrows( i_pol, i_comp )%v, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
+                    !call model_operator%metric%createVector( complex_t, EDGE, Rx%lrows( i_pol, i_comp )%v )
                 enddo
             enddo
             !

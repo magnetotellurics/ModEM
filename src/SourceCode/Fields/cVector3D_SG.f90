@@ -64,8 +64,6 @@ module cVector3D_SG
             !> Miscellaneous
             procedure, public :: getAxis => getAxis_cVector3D_SG
             !
-            procedure, public :: getReal => getReal_cVector3D_SG
-            !
             procedure, public :: getArray => getArray_cVector3D_SG
             procedure, public :: setArray => setArray_cVector3D_SG
             !
@@ -1801,20 +1799,6 @@ contains
         endif
         !
     end function getAxis_cVector3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine getReal_cVector3D_SG( self, r_vector )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        class( Vector_t ), allocatable, intent( out ) :: r_vector
-        !
-        allocate( r_vector, source = self )
-        !
-        call r_vector%copyFrom( self )
-        !
-    end subroutine getReal_cVector3D_SG
     !
     !> No subroutine briefing
     !

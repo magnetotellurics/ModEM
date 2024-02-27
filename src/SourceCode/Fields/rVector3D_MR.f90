@@ -79,8 +79,6 @@ module rVector3D_MR
             !> Miscellaneous
             procedure, public :: getAxis => getAxis_rVector3D_MR
             !
-            procedure, public :: getReal => getReal_rVector3D_MR
-            !
             procedure, public :: deallOtherState => deallOtherState_rVector3D_MR
             !
             procedure, public :: copyFrom => copyFrom_rVector3D_MR
@@ -1805,20 +1803,6 @@ contains
         call errStop( "getAxis_rVector3D_MR still not implemented" )
         !
     end function getAxis_rVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine getReal_rVector3D_MR( self, r_vector )
-        implicit none
-        !
-        class( rVector3D_MR_t ), intent( in ) :: self
-        class( Vector_t ), allocatable, intent( out ) :: r_vector
-        !
-        allocate( r_vector, source = rVector3D_MR_t( self%grid, self%grid_type ) )
-        !
-        call r_vector%copyFrom( self )
-        !
-    end subroutine getReal_rVector3D_MR
     !
     !> No subroutine briefing
     !

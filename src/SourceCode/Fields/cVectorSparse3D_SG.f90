@@ -55,8 +55,6 @@ module cVectorSparse3D_SG
             procedure, public :: interpFunc => interpFunc_cVectorSparse3D_SG
             !
             !> Miscellaneous
-            procedure, public :: getReal => getReal_cVectorSparse3D_SG
-            !
             procedure, public :: deallOtherState => deallOtherState_cVectorSparse3D_SG
             !
             procedure, public :: getArray => getArray_cVectorSparse3D_SG
@@ -702,18 +700,6 @@ contains
         call errStop( "interpFunc_cVectorSparse3D_SG not implemented yet!" )
         !
     end subroutine interpFunc_cVectorSparse3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine getReal_cVectorSparse3D_SG( self, r_vector )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( in ) :: self
-        class( Vector_t ), allocatable, intent( out ) :: r_vector
-        !
-        call errStop( "getReal_cVectorSparse3D_SG not implemented yet!" )
-        !
-    end subroutine getReal_cVectorSparse3D_SG
     !
     subroutine switchStoreState_cVectorSparse3D_SG( self, store_state )
         implicit none

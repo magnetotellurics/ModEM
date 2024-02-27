@@ -78,8 +78,6 @@ module cVector3D_MR
             !> Miscellaneous
             procedure, public :: getAxis => getAxis_cVector3D_MR
             !
-            procedure, public :: getReal => getReal_cVector3D_MR
-            !
             procedure, public :: deallOtherState => deallOtherState_cVector3D_MR
             !
             procedure, public :: copyFrom => copyFrom_cVector3D_MR
@@ -938,15 +936,15 @@ contains
              call errStop( "sumEdge_cVector3D_MR > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         is_interior_only = .FALSE.
         !
-        if( present( interior_only ) ) is_interior_only = interior_only
+        !if( present( interior_only ) ) is_interior_only = interior_only
         !
-        if( is_interior_only ) then
-            call self%setAllBoundary( C_ZERO )
-        endif
+        !if( is_interior_only ) then
+            !call self%setAllBoundary( C_ZERO )
+        !endif
         !
         allocate( cell_out, source = cScalar3D_MR_t( self%grid, CELL ) )
         !
@@ -1127,6 +1125,7 @@ contains
         class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
+		type( cVector3D_MR_t ) :: temp_vector_mr
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
@@ -1492,6 +1491,12 @@ contains
                             self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
                             self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
                             self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%z
+                        !
+                        class is( rVector3D_MR_t )
+                            !
+                            self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
+                            self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
+                            self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%z
                             !
                         class is( rScalar3D_MR_t )
                             !
@@ -1772,7 +1777,23 @@ contains
                             self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_vector(i)%s_v
                             !
                         else
-                            call errStop( "divByField_cVector3D_MR > Unknown rhs store_state!" )
+                            call errStop( "divByField_cVector3D_MR > Unknown complex rhs store_state!" )
+                        endif
+                    !
+                    class is( rVector3D_MR_t )
+                        !
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            self%sub_vector(i)%x = self%sub_vector(i)%x / rhs%sub_vector(i)%x
+                            self%sub_vector(i)%y = self%sub_vector(i)%y / rhs%sub_vector(i)%y
+                            self%sub_vector(i)%z = self%sub_vector(i)%z / rhs%sub_vector(i)%z
+                            !
+                        elseif( rhs%store_state .EQ. singleton ) then
+                            !
+                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_vector(i)%s_v
+                            !
+                        else
+                            call errStop( "divByField_cVector3D_MR > Unknown real rhs store_state!" )
                         endif
                         !
                     class is( rScalar3D_MR_t )
@@ -1849,20 +1870,6 @@ contains
         call errStop( "getAxis_cVector3D_MR still not implemented" )
         !
     end function getAxis_cVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine getReal_cVector3D_MR( self, r_vector )
-        implicit none
-        !
-        class( cVector3D_MR_t ), intent( in ) :: self
-        class( Vector_t ), allocatable, intent( out ) :: r_vector
-        !
-        allocate( r_vector, source = cVector3D_MR_t( self%grid, self%grid_type ) )
-        !
-        call r_vector%copyFrom( self )
-        !
-    end subroutine getReal_cVector3D_MR
     !
     !> No subroutine briefing
     !
@@ -1977,6 +1984,11 @@ contains
                 endif
                 !
                 self%is_allocated = .TRUE.
+            !
+			! ????
+            class is( cVector3D_SG_t )
+                !
+                call self%fromSG( rhs )
                 !
             class default
                 call errStop( "copyFrom_cVector3D_MR > Undefined rhs" )

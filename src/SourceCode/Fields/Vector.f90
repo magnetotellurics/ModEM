@@ -25,8 +25,6 @@ module Vector
         procedure( interface_sum_cells_VTI_vector ), deferred, public :: sumCellVTI
         generic :: sumCells => sumCell, sumCellVTI
         !
-        procedure( interface_get_real_vector ), deferred, public :: getReal
-        !
         procedure, public :: boundary => boundary_Vector
         procedure, public :: interior => interior_Vector
         !
@@ -101,13 +99,6 @@ module Vector
             class( Scalar_t ), intent( in ) :: cell_h_in, cell_v_in
             character(*), intent( in ), optional :: ptype
         end subroutine interface_sum_cells_vti_vector
-        !
-        !> No interface subroutine briefing
-        subroutine interface_get_real_vector( self, r_vector )
-            import :: Vector_t
-            class( Vector_t ), intent( in ) :: self
-            class( Vector_t ), allocatable, intent( out ) :: r_vector
-        end subroutine interface_get_real_vector
         !
     end interface
     !

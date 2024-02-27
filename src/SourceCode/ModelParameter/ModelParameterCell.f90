@@ -108,7 +108,7 @@ contains
         implicit none
         !
         class( ModelParameterCell_t ), intent( inout ) :: self
-        class( Scalar_t ), intent( in ) :: cond
+        type( rScalar3D_SG_t ), intent( in ) :: cond
         integer, intent( in ) :: i_cond
         !
         if( .NOT. cond%is_allocated ) then
