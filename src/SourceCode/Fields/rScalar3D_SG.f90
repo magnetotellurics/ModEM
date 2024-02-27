@@ -51,7 +51,7 @@ module rScalar3D_SG
             procedure, public :: divByField => divByField_rScalar3D_SG
             procedure, public :: divByValue => divByValue_rScalar3D_SG
             !
-            procedure, public :: toNode => toNode_rScalar3D_SG
+            procedure, public :: SumToNode => SumToNode_rScalar3D_SG
             !
             !> Getters & Setters
             !
@@ -178,6 +178,7 @@ contains
         !
         select case( self%grid_type )
             !
+            !   NO BOUNDARIES FOR CELLS!!!
             case( NODE, CELL ) 
                 !
                 self%v((/1, self%NdV(1)/), :, :) = cvalue
@@ -741,7 +742,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine toNode_rScalar3D_SG( self, node_scalar, interior_only )
+    subroutine SumToNode_rScalar3D_SG( self, node_scalar, interior_only )
         implicit none
         !
         class( rScalar3D_SG_t ), intent( inout ) :: self
@@ -793,13 +794,16 @@ contains
                 !
                 node_scalar = temp_node
                 !
-                call node_scalar%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
+                !   For consistency with cell-to-edge perhaps best to omit this?
+                !    and call this routine SumToNode instead of just toNode
+                !   ACTUALLY THE way implemented and used is (slighty) wrong!
+                !call node_scalar%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
                 !
             case default
                 call errStop( "toNode_rScalar3D_SG: undefined self%grid_type" )
         end select
         !
-    end subroutine toNode_rScalar3D_SG
+    end subroutine SumToNode_rScalar3D_SG
     !
     !> No subroutine briefing
     !
