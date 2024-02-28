@@ -577,9 +577,9 @@ contains
         !
         !write( *, * ) "Destructor rScalar3D_MR: ", self%grid_type, self%nx, self%ny, self%nz
         !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "rScalar3D_MR_dtor > self not allocated." )
-        endif
+        !if( .NOT. self%is_allocated ) then
+            !call errStop( "rScalar3D_MR_dtor > self not allocated." )
+        !endif
         !
         call self%baseDealloc
         !

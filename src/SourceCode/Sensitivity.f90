@@ -94,6 +94,7 @@ contains
         !
         integer :: i_data_tx
         class( Transmitter_t ), pointer :: Tx
+        type( SourceAdjoint_t ) :: source_adjoint
         !
         if( allocated( JmHat ) ) deallocate( JmHat )
         !
@@ -107,8 +108,10 @@ contains
             !
             call Tx%forward_solver%setFrequency( sigma, Tx%period )
             !
+            source_adjoint = Tx%PMult( sigma, dsigma, model_operator )
+            !
             !> Switch Transmitter's source to SourceAdjoint
-            call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
+            call Tx%setSource( source_adjoint )
             !
             call Tx%solve
             !
@@ -319,7 +322,8 @@ contains
         integer, intent( in ), optional :: i_sol
         !
         class( Vector_t ), allocatable :: lrows
-        type( cVector3D_SG_t ), allocatable, dimension(:) :: bSrc
+        type( GenVector_t ), allocatable, dimension(:) :: bSrc
+		type( SourceAdjoint_t ) :: source_adjoint
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
         type( DataGroup_t ) :: data_group
@@ -348,9 +352,10 @@ contains
         !
         do i_pol = 1, Tx%n_pol
             !
-            bSrc( i_pol ) = cVector3D_SG_t( model_operator%metric%grid, EDGE )
-            !
-            call bSrc( i_pol )%zeros
+			!call model_operator%metric%createVector( complex_t, EDGE, bSrc( i_pol )%v )
+			allocate( bSrc( i_pol )%v, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
+			!
+            call bSrc( i_pol )%v%zeros
             !
         enddo
         !
@@ -388,7 +393,7 @@ contains
                     !
                     call lrows%mult( tx_data_cvalue )
                     !
-                    call bSrc( i_pol )%add( lrows )
+                    call bSrc( i_pol )%v%add( lrows )
                     !
                     deallocate( lrows )
                     !
@@ -401,7 +406,7 @@ contains
         !> NECESSARY FOR FULL VECTOR LROWS ????
         do i_pol = 1, Tx%n_pol
             !
-            call bSrc( i_pol )%mult( C_MinusOne )
+            call bSrc( i_pol )%v%mult( C_MinusOne )
             !
         enddo
         !
@@ -410,26 +415,32 @@ contains
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
         write( *, * ) "JMult_T_Tx 3"
-        !
-        !> Switch Transmitter's source to SourceAdjoint, with transpose = .TRUE.
-        call Tx%setSource( SourceAdjoint_t( model_operator, sigma, Tx%period, .TRUE. ) )
+		!
+		source_adjoint = SourceAdjoint_t( model_operator, sigma, Tx%period, .TRUE. )
         !
         write( *, * ) "JMult_T_Tx 4"
         !
-        call Tx%source%setE( bSrc )
+        !> Switch Transmitter's source to SourceAdjoint, with transpose = .TRUE.
+        call Tx%setSource( source_adjoint )
         !
         write( *, * ) "JMult_T_Tx 5"
         !
+        call Tx%source%setE( bSrc )
+        !
+        write( *, * ) "JMult_T_Tx 6"
+        !
         deallocate( bSrc )
+        !
+        write( *, * ) "JMult_T_Tx 7"
         !
         !> Solve Transmitter's e_sens with the new SourceAdjoint
         call Tx%solve
         !
-        write( *, * ) "JMult_T_Tx 6"
+        write( *, * ) "JMult_T_Tx 8"
         !
         call Tx%PMult_t( sigma, tx_dsigma )
         !
-        write( *, * ) "JMult_T_Tx 7"
+        write( *, * ) "JMult_T_Tx 9"
         !
     end subroutine JMult_T_Tx
     !

@@ -755,7 +755,13 @@ contains
         class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        call errStop( "setAllBoundary_cVector3D_MR just implemented for SG!" )
+        complex( kind=prec ), allocatable, dimension(:) :: c_array
+        !
+        c_array = self%getArray()
+        !
+        c_array( self%indBoundary() ) = cvalue
+        !
+        call self%setArray( c_array )
         !
     end subroutine setAllBoundary_cVector3D_MR
     !
@@ -936,17 +942,21 @@ contains
              call errStop( "sumEdge_cVector3D_MR > self not allocated." )
         endif
         !
-        !call self%switchStoreState( compound )
+        write( *, * ) "sumEdge_cVector3D_MR 1"
         !
         is_interior_only = .FALSE.
         !
-        !if( present( interior_only ) ) is_interior_only = interior_only
+        if( present( interior_only ) ) is_interior_only = interior_only
         !
-        !if( is_interior_only ) then
-            !call self%setAllBoundary( C_ZERO )
-        !endif
+        if( is_interior_only ) then
+            call self%setAllBoundary( C_ZERO )
+        endif
+        !
+        write( *, * ) "sumEdge_cVector3D_MR 2"
         !
         allocate( cell_out, source = cScalar3D_MR_t( self%grid, CELL ) )
+        !
+        write( *, * ) "sumEdge_cVector3D_MR 3"
         !
         select type( cell_out )
             !
@@ -958,9 +968,17 @@ contains
                         !
                         !> loop over INTERFACES (one less than n_grids) and fill in inactive edges
                         do i = 1, self%grid%n_grids-1
+                            !
+                            write( *, * ) "sumEdge_cVector3D_MR 4", i
+                            !
                             call setInactiveEdge_cVector3D_MR( self%sub_vector(i), self%sub_vector(i+1) )
+                            !
+                            write( *, * ) "sumEdge_cVector3D_MR 5", i
+                            !
                         enddo
-                        !
+                            !
+                            write( *, * ) "sumEdge_cVector3D_MR 6"
+                            !
                         !> loop over sub-vectors and sum edges onto cells
                         do i = 1, self%grid%n_grids
                             !
@@ -1125,7 +1143,7 @@ contains
         class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-		type( cVector3D_MR_t ) :: temp_vector_mr
+        type( cVector3D_MR_t ) :: temp_vector_mr
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
@@ -1928,8 +1946,8 @@ contains
         !
         allocate( vFull( self%lengthFull() ) )
         !
-		vFull = C_ZERO
-		!
+        vFull = C_ZERO
+        !
         vFull( self%indActive() ) = array
         !
         call self%setFullArray( vFull )
@@ -1985,7 +2003,7 @@ contains
                 !
                 self%is_allocated = .TRUE.
             !
-			! ????
+            ! ????
             class is( cVector3D_SG_t )
                 !
                 call self%fromSG( rhs )
@@ -2191,6 +2209,9 @@ contains
                     !> in vec_1, but at bottom of vec_2
                     location(1) = sub_grid_1%x_center(i)
                     location(2) = sub_grid_1%y_edge(j)
+                    !
+                    ! GARY: HERE IT IS BREAKING !!!! 
+                    ! I BELIEVE THE PROBLEM IS INTERPFUNC FOR SUB-VECTOR SG (VEC2), WHICH ALWAYS USES THE LAYER 1 
                     !
                     !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
                     call vec_2%interpFunc( location, 'x', interp )

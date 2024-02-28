@@ -755,7 +755,13 @@ contains
         class( rVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        call errStop( "setAllBoundary_rVector3D_MR just implemented for SG!" )
+        complex( kind=prec ), allocatable, dimension(:) :: c_array
+        !
+        c_array = self%getArray()
+        !
+        c_array( self%indBoundary() ) = cvalue
+        !
+        call self%setArray( c_array )
         !
     end subroutine setAllBoundary_rVector3D_MR
     !

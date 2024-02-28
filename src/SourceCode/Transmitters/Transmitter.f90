@@ -270,7 +270,7 @@ module Transmitter
             !
             type( SourceAdjoint_t ) :: source_int_force
             !
-            type( cVector3D_SG_t ), allocatable, dimension(:) :: bSrc
+            type( GenVector_t ), allocatable, dimension(:) :: bSrc
             class( Vector_t ), allocatable :: solution, map_e_vector
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
@@ -292,13 +292,13 @@ module Transmitter
                 !
                 call self%getSolutionVector( pol, solution )
                 !
-                bSrc( pol ) = solution
+                allocate( bSrc( pol )%v, source = solution )
                 !
                 deallocate( solution )
                 !
-                call bSrc( pol )%mult( map_e_vector )
+                call bSrc( pol )%v%mult( map_e_vector )
                 !
-                call bSrc( pol )%mult( minus_i_omega_mu )
+                call bSrc( pol )%v%mult( minus_i_omega_mu )
                 !
             enddo
             !
