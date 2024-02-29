@@ -64,14 +64,14 @@ module cVector3D_SG
             !> Miscellaneous
             procedure, public :: getAxis => getAxis_cVector3D_SG
             !
-            procedure, public :: getReal => getReal_cVector3D_SG
-            !
             procedure, public :: getArray => getArray_cVector3D_SG
             procedure, public :: setArray => setArray_cVector3D_SG
             !
             procedure, public :: deallOtherState => deallOtherState_cVector3D_SG
             !
             procedure, public :: copyFrom => copyFrom_cVector3D_SG
+            !
+            procedure, public :: getReal => getReal_CVector3D_SG
             !
             procedure, public :: edgeLength => edgeLength_cVector3D_SG
             !
@@ -197,7 +197,7 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         select case( self%grid_type )
             !
@@ -235,7 +235,7 @@ contains
         !
         logical :: int_only_p
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         if( .NOT. present( int_only ) ) then
             int_only_p = .FALSE.
@@ -378,7 +378,7 @@ contains
         integer :: y1, y2
         integer :: z1, z2
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         x1 = xmin; x2 = xmax
         y1 = ymin; y2 = ymax
@@ -476,7 +476,7 @@ contains
              call errStop( "sumEdge_cVector3D_SG > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         is_interior_only = .FALSE.
         !
@@ -558,7 +558,7 @@ contains
              call errStop( "sumEdgeVTI_cVector3D_SG > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         is_interior_only = .FALSE.
         !
@@ -670,7 +670,7 @@ contains
             grid_type = ptype
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         select type( cell_in )
             !
@@ -781,7 +781,7 @@ contains
             grid_type = ptype
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         select type( cell_h_in )
             !
@@ -906,7 +906,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
+            !call self%switchStoreState( rhs%store_state )
             !
             if( rhs%store_state .EQ. compound ) then
                 !
@@ -997,7 +997,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
+            !call self%switchStoreState( rhs%store_state )
             !
             if( rhs%store_state .EQ. compound ) then
                 !
@@ -1066,7 +1066,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
+            !call self%switchStoreState( rhs%store_state )
             !
             if( rhs%store_state .EQ. compound ) then
                 !
@@ -1178,7 +1178,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
+            !call self%switchStoreState( rhs%store_state )
             !
             if( rhs%store_state .EQ. compound ) then
                 !
@@ -1260,9 +1260,9 @@ contains
             !
             diag_mult_temp = cVector3D_SG_t( self%grid, self%grid_type )
             !
-            call diag_mult_temp%switchStoreState( rhs%store_state )
+            !call diag_mult_temp%switchStoreState( rhs%store_state )
             !
-            call self%switchStoreState( rhs%store_state )
+            !call self%switchStoreState( rhs%store_state )
             !
             if( rhs%store_state .EQ. compound ) then
                 !
@@ -1329,7 +1329,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
+            !call self%switchStoreState( rhs%store_state )
             !
             if( rhs%store_state .EQ. compound ) then
                 !
@@ -1389,19 +1389,19 @@ contains
         !
         complex( kind=prec ) :: cvalue
         !
-        type( cVector3D_SG_t ) :: copy
+        if( .NOT. self%is_allocated ) then
+            call errStop( "dotProd_cVector3D_SG > Self not allocated." )
+        endif
         !
-        if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
-            call errStop( "dotProd_cVector3D_SG > Input vectors not allocated." )
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "dotProd_cVector3D_SG > Rhs not allocated." )
         endif
         !
         cvalue = C_ZERO
         !
-        copy = self
-        !
-        if( copy%isCompatible( rhs ) ) then
+        if( self%isCompatible( rhs ) ) then
             !
-            call copy%switchStoreState( rhs%store_state )
+            !call self%switchStoreState( rhs%store_state )
             !
             if( rhs%store_state .EQ. compound ) then
                 !
@@ -1409,15 +1409,15 @@ contains
                     !
                     class is( cVector3D_SG_t )
                         !
-                        cvalue = cvalue + sum( conjg( copy%x ) * rhs%x )
-                        cvalue = cvalue + sum( conjg( copy%y ) * rhs%y )
-                        cvalue = cvalue + sum( conjg( copy%z ) * rhs%z )
+                        cvalue = cvalue + sum( conjg( self%x ) * rhs%x )
+                        cvalue = cvalue + sum( conjg( self%y ) * rhs%y )
+                        cvalue = cvalue + sum( conjg( self%z ) * rhs%z )
                         !
                     class is( cScalar3D_SG_t )
                         !
-                        cvalue = cvalue + sum( conjg( copy%x ) * rhs%v )
-                        cvalue = cvalue + sum( conjg( copy%y ) * rhs%v )
-                        cvalue = cvalue + sum( conjg( copy%z ) * rhs%v )
+                        cvalue = cvalue + sum( conjg( self%x ) * rhs%v )
+                        cvalue = cvalue + sum( conjg( self%y ) * rhs%v )
+                        cvalue = cvalue + sum( conjg( self%z ) * rhs%v )
                         !
                     class default
                         call errStop( "dotProd_cVector3D_SG > Undefined rhs" )
@@ -1430,11 +1430,11 @@ contains
                     !
                     class is( cVector3D_SG_t )
                         !
-                        cvalue = cvalue + sum( conjg( copy%s_v ) * rhs%s_v )
+                        cvalue = cvalue + sum( conjg( self%s_v ) * rhs%s_v )
                         !
                     class is( cScalar3D_SG_t )
                         !
-                        cvalue = cvalue + sum( conjg( copy%s_v ) * rhs%s_v )
+                        cvalue = cvalue + sum( conjg( self%s_v ) * rhs%s_v )
                         !
                     class default
                         call errStop( "dotProd_cVector3D_SG > Undefined compound rhs" )
@@ -1442,7 +1442,7 @@ contains
                 end select
                 !
             else
-                call errStop( "dotProd_cVector3D_SG > Unknow store_state." )
+                call errStop( "dotProd_cVector3D_SG > Unknown store_state." )
             endif
             !
         else
@@ -1493,7 +1493,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
+            !call self%switchStoreState( rhs%store_state )
             !
             if( rhs%store_state .EQ. compound ) then
                 !
@@ -1565,14 +1565,17 @@ contains
         character, intent( in ) :: xyz
         class( Vector_t ), allocatable, intent( inout ) :: interp
         !
-        type( cVector3D_SG_t ) :: temp_interp
-        real( kind=prec ), allocatable, dimension(:) :: xC, yC, zC
         integer :: ix, iy, iz, i
         real( kind=prec ) :: wx, wy, wz
         logical, dimension(:), allocatable :: tmp
+        real( kind=prec ), allocatable, dimension(:) :: xC, yC, zC
         !
-        if( ( .NOT. self%is_allocated ) ) then
+        if( .NOT. self%is_allocated ) then
             call errStop( "interpFunc_cVector3D_SG > Self not allocated." )
+        endif
+        !
+        if( allocated( interp ) ) then
+            deallocate( interp )
         endif
         !
         select type( grid => self%grid )
@@ -1583,15 +1586,15 @@ contains
                     !
                     case( EDGE )
                         !
-                        temp_interp = cVector3D_SG_t( grid, EDGE )
+                        allocate( interp, source = cVector3D_SG_t( grid, EDGE ) )
                         !
                         select case( xyz )
                             !
                             case("x")
                                 !
                                 allocate(xC(size(grid%del_x)))
-                                allocate(yC(size(grid%dy + 1)))
-                                allocate(zC(size(grid%dz + 1)))
+                                allocate(yC(size(grid%dy) + 1))
+                                allocate(zC(size(grid%dz) + 1))
                                 !
                                 xC = CumSum(grid%del_x)
                                 yC = CumSum([0._prec, grid%dy])
@@ -1599,7 +1602,7 @@ contains
                                 !
                             case("y")
                                 !
-                                allocate(xC(size(grid%dx + 1)))
+                                allocate(xC(size(grid%dx) + 1))
                                 allocate(yC(size(grid%del_y)))
                                 allocate(zC(size(grid%dz)))
                                 
@@ -1609,8 +1612,8 @@ contains
                                 !
                             case("z")
                                 !
-                                allocate(xC(size(grid%dx + 1)))
-                                allocate(yC(size(grid%dy + 1)))
+                                allocate(xC(size(grid%dx) + 1))
+                                allocate(yC(size(grid%dy) + 1))
                                 allocate(zC(size(grid%del_z)))
                                 !
                                 xC = CumSum([0._prec, grid%dx])
@@ -1624,13 +1627,13 @@ contains
                         !
                     case( FACE )
                         !
-                        temp_interp = cVector3D_SG_t( grid, FACE )
+                        allocate( interp, source = cVector3D_SG_t( grid, FACE ) )
                         !
                         select case( xyz )
                             !
                             case( "x" )
                                 !
-                                allocate(xC(size(grid%dx + 1)))
+                                allocate(xC(size(grid%dx) + 1))
                                 allocate(yC(size(grid%del_y)))
                                 allocate(zC(size(grid%del_z)))
                                 !
@@ -1641,7 +1644,7 @@ contains
                             case( "y" )
                                 !
                                 allocate(xC(size(grid%del_x)))
-                                allocate(yC(size(grid%dy + 1)))
+                                allocate(yC(size(grid%dy) + 1))
                                 allocate(zC(size(grid%del_z)))
                                 !
                                 xC = CumSum([grid%del_x])
@@ -1652,7 +1655,7 @@ contains
                                 !
                                 allocate(xC(size(grid%del_x)))
                                 allocate(yC(size(grid%del_y)))
-                                allocate(zC(size(grid%dz + 1)))
+                                allocate(zC(size(grid%dz) + 1))
                                 !
                                 xC = CumSum([grid%del_x])
                                 yC = CumSum([grid%del_y])
@@ -1677,7 +1680,7 @@ contains
             !
         end select
         !
-        tmp = location(1) > xC
+        tmp = location(1) >= xC
         !
         ix = size( tmp )
         !
@@ -1688,7 +1691,7 @@ contains
             endif
         enddo
         !
-        tmp = location(2) > yC
+        tmp = location(2) >= yC
         !
         iy = size( tmp )
         !
@@ -1699,7 +1702,7 @@ contains
             endif
         enddo
         !
-        tmp = location(3) > zC
+        tmp = location(3) >= zC
         !
         iz = size( tmp )
         !
@@ -1730,47 +1733,54 @@ contains
         !
         deallocate( zC )
         !
-        select case( xyz )
+        select type( interp )
             !
-            case("x")
+            class is( cVector3D_SG_t )
                 !
-                temp_interp%x(ix,iy,iz) = wx*wy*wz
-                temp_interp%x(ix+1,iy,iz) = (1-wx)*wy*wz
-                temp_interp%x(ix,iy+1,iz) = wx*(1-wy)*wz
-                temp_interp%x(ix,iy,iz+1) = wx*wy*(1-wz)
-                temp_interp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                temp_interp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                temp_interp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                temp_interp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                select case( xyz )
+                    !
+                    case("x")
+                        !
+                        interp%x(ix,iy,iz) = wx*wy*wz
+                        interp%x(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%x(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%x(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%x(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%x(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%x(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%x(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                        !
+                    case("y")
+                        !
+                        interp%y(ix,iy,iz) = wx*wy*wz
+                        interp%y(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%y(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%y(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                        !
+                    case("z")
+                        !
+                        interp%z(ix,iy,iz) = wx*wy*wz
+                        interp%z(ix+1,iy,iz) = (1-wx)*wy*wz
+                        interp%z(ix,iy+1,iz) = wx*(1-wy)*wz
+                        interp%z(ix,iy,iz+1) = wx*wy*(1-wz)
+                        interp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
+                        interp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
+                        interp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
+                        interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
+                        !
+                    case default
+                        call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
+                    !
+                end select !XYZ
                 !
-            case("y")
-                !
-                temp_interp%y(ix,iy,iz) = wx*wy*wz
-                temp_interp%y(ix+1,iy,iz) = (1-wx)*wy*wz
-                temp_interp%y(ix,iy+1,iz) = wx*(1-wy)*wz
-                temp_interp%y(ix,iy,iz+1) = wx*wy*(1-wz)
-                temp_interp%y(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                temp_interp%y(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                temp_interp%y(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                temp_interp%y(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                !
-            case("z")
-                !
-                temp_interp%z(ix,iy,iz) = wx*wy*wz
-                temp_interp%z(ix+1,iy,iz) = (1-wx)*wy*wz
-                temp_interp%z(ix,iy+1,iz) = wx*(1-wy)*wz
-                temp_interp%z(ix,iy,iz+1) = wx*wy*(1-wz)
-                temp_interp%z(ix,iy+1,iz+1) = wx*(1-wy)*(1-wz)
-                temp_interp%z(ix+1,iy,iz+1) = (1-wx)*wy*(1-wz)
-                temp_interp%z(ix+1,iy+1,iz) = (1-wx)*(1-wy)*wz
-                temp_interp%z(ix+1,iy+1,iz+1) = (1-wx)*(1-wy)*(1-wz)
-                !
-            case default
-                call errStop( "interpFunc_cVector3D_SG: Unknown xyz" )
+            class default
+                call errStop( "interpFunc_cVector3D_SG > Undefined interp" )
             !
-        end select !XYZ
-        !
-        allocate( interp, source = temp_interp )
+        end select
         !
     end subroutine interpFunc_cVector3D_SG
     !
@@ -1788,7 +1798,7 @@ contains
             call errStop( "interpFunc_cVector3D_SG > Self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         if( comp_lbl == "x" .OR. comp_lbl == "X" ) then
             comp = self%x
@@ -1801,20 +1811,6 @@ contains
         endif
         !
     end function getAxis_cVector3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine getReal_cVector3D_SG( self, r_vector )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( in ) :: self
-        class( Vector_t ), allocatable, intent( out ) :: r_vector
-        !
-        allocate( r_vector, source = self )
-        !
-        call r_vector%copyFrom( self )
-        !
-    end subroutine getReal_cVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -1974,6 +1970,31 @@ contains
     !
     !> No subroutine briefing
     !
+    subroutine getReal_CVector3D_SG( self, r_field )
+        implicit none
+        !
+        class( cVector3D_SG_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( out ) :: r_field
+        !
+        allocate( r_field, source = rVector3D_SG_t( self%grid, self%grid_type ) )
+        !
+        select type ( r_field )
+            !
+            class is( rVector3D_SG_t )
+                !
+                r_field%x = real( self%x, kind=prec )
+                r_field%y = real( self%y, kind=prec )
+                r_field%z = real( self%z, kind=prec )
+                !
+            class default
+                call errStop( "getReal_CVector3D_SG > Undefined r_field" )
+                !
+        end select
+        !
+    end subroutine getReal_CVector3D_SG
+    !
+    !> No subroutine briefing
+    !
     subroutine edgeLength_cVector3D_SG( self, edge_length )
         implicit none
         !
@@ -2015,7 +2036,7 @@ contains
         logical :: ok, hasname, binary
         character(80) :: fname, isbinary
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         binary = .TRUE.
         !
@@ -2069,7 +2090,7 @@ contains
             call errStop( "write_cVector3D_SG > Self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         binary = .TRUE.
         !
@@ -2112,7 +2133,7 @@ contains
         !
         copy = self
         !
-        call copy%switchStoreState( compound )
+        !call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit

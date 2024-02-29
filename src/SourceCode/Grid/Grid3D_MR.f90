@@ -81,7 +81,7 @@ contains
         !  
         integer :: i
         !
-        write( *, * ) "Constructor Grid3D_MR_t", size(dx), size(dy), size(dz)
+        !write( *, * ) "Constructor Grid3D_MR_t", size(dx), size(dy), size(dz)
         !
         call self%baseInit
         !

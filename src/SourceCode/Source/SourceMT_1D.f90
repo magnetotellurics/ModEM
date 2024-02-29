@@ -110,14 +110,18 @@ contains
                 enddo
             !
             !> 2nd polarization case: Only x components are non-zero
-            else
+            elseif( pol == 2 ) then
                 !
                 do ix = 1, self%model_operator%metric%grid%nx
                     do iy = 1, self%model_operator%metric%grid%ny+1
                         self%E( pol )%x( ix, iy, : ) = E1D
                     enddo
                 enddo
-                !
+            !
+            !> Something wrong with MT polarizations
+            else
+                write( *, * ) "Polarization =", pol
+                call errStop( "createE_SourceMT_1D > Wrong polarization value" )
             endif
             !
         enddo
@@ -125,19 +129,20 @@ contains
         deallocate( E1D )
         !
         call self%createRHS
-        !
-        open(unit = 6666,file = 'RHS1.bin',form = 'unformatted')
-        call self%rhs(1)%v%write( 6666)
-        close(6666)
-        open(unit = 6666,file = 'RHS2.bin',form = 'unformatted')
-        call self%rhs(2)%v%write( 6666)
-        close(6666)
-        open(unit = 6666,file = 'srcE1.bin',form = 'unformatted')
-        call self%E(1)%write( 6666)
-        close(6666)
-        open(unit = 6666,file = 'srcE2.bin',form = 'unformatted')
-        call self%E(2)%write( 6666)
-        close(6666)
+        ! !
+        ! open(unit = 6666,file = 'RHS1.bin',form = 'unformatted')
+        ! call self%rhs(1)%v%write( 6666)
+        ! close(6666)
+        ! open(unit = 6666,file = 'RHS2.bin',form = 'unformatted')
+        ! call self%rhs(2)%v%write( 6666)
+        ! close(6666)
+        ! open(unit = 6666,file = 'srcE1.bin',form = 'unformatted')
+        ! call self%E(1)%write( 6666)
+        ! close(6666)
+        ! open(unit = 6666,file = 'srcE2.bin',form = 'unformatted')
+        ! call self%E(2)%write( 6666)
+        ! close(6666)
+        ! !
     end subroutine createE_SourceMT_1D
     !
     !> Build the proper Source RHS from its E

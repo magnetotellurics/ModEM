@@ -6,6 +6,7 @@ module Source
     use Utilities
     use ModelOperator
     use ModelParameter
+    use cVector3D_MR
     !
     character(:), allocatable :: source_type_mt
     character( len=11 ), parameter :: SRC_MT_1D = "SourceMT_1D"
@@ -64,13 +65,42 @@ module Source
     contains
     !
     !> No subroutine briefing
+    !
     subroutine setE_Source( self, E )
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
-        type( cVector3D_SG_t ), dimension(:), intent( in ) :: E
+        type( GenVector_t ), allocatable, dimension(:), intent( in ) :: E
         !
-        self%E = E
+        type( cVector3D_SG_t ) :: temp_e_sg
+        integer :: i, size_e
+        !
+        size_e = size( E )
+        !
+        allocate( self%E( size_e ) )
+        !
+        do i = 1, size_e
+            !> RHS calculated as MR vector
+            select type( Ei => E(i)%v )
+                !
+                class is( cVector3D_SG_t )
+                    !
+                    self%E(i) = Ei
+                    !
+                class is( cVector3D_MR_t )
+                    !
+                    temp_e_sg = cVector3D_SG_t( Ei%grid, Ei%grid_type )
+                    !
+                    call Ei%MRtoSG( temp_e_sg )
+                    !
+                    self%E(i) = temp_e_sg
+                    !
+                class default
+                    call errStop( "setE_Source > model_operator must be SP V1 or V2" )
+                !
+            end select
+            !
+        enddo
         !
         call self%createRHS
         !

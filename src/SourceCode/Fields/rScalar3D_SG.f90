@@ -63,6 +63,8 @@ module rScalar3D_SG
             !> Miscellaneous
             procedure, public :: copyFrom => copyFrom_rScalar3D_SG
             !
+            procedure, public :: getReal => getReal_rScalar3D_SG
+            !
             !> I/O operations
             procedure, public :: read => read_rScalar3D_SG
             procedure, public :: write => write_rScalar3D_SG
@@ -174,7 +176,7 @@ contains
             call errStop( "setAllBoundary_rScalar3D_SG > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         select case( self%grid_type )
             !
@@ -208,7 +210,7 @@ contains
             call errStop( "setOneBoundary_rScalar3D_SG > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         if( .NOT. present( int_only ) ) then
              int_only_p = .FALSE.
@@ -310,7 +312,7 @@ contains
             call errStop( "setVecComponents_rScalar3D_SG > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         x1 = xmin; x2 = xmax
         y1 = ymin; y2 = ymax
@@ -387,7 +389,7 @@ contains
                 !
                 class is( rScalar3D_SG_t )
                     !
-                    call self%switchStoreState( rhs%store_state )
+                    !call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
@@ -432,7 +434,7 @@ contains
                 !
                 class is( rScalar3D_SG_t )
                     !
-                    call self%switchStoreState( rhs%store_state )
+                    !call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
@@ -501,7 +503,7 @@ contains
                 !
                 class is( rScalar3D_SG_t )
                     !
-                    call self%switchStoreState( rhs%store_state )
+                    !call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
@@ -596,7 +598,7 @@ contains
                 !
                 class is( rScalar3D_SG_t )
                     !
-                    call self%switchStoreState( rhs%store_state )
+                    !call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
@@ -640,7 +642,7 @@ contains
                 !
                 class is( rScalar3D_SG_t )
                     !
-                    call self%switchStoreState( rhs%store_state )
+                    !call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
@@ -689,7 +691,7 @@ contains
                 !
                 class is( rScalar3D_SG_t )
                     !
-                    call copy%switchStoreState( rhs%store_state )
+                    !call copy%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
@@ -754,14 +756,14 @@ contains
         logical :: is_interior_only
         !
         if( .NOT. self%is_allocated ) then
-             call errStop( "toNode_rScalar3D_SG > self not allocated." )
+             call errStop( "sumToNode_rScalar3D_SG > self not allocated." )
         endif
         !
         if( .NOT. node_scalar%is_allocated ) then
-             call errStop( "toNode_rScalar3D_SG > node_scalar not allocated." )
+             call errStop( "sumToNode_rScalar3D_SG > node_scalar not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         is_interior_only = .FALSE.
         !
@@ -800,7 +802,7 @@ contains
                 !call node_scalar%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
                 !
             case default
-                call errStop( "toNode_rScalar3D_SG: undefined self%grid_type" )
+                call errStop( "sumToNode_rScalar3D_SG: undefined self%grid_type" )
         end select
         !
     end subroutine SumToNode_rScalar3D_SG
@@ -823,7 +825,7 @@ contains
                 !
                 class is( rScalar3D_SG_t )
                     !
-                    call self%switchStoreState( rhs%store_state )
+                    !call self%switchStoreState( rhs%store_state )
                     !
                     if( rhs%store_state .EQ. compound ) then
                         !
@@ -966,11 +968,11 @@ contains
                 self%NdV = rhs%NdV
                 self%Nxyz = rhs%Nxyz
                 !
-                if( rhs%store_state .EQ. compound ) then
+                if( self%store_state .EQ. compound ) then
                     !
                     self%v = rhs%v
                     !
-                elseif( rhs%store_state .EQ. singleton ) then
+                elseif( self%store_state .EQ. singleton ) then
                     !
                     self%s_v = rhs%s_v
                     !
@@ -986,6 +988,20 @@ contains
         end select
         !
     end subroutine copyFrom_rScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine getReal_rScalar3D_SG( self, r_field )
+        implicit none
+        !
+        class( rScalar3D_SG_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( out ) :: r_field
+        !
+        allocate( r_field, source = self )
+        !
+        call warning( "getReal_rScalar3D_SG > Getting Real Field from already Real Field" )
+        !
+    end subroutine getReal_rScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -1007,7 +1023,7 @@ contains
             call errStop( "read_rScalar3D_SG > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         if( .NOT. present( ftype ) ) then
              binary = .FALSE.
@@ -1094,7 +1110,7 @@ contains
             call errStop( "write_rScalar3D_SG > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         if(  .NOT. present( ftype ) ) then
              binary = .TRUE.
@@ -1192,7 +1208,7 @@ contains
         !
         copy = self
         !
-        call copy%switchStoreState( compound )
+        !call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit

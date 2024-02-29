@@ -78,11 +78,11 @@ module cVector3D_MR
             !> Miscellaneous
             procedure, public :: getAxis => getAxis_cVector3D_MR
             !
-            procedure, public :: getReal => getReal_cVector3D_MR
-            !
             procedure, public :: deallOtherState => deallOtherState_cVector3D_MR
             !
             procedure, public :: copyFrom => copyFrom_cVector3D_MR
+            !
+            procedure, public :: getReal => getReal_cVector3D_MR
             !
             !> I/O operations
             procedure, public :: print => print_cVector3D_MR
@@ -757,7 +757,13 @@ contains
         class( cVector3D_MR_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        call errStop( "setAllBoundary_cVector3D_MR just implemented for SG!" )
+        complex( kind=prec ), allocatable, dimension(:) :: c_array
+        !
+        c_array = self%getArray()
+        !
+        c_array( self%indBoundary() ) = cvalue
+        !
+        call self%setArray( c_array )
         !
     end subroutine setAllBoundary_cVector3D_MR
     !
@@ -780,7 +786,7 @@ contains
             int_only_p = int_only
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -938,8 +944,6 @@ contains
              call errStop( "sumEdge_cVector3D_MR > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
-        !
         is_interior_only = .FALSE.
         !
         if( present( interior_only ) ) is_interior_only = interior_only
@@ -960,7 +964,9 @@ contains
                         !
                         !> loop over INTERFACES (one less than n_grids) and fill in inactive edges
                         do i = 1, self%grid%n_grids-1
+                            !
                             call setInactiveEdge_cVector3D_MR( self%sub_vector(i), self%sub_vector(i+1) )
+                            !
                         enddo
                         !
                         !> loop over sub-vectors and sum edges onto cells
@@ -1127,6 +1133,7 @@ contains
         class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
+        type( cVector3D_MR_t ) :: temp_vector_mr
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
@@ -1137,7 +1144,7 @@ contains
             call errStop( "add_cVector3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
@@ -1213,7 +1220,7 @@ contains
             call errStop( "linComb_cVector3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
@@ -1344,7 +1351,7 @@ contains
             call errStop( "subField_cVector3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
@@ -1477,7 +1484,7 @@ contains
             call errStop( "multByField_cVector3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
@@ -1488,6 +1495,12 @@ contains
                     select type( rhs )
                         !
                         class is( cVector3D_MR_t )
+                            !
+                            self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
+                            self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
+                            self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%z
+                        !
+                        class is( rVector3D_MR_t )
                             !
                             self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
                             self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
@@ -1556,9 +1569,9 @@ contains
         !
         diag_mult_temp = cVector3D_MR_t( self%grid, self%grid_type )
         !
-        call diag_mult_temp%switchStoreState( rhs%store_state )
+        !call diag_mult_temp%switchStoreState( rhs%store_state )
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
@@ -1631,13 +1644,13 @@ contains
             call errStop( "multAdd_cVector3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
             do i = 1, self%grid%getNGrids()
                 !
-                call self%switchStoreState( rhs%store_state )
+                !call self%switchStoreState( rhs%store_state )
                 !
                 select type( rhs )
                     !
@@ -1753,7 +1766,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
+            !call self%switchStoreState( rhs%store_state )
             !
             do i = 1, self%grid%getNGrids()
                 !
@@ -1772,7 +1785,23 @@ contains
                             self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_vector(i)%s_v
                             !
                         else
-                            call errStop( "divByField_cVector3D_MR > Unknown rhs store_state!" )
+                            call errStop( "divByField_cVector3D_MR > Unknown complex rhs store_state!" )
+                        endif
+                    !
+                    class is( rVector3D_MR_t )
+                        !
+                        if( rhs%store_state .EQ. compound ) then
+                            !
+                            self%sub_vector(i)%x = self%sub_vector(i)%x / rhs%sub_vector(i)%x
+                            self%sub_vector(i)%y = self%sub_vector(i)%y / rhs%sub_vector(i)%y
+                            self%sub_vector(i)%z = self%sub_vector(i)%z / rhs%sub_vector(i)%z
+                            !
+                        elseif( rhs%store_state .EQ. singleton ) then
+                            !
+                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_vector(i)%s_v
+                            !
+                        else
+                            call errStop( "divByField_cVector3D_MR > Unknown real rhs store_state!" )
                         endif
                         !
                     class is( rScalar3D_MR_t )
@@ -1816,7 +1845,7 @@ contains
         !
         integer :: i_sub
         class( Vector_t ), allocatable :: sub_interp
-        type( cVector3D_MR_t ) :: interp_mr
+        type( cVector3D_MR_t ), allocatable :: temp_interp_mr
         !
         !call errStop( "interpFunc_cVector3D_MR still not implemented" )
         !
@@ -1826,13 +1855,15 @@ contains
         !> Do the interpFunc for this sub_vector
         call self%sub_vector( i_sub )%interpFunc( location, xyz, sub_interp )
         !
-        interp_mr = self
+        allocate( temp_interp_mr, source = self )
         !
-        call interp_mr%zeros
+        !call temp_interp_mr%zeros
         !
-        interp_mr%sub_vector( i_sub ) = sub_interp
+        temp_interp_mr%sub_vector( i_sub ) = sub_interp
         !
-        allocate( interp, source = interp_mr )
+        allocate( interp, source = temp_interp_mr )
+        !
+        deallocate( temp_interp_mr )
         !
     end subroutine interpFunc_cVector3D_MR
     !
@@ -1849,20 +1880,6 @@ contains
         call errStop( "getAxis_cVector3D_MR still not implemented" )
         !
     end function getAxis_cVector3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine getReal_cVector3D_MR( self, r_vector )
-        implicit none
-        !
-        class( cVector3D_MR_t ), intent( in ) :: self
-        class( Vector_t ), allocatable, intent( out ) :: r_vector
-        !
-        allocate( r_vector, source = cVector3D_MR_t( self%grid, self%grid_type ) )
-        !
-        call r_vector%copyFrom( self )
-        !
-    end subroutine getReal_cVector3D_MR
     !
     !> No subroutine briefing
     !
@@ -1921,8 +1938,8 @@ contains
         !
         allocate( vFull( self%lengthFull() ) )
         !
-		vFull = C_ZERO
-		!
+        vFull = C_ZERO
+        !
         vFull( self%indActive() ) = array
         !
         call self%setFullArray( vFull )
@@ -1951,8 +1968,6 @@ contains
         class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        integer :: i
-        !
         if( .NOT. rhs%is_allocated) then
             call errStop( "copyFrom_cVector3D_MR > rhs not allocated" )
         endif
@@ -1973,17 +1988,48 @@ contains
                     self%sub_vector = rhs%sub_vector
                     !
                 else
-                    call errStop( "copyFrom_cVector3D_MR > rhs%sub_vector not allocated" )
+                    call errStop( "copyFrom_cVector3D_MR > Unclassified rhs" )
                 endif
                 !
                 self%is_allocated = .TRUE.
                 !
             class default
-                call errStop( "copyFrom_cVector3D_MR > Undefined rhs" )
+                call errStop( "copyFrom_cVector3D_MR: undefined rhs" )
             !
         end select
         !
     end subroutine copyFrom_cVector3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine getReal_cVector3D_MR( self, r_field )
+        implicit none
+        !
+        class( cVector3D_MR_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( out ) :: r_field
+        !
+        integer :: i
+        !
+        allocate( r_field, source = rVector3D_MR_t( self%grid, self%grid_type ) )
+        !
+        select type ( r_field )
+            !
+            class is( rVector3D_MR_t )
+                !
+                do i = 1, size( r_field%sub_vector )
+                    !
+                    r_field%sub_vector(i)%x = real( self%sub_vector(i)%x, kind=prec )
+                    r_field%sub_vector(i)%y = real( self%sub_vector(i)%y, kind=prec )
+                    r_field%sub_vector(i)%z = real( self%sub_vector(i)%z, kind=prec )
+                    !
+                enddo
+                !
+            class default
+                call errStop( "getReal_cVector3D_MR > Undefined r_field" )
+                !
+        end select
+        !
+    end subroutine getReal_cVector3D_MR
     !
     !> No subroutine briefing
     !
@@ -2036,7 +2082,7 @@ contains
         !
         copy = self
         !
-        call copy%switchStoreState( compound )
+        !call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit
@@ -2113,15 +2159,19 @@ contains
         type( cVector3D_SG_t ), intent( inout ) :: vec_1, vec_2
         !
         integer :: i, j
-        real( kind=prec ) :: location(3)
+        real( kind=prec ), dimension(3) :: location
         class( Vector_t ), allocatable :: interp
-        type( Grid3D_SG_t ) :: sub_grid_1, sub_grid_2
         !
-        sub_grid_1 = vec_1%grid
-        sub_grid_2 = vec_2%grid
+        type( Grid3D_SG_t ) :: grid_1, grid_2
+        !
+        grid_1 = vec_1%grid
+        grid_2 = vec_2%grid
         !
         !> vec1 is coarser (by factor of two)
         if( vec_2%nx .GT. vec_1%nx ) then
+            !
+            !> yes, use vec_1 to compute vertical position
+            location(3) = grid_1%z_edge( vec_1%nz + 1 )
             !
             !> fill in inactive edges (top boundary) of vec_2 first x-edges
             do i = 1, vec_2%nx
@@ -2129,11 +2179,9 @@ contains
                     !
                     !> these are supposed to be coordinates of centers of x-edges
                     !> in vec_2, but at bottom of vec_1
-                    location(1) = sub_grid_2%x_center(i)
-                    location(2) = sub_grid_2%y_edge(j)
+                    location(1) = grid_2%x_center(i)
                     !
-                    !> yes, use vec_1 to compute vertical position
-                    location(3) = sub_grid_1%z_edge( vec_1%nz+1 )
+                    location(2) = grid_2%y_edge(j)
                     !
                     !> interpolate to location (in vec_1 grid) and store in top x/y layer of vec_2
                     call vec_1%interpFunc( location, 'x', interp )
@@ -2149,11 +2197,9 @@ contains
                     !
                     !> these are supposed to be coordinates of centers of y-edges
                     !> in vec_2, but at bottom of vec_1
-                    location(1) = sub_grid_2%x_edge(i)
-                    location(2) = sub_grid_2%y_center(j)
+                    location(1) = grid_2%x_edge(i)
                     !
-                    !> yes, use vec_1 to compute vertical position
-                    location(3) = sub_grid_1%z_edge( vec_1%nz + 1 )
+                    location(2) = grid_2%y_center(j)
                     !
                     !> interpolate to location (in vec_1 grid) and store in top x/y layer of vec_2
                     call vec_1%interpFunc( location, 'y', interp )
@@ -2167,40 +2213,45 @@ contains
         else
             !If vec_2 is coarser
             !--> switch vec_2, vec_2 
-            location(3) = 0
             !last line of x-edge block is vec_2%x(i,j,vec_2%nz+1) = vec_2%dot(interp)
-            !and analaously for y block, etc.
+            !and analogously for y block, etc.
             !
             !> fill in inactive edges (top boundary) of vec_2 first x-edges
+            !
+            !location(3) = R_ZERO
+            location(3) = grid_2%z_edge( vec_2%nz + 1 )
+            !
             do i = 1, vec_1%nx
-                do j = 1, vec_1%ny+1
+                do j = 1, vec_1%ny + 1
                     !
                     !> these are supposed to be coordinates of centers of x-edges
                     !> in vec_1, but at bottom of vec_2
-                    location(1) = sub_grid_1%x_center(i)
-                    location(2) = sub_grid_1%y_edge(j)
+                    location(1) = grid_1%x_center(i)
+                    !
+                    location(2) = grid_1%y_edge(j)
                     !
                     !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
                     call vec_2%interpFunc( location, 'x', interp )
                     !
-                    vec_1%x( i, j, vec_1%nz+1 ) = vec_2%dotProd( interp )
+                    vec_1%x( i, j, vec_1%nz ) = vec_2%dotProd( interp )
                     !
                 enddo
             enddo
             !
             !  then y-edges
-            do i = 1, vec_1%nx+1
+            do i = 1, vec_1%nx + 1
                 do j = 1, vec_1%ny
                     !
                     !> these are supposed to be coordinates of centers of y-edges
                     !> in vec_1, but at bottom of vec_2
-                    location(1) = sub_grid_1%x_edge(i)
-                    location(2) = sub_grid_1%y_center(j)
+                    location(1) = grid_1%x_edge(i)
+                    !
+                    location(2) = grid_1%y_center(j)
                     !
                     !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
                     call vec_2%interpFunc( location, 'y', interp )
                     !
-                    vec_1%x( i, j, vec_1%nz+1 ) = vec_2%dotProd( interp )
+                    vec_1%y( i, j, vec_1%nz+1 ) = vec_2%dotProd( interp )
                     !
                 enddo
             enddo

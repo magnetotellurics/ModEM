@@ -270,7 +270,7 @@ module Transmitter
             !
             type( SourceAdjoint_t ) :: source_int_force
             !
-            type( cVector3D_SG_t ), allocatable, dimension(:) :: bSrc
+            type( GenVector_t ), allocatable, dimension(:) :: bSrc
             class( Vector_t ), allocatable :: solution, map_e_vector
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
@@ -292,13 +292,13 @@ module Transmitter
                 !
                 call self%getSolutionVector( pol, solution )
                 !
-                bSrc( pol ) = solution
+                allocate( bSrc( pol )%v, source = solution )
                 !
                 deallocate( solution )
                 !
-                call bSrc( pol )%mult( map_e_vector )
+                call bSrc( pol )%v%mult( map_e_vector )
                 !
-                call bSrc( pol )%mult( minus_i_omega_mu )
+                call bSrc( pol )%v%mult( minus_i_omega_mu )
                 !
             enddo
             !
@@ -325,7 +325,7 @@ module Transmitter
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
             !
             class( GenVector_t ), allocatable, dimension(:) :: eSens
-            class( Vector_t ), allocatable :: solution, real_sens
+            class( Vector_t ), allocatable :: solution!, real_sens
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
             !
@@ -366,15 +366,12 @@ module Transmitter
             !
             call eSens(1)%v%mult( minus_i_omega_mu )
             !
-            call eSens(1)%v%getReal( real_sens )
-            !
-            !> Free up local memory
-            deallocate( eSens )
+            !call eSens(1)%v%getReal( real_sens )
             !
             !> Get dsigma from dPDEmapping_T, using first position of eSens
-            call sigma%dPDEmapping_T( real_sens, dsigma )
+            call sigma%dPDEmapping_T( eSens(1)%v, dsigma )
             !
-            deallocate( real_sens )
+            !deallocate( real_sens )
             !
         end subroutine PMult_t_Tx
         !

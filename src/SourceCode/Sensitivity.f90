@@ -94,6 +94,7 @@ contains
         !
         integer :: i_data_tx
         class( Transmitter_t ), pointer :: Tx
+        type( SourceAdjoint_t ) :: source_adjoint
         !
         if( allocated( JmHat ) ) deallocate( JmHat )
         !
@@ -107,8 +108,10 @@ contains
             !
             call Tx%forward_solver%setFrequency( sigma, Tx%period )
             !
+            source_adjoint = Tx%PMult( sigma, dsigma, model_operator )
+            !
             !> Switch Transmitter's source to SourceAdjoint
-            call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
+            call Tx%setSource( source_adjoint )
             !
             call Tx%solve
             !
@@ -256,7 +259,7 @@ contains
         integer :: i_tx, sol_index
         !
         ! Verbose
-        !write( *, * ) "          - Start serialJMult_T"
+        write( *, * ) "          - Start serialJMult_T"
         !
         sol_index = 0
         !
@@ -319,7 +322,8 @@ contains
         integer, intent( in ), optional :: i_sol
         !
         class( Vector_t ), allocatable :: lrows
-        type( cVector3D_SG_t ), allocatable, dimension(:) :: bSrc
+        type( GenVector_t ), allocatable, dimension(:) :: bSrc
+        type( SourceAdjoint_t ) :: source_adjoint
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
         type( DataGroup_t ) :: data_group
@@ -346,9 +350,10 @@ contains
         !
         do i_pol = 1, Tx%n_pol
             !
-            bSrc( i_pol ) = cVector3D_SG_t( model_operator%metric%grid, EDGE )
+            !call model_operator%metric%createVector( complex_t, EDGE, bSrc( i_pol )%v )
+            allocate( bSrc( i_pol )%v, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
             !
-            call bSrc( i_pol )%zeros
+            call bSrc( i_pol )%v%zeros
             !
         enddo
         !
@@ -386,7 +391,7 @@ contains
                     !
                     call lrows%mult( tx_data_cvalue )
                     !
-                    call bSrc( i_pol )%add( lrows )
+                    call bSrc( i_pol )%v%add( lrows )
                     !
                     deallocate( lrows )
                     !
@@ -399,14 +404,16 @@ contains
         !> NECESSARY FOR FULL VECTOR LROWS ????
         do i_pol = 1, Tx%n_pol
             !
-            call bSrc( i_pol )%mult( C_MinusOne )
+            call bSrc( i_pol )%v%mult( C_MinusOne )
             !
         enddo
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
+        source_adjoint = SourceAdjoint_t( model_operator, sigma, Tx%period, .TRUE. )
+        !
         !> Switch Transmitter's source to SourceAdjoint, with transpose = .TRUE.
-        call Tx%setSource( SourceAdjoint_t( model_operator, sigma, Tx%period, .TRUE. ) )
+        call Tx%setSource( source_adjoint )
         !
         call Tx%source%setE( bSrc )
         !
@@ -433,7 +440,8 @@ contains
             !
             do i_comp = 1, Rx%n_comp
                 do i_pol = 1, Tx%n_pol
-                    call model_operator%metric%createVector( complex_t, EDGE, Rx%lrows( i_pol, i_comp )%v )
+                    allocate( Rx%lrows( i_pol, i_comp )%v, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
+                    !call model_operator%metric%createVector( complex_t, EDGE, Rx%lrows( i_pol, i_comp )%v )
                 enddo
             enddo
             !

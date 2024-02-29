@@ -29,8 +29,6 @@ module ModelParameterCell_SG
             !
             procedure, public :: avgModel1D => avgModel1D_ModelParameterCell_SG
             !
-            procedure, public :: write => write_ModelParameterCell_SG
-            !
     end type ModelParameterCell_SG_t
     !
     interface ModelParameterCell_SG_t
@@ -163,7 +161,12 @@ contains
         !
         call sigma_cell%mult( self%metric%v_cell )
         !
-        call sigma_cell%toNode( sigma_node, .TRUE. )
+        call sigma_cell%sumToNode( sigma_node, .TRUE. )
+        !
+        !> Later fix for SP2 - 27/02/2024!!!!
+        call sigma_node%div( self%metric%v_node )
+        !
+        call sigma_node%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
         !
     end subroutine nodeCond_ModelParameterCell_SG
     !
@@ -234,7 +237,6 @@ contains
         !
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: sigma_cells
         type( rScalar3D_SG_t ) :: dsigma_cond
-        character( len=5 ), parameter :: JOB = "DERIV"
         integer :: i, k0, k1, k2
         !
         if( .NOT. self%is_allocated ) then
@@ -262,7 +264,7 @@ contains
             !> Create and initialize sigma_cells with zeros
             sigma_cells(i) = rScalar3D_SG_t( self%metric%grid, CELL )
             !
-            sigma_cells(i)%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(i)%v, kind=prec ), JOB )
+            sigma_cells(i)%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(i)%v, kind=prec ), DERIV )
             !
             dsigma_cond = dsigma%getCond(i)
             !
@@ -304,7 +306,6 @@ contains
         type( rScalar3D_SG_t ) :: dsigma_cond, sigma_cell
         type( GenScalar_t ), allocatable, dimension(:) :: sigma_cells
         complex( kind=prec ), allocatable, dimension(:,:,:) :: sigma_cell_v
-        character( len=5 ), parameter :: JOB = "DERIV"
         integer :: i, k0, k1, k2
         !
         if( .NOT. self%is_allocated ) then
@@ -357,7 +358,7 @@ contains
             !
             call dsigma_cond%zeros
             !
-            dsigma_cond%v = self%sigMap( real( self%cell_cond(i)%v, kind=prec ), JOB )
+            dsigma_cond%v = self%sigMap( real( self%cell_cond(i)%v, kind=prec ), DERIV )
             !
             call sigma_cells(i)%s%mult( self%metric%v_cell )
             !
@@ -474,119 +475,6 @@ contains
         deallocate( cond_slice )
         !
     end function slice2D_ModelParameterCell_SG
-    !
-    !> opens cfile on unit ioModelParam, writes out object of
-    !> type modelParam in Weerachai Siripunvaraporn"s format,
-    !> closes file.
-    !
-    subroutine write_ModelParameterCell_SG( self, file_name, comment )
-        implicit none
-        !
-        class( ModelParameterCell_SG_t ), intent( in ) :: self
-        character(*), intent( in ) :: file_name
-        character(*), intent( in ), optional :: comment
-        !
-        real( kind=prec ), allocatable, dimension(:,:,:) :: cond_v
-        integer :: Nx, Ny, NzEarth, ii, i, j, k, ios
-        !
-        ! Verbose
-        !write( *, * ) "     > Write Model to file: [", file_name, "]"
-        !
-        open( ioModelParam, file = file_name, action = "write", form = "formatted", iostat = ios )
-        !
-        if( ios == 0 ) then
-            !
-            if( present( comment ) ) then
-                write( ioModelParam, * ) "# ", trim( comment )
-            else
-                write( ioModelParam, * ) "# 3D MT model written by ModEM-OO in WS format"
-            endif
-            !
-            !> Write grid geometry definitions
-            Nx = self%metric%grid%nx
-            Ny = self%metric%grid%ny
-            NzEarth = self%metric%grid%nz - self%metric%grid%nzAir
-            !
-            write( ioModelParam, "(4i5)", advance = "no" ) Nx, Ny, NzEarth, 0
-            !
-            write( ioModelParam, "(a10)", advance = "no" ) trim( self%param_type )
-            !
-            if( self%anisotropic_level == 2 ) then
-                !
-                write( ioModelParam, * ) " VTI"
-                !
-            else
-                !
-                write( ioModelParam, * )
-                !
-            endif
-            !
-            !> Write self%metric%grid spacings
-            do j = 1, self%metric%grid%nx
-                write( ioModelParam, "(f12.3)", advance = "no" ) self%metric%grid%dx(j)
-            enddo
-            !
-            write( ioModelParam, * )
-            !
-            do j = 1, self%metric%grid%ny
-                write( ioModelParam, "(f12.3)", advance = "no" ) self%metric%grid%dy(j)
-            enddo
-            !
-            write( ioModelParam, * )
-            !
-            do j = self%metric%grid%nzAir + 1, self%metric%grid%nz
-                write( ioModelParam, "(f12.3)", advance = "no" ) self%metric%grid%dz(j)
-            enddo
-            !
-            write( ioModelParam, * )
-            !
-            do ii = 1, self%anisotropic_level
-                !
-                !> Convert (horizontal) conductivity to resistivity
-                !
-                cond_v = self%cell_cond(ii)%v
-                !
-                if( index( self%param_type, "LOGE" ) > 0 .OR. index( self%param_type, "LOG10" ) > 0 ) then
-                    cond_v = -cond_v
-                elseif( index(self%param_type, "LINEAR" ) > 0 ) then
-                    cond_v = ONE / cond_v
-                endif
-                !
-                !> Write the (horizontal) resistivity
-                !
-                write( ioModelParam, * )
-                !
-                do k = 1, nzEarth
-                    do j = 1, Ny
-                        do i = Nx, 1, -1
-                            write( ioModelParam, "(es13.5)", iostat = ios, advance = "no" ) cond_v(i,j,k)
-                        enddo
-                        !
-                        write( ioModelParam, * )
-                        !
-                    enddo
-                    !
-                    write( ioModelParam, * )
-                    !
-                enddo
-                !
-            enddo
-            !
-            !> Note that our standard subroutine doesn"t work with Weerachai"s
-            !> real value format. It is still better than either Mackie"s or WS"s...
-            !> call write_rscalar(ioModelParam,rho)
-            !> Also write the self%metric%grid origin (in metres!) and rotation (in degrees)...
-            !
-            write( ioModelParam, "(3f16.3)", iostat = ios) self%metric%grid%ox, self%metric%grid%oy, self%metric%grid%oz
-            write( ioModelParam, "(f9.3)", iostat = ios)  self%metric%grid%rotdeg
-            !
-            close( ioModelParam )
-            !
-        else
-            call errStop( "write_ModelParameterCell_SG > Error opening file ["//file_name//"]!" )
-        endif
-        !
-    end subroutine write_ModelParameterCell_SG
     !
 end Module ModelParameterCell_SG
 !

@@ -36,7 +36,7 @@ contains
         !
         type( Solver_PCG_t ) :: self
         !
-        write( *, * ) "Constructor Solver_PCG_t"
+        !write( *, * ) "Constructor Solver_PCG_t"
         !
         call self%baseInit
         !
