@@ -1102,6 +1102,7 @@ contains
         !
         integer :: i, param_type_size
         class( Scalar_t ), allocatable :: cell_cond
+        type( rScalar3D_SG_t ) :: cell_cond_sg
         class( Grid_t ), allocatable, target :: temp_grid
         !
         param_type_size = 0
@@ -1156,7 +1157,8 @@ contains
                     !
                     call unpackScalarBuffer( cell_cond, param_grid, parent_buffer, parent_buffer_size, index )
                     !
-                    call model%setCond( cell_cond, i )
+					cell_cond_sg = cell_cond
+                    call model%setCond( cell_cond_sg, i )
                     !
                     deallocate( cell_cond )
                     !
