@@ -157,8 +157,6 @@ contains
         integer :: pol
         type( cVector3D_MR_t ) :: temp_vec_mr
         !
-        write( *, * ) "createRHS_SourceMT_1D 1"
-        !
         allocate( self%rhs( 2 ) )
         !
         do pol = 1, 2
@@ -188,17 +186,11 @@ contains
                 !
             end select
             !
-            write( *, * ) "createRHS_SourceMT_1D 2"
-            !
             call self%model_operator%MultAib( e_boundary, self%rhs( pol )%v )
-            !
-            write( *, * ) "createRHS_SourceMT_1D 3"
             !
             deallocate( e_boundary )
             !
             call self%rhs( pol )%v%mult( C_MinusOne )
-            !
-            write( *, * ) "createRHS_SourceMT_1D 4"
             !
         enddo
         !

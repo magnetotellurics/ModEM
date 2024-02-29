@@ -71,6 +71,8 @@ module cScalar3D_MR
             !
             procedure, public :: copyFrom => copyFrom_cScalar3D_MR
             !
+            procedure, public :: getReal => getReal_cScalar3D_MR
+            !
             !> I/O operations
             procedure, public :: read => read_cScalar3D_MR
             procedure, public :: write => write_cScalar3D_MR
@@ -705,7 +707,7 @@ contains
             call errStop( "add_cScalar3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -759,7 +761,7 @@ contains
             call errStop( "linComb_cScalar3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -832,7 +834,7 @@ contains
         !
         integer :: i
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -933,7 +935,7 @@ contains
         !
         integer :: i
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -997,7 +999,7 @@ contains
             call errStop( "multAdd_cScalar3D_MR > self not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -1111,7 +1113,7 @@ contains
         !
         integer :: i
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -1167,7 +1169,7 @@ contains
              call errStop( "sumToNode_cScalar3D_MR > node_scalar not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         select type( node_scalar )
             !
@@ -1383,8 +1385,6 @@ contains
         class( cScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        integer :: i
-        !
         if( .NOT. rhs%is_allocated ) then
             call errStop( "copyFrom_cScalar3D_MR > rhs not allocated" )
         endif
@@ -1402,16 +1402,11 @@ contains
                 !
                 if( allocated( rhs%sub_scalar ) ) then
                     !
-                    if( allocated( self%sub_scalar ) ) deallocate( self%sub_scalar )
-                    allocate( self%sub_scalar( size( rhs%sub_scalar ) ) )
+                    self%sub_scalar = rhs%sub_scalar
                     !
                 else
                     call errStop( "copyFrom_cScalar3D_MR > rhs%sub_scalar not allocated" )
                 endif
-                !
-                do i = 1, size( self%sub_scalar )
-                    self%sub_scalar(i) = rhs%sub_scalar(i)
-                enddo
                 !
                 self%is_allocated = .TRUE.
                 !
@@ -1421,6 +1416,35 @@ contains
         end select
         !
     end subroutine copyFrom_cScalar3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine getReal_cScalar3D_MR( self, r_field )
+        implicit none
+        !
+        class( cScalar3D_MR_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( out ) :: r_field
+        !
+        integer :: i
+        !
+        allocate( r_field, source = rScalar3D_MR_t( self%grid, self%grid_type ) )
+        !
+        select type ( r_field )
+            !
+            class is( rScalar3D_MR_t )
+                !
+                do i = 1, size( r_field%sub_scalar )
+                    !
+                    r_field%sub_scalar(i)%v = real( self%sub_scalar(i)%v, kind=prec )
+                    !
+                enddo
+                !
+            class default
+                call errStop( "getReal_cScalar3D_MR > Undefined r_field" )
+                !
+        end select
+        !
+    end subroutine getReal_cScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -1477,7 +1501,7 @@ contains
         !
         copy = self
         !
-        call copy%switchStoreState( compound )
+        !call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit

@@ -71,6 +71,8 @@ module rScalar3D_MR
             !
             procedure, public :: copyFrom => copyFrom_rScalar3D_MR
             !
+            procedure, public :: getReal => getReal_rScalar3D_MR
+            !
             !> I/O operations
             procedure, public :: read => read_rScalar3D_MR
             procedure, public :: write => write_rScalar3D_MR
@@ -619,7 +621,7 @@ contains
         integer :: i
         logical :: int_only_p
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -765,7 +767,7 @@ contains
             call errStop( "add_rScalar3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -819,7 +821,7 @@ contains
             call errStop( "linComb_rScalar3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -892,7 +894,7 @@ contains
         !
         integer :: i
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -993,7 +995,7 @@ contains
         !
         integer :: i
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -1043,7 +1045,7 @@ contains
             call errStop( "multAdd_rScalar3D_MR > self not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -1157,7 +1159,7 @@ contains
         !
         integer :: i
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -1213,7 +1215,7 @@ contains
              call errStop( "sumToNode_rScalar3D_MR > node_scalar not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         select type( node_scalar )
             !
@@ -1244,14 +1246,14 @@ contains
                                 nzF = self%sub_scalar(i+1)%grid%nz
                                 !
                                 node_scalar%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC+1 ) = &
-									self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
-									self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
-									self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
-									self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
-									self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
-									self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
-									self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
-									self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
+                                    self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
+                                    self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                    self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
+                                    self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                    self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
+                                    self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
+                                    self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
+                                    self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
                                 !
                             else
                                 !
@@ -1263,14 +1265,14 @@ contains
                                 nzC = self%sub_scalar(i+1)%grid%nz
                                 !
                                 node_scalar%sub_scalar(i+1)%v( 2:nxC,     2:nyC,     1   ) = &
-									self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
-									self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
-									self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
-									self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
-									self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
-									self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
-									self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
-									self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
+                                    self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
+                                    self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                    self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
+                                    self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                    self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
+                                    self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
+                                    self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
+                                    self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
                                 !
                             endif
                             !
@@ -1407,8 +1409,6 @@ contains
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        integer :: i
-        !
         if( .NOT. rhs%is_allocated ) then
             call errStop( "copyFrom_rScalar3D_MR > rhs not allocated" )
         endif
@@ -1425,19 +1425,16 @@ contains
             class is( rScalar3D_MR_t )
                 !
                 if( allocated( rhs%sub_scalar ) ) then
-                    !
-                    if( allocated( self%sub_scalar ) ) deallocate( self%sub_scalar )
-                    allocate( self%sub_scalar( size( rhs%sub_scalar ) ) )
-                    !
+                    self%sub_scalar = rhs%sub_scalar
                 else
                     call errStop( "copyFrom_rScalar3D_MR > rhs%sub_scalar not allocated" )
                 endif
                 !
-                do i = 1, size( self%sub_scalar )
-                    self%sub_scalar(i) = rhs%sub_scalar(i)
-                enddo
-                !
                 self%is_allocated = .TRUE.
+            !
+            class is( rScalar3D_SG_t )
+                !
+                call errStop( "copyFrom_rScalar3D_MR > rScalar3D_SG_t" )
                 !
             class default
                 call errStop( "copyFrom_rScalar3D_MR > Unclassified rhs" )
@@ -1445,6 +1442,20 @@ contains
         end select
         !
     end subroutine copyFrom_rScalar3D_MR
+    !
+    !> No subroutine briefing
+    !
+    subroutine getReal_rScalar3D_MR( self, r_field )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( out ) :: r_field
+        !
+        allocate( r_field, source = self )
+        !
+        call warning( "getReal_rScalar3D_MR > Getting Real Field from already Real Field" )
+        !
+    end subroutine getReal_rScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -1501,7 +1512,7 @@ contains
         !
         copy = self
         !
-        call copy%switchStoreState( compound )
+        !call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit

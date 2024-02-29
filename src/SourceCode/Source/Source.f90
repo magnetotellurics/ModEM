@@ -65,6 +65,7 @@ module Source
     contains
     !
     !> No subroutine briefing
+    !
     subroutine setE_Source( self, E )
         implicit none
         !
@@ -74,15 +75,9 @@ module Source
         type( cVector3D_SG_t ) :: temp_e_sg
         integer :: i, size_e
         !
-        write( *, * ) "setE_Source 1"
-        !
         size_e = size( E )
         !
-        write( *, * ) "setE_Source 2"
-        !
         allocate( self%E( size_e ) )
-        !
-        write( *, * ) "setE_Source 3"
         !
         do i = 1, size_e
             !> RHS calculated as MR vector
@@ -107,11 +102,7 @@ module Source
             !
         enddo
         !
-        write( *, * ) "setE_Source 4"
-        !
         call self%createRHS
-        !
-        write( *, * ) "setE_Source 5"
         !
     end subroutine setE_Source
     !

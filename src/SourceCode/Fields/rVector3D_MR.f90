@@ -83,6 +83,8 @@ module rVector3D_MR
             !
             procedure, public :: copyFrom => copyFrom_rVector3D_MR
             !
+            procedure, public :: getReal => getReal_rVector3D_MR
+            !
             !> I/O operations
             procedure, public :: print => print_rVector3D_MR
             procedure, public :: read => read_rVector3D_MR
@@ -784,7 +786,7 @@ contains
             int_only_p = int_only
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         do i = 1, self%grid%getNGrids()
             !
@@ -942,7 +944,7 @@ contains
              call errStop( "sumEdge_rVector3D_MR > self not allocated." )
         endif
         !
-        call self%switchStoreState( compound )
+        !call self%switchStoreState( compound )
         !
         is_interior_only = .FALSE.
         !
@@ -1144,7 +1146,7 @@ contains
             call errStop( "add_rVector3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
@@ -1219,7 +1221,7 @@ contains
             call errStop( "linComb_rVector3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
@@ -1322,7 +1324,7 @@ contains
             call errStop( "subField_rVector3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
@@ -1455,7 +1457,7 @@ contains
             call errStop( "multByField_rVector3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
@@ -1534,9 +1536,9 @@ contains
         !
         diag_mult_temp = rVector3D_MR_t( self%grid, self%grid_type )
         !
-        call diag_mult_temp%switchStoreState( rhs%store_state )
+        !call diag_mult_temp%switchStoreState( rhs%store_state )
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
@@ -1609,13 +1611,13 @@ contains
             call errStop( "multAdd_rVector3D_MR > rhs not allocated." )
         endif
         !
-        call self%switchStoreState( rhs%store_state )
+        !call self%switchStoreState( rhs%store_state )
         !
         if( self%isCompatible( rhs ) ) then
             !
             do i = 1, self%grid%getNGrids()
                 !
-                call self%switchStoreState( rhs%store_state )
+                !call self%switchStoreState( rhs%store_state )
                 !
                 select type( rhs )
                     !
@@ -1731,7 +1733,7 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            call self%switchStoreState( rhs%store_state )
+            !call self%switchStoreState( rhs%store_state )
             !
             do i = 1, self%grid%getNGrids()
                 !
@@ -1930,6 +1932,20 @@ contains
     !
     !> No subroutine briefing
     !
+    subroutine getReal_rVector3D_MR( self, r_field )
+        implicit none
+        !
+        class( rVector3D_MR_t ), intent( in ) :: self
+        class( Field_t ), allocatable, intent( out ) :: r_field
+        !
+        allocate( r_field, source = self )
+        !
+        call warning( "getReal_rVector3D_MR > Getting Real Field from already Real Field" )
+        !
+    end subroutine getReal_rVector3D_MR
+    !
+    !> No subroutine briefing
+    !
     subroutine read_rVector3D_MR( self, funit, ftype )
         implicit none
         !
@@ -1979,7 +1995,7 @@ contains
         !
         copy = self
         !
-        call copy%switchStoreState( compound )
+        !call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit

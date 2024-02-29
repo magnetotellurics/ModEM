@@ -33,8 +33,6 @@ module ModelParameterCell_MR
             !
             procedure, public :: avgModel1D => avgModel1D_ModelParameterCell_MR
             !
-            procedure, public :: write => write_ModelParameterCell_MR
-            !
             procedure, public :: cellToNode => cellToNode_ModelParameterCell_MR
             procedure, public :: edgeToCell => edgeToCell_ModelParameterCell_MR
             procedure, public :: cellToEdge => cellToEdge_ModelParameterCell_MR
@@ -414,33 +412,19 @@ contains
             call errStop( "edgeToCell_ModelParameterCell_MR > sigma_cell_al not allocated" )
         endif
         !
-        write( *, * ) "edgeToCell_ModelParameterCell_MR 1"
-        !
         !> again computing  edge volumes, and could use v_edge from Metric Elements 
         !   IF the computation of that is modified
         call self%metric%createVector( real_t, EDGE, e_vol )
         !
-        write( *, * ) "edgeToCell_ModelParameterCell_MR 2"
-        !
         call e_vol%sumCells( self%metric%v_cell )
-        !
-        write( *, * ) "edgeToCell_ModelParameterCell_MR 3"
         !
         call e_vol%setAllBoundary( C_ONE ) !IT WAS R_ONE, PROBLEM????
         !
-        write( *, * ) "edgeToCell_ModelParameterCell_MR 4"
-        !
         allocate( temp_e_vec, source = e_vec )
-        !
-        write( *, * ) "edgeToCell_ModelParameterCell_MR 5"
         !
         call temp_e_vec%div( e_vol )
         !
-        write( *, * ) "edgeToCell_ModelParameterCell_MR 6"
-        !
         deallocate( e_vol )
-        !
-        write( *, * ) "edgeToCell_ModelParameterCell_MR 7"
         !
         !> cell cond as MR with AirLayers
         !    maybe this should be allocated before calling this routine ????
@@ -448,15 +432,9 @@ contains
         !
         call temp_e_vec%sumEdges( sigma_cell_al, .TRUE. )
         !
-        write( *, * ) "edgeToCell_ModelParameterCell_MR 8"
-        !
         deallocate( temp_e_vec )
         !
-        write( *, * ) "edgeToCell_ModelParameterCell_MR 9"
-        !
         call sigma_cell_al%mult( self%metric%v_cell )
-        !
-        write( *, * ) "edgeToCell_ModelParameterCell_MR 10"
         !
     end subroutine edgeToCell_ModelParameterCell_MR
     !
@@ -525,6 +503,7 @@ contains
         !
         class( Scalar_t ), allocatable :: sigma_cell_al
         type( rScalar3D_MR_t ) :: sigma_cell_al_mr
+        integer :: i
         !
         if( .NOT. e_vec%is_allocated ) then
             call errStop( "dPDEmapping_T_ModelParameterCell_MR > e_vec not allocated" )
@@ -534,30 +513,34 @@ contains
             call errStop( "dPDEmapping_T_ModelParameterCell_MR > dsigma not allocated" )
         endif
         !
-        write( *, * ) "dPDEmapping_T_ModelParameterCell_MR 1"
-        !
         !> temp storage for calculation of dsigma on MR grid
         !sigma_cell_al = rScalar3D_MR_t( self%metric%grid, CELL )
         call self%metric%createScalar( real_t, CELL, sigma_cell_al )    !SHOULD BE GENERIC FOR sumEdges...
         !
-        write( *, * ) "dPDEmapping_T_ModelParameterCell_MR 2"
-        !
         call self%edgeToCell( e_vec, sigma_cell_al )                    !... HERE!
         !
-        write( *, * ) "dPDEmapping_T_ModelParameterCell_MR 3"
-        !
-        sigma_cell_al_mr = sigma_cell_al
-        !
-        write( *, * ) "dPDEmapping_T_ModelParameterCell_MR 4"
+        !> IMPLEMENT A GETREAL ROUTINE FOR THIS ????
+        select type( sigma_cell_al )
+            !
+            class is( cScalar3D_MR_t )
+                !
+                sigma_cell_al_mr = rScalar3D_MR_t( sigma_cell_al%grid, sigma_cell_al%grid_type )
+                !
+                do i = 1, size( sigma_cell_al%sub_scalar )
+                    !
+                    sigma_cell_al_mr%sub_scalar(i)%v = real( sigma_cell_al%sub_scalar(i)%v, kind=prec )
+                    !
+                enddo
+                !
+            class default
+                call errStop( "dPDEmapping_T_ModelParameterCell_MR > Unclassified sigma_cell_al" )
+            !
+        end select
         !
         deallocate( sigma_cell_al )
         !
-        write( *, * ) "dPDEmapping_T_ModelParameterCell_MR 5"
-        !
         ! difference with PDEmapping: set air layers to zero, pass optional argument dsigma
         call self%cellToModel( sigma_cell_al_mr, dsigma )
-        !
-        write( *, * ) "dPDEmapping_T_ModelParameterCell_MR 6"
         !
     end subroutine dPDEmapping_T_ModelParameterCell_MR
     !
@@ -641,21 +624,6 @@ contains
         call errStop( "slice2D_ModelParameterCell_MR > must be implemented!" )
         !
     end function slice2D_ModelParameterCell_MR
-    !
-    !> opens cfile on unit ioModelParam, writes out object of
-    !> type modelParam in Weerachai Siripunvaraporn"s format,
-    !> closes file.
-    !
-    subroutine write_ModelParameterCell_MR( self, file_name, comment )
-        implicit none
-        !
-        class( ModelParameterCell_MR_t ), intent( in ) :: self
-        character(*), intent( in ) :: file_name
-        character(*), intent( in ), optional :: comment
-        !
-        call errStop( "write_ModelParameterCell_MR > must be implemented!" )
-        !
-    end subroutine write_ModelParameterCell_MR
     !
 end Module ModelParameterCell_MR
 !

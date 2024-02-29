@@ -67,6 +67,8 @@ module Field
             procedure( interface_copy_from_field ), deferred, public :: copyFrom
             generic :: assignment(=) => copyFrom
             !
+            procedure( interface_get_real_field ), deferred, public :: getReal
+            !
             procedure( interface_deallocate_other_state_field ), deferred, public :: deallOtherState
             !
             !> Field procedures
@@ -270,6 +272,14 @@ module Field
             class( Field_t ), intent( inout ) :: self
             class( Field_t ), intent( in ) :: rhs
         end subroutine interface_copy_from_field
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_get_real_field( self, r_field )
+            import :: Field_t
+            class( Field_t ), intent( in ) :: self
+            class( Field_t ), allocatable, intent( out ) :: r_field
+        end subroutine interface_get_real_field
         !
         !> No interface subroutine briefing
         !

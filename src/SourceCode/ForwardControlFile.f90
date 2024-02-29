@@ -153,8 +153,6 @@ contains
                     !
                 enddo
                 !
-                write( *, * ) "layers: ", layers
-                !
                 grid_format = GRID_MR
                 !
             else
