@@ -64,7 +64,7 @@ module rScalar3D_MR
             procedure, public :: divByField => divByField_rScalar3D_MR
             procedure, public :: divByValue => divByValue_rScalar3D_MR
             !
-            procedure, public :: sumToNode => sumToNode_rScalar3D_MR
+            procedure, public :: SumToNode => SumToNode_rScalar3D_MR
             !
             !> Miscellaneous
             procedure, public :: deallOtherState => deallOtherState_rScalar3D_MR
@@ -407,12 +407,15 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
-        type( rScalar3D_SG_t ), intent( out ) :: scalar_sg
-        !
+        type( rScalar3D_SG_t ), intent( inout ) :: scalar_sg
+        !MR 
         integer :: i_grid, i, j, k, z, cs
         integer :: i1, i2, j1, j2, k1, k2
         !
-        scalar_sg = rScalar3D_SG_t( self%grid, self%grid_type )
+        !    I THINK THIS IS WRONG -- self%grid is an MR grid, right?? 
+        !      or does call to rScalar3D_SG work with MR grid as input???
+        !        scalar_sg = rScalar3D_SG_t( self%grid, self%grid_type )
+        !      Let's allocate scalar_sg before calling!  Might check first!
         !
         select type( grid => self%grid )
             !
@@ -1196,7 +1199,9 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine sumToNode_rScalar3D_MR( self, node_scalar, interior_only )
+    subroutine SumToNode_rScalar3D_MR( self, node_scalar, interior_only )
+        ! NOTE  as written the interfaces are computed as sums, but other nodes
+        !    as averages!!!   I AM CHANGING EVERYTHING TO SUMS
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -1228,7 +1233,7 @@ contains
                         !> set nodes for interior of all sub-scalars
                         do i = 1, self%grid%n_grids
                             !
-                            call self%sub_scalar(i)%sumToNode( node_scalar%sub_scalar(i) )
+                            call self%sub_scalar(i)%SumToNode( node_scalar%sub_scalar(i) )
                             !
                         enddo
                         !
@@ -1288,51 +1293,7 @@ contains
             !
         end select
         !
-        ! select type( node_scalar )
-            ! !
-            ! class is( rScalar3D_MR_t )
-                ! !
-                ! select case( self%grid_type )
-                    ! !
-                    ! case( CELL )
-                        ! !
-                        ! do i = 1, self%grid%getNGrids()
-                            ! !
-                            ! is_interior_only = .FALSE.
-                            ! !
-                            ! if( present( interior_only ) ) is_interior_only = interior_only
-                            ! !
-                            ! if( is_interior_only ) then
-                                ! call self%sub_scalar(i)%setAllBoundary( C_ZERO )
-                            ! endif
-                            ! !
-                            ! v_xend = size( self%sub_scalar(i)%v, 1 )
-                            ! v_yend = size( self%sub_scalar(i)%v, 2 )
-                            ! v_zend = size( self%sub_scalar(i)%v, 3 )
-                            ! !
-                            ! !> Interior
-                            ! node_scalar%sub_scalar(i)%v( 2:v_xend, 2:v_yend, 2:v_zend ) = &
-                            ! self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
-                            ! self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
-                            ! self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
-                            ! self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
-                            ! self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
-                            ! self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
-                            ! self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
-                            ! self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
-                            ! !
-                        ! enddo
-                        ! !
-                    ! case default
-                        ! call errStop( "sumToNode_rScalar3D_MR just for CELL type" )
-                ! end select
-                ! !
-            ! class default
-                ! call errStop( "sumToNode_rScalar3D_MR > Unclassified node_scalar" )
-            ! !
-        ! end select
-        ! !
-    end subroutine sumToNode_rScalar3D_MR
+    end subroutine SumToNode_rScalar3D_MR
     !
     !> No subroutine briefing
     !
