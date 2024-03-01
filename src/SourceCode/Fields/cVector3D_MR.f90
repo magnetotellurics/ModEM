@@ -1851,6 +1851,8 @@ contains
         !
         !> Find index of the sub_vector based on location(3) - ALWAYS THE FIRST FOR NOW
         i_sub = 1
+		!
+		write( *, * ) "location(3): ", location
         !
         !> Do the interpFunc for this sub_vector
         call self%sub_vector( i_sub )%interpFunc( location, xyz, sub_interp )
