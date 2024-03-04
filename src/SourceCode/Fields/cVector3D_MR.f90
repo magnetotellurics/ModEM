@@ -2219,7 +2219,7 @@ contains
             !> fill in inactive edges (top boundary) of vec_2 first x-edges
             !
             !location(3) = R_ZERO
-            location(3) = grid_2%z_edge( vec_2%nz + 1 )
+            location(3) = grid_1%z_edge( vec_1%nz + 1 )
             !
             do i = 1, vec_1%nx
                 do j = 1, vec_1%ny + 1

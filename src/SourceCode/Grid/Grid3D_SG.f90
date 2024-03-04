@@ -94,6 +94,7 @@ contains
         !
         call self%setup
         !
+        call self%write
     end function Grid3D_SG_t_ctor_n_d
     !
     !> Deconstructor routine:
@@ -211,7 +212,8 @@ contains
         !
         self%x_edge(1) = ox
         self%y_edge(1) = oy
-        self%z_edge(1) = oz !> ALWAYS BE ZERO ???? BEFORE WAS oz
+        self%z_edge(1) = R_ZERO !> ALWAYS BE ZERO ???? BEFORE WAS oz
+        !       YES zero at this point -- will generally be oz when done
         !
         xCum = R_ZERO
         yCum = R_ZERO
@@ -510,14 +512,23 @@ contains
         write( *, * ) "    EDGEi, FACEi, NODEi: ", size( self%EDGEi ), size( self%FACEi ), size( self%NODEi )
         !
         write( *, * ) "    dx, dy, dz: ", size( self%dx ), size( self%dy ), size( self%dz )
+        write( *, * ) "dx ", self%dx
+        write( *, * ) "dy ", self%dy
+        write( *, * ) "dz ", self%dz
         write( *, * ) "    dx_inv, dy_inv, dz_inv: ", size( self%dx_inv ), size( self%dy_inv ), size( self%dz_inv )
         !
         write( *, * ) "    del_x, del_y, del_z: ", size( self%del_x ), size( self%del_y ), size( self%del_z )
         write( *, * ) "    del_x_inv, del_y_inv, del_z_inv: ", size( self%del_x_inv ), size( self%del_y_inv ), size( self%del_z_inv )
         !
         write( *, * ) "    x_edge, y_edge, z_edge: ", size( self%x_edge ), size( self%y_edge ), size( self%z_edge )
+        write( *, * ) "x_edge ", self%x_edge
+        write( *, * ) "y_edge ", self%y_edge
+        write( *, * ) "z_edge ", self%z_edge
         !
         write( *, * ) "    x_center, y_center, z_center: ", size( self%x_center ), size( self%y_center ), size( self%z_center )
+        write( *, * ) "x_center ", self%x_center
+        write( *, * ) "y_center ", self%y_center
+        write( *, * ) "z_center ", self%z_center
         !
     end subroutine write_Grid3D_SG
     !
