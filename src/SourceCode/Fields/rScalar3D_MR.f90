@@ -64,7 +64,7 @@ module rScalar3D_MR
             procedure, public :: divByField => divByField_rScalar3D_MR
             procedure, public :: divByValue => divByValue_rScalar3D_MR
             !
-            procedure, public :: sumToNode => sumToNode_rScalar3D_MR
+            procedure, public :: SumToNode => SumToNode_rScalar3D_MR
             !
             !> Miscellaneous
             procedure, public :: deallOtherState => deallOtherState_rScalar3D_MR

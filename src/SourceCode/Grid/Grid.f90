@@ -628,6 +628,8 @@ contains
         !> setup the rest of the grid from scratch
         call self%setup
         !
+        !write(*,*) '****************** Air Layers Added to Grid ************************'
+        !call self%write()
     end subroutine updateAirLayers_Grid
     !
     !> No subroutine briefing

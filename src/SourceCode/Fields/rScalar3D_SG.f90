@@ -180,7 +180,7 @@ contains
         !
         select case( self%grid_type )
             !
-            !   NO BOUNDARIES FOR CELLS!!!!
+            !   NO BOUNDARIES FOR CELLS!!!
             case( NODE, CELL ) 
                 !
                 self%v((/1, self%NdV(1)/), :, :) = cvalue
