@@ -939,6 +939,7 @@ contains
         integer :: i
         logical :: is_interior_only
         class( Scalar_t ), allocatable :: aux_scalar
+        type( Grid3D_SG_t ) :: aux_grid
         !
         if( .NOT. self%is_allocated ) then
              call errStop( "sumEdge_cVector3D_MR > self not allocated." )
@@ -961,6 +962,25 @@ contains
                 select case( self%grid_type )
                     !
                     case( EDGE )
+                        !
+                        !> loop over INTERFACES (one less than n_grids) and fill in inactive edges
+                        do i = 1, self%grid%n_grids
+                            !
+                            aux_grid = self%sub_vector(i)%grid
+                            !
+                            write( *, * ) "Grid", i
+                            !
+                            write( *, * ) "   o(x,y,z):", aux_grid%ox, aux_grid%oy, aux_grid%oz
+							write( *, * ) "   x_center:", aux_grid%x_center
+							write( *, * ) "   y_center:", aux_grid%y_center
+							write( *, * ) "   z_center:", aux_grid%z_center
+							write( *, * ) "     x_edge:", aux_grid%x_edge
+							write( *, * ) "     y_edge:", aux_grid%y_edge
+							write( *, * ) "     z_edge:", aux_grid%z_edge
+                            !
+                        enddo
+                        !
+                        stop
                         !
                         !> loop over INTERFACES (one less than n_grids) and fill in inactive edges
                         do i = 1, self%grid%n_grids-1
@@ -1847,12 +1867,8 @@ contains
         class( Vector_t ), allocatable :: sub_interp
         type( cVector3D_MR_t ), allocatable :: temp_interp_mr
         !
-        !call errStop( "interpFunc_cVector3D_MR still not implemented" )
-        !
-        !> Find index of the sub_vector based on location(3) - ALWAYS THE FIRST FOR NOW
+        !> Find index of the sub_vector based on location(3) - ALWAYS THE FIRST FOR NOW ????
         i_sub = 1
-		!
-		write( *, * ) "location(3): ", location
         !
         !> Do the interpFunc for this sub_vector
         call self%sub_vector( i_sub )%interpFunc( location, xyz, sub_interp )
@@ -2177,7 +2193,7 @@ contains
             !
             !> fill in inactive edges (top boundary) of vec_2 first x-edges
             do i = 1, vec_2%nx
-                do j = 1, vec_2%ny+1
+                do j = 1, vec_2%ny + 1
                     !
                     !> these are supposed to be coordinates of centers of x-edges
                     !> in vec_2, but at bottom of vec_1
@@ -2188,13 +2204,13 @@ contains
                     !> interpolate to location (in vec_1 grid) and store in top x/y layer of vec_2
                     call vec_1%interpFunc( location, 'x', interp )
                     !
-                    vec_2%x(i,j,1) = vec_1%dotProd( interp )
+                    vec_2%x( i, j, 1 ) = vec_1%dotProd( interp )
                     !
                 enddo
             enddo
             !
             !  then y-edges
-            do i = 1, vec_2%nx+1
+            do i = 1, vec_2%nx + 1
                 do j = 1, vec_2%ny
                     !
                     !> these are supposed to be coordinates of centers of y-edges
@@ -2206,7 +2222,7 @@ contains
                     !> interpolate to location (in vec_1 grid) and store in top x/y layer of vec_2
                     call vec_1%interpFunc( location, 'y', interp )
                     !
-                    vec_2%y(i,j,1) = vec_1%dotProd( interp )
+                    vec_2%y( i, j, 1 ) = vec_1%dotProd( interp )
                     !
                 enddo
             enddo
@@ -2220,9 +2236,10 @@ contains
             !
             !> fill in inactive edges (top boundary) of vec_2 first x-edges
             !
-            !location(3) = R_ZERO
-            location(3) = grid_2%z_edge( vec_2%nz + 1 )
+            location(3) = R_ZERO
+            !location(3) = grid_2%oz
             !
+            ! x-edges
             do i = 1, vec_1%nx
                 do j = 1, vec_1%ny + 1
                     !
@@ -2240,7 +2257,7 @@ contains
                 enddo
             enddo
             !
-            !  then y-edges
+            ! y-edges
             do i = 1, vec_1%nx + 1
                 do j = 1, vec_1%ny
                     !
@@ -2253,7 +2270,7 @@ contains
                     !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
                     call vec_2%interpFunc( location, 'y', interp )
                     !
-                    vec_1%y( i, j, vec_1%nz+1 ) = vec_2%dotProd( interp )
+                    vec_1%y( i, j, vec_1%nz ) = vec_2%dotProd( interp )
                     !
                 enddo
             enddo

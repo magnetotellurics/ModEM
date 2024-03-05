@@ -1,0 +1,398 @@
+==24462== Memcheck, a memory error detector
+==24462== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==24462== Using Valgrind-3.15.0-608cb11914-20190413 and LibVEX; rerun with -h for copyright info
+==24462== Command: ./ModEM -jt -m MR_TEST_INPUTS/m0.rho -d MR_TEST_INPUTS/d_05_1tx_1rx.dat -cf fwd_ctrl_template.txt
+==24462== Parent PID: 11143
+==24462== 
+--24462-- 
+--24462-- Valgrind options:
+--24462--    --leak-check=full
+--24462--    --show-leak-kinds=all
+--24462--    --track-origins=yes
+--24462--    -v
+--24462--    --log-file=JMULT_T.valg
+--24462-- Contents of /proc/version:
+--24462--   Linux version 4.4.0-19041-Microsoft (Microsoft@Microsoft.com) (gcc version 5.4.0 (GCC) ) #3996-Microsoft Thu Jan 18 16:36:00 PST 2024
+--24462-- 
+--24462-- Arch and hwcaps: AMD64, LittleEndian, amd64-cx16-lzcnt-rdtscp-sse3-ssse3-avx-avx2-bmi-f16c-rdrand
+--24462-- Page sizes: currently 4096, max supported 4096
+--24462-- Valgrind library directory: /usr/lib/x86_64-linux-gnu/valgrind
+--24462-- Reading syms from /mnt/c/ON/GITLAB_PROJECTS/modem-oo/src/ModEM
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/ld-2.31.so
+--24462--   Considering /usr/lib/debug/.build-id/45/87364908de169dec62ffa538170118c1c3a078.debug ..
+--24462--   .. build-id is valid
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/memcheck-amd64-linux
+--24462--    object doesn't have a symbol table
+--24462--    object doesn't have a dynamic symbol table
+--24462-- Scheduler: using generic scheduler lock implementation.
+--24462-- Reading suppressions file: /usr/lib/x86_64-linux-gnu/valgrind/default.supp
+==24462== embedded gdbserver: reading from /tmp/vgdb-pipe-from-vgdb-to-24462-by-protew-on-???
+==24462== embedded gdbserver: writing to   /tmp/vgdb-pipe-to-vgdb-from-24462-by-protew-on-???
+==24462== embedded gdbserver: shared mem   /tmp/vgdb-pipe-shared-mem-vgdb-24462-by-protew-on-???
+==24462== 
+==24462== TO CONTROL THIS PROCESS USING vgdb (which you probably
+==24462== don't want to do, unless you know exactly what you're doing,
+==24462== or are doing some strange experiment):
+==24462==   /usr/lib/x86_64-linux-gnu/valgrind/../../bin/vgdb --pid=24462 ...command...
+==24462== 
+==24462== TO DEBUG THIS PROCESS USING GDB: start GDB like this
+==24462==   /path/to/gdb ./ModEM
+==24462== and then give GDB the following command
+==24462==   target remote | /usr/lib/x86_64-linux-gnu/valgrind/../../bin/vgdb --pid=24462
+==24462== --pid is optional if only one valgrind process is running
+==24462== 
+==24462== error calling PR_SET_PTRACER, vgdb might block
+--24462-- REDIR: 0x4022e20 (ld-linux-x86-64.so.2:strlen) redirected to 0x580c9ce2 (???)
+--24462-- REDIR: 0x4022bf0 (ld-linux-x86-64.so.2:index) redirected to 0x580c9cfc (???)
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_core-amd64-linux.so
+--24462--    object doesn't have a symbol table
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so
+--24462--    object doesn't have a symbol table
+==24462== WARNING: new redirection conflicts with existing -- ignoring it
+--24462--     old: 0x04022e20 (strlen              ) R-> (0000.0) 0x580c9ce2 ???
+--24462--     new: 0x04022e20 (strlen              ) R-> (2007.0) 0x0483f060 strlen
+--24462-- REDIR: 0x401f600 (ld-linux-x86-64.so.2:strcmp) redirected to 0x483ffd0 (strcmp)
+--24462-- REDIR: 0x4023380 (ld-linux-x86-64.so.2:mempcpy) redirected to 0x4843a20 (mempcpy)
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.9.0
+--24462--    object doesn't have a symbol table
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/libfftw3.so.3.5.8
+--24462--    object doesn't have a symbol table
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/libgfortran.so.5.0.0
+--24462--    object doesn't have a symbol table
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/libm-2.31.so
+--24462--   Considering /usr/lib/debug/.build-id/fe/91b4090ea04c1559ff71dd9290062776618891.debug ..
+--24462--   .. build-id is valid
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+--24462--    object doesn't have a symbol table
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/libc-2.31.so
+--24462--   Considering /usr/lib/debug/.build-id/18/78e6b475720c7c51969e69ab2d276fae6d1dee.debug ..
+--24462--   .. build-id is valid
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.9.0
+--24462--    object doesn't have a symbol table
+--24462-- Reading syms from /usr/lib/x86_64-linux-gnu/libquadmath.so.0.0.0
+--24462--    object doesn't have a symbol table
+--24462-- REDIR: 0x55d3480 (libc.so.6:memmove) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d2780 (libc.so.6:strncpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d37b0 (libc.so.6:strcasecmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d20a0 (libc.so.6:strcat) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d27e0 (libc.so.6:rindex) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d4c50 (libc.so.6:rawmemchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55efce0 (libc.so.6:wmemchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55ef820 (libc.so.6:wcscmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d35e0 (libc.so.6:mempcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d3410 (libc.so.6:bcmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d2710 (libc.so.6:strncmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d2150 (libc.so.6:strcmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d3540 (libc.so.6:memset) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55ef7e0 (libc.so.6:wcschr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d2670 (libc.so.6:strnlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d2230 (libc.so.6:strcspn) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d3800 (libc.so.6:strncasecmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d21d0 (libc.so.6:strcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d3950 (libc.so.6:memcpy@@GLIBC_2.14) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55f0f50 (libc.so.6:wcsnlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55ef860 (libc.so.6:wcscpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d2820 (libc.so.6:strpbrk) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d2100 (libc.so.6:index) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d2630 (libc.so.6:strlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55dbbb0 (libc.so.6:memrchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d3850 (libc.so.6:strcasecmp_l) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d33d0 (libc.so.6:memchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55ef930 (libc.so.6:wcslen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d2ae0 (libc.so.6:strspn) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d3750 (libc.so.6:stpncpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d36f0 (libc.so.6:stpcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d4c90 (libc.so.6:strchrnul) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d38a0 (libc.so.6:strncasecmp_l) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x55d32f0 (libc.so.6:strstr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--24462-- REDIR: 0x56bb500 (libc.so.6:__strrchr_avx2) redirected to 0x483ea10 (rindex)
+--24462-- REDIR: 0x55ceb10 (libc.so.6:calloc) redirected to 0x483dce0 (calloc)
+--24462-- REDIR: 0x55cd0e0 (libc.so.6:malloc) redirected to 0x483b780 (malloc)
+--24462-- REDIR: 0x56be6e0 (libc.so.6:__memcpy_avx_unaligned_erms) redirected to 0x48429f0 (memmove)
+--24462-- REDIR: 0x56bb6d0 (libc.so.6:__strlen_avx2) redirected to 0x483ef40 (strlen)
+--24462-- REDIR: 0x55cd6d0 (libc.so.6:free) redirected to 0x483c9d0 (free)
+--24462-- REDIR: 0x55d2fa0 (libc.so.6:__GI_strstr) redirected to 0x4843ca0 (__strstr_sse2)
+--24462-- REDIR: 0x56b7cc0 (libc.so.6:__memcmp_avx2_movbe) redirected to 0x48421e0 (bcmp)
+--24462-- REDIR: 0x56b6bd0 (libc.so.6:__strcmp_avx2) redirected to 0x483fed0 (strcmp)
+--24462-- REDIR: 0x56bb310 (libc.so.6:__strchrnul_avx2) redirected to 0x4843540 (strchrnul)
+--24462-- REDIR: 0x56beb60 (libc.so.6:__memset_avx2_unaligned_erms) redirected to 0x48428e0 (memset)
+--24462-- REDIR: 0x55cde80 (libc.so.6:realloc) redirected to 0x483df30 (realloc)
+--24462-- REDIR: 0x56bb870 (libc.so.6:__strnlen_avx2) redirected to 0x483eee0 (strnlen)
+--24462-- REDIR: 0x56b9720 (libc.so.6:__strncasecmp_avx) redirected to 0x483f910 (strncasecmp)
+--24462-- REDIR: 0x56b7010 (libc.so.6:__strncmp_avx2) redirected to 0x483f670 (strncmp)
+--24462-- REDIR: 0x56be6c0 (libc.so.6:__mempcpy_avx_unaligned_erms) redirected to 0x4843660 (mempcpy)
+==24462== Invalid read of size 8
+==24462==    at 0x1A4BBB: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1724)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5c8d618 is 0 bytes after a block of size 72 alloc'd
+==24462==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==24462==    by 0x19D246: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1595)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462== 
+==24462== Invalid read of size 8
+==24462==    at 0x1A4BED: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1724)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5c8d618 is 0 bytes after a block of size 72 alloc'd
+==24462==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==24462==    by 0x19D246: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1595)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462== 
+==24462== Invalid read of size 8
+==24462==    at 0x1A4D42: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1732)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5c8d718 is 0 bytes after a block of size 40 alloc'd
+==24462==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==24462==    by 0x19D5E3: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1597)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462== 
+==24462== Invalid read of size 8
+==24462==    at 0x1A4D75: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1732)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5c8d718 is 0 bytes after a block of size 40 alloc'd
+==24462==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==24462==    by 0x19D5E3: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1597)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462== 
+==24462== Invalid write of size 8
+==24462==    at 0x1A501C: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1747)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5e4b700 is 320 bytes inside an unallocated block of size 1,760 in arena "client"
+==24462== 
+==24462== Invalid write of size 8
+==24462==    at 0x1A5020: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1747)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5e4b708 is 328 bytes inside an unallocated block of size 1,760 in arena "client"
+==24462== 
+==24462== Invalid write of size 8
+==24462==    at 0x1A50A8: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1748)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5e4b780 is 448 bytes inside an unallocated block of size 1,760 in arena "client"
+==24462== 
+==24462== Invalid write of size 8
+==24462==    at 0x1A50AC: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1748)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5e4b788 is 456 bytes inside an unallocated block of size 1,760 in arena "client"
+==24462== 
+==24462== Invalid write of size 8
+==24462==    at 0x1A5134: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1749)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5e4b710 is 336 bytes inside an unallocated block of size 1,760 in arena "client"
+==24462== 
+==24462== Invalid write of size 8
+==24462==    at 0x1A5138: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1749)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5e4b718 is 344 bytes inside an unallocated block of size 1,760 in arena "client"
+==24462== 
+==24462== Invalid write of size 8
+==24462==    at 0x1A5259: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1751)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5e4b790 is 464 bytes inside an unallocated block of size 1,760 in arena "client"
+==24462== 
+==24462== Invalid write of size 8
+==24462==    at 0x1A525D: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1751)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==  Address 0x5e4b798 is 472 bytes inside an unallocated block of size 1,760 in arena "client"
+==24462== 
+--24462-- VALGRIND INTERNAL ERROR: Valgrind received a signal 11 (SIGSEGV) - exiting
+--24462-- si_code=1;  Faulting address: 0x0;  sp: 0x1008ebde40
+
+valgrind: the 'impossible' happened:
+   Killed by fatal signal
+
+host stacktrace:
+==24462==    at 0x5805160F: ??? (in /usr/lib/x86_64-linux-gnu/valgrind/memcheck-amd64-linux)
+==24462==    by 0x58005BF7: ??? (in /usr/lib/x86_64-linux-gnu/valgrind/memcheck-amd64-linux)
+==24462==    by 0x580A7204: ??? (in /usr/lib/x86_64-linux-gnu/valgrind/memcheck-amd64-linux)
+==24462==    by 0x580F5FD4: ??? (in /usr/lib/x86_64-linux-gnu/valgrind/memcheck-amd64-linux)
+
+sched status:
+  running_tid=1
+
+Thread 1: status = VgTs_Runnable (lwpid 24462)
+==24462==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==24462==    by 0x193515: __cvector3d_sg_MOD___final_cvector3d_sg_Cvector3d_sg_t (cVector3D_SG.f90:2182)
+==24462==    by 0x19CE91: __cvector3d_sg_MOD_interpfunc_cvector3d_sg (cVector3D_SG.f90:1578)
+==24462==    by 0x25E682: __cvector3d_mr_MOD_setinactiveedge_cvector3d_mr (cVector3D_MR.f90:2232)
+==24462==    by 0x29BE90: __cvector3d_mr_MOD_sumedge_cvector3d_mr (cVector3D_MR.f90:968)
+==24462==    by 0x4004A3: __modelparametercell_mr_MOD_edgetocell_modelparametercell_mr (ModelParameterCell_MR.f90:433)
+==24462==    by 0x3FE9FF: __modelparametercell_mr_MOD_dpdemapping_t_modelparametercell_mr (ModelParameterCell_MR.f90:520)
+==24462==    by 0x39AD08: __transmitter_MOD_pmult_t_tx (Transmitter.f90:372)
+==24462==    by 0x5A87DA: __sensitivity_MOD_jmult_t_tx (Sensitivity.f90:425)
+==24462==    by 0x5A926F: __sensitivity_MOD_serialjmult_t (Sensitivity.f90:302)
+==24462==    by 0x5A97D7: __sensitivity_MOD_jobjmult_t (Sensitivity.f90:230)
+==24462==    by 0x5CE0E1: handlejob.3872 (ModEM.f90:119)
+==24462==    by 0x5CE4E1: runprogram.3874 (ModEM.f90:71)
+==24462==    by 0x5CE20A: MAIN__ (ModEM.f90:30)
+==24462==    by 0x5CE751: main (ModEM.f90:28)
+client stack range: [0x1FFEFDD000 0x1FFF000FFF] client SP: 0x1FFEFFBDD0
+valgrind stack range: [0x1008DBE000 0x1008EBDFFF] top usage: 18696 of 1048576
+
+
+Note: see also the FAQ in the source distribution.
+It contains workarounds to several common problems.
+In particular, if Valgrind aborted or crashed after
+identifying problems in your program, there's a good chance
+that fixing those problems will prevent Valgrind aborting or
+crashing, especially if it happened in m_mallocfree.c.
+
+If that doesn't help, please report this bug to: www.valgrind.org
+
+In the bug report, send all the above text, the valgrind
+version, and what OS and version you are using.  Thanks.
+
