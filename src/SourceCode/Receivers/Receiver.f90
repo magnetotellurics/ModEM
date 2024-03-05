@@ -200,25 +200,27 @@ contains
         !
         class( Receiver_t ), intent( inout ) :: self
         class( ModelOperator_t ), intent( in ) :: model_operator
-        class( Vector_t ), allocatable :: temp_full_vec
         !
         integer :: k
-        !
-        class( Vector_t ), allocatable :: e_h, lh
+        class( Vector_t ), allocatable :: e_b, interp_comp, temp_full_vec
         !
         do k = 1, size( self%EHxy )
             !
-            !> Create e_h vector with proper type
+            !> Create e_b vector with proper type
             !> Eletrical(E) - EDGE and Magnetic(B) - FACE
             select case( self%EHxy(k)%str )
                 !
                 case( "Ex", "Ey", "Ez" )
                     !
-                    call model_operator%metric%createVector( complex_t, EDGE, e_h )
+                    call model_operator%metric%createVector( complex_t, EDGE, e_b )
+                    !
+                    call model_operator%metric%createVector( complex_t, EDGE, interp_comp )
                     !
                 case( "Bx", "By", "Bz" )
                     !
-                    call model_operator%metric%createVector( complex_t, FACE, e_h )
+                    call model_operator%metric%createVector( complex_t, FACE, e_b )
+                    !
+                    call model_operator%metric%createVector( complex_t, FACE, interp_comp )
                     !
                 case default
                     call errStop( "evaluationFunction_Receiver > Unknown EHxy" )
@@ -230,61 +232,61 @@ contains
                 !
                 case( "Ex" )
                     !
-                    call e_h%interpFunc( self%location, "x", temp_full_vec )
+                    call e_b%interpFunc( self%location, "x", interp_comp )
                     !
-                    call self%Lex%fromFullVector( temp_full_vec )
+                    call self%Lex%fromFullVector( interp_comp )
                     !
                 case( "Ey" )
                     !
-                    call e_h%interpFunc( self%location, "y", temp_full_vec )
+                    call e_b%interpFunc( self%location, "y", interp_comp )
                     !
-                    call self%Ley%fromFullVector( temp_full_vec )
+                    call self%Ley%fromFullVector( interp_comp )
                     !
                 case( "Ez" )
                     !
-                    call e_h%interpFunc( self%location, "z", temp_full_vec )
+                    call e_b%interpFunc( self%location, "z", interp_comp )
                     !
-                    call self%Lez%fromFullVector( temp_full_vec )
+                    call self%Lez%fromFullVector( interp_comp )
                     !
                 case( "Bx" )
                     !
-                    call e_h%interpFunc( self%location, "x", lh )
+                    call e_b%interpFunc( self%location, "x", interp_comp )
                     !
                     call model_operator%metric%createVector( complex_t, EDGE, temp_full_vec )
                     !
-                    call model_operator%multCurlT( lh, temp_full_vec )
-                    !
-                    deallocate( lh )
+                    call model_operator%multCurlT( interp_comp, temp_full_vec )
                     !
                     call self%Lbx%fromFullVector( temp_full_vec )
                     !
+                    deallocate( temp_full_vec )
+                    !
                 case( "By" )
                     !
-                    call e_h%interpFunc( self%location, "y", lh )
+                    call e_b%interpFunc( self%location, "y", interp_comp )
                     !
                     call model_operator%metric%createVector( complex_t, EDGE, temp_full_vec )
                     !
-                    call model_operator%multCurlT( lh, temp_full_vec )
-                    !
-                    deallocate( lh )
+                    call model_operator%multCurlT( interp_comp, temp_full_vec )
                     !
                     call self%Lby%fromFullVector( temp_full_vec )
                     !
+                    deallocate( temp_full_vec )
+                    !
                 case( "Bz" )
                     !
-                    call e_h%interpFunc( self%location, "z", lh )
+                    call e_b%interpFunc( self%location, "z", interp_comp )
                     !
                     call model_operator%metric%createVector( complex_t, EDGE, temp_full_vec )
                     !
-                    call model_operator%multCurlT( lh, temp_full_vec )
-                    !
-                    deallocate( lh )
+                    call model_operator%multCurlT( interp_comp, temp_full_vec )
                     !
                     call self%Lbz%fromFullVector( temp_full_vec )
                     !
+                    deallocate( temp_full_vec )
+                    !
             end select
             !
-            deallocate( e_h, temp_full_vec )
+            deallocate( e_b, interp_comp )
             !
         enddo
         !
@@ -463,3 +465,4 @@ contains
     end function ImpUnits
     !
 end module Receiver
+!

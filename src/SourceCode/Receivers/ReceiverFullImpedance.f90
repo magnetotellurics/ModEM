@@ -105,11 +105,8 @@ contains
         allocate( EE(2,2) )
         !
         EE(1,1) = self%Lex%dotProd( tx_e_1 )
-        !
         EE(2,1) = self%Ley%dotProd( tx_e_1 )
-        !
         EE(1,2) = self%Lex%dotProd( tx_e_2 )
-        !
         EE(2,2) = self%Ley%dotProd( tx_e_2 )
         !
         !write( *, * ) "EE"

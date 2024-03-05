@@ -1563,19 +1563,19 @@ contains
         class( cVector3D_SG_t ), intent( in ) :: self
         real( kind=prec ), intent( in ) :: location(3)
         character, intent( in ) :: xyz
-        class( Vector_t ), allocatable, intent( inout ) :: interp
+        class( Vector_t ), intent( inout ) :: interp
         !
         integer :: ix, iy, iz, i
         real( kind=prec ) :: wx, wy, wz
-        logical, dimension(:), allocatable :: tmp
+        logical, allocatable, dimension(:) :: tmp
         real( kind=prec ), allocatable, dimension(:) :: xC, yC, zC
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "interpFunc_cVector3D_SG > Self not allocated." )
+            call errStop( "interpFunc_cVector3D_SG > self not allocated." )
         endif
         !
-        if( allocated( interp ) ) then
-            deallocate( interp )
+        if( .NOT. interp%is_allocated ) then
+            call errStop( "interpFunc_cVector3D_SG > interp not allocated." )
         endif
         !
         select type( grid => self%grid )
@@ -1585,8 +1585,6 @@ contains
                 select case( self%grid_type )
                     !
                     case( EDGE )
-                        !
-                        allocate( interp, source = cVector3D_SG_t( grid, EDGE ) )
                         !
                         select case( xyz )
                             !
@@ -1604,8 +1602,8 @@ contains
                                 !
                                 allocate(xC(size(grid%dx) + 1))
                                 allocate(yC(size(grid%del_y)))
-                                allocate(zC(size(grid%dz)))
-                                
+                                allocate(zC(size(grid%dz) + 1))
+                                !
                                 xC = CumSum([0._prec, grid%dx])
                                 yC = CumSum([grid%del_y])
                                 zC = CumSum([0._prec, grid%dz])
@@ -1626,8 +1624,6 @@ contains
                         end select
                         !
                     case( FACE )
-                        !
-                        allocate( interp, source = cVector3D_SG_t( grid, FACE ) )
                         !
                         select case( xyz )
                             !
@@ -2180,3 +2176,4 @@ contains
     end subroutine print_cVector3D_SG
     !
 end module cVector3D_SG
+!
