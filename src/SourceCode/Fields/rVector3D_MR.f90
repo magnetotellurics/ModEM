@@ -1792,7 +1792,7 @@ contains
         class( rVector3D_MR_t ), intent( in ) :: self
         real( kind=prec ), intent( in ) :: location(3)
         character, intent( in ) :: xyz
-        class( Vector_t ), allocatable, intent( inout ) :: interp
+        class( Vector_t ), intent( inout ) :: interp
         !
         call errStop( "interpFunc_rVector3D_MR still not implemented" )
         !

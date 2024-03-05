@@ -19,29 +19,28 @@
 !> if you have time reading this, test it!
 !
 module Solver_BICG
-	!
-	use Solver_CC
-	use ModelOperator_MF_SG
-	use ModelOperator_SP_V1
-	use ModelOperator_SP_V2
-	use PreConditioner_CC_MF_SG
-	use PreConditioner_CC_SP_SG
-	use PreConditioner_CC_SP_MR
-	!
-	type, extends( Solver_CC_t ) :: Solver_BICG_t
-	!
-	!> No derived properties
-	!
-	contains
-		!
-		procedure, public :: solve => solve_Solver_BICG
-		!
-	end type Solver_BICG_t
-	!
-	interface Solver_BICG_t
-		module procedure Solver_BICG_ctor
-	end interface Solver_BICG_t
-	!
+    !
+    use Solver_CC
+    use ModelOperator_MF_SG
+    use ModelOperator_SP
+    use PreConditioner_CC_MF_SG
+    use PreConditioner_CC_SP_SG
+    use PreConditioner_CC_SP_MR
+    !
+    type, extends( Solver_CC_t ) :: Solver_BICG_t
+    !
+    !> No derived properties
+    !
+    contains
+        !
+        procedure, public :: solve => solve_Solver_BICG
+        !
+    end type Solver_BICG_t
+    !
+    interface Solver_BICG_t
+        module procedure Solver_BICG_ctor
+    end interface Solver_BICG_t
+    !
 contains
     !
     !> No subroutine briefing
@@ -85,7 +84,7 @@ contains
                     !
                     class is( ModelOperator_MF_SG_t )
                         !
-                        call errStop( "Solver_BICG_ctor > For MR use model_operator SP" )
+                        call errStop( "Solver_BICG_ctor > For MR use model_operator SP or SP2" )
                         !
                     class is( ModelOperator_SP_t )
                         !
@@ -118,9 +117,9 @@ contains
     subroutine solve_Solver_BICG( self, b, x )
         implicit none
         !
-        class( Solver_BICG_t ), intent(inout) :: self
-        class( Vector_t ), intent(in) :: b
-        class( Vector_t ), intent(inout) :: x
+        class( Solver_BICG_t ), intent( inout ) :: self
+        class( Vector_t ), intent( in ) :: b
+        class( Vector_t ), intent( inout ) :: x
         !
         class( Vector_t ), allocatable :: R, RT, V, T
         class( Vector_t ), allocatable :: P, PT, PH, S, ST, SH, AX
@@ -139,19 +138,19 @@ contains
             call errStop( "solve_Solver_BICG > b not allocated yet" )
         endif
         !
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, xhalf )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, xmin)
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, AX )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, R )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, RT )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, P )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, PT )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, PH )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, S )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, ST )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, SH )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, V )
-        call self%preconditioner%model_operator%metric%createVector( complex_t, x%grid_type, T )
+        allocate( xhalf, source = x )
+        allocate( xmin, source = x )
+        allocate( AX, source = x )
+        allocate( R, source = x )
+        allocate( RT, source = x )
+        allocate( P, source = x )
+        allocate( PT, source = x )
+        allocate( PH, source = x )
+        allocate( S, source = x )
+        allocate( ST, source = x )
+        allocate( SH, source = x )
+        allocate( V, source = x )
+        allocate( T, source = x )
         !
         self%iter = 1
         !
@@ -405,7 +404,7 @@ contains
         endif
         !
         deallocate( xhalf )
-        deallocate( xmin)
+        deallocate( xmin )
         deallocate( AX )
         deallocate( R )
         deallocate( RT )

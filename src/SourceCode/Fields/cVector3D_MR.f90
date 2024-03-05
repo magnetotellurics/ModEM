@@ -1841,29 +1841,36 @@ contains
         class( cVector3D_MR_t ), intent( in ) :: self
         real( kind=prec ), intent( in ) :: location(3)
         character, intent( in ) :: xyz
-        class( Vector_t ), allocatable, intent( inout ) :: interp
+        class( Vector_t ), intent( inout ) :: interp
         !
         integer :: i_sub
         class( Vector_t ), allocatable :: sub_interp
-        type( cVector3D_MR_t ), allocatable :: temp_interp_mr
+        type( cVector3D_MR_t ) :: temp_interp_mr
         !
-        !call errStop( "interpFunc_cVector3D_MR still not implemented" )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "interpFunc_cVector3D_MR > self not allocated." )
+        endif
         !
-        !> Find index of the sub_vector based on location(3) - ALWAYS THE FIRST FOR NOW
+        if( .NOT. interp%is_allocated ) then
+            call errStop( "interpFunc_cVector3D_MR > interp not allocated." )
+        endif
+        !
+        !> Find index of the sub_vector based on location(3) - ALWAYS THE FIRST FOR NOW ????
         i_sub = 1
+        !
+        !>
+        allocate( sub_interp, source = self%sub_vector( i_sub ) )
         !
         !> Do the interpFunc for this sub_vector
         call self%sub_vector( i_sub )%interpFunc( location, xyz, sub_interp )
         !
-        allocate( temp_interp_mr, source = self )
-        !
-        !call temp_interp_mr%zeros
+        temp_interp_mr = self
         !
         temp_interp_mr%sub_vector( i_sub ) = sub_interp
         !
-        allocate( interp, source = temp_interp_mr )
+        deallocate( sub_interp )
         !
-        deallocate( temp_interp_mr )
+        interp = temp_interp_mr
         !
     end subroutine interpFunc_cVector3D_MR
     !
@@ -2160,9 +2167,16 @@ contains
         !
         integer :: i, j
         real( kind=prec ), dimension(3) :: location
-        class( Vector_t ), allocatable :: interp
-        !
+        type( cVector3D_SG_t ) :: interp
         type( Grid3D_SG_t ) :: grid_1, grid_2
+        !
+        if( .NOT. vec_1%is_allocated ) then
+            call errStop( "setInactiveEdge_cVector3D_MR > vec_1 not allocated." )
+        endif
+        !
+        if( .NOT. vec_2%is_allocated ) then
+            call errStop( "setInactiveEdge_cVector3D_MR > vec_2 not allocated." )
+        endif
         !
         grid_1 = vec_1%grid
         grid_2 = vec_2%grid
@@ -2173,9 +2187,11 @@ contains
             !> yes, use vec_1 to compute vertical position
             location(3) = grid_1%z_edge( vec_1%nz + 1 )
             !
+            interp = cVector3D_SG_t( grid_1, vec_1%grid_type )
+            !
             !> fill in inactive edges (top boundary) of vec_2 first x-edges
             do i = 1, vec_2%nx
-                do j = 1, vec_2%ny+1
+                do j = 1, vec_2%ny + 1
                     !
                     !> these are supposed to be coordinates of centers of x-edges
                     !> in vec_2, but at bottom of vec_1
@@ -2186,13 +2202,13 @@ contains
                     !> interpolate to location (in vec_1 grid) and store in top x/y layer of vec_2
                     call vec_1%interpFunc( location, 'x', interp )
                     !
-                    vec_2%x(i,j,1) = vec_1%dotProd( interp )
+                    vec_2%x( i, j, 1 ) = vec_1%dotProd( interp )
                     !
                 enddo
             enddo
             !
             !  then y-edges
-            do i = 1, vec_2%nx+1
+            do i = 1, vec_2%nx + 1
                 do j = 1, vec_2%ny
                     !
                     !> these are supposed to be coordinates of centers of y-edges
@@ -2204,11 +2220,11 @@ contains
                     !> interpolate to location (in vec_1 grid) and store in top x/y layer of vec_2
                     call vec_1%interpFunc( location, 'y', interp )
                     !
-                    vec_2%y(i,j,1) = vec_1%dotProd( interp )
+                    vec_2%y( i, j, 1 ) = vec_1%dotProd( interp )
                     !
                 enddo
             enddo
-        !
+            !
         !> vec_2 is coarser
         else
             !If vec_2 is coarser
@@ -2233,7 +2249,7 @@ contains
                     !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
                     call vec_2%interpFunc( location, 'x', interp )
                     !
-                    vec_1%x( i, j, vec_1%nz ) = vec_2%dotProd( interp )
+                    vec_1%x( i, j, vec_1%nz + 1 ) = vec_2%dotProd( interp )
                     !
                 enddo
             enddo
@@ -2251,7 +2267,7 @@ contains
                     !> interpolate to location (in vec_2 grid) and store in top x/y layer of vec_1
                     call vec_2%interpFunc( location, 'y', interp )
                     !
-                    vec_1%y( i, j, vec_1%nz+1 ) = vec_2%dotProd( interp )
+                    vec_1%y( i, j, vec_1%nz + 1 ) = vec_2%dotProd( interp )
                     !
                 enddo
             enddo

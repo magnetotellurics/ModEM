@@ -63,7 +63,7 @@ module Vector
             class( Vector_t ), intent( in ) :: self
             real( kind=prec ), intent( in ) :: location(3)
             character, intent( in ) :: xyz
-            class( Vector_t ), allocatable, intent( inout ) :: interp
+            class( Vector_t ), intent( inout ) :: interp
         end subroutine interface_interp_func_vector
         !
         !> No interface subroutine briefing
@@ -165,3 +165,4 @@ contains
     end subroutine interior_Vector
     !
 end module Vector
+!
