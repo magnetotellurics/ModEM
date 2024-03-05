@@ -1548,13 +1548,13 @@ contains
                                 allocate(yC(size(grid%dy) + 1))
                                 allocate(zC(size(grid%dz) + 1))
                                 !
-                                xC = CumSum(grid%del_x)
-                                yC = CumSum([0._prec, grid%dy])
-                                zC = CumSum([0._prec, grid%dz])
+                                xC = CumSum(grid%del_x)          ! grid%xCenter
+                                yC = CumSum([0._prec, grid%dy])  ! grid%yEdge
+                                zC = CumSum([0._prec, grid%dz])  ! grid%zEdge
                                 !
                             case("y")
                                 !
-                                allocate(xC(size(grid%dx) + 1))
+                                allocate(xC(size(grid%dx) + 1))   !   etc.
                                 allocate(yC(size(grid%del_y)))
                                 allocate(zC(size(grid%dz)))
                                 
@@ -1625,7 +1625,7 @@ contains
                 !
                 xC = xC + grid%ox
                 yC = yC + grid%oy
-                zC = zC - sum(grid%dz(1:grid%nzAir)) - grid%oz
+                zC = zC - sum( grid%dz(1:grid%nzAir) ) + grid%oz
                 !
             class default
                 call errStop( "interpFunc_rVector3D_SG > Undefined grid" )

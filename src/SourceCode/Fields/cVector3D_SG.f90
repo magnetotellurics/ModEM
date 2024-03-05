@@ -1673,7 +1673,7 @@ contains
                 !
                 xC = xC + grid%ox
                 yC = yC + grid%oy
-                zC = zC - sum( grid%dz(1:grid%nzAir) ) - grid%oz
+                zC = zC - sum( grid%dz(1:grid%nzAir) ) + grid%oz
                 !
             class default
                 call errStop( "interpFunc_cVector3D_SG > Undefined grid" )

@@ -130,6 +130,7 @@ contains
         else
             call errStop( "Grid3D_MR_t_ctor > n_grids equal 0" )
         endif
+        !call self%write()
         !
     end function Grid3D_MR_t_ctor
     !
@@ -255,19 +256,20 @@ contains
         self%sub_grid(k)%dy = Dy
         self%sub_grid(k)%dz = Dz
         !
-        ! Origin correction for spherical grid
-        if( i1 < nz_air ) then
+        ! Origin correction
+        self%sub_grid(k)%ox = self%ox
+        self%sub_grid(k)%oy = self%oy
+        if( i2 < nz_air ) then
             !
             !> Whole sub-grid in the air
-            self%sub_grid(k)%oz = sum( self%dz(i2 + 1 : self%nzAir) )
+            self%sub_grid(k)%oz =  self%oz -1 * sum( self%dz(i2 + 1 : self%nzAir) )
             !
         elseif( i1 > self%nzAir + 1 ) then
             !
-            self%sub_grid(k)%oz = -1.0 * &
-            sum( self%dz(self%nzAir + 1 : i1 - 1) )
+            self%sub_grid(k)%oz = self%oz + sum( self%dz(self%nzAir + 1 : i1 - 1) )
             !
         else
-            self%sub_grid(k)%oz = 0.0
+            self%sub_grid(k)%oz = self%oz
         endif
         !
         call self%sub_grid(k)%setup
@@ -745,6 +747,9 @@ contains
         enddo
         !
         call self%setupMR
+        !write(*,*) '****************** Air Layers Added to Grid ************************'
+        !call self%write()
+
         !
     end subroutine updateAirLayers_Grid3D_MR
     !
@@ -856,6 +861,7 @@ contains
         write( *, * ) "    dx, dy, dz: ", size( self%dx ), size( self%dy ), size( self%dz )
         !
         do i = 1, self%n_grids
+            write(*,*) 'Subgrid # ',i
             call self%sub_grid(i)%write
         enddo
         !
