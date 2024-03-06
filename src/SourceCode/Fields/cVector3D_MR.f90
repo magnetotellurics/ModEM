@@ -2276,8 +2276,8 @@ contains
             !
         endif
         !
-		! HERE THE PROGRAM BREAKS IN MEMORY BECAUSE OF interp !!!!
-		!
+        ! HERE THE PROGRAM BREAKS IN MEMORY BECAUSE OF interp !!!!
+        !
     end subroutine setInactiveEdge_cVector3D_MR
     !
     !> Now inputs are an SG vector (vec) and and SG scalar (scalar) and a logical "topCoarser"
