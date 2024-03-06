@@ -2237,6 +2237,8 @@ contains
             !location(3) = R_ZERO
             location(3) = grid_1%z_edge( vec_1%nz + 1 )
             !
+            interp = cVector3D_SG_t( grid_2, vec_2%grid_type )
+            !
             do i = 1, vec_1%nx
                 do j = 1, vec_1%ny + 1
                     !
@@ -2274,6 +2276,8 @@ contains
             !
         endif
         !
+		! HERE THE PROGRAM BREAKS IN MEMORY BECAUSE OF interp !!!!
+		!
     end subroutine setInactiveEdge_cVector3D_MR
     !
     !> Now inputs are an SG vector (vec) and and SG scalar (scalar) and a logical "topCoarser"
