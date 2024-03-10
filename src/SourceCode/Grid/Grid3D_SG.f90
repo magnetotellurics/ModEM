@@ -94,7 +94,7 @@ contains
         !
         call self%setup
         !
-        call self%write
+        !call self%write
     end function Grid3D_SG_t_ctor_n_d
     !
     !> Deconstructor routine:

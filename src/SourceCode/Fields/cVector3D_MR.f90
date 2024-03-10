@@ -1,4 +1,4 @@
-!
+
 !> This module specializes the abstract Vector3D_real class for
 !> real vector fields on a multi-resolution staggered grid.
 !
@@ -937,7 +937,7 @@ contains
         logical, intent( in ), optional :: interior_only
         !
         integer :: i
-        logical :: is_interior_only
+        logical :: is_interior_only,top_coarser
         class( Scalar_t ), allocatable :: aux_scalar
         !
         if( .NOT. self%is_allocated ) then
@@ -954,6 +954,8 @@ contains
         !
         allocate( cell_out, source = cScalar3D_MR_t( self%grid, CELL ) )
         !
+        call cell_out%zeros()
+        !
         select type( cell_out )
             !
             class is( cScalar3D_MR_t )
@@ -965,18 +967,30 @@ contains
                         !> loop over INTERFACES (one less than n_grids) and fill in inactive edges
                         do i = 1, self%grid%n_grids-1
                             !
-                            call setInactiveEdge_cVector3D_MR( self%sub_vector(i), self%sub_vector(i+1) )
+                            !call setInactiveEdge_cVector3D_MR( self%sub_vector(i), self%sub_vector(i+1) )
+                            top_coarser = self%sub_vector(i)%grid%nx .LT.  &
+                            self%sub_vector(i+1)%grid%nx
+!
+                            if( top_coarser ) then
+                                 call addEdgesFromAdjacentGrid_cVector3D_MR( self%sub_vector(i), &
+                                          cell_out%sub_scalar(i+1), top_coarser )
+                             else
+                                 call addCellFromAdjacentGrid_cVector3D_MR( self%sub_vector(i+1), &
+                                       cell_out%sub_scalar(i), top_coarser )
+                             endif
                             !
                         enddo
                         !
-                        !> loop over sub-vectors and sum edges onto cells
+                        !> loop over sub-vectors and sum edges onto cells -- already included interface edges
+                        !    so need to add to cell_out, not start over  -- if for aome technical reason this does
+                        !     not work, need to find a work around -- old way w/ aux_scalar is not an option
                         do i = 1, self%grid%n_grids
                             !
-                            call self%sub_vector(i)%sumEdges( aux_scalar )
+                            call self%sub_vector(i)%sumEdges( cell_out%sub_scalar(i) )
                             !
-                            cell_out%sub_scalar(i) = aux_scalar
+                            !cell_out%sub_scalar(i) = aux_scalar
                             !
-                            deallocate( aux_scalar )
+                            !deallocate( aux_scalar )
                             !
                         enddo
                         !
@@ -2341,4 +2355,64 @@ contains
         !
     end subroutine addCellFromAdjacentGrid_cVector3D_MR
     !
+    subroutine addEdgesFromAdjacentGrid(CoarseGridVector,FineGridScalar,topCoarser)
+    !    Again inputs are an SG vector (vec) and and SG scalar (scalar) and a logical "topCoarser"
+    !      the vector is always on the coarser grid -- sitting above or below the finer grid
+    !       depending on the value of topCoarser (obviously if .true., the vector is defined on
+    !        the upper, coarser subgrid).   In this routine the scalar (fine grid)
+    !        will be modified, using values from the vector (coarse grid, not modified)
+    !    This is the routine needed for dPDEmappingT
+
+     implicit none
+    !
+         type( cVector3D_SG_t ), intent( in ) :: CoarseGridVector
+         type( cScalar3D_SG_t ), intent( inout ) :: FineGridScalar
+         logical, intent( in ) :: topCoarser
+         !
+         integer :: i, j, k, kFine, iFine(2), jFine(2), ii, jj
+
+        if( topCoarser ) then
+            !   vertical layer index for fine scalar/vector
+            kFine = 1
+            k = CoarseGridVector%grid%nz+1
+        else
+            kFine = FineGridScalar%grid%nz
+            k = 1
+       endif
+ 
+         ! add contribution from coarse grid x-edges on interface to fine grid cells
+       do i = 1,CoarseGridvector%nx
+            iFine(2) = 2*i
+            iFine(1) = iFine(2)-1
+            !   exclude boundary of MR grid
+            do j = 2,CoarseGridVector%ny
+                jFine(1) = (j-1)*2
+                jFine(2) = jFine(1)+1
+                do ii = 1,2
+                   do jj  = 1,2
+                      FineGridScalar%v(iFine(ii),jFine(jj),kFine) =  &
+                         FineGridScalar%v(iFine(ii),jFine(jj),kFine) + CoarseGridVector%x(i,j,k)
+                   enddo
+                enddo
+             enddo
+          enddo
+         ! add contribution from coarse grid y-edges to in interface to fine grid cells
+         do j = 1,CoarseGridVector%ny
+             jFine(2) = 2*j
+             jFine(1) = jFine(2)-1
+             !   exclude boundary of MR grid
+             do i = 2,CoarseGridVector%nx
+                iFine(1) = (i-1)*2
+                iFine(2) = iFine(1)+1
+                do ii = 1,2
+                   do jj  = 1,2
+                      FineGridScalar%v(iFine(ii),jFine(jj),kFine) =  &
+                         FineGridScalar%v(iFine(ii),jFine(jj),kFine) + CoarseGridVector%y(i,j,k)
+                   enddo
+                enddo
+             enddo
+          enddo
+          !
+          end subroutine addEdgesFromAdjacentGrid
+
 end module cVector3D_MR
