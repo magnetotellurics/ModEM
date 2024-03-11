@@ -509,17 +509,17 @@ contains
                         z_zend = size(self%z, 3)
                         !
                         cell_out%v = self%x(:,1:x_yend-1,1:x_zend-1) + &
-                                          self%x(:,2:x_yend,1:x_zend-1)   + &
-                                          self%x(:,1:x_yend-1,2:x_zend)   + &
-                                          self%x(:,2:x_yend,2:x_zend)     + &
-                                          self%y(1:y_xend-1,:,1:y_zend-1) + &
-                                          self%y(2:y_xend,:,1:y_zend-1)   + &
-                                          self%y(1:y_xend-1,:,2:y_zend)   + &
-                                          self%y(2:y_xend,:,2:y_zend)     + &
-                                          self%z(1:z_xend-1,1:z_yend-1,:) + &
-                                          self%z(2:z_xend,1:z_yend-1,:)   + &
-                                          self%z(1:z_xend-1,2:z_yend,:)   + &
-                                          self%z(2:z_xend,2:z_yend,:)
+                                     self%x(:,2:x_yend,1:x_zend-1)   + &
+                                     self%x(:,1:x_yend-1,2:x_zend)   + &
+                                     self%x(:,2:x_yend,2:x_zend)     + &
+                                     self%y(1:y_xend-1,:,1:y_zend-1) + &
+                                     self%y(2:y_xend,:,1:y_zend-1)   + &
+                                     self%y(1:y_xend-1,:,2:y_zend)   + &
+                                     self%y(2:y_xend,:,2:y_zend)     + &
+                                     self%z(1:z_xend-1,1:z_yend-1,:) + &
+                                     self%z(2:z_xend,1:z_yend-1,:)   + &
+                                     self%z(1:z_xend-1,2:z_yend,:)   + &
+                                     self%z(2:z_xend,2:z_yend,:)
                         !
                     case( FACE )
                         !
@@ -528,8 +528,8 @@ contains
                         z_xend = size(self%z, 1)
                         !
                         cell_out%v = self%x(1:x_xend-1,:,:) + self%x(2:x_xend,:,:) + &
-                                          self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:) + &
-                                          self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
+                                     self%y(:,1:y_yend-1,:) + self%y(:,2:y_yend,:) + &
+                                     self%z(:,:,1:z_zend-1) + self%z(:,:,2:z_zend)
                         !
                     case default
                         call errStop( "sumEdge_cVector3D_SG: undefined self%grid_type" )

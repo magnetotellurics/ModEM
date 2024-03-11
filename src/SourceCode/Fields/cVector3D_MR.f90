@@ -1033,30 +1033,30 @@ contains
                     case( EDGE )
                         !
                         !> loop over INTERFACES (one less than n_grids) and fill in inactive edges
-                        do i = 1, self%grid%n_grids-1
+                        do i = 1, self%grid%n_grids - 1
                             !
                             !call setInactiveEdge_cVector3D_MR( self%sub_vector(i), self%sub_vector(i+1) )
                             top_coarser = self%sub_vector(i)%grid%nx .LT.  &
                             self%sub_vector(i+1)%grid%nx
-!
+                            !
                             if( top_coarser ) then
-                                 call addEdgesFromAdjacentGrid_cVector3D_MR( self%sub_vector(i), &
-                                          cell_out%sub_scalar(i+1), top_coarser )
-                             else
-                                 call addCellFromAdjacentGrid_cVector3D_MR( self%sub_vector(i+1), &
-                                       cell_out%sub_scalar(i), top_coarser )
-                             endif
+                                call addEdgesFromAdjacentGrid_cVector3D_MR( self%sub_vector(i), &
+                                cell_out%sub_scalar(i+1), top_coarser )
+                            else
+                                call addCellFromAdjacentGrid_cVector3D_MR( self%sub_vector(i+1), &
+                                cell_out%sub_scalar(i), top_coarser )
+                            endif
                             !
                         enddo
                         !
                         !> loop over sub-vectors and sum edges onto cells -- already included interface edges
-                        !    so need to add to cell_out, not start over  -- if for aome technical reason this does
-                        !     not work, need to find a work around -- old way w/ aux_scalar is not an option
+                        !> so need to add to cell_out, not start over  -- if for some technical reason this does
+                        !> not work, need to find a work around -- old way w/ aux_scalar is not an option
                         do i = 1, self%grid%n_grids
                             !
                             call self%sub_vector(i)%sumEdges( aux_scalar )
                             !
-                            cell_out%sub_scalar(i) = aux_scalar
+                            call cell_out%sub_scalar(i)%add( aux_scalar )
                             !
                             deallocate( aux_scalar )
                             !
@@ -1077,6 +1077,8 @@ contains
         end select
         !
     end subroutine sumEdge_cVector3D_MR
+    !
+    !> No subroutine briefing
     !
     subroutine sumEdgeVTI_cVector3D_MR( self, cell_h_out, cell_v_out, interior_only )
         implicit none
@@ -2430,7 +2432,7 @@ contains
     !> will be modified, using values from the vector (coarse grid, not modified)
     !> This is the routine needed for dPDEmappingT
     !
-    subroutine addEdgesFromAdjacentGrid_cVector3D_MR(CoarseGridVector,FineGridScalar,topCoarser)
+    subroutine addEdgesFromAdjacentGrid_cVector3D_MR( CoarseGridVector, FineGridScalar, topCoarser )
         implicit none
         !
         type( cVector3D_SG_t ), intent( in ) :: CoarseGridVector
