@@ -96,6 +96,7 @@ module cVector3D_MR
     end interface cVector3D_MR_t
     !
     public :: setInactiveEdge_cVector3D_MR
+    public :: addEdgesFromAdjacentGrid_cVector3D_MR
     public :: addCellFromAdjacentGrid_cVector3D_MR
     !
 contains
@@ -927,6 +928,73 @@ contains
         !
     end subroutine zeros_cVector3D_MR
     !
+    !> Again inputs are an SG vector (vec) and and SG scalar (scalar) and a logical "topCoarser"
+    !> the vector is always on the coarser grid -- sitting above or below the finer grid
+    !> depending on the value of topCoarser (obviously if .true., the vector is defined on
+    !> the upper, coarser subgrid).   In this routine the scalar (fine grid)
+    !> will be modified, using values from the vector (coarse grid, not modified)
+    !> This is the routine needed for dPDEmappingT
+    !
+    subroutine addEdgesFromAdjacentGrid( CoarseGridVector, FineGridScalar, topCoarser )
+        implicit none
+        !
+        class( cVector3D_SG_t ), allocatable, intent( in ) :: CoarseGridVector
+        class( cScalar3D_SG_t ), allocatable, intent( inout ) :: FineGridScalar
+        logical, intent( in ) :: topCoarser
+        !
+        integer :: i, j, ii, jj, k, iFine(2), jFine(2), kFine
+        !
+        if( topCoarser ) then
+            !   vertical layer index for fine scalar/vector
+            kFine = 1
+            k = CoarseGridVector%grid%nz+1
+        else
+            kFine = FineGridScalar%grid%nz
+            k = 1
+        endif
+        !
+        !> add contribution from coarse grid x-edges on interface to fine grid cells
+        do i = 1, CoarseGridvector%nx
+            iFine(2) = 2 * i
+            iFine(1) = iFine(2)-1
+            ! exclude boundary of MR grid
+            do j = 2,CoarseGridVector%ny
+                !
+                jFine(1) = (j-1) * 2
+                jFine(2) = jFine(1) + 1
+                !
+                do ii = 1, 2
+                    do jj  = 1, 2
+                        FineGridScalar%v(iFine(ii),jFine(jj),kFine) =  &
+                        FineGridScalar%v(iFine(ii),jFine(jj),kFine) + CoarseGridVector%x(i,j,k)
+                    enddo
+                enddo
+                !
+            enddo
+        enddo
+        !
+        !> add contribution from coarse grid y-edges to in interface to fine grid cells
+        do j = 1,CoarseGridVector%ny
+            !
+            jFine(2) = 2 * j
+            jFine(1) = jFine(2)-1
+            !> exclude boundary of MR grid
+            do i = 2, CoarseGridVector%nx
+                !
+                iFine(1) = (i-1)*2
+                jFine(2) = jFine(1) + 1
+                !
+                do ii = 1, 2
+                    do jj  = 1, 2
+                        FineGridScalar%v( iFine(ii), jFine(jj), kFine ) =  &
+                        FineGridScalar%v( iFine(ii), jFine(jj), kFine ) + CoarseGridVector%y(i,j,k)
+                    enddo
+                enddo
+            enddo
+        enddo
+        !
+    end subroutine addEdgesFromAdjacentGrid
+    !
     !> No subroutine briefing
     !
     subroutine sumEdge_cVector3D_MR( self, cell_out, interior_only )
@@ -986,11 +1054,11 @@ contains
                         !     not work, need to find a work around -- old way w/ aux_scalar is not an option
                         do i = 1, self%grid%n_grids
                             !
-                            call self%sub_vector(i)%sumEdges( cell_out%sub_scalar(i) )
+                            call self%sub_vector(i)%sumEdges( aux_scalar )
                             !
-                            !cell_out%sub_scalar(i) = aux_scalar
+                            cell_out%sub_scalar(i) = aux_scalar
                             !
-                            !deallocate( aux_scalar )
+                            deallocate( aux_scalar )
                             !
                         enddo
                         !
@@ -2355,64 +2423,73 @@ contains
         !
     end subroutine addCellFromAdjacentGrid_cVector3D_MR
     !
-    subroutine addEdgesFromAdjacentGrid(CoarseGridVector,FineGridScalar,topCoarser)
-    !    Again inputs are an SG vector (vec) and and SG scalar (scalar) and a logical "topCoarser"
-    !      the vector is always on the coarser grid -- sitting above or below the finer grid
-    !       depending on the value of topCoarser (obviously if .true., the vector is defined on
-    !        the upper, coarser subgrid).   In this routine the scalar (fine grid)
-    !        will be modified, using values from the vector (coarse grid, not modified)
-    !    This is the routine needed for dPDEmappingT
-
-     implicit none
+    !> Again inputs are an SG vector (vec) and and SG scalar (scalar) and a logical "topCoarser"
+    !> the vector is always on the coarser grid -- sitting above or below the finer grid
+    !> depending on the value of topCoarser (obviously if .true., the vector is defined on
+    !> the upper, coarser subgrid).   In this routine the scalar (fine grid)
+    !> will be modified, using values from the vector (coarse grid, not modified)
+    !> This is the routine needed for dPDEmappingT
     !
-         type( cVector3D_SG_t ), intent( in ) :: CoarseGridVector
-         type( cScalar3D_SG_t ), intent( inout ) :: FineGridScalar
-         logical, intent( in ) :: topCoarser
-         !
-         integer :: i, j, k, kFine, iFine(2), jFine(2), ii, jj
-
+    subroutine addEdgesFromAdjacentGrid_cVector3D_MR(CoarseGridVector,FineGridScalar,topCoarser)
+        implicit none
+        !
+        type( cVector3D_SG_t ), intent( in ) :: CoarseGridVector
+        type( cScalar3D_SG_t ), intent( inout ) :: FineGridScalar
+        logical, intent( in ) :: topCoarser
+        !
+        integer :: i, j, k, kFine, iFine(2), jFine(2), ii, jj
+        !
+        !> vertical layer index for fine scalar/vector
         if( topCoarser ) then
-            !   vertical layer index for fine scalar/vector
             kFine = 1
             k = CoarseGridVector%grid%nz+1
         else
             kFine = FineGridScalar%grid%nz
             k = 1
-       endif
- 
-         ! add contribution from coarse grid x-edges on interface to fine grid cells
-       do i = 1,CoarseGridvector%nx
-            iFine(2) = 2*i
+        endif
+        !
+        !> add contribution from coarse grid x-edges on interface to fine grid cells
+        do i = 1,CoarseGridvector%nx
+            !
+            iFine(2) = 2 * i
             iFine(1) = iFine(2)-1
-            !   exclude boundary of MR grid
-            do j = 2,CoarseGridVector%ny
+            !
+            !> exclude boundary of MR grid
+            do j = 2, CoarseGridVector%ny
+                !
                 jFine(1) = (j-1)*2
                 jFine(2) = jFine(1)+1
-                do ii = 1,2
-                   do jj  = 1,2
-                      FineGridScalar%v(iFine(ii),jFine(jj),kFine) =  &
-                         FineGridScalar%v(iFine(ii),jFine(jj),kFine) + CoarseGridVector%x(i,j,k)
-                   enddo
+                !
+                do ii = 1, 2
+                    do jj  = 1, 2
+                        FineGridScalar%v(iFine(ii),jFine(jj),kFine) =  &
+                        FineGridScalar%v(iFine(ii),jFine(jj),kFine) + CoarseGridVector%x(i,j,k)
+                    enddo
                 enddo
-             enddo
-          enddo
-         ! add contribution from coarse grid y-edges to in interface to fine grid cells
-         do j = 1,CoarseGridVector%ny
-             jFine(2) = 2*j
-             jFine(1) = jFine(2)-1
-             !   exclude boundary of MR grid
-             do i = 2,CoarseGridVector%nx
+            enddo
+        enddo
+        !
+        !> add contribution from coarse grid y-edges to in interface to fine grid cells
+        do j = 1,CoarseGridVector%ny
+            !
+            jFine(2) = 2*j
+            jFine(1) = jFine(2)-1
+            !
+            !> exclude boundary of MR grid
+            do i = 2,CoarseGridVector%nx
+                !
                 iFine(1) = (i-1)*2
                 iFine(2) = iFine(1)+1
                 do ii = 1,2
-                   do jj  = 1,2
-                      FineGridScalar%v(iFine(ii),jFine(jj),kFine) =  &
-                         FineGridScalar%v(iFine(ii),jFine(jj),kFine) + CoarseGridVector%y(i,j,k)
-                   enddo
+                    do jj  = 1,2
+                        FineGridScalar%v(iFine(ii),jFine(jj),kFine) =  &
+                        FineGridScalar%v(iFine(ii),jFine(jj),kFine) + CoarseGridVector%y(i,j,k)
+                    enddo
                 enddo
-             enddo
-          enddo
+            enddo
+        enddo
           !
-          end subroutine addEdgesFromAdjacentGrid
-
+    end subroutine addEdgesFromAdjacentGrid_cVector3D_MR
+    !
 end module cVector3D_MR
+!
