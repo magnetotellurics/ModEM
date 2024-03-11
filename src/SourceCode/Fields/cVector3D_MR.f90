@@ -1005,7 +1005,7 @@ contains
         logical, intent( in ), optional :: interior_only
         !
         integer :: i
-        logical :: is_interior_only,top_coarser
+        logical :: is_interior_only, top_coarser
         class( Scalar_t ), allocatable :: aux_scalar
         !
         if( .NOT. self%is_allocated ) then
@@ -1022,7 +1022,7 @@ contains
         !
         allocate( cell_out, source = cScalar3D_MR_t( self%grid, CELL ) )
         !
-        call cell_out%zeros()
+        call cell_out%zeros
         !
         select type( cell_out )
             !
@@ -1036,7 +1036,7 @@ contains
                         do i = 1, self%grid%n_grids - 1
                             !
                             !call setInactiveEdge_cVector3D_MR( self%sub_vector(i), self%sub_vector(i+1) )
-                            top_coarser = self%sub_vector(i)%grid%nx .LT.  &
+                            top_coarser = self%sub_vector(i)%grid%nx .LT. &
                             self%sub_vector(i+1)%grid%nx
                             !
                             if( top_coarser ) then
