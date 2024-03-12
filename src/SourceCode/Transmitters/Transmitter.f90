@@ -369,9 +369,7 @@ module Transmitter
             !call eSens(1)%v%getReal( real_sens )
             !
             !> Get dsigma from dPDEmapping_T, using first position of eSens
-            write(*,*) 'about to enter PDEmapping'
             call sigma%dPDEmapping_T( eSens(1)%v, dsigma )
-            write(*,*) 'returned from PDEmapping'
             !
             !deallocate( real_sens )
             !

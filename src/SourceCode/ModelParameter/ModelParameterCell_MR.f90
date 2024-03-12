@@ -517,9 +517,7 @@ contains
         !sigma_cell_al = rScalar3D_MR_t( self%metric%grid, CELL )
         call self%metric%createScalar( real_t, CELL, sigma_cell_al )    !SHOULD BE GENERIC FOR sumEdges...
         !
-        write(*,*) 'about to enter edgeToCell'
         call self%edgeToCell( e_vec, sigma_cell_al )                    !... HERE!
-        !write(*,*) 'returned from edgeToCell'
         !
         !> IMPLEMENT A GETREAL ROUTINE FOR THIS ????
         select type( sigma_cell_al )

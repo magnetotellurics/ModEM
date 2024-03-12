@@ -902,12 +902,6 @@ contains
                         self%y = self%y + rhs%y
                         self%z = self%z + rhs%z
                         !
-                    class is( rScalar3D_SG_t )
-                        !
-                        self%x = self%x + rhs%v
-                        self%y = self%y + rhs%v
-                        self%z = self%z + rhs%v
-                        !
                     class default
                         call errStop( "add_rVector3D_SG > Undefined compound rhs" )
                         !
@@ -918,10 +912,6 @@ contains
                 select type( rhs )
                     !
                     class is( rVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v + rhs%s_v
-                        !
-                    class is( rScalar3D_SG_t )
                         !
                         self%s_v = self%s_v + rhs%s_v
                         !
@@ -993,12 +983,6 @@ contains
                         self%y = self%y - rhs%y
                         self%z = self%z - rhs%z
                         !
-                    class is( rScalar3D_SG_t )
-                        !
-                        self%x = self%x - rhs%v
-                        self%y = self%y - rhs%v
-                        self%z = self%z - rhs%v
-                        !
                     class default
                         call errStop( "subField_rVector3D_SG > Undefined rhs" )
                         !
@@ -1009,10 +993,6 @@ contains
                 select type( rhs )
                     !
                     class is( rVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v - rhs%s_v
-                        !
-                    class is( rScalar3D_SG_t )
                         !
                         self%s_v = self%s_v - rhs%s_v
                         !
@@ -1058,12 +1038,6 @@ contains
                         self%y = c1 * self%y + c2 * rhs%y
                         self%z = c1 * self%z + c2 * rhs%z
                         !
-                    class is( rScalar3D_SG_t )
-                        !
-                        self%x = c1 * self%x + c2 * rhs%v
-                        self%y = c1 * self%y + c2 * rhs%v
-                        self%z = c1 * self%z + c2 * rhs%v
-                        !
                     class default
                         call errStop( "linComb_rVector3D_SG > Undefined rhs" )
                         !
@@ -1074,10 +1048,6 @@ contains
                 select type( rhs )
                     !
                     class is( rVector3D_SG_t )
-                        !
-                        self%s_v = c1 * self%s_v + c2 * rhs%s_v
-                        !
-                    class is( rScalar3D_SG_t )
                         !
                         self%s_v = c1 * self%s_v + c2 * rhs%s_v
                         !
@@ -1170,12 +1140,6 @@ contains
                         self%y = self%y * rhs%y
                         self%z = self%z * rhs%z
                         !
-                    class is( rScalar3D_SG_t )
-                        !
-                        self%x = self%x * rhs%v
-                        self%y = self%y * rhs%v
-                        self%z = self%z * rhs%v
-                        !
                     class default
                         call errStop( "multByField_rVector3D_SG > Undefined rhs" )
                         !
@@ -1186,10 +1150,6 @@ contains
                 select type( rhs )
                     !
                     class is( rVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v * rhs%s_v
-                        !
-                    class is( rScalar3D_SG_t )
                         !
                         self%s_v = self%s_v * rhs%s_v
                         !
@@ -1242,12 +1202,6 @@ contains
                         diag_mult_temp%y = self%y * rhs%y
                         diag_mult_temp%z = self%z * rhs%z
                         !
-                    class is( rScalar3D_SG_t )
-                        !
-                        diag_mult_temp%x = self%x * rhs%v
-                        diag_mult_temp%y = self%y * rhs%v
-                        diag_mult_temp%z = self%z * rhs%v
-                        !
                     class default
                         call errStop( "diagMult_rVector3D_SG > Undefined rhs" )
                         !
@@ -1258,10 +1212,6 @@ contains
                 select type( rhs )
                     !
                     class is( rVector3D_SG_t )
-                        !
-                        diag_mult_temp%s_v = self%s_v * rhs%s_v
-                        !
-                    class is( rScalar3D_SG_t )
                         !
                         diag_mult_temp%s_v = self%s_v * rhs%s_v
                         !
@@ -1309,12 +1259,6 @@ contains
                         self%y = self%y + cvalue * rhs%y
                         self%z = self%z + cvalue * rhs%z
                         !
-                    class is( rScalar3D_SG_t )
-                        !
-                        self%x = self%x + cvalue * rhs%v
-                        self%y = self%y + cvalue * rhs%v
-                        self%z = self%z + cvalue * rhs%v
-                        !
                     class default
                         call errStop( "multAdd_rVector3D_SG > Undefined rhs" )
                         !
@@ -1325,10 +1269,6 @@ contains
                 select type( rhs )
                     !
                     class is( rVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v + cvalue * rhs%s_v
-                        !
-                    class is( rScalar3D_SG_t )
                         !
                         self%s_v = self%s_v + cvalue * rhs%s_v
                         !
@@ -1381,12 +1321,6 @@ contains
                         cvalue = cvalue + sum( copy%y * rhs%y )
                         cvalue = cvalue + sum( copy%z * rhs%z )
                         !
-                    class is( rScalar3D_SG_t )
-                        !
-                        cvalue = cvalue + sum( copy%x * rhs%v )
-                        cvalue = cvalue + sum( copy%y * rhs%v )
-                        cvalue = cvalue + sum( copy%z * rhs%v )
-                        !
                     class default
                         call errStop( "dotProd_rVector3D_SG > Undefined rhs" )
                         !
@@ -1397,10 +1331,6 @@ contains
                 select type( rhs )
                     !
                     class is( rVector3D_SG_t )
-                        !
-                        cvalue = cvalue + sum( copy%s_v * rhs%s_v )
-                        !
-                    class is( rScalar3D_SG_t )
                         !
                         cvalue = cvalue + sum( copy%s_v * rhs%s_v )
                         !
@@ -1473,12 +1403,6 @@ contains
                         self%y = self%y / rhs%y
                         self%z = self%z / rhs%z
                         !
-                    class is( rScalar3D_SG_t )
-                        !
-                        self%x = self%x / rhs%v
-                        self%y = self%y / rhs%v
-                        self%z = self%z / rhs%v
-                        !
                     class default
                         call errStop( "divByField_rVector3D_SG > Undefined rhs" )
                         !
@@ -1489,10 +1413,6 @@ contains
                 select type( rhs )
                     !
                     class is( rVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v / rhs%s_v
-                        !
-                    class is( rScalar3D_SG_t )
                         !
                         self%s_v = self%s_v / rhs%s_v
                         !
