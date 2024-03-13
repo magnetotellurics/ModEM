@@ -154,9 +154,13 @@ contains
         !
         fwd_solver_loop: do
             !
+			write( *, * ) "1"
+			!
             !> 
             call self%solver%solve( source%rhs( pol )%v, e_solution )
             !
+			write( *, * ) "2"
+			!
             do i = 1, self%solver%n_iter
                 !
                 self%relResVec( self%n_iter_actual + i ) = self%solver%relErr(i)
@@ -165,6 +169,8 @@ contains
                 !
             enddo
             !
+			write( *, * ) "3"
+			!
             !> Apply Divergence Correction if solver not converged
             if( .NOT. self%solver%converged )  then
                 !
@@ -180,11 +186,15 @@ contains
                 !
             endif
             !
+			write( *, * ) "4"
+			!
             !> Check Stop Conditions
             if( self%solver%converged .OR. ( self%iter .GE. self%max_solver_calls ) ) then
                 exit
             endif
             !
+			write( *, * ) "5"
+			!
             self%iter = self%iter + 1
             !
         enddo fwd_solver_loop
@@ -201,20 +211,34 @@ contains
             !
             call e_solution%mult( self%solver%preconditioner%model_operator%metric%v_edge )
             !
+			write( *, * ) "6"
+			!
         endif
         !
         if( source%non_zero_bc ) then
             !
+			write( *, * ) "6.1.1"
+			!
             call source%rhs( pol )%v%boundary( temp_vec )
             !
+			write( *, * ) "6.1.2"
+			!
         else
             !
+			write( *, * ) "6.2.1"
+			!
             call temp_e%boundary( temp_vec )
             !
+			write( *, * ) "6.2.2"
+			!
         endif
-        !
+		!
+		write( *, * ) "7"
+		!
         call e_solution%add( temp_vec )
-        !
+		!
+		write( *, * ) "8"
+		!
         deallocate( temp_vec )
         !
     end subroutine createESolution_ForwardSolver_IT_DC

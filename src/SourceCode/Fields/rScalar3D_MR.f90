@@ -67,8 +67,6 @@ module rScalar3D_MR
             procedure, public :: SumToNode => SumToNode_rScalar3D_MR
             !
             !> Miscellaneous
-            procedure, public :: deallOtherState => deallOtherState_rScalar3D_MR
-            !
             procedure, public :: copyFrom => copyFrom_rScalar3D_MR
             !
             procedure, public :: getReal => getReal_rScalar3D_MR
@@ -154,19 +152,23 @@ contains
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
         integer, intent( inout ) :: n_full
-        integer, dimension(:), allocatable, intent( out ) :: ind_boundary, ind_interior
-        integer, dimension(:), allocatable, intent( out ), optional :: ind_active
+        integer, allocatable, dimension(:), intent( out ) :: ind_boundary, ind_interior
+        integer, allocatable, dimension(:), intent( out ), optional :: ind_active
         logical, intent( in ), optional :: xy_in
         !
         type( rScalar3D_MR_t ) :: temp_scalar
         logical :: xy, int_only
         integer :: i, k, n_active, n_interior, n_boundaries
-        real( kind=prec ), dimension(:), allocatable :: v_1, v_2
+        real( kind=prec ), allocatable, dimension(:) :: v_1, v_2
         !
         if( .NOT. present( xy_in ) ) then
             xy = .FALSE.
         else
             xy = xy_in
+        endif
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setIndexArrays_rScalar3D_MR > self not allocated" )
         endif
         !
         temp_scalar = self
@@ -302,6 +304,10 @@ contains
         !
         integer :: n, i, i1, i2
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getFullArray_rScalar3D_MR > self not allocated" )
+        endif
+        !
         n = self%lengthFull()
         !
         allocate( array(n) )
@@ -311,7 +317,7 @@ contains
         i1 = 1
         i2 = 0
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
             n = self%sub_scalar(i)%length()
             !
@@ -333,10 +339,14 @@ contains
         !
         integer :: i, i1, i2, n
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setFullArray_rScalar3D_MR > self not allocated" )
+        endif
+        !
         i1 = 1
         i2 = 0
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
             n = self%sub_scalar(i)%length()
             i2 = i2 + n
@@ -356,9 +366,13 @@ contains
         !
         integer :: i, n
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "lengthFull_rScalar3D_MR > self not allocated" )
+        endif
+        !
         n = 0
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
             n = n + self%sub_scalar(i)%length()
             !
@@ -372,18 +386,23 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
-        real( kind=prec ), intent(in) :: c
+        real( kind=prec ), intent( in ) :: c
         !
-        integer, dimension(:), allocatable :: I
-        real( kind=prec ), dimension(:), allocatable :: v
+        integer, allocatable, dimension(:) :: I
+        !
+        real( kind=prec ), allocatable, dimension(:) :: v
         integer :: n, n_I, k
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "findFull_rScalar3D_MR > self not allocated" )
+        endif
         !
         n = self%lengthFull()
         v = self%getFullArray()
         !
         n_I = 0
         do k = 1, n
-            if(v(k) == c) n_I = n_I + 1
+            if( v(k) == c ) n_I = n_I + 1
         enddo
         !
         allocate(I(n_I))
@@ -400,7 +419,7 @@ contains
     !
     !> MRtoSG
     !
-    !> input self is of class rScalar3D_MR , output SGscalar isi of class rScalar3D_SG
+    !> input self is of class rScalar3D_MR , output SGscalar is of class rScalar3D_SG
     !> this just copies contents of an MR cell into all subdividing fine grid cells
     !
     subroutine MRtoSG_rScalar3D_MR( self, scalar_sg )
@@ -408,14 +427,18 @@ contains
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
         type( rScalar3D_SG_t ), intent( inout ) :: scalar_sg
-        !MR 
+        !
         integer :: i_grid, i, j, k, z, cs
         integer :: i1, i2, j1, j2, k1, k2
         !
-        !    I THINK THIS IS WRONG -- self%grid is an MR grid, right?? 
-        !      or does call to rScalar3D_SG work with MR grid as input???
-        !        scalar_sg = rScalar3D_SG_t( self%grid, self%grid_type )
-        !      Let's allocate scalar_sg before calling!  Might check first!
+        !> I THINK THIS IS WRONG -- self%grid is an MR grid, right????
+        !> or does call to rScalar3D_SG work with MR grid as input???
+        !> scalar_sg = rScalar3D_SG_t( self%grid, self%grid_type )
+        !> Let's allocate scalar_sg before calling!  Might check first!
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "MRtoSG_rScalar3D_MR > self not allocated" )
+        endif
         !
         select type( grid => self%grid )
             !
@@ -446,6 +469,7 @@ contains
                                 scalar_sg%v( i1:i2, j1:j2, k ) = self%sub_scalar( i_grid )%v(i,j,z)
                                 !
                             enddo
+                            !
                         enddo
                         !
                         z = z + 1
@@ -474,6 +498,10 @@ contains
         !
         integer :: i_grid
         real( kind=prec ) :: c
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "divFine_rScalar3D_MR > self not allocated" )
+        endif
         !
         select type( grid => self%grid )
             !
@@ -543,7 +571,6 @@ contains
                                     i1 = (i-1) * cs + 1
                                     i2 = i * cs
                                     !
-
                                     do j = 1, self%sub_scalar( i_grid )%ny
                                         !
                                         j1 = (j-1) * cs + 1
@@ -609,6 +636,10 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: c_array
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setAllBoundary_rScalar3D_MR > self not allocated" )
+        endif
+        !
         c_array = self%getArray()
         !
         c_array( self%indBoundary() ) = real( cvalue, kind=prec )
@@ -630,9 +661,11 @@ contains
         integer :: i
         logical :: int_only_p
         !
-        !call self%switchStoreState( compound )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setOneBoundary_rScalar3D_MR > self not allocated" )
+        endif
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
             if( .NOT. present(int_only)) then
                  int_only_p = .FALSE.
@@ -721,6 +754,10 @@ contains
         !
         integer :: field_length
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "length_rScalar3D_MR > self not allocated" )
+        endif
+        !
         field_length = size( self%indActive() )
         !
     end function length_rScalar3D_MR
@@ -732,12 +769,16 @@ contains
         !
         integer :: i
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "zeros_rScalar3D_MR > self not allocated" )
+        endif
+        !
         select type( grid => self%grid )
             !
             class is( Grid3D_MR_t )
                 !
                 do i = 1, grid%n_grids
-                    call self%sub_scalar(i)%zeros()
+                    call self%sub_scalar(i)%zeros
                 enddo
                 !
             class default
@@ -776,38 +817,26 @@ contains
             call errStop( "add_rScalar3D_MR > rhs not allocated." )
         endif
         !
-        !call self%switchStoreState( rhs%store_state )
-        !
-        do i = 1, self%grid%getNGrids()
+        if( self%isCompatible( rhs ) ) then
             !
-            if( self%isCompatible( rhs ) ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( rScalar3D_MR_t )
                     !
-                    class is( rScalar3D_MR_t )
+                    do i = 1, self%grid%n_grids
                         !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            self%sub_scalar(i)%v = self%sub_scalar(i)%v + rhs%sub_scalar(i)%v
-                            !
-                        elseif( rhs%store_state .EQ. singleton ) then
-                            !
-                            self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v + rhs%sub_scalar(i)%s_v
-                            !
-                        else
-                            call errStop( "add_rScalar3D_MR > Unknown rhs store_state!" )
-                        endif
+                        self%sub_scalar(i)%v = self%sub_scalar(i)%v + rhs%sub_scalar(i)%v
                         !
-                    class default
-                        call errStop( "add_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    enddo
                     !
-                end select
+                class default
+                    call errStop( "add_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
                 !
-            else
-                call errStop( "add_rScalar3D_MR > Incompatible inputs." )
-            endif
+            end select
             !
-        enddo
+        else
+            call errStop( "add_rScalar3D_MR > Incompatible inputs." )
+        endif
         !
     end subroutine add_rScalar3D_MR
     !
@@ -830,38 +859,26 @@ contains
             call errStop( "linComb_rScalar3D_MR > rhs not allocated." )
         endif
         !
-        !call self%switchStoreState( rhs%store_state )
-        !
-        do i = 1, self%grid%getNGrids()
+        if( self%isCompatible( rhs ) ) then
             !
-            if( self%isCompatible( rhs ) ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( rScalar3D_MR_t )
                     !
-                    class is( rScalar3D_MR_t )
+                    do i = 1, self%grid%n_grids
                         !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            self%sub_scalar(i)%v = c1 * self%sub_scalar(i)%v + c2 * rhs%sub_scalar(i)%v
-                            !
-                        elseif( rhs%store_state .EQ. singleton ) then
-                            !
-                            self%sub_scalar(i)%s_v = c1 * self%sub_scalar(i)%s_v + c2 * rhs%sub_scalar(i)%s_v
-                            !
-                        else
-                            call errStop( "linComb_rScalar3D_MR > Unknown rhs store_state!" )
-                        endif
+                        self%sub_scalar(i)%v = c1 * self%sub_scalar(i)%v + c2 * rhs%sub_scalar(i)%v
                         !
-                    class default
-                        call errStop( "linComb_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    enddo
                     !
-                end select
+                class default
+                    call errStop( "linComb_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
                 !
-            else
-                call errStop( "linComb_rScalar3D_MR > Incompatible inputs." )
-            endif
+            end select
             !
-        enddo
+        else
+            call errStop( "linComb_rScalar3D_MR > Incompatible inputs." )
+        endif
         !
     end subroutine linComb_rScalar3D_MR
     !
@@ -875,19 +892,13 @@ contains
         !
         integer :: i
         !
-        do i = 1, self%grid%getNGrids()
+        if( .NOT. self%is_allocated ) then
+            call errStop( "subValue_rScalar3D_MR > self not allocated" )
+        endif
+        !
+        do i = 1, self%grid%n_grids
             !
-            if( self%store_state .EQ. compound ) then
-                !
-                self%sub_scalar(i)%v = self%sub_scalar(i)%v - cvalue
-                !
-            elseif( self%store_state .EQ. singleton ) then
-                !
-                self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v - cvalue
-                !
-            else
-                call errStop( "subValue_rScalar3D_MR > Unknown store_state!" )
-            endif
+            self%sub_scalar(i)%v = self%sub_scalar(i)%v - cvalue
             !
         enddo
         !
@@ -903,38 +914,30 @@ contains
         !
         integer :: i
         !
-        !call self%switchStoreState( rhs%store_state )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "subField_rScalar3D_MR > self not allocated" )
+        endif
         !
-        do i = 1, self%grid%getNGrids()
+        if( self%isCompatible( rhs ) ) then
             !
-            if( self%isCompatible( rhs ) ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( rScalar3D_MR_t )
                     !
-                    class is( rScalar3D_MR_t )
+                    do i = 1, self%grid%n_grids
                         !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            self%sub_scalar(i)%v = self%sub_scalar(i)%v - rhs%sub_scalar(i)%v
-                            !
-                        elseif( rhs%store_state .EQ. singleton ) then
-                            !
-                            self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v - rhs%sub_scalar(i)%s_v
-                            !
-                        else
-                            call errStop( "subField_rScalar3D_MR > Unknown rhs store_state!" )
-                        endif
+                        self%sub_scalar(i)%v = self%sub_scalar(i)%v - rhs%sub_scalar(i)%v
                         !
-                    class default
-                        call errStop( "subField_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    enddo
                     !
-                end select
+                class default
+                    call errStop( "subField_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
                 !
-            else
-                call errStop( "subField_rScalar3D_MR > Incompatible inputs." )
-            endif
+            end select
             !
-        enddo
+        else
+            call errStop( "subField_rScalar3D_MR > Incompatible inputs." )
+        endif
         !
     end subroutine subField_rScalar3D_MR
     !
@@ -948,19 +951,13 @@ contains
         !
         integer :: i
         !
-        do i = 1, self%grid%getNGrids()
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multByReal_rScalar3D_MR > self not allocated" )
+        endif
+        !
+        do i = 1, self%grid%n_grids
             !
-            if( self%store_state .EQ. compound ) then
-                !
-                self%sub_scalar(i)%v = self%sub_scalar(i)%v * rvalue
-                !
-            elseif( self%store_state .EQ. singleton ) then
-                !
-                self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v * rvalue
-                !
-            else
-                call errStop( "multByReal_rScalar3D_MR > Unknown store_state!" )
-            endif
+            self%sub_scalar(i)%v = self%sub_scalar(i)%v * rvalue
             !
         enddo
         !
@@ -976,19 +973,13 @@ contains
         !
         integer :: i
         !
-        do i = 1, self%grid%getNGrids()
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multByComplex_rScalar3D_MR > self not allocated" )
+        endif
+        !
+        do i = 1, self%grid%n_grids
             !
-            if( self%store_state .EQ. compound ) then
-                !
-                self%sub_scalar(i)%v = self%sub_scalar(i)%v * cvalue
-                !
-            elseif( self%store_state .EQ. singleton ) then
-                !
-                self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v * cvalue
-                !
-            else
-                call errStop( "multByComplex_rScalar3D_MR > Unknown store_state!" )
-            endif
+            self%sub_scalar(i)%v = self%sub_scalar(i)%v * cvalue
             !
         enddo
         !
@@ -1004,38 +995,34 @@ contains
         !
         integer :: i
         !
-        !call self%switchStoreState( rhs%store_state )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multByField_rScalar3D_MR > self not allocated" )
+        endif
         !
-        do i = 1, self%grid%getNGrids()
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "multByField_rScalar3D_MR > rhs not allocated" )
+        endif
+        !
+        if( self%isCompatible( rhs ) ) then
             !
-            if( self%isCompatible( rhs ) ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( rScalar3D_MR_t )
                     !
-                    class is( rScalar3D_MR_t )
+                    do i = 1, self%grid%n_grids
                         !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            self%sub_scalar(i)%v = self%sub_scalar(i)%v * rhs%sub_scalar(i)%v
-                            !
-                        elseif( rhs%store_state .EQ. singleton ) then
-                            !
-                            self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v * rhs%sub_scalar(i)%s_v
-                            !
-                        else
-                            call errStop( "multByField_rScalar3D_MR > Unknown rhs store_state!" )
-                        endif
+                        self%sub_scalar(i)%v = self%sub_scalar(i)%v * rhs%sub_scalar(i)%v
                         !
-                    class default
-                        call errStop( "multByField_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    enddo
                     !
-                end select
+                class default
+                    call errStop( "multByField_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
                 !
-            else
-                call errStop( "multByField_rScalar3D_MR > Incompatible inputs." )
-            endif
+            end select
             !
-        enddo
+        else
+            call errStop( "multByField_rScalar3D_MR > Incompatible inputs." )
+        endif
         !
     end subroutine multByField_rScalar3D_MR
     !
@@ -1054,38 +1041,30 @@ contains
             call errStop( "multAdd_rScalar3D_MR > self not allocated." )
         endif
         !
-        !call self%switchStoreState( rhs%store_state )
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "multAdd_rScalar3D_MR > rhs not allocated." )
+        endif
         !
-        do i = 1, self%grid%getNGrids()
+        if( self%isCompatible( rhs ) ) then
             !
-            if( self%isCompatible( rhs ) ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( rScalar3D_MR_t )
                     !
-                    class is( rScalar3D_MR_t )
+                    do i = 1, self%grid%n_grids
                         !
-                        if( rhs%sub_scalar(i)%store_state .EQ. compound ) then
-                            !
-                            self%sub_scalar(i)%v = self%sub_scalar(i)%v + cvalue * rhs%sub_scalar(i)%v
-                            !
-                        elseif( rhs%sub_scalar(i)%store_state .EQ. singleton ) then
-                            !
-                            self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v + cvalue * rhs%sub_scalar(i)%s_v
-                            !
-                        else
-                            call errStop( "multAdd_rScalar3D_MR > Unknown rhs store_state!" )
-                        endif
+                        self%sub_scalar(i)%v = self%sub_scalar(i)%v + cvalue * rhs%sub_scalar(i)%v
                         !
-                    class default
-                        call errStop( "multAdd_rScalar3D_MR > rhs must be Scalar [try vec%mult(scl)]." )
+                    enddo
                     !
-                end select
+                class default
+                    call errStop( "multAdd_rScalar3D_MR > rhs must be Scalar [try vec%mult(scl)]." )
                 !
-            else
-                call errStop( "multAdd_rScalar3D_MR > Incompatible inputs." )
-            endif
+            end select
             !
-        enddo
+        else
+            call errStop( "multAdd_rScalar3D_MR > Incompatible inputs." )
+        endif
         !
     end subroutine multAdd_rScalar3D_MR
     !
@@ -1105,28 +1084,33 @@ contains
             call errStop( "dotProd_rScalar3D_MR > self not allocated." )
         endif
         !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "dotProd_rScalar3D_MR > rhs not allocated." )
+        endif
+        !
         cvalue = C_ZERO
         !
-        do i = 1, self%grid%getNGrids()
+        if( self%isCompatible( rhs ) ) then
             !
-            if( self%isCompatible( rhs ) ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( rScalar3D_MR_t )
                     !
-                    class is( rScalar3D_MR_t )
+                    do i = 1, self%grid%n_grids
                         !
                         cvalue = cvalue + self%sub_scalar(i)%dotProd( rhs%sub_scalar(i) )
                         !
-                    class default
-                        call errStop( "dotProd_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    enddo
                     !
-                end select
+                    !
+                class default
+                    call errStop( "dotProd_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
                 !
-            else
-                call errStop( "dotProd_rScalar3D_MR > Incompatible rhs" )
-            endif
+            end select
             !
-        enddo
+        else
+            call errStop( "dotProd_rScalar3D_MR > Incompatible rhs" )
+        endif
         !
     end function dotProd_rScalar3D_MR
     !
@@ -1140,19 +1124,13 @@ contains
         !
         integer :: i
         !
-        do i = 1, self%grid%getNGrids()
+        if( .NOT. self%is_allocated ) then
+            call errStop( "divByValue_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        do i = 1, self%grid%n_grids
             !
-            if( self%store_state .EQ. compound ) then
-                !
-                self%sub_scalar(i)%v = self%sub_scalar(i)%v / cvalue
-                !
-            elseif( self%store_state .EQ. singleton ) then
-                !
-                self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v / cvalue
-                !
-            else
-                call errStop( "divByValue_rScalar3D_MR > Unknown store_state!" )
-            endif
+            self%sub_scalar(i)%v = self%sub_scalar(i)%v / cvalue
             !
         enddo
         !
@@ -1168,46 +1146,41 @@ contains
         !
         integer :: i
         !
-        !call self%switchStoreState( rhs%store_state )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "divByField_rScalar3D_MR > self not allocated." )
+        endif
         !
-        do i = 1, self%grid%getNGrids()
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "divByField_rScalar3D_MR > rhs not allocated." )
+        endif
+        !
+        if( self%isCompatible( rhs ) ) then
             !
-            if( self%isCompatible( rhs ) ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( rScalar3D_MR_t )
                     !
-                    class is( rScalar3D_MR_t )
+                    do i = 1, self%grid%n_grids
                         !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            self%sub_scalar(i)%v = self%sub_scalar(i)%v / rhs%sub_scalar(i)%v
-                            !
-                        elseif( rhs%store_state .EQ. singleton ) then
-                            !
-                            self%sub_scalar(i)%s_v = self%sub_scalar(i)%s_v / rhs%sub_scalar(i)%s_v
-                            !
-                        else
-                            call errStop( "divByField_rScalar3D_MR > Unknown rhs store_state!" )
-                        endif
+                        self%sub_scalar(i)%v = self%sub_scalar(i)%v / rhs%sub_scalar(i)%v
                         !
-                    class default
-                        call errStop( "divByField_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
+                    enddo
                     !
-                end select
+                class default
+                    call errStop( "divByField_rScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
                 !
-            else
-                call errStop( "divByField_rScalar3D_MR > Incompatible inputs." )
-            endif
+            end select
             !
-        enddo
+        else
+            call errStop( "divByField_rScalar3D_MR > Incompatible inputs." )
+        endif
         !
     end subroutine divByField_rScalar3D_MR
     !
-    !> No subroutine briefing
+    !> NOTE  as written the interfaces are computed as sums, but other nodes
+    !> as averages!!!   I AM CHANGING EVERYTHING TO SUMS
     !
     subroutine SumToNode_rScalar3D_MR( self, node_scalar, interior_only )
-        ! NOTE  as written the interfaces are computed as sums, but other nodes
-        !    as averages!!!   I AM CHANGING EVERYTHING TO SUMS
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -1225,8 +1198,6 @@ contains
         if( .NOT. node_scalar%is_allocated ) then
              call errStop( "sumToNode_rScalar3D_MR > node_scalar not allocated." )
         endif
-        !
-        !call self%switchStoreState( compound )
         !
         select type( node_scalar )
             !
@@ -1303,40 +1274,17 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine deallOtherState_rScalar3D_MR( self )
-        implicit none
-        !
-        class( rScalar3D_MR_t ), intent( inout ) :: self
-        !
-        call errStop( "deallOtherState_rScalar3D_MR not implemented!" )
-        ! !
-        ! if( ( .NOT. self%is_allocated ) ) then
-            ! call errStop( "deallOtherState_rScalar3D_MR > Self not allocated." )
-        ! endif
-        ! !
-        ! if( self%store_state .EQ. compound ) then
-            ! !
-            ! if( allocated( self%s_v ) ) deallocate( self%s_v )
-            ! !
-        ! elseif( self%store_state .EQ. singleton ) then
-            ! !
-            ! if( allocated( self%v ) ) deallocate( self%v )
-            ! !
-        ! else
-            ! call errStop( "deallOtherState_rScalar3D_MR > Unknown store_state!" )
-        ! endif
-        ! !
-    end subroutine deallOtherState_rScalar3D_MR
-    !
-    !> No subroutine briefing
-    !
     function getArray_rScalar3D_MR( self ) result( array )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
-        real( kind=prec ), allocatable :: v_full(:)
+        real( kind=prec ), allocatable, dimension(:) :: v_full
+        !
+        if( .NOT. self%is_allocated ) then
+             call errStop( "getArray_rScalar3D_MR > self not allocated." )
+        endif
         !
         v_full = self%getFullArray()
         !
@@ -1355,6 +1303,10 @@ contains
         complex( kind=prec ), dimension(:), intent( in ) :: array
         !
         complex( kind=prec ), allocatable, dimension(:) :: vFull
+        !
+        if( .NOT. self%is_allocated ) then
+             call errStop( "setArray_rScalar3D_MR > self not allocated." )
+        endif
         !
         allocate( vFull( self%lengthFull() ) )
         !
@@ -1385,7 +1337,6 @@ contains
         self%nx = rhs%nx
         self%ny = rhs%ny
         self%nz = rhs%nz
-        self%store_state = rhs%store_state
         !
         select type( rhs )
             !
@@ -1470,16 +1421,11 @@ contains
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append
         !
-        type( rScalar3D_MR_t ) :: copy
         integer :: i, ix, iy, iz, funit
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "print_rScalar3D_MR > self not allocated." )
         endif
-        !
-        copy = self
-        !
-        !call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit
@@ -1491,16 +1437,16 @@ contains
         endif
         !
         write(funit,*) "rScalar3D_MR field"
-        do i = 1, copy%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
-            write( funit, * ) copy%sub_scalar(i)%nx, copy%sub_scalar(i)%ny, copy%sub_scalar(i)%nz
+            write( funit, * ) self%sub_scalar(i)%nx, self%sub_scalar(i)%ny, self%sub_scalar(i)%nz
             !
             write(funit,*) "sub_scalar ", i
-            do ix = 1, copy%sub_scalar(i)%nx
-                do iy = 1, copy%sub_scalar(i)%ny
-                    do iz = 1, copy%sub_scalar(i)%nz
-                        if( copy%sub_scalar(i)%v( ix, iy, iz ) /= 0 ) then
-                            write(funit,*) ix,iy,iz, ":[", copy%sub_scalar(i)%v( ix, iy, iz ), "]"
+            do ix = 1, self%sub_scalar(i)%nx
+                do iy = 1, self%sub_scalar(i)%ny
+                    do iz = 1, self%sub_scalar(i)%nz
+                        if( self%sub_scalar(i)%v( ix, iy, iz ) /= 0 ) then
+                            write(funit,*) ix,iy,iz, ":[", self%sub_scalar(i)%v( ix, iy, iz ), "]"
                         endif
                     enddo
                 enddo
@@ -1511,3 +1457,4 @@ contains
     end subroutine print_rScalar3D_MR
     !
 end module rScalar3D_MR
+!

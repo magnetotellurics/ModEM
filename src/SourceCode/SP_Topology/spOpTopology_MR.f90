@@ -510,11 +510,11 @@ contains
         type(spMatIJS_Real) :: G1_ijs
         type(rScalar3D_MR_t) :: vecR, vecC(9)
         !
-        integer, dimension(:), allocatable :: R, C
+        integer, allocatable, dimension(:) :: R, C
         real(kind=prec), dimension(:), allocatable :: S
-        integer, dimension(:), allocatable :: Rtmp, Ctmp
+        integer, allocatable, dimension(:) :: Rtmp, Ctmp
         real(kind=prec), dimension(:), allocatable :: Stmp
-        integer, dimension(:), allocatable :: indR, indC_i
+        integer, allocatable, dimension(:) :: indR, indC_i
         type(Comp) :: compR(4), compC(9)
         real(kind=prec) :: Cc(9), cR(4)
 

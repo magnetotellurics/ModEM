@@ -13,8 +13,6 @@ module cVector3D_SG
         !
         complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
-        complex( kind=prec ), allocatable, dimension(:) :: s_v
-        !
         contains
             !
             final :: cVector3D_SG_dtor
@@ -66,8 +64,6 @@ module cVector3D_SG
             !
             procedure, public :: getArray => getArray_cVector3D_SG
             procedure, public :: setArray => setArray_cVector3D_SG
-            !
-            procedure, public :: deallOtherState => deallOtherState_cVector3D_SG
             !
             procedure, public :: copyFrom => copyFrom_cVector3D_SG
             !
@@ -178,8 +174,6 @@ contains
         if( allocated( self%y ) ) deallocate( self%y )
         if( allocated( self%z ) ) deallocate( self%z )
         !
-        if( allocated( self%s_v ) ) deallocate( self%s_v )
-        !
         self%nx = 0
         self%ny = 0
         self%nz = 0
@@ -196,8 +190,6 @@ contains
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
-        !
-        !call self%switchStoreState( compound )
         !
         select case( self%grid_type )
             !
@@ -234,8 +226,6 @@ contains
         logical, intent( in ), optional :: int_only
         !
         logical :: int_only_p
-        !
-        !call self%switchStoreState( compound )
         !
         if( .NOT. present( int_only ) ) then
             int_only_p = .FALSE.
@@ -378,8 +368,6 @@ contains
         integer :: y1, y2
         integer :: z1, z2
         !
-        !call self%switchStoreState( compound )
-        !
         x1 = xmin; x2 = xmax
         y1 = ymin; y2 = ymax
         z1 = zmin; z2 = zmax
@@ -442,19 +430,9 @@ contains
              call errStop( "zeros_cVector3D_SG > self not allocated." )
         endif
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%x = R_ZERO
-            self%y = R_ZERO
-            self%z = R_ZERO
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%s_v = R_ZERO
-            !
-        else
-            call errStop( "zeros_cVector3D_SG > Unknown store_state!" )
-        endif
+        self%x = R_ZERO
+        self%y = R_ZERO
+        self%z = R_ZERO
         !
     end subroutine zeros_cVector3D_SG
     !
@@ -475,8 +453,6 @@ contains
         if( .NOT. self%is_allocated ) then
              call errStop( "sumEdge_cVector3D_SG > self not allocated." )
         endif
-        !
-        !call self%switchStoreState( compound )
         !
         is_interior_only = .FALSE.
         !
@@ -542,6 +518,8 @@ contains
         !
     end subroutine sumEdge_cVector3D_SG
     !
+    !> No subroutine briefing
+    !
     subroutine sumEdgeVTI_cVector3D_SG( self, cell_h_out, cell_v_out, interior_only )
         implicit none
         !
@@ -557,8 +535,6 @@ contains
         if( .NOT. self%is_allocated ) then
              call errStop( "sumEdgeVTI_cVector3D_SG > self not allocated." )
         endif
-        !
-        !call self%switchStoreState( compound )
         !
         is_interior_only = .FALSE.
         !
@@ -670,8 +646,6 @@ contains
             grid_type = ptype
         endif
         !
-        !call self%switchStoreState( compound )
-        !
         select type( cell_in )
             !
             class is( cScalar3D_SG_t )
@@ -781,8 +755,6 @@ contains
             grid_type = ptype
         endif
         !
-        !call self%switchStoreState( compound )
-        !
         select type( cell_h_in )
             !
             class is( cScalar3D_SG_t )
@@ -876,19 +848,9 @@ contains
              call errStop( "conjugate_cVector3D_SG > Not allocated." )
         endif
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%x = conjg( self%x )
-            self%y = conjg( self%y )
-            self%z = conjg( self%z )
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%s_v = conjg( self%s_v )
-            !
-        else
-            call errStop( "conjugate_cVector3D_SG > Unknown store_state!" )
-        endif
+        self%x = conjg( self%x )
+        self%y = conjg( self%y )
+        self%z = conjg( self%z )
         !
     end subroutine conjugate_cVector3D_SG
     !
@@ -900,45 +862,36 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
-            call errStop( "add_cVector3D_SG > Input vectors not allocated." )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "add_cVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "add_cVector3D_SG > rhs not allocated." )
         endif
         !
         if( self%isCompatible( rhs ) ) then
             !
-            !call self%switchStoreState( rhs%store_state )
-            !
-            if( rhs%store_state .EQ. compound ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( cVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%x = self%x + rhs%x
-                        self%y = self%y + rhs%y
-                        self%z = self%z + rhs%z
-                        !
-                    class default
-                        call errStop( "add_cVector3D_SG > Undefined rhs" )
-                        !
-                end select
+                    self%x = self%x + rhs%x
+                    self%y = self%y + rhs%y
+                    self%z = self%z + rhs%z
                 !
-            elseif( rhs%store_state .EQ. singleton ) then
-                !
-                select type( rhs )
+                class is( rVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v + rhs%s_v
-                        !
-                    class default
-                        call errStop( "add_cVector3D_SG > Undefined compound rhs" )
-                        !
-                end select
-                !
-            else
-                call errStop( "add_cVector3D_SG > Unknow store_state." )
-            endif
+                    self%x = self%x + rhs%x
+                    self%y = self%y + rhs%y
+                    self%z = self%z + rhs%z
+                    !
+                    call errStop( "add_cVector3D_SG > rhs is rVector3D_SG_t" )
+                    !
+                class default
+                    call errStop( "add_cVector3D_SG > Undefined rhs" )
+                    !
+            end select
             !
         else
             call errStop( "add_cVector3D_SG > Incompatible inputs." )
@@ -947,29 +900,20 @@ contains
     end subroutine add_cVector3D_SG
     !
     !> No subroutine briefing
+    !
     subroutine subValue_cVector3D_SG( self, cvalue )
         implicit none
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "subValue_cVector3D_SG > Self not allocated." )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "subValue_cVector3D_SG > self not allocated." )
         endif
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%x = self%x - cvalue
-            self%y = self%y - cvalue
-            self%z = self%z - cvalue
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%s_v = self%s_v - cvalue
-            !
-        else
-            call errStop( "subValue_cVector3D_SG > Unknown self store_state!" )
-        endif
+        self%x = self%x - cvalue
+        self%y = self%y - cvalue
+        self%z = self%z - cvalue
         !
     end subroutine subValue_cVector3D_SG
     !
@@ -981,45 +925,36 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
-            call errStop( "subField_cVector3D_SG > Input vectors not allocated." )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "subField_cVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "subField_cVector3D_SG > rhs not allocated." )
         endif
         !
         if( self%isCompatible( rhs ) ) then
             !
-            !call self%switchStoreState( rhs%store_state )
-            !
-            if( rhs%store_state .EQ. compound ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( cVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%x = self%x - rhs%x
-                        self%y = self%y - rhs%y
-                        self%z = self%z - rhs%z
-                        !
-                    class default
-                        call errStop( "subField_cVector3D_SG > Undefined rhs" )
-                        !
-                end select
+                    self%x = self%x - rhs%x
+                    self%y = self%y - rhs%y
+                    self%z = self%z - rhs%z
                 !
-            elseif( rhs%store_state .EQ. singleton ) then
-                !
-                select type( rhs )
+                class is( rVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v - rhs%s_v
-                        !
-                    class default
-                        call errStop( "subField_cVector3D_SG > Undefined rhs" )
-                        !
-                end select
-                !
-            else
-                call errStop( "subField_cVector3D_SG > Unknow store_state." )
-            endif
+                    self%x = self%x - rhs%x
+                    self%y = self%y - rhs%y
+                    self%z = self%z - rhs%z
+                    !
+                    call errStop( "subField_cVector3D_SG > rhs is rVector3D_SG_t" )
+                    !
+                class default
+                    call errStop( "subField_cVector3D_SG > Undefined rhs" )
+                    !
+            end select
             !
         else
             call errStop( "subField_cVector3D_SG > Incompatible inputs." )
@@ -1036,45 +971,36 @@ contains
         class( Field_t ), intent( in ) :: rhs
         complex( kind=prec ), intent( in ) :: c1, c2
         !
-        if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
-            call errStop( "linComb_cVector3D_SG > Input vectors not allocated." )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "linComb_cVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "linComb_cVector3D_SG > rhs not allocated." )
         endif
         !
         if( self%isCompatible( rhs ) ) then
             !
-            !call self%switchStoreState( rhs%store_state )
-            !
-            if( rhs%store_state .EQ. compound ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( cVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%x = c1 * self%x + c2 * rhs%x
-                        self%y = c1 * self%y + c2 * rhs%y
-                        self%z = c1 * self%z + c2 * rhs%z
-                        !
-                    class default
-                        call errStop( "linComb_cVector3D_SG > Undefined rhs" )
-                        !
-                end select
+                    self%x = c1 * self%x + c2 * rhs%x
+                    self%y = c1 * self%y + c2 * rhs%y
+                    self%z = c1 * self%z + c2 * rhs%z
                 !
-            elseif( rhs%store_state .EQ. singleton ) then
-                !
-                select type( rhs )
+                class is( rVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%s_v = c1 * self%s_v + c2 * rhs%s_v
-                        !
-                    class default
-                        call errStop( "linComb_cVector3D_SG > Undefined compound rhs" )
-                        !
-                end select
-                !
-            else
-                call errStop( "linComb_cVector3D_SG > Unknow store_state." )
-            endif
+                    self%x = c1 * self%x + c2 * rhs%x
+                    self%y = c1 * self%y + c2 * rhs%y
+                    self%z = c1 * self%z + c2 * rhs%z
+                    !
+                    call errStop( "linComb_cVector3D_SG > rhs is rVector3D_SG_t" )
+                    !
+                class default
+                    call errStop( "linComb_cVector3D_SG > Undefined rhs" )
+                    !
+            end select
             !
         else
             call errStop( "linComb_cVector3D_SG > Incompatible inputs." )
@@ -1090,19 +1016,13 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: rvalue
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%x = self%x * rvalue
-            self%y = self%y * rvalue
-            self%z = self%z * rvalue
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%s_v = self%s_v * rvalue
-            !
-        else
-            call errStop( "multByReal_cVector3D_SG > Unknown self store_state!" )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multByReal_cVector3D_SG > self not allocated." )
         endif
+        !
+        self%x = self%x * rvalue
+        self%y = self%y * rvalue
+        self%z = self%z * rvalue
         !
     end subroutine multByReal_cVector3D_SG
     !
@@ -1114,19 +1034,13 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%x = self%x * cvalue
-            self%y = self%y * cvalue
-            self%z = self%z * cvalue
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%s_v = self%s_v * cvalue
-            !
-        else
-            call errStop( "multByComplex_cVector3D_SG > Unknown self store_state!" )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multByComplex_cVector3D_SG > self not allocated." )
         endif
+        !
+        self%x = self%x * cvalue
+        self%y = self%y * cvalue
+        self%z = self%z * cvalue
         !
     end subroutine multByComplex_cVector3D_SG
     !
@@ -1138,55 +1052,36 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
-            call errStop( "multByField_cVector3D_SG > Input vectors not allocated." )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multByField_cVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "multByField_cVector3D_SG > rhs not allocated." )
         endif
         !
         if( self%isCompatible( rhs ) ) then
             !
-            !call self%switchStoreState( rhs%store_state )
-            !
-            if( rhs%store_state .EQ. compound ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( cVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%x = self%x * rhs%x
-                        self%y = self%y * rhs%y
-                        self%z = self%z * rhs%z
+                    self%x = self%x * rhs%x
+                    self%y = self%y * rhs%y
+                    self%z = self%z * rhs%z
+                !
+                class is( rVector3D_SG_t )
                     !
-                    class is( rVector3D_SG_t )
-                        !
-                        self%x = self%x * rhs%x
-                        self%y = self%y * rhs%y
-                        self%z = self%z * rhs%z
-                        !
-                    class default
-                        call errStop( "multByField_cVector3D_SG > Undefined rhs" )
-                        !
-                end select
-                !
-            elseif( rhs%store_state .EQ. singleton ) then
-                !
-                select type( rhs )
+                    self%x = self%x * rhs%x
+                    self%y = self%y * rhs%y
+                    self%z = self%z * rhs%z
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v * rhs%s_v
-                        !
-                    class is( rVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v * rhs%s_v
-                        !
-                    class default
-                        call errStop( "multByField_cVector3D_SG > Undefined compound rhs" )
-                        !
-                end select
-                !
-            else
-                call errStop( "multByField_cVector3D_SG > Unknow store_state." )
-            endif
+                    !call errStop( "multByField_cVector3D_SG > rhs is rVector3D_SG_t" ) !!!!
+                    !
+                class default
+                    call errStop( "multByField_cVector3D_SG > Undefined rhs" )
+                    !
+            end select
             !
         else
             call errStop( "multByField_cVector3D_SG > Incompatible inputs." )
@@ -1206,49 +1101,38 @@ contains
         !
         type( cVector3D_SG_t ) :: diag_mult_temp
         !
-        if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
-            call errStop( "diagMult_cVector3D_SG > Input vectors not allocated." )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "diagMult_cVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "diagMult_cVector3D_SG > rhs not allocated." )
         endif
         !
         if( self%isCompatible( rhs ) ) then
             !
             diag_mult_temp = cVector3D_SG_t( self%grid, self%grid_type )
             !
-            !call diag_mult_temp%switchStoreState( rhs%store_state )
-            !
-            !call self%switchStoreState( rhs%store_state )
-            !
-            if( rhs%store_state .EQ. compound ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( cVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        diag_mult_temp%x = self%x * rhs%x
-                        diag_mult_temp%y = self%y * rhs%y
-                        diag_mult_temp%z = self%z * rhs%z
-                        !
-                    class default
-                        call errStop( "diagMult_cVector3D_SG > Undefined rhs" )
-                        !
-                end select
+                    diag_mult_temp%x = self%x * rhs%x
+                    diag_mult_temp%y = self%y * rhs%y
+                    diag_mult_temp%z = self%z * rhs%z
                 !
-            elseif( rhs%store_state .EQ. singleton ) then
-                !
-                select type( rhs )
+                class is( rVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        diag_mult_temp%s_v = self%s_v * rhs%s_v
-                        !
-                    class default
-                        call errStop( "diagMult_cVector3D_SG > Undefined compound rhs" )
-                        !
-                end select
-                !
-            else
-                call errStop( "diagMult_cVector3D_SG > Unknow store_state." )
-            endif
+                    diag_mult_temp%x = self%x * rhs%x
+                    diag_mult_temp%y = self%y * rhs%y
+                    diag_mult_temp%z = self%z * rhs%z
+                    !
+                    call errStop( "diagMult_cVector3D_SG > rhs is rVector3D_SG_t" )
+                    !
+                class default
+                    call errStop( "diagMult_cVector3D_SG > Undefined rhs" )
+                    !
+            end select
             !
             allocate( diag_mult, source = diag_mult_temp )
             !
@@ -1267,45 +1151,36 @@ contains
         complex( kind=prec ), intent( in ) :: cvalue
         class( Field_t ), intent( in ) :: rhs
         !
-        if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
-            call errStop( "multAdd_cVector3D_SG > Input vectors not allocated." )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multAdd_cVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "multAdd_cVector3D_SG > rhs not allocated." )
         endif
         !
         if( self%isCompatible( rhs ) ) then
             !
-            !call self%switchStoreState( rhs%store_state )
-            !
-            if( rhs%store_state .EQ. compound ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( cVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%x = self%x + cvalue * rhs%x
-                        self%y = self%y + cvalue * rhs%y
-                        self%z = self%z + cvalue * rhs%z
-                        !
-                    class default
-                        call errStop( "multAdd_cVector3D_SG > Undefined rhs" )
-                        !
-                end select
+                    self%x = self%x + cvalue * rhs%x
+                    self%y = self%y + cvalue * rhs%y
+                    self%z = self%z + cvalue * rhs%z
                 !
-            elseif( rhs%store_state .EQ. singleton ) then
-                !
-                select type( rhs )
+                class is( rVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v + cvalue * rhs%s_v
-                        !
-                    class default
-                        call errStop( "multAdd_cVector3D_SG > Undefined compound rhs" )
-                        !
-                end select
-                !
-            else
-                call errStop( "multAdd_cVector3D_SG > Unknow store_state." )
-            endif
+                    self%x = self%x + cvalue * rhs%x
+                    self%y = self%y + cvalue * rhs%y
+                    self%z = self%z + cvalue * rhs%z
+                    !
+                    call errStop( "multAdd_cVector3D_SG > rhs is rVector3D_SG_t" )
+                    !
+                class default
+                    call errStop( "multAdd_cVector3D_SG > Undefined rhs" )
+                    !
+            end select
             !
         else
             call errStop( "multAdd_cVector3D_SG > Incompatible inputs." )
@@ -1324,48 +1199,37 @@ contains
         complex( kind=prec ) :: cvalue
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "dotProd_cVector3D_SG > Self not allocated." )
+            call errStop( "dotProd_cVector3D_SG > self not allocated." )
         endif
         !
         if( .NOT. rhs%is_allocated ) then
-            call errStop( "dotProd_cVector3D_SG > Rhs not allocated." )
+            call errStop( "dotProd_cVector3D_SG > rhs not allocated." )
         endif
         !
         if( self%isCompatible( rhs ) ) then
             !
-            !call self%switchStoreState( rhs%store_state )
+            cvalue = C_ZERO
             !
-            if( rhs%store_state .EQ. compound ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( cVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        cvalue =  sum( conjg( self%x ) * rhs%x )
-                        cvalue =  sum( conjg( self%y ) * rhs%y )
-                        cvalue =  sum( conjg( self%z ) * rhs%z )
-                        !
-                    class default
-                        call errStop( "dotProd_cVector3D_SG > Undefined rhs" )
-                        !
-                end select
-                !
-            elseif( rhs%store_state .EQ. singleton ) then
-                !
-                select type( rhs )
+                    cvalue = cvalue + sum( self%x * rhs%x )
+                    cvalue = cvalue + sum( self%y * rhs%y )
+                    cvalue = cvalue + sum( self%z * rhs%z )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        cvalue = sum( conjg( self%s_v ) * rhs%s_v )
-                        !
-                    class default
-                        call errStop( "dotProd_cVector3D_SG > Undefined compound rhs" )
-                        !
-                end select
-                !
-            else
-                call errStop( "dotProd_cVector3D_SG > Unknown store_state." )
-            endif
+                class is( rVector3D_SG_t )
+                    !
+                    cvalue = cvalue + sum( self%x * rhs%x )
+                    cvalue = cvalue + sum( self%y * rhs%y )
+                    cvalue = cvalue + sum( self%z * rhs%z )
+                    !
+                    call errStop( "dotProd_cVector3D_SG > rhs is rVector3D_SG_t" )
+                    !
+                class default
+                    call errStop( "dotProd_cVector3D_SG > Undefined rhs" )
+                    !
+            end select
             !
         else
             call errStop( "dotProd_cVector3D_SG > Incompatible inputs." )
@@ -1381,23 +1245,13 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "divByValue_cVector3D_SG > Self not allocated." )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "divByValue_cVector3D_SG > self not allocated." )
         endif
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%x = self%x / cvalue
-            self%y = self%y / cvalue
-            self%z = self%z / cvalue
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%s_v = self%s_v / cvalue
-            !
-        else
-            call errStop( "divByValue_cVector3D_SG > Unknown self store_state!" )
-        endif
+        self%x = self%x / cvalue
+        self%y = self%y / cvalue
+        self%z = self%z / cvalue
         !
     end subroutine divByValue_cVector3D_SG
     !
@@ -1409,55 +1263,36 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( ( .NOT. self%is_allocated ) .OR. ( .NOT. rhs%is_allocated ) ) then
-            call errStop( "divByField_cVector3D_SG > Input vectors not allocated." )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "divByField_cVector3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "divByField_cVector3D_SG > rhs not allocated." )
         endif
         !
         if( self%isCompatible( rhs ) ) then
             !
-            !call self%switchStoreState( rhs%store_state )
-            !
-            if( rhs%store_state .EQ. compound ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( cVector3D_SG_t )
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%x = self%x / rhs%x
-                        self%y = self%y / rhs%y
-                        self%z = self%z / rhs%z
+                    self%x = self%x / rhs%x
+                    self%y = self%y / rhs%y
+                    self%z = self%z / rhs%z
+                !
+                class is( rVector3D_SG_t )
                     !
-                    class is( rVector3D_SG_t )
-                        !
-                        self%x = self%x / rhs%x
-                        self%y = self%y / rhs%y
-                        self%z = self%z / rhs%z
-                        !
-                    class default
-                        call errStop( "divByField_cVector3D_SG > Undefined rhs" )
-                        !
-                end select
-                !
-            elseif( rhs%store_state .EQ. singleton ) then
-                !
-                select type( rhs )
+                    self%x = self%x / rhs%x
+                    self%y = self%y / rhs%y
+                    self%z = self%z / rhs%z
                     !
-                    class is( cVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v / rhs%s_v
-                        !
-                    class is( rVector3D_SG_t )
-                        !
-                        self%s_v = self%s_v / rhs%s_v
-                        !
-                    class default
-                        call errStop( "multAdd_rVector3D_SG > Undefined compound rhs" )
-                        !
-                end select
-                !
-            else
-                call errStop( "divByField_cVector3D_SG > Unknow store_state." )
-            endif
+                    !call errStop( "divByField_cVector3D_SG > rhs is rVector3D_SG_t" ) !!!!
+                    !
+                class default
+                    call errStop( "divByField_cVector3D_SG > Undefined rhs" )
+                    !
+            end select
             !
         else
             call errStop( "divByField_cVector3D_SG > Incompatible inputs." )
@@ -1701,10 +1536,8 @@ contains
         complex( kind=prec ), allocatable :: comp(:,:,:)
         !
         if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "interpFunc_cVector3D_SG > Self not allocated." )
+            call errStop( "getAxis_cVector3D_SG > self not allocated." )
         endif
-        !
-        !call self%switchStoreState( compound )
         !
         if( comp_lbl == "x" .OR. comp_lbl == "X" ) then
             comp = self%x
@@ -1727,29 +1560,15 @@ contains
         !
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
-        if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "getArray_cVector3D_SG > Self not allocated." )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getArray_cVector3D_SG > self not allocated." )
         endif
         !
-        if( self%store_state .EQ. compound ) then
-            ! !
-            ! write( *, * ) "getArray_Vector: ", &
-            ! self%Nxyz(1), self%Nxyz(2), self%Nxyz(3), &
-            ! self%Nxyz(1)+self%Nxyz(2)+self%Nxyz(3), self%length()
-            ! !
-            allocate( array( self%length() ) )
-            !
-            array = (/reshape(self%x, (/self%Nxyz(1), 1/)), &
-            reshape(self%y, (/self%Nxyz(2), 1/)), &
-            reshape(self%z, (/self%Nxyz(3), 1/))/)
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            array = self%s_v
-            !
-        else
-            call errStop( "getArray_cVector3D_SG > Unknown store_state!" )
-        endif
+        allocate( array( self%length() ) )
+        !
+        array = (/reshape(self%x, (/self%Nxyz(1), 1/)), &
+        reshape(self%y, (/self%Nxyz(2), 1/)), &
+        reshape(self%z, (/self%Nxyz(3), 1/))/)
         !
     end function getArray_cVector3D_SG
     !
@@ -1764,64 +1583,25 @@ contains
         integer :: i1, i2
         !
         if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "setArray_cVector3D_SG > Self not allocated." )
+            call errStop( "setArray_cVector3D_SG > self not allocated." )
         endif
         !
-        call self%deallOtherState
+        !> Ex
+        i1 = 1; i2 = self%Nxyz(1)
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            !> Ex
-            i1 = 1; i2 = self%Nxyz(1)
-            !
-            self%x = reshape( array(i1:i2), self%NdX )
-            !
-            !> Ey
-            i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
-            !
-            self%y = reshape( array(i1:i2), self%NdY )
-            !
-            !> Ez
-            i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
-            !
-            self%z = reshape(array(i1:i2), self%NdZ)
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%s_v = array
-            !
-        else
-            call errStop( "setArray_cVector3D_SG > Unknown store_state!" )
-        endif
+        self%x = reshape( array(i1:i2), self%NdX )
+        !
+        !> Ey
+        i1 = i2 + 1; i2 = i2 + self%Nxyz(2)
+        !
+        self%y = reshape( array(i1:i2), self%NdY )
+        !
+        !> Ez
+        i1 = i2 + 1; i2 = i2 + self%Nxyz(3)
+        !
+        self%z = reshape(array(i1:i2), self%NdZ)
         !
     end subroutine setArray_cVector3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine deallOtherState_cVector3D_SG( self )
-        implicit none
-        !
-        class( cVector3D_SG_t ), intent( inout ) :: self
-        !
-        if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "deallOtherState_cVector3D_SG > Self not allocated." )
-        endif
-        !
-        if( self%store_state .EQ. compound ) then
-            !
-            if( allocated( self%s_v ) ) deallocate( self%s_v )
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            if( allocated( self%x ) ) deallocate( self%x )
-            if( allocated( self%y ) ) deallocate( self%y )
-            if( allocated( self%z ) ) deallocate( self%z )
-            !
-        else
-            call errStop( "deallOtherState_cVector3D_SG > Unknown store_state!" )
-        endif
-        !
-    end subroutine deallOtherState_cVector3D_SG
     !
     !> No subroutine briefing
     !
@@ -1831,7 +1611,11 @@ contains
         class( cVector3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( .NOT. rhs%is_allocated) then
+        !if( .NOT. self%is_allocated ) then
+            !call errStop( "copyFrom_cVector3D_SG > self not allocated." ) !!!!
+        !endif
+        !
+        if( .NOT. rhs%is_allocated ) then
             call errStop( "copyFrom_cVector3D_SG > rhs not allocated" )
         endif
         !
@@ -1840,7 +1624,6 @@ contains
         self%nx = rhs%nx
         self%ny = rhs%ny
         self%nz = rhs%nz
-        self%store_state = rhs%store_state
         !
         select type( rhs )
             !
@@ -1851,19 +1634,9 @@ contains
                 self%NdZ = rhs%NdZ
                 self%Nxyz = rhs%Nxyz
                 !
-                if( rhs%store_state .EQ. compound ) then
-                    !
-                    self%x = rhs%x
-                    self%y = rhs%y
-                    self%z = rhs%z
-                    !
-                elseif( rhs%store_state .EQ. singleton ) then
-                    !
-                    self%s_v = rhs%s_v
-                    !
-                else
-                    call errStop( "copyFrom_cVector3D_SG > Unknown store_state!" )
-                endif
+                self%x = rhs%x
+                self%y = rhs%y
+                self%z = rhs%z
                 !
                 self%is_allocated = .TRUE.
                 !
@@ -1942,8 +1715,6 @@ contains
         logical :: ok, hasname, binary
         character(80) :: fname, isbinary
         !
-        !call self%switchStoreState( compound )
-        !
         binary = .TRUE.
         !
         inquire( funit, opened = ok, named = hasname, name = fname, unformatted = isbinary )
@@ -1962,7 +1733,7 @@ contains
             read(funit) Nx, Ny, Nz, grid_type
             !
             if(  .NOT. self%is_allocated ) then
-                call errStop( "read_cVector3D_SG > Self not allocated." )
+                call errStop( "read_cVector3D_SG > self not allocated." )
             elseif( self%grid_type .NE. grid_type ) then
                 call errStop( "read_cVector3D_SG > Incompatible grid_type." )
             elseif( ( self%nx .NE. Nx ).OR. &
@@ -1993,10 +1764,8 @@ contains
         character(80) :: fname, isbinary
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "write_cVector3D_SG > Self not allocated." )
+            call errStop( "write_cVector3D_SG > self not allocated." )
         endif
-        !
-        !call self%switchStoreState( compound )
         !
         binary = .TRUE.
         !
@@ -2034,12 +1803,7 @@ contains
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append
         !
-        type( cVector3D_SG_t ) :: copy
         integer :: ix, iy, iz, funit
-        !
-        copy = self
-        !
-        !call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit
@@ -2049,35 +1813,35 @@ contains
         !
         if( present( title ) ) write( funit, * ) title
         !
-        write( funit, * ) copy%nx, copy%ny, copy%nz
-        write(funit, * ) "x-component",copy%NdX
-        do ix = 1, copy%NdX(1)
-             do iy = 1, copy%NdX(2)
-                do iz = 1, copy%NdX(3)
-                     if( copy%x( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", copy%x( ix, iy, iz ), "]"
+        write( funit, * ) self%nx, self%ny, self%nz
+        write(funit, * ) "x-component",self%NdX
+        do ix = 1, self%NdX(1)
+             do iy = 1, self%NdX(2)
+                do iz = 1, self%NdX(3)
+                     if( self%x( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", self%x( ix, iy, iz ), "]"
                      endif
                 enddo
              enddo
         enddo
         !
-        write(funit,*) "y-component",copy%NdY
-        do ix = 1, copy%NdY(1)
-             do iy = 1, copy%NdY(2)
-                do iz = 1, copy%NdY(3)
-                     if( copy%y( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", copy%y( ix, iy, iz ), "]"
+        write(funit,*) "y-component",self%NdY
+        do ix = 1, self%NdY(1)
+             do iy = 1, self%NdY(2)
+                do iz = 1, self%NdY(3)
+                     if( self%y( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", self%y( ix, iy, iz ), "]"
                      endif
                 enddo
              enddo
         enddo
         !
-        write(funit,*) "z-component",copy%NdZ
-        do ix = 1, copy%NdZ(1)
-             do iy = 1, copy%NdZ(2)
-                do iz = 1, copy%NdZ(3)
-                     if( copy%z( ix, iy, iz ) /= 0 ) then
-                        write(funit,*) ix,iy,iz, ":[", copy%z( ix, iy, iz ), "]"
+        write(funit,*) "z-component",self%NdZ
+        do ix = 1, self%NdZ(1)
+             do iy = 1, self%NdZ(2)
+                do iz = 1, self%NdZ(3)
+                     if( self%z( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", self%z( ix, iy, iz ), "]"
                      endif
                 enddo
              enddo

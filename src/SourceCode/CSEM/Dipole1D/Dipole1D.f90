@@ -317,7 +317,7 @@ module dipole1d
     integer, private    :: nlam_interp   ! number of interpolation index points in lambda
     integer, private    :: iptr          ! a pointer to the last interpolation indices, used for quickly finding next indices
     real(8), dimension(:), allocatable, private :: lam_interp      ! interpolation index points 
-    integer, dimension(:), allocatable, private :: iRxLayerInterp  ! Mapping from layer i to interpolation array column, so that
+    integer, allocatable, dimension(:), private :: iRxLayerInterp  ! Mapping from layer i to interpolation array column, so that
                                                                    ! we only store interp coeffs in layers with receivers...can be
                                                                    ! a huge savings in memory for models with 1000's layers
 !
@@ -4098,7 +4098,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
     real(8)     :: lamtest, lam_hed_min, lam_hed_max, lam_ved_min, lam_ved_max, pot_coef_tol
 
-    integer, dimension(:), allocatable :: ilayersInterp
+    integer, allocatable, dimension(:) :: ilayersInterp
 
     logical :: linversionIn
     

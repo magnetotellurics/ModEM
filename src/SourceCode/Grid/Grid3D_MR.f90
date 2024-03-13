@@ -436,7 +436,7 @@ contains
         character( len=4 ), intent( in ) :: grid_type
         !
         integer :: iGrid
-        integer, dimension(:), allocatable :: n_active
+        integer, allocatable, dimension(:) :: n_active
         !
         allocate( n_active( self%n_grids ) )
         !

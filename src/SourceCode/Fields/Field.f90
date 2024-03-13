@@ -7,15 +7,11 @@ module Field
     use Utilities
     use Grid
     !
-    !> Field Store States
-    integer, parameter :: compound = 1
-    integer, parameter :: singleton = 2
-    !
     type, abstract :: Field_t
         !
         class( Grid_t ), pointer :: grid
         !
-        integer :: nx, ny, nz, store_state
+        integer :: nx, ny, nz
         !
         character( len=4 ) :: grid_type
         !
@@ -69,13 +65,9 @@ module Field
             !
             procedure( interface_get_real_field ), deferred, public :: getReal
             !
-            procedure( interface_deallocate_other_state_field ), deferred, public :: deallOtherState
-            !
             !> Field procedures
             procedure, public :: baseInit => initialize_Field
             procedure, public :: baseDealloc => deallocate_Field
-            !
-            procedure, public :: switchStoreState => switchStoreState_Field
             !
             procedure, public :: isCompatible => isCompatible_Field
             !
@@ -281,13 +273,6 @@ module Field
             class( Field_t ), allocatable, intent( out ) :: r_field
         end subroutine interface_get_real_field
         !
-        !> No interface subroutine briefing
-        !
-        subroutine interface_deallocate_other_state_field( self )
-            import :: Field_t
-            class( Field_t ), intent( inout ) :: self
-        end subroutine interface_deallocate_other_state_field
-        !
         !> No interface function briefing
         !
         function interface_is_compatible_field( self, rhs ) result( is_compatible )
@@ -332,8 +317,6 @@ contains
         self%ny = 0
         self%nz = 0
         !
-        self%store_state = compound
-        !
         self%is_allocated = .FALSE.
         !
     end subroutine initialize_Field
@@ -345,45 +328,6 @@ contains
         class( Field_t ), intent( inout ) :: self
         !
     end subroutine deallocate_Field
-    !
-    !> No subroutine briefing
-    !
-    subroutine switchStoreState_Field( self, store_state )
-        implicit none
-        !
-        class( Field_t ), intent( inout ) :: self
-        integer, intent( in ) :: store_state
-        !
-        complex( kind=prec ), allocatable, dimension(:) :: field_array
-        !
-        if( self%store_state /= store_state ) then
-            !
-            field_array = self%getArray()
-            !
-            select case( self%store_state )
-                !
-                case( compound )
-                    !
-                    self%store_state = singleton
-                    !
-                case( singleton )
-                    !
-                    self%store_state = compound
-                    !
-                case default
-                    call errStop( "switchStoreState_Field > store_state should be 'singleton' or 'compound'" )
-                !
-            end select
-            !
-            call self%setArray( field_array )
-            !
-        else
-            !
-            aux_counter = aux_counter + 1
-            !
-        endif
-        !
-    end subroutine switchStoreState_Field
     !
     !> No subroutine briefing
     !
@@ -450,8 +394,8 @@ contains
         !
         class( Field_t ), intent( in ) :: self
         integer, intent( inout ) :: n_full
-        integer, dimension(:), allocatable, intent( out ) :: ind_boundary, ind_interior
-        integer, dimension(:), allocatable, intent( out ), optional :: ind_active
+        integer, allocatable, dimension(:), intent( out ) :: ind_boundary, ind_interior
+        integer, allocatable, dimension(:), intent( out ), optional :: ind_active
         logical, intent( in ), optional :: xy_in
         !
         integer :: i, j, k, int_size, bdry_size
@@ -507,7 +451,7 @@ contains
         !
         class( Field_t ), intent( in ) :: self
         !
-        integer, dimension(:), allocatable :: ind_boundary
+        integer, allocatable, dimension(:) :: ind_boundary
         !
         select case( self%grid_type )
             !
@@ -540,7 +484,7 @@ contains
         !
         class( Field_t ), intent( in ) :: self
         !
-        integer, dimension(:), allocatable :: ind_interior
+        integer, allocatable, dimension(:) :: ind_interior
         !
         select case( self%grid_type )
             !
@@ -573,7 +517,7 @@ contains
         !
         class( Field_t ), intent( in ) :: self
         !
-        integer, dimension(:), allocatable :: ind_active
+        integer, allocatable, dimension(:) :: ind_active
         !
         select case( self%grid_type )
             !

@@ -55,11 +55,8 @@ module cVectorSparse3D_SG
             procedure, public :: interpFunc => interpFunc_cVectorSparse3D_SG
             !
             !> Miscellaneous
-            procedure, public :: deallOtherState => deallOtherState_cVectorSparse3D_SG
-            !
             procedure, public :: getArray => getArray_cVectorSparse3D_SG
             procedure, public :: setArray => setArray_cVectorSparse3D_SG
-            procedure, public :: switchStoreState => switchStoreState_cVectorSparse3D_SG
             procedure, public :: copyFrom => copyFrom_cVectorSparse3D_SG
             procedure, public :: getReal => getReal_cVectorSparse3D_SG
             !
@@ -497,21 +494,6 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine deallOtherState_cVectorSparse3D_SG( self )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        !
-        if( ( .NOT. self%is_allocated ) ) then
-            call errStop( "deallOtherState_cVectorSparse3D_SG > Self not allocated." )
-        endif
-        !
-        call errStop( "deallOtherState_cVectorSparse3D_SG not implemented!" )
-        !
-    end subroutine deallOtherState_cVectorSparse3D_SG
-    !
-    !> No subroutine briefing
-    !
     function getArray_cVectorSparse3D_SG( self ) result( array )
         implicit none
         !
@@ -702,16 +684,6 @@ contains
         !
     end subroutine interpFunc_cVectorSparse3D_SG
     !
-    subroutine switchStoreState_cVectorSparse3D_SG( self, store_state )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( inout ) :: self
-        integer, intent( in ) :: store_state
-        !
-        call errStop( "switchStoreState_cVectorSparse3D_SG not implemented yet!" )
-        !
-    end subroutine switchStoreState_cVectorSparse3D_SG
-    !
     !> No subroutine briefing
     !
     subroutine copyFrom_cVectorSparse3D_SG( self, rhs )
@@ -729,7 +701,6 @@ contains
         self%nx = rhs%nx
         self%ny = rhs%ny
         self%nz = rhs%nz
-        self%store_state = rhs%store_state
         !
         select type( rhs )
             !

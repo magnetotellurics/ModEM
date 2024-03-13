@@ -329,7 +329,7 @@ contains
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
-                call errStop( "setType_ModelParameterCell > Self not allocated." )
+                call errStop( "setType_ModelParameterCell > self not allocated." )
         endif
         !
         do i = 1, self%anisotropic_level

@@ -78,8 +78,6 @@ module cVector3D_MR
             !> Miscellaneous
             procedure, public :: getAxis => getAxis_cVector3D_MR
             !
-            procedure, public :: deallOtherState => deallOtherState_cVector3D_MR
-            !
             procedure, public :: copyFrom => copyFrom_cVector3D_MR
             !
             procedure, public :: getReal => getReal_cVector3D_MR
@@ -123,7 +121,7 @@ contains
         call self%initializeSub
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "rVector3D_MR_ctor > Unable to allocate vector." )
+            call errStop( "cVector3D_MR_ctor > Unable to allocate vector." )
         endif
         !
     end function cVector3D_MR_ctor
@@ -169,8 +167,8 @@ contains
         !
         class( cVector3D_MR_t ), intent( in ) :: self
         integer, intent( inout ) :: n_full
-        integer, dimension(:), allocatable, intent( out ) :: ind_boundary, ind_interior
-        integer, dimension(:), allocatable, intent( out ), optional :: ind_active
+        integer, allocatable, dimension(:), intent( out ) :: ind_boundary, ind_interior
+        integer, allocatable, dimension(:), intent( out ), optional :: ind_active
         logical, intent( in ), optional :: xy_in
         !
         type( cVector3D_MR_t ) :: temp_vector
@@ -331,7 +329,7 @@ contains
         i1 = 1
         i2 = 0
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
             n = self%sub_vector(i)%length()
             i2 = i2 + n
@@ -386,7 +384,7 @@ contains
         !
         n = 0
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
             n = n + self%sub_vector(i)%length()
             !
@@ -402,8 +400,8 @@ contains
         class( cVector3D_MR_t ), intent( in ) :: self
         real( kind=prec ), intent( in) :: c
         !
-        integer, dimension(:), allocatable :: I
-        real( kind=prec ), dimension(:), allocatable :: v
+        integer, allocatable, dimension(:) :: I
+        real( kind=prec ), allocatable, dimension(:) :: v
         integer :: n, n_I, k
         !
         n = self%lengthFull()
@@ -781,15 +779,13 @@ contains
         logical :: int_only_p
         integer :: i
         !
-        if( .NOT. present(int_only)) then
+        if( .NOT. present( int_only ) ) then
             int_only_p = .FALSE.
         else
             int_only_p = int_only
         endif
         !
-        !call self%switchStoreState( compound )
-        !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
             select case( self%sub_vector(i)%grid_type )
                 !
@@ -922,8 +918,8 @@ contains
         !
         integer :: i
         !
-        do i = 1, self%grid%getNGrids()
-            call self%sub_vector(i)%zeros()
+        do i = 1, self%grid%n_grids
+            call self%sub_vector(i)%zeros
         enddo
         !
     end subroutine zeros_cVector3D_MR
@@ -1201,7 +1197,7 @@ contains
         !
         integer :: i
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
             call self%sub_vector(i)%conjugate
             !
@@ -1217,7 +1213,6 @@ contains
         class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        type( cVector3D_MR_t ) :: temp_vector_mr
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
@@ -1228,55 +1223,34 @@ contains
             call errStop( "add_cVector3D_MR > rhs not allocated." )
         endif
         !
-        !call self%switchStoreState( rhs%store_state )
-        !
         if( self%isCompatible( rhs ) ) then
             !
-            do i = 1, self%grid%getNGrids()
+            select type( rhs )
                 !
-                if( rhs%store_state .EQ. compound ) then
+                class is( cVector3D_MR_t )
                     !
-                    select type( rhs )
+                    do i = 1, self%grid%n_grids
                         !
-                        class is( cVector3D_MR_t )
-                            !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x + rhs%sub_vector(i)%x
-                            self%sub_vector(i)%y = self%sub_vector(i)%y + rhs%sub_vector(i)%y
-                            self%sub_vector(i)%z = self%sub_vector(i)%z + rhs%sub_vector(i)%z
-                            !
-                        class is( rScalar3D_MR_t )
-                            !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x + rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%y = self%sub_vector(i)%y + rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%z = self%sub_vector(i)%z + rhs%sub_scalar(i)%v
-                            !
-                        class default
-                            call errStop( "add_cVector3D_MR > Undefined compound rhs" )
-                            !
-                    end select
-                    !
-                elseif( rhs%store_state .EQ. singleton ) then
-                    !
-                    select type( rhs )
+                        self%sub_vector(i)%x = self%sub_vector(i)%x + rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = self%sub_vector(i)%y + rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = self%sub_vector(i)%z + rhs%sub_vector(i)%z
                         !
-                        class is( cVector3D_MR_t )
-                            !
-                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v + rhs%sub_vector(i)%s_v
-                            !
-                        class is( rScalar3D_MR_t )
-                            !
-                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v + rhs%sub_scalar(i)%s_v
-                            !
-                        class default
-                            call errStop( "add_cVector3D_MR > Undefined singleton rhs" )
-                            !
-                    end select
+                    enddo
                     !
-                else
-                    call errStop( "add_cVector3D_MR > Unknow store_state." )
-                endif
+                class is( rVector3D_MR_t )
                 !
-            enddo
+                    do i = 1, self%grid%n_grids
+                        !
+                        self%sub_vector(i)%x = self%sub_vector(i)%x + rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = self%sub_vector(i)%y + rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = self%sub_vector(i)%z + rhs%sub_vector(i)%z
+                        !
+                    enddo
+                    !
+                class default
+                    call errStop( "add_cVector3D_MR > Undefined compound rhs" )
+                    !
+            end select
             !
         else
             call errStop( "add_cVector3D_MR > Incompatible inputs." )
@@ -1304,83 +1278,50 @@ contains
             call errStop( "linComb_cVector3D_MR > rhs not allocated." )
         endif
         !
-        !call self%switchStoreState( rhs%store_state )
-        !
         if( self%isCompatible( rhs ) ) then
             !
-            if( rhs%store_state .EQ. compound ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( cVector3D_MR_t )
                     !
-                    class is( cVector3D_MR_t )
+                    do i = 1, self%grid%n_grids
                         !
-                        do i = 1, self%grid%getNGrids()
-                            !
-                            !write( *, * ) "x: ", size( self%sub_vector(i)%x ), size( rhs%sub_vector(i)%x )
-                            !write( *, * ) "y: ", size( self%sub_vector(i)%y ), size( rhs%sub_vector(i)%y )
-                            !write( *, * ) "z: ", size( self%sub_vector(i)%z ), size( rhs%sub_vector(i)%z )
-                            !
-                            self%sub_vector(i)%x = c1 * self%sub_vector(i)%x + c2 * rhs%sub_vector(i)%x
-                            self%sub_vector(i)%y = c1 * self%sub_vector(i)%y + c2 * rhs%sub_vector(i)%y
-                            self%sub_vector(i)%z = c1 * self%sub_vector(i)%z + c2 * rhs%sub_vector(i)%z
-                            !
-                        enddo
+                        self%sub_vector(i)%x = c1 * self%sub_vector(i)%x + c2 * rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = c1 * self%sub_vector(i)%y + c2 * rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = c1 * self%sub_vector(i)%z + c2 * rhs%sub_vector(i)%z
                         !
-                    class is( rScalar3D_MR_t )
-                        !
-                        do i = 1, self%grid%getNGrids()
-                            !
-                            self%sub_vector(i)%x = c1 * self%sub_vector(i)%x + c2 * rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%y = c1 * self%sub_vector(i)%y + c2 * rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%z = c1 * self%sub_vector(i)%z + c2 * rhs%sub_scalar(i)%v
-                            !
-                        enddo
-                        !
-                    class is( cVector3D_SG_t )
-                        !
-                        mr_rhs = cVector3D_MR_t( self%grid, self%grid_type )
-                        !
-                        call mr_rhs%fromSG( rhs )
-                        !
-                        call self%linComb( mr_rhs, c1, c2 )
-                        !
-                    class is( rVector3D_SG_t )
-                        !
-                        call errStop( "linComb_cVector3D_MR > rVector3D_SG_t case not implemented" )
-                        !
-                    class is( cScalar3D_SG_t )
-                        !
-                        call errStop( "linComb_cVector3D_MR > cScalar3D_SG_t case not implemented" )
-                        !
-                    class is( rScalar3D_SG_t )
-                        !
-                        call errStop( "linComb_cVector3D_MR > rScalar3D_SG_t case not implemented" )
-                        !
-                    class default
-                        call errStop( "linComb_cVector3D_MR > Undefined rhs" )
-                        !
-                end select
-                !
-            elseif( rhs%store_state .EQ. singleton ) then
-                !
-                select type( rhs )
+                    enddo
                     !
-                    class is( cVector3D_MR_t )
+                class is( rVector3D_MR_t )
+                    !
+                    do i = 1, self%grid%n_grids
                         !
-                        self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_vector(i)%s_v
+                        self%sub_vector(i)%x = c1 * self%sub_vector(i)%x + c2 * rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = c1 * self%sub_vector(i)%y + c2 * rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = c1 * self%sub_vector(i)%z + c2 * rhs%sub_vector(i)%z
                         !
-                    class is( rScalar3D_MR_t )
-                        !
-                        self%sub_vector(i)%s_v = c1* self%sub_vector(i)%s_v + c2 * rhs%sub_scalar(i)%s_v
-                        !
-                    class default
-                        call errStop( "linComb_cVector3D_MR > Undefined singleton rhs" )
-                        !
-                end select
-                !
-            else
-                call errStop( "linComb_cVector3D_MR > Unknow store_state." )
-            endif
+                    enddo
+                    !
+                class is( cVector3D_SG_t )
+                    !
+                    mr_rhs = cVector3D_MR_t( self%grid, self%grid_type )
+                    !
+                    call mr_rhs%fromSG( rhs )
+                    !
+                    call self%linComb( mr_rhs, c1, c2 )
+                    !
+                class is( rVector3D_SG_t )
+                    !
+                    call errStop( "linComb_cVector3D_MR > rVector3D_SG_t case not implemented" )
+                    !
+                class is( cScalar3D_SG_t )
+                    !
+                    call errStop( "linComb_cVector3D_MR > cScalar3D_SG_t case not implemented" )
+                    !
+                class default
+                    call errStop( "linComb_cVector3D_MR > Undefined rhs" )
+                    !
+            end select
             !
         else
             call errStop( "linComb_cVector3D_MR > Incompatible inputs." )
@@ -1389,6 +1330,7 @@ contains
     end subroutine linComb_cVector3D_MR
     !
     !> No subroutine briefing
+    !
     subroutine subValue_cVector3D_MR( self, cvalue )
         implicit none
         !
@@ -1397,21 +1339,11 @@ contains
         !
         integer :: i
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
-            if( self%store_state .EQ. compound ) then
-                !
-                self%sub_vector(i)%x = self%sub_vector(i)%x - cvalue
-                self%sub_vector(i)%y = self%sub_vector(i)%y - cvalue
-                self%sub_vector(i)%z = self%sub_vector(i)%z - cvalue
-                !
-            elseif( self%store_state .EQ. singleton ) then
-                !
-                self%sub_vector(i)%s_v = self%sub_vector(i)%s_v - cvalue
-                !
-            else
-                call errStop( "subValue_cVector3D_MR > Unknown store_state!" )
-            endif
+            self%sub_vector(i)%x = self%sub_vector(i)%x - cvalue
+            self%sub_vector(i)%y = self%sub_vector(i)%y - cvalue
+            self%sub_vector(i)%z = self%sub_vector(i)%z - cvalue
             !
         enddo
         !
@@ -1435,55 +1367,34 @@ contains
             call errStop( "subField_cVector3D_MR > rhs not allocated." )
         endif
         !
-        !call self%switchStoreState( rhs%store_state )
-        !
         if( self%isCompatible( rhs ) ) then
             !
-            do i = 1, self%grid%getNGrids()
+            select type( rhs )
                 !
-                if( rhs%store_state .EQ. compound ) then
+                class is( cVector3D_MR_t )
                     !
-                    select type( rhs )
+                    do i = 1, self%grid%n_grids
                         !
-                        class is( cVector3D_MR_t )
-                            !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x - rhs%sub_vector(i)%x
-                            self%sub_vector(i)%y = self%sub_vector(i)%y - rhs%sub_vector(i)%y
-                            self%sub_vector(i)%z = self%sub_vector(i)%z - rhs%sub_vector(i)%z
-                            !
-                        class is( rScalar3D_MR_t )
-                            !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x - rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%y = self%sub_vector(i)%y - rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%z = self%sub_vector(i)%z - rhs%sub_scalar(i)%v
-                            !
-                        class default
-                            call errStop( "subField_cVector3D_MR > Undefined rhs" )
-                            !
-                    end select
-                    !
-                elseif( rhs%store_state .EQ. singleton ) then
-                    !
-                    select type( rhs )
+                        self%sub_vector(i)%x = self%sub_vector(i)%x - rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = self%sub_vector(i)%y - rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = self%sub_vector(i)%z - rhs%sub_vector(i)%z
                         !
-                        class is( cVector3D_MR_t )
-                            !
-                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v - rhs%sub_vector(i)%s_v
-                            !
-                        class is( rScalar3D_MR_t )
-                            !
-                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v - rhs%sub_scalar(i)%s_v
-                            !
-                        class default
-                            call errStop( "add_cVector3D_MR > Undefined singleton rhs" )
-                            !
-                    end select
+                    enddo
                     !
-                else
-                    call errStop( "subField_cVector3D_MR > Unknow store_state." )
-                endif
-                !
-            enddo
+                class is( rVector3D_MR_t )
+                    !
+                    do i = 1, self%grid%n_grids
+                        !
+                        self%sub_vector(i)%x = self%sub_vector(i)%x - rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = self%sub_vector(i)%y - rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = self%sub_vector(i)%z - rhs%sub_vector(i)%z
+                        !
+                    enddo
+                    !
+                class default
+                    call errStop( "subField_cVector3D_MR > Undefined rhs" )
+                    !
+            end select
             !
         else
             call errStop( "subField_cVector3D_MR > Incompatible inputs." )
@@ -1501,21 +1412,11 @@ contains
         !
         integer :: i
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
-            if( self%store_state .EQ. compound ) then
-                !
-                self%sub_vector(i)%x = self%sub_vector(i)%x * rvalue
-                self%sub_vector(i)%y = self%sub_vector(i)%y * rvalue
-                self%sub_vector(i)%z = self%sub_vector(i)%z * rvalue
-                !
-            elseif( self%store_state .EQ. singleton ) then
-                !
-                self%sub_vector(i)%s_v = self%sub_vector(i)%s_v * rvalue
-                !
-            else
-                call errStop( "multByReal_cVector3D_MR > Unknown store_state!" )
-            endif
+            self%sub_vector(i)%x = self%sub_vector(i)%x * rvalue
+            self%sub_vector(i)%y = self%sub_vector(i)%y * rvalue
+            self%sub_vector(i)%z = self%sub_vector(i)%z * rvalue
             !
         enddo
         !
@@ -1531,21 +1432,11 @@ contains
         !
         integer :: i
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
-            if( self%store_state .EQ. compound ) then
-                !
-                self%sub_vector(i)%x = self%sub_vector(i)%x * cvalue
-                self%sub_vector(i)%y = self%sub_vector(i)%y * cvalue
-                self%sub_vector(i)%z = self%sub_vector(i)%z * cvalue
-                !
-            elseif( self%store_state .EQ. singleton ) then
-                !
-                self%sub_vector(i)%s_v = self%sub_vector(i)%s_v * cvalue
-                !
-            else
-                call errStop( "multByComplex_cVector3D_MR > Unknown store_state!" )
-            endif
+            self%sub_vector(i)%x = self%sub_vector(i)%x * cvalue
+            self%sub_vector(i)%y = self%sub_vector(i)%y * cvalue
+            self%sub_vector(i)%z = self%sub_vector(i)%z * cvalue
             !
         enddo
         !
@@ -1568,61 +1459,34 @@ contains
             call errStop( "multByField_cVector3D_MR > rhs not allocated." )
         endif
         !
-        !call self%switchStoreState( rhs%store_state )
-        !
         if( self%isCompatible( rhs ) ) then
             !
-            do i = 1, self%grid%getNGrids()
+            select type( rhs )
                 !
-                if( rhs%store_state .EQ. compound ) then
+                class is( cVector3D_MR_t )
                     !
-                    select type( rhs )
+                    do i = 1, self%grid%n_grids
                         !
-                        class is( cVector3D_MR_t )
-                            !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
-                            self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
-                            self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%z
+                        self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%z
                         !
-                        class is( rVector3D_MR_t )
-                            !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
-                            self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
-                            self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%z
-                            !
-                        class is( rScalar3D_MR_t )
-                            !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_scalar(i)%v
-                            !
-                        class default
-                            call errStop( "multByField_cVector3D_MR > Undefined rhs" )
-                            !
-                    end select
+                    enddo
                     !
-                elseif( rhs%store_state .EQ. singleton ) then
+                class is( rVector3D_MR_t )
                     !
-                    select type( rhs )
+                    do i = 1, self%grid%n_grids
                         !
-                        class is( cVector3D_MR_t )
-                            !
-                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v * rhs%sub_vector(i)%s_v
-                            !
-                        class is( rScalar3D_MR_t )
-                            !
-                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v * rhs%sub_scalar(i)%s_v
-                            !
-                        class default
-                            call errStop( "add_cVector3D_MR > Undefined singleton rhs" )
-                            !
-                    end select
+                        self%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%z
+                        !
+                    enddo
                     !
-                else
-                    call errStop( "multByField_cVector3D_MR > Unknow store_state." )
-                endif
+            class default
+                call errStop( "multByField_cVector3D_MR > Undefined rhs" )
                 !
-            enddo
+            end select
             !
         else
             call errStop( "multByField_cVector3D_MR > Incompatible inputs." )
@@ -1653,57 +1517,34 @@ contains
         !
         diag_mult_temp = cVector3D_MR_t( self%grid, self%grid_type )
         !
-        !call diag_mult_temp%switchStoreState( rhs%store_state )
-        !
-        !call self%switchStoreState( rhs%store_state )
-        !
         if( self%isCompatible( rhs ) ) then
             !
-            do i = 1, self%grid%getNGrids()
+            select type( rhs )
                 !
-                if( rhs%store_state .EQ. compound ) then
+                class is( cVector3D_MR_t )
                     !
-                    select type( rhs )
+                    do i = 1, self%grid%n_grids
                         !
-                        class is( cVector3D_MR_t )
-                            !
-                            diag_mult_temp%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
-                            diag_mult_temp%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
-                            diag_mult_temp%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%z
-                            !
-                        class is( rScalar3D_MR_t )
-                            !
-                            diag_mult_temp%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_scalar(i)%v
-                            diag_mult_temp%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_scalar(i)%v
-                            diag_mult_temp%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_scalar(i)%v
-                            !
-                        class default
-                            call errStop( "diagMult_cVector3D_MR > Undefined rhs" )
-                            !
-                    end select
-                    !
-                elseif( rhs%store_state .EQ. singleton ) then
-                    !
-                    select type( rhs )
+                        diag_mult_temp%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
+                        diag_mult_temp%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
+                        diag_mult_temp%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%z
                         !
-                        class is( cVector3D_MR_t )
-                            !
-                            diag_mult_temp%sub_vector(i)%s_v = self%sub_vector(i)%s_v * rhs%sub_vector(i)%s_v
-                            !
-                        class is( rScalar3D_MR_t )
-                            !
-                            diag_mult_temp%sub_vector(i)%s_v = self%sub_vector(i)%s_v * rhs%sub_scalar(i)%s_v
-                            !
-                        class default
-                            call errStop( "add_cVector3D_MR > Undefined singleton rhs" )
-                            !
-                    end select
+                    enddo
                     !
-                else
-                    call errStop( "diagMult_cVector3D_MR > Unknow store_state." )
-                endif
-                !
-            enddo
+                class is( rVector3D_MR_t )
+                    !
+                    do i = 1, self%grid%n_grids
+                        !
+                        diag_mult_temp%sub_vector(i)%x = self%sub_vector(i)%x * rhs%sub_vector(i)%x
+                        diag_mult_temp%sub_vector(i)%y = self%sub_vector(i)%y * rhs%sub_vector(i)%y
+                        diag_mult_temp%sub_vector(i)%z = self%sub_vector(i)%z * rhs%sub_vector(i)%z
+                        !
+                    enddo
+                    !
+                class default
+                    call errStop( "diagMult_cVector3D_MR > Undefined rhs" )
+                    !
+            end select
             !
             allocate( diag_mult, source = diag_mult_temp )
             !
@@ -1728,38 +1569,34 @@ contains
             call errStop( "multAdd_cVector3D_MR > rhs not allocated." )
         endif
         !
-        !call self%switchStoreState( rhs%store_state )
-        !
         if( self%isCompatible( rhs ) ) then
             !
-            do i = 1, self%grid%getNGrids()
+            select type( rhs )
                 !
-                !call self%switchStoreState( rhs%store_state )
-                !
-                select type( rhs )
+                class is( cVector3D_MR_t ) 
                     !
-                    class is( cVector3D_MR_t ) 
+                    do i = 1, self%grid%n_grids
                         !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x + cvalue * rhs%sub_vector(i)%x
-                            self%sub_vector(i)%y = self%sub_vector(i)%y + cvalue * rhs%sub_vector(i)%y
-                            self%sub_vector(i)%z = self%sub_vector(i)%z + cvalue * rhs%sub_vector(i)%z
-                            !
-                        elseif( rhs%store_state .EQ. singleton ) then
-                            !
-                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v + cvalue * rhs%sub_vector(i)%s_v
-                            !
-                        else
-                            call errStop( "multAdd_cVector3D_MR > Unknown rhs store_state!" )
-                        endif
+                        self%sub_vector(i)%x = self%sub_vector(i)%x + cvalue * rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = self%sub_vector(i)%y + cvalue * rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = self%sub_vector(i)%z + cvalue * rhs%sub_vector(i)%z
                         !
-                    class default
-                        call errStop( "multAdd_cVector3D_MR > rhs undefined." )
+                    enddo
                     !
-                end select
-                !
-            enddo
+                class is( rVector3D_MR_t ) 
+                    !
+                    do i = 1, self%grid%n_grids
+                        !
+                        self%sub_vector(i)%x = self%sub_vector(i)%x + cvalue * rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = self%sub_vector(i)%y + cvalue * rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = self%sub_vector(i)%z + cvalue * rhs%sub_vector(i)%z
+                        !
+                    enddo
+                    !
+                class default
+                    call errStop( "multAdd_cVector3D_MR > rhs undefined." )
+                    !
+            end select
             !
         else
             call errStop( "multAdd_cVector3D_MR >Incompatible inputs." )
@@ -1780,12 +1617,12 @@ contains
         integer :: i
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "dotProd_rScalar3D_MR > self not allocated." )
+            call errStop( "dotProd_cVector3D_MR > self not allocated." )
         endif
         !
         cvalue = C_ZERO
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
             if( self%isCompatible( rhs ) ) then
                 !
@@ -1818,21 +1655,11 @@ contains
         !
         integer :: i
         !
-        do i = 1, self%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
-            if( self%store_state .EQ. compound ) then
-                !
-                self%sub_vector(i)%x = self%sub_vector(i)%x / cvalue
-                self%sub_vector(i)%y = self%sub_vector(i)%y / cvalue
-                self%sub_vector(i)%z = self%sub_vector(i)%z / cvalue
-                !
-            elseif( self%store_state .EQ. singleton ) then
-                !
-                self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / cvalue
-                !
-            else
-                call errStop( "divByValue_cVector3D_MR > Unknown self store_state!" )
-            endif
+            self%sub_vector(i)%x = self%sub_vector(i)%x / cvalue
+            self%sub_vector(i)%y = self%sub_vector(i)%y / cvalue
+            self%sub_vector(i)%z = self%sub_vector(i)%z / cvalue
             !
         enddo
         !
@@ -1850,66 +1677,32 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            !call self%switchStoreState( rhs%store_state )
-            !
-            do i = 1, self%grid%getNGrids()
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( cVector3D_MR_t )
                     !
-                    class is( cVector3D_MR_t )
+                    do i = 1, self%grid%n_grids
                         !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x / rhs%sub_vector(i)%x
-                            self%sub_vector(i)%y = self%sub_vector(i)%y / rhs%sub_vector(i)%y
-                            self%sub_vector(i)%z = self%sub_vector(i)%z / rhs%sub_vector(i)%z
-                            !
-                        elseif( rhs%store_state .EQ. singleton ) then
-                            !
-                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_vector(i)%s_v
-                            !
-                        else
-                            call errStop( "divByField_cVector3D_MR > Unknown complex rhs store_state!" )
-                        endif
+                        self%sub_vector(i)%x = self%sub_vector(i)%x / rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = self%sub_vector(i)%y / rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = self%sub_vector(i)%z / rhs%sub_vector(i)%z
+                        !
+                    enddo
                     !
-                    class is( rVector3D_MR_t )
-                        !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x / rhs%sub_vector(i)%x
-                            self%sub_vector(i)%y = self%sub_vector(i)%y / rhs%sub_vector(i)%y
-                            self%sub_vector(i)%z = self%sub_vector(i)%z / rhs%sub_vector(i)%z
-                            !
-                        elseif( rhs%store_state .EQ. singleton ) then
-                            !
-                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_vector(i)%s_v
-                            !
-                        else
-                            call errStop( "divByField_cVector3D_MR > Unknown real rhs store_state!" )
-                        endif
-                        !
-                    class is( rScalar3D_MR_t )
-                        !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            self%sub_vector(i)%x = self%sub_vector(i)%x / rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%y = self%sub_vector(i)%y / rhs%sub_scalar(i)%v
-                            self%sub_vector(i)%z = self%sub_vector(i)%z / rhs%sub_scalar(i)%v
-                            !
-                        elseif( rhs%store_state .EQ. singleton ) then
-                            !
-                            self%sub_vector(i)%s_v = self%sub_vector(i)%s_v / rhs%sub_scalar(i)%s_v
-                            !
-                        else
-                            call errStop( "divByField_cVector3D_MR > Unknown rhs store_state!" )
-                        endif
-                        !
-                    class default
-                        call errStop( "divByField_cVector3D_MR: undefined rhs" )
+                class is( rVector3D_MR_t )
                     !
-                end select
-                !
-            enddo
+                    do i = 1, self%grid%n_grids
+                        !
+                        self%sub_vector(i)%x = self%sub_vector(i)%x / rhs%sub_vector(i)%x
+                        self%sub_vector(i)%y = self%sub_vector(i)%y / rhs%sub_vector(i)%y
+                        self%sub_vector(i)%z = self%sub_vector(i)%z / rhs%sub_vector(i)%z
+                        !
+                    enddo
+                    !
+                class default
+                    call errStop( "divByField_cVector3D_MR: undefined rhs" )
+                    !
+            end select
             !
         else
             call errStop( "divByField_cVector3D_MR: incompatible rhs" )
@@ -1974,33 +1767,6 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine deallOtherState_cVector3D_MR( self )
-        implicit none
-        !
-        class( cVector3D_MR_t ), intent( inout ) :: self
-        !
-        call errStop( "deallOtherState_cVector3D_MR not implemented!" )
-        ! !
-        ! if( ( .NOT. self%is_allocated ) ) then
-            ! call errStop( "deallOtherState_cVector3D_MR > Self not allocated." )
-        ! endif
-        ! !
-        ! if( self%store_state .EQ. compound ) then
-            ! !
-            ! if( allocated( self%s_v ) ) deallocate( self%s_v )
-            ! !
-        ! elseif( self%store_state .EQ. singleton ) then
-            ! !
-            ! if( allocated( self%v ) ) deallocate( self%v )
-            ! !
-        ! else
-            ! call errStop( "deallOtherState_cVector3D_MR > Unknown store_state!" )
-        ! endif
-        ! !
-    end subroutine deallOtherState_cVector3D_MR
-    !
-    !> No subroutine briefing
-    !
     function getArray_cVector3D_MR( self ) result( array )
         implicit none
         !
@@ -2041,18 +1807,6 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine switchStoreState_cVector3D_MR( self, store_state )
-        implicit none
-        !
-        class( cVector3D_MR_t ), intent( inout ) :: self
-        integer, intent( in ), optional :: store_state
-        !
-        call errStop( "switchStoreState_cVector3D_MR not implemented!" )
-        !
-    end subroutine switchStoreState_cVector3D_MR
-    !
-    !> No subroutine briefing
-    !
     subroutine copyFrom_cVector3D_MR( self, rhs )
         implicit none
         !
@@ -2068,7 +1822,6 @@ contains
         self%nx = rhs%nx
         self%ny = rhs%ny
         self%nz = rhs%nz
-        self%store_state = rhs%store_state
         !
         select type( rhs )
             !
@@ -2168,12 +1921,7 @@ contains
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append
         !
-        type( cVector3D_MR_t ) :: copy
         integer :: i, ix, iy, iz,funit
-        !
-        copy = self
-        !
-        !call copy%switchStoreState( compound )
         !
         if( present( io_unit ) ) then
             funit = io_unit
@@ -2183,40 +1931,40 @@ contains
         !
         write(funit,*) "cVector3D_MR field"
         !
-        do i = 1, copy%grid%getNGrids()
+        do i = 1, self%grid%n_grids
             !
             if( present( title ) ) write( funit, * ) title
             !
-            write( funit, * ) copy%sub_vector(i)%nx, copy%sub_vector(i)%ny, copy%sub_vector(i)%nz
+            write( funit, * ) self%sub_vector(i)%nx, self%sub_vector(i)%ny, self%sub_vector(i)%nz
             !
-            write(funit, * ) "x-component",copy%sub_vector(i)%NdX
-            do ix = 1, copy%sub_vector(i)%NdX(1)
-                 do iy = 1, copy%sub_vector(i)%NdX(2)
-                    do iz = 1, copy%sub_vector(i)%NdX(3)
-                         if( copy%sub_vector(i)%x( ix, iy, iz ) /= 0 ) then
-                            write(funit,*) ix,iy,iz, ":[", copy%sub_vector(i)%x( ix, iy, iz ), "]"
+            write(funit, * ) "x-component",self%sub_vector(i)%NdX
+            do ix = 1, self%sub_vector(i)%NdX(1)
+                 do iy = 1, self%sub_vector(i)%NdX(2)
+                    do iz = 1, self%sub_vector(i)%NdX(3)
+                         if( self%sub_vector(i)%x( ix, iy, iz ) /= 0 ) then
+                            write(funit,*) ix,iy,iz, ":[", self%sub_vector(i)%x( ix, iy, iz ), "]"
                          endif
                     enddo
                  enddo
             enddo
             !
-            write(funit,*) "y-component",copy%sub_vector(i)%NdY
-            do ix = 1, copy%sub_vector(i)%NdY(1)
-                 do iy = 1, copy%sub_vector(i)%NdY(2)
-                    do iz = 1, copy%sub_vector(i)%NdY(3)
-                         if( copy%sub_vector(i)%y( ix, iy, iz ) /= 0 ) then
-                            write(funit,*) ix,iy,iz, ":[", copy%sub_vector(i)%y( ix, iy, iz ), "]"
+            write(funit,*) "y-component",self%sub_vector(i)%NdY
+            do ix = 1, self%sub_vector(i)%NdY(1)
+                 do iy = 1, self%sub_vector(i)%NdY(2)
+                    do iz = 1, self%sub_vector(i)%NdY(3)
+                         if( self%sub_vector(i)%y( ix, iy, iz ) /= 0 ) then
+                            write(funit,*) ix,iy,iz, ":[", self%sub_vector(i)%y( ix, iy, iz ), "]"
                          endif
                     enddo
                  enddo
             enddo
             !
-            write(funit,*) "z-component",copy%sub_vector(i)%NdZ
-            do ix = 1, copy%sub_vector(i)%NdZ(1)
-                 do iy = 1, copy%sub_vector(i)%NdZ(2)
-                    do iz = 1, copy%sub_vector(i)%NdZ(3)
-                         if( copy%sub_vector(i)%z( ix, iy, iz ) /= 0 ) then
-                            write(funit,*) ix,iy,iz, ":[", copy%sub_vector(i)%z( ix, iy, iz ), "]"
+            write(funit,*) "z-component",self%sub_vector(i)%NdZ
+            do ix = 1, self%sub_vector(i)%NdZ(1)
+                 do iy = 1, self%sub_vector(i)%NdZ(2)
+                    do iz = 1, self%sub_vector(i)%NdZ(3)
+                         if( self%sub_vector(i)%z( ix, iy, iz ) /= 0 ) then
+                            write(funit,*) ix,iy,iz, ":[", self%sub_vector(i)%z( ix, iy, iz ), "]"
                          endif
                     enddo
                  enddo

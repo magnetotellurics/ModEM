@@ -302,7 +302,7 @@ module Transmitter
                 !
             enddo
             !
-            !> Instantiates the source and sets its E, creating Rhs from it.
+            !> Instantiates the source and sets its E, creating rhs from it.
             source_int_force = SourceAdjoint_t( model_operator, sigma, self%period )
             !
             call source_int_force%setE( bSrc )

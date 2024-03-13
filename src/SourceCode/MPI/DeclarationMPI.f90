@@ -1781,7 +1781,7 @@ contains
         !
         call MPI_PACK_SIZE( 4, MPI_CHARACTER, main_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes(2), ierr )
-        call MPI_PACK_SIZE( 8, MPI_INTEGER, main_comm, nbytes(3), ierr )
+        call MPI_PACK_SIZE( 7, MPI_INTEGER, main_comm, nbytes(3), ierr )
         !
         select type( ccond )
             !
@@ -1828,7 +1828,6 @@ contains
                 call MPI_PACK( ccond%nz, 1, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( ccond%NdV(1), 3, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, main_comm, ierr )
                 call MPI_PACK( ccond%Nxyz, 1, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( ccond%store_state, 1, MPI_INTEGER, conductivity_buffer, conductivity_buffer_size, index, main_comm, ierr )
                 !
                 aux_array = ccond%getArray()
                 !
@@ -1868,7 +1867,6 @@ contains
                 call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%nz, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%NdV(1), 3, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%Nxyz, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( conductivity_buffer, conductivity_buffer_size, index, ccond%store_state, 1, MPI_INTEGER, main_comm, ierr )
                 !
                 allocate( aux_array( ccond%Nxyz ) )
                 !
@@ -2002,7 +2000,7 @@ contains
         !
         call MPI_PACK_SIZE( 1, MPI_INTEGER, main_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 4, MPI_CHARACTER, main_comm, nbytes(2), ierr )
-        call MPI_PACK_SIZE( 4, MPI_INTEGER, main_comm, nbytes(3), ierr )
+        call MPI_PACK_SIZE( 3, MPI_INTEGER, main_comm, nbytes(3), ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes(4), ierr )
         call MPI_PACK_SIZE( 4, MPI_INTEGER, main_comm, nbytes(5), ierr )
         !
@@ -2095,7 +2093,6 @@ contains
         call MPI_PACK( scalar%nx, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( scalar%ny, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( scalar%nz, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-        call MPI_PACK( scalar%store_state, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( scalar%is_allocated, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         !
         !> Pack type specific properties
@@ -2180,7 +2177,6 @@ contains
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%nx, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%ny, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%nz, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%store_state, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                 !
                 select type( scalar )
@@ -2207,7 +2203,6 @@ contains
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%nx, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%ny, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%nz, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%store_state, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                 !
                 select type( scalar )
@@ -2234,7 +2229,6 @@ contains
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%nx, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%ny, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%nz, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%store_state, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                 !
                 select type( scalar )
@@ -2261,7 +2255,6 @@ contains
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%nx, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%ny, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%nz, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%store_state, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                 !
                 select type( scalar )
@@ -2288,7 +2281,6 @@ contains
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%nx, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%ny, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%nz, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%store_state, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, scalar%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                 !
                 select type( scalar )
@@ -2332,7 +2324,7 @@ contains
         !
         call MPI_PACK_SIZE( 1, MPI_INTEGER, main_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 4, MPI_CHARACTER, main_comm, nbytes(2), ierr )
-        call MPI_PACK_SIZE( 4, MPI_INTEGER, main_comm, nbytes(3), ierr )
+        call MPI_PACK_SIZE( 3, MPI_INTEGER, main_comm, nbytes(3), ierr )
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes(4), ierr )
         call MPI_PACK_SIZE( 12, MPI_INTEGER, main_comm, nbytes(5), ierr )
         !
@@ -2417,7 +2409,6 @@ contains
         call MPI_PACK( vector%nx, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( vector%ny, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( vector%nz, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-        call MPI_PACK( vector%store_state, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( vector%is_allocated, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         !
         !> Pack type specific properties
@@ -2497,7 +2488,6 @@ contains
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%nx, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%ny, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%nz, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%store_state, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                 !
                 select type( vector )
@@ -2525,7 +2515,6 @@ contains
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%nx, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%ny, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%nz, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%store_state, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                 !
                 select type( vector )
@@ -2553,7 +2542,6 @@ contains
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%nx, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%ny, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%nz, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%store_state, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                 !
                 select type( vector )
@@ -2580,7 +2568,6 @@ contains
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%nx, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%ny, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%nz, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%store_state, 1, MPI_INTEGER, main_comm, ierr )
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, vector%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
                 !
                 select type( vector )
