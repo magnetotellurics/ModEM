@@ -513,32 +513,17 @@ contains
             call errStop( "dPDEmapping_T_ModelParameterCell_MR > dsigma not allocated" )
         endif
         !
-        !> temp storage for calculation of dsigma on MR grid
-        !sigma_cell_al = rScalar3D_MR_t( self%metric%grid, CELL )
-        call self%metric%createScalar( real_t, CELL, sigma_cell_al )    !SHOULD BE GENERIC FOR sumEdges...
+        !>
+        call self%metric%createScalar( real_t, CELL, sigma_cell_al )    !sigma_cell_al SHOULD BE GENERIC FOR edgeToCell...
         !
         call self%edgeToCell( e_vec, sigma_cell_al )                    !... HERE!
-        !
-        !> IMPLEMENT A GETREAL ROUTINE FOR THIS ????
+		!
+		sigma_cell_al_mr = rScalar3D_MR_t( sigma_cell_al%grid, sigma_cell_al%grid_type )
+		!
         select type( sigma_cell_al )
             !
-            class is( cScalar3D_MR_t )
-                !
-                write( *, * ) "dPDEmapping_T_ModelParameterCell_MR > sigma_cell_al is cScalar3D_MR_t"
-                !
-                sigma_cell_al_mr = rScalar3D_MR_t( sigma_cell_al%grid, sigma_cell_al%grid_type )
-                !
-                do i = 1, size( sigma_cell_al%sub_scalar )
-                    !
-                    sigma_cell_al_mr%sub_scalar(i)%v = real( sigma_cell_al%sub_scalar(i)%v, kind=prec )
-                    !
-                enddo
-            !
+            ! ALWAYS THIS CASE BECAUSE GETREAL IN PMult_t_Tx!!!!
             class is( rScalar3D_MR_t )
-                !
-                write( *, * ) "dPDEmapping_T_ModelParameterCell_MR > sigma_cell_al is rScalar3D_MR_t"
-                !
-                sigma_cell_al_mr = rScalar3D_MR_t( sigma_cell_al%grid, sigma_cell_al%grid_type )
                 !
                 do i = 1, size( sigma_cell_al%sub_scalar )
                     !

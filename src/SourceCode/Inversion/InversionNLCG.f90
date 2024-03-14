@@ -40,8 +40,6 @@ module InversionNLCG
             !
     end type InversionNLCG_t
     !
-    logical :: is_complex = .TRUE.
-    !
     !private :: weightGradrients
     private :: writeHeaders
     !
@@ -489,8 +487,6 @@ contains
         Nres = res
         !
         call normalizeData( Nres, 2 )
-        !
-        !call setComplex( Nres, is_complex )
         !
         SS = dotProdData( res, Nres )
         !
