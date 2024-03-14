@@ -753,15 +753,11 @@ contains
         class( cScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
-        !
         if( .NOT. self%is_allocated ) then
             call errStop( "setArray_cScalar3D_SG > self not allocated." )
         endif
         !
-        v = reshape( array, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
-        !
-        self%v = v
+        self%v = reshape( array, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
         !
     end subroutine setArray_cScalar3D_SG
     !
@@ -843,7 +839,7 @@ contains
         character(:), allocatable, intent( in ), optional :: ftype
         !
         integer :: Nx, Ny, Nz
-        character(4) :: grid_type
+        character( len=4 ) :: grid_type
         integer :: i, j, k, k1, k2, istat
         real( kind=prec ), allocatable :: temp(:)
         logical :: ok, hasname, binary
@@ -855,7 +851,7 @@ contains
         !
         if( .NOT. present( ftype ) ) then
              binary = .FALSE.
-        elseif( index( ftype, "b" ) > 0) then
+        elseif( index( ftype, "b" ) > 0 ) then
              binary = .TRUE.
         else
              binary = .FALSE.
@@ -893,13 +889,14 @@ contains
                  endif
                  !
                  do j = Nx, 1, -1
-                        read(funit, *, iostat = istat) temp
-                        
+                        !
+						read(funit, *, iostat = istat) temp
+                        !
                         if( istat /= 0) then
                              write( *, * ) "While reading the ", j, "th row in ", i,"th block."
                              call errStop( "read_cScalar3D_SG." )
                         endif
-                        
+                        !
                         do k = k1, k2
                              self%v(j, :, k) = temp
                         enddo

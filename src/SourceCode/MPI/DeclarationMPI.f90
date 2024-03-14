@@ -47,12 +47,12 @@ module DeclarationMPI
     integer, parameter :: receiver_single_field = 4
     !
     !> Labels for ModEM jobs
-    character( len=15 ) :: job_master = "MASTER_JOB", job_finish = "STOP_JOBS", job_done = "FINISH_JOB"
-    character( len=15 ) :: job_em_solve = "JOB_EM_SOLVE", job_forward = "JOB_FORWARD", job_inversion = "JOB_INVERSION"
-    character( len=15 ) :: job_jmult = "JOB_JMULT", job_jmult_t = "JOB_JMULT_T"
-    character( len=15 ) :: job_basic_components = "HANDLE_FWD_COMP"
-    character( len=15 ) :: job_sigma_model = "HANDLE_SIGMA"
-    character( len=15 ) :: job_dsigma_model = "HANDLE_DSIGMA"
+    character( len=15 ) :: job_master = "MASTER_JOB"
+    character( len=15 ) :: job_finish = "STOP_JOBS", job_done = "FINISH_JOB"
+    character( len=15 ) :: job_em_solve = "JOB_EM_SOLVE", job_forward = "JOB_FORWARD"
+    character( len=15 ) :: job_inversion = "JOB_INVERSION", job_jmult = "JOB_JMULT"
+    character( len=15 ) :: job_jmult_t = "JOB_JMULT_T", job_basic_components = "HANDLE_FWD_COMP"
+    character( len=15 ) :: job_sigma_model = "HANDLE_SIGMA", job_dsigma_model = "HANDLE_DSIGMA"
     !
     !> Structure to gather necessary MPI information for the execution of the different ModEM jobs.
     type :: JobInfo_t
@@ -1157,7 +1157,7 @@ contains
                     !
                     call unpackScalarBuffer( cell_cond, param_grid, parent_buffer, parent_buffer_size, index )
                     !
-					cell_cond_sg = cell_cond
+                    cell_cond_sg = cell_cond
                     call model%setCond( cell_cond_sg, i )
                     !
                     deallocate( cell_cond )

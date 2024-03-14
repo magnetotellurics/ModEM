@@ -720,15 +720,11 @@ contains
         class( iScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
-        !
         if( .NOT. self%is_allocated ) then
             call errStop( "setArray_iScalar3D_SG > self not allocated." )
         endif
         !
-        v = reshape( array, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
-        !
-        self%v = v
+        self%v = reshape( array, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
         !
     end subroutine setArray_iScalar3D_SG
     !
@@ -775,9 +771,9 @@ contains
         !
         class( iScalar3D_SG_t ), intent( in ) :: self
         class( Field_t ), allocatable, intent( out ) :: r_field
-		!
-		call errStop( "getReal_iScalar3D_SG > not implemented." )
-		!
+        !
+        call errStop( "getReal_iScalar3D_SG > not implemented." )
+        !
     end subroutine getReal_iScalar3D_SG
     !
     !> No subroutine briefing
@@ -790,7 +786,7 @@ contains
         character(:), allocatable, intent( in ), optional :: ftype
         !
         integer :: Nx, Ny, Nz
-        character(4) :: grid_type
+        character( len=4 ) :: grid_type
         integer :: i, j, k, k1, k2, istat
         real( kind=prec ), allocatable, dimension(:) :: temp
         logical :: ok, hasname, binary

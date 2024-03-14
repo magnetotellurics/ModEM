@@ -1108,7 +1108,7 @@ contains
         character(*), intent( in ), optional :: ptype
         !
         integer :: i
-        character(10) :: grid_type
+        character( len=4 ) :: grid_type
         logical :: top_coarser
         !
         if( .NOT. self%is_allocated ) then
@@ -1119,7 +1119,7 @@ contains
             call errStop( "sumCell_cVector3D_MR > cell_in not allocated." )
         endif
         !
-        if( index( self%grid_type, CELL ) > 0 ) then
+        if( .NOT. grid_type == CELL ) then
             call errStop( "sumCell_cVector3D_MR > Only CELL type supported." )
         endif
         !

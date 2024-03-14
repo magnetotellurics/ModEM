@@ -621,7 +621,7 @@ contains
         class( Scalar_t ), intent( in ) :: cell_in
         character(*), intent( in ), optional :: ptype
         !
-        character(10) :: grid_type
+        character( len=4 ) :: grid_type
         integer :: xend, yend, zend
         integer :: v_xend, v_yend, v_zend
         integer :: ix, iy, iz
@@ -634,7 +634,7 @@ contains
              call errStop( "sumCell_rVector3D_SG > cell_in not allocated." )
         endif
         !
-        if( index( self%grid_type, CELL ) > 0 ) then
+        if( .NOT. cell_in%grid_type == CELL ) then
             call errStop( "sumCell_rVector3D_SG > Only CELL type supported." )
         endif
         !
@@ -726,7 +726,7 @@ contains
         class( Scalar_t ), intent( in ) :: cell_h_in, cell_v_in
         character(*), intent( in ), optional :: ptype
         !
-        character(10) :: grid_type
+        character( len=4 ) :: grid_type
         integer :: xend, yend, zend
         integer :: v_xend, v_yend, v_zend
         integer :: ix, iy, iz
@@ -743,7 +743,7 @@ contains
              call errStop( "sumCellVTI_rVector3D_SG > cell_v_in not allocated." )
         endif
         !
-        if( index( self%grid_type, CELL ) > 0 ) then
+        if( .NOT. self%grid_type == CELL ) then
             call errStop( "sumCellVTI_rVector3D_SG > Only CELL type supported." )
         endif
         !

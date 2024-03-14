@@ -1,6 +1,5 @@
 !
 !> Abstract Base class to define a ModEM Field
-!>     store_state: 1 - compound, 2 - singleton
 !
 module Field
     !

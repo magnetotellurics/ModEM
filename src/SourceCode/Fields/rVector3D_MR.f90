@@ -1029,7 +1029,7 @@ contains
             call errStop( "sumCell_rVector3D_MR > cell_in not allocated." )
         endif
         !
-        if( index( self%grid_type, CELL ) > 0 ) then
+        if( .NOT. grid_type == CELL ) then
             call errStop( "sumCell_rVector3D_MR > Only CELL type supported." )
         endif
         !
@@ -1098,7 +1098,7 @@ contains
         character(*), intent( in ), optional :: ptype
         !
         complex( kind=prec ), allocatable :: v_h(:,:,:), v_v(:,:,:)
-        character(10) :: grid_type
+        character( len=4 ) :: grid_type
         integer :: xend, yend, zend
         integer :: v_xend, v_yend, v_zend
         integer :: i, ix, iy, iz

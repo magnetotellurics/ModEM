@@ -728,15 +728,11 @@ contains
         class( rScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
-        !
         if( .NOT. self%is_allocated ) then
             call errStop( "setArray_rScalar3D_SG > self not allocated." )
         endif
         !
-        v = reshape( real( array, kind=prec ), (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
-        !
-        self%v = v
+        self%v = reshape( real( array, kind=prec ), (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
         !
     end subroutine setArray_rScalar3D_SG
     !
@@ -809,7 +805,7 @@ contains
         character(:), allocatable, intent( in ), optional :: ftype
         !
         integer :: Nx, Ny, Nz
-        character(4) :: grid_type
+        character( len=4 ) :: grid_type
         integer :: i, j, k, k1, k2, istat
         real( kind=prec ), allocatable :: temp(:)
         logical :: ok, hasname, binary
