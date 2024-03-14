@@ -59,8 +59,6 @@ module iScalar3D_SG
             !> Miscellaneous
             procedure, public :: copyFrom => copyFrom_iScalar3D_SG
             !
-            procedure, public :: getReal => getReal_iScalar3D_SG
-            !
             !> I/O operations
             procedure, public :: read => read_iScalar3D_SG
             procedure, public :: write => write_iScalar3D_SG
@@ -763,18 +761,6 @@ contains
         end select
         !
     end subroutine copyFrom_iScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine getReal_iScalar3D_SG( self, r_field )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
-        !
-        call errStop( "getReal_iScalar3D_SG > not implemented." )
-        !
-    end subroutine getReal_iScalar3D_SG
     !
     !> No subroutine briefing
     !

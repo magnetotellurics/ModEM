@@ -207,7 +207,7 @@ contains
         do k = 1, size( self%EHxy )
             !
             !> Create e_b vector with proper type
-            !> Eletrical(E) - EDGE and Magnetic(B) - FACE
+            !> Electrical(E) - EDGE and Magnetic(B) - FACE
             select case( self%EHxy(k)%str )
                 !
                 case( "Ex", "Ey", "Ez" )
@@ -227,7 +227,7 @@ contains
                 !
             end select
             !
-            !> Different behaviour for E and B components
+            !> Different behavior for E and B components
             select case( self%EHxy(k)%str )
                 !
                 case( "Ex" )

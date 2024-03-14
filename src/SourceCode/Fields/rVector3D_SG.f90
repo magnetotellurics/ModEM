@@ -1138,15 +1138,13 @@ contains
             call errStop( "dotProd_rVector3D_SG > rhs not allocated." )
         endif
         !
-        cvalue = C_ZERO
-        !
         if( self%isCompatible( rhs ) ) then
             !
             select type( rhs )
                 !
                 class is( rVector3D_SG_t )
                     !
-                    cvalue = cvalue + sum( self%x * rhs%x )
+                    cvalue = sum( self%x * rhs%x )
                     cvalue = cvalue + sum( self%y * rhs%y )
                     cvalue = cvalue + sum( self%z * rhs%z )
                     !
@@ -1239,6 +1237,8 @@ contains
             call errStop( "interpFunc_rVector3D_SG > interp not allocated." )
         endif
         !
+		write( *, * ) "interpFunc_rVector3D_SG"
+		!
         select type( grid => self%grid )
             !
             class is( Grid3D_SG_t )
@@ -1560,13 +1560,13 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine getReal_rVector3D_SG( self, r_field )
+    subroutine getReal_rVector3D_SG( self, r_vector )
         implicit none
         !
         class( rVector3D_SG_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
+        class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
-        allocate( r_field, source = self )
+        allocate( r_vector, source = self )
         !
         call warning( "getReal_rVector3D_SG > Getting Real Field from already Real Field" )
         !

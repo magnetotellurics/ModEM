@@ -68,8 +68,6 @@ module cScalar3D_MR
             !
             procedure, public :: copyFrom => copyFrom_cScalar3D_MR
             !
-            procedure, public :: getReal => getReal_cScalar3D_MR
-            !
             !> I/O operations
             procedure, public :: read => read_cScalar3D_MR
             procedure, public :: write => write_cScalar3D_MR
@@ -975,7 +973,8 @@ contains
                         !
                     enddo
                     !
-                    call errStop( "multByField_cScalar3D_MR > rhs is rScalar3D_MR_t" )
+                    ! MR FWD ENTER HERE !!!!
+                    !call warning( "multByField_cScalar3D_MR > rhs is rScalar3D_MR_t" )
                     !
                 class default
                     call errStop( "multByField_cScalar3D_MR > rhs must be Scalar (try vec%scl)!" )
@@ -1412,35 +1411,6 @@ contains
         end select
         !
     end subroutine copyFrom_cScalar3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine getReal_cScalar3D_MR( self, r_field )
-        implicit none
-        !
-        class( cScalar3D_MR_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
-        !
-        integer :: i
-        !
-        allocate( r_field, source = rScalar3D_MR_t( self%grid, self%grid_type ) )
-        !
-        select type ( r_field )
-            !
-            class is( rScalar3D_MR_t )
-                !
-                do i = 1, size( r_field%sub_scalar )
-                    !
-                    r_field%sub_scalar(i)%v = real( self%sub_scalar(i)%v, kind=prec )
-                    !
-                enddo
-                !
-            class default
-                call errStop( "getReal_cScalar3D_MR > Undefined r_field" )
-                !
-        end select
-        !
-    end subroutine getReal_cScalar3D_MR
     !
     !> No subroutine briefing
     !

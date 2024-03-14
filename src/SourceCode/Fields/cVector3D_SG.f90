@@ -1208,21 +1208,15 @@ contains
         !
         if( self%isCompatible( rhs ) ) then
             !
-            cvalue = C_ZERO
-            !
             select type( rhs )
                 !
                 class is( cVector3D_SG_t )
                     !
-                    cvalue = cvalue + sum( self%x * rhs%x )
-                    cvalue = cvalue + sum( self%y * rhs%y )
-                    cvalue = cvalue + sum( self%z * rhs%z )
+                    cvalue = sum( conjg( self%x ) * rhs%x )
+                    cvalue = cvalue + sum( conjg( self%y ) * rhs%y )
+                    cvalue = cvalue + sum( conjg( self%z ) * rhs%z )
                     !
                 class is( rVector3D_SG_t )
-                    !
-                    cvalue = cvalue + sum( self%x * rhs%x )
-                    cvalue = cvalue + sum( self%y * rhs%y )
-                    cvalue = cvalue + sum( self%z * rhs%z )
                     !
                     call errStop( "dotProd_cVector3D_SG > rhs is rVector3D_SG_t" )
                     !
@@ -1649,24 +1643,24 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine getReal_CVector3D_SG( self, r_field )
+    subroutine getReal_CVector3D_SG( self, r_vector )
         implicit none
         !
         class( cVector3D_SG_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
+        class( Vector_t ), allocatable, intent( out ) :: r_vector
         !
-        allocate( r_field, source = rVector3D_SG_t( self%grid, self%grid_type ) )
+        allocate( r_vector, source = rVector3D_SG_t( self%grid, self%grid_type ) )
         !
-        select type ( r_field )
+        select type ( r_vector )
             !
             class is( rVector3D_SG_t )
                 !
-                r_field%x = real( self%x, kind=prec )
-                r_field%y = real( self%y, kind=prec )
-                r_field%z = real( self%z, kind=prec )
+                r_vector%x = real( self%x, kind=prec )
+                r_vector%y = real( self%y, kind=prec )
+                r_vector%z = real( self%z, kind=prec )
                 !
             class default
-                call errStop( "getReal_CVector3D_SG > Undefined r_field" )
+                call errStop( "getReal_CVector3D_SG > Undefined r_vector" )
                 !
         end select
         !

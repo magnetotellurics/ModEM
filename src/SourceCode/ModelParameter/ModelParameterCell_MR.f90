@@ -524,6 +524,20 @@ contains
             !
             class is( cScalar3D_MR_t )
                 !
+                write( *, * ) "dPDEmapping_T_ModelParameterCell_MR > sigma_cell_al is cScalar3D_MR_t"
+                !
+                sigma_cell_al_mr = rScalar3D_MR_t( sigma_cell_al%grid, sigma_cell_al%grid_type )
+                !
+                do i = 1, size( sigma_cell_al%sub_scalar )
+                    !
+                    sigma_cell_al_mr%sub_scalar(i)%v = real( sigma_cell_al%sub_scalar(i)%v, kind=prec )
+                    !
+                enddo
+            !
+            class is( rScalar3D_MR_t )
+                !
+                write( *, * ) "dPDEmapping_T_ModelParameterCell_MR > sigma_cell_al is rScalar3D_MR_t"
+                !
                 sigma_cell_al_mr = rScalar3D_MR_t( sigma_cell_al%grid, sigma_cell_al%grid_type )
                 !
                 do i = 1, size( sigma_cell_al%sub_scalar )

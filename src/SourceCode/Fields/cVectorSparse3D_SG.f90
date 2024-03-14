@@ -58,7 +58,6 @@ module cVectorSparse3D_SG
             procedure, public :: getArray => getArray_cVectorSparse3D_SG
             procedure, public :: setArray => setArray_cVectorSparse3D_SG
             procedure, public :: copyFrom => copyFrom_cVectorSparse3D_SG
-            procedure, public :: getReal => getReal_cVectorSparse3D_SG
             !
             !> I/O operations
             procedure, public :: read => read_cVectorSparse3D_SG
@@ -723,18 +722,6 @@ contains
         end select
         !
     end subroutine copyFrom_cVectorSparse3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine getReal_cVectorSparse3D_SG( self, r_field )
-        implicit none
-        !
-        class( cVectorSparse3D_SG_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
-        !
-        call errStop( "getReal_cVectorSparse3D_SG not implemented yet!" )
-        !
-    end subroutine getReal_cVectorSparse3D_SG
     !
     !> No subroutine briefing
     !

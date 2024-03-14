@@ -97,8 +97,8 @@ contains
         call transmitter%getSolutionVector( 1, tx_e_1 )
         call transmitter%getSolutionVector( 2, tx_e_2 )
         !
-        !call tx_e_1%print( 6666 )
-        !call tx_e_2%print( 6667 )
+        call tx_e_1%print( 6666 )
+        call tx_e_2%print( 6667 )
         !
         comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
         !

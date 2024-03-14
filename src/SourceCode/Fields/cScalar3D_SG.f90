@@ -59,8 +59,6 @@ module cScalar3D_SG
             !> Miscellaneous
             procedure, public :: copyFrom => copyFrom_cScalar3D_SG
             !
-            procedure, public :: getReal => getReal_cScalar3D_SG
-            !
             !> I/O operations
             procedure, public :: read => read_cScalar3D_SG
             procedure, public :: write => write_cScalar3D_SG
@@ -795,7 +793,8 @@ contains
                 !
                 self%v = rhs%v
                 !
-                call errStop( "copyFrom_cScalar3D_SG > rhs is rScalar3D_SG_t" )
+                ! MR FWD ENTER HERE !!!!
+                !call warning( "copyFrom_cScalar3D_SG > rhs is rScalar3D_SG_t" )
                 !
             class default
                 call errStop( "copyFrom_cScalar3D_SG > Unclassified rhs" )
@@ -805,29 +804,6 @@ contains
         self%is_allocated = .TRUE.
         !
     end subroutine copyFrom_cScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine getReal_cScalar3D_SG( self, r_field )
-        implicit none
-        !
-        class( cScalar3D_SG_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
-        !
-        allocate( r_field, source = rScalar3D_SG_t( self%grid, self%grid_type ) )
-        !
-        select type ( r_field )
-            !
-            class is( rScalar3D_SG_t )
-                !
-                r_field%v = real( self%v, kind=prec )
-                !
-            class default
-                call errStop( "getReal_cScalar3D_SG > Undefined r_field" )
-                !
-        end select
-        !
-    end subroutine getReal_cScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -890,7 +866,7 @@ contains
                  !
                  do j = Nx, 1, -1
                         !
-						read(funit, *, iostat = istat) temp
+                        read(funit, *, iostat = istat) temp
                         !
                         if( istat /= 0) then
                              write( *, * ) "While reading the ", j, "th row in ", i,"th block."

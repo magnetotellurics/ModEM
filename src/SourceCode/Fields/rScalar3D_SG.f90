@@ -59,8 +59,6 @@ module rScalar3D_SG
             !> Miscellaneous
             procedure, public :: copyFrom => copyFrom_rScalar3D_SG
             !
-            procedure, public :: getReal => getReal_rScalar3D_SG
-            !
             !> I/O operations
             procedure, public :: read => read_rScalar3D_SG
             procedure, public :: write => write_rScalar3D_SG
@@ -780,20 +778,6 @@ contains
         end select
         !
     end subroutine copyFrom_rScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine getReal_rScalar3D_SG( self, r_field )
-        implicit none
-        !
-        class( rScalar3D_SG_t ), intent( in ) :: self
-        class( Field_t ), allocatable, intent( out ) :: r_field
-        !
-        allocate( r_field, source = self )
-        !
-        call warning( "getReal_rScalar3D_SG > Getting Real Field from already Real Field" )
-        !
-    end subroutine getReal_rScalar3D_SG
     !
     !> No subroutine briefing
     !
