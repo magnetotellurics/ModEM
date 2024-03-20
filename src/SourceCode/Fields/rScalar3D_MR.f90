@@ -426,14 +426,8 @@ contains
         class( rScalar3D_MR_t ), intent( in ) :: self
         type( rScalar3D_SG_t ), intent( out ) :: scalar_sg
         !
-        type( Grid3D_SG_t ) :: grid_sg
         integer :: i_grid, i, j, k, z, cs
         integer :: i1, i2, j1, j2, k1, k2
-        !
-        !> I THINK THIS IS WRONG -- self%grid is an MR grid, right????
-        !> or does call to rScalar3D_SG work with MR grid as input???
-        !> scalar_sg = rScalar3D_SG_t( self%grid, self%grid_type )
-        !> Let's allocate scalar_sg before calling!  Might check first!
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "toSG_rScalar3D_MR > self not allocated" )
@@ -444,11 +438,7 @@ contains
         endif
         !
         !> Using a temporary Grid SG with AirLayers, for instantiate the scalar_sg output
-        grid_sg = param_grid
-        !
-        call grid_sg%setAirLayers
-        !
-        scalar_sg = rScalar3D_SG_t( grid_sg, self%grid_type )
+        scalar_sg = rScalar3D_SG_t( self%grid, self%grid_type )
         !
         select type( grid => self%grid )
             !
@@ -1258,7 +1248,6 @@ contains
                                 nyC = self%sub_scalar(i+1)%grid%ny
                                 nzC = self%sub_scalar(i+1)%grid%nz
                                 !
-                                
                                 node_scalar%sub_scalar(i+1)%v( 2:nxC,     2:nyC,     1   ) = &
                                        self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
                                        self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &

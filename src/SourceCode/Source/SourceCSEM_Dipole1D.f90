@@ -120,11 +120,12 @@ contains
         !
         call self%set1DModel
         !
+        !> Initialize the 1D vectors where to compute the e_field field
         select type( grid => self%sigma%metric%grid )
             !
             class is( Grid3D_SG_t )
                 !
-                call initilize_1d_vectors( grid ) !> Initialize the 1D vectors where to compute the e_field field
+                call initilize_1d_vectors( grid )
             !
             class is( Grid3D_MR_t )
                 !
@@ -132,7 +133,7 @@ contains
                 !
                 call grid_sg%setAirLayers
                 !
-                call initilize_1d_vectors( grid_sg ) !> Initialize the 1D vectors where to compute the e_field field
+                call initilize_1d_vectors( grid_sg )
                 !
             class default
                 call errStop( "createE_SourceCSEM_Dipole1D > grid must be Grid3D_SG_t" )

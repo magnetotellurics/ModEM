@@ -1599,6 +1599,7 @@ contains
         !> count number of entries in each row
         rowT = 0
         nz = 0
+        !
         do i = 1, m
             do j = A%row( r(i) ), A%row( r(i) + 1 ) - 1
                 !
@@ -1609,6 +1610,8 @@ contains
                         nz = nz+1
                     endif
                     !
+                else
+                    call errStop( "subMatrix_Real > A%col(j) is outside colT range - 1st - Bad MR Coarse!" )
                 endif
                 !
             enddo
@@ -1634,7 +1637,10 @@ contains
                         kk = kk+1
                     endif
                     !
+                else
+                    call errStop( "subMatrix_Real > A%col(j) outside colT range - 2nd - Bad MR Coarse!" )
                 endif
+                !
             enddo
         enddo
         !

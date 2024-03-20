@@ -192,14 +192,14 @@ contains
                 !
             enddo
             !
-            !> ALWAYS convert modelParam to natural log for computations ????
+            !> Always convert modelparam to natural log for computations !!!!
             paramType = LOGE
             call model%setType( paramType )
             !
             !> End - Reading cells conductivity values.
             !
             !> In case the grid origin is stored next (in meters!)...
-            read(ioPrm, *, iostat = io_stat) ox, oy, oz
+            read( ioPrm, *, iostat = io_stat ) ox, oy, oz
             !
             !> Defaults to the grid center at the Earth"s surface
             if( io_stat /= 0 ) then

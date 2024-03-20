@@ -29,9 +29,9 @@ module cScalar3D_MR
             procedure, public :: lengthFull => lengthFull_cScalar3D_MR
             procedure, public :: findFull => findFull_cScalar3D_MR
             !
-            procedure, public :: toSG => toSG_cScalar3D_MR
             procedure, public :: divFine => divFine_cScalar3D_MR
             !
+            procedure, public :: toSG => toSG_cScalar3D_MR
             procedure, public :: fromSG => fromSG_cScalar3D_MR
             !
             !> Boundary operations
@@ -426,7 +426,6 @@ contains
         class( cScalar3D_MR_t ), intent( in ) :: self
         type( cScalar3D_SG_t ), intent( out ) :: scalar_sg
         !
-        type( Grid3D_SG_t ) :: grid_sg
         integer :: i_grid, i, j, k, z, cs
         integer :: i1, i2, j1, j2, k1, k2
         !
@@ -435,11 +434,7 @@ contains
         endif
         !
         !> Using a temporary Grid SG with AirLayers, for instantiate the scalar_sg output
-        grid_sg = param_grid
-        !
-        call grid_sg%setAirLayers
-        !
-        scalar_sg = cScalar3D_SG_t( grid_sg, self%grid_type )
+        scalar_sg = cScalar3D_SG_t( self%grid, self%grid_type )
         !
         select type( grid => self%grid )
             !

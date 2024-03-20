@@ -264,8 +264,7 @@ contains
                         self%cell_cond(i)%v = a1 * self%cell_cond(i)%v + a2 * rhs%cell_cond(i)%v
                         !
                     else
-                        write( *, * ) "Error: linComb_ModelParameterCell > Incompatible rhs cell_cond (", i, ")!"
-                        stop
+                        call errStop( "linComb_ModelParameterCell > Incompatible rhs cell_cond" )
                     endif
                     !
                 enddo
@@ -274,9 +273,6 @@ contains
                 call errStop( "linComb_ModelParameterCell > undefined rhs" )
             !
         end select
-        !
-        !> NEED THIS LINE????
-        !self%air_cond = rhs%air_cond
         !
     end subroutine linComb_ModelParameterCell
     !

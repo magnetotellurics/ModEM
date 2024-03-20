@@ -206,14 +206,13 @@ contains
             oy = origin(2)
             oz = origin(3)
             !
-            call self%setOrigin(ox, oy, oz)
+            call self%setOrigin( ox, oy, oz )
             !
         endif
         !
         self%x_edge(1) = ox
         self%y_edge(1) = oy
-        self%z_edge(1) = R_ZERO !> ALWAYS BE ZERO ???? BEFORE WAS oz
-        !       YES zero at this point -- will generally be oz when done
+        self%z_edge(1) = R_ZERO
         !
         xCum = R_ZERO
         yCum = R_ZERO
@@ -221,47 +220,47 @@ contains
         !
         do ix = 1, self%nx
             xCum = xCum + self%dx(ix)
-            self%x_edge(ix+1) = xCum + ox
+            self%x_edge( ix + 1 ) = xCum + ox
         enddo
         !
         do iy = 1, self%ny
             yCum = yCum + self%dy(iy)
-            self%y_edge(iy + 1) = yCum + oy
+            self%y_edge( iy + 1 ) = yCum + oy
         enddo
         !
-        !> NOTE: adjust for origin later to get airthickness, 
+        !> NOTE: adjust for origin later to get air thickness, 
         !> reference to origin at Earth"s surface correct!
         do iz = 1, self%nz
             zCum = zCum + self%dz(iz)
-            self%z_edge(iz + 1) = zCum !> CHECK - WHY SHIFT X and Y BUT NOT Z ????
+            self%z_edge( iz + 1 ) = zCum
         enddo
         !
         nzAir = self%nzAir
-        self%zAirThick = self%z_edge(nzAir + 1)
+        self%zAirThick = self%z_edge( nzAir + 1 )
         !
         !> Distance between center of the selfs
         self%del_x(1) = self%dx(1)
         do ix = 2, self%nx
-            self%del_x(ix) = self%dx(ix - 1) + self%dx(ix)
+            self%del_x(ix) = self%dx( ix - 1 ) + self%dx(ix)
         enddo
         !
-        self%del_x(self%nx + 1) = self%dx(self%nx)
+        self%del_x(self%nx + 1) = self%dx( self%nx )
         self%del_x = self%del_x / 2.0
         !
         self%del_y(1) = self%dy(1)
         do iy = 2, self%ny
-            self%del_y(iy) = self%dy(iy - 1) + self%dy(iy)
+            self%del_y(iy) = self%dy( iy - 1 ) + self%dy(iy)
         enddo
         !
-        self%del_y(self%ny + 1) = self%dy(self%ny)
+        self%del_y(self%ny + 1) = self%dy( self%ny )
         self%del_y = self%del_y / 2.0
         !
         self%del_z(1) = self%dz(1)
         do iz = 2, self%nz
-            self%del_z(iz) = self%dz(iz - 1) + self%dz(iz)
+            self%del_z(iz) = self%dz( iz - 1 ) + self%dz(iz)
         enddo
         !
-        self%del_z(self%nz + 1) = self%dz(self%nz)
+        self%del_z(self%nz + 1) = self%dz( self%nz )
         self%del_z = self%del_z / 2.0
         !
         self%del_x_inv = 1 / self%del_x
@@ -272,27 +271,30 @@ contains
         xCum = R_ZERO
         yCum = R_ZERO
         zCum = R_ZERO
+        !
         do ix = 1, self%nx
             xCum = xCum + self%del_x(ix)
             self%x_center(ix) = xCum + ox
         enddo
+        !
         do iy = 1, self%ny
             yCum = yCum + self%del_y(iy)
             self%y_center(iy) = yCum + oy
         enddo
+        !
         do iz = 1, self%nz
             zCum = zCum + self%del_z(iz)
             self%z_center(iz) = zCum
         enddo
         !
         !> Need to be careful here ... grid origin is given
-        !> at Earth"s surface, not top of model domain!
+        !> at Earth"s surface, not top of model domain !!!!
         do iz = 1, self%nz
             self%z_center(iz) = self%z_center(iz) - self%zAirThick + oz
             self%z_edge(iz) = self%z_edge(iz) - self%zAirThick + oz
         enddo
         !
-        self%z_edge(self%nz + 1) = self%z_edge(self%nz + 1) - self%zAirThick + oz
+        self%z_edge( self%nz + 1 ) = self%z_edge( self%nz + 1 ) - self%zAirThick + oz
         !
     end subroutine setup_Grid3D_SG
     !

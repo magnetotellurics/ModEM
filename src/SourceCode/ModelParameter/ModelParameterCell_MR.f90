@@ -196,7 +196,7 @@ contains
         !> Now the actual adjoint mapping -- reverse order from fwd
         !
         !> multiply sigma_cell_al_mr by dsigma_cell_mr, considering AirLayers just for the first sub_grid2
-        !> THIS NEEDS TO BE GENERALIZED ????
+        !> This needs to be generalized !!!!
         nz_air = self%metric%grid%NzAir
         !
         sigma_cell_mr%sub_scalar(1)%v = sigma_cell_mr%sub_scalar(1)%v * &
@@ -242,8 +242,6 @@ contains
         dPDE = present( dsigma )
         !
         select type( grid => self%metric%grid )
-            !
-            ! If metric contains the MR grid why do we need to make a local copy ????
             !
             class is( Grid3D_MR_t )
                 !
@@ -308,7 +306,7 @@ contains
         !
     end subroutine modelToCell_ModelParameterCell_MR
     !
-    !> This routine averages cells to nodes --- I think this can be generic ????
+    !> This routine can be more generic !!!!
     !
     subroutine cellToNode_ModelParameterCell_MR( self, sigma_cell, node_cond )
         implicit none
@@ -347,7 +345,7 @@ contains
         !
     end subroutine cellToNode_ModelParameterCell_MR
     !
-    !> This routine averages cells to edges --- I think this can be generic ????
+    !> This routine can be more generic !!!!
     !
     subroutine cellToEdge_ModelParameterCell_MR( self, sigma_cell_al_mr, e_vec )
         implicit none
@@ -420,10 +418,6 @@ contains
         call temp_e_vec%div( e_vol )
         !
         deallocate( e_vol )
-        !
-        !> cell cond as MR with AirLayers
-        !    maybe this should be allocated before calling this routine ????
-        !call self%metric%createScalar( real_t, CELL, sigma_cell_al )
         !
         call temp_e_vec%sumEdges( sigma_cell_al, .TRUE. )
         !

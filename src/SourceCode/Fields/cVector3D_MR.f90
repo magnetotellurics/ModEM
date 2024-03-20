@@ -30,7 +30,6 @@ module cVector3D_MR
             procedure, public :: findFull => findFull_cVector3D_MR
             !
             procedure, public :: toSG => toSG_cVector3D_MR
-            procedure, public :: SGtoMRE0 => SGtoMRE0_cVector3D_MR
             !
             procedure, public :: fromSG => fromSG_cVector3D_MR
             !
@@ -435,19 +434,13 @@ contains
         type( cVector3D_SG_t ), intent( inout ) :: vector_sg
         !
         type( cVector3D_SG_t ) :: temp_vector_sg
-        type( Grid3D_SG_t ) :: grid_sg
         integer :: x_nx, x_ny, x_nz
         integer :: y_nx, y_ny, y_nz
         integer :: z_nx, z_ny, z_nz
         integer :: last, Cs, i1, i2, i, k
         real( kind=prec ) :: w1, w2
         !
-        !> Using a temporary Grid SG with AirLayers, for instantiate the vector_sg output
-        grid_sg = param_grid
-        !
-        call grid_sg%setAirLayers
-        !
-        vector_sg = cVector3D_SG_t( grid_sg, self%grid_type )
+        vector_sg = cVector3D_SG_t( self%grid, self%grid_type )
         !
         temp_vector_sg = vector_sg
         !
@@ -650,89 +643,6 @@ contains
         end select
         !
     end subroutine fromSG_cVector3D_MR
-    !
-    !> Converts SG Vector object to MR by averaging
-    !> used only for e0
-    !
-    subroutine SGtoMRE0_cVector3D_MR( self, sg_vector )
-        implicit none
-        !
-        class( cVector3D_MR_t ), intent( inout ) :: self
-        type( cVector3D_SG_t ), intent( in ) :: sg_vector
-        !
-        class( Grid_t ), pointer :: grid
-        !
-        integer :: x_nx, x_ny, x_nz
-        integer :: y_nx, y_ny, y_nz
-        integer :: z_nx, z_ny, z_nz
-        integer :: last, Cs, i1, i2, i, k
-        !
-        grid => sg_vector%grid
-        !
-        x_nx = size(sg_vector%x, 1)
-        x_ny = size(sg_vector%x, 2)
-        x_nz = size(sg_vector%x, 3)
-        !
-        y_nx = size(sg_vector%y, 1)
-        y_ny = size(sg_vector%y, 2)
-        y_nz = size(sg_vector%y, 3)
-        !
-        z_nx = size(sg_vector%z, 1)
-        z_ny = size(sg_vector%z, 2)
-        z_nz = size(sg_vector%z, 3)
-        !
-        select type( grid => self%grid )
-            !
-            class is( Grid3D_MR_t )
-                !
-                do k = 1, grid%n_grids
-                    !
-                    Cs = 2**grid%coarseness(k, 1)
-                    i1 = grid%coarseness(k, 3)
-                    i2 = grid%coarseness(k, 4)
-                    !
-                    do i = 1, Cs
-                        !
-                        last = size(grid%Dx)
-                        self%sub_vector(k)%x = self%sub_vector(k)%x + &
-                        sg_vector%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) *    &
-                        repMat(grid%Dx(i:last:Cs), &
-                        1, &
-                        grid%sub_grid(k)%Ny + 1, &
-                        grid%sub_grid(k)%Nz + 1, .false.)
-
-                        last = size(grid%Dy)
-                        self%sub_vector(k)%y = self%sub_vector(k)%y + &
-                        sg_vector%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) *  & 
-                        repMat(grid%Dy(i:last:Cs), &
-                        grid%sub_grid(k)%Nx + 1, &
-                        1, &
-                        grid%sub_grid(k)%Nz + 1, .TRUE.)
-                        !
-                    enddo
-                    !
-                    self%sub_vector(k)%x = self%sub_vector(k)%x / &
-                    repMat(grid%sub_grid(k)%Dx, &
-                    1, &
-                    grid%sub_grid(k)%Ny + 1, &
-                    grid%sub_grid(k)%Nz + 1, .false.)
-                    !
-                    self%sub_vector(k)%y = self%sub_vector(k)%y / &
-                    repMat(grid%sub_grid(k)%Dy, &
-                    grid%sub_grid(k)%Nx + 1, &
-                    1, &
-                    grid%sub_grid(k)%Nz + 1, .TRUE.)
-                    !
-                    self%sub_vector(k)%z = sg_vector%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2)
-                    !
-                enddo
-                !
-            class default
-                call errStop( "SGtoMRE0_cVector3D_MR > Unclassified grid" )
-            !
-        end select
-        !
-    end subroutine SGtoMRE0_cVector3D_MR
     !
     !> No subroutine briefing
     !

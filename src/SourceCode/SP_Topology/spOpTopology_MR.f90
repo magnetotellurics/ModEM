@@ -79,7 +79,7 @@ contains
         !
         type( spMatCSR_Real ), pointer, dimension(:) :: T2_array
         type( spMatCSR_Real ) :: T1, T2, Ctmp
-        type( SpOpTopology_SG_t ) :: TOp1
+        type( SpOpTopology_SG_t ) :: Top1
         type( rVector3D_MR_t ) :: vecC
         integer, allocatable, dimension(:) :: col
         integer :: i
@@ -89,7 +89,7 @@ contains
         allocate( T2_array( self%grid%n_grids ) )
         !
         do i = 1, self%grid%n_grids
-            TOp1 = SpOpTopology_SG_t( self%grid%sub_grid(i) )
+            Top1 = SpOpTopology_SG_t( self%grid%sub_grid(i) )
             call Top1%curl( T2_array(i) )
         enddo
         !
@@ -138,7 +138,7 @@ contains
         !
         type( spMatCSR_Real ), pointer, dimension(:) :: G2_array
         type( spMatCSR_Real ) :: G1, G2, Gtmp
-        type( SpOpTopology_SG_t ) :: TOp1
+        type( SpOpTopology_SG_t ) :: Top1
         integer, allocatable, dimension(:) :: col
         integer :: i
         !
@@ -147,7 +147,7 @@ contains
         allocate( G2_array( self%grid%n_grids ) )
         !
         do i = 1, self%grid%n_grids
-            TOp1 = SpOpTopology_SG_t( self%grid%sub_grid(i) )
+            Top1 = SpOpTopology_SG_t( self%grid%sub_grid(i) )
             call Top1%grad( G2_array(i) )
         enddo
         !

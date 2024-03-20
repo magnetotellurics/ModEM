@@ -408,18 +408,22 @@ contains
         !
         logical :: TopBottom(2)
         !
-        !  perhaps some error checking
-        !   e.g., 0<iGrid<nGrid ????
-        if( iGrid .EQ. 1 ) then
-            TopBottom(1) = .TRUE.
+        if( ( iGrid >= 1 .AND. iGrid <= self%n_grids ) ) then
+            !
+            if( iGrid .EQ. 1 ) then
+                TopBottom(1) = .TRUE.
+            else
+                TopBottom(1) = self%cs( iGrid ) .LT. self%cs( iGrid - 1 )
+            endif
+            !
+            if( iGrid .EQ. self%n_grids ) then
+                TopBottom(2) = .TRUE.
+            else
+                TopBottom(2) = self%cs( iGrid ) .LT. self%cs( iGrid + 1 )
+            endif
+            !
         else
-            TopBottom(1) = self%cs( iGrid ) .LT. self%cs( iGrid - 1 )
-        endif
-        !
-        if( iGrid .EQ. self%n_grids ) then
-            TopBottom(2) = .TRUE.
-        else
-            TopBottom(2) = self%cs( iGrid ) .LT. self%cs( iGrid + 1 )
+            call errStop( "active_Grid3D_MR > iGrid outside range" )
         endif
         !
     end function active_Grid3D_MR

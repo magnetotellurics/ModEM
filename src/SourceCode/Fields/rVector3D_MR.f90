@@ -435,19 +435,14 @@ contains
         type( rVector3D_SG_t ), intent( out ) :: vector_sg
         !
         type( rVector3D_SG_t ) :: temp_vector_sg
-        type( Grid3D_SG_t ) :: grid_sg
         integer :: x_nx, x_ny, x_nz
         integer :: y_nx, y_ny, y_nz
         integer :: z_nx, z_ny, z_nz
         integer :: last, Cs, i1, i2, i, k
         real( kind=prec ) :: w1, w2
         !
-        !> Using a temporary Grid SG with AirLayers, for instantiate the vector_sg output
-        grid_sg = param_grid
-        !
-        call grid_sg%setAirLayers
-        !
-        vector_sg = rVector3D_SG_t( grid_sg, self%grid_type )
+        !>
+        vector_sg = rVector3D_SG_t( self%grid, self%grid_type )
         !
         temp_vector_sg = vector_sg
         !

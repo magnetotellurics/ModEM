@@ -317,21 +317,25 @@ module Transmitter
         !
         !> Defines a new model (dsigma) from a previous model and e_sens for this transmitter.
         !
-        subroutine PMult_t_Tx( self, sigma, dsigma )
+        subroutine PMult_t_Tx( self, sigma, dsigma, dsigma_img )
             implicit none
             !
             class( Transmitter_t ), intent( in ) :: self
             class( ModelParameter_t ), intent( in ) :: sigma
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+            class( ModelParameter_t ), allocatable, intent( inout ), optional :: dsigma_img
             !
             class( GenVector_t ), allocatable, dimension(:) :: eSens
             class( Vector_t ), allocatable :: solution, real_sens
-            !class( Field_t ), allocatable :: real_sens
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
             !
             ! Verbose
             !write( *, * ) "               - Start PMult_t"
+            !
+            if( present( dsigma_img ) ) then
+                call errStop( "PMult_t_Tx > dsigma_img not implemented yet!" )
+            endif
             !
             if( .NOT. allocated( self%e_sens ) ) then
                 call errStop( "PMult_t_Tx > eSens not allocated on the Tx" )
@@ -373,6 +377,14 @@ module Transmitter
             call sigma%dPDEmapping_T( real_sens, dsigma )
             !
             deallocate( real_sens )
+            !
+            !> NEEDS TO MULTIPLY eSens(1) FROM SOMETHING !!!!
+            !> NOT USED YET IN OO
+            !if( present( dsigma_img ) ) then
+                !
+                !call sigma%dPDEmapping_T( eSens(1), dsigma_img )
+                !
+            !endif
             !
         end subroutine PMult_t_Tx
         !

@@ -270,7 +270,6 @@ contains
                     !
                     else
                         call errStop( "dotProd_cVectorSparse3D_SG > IJK out of bounds for dotProdSparse" )
-                    !
                     endif
                     !
                 enddo
@@ -370,8 +369,6 @@ contains
         select type( cvector )
             !
             class is( cVector3D_SG_t )
-                !
-                !call cvector%switchStoreState( compound )
                 !
                 Ix = cvector%x
                 Jx = cvector%x
