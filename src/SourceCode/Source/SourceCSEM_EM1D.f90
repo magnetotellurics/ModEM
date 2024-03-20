@@ -291,8 +291,10 @@ contains
         class( SourceCSEM_EM1D_t ), intent( in ) :: self
         type( backgrounddata ), intent( inout ) :: bgdat 
         !
+        type( Grid3D_SG_t ) :: temp_grid_al_sg
+        type( TAirLayers ) :: air_layer
         integer( kind=int32 ) :: counter, ilay, ix, iy, iz, ierr
-        integer( kind=int32 ) :: nx1, ny1, nz1 !nr of points in my domain for which fields are computed
+        integer( kind=int32 ) :: nx1, ny1, nz1 !> nr of points in my domain for which fields are computed
         !
         bgdat%nlay= nlay1D
         !allocate vectors for medium properties
@@ -359,62 +361,60 @@ contains
         bgdat%Ey = 0._real64
         bgdat%Ez = 0._real64
         !
-        select type( grid => self%sigma%metric%grid )
-            !
-            class is( Grid3D_SG_t )
-                !
-                counter = 1
-                !> E-field corresponding to these nodes is Ex
-                do iz = 1, grid%Nz+1 !Edge Z
-                    do iy = 1, grid%Ny+1 !Edge Y
-                        do ix = 1, grid%Nx !Center X
-                            !
-                            bgdat%Expos(counter,1) = grid%x_center(ix)
-                            bgdat%Expos(counter,2) = grid%y_edge(iy)
-                            bgdat%Expos(counter,3) = grid%z_edge(iz)
-                            !
-                            counter = counter + 1
-                            !
-                        enddo
-                    enddo
+        !> Using always an SG grid with air_layers here !!!!
+        temp_grid_al_sg = param_grid
+        !
+        call temp_grid_al_sg%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+        !
+        call temp_grid_al_sg%updateAirLayers( air_layer%nz, air_layer%dz )
+        !
+        counter = 1
+        !> E-field corresponding to these nodes is Ex
+        do iz = 1, temp_grid_al_sg%Nz+1 !Edge Z
+            do iy = 1, temp_grid_al_sg%Ny+1 !Edge Y
+                do ix = 1, temp_grid_al_sg%Nx !Center X
+                    !
+                    bgdat%Expos(counter,1) = temp_grid_al_sg%x_center(ix)
+                    bgdat%Expos(counter,2) = temp_grid_al_sg%y_edge(iy)
+                    bgdat%Expos(counter,3) = temp_grid_al_sg%z_edge(iz)
+                    !
+                    counter = counter + 1
+                    !
                 enddo
-                !
-                counter = 1
-                !> E-field corresponing to these nodes is Ey
-                do iz = 1, grid%Nz+1 !Edge Z
-                    do iy = 1, grid%Ny !Center y
-                        do ix = 1, grid%Nx+1 !Edge x
-                            !
-                            bgdat%Eypos(counter,1) = grid%x_edge(ix)
-                            bgdat%Eypos(counter,2) = grid%y_center(iy)
-                            bgdat%Eypos(counter,3) = grid%z_edge(iz)
-                            !
-                            counter = counter + 1
-                            !
-                        enddo
-                    enddo
+            enddo
+        enddo
+        !
+        counter = 1
+        !> E-field corresponing to these nodes is Ey
+        do iz = 1, temp_grid_al_sg%Nz+1 !Edge Z
+            do iy = 1, temp_grid_al_sg%Ny !Center y
+                do ix = 1, temp_grid_al_sg%Nx+1 !Edge x
+                    !
+                    bgdat%Eypos(counter,1) = temp_grid_al_sg%x_edge(ix)
+                    bgdat%Eypos(counter,2) = temp_grid_al_sg%y_center(iy)
+                    bgdat%Eypos(counter,3) = temp_grid_al_sg%z_edge(iz)
+                    !
+                    counter = counter + 1
+                    !
                 enddo
-                !
-                counter = 1
-                !> E-field corresponing to these nodes is Ez
-                do iz = 1, grid%Nz !Center Z
-                    do iy = 1, grid%Ny+1 !Edge y
-                        do ix = 1, grid%Nx+1 !Edge x
-                            !
-                            bgdat%Ezpos(counter,1)= grid%x_edge(ix)
-                            bgdat%Ezpos(counter,2) = grid%y_edge(iy)
-                            bgdat%Ezpos(counter,3) = grid%z_center(iz)
-                            !
-                            counter = counter + 1
-                            !
-                        enddo
-                    enddo
+            enddo
+        enddo
+        !
+        counter = 1
+        !> E-field corresponing to these nodes is Ez
+        do iz = 1, temp_grid_al_sg%Nz !Center Z
+            do iy = 1, temp_grid_al_sg%Ny+1 !Edge y
+                do ix = 1, temp_grid_al_sg%Nx+1 !Edge x
+                    !
+                    bgdat%Ezpos(counter,1)= temp_grid_al_sg%x_edge(ix)
+                    bgdat%Ezpos(counter,2) = temp_grid_al_sg%y_edge(iy)
+                    bgdat%Ezpos(counter,3) = temp_grid_al_sg%z_center(iz)
+                    !
+                    counter = counter + 1
+                    !
                 enddo
-                !
-            class default
-                call errStop( "createBackgroundData > grid must be Grid3D_SG_t" )
-            !
-        end select
+            enddo
+        enddo
         !
     end subroutine createBackgroundData
     !

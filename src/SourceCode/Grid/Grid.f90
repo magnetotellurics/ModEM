@@ -101,10 +101,10 @@ module Grid
             !
     end type Grid_t
     !
-    !> Public Global Generic Grid object
+    !> Public Global Generic Grid objects
     class( Grid_t ), allocatable, target :: main_grid, param_grid
     !
-    !> Details needed to unambiguosly compute and/or store the air layers;
+    !> Details needed to unambiguously compute and/or store the air layers;
     !> method options are: mirror; fixed height; read from file
     !> for backwards compatibility, all of the defaults are set to what
     !> was previously hard coded (AK; May 19, 2017)
