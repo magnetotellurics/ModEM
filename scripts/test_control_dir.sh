@@ -1,9 +1,9 @@
 #!/bin/bash
 #
 procs=9
-start_model="MR_TEST_INPUTS/m0.rho"
-real_model="MR_TEST_INPUTS/m.rho"
-data="MR_TEST_INPUTS/d_05_1tx_1rx.dat"
+start_model="MR_TEST_INPUTS/MT/m0.rho"
+real_model="MR_TEST_INPUTS/MT/m.rho"
+data="MR_TEST_INPUTS/MT/d05.dat"
 #
 FWD_CONTROLS=$(ls CONTROL_FILES/*)
 #
@@ -25,11 +25,11 @@ for FWD_CONTROL in $FWD_CONTROLS; do
     # #
     # valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -v --log-file=jt_$OUTPUT.vg ./ModEM_SERIAL -jt -m $start_model -d $data -cf $FWD_CONTROL -dm DSIGMA_$OUTPUT.rho | tee -a DSIGMA_$OUTPUT.txt
     # #
-    ./ModEM_SERIAL -f -m $real_model -d $data -cf $FWD_CONTROL -pd PRED_$OUTPUT.dat | tee -a PRED_$OUTPUT.txt
+    mpirun -np $procs ./ModEM_MPI -f -m $real_model -d $data -cf $FWD_CONTROL -pd PRED_$OUTPUT.dat | tee -a PRED_$OUTPUT.txt
     #
-    ./ModEM_SERIAL -j -m $start_model -pm $real_model -d $data -cf $FWD_CONTROL -jm JHMAT_$OUTPUT.dat | tee -a JHMAT_$OUTPUT.txt
+    mpirun -np $procs ./ModEM_MPI -j -m $start_model -pm $real_model -d $data -cf $FWD_CONTROL -jm JHMAT_$OUTPUT.dat | tee -a JHMAT_$OUTPUT.txt
     #
-    ./ModEM_SERIAL -jt -m $start_model -d $data -cf $FWD_CONTROL -dm DSIGMA_$OUTPUT.rho | tee -a DSIGMA_$OUTPUT.txt
+    mpirun -np $procs ./ModEM_MPI -jt -m $start_model -d $data -cf $FWD_CONTROL -dm DSIGMA_$OUTPUT.rho | tee -a DSIGMA_$OUTPUT.txt
     #
     T_END=$(date +%s%3N)
     #
