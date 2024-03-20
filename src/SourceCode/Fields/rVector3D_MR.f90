@@ -30,7 +30,7 @@ module rVector3D_MR
             procedure, public :: lengthFull => lengthFull_rVector3D_MR
             procedure, public :: findFull => findFull_rVector3D_MR
             !
-            procedure, public :: MRtoSG => MRtoSG_rVector3D_MR
+            procedure, public :: toSG => toSG_rVector3D_MR
             procedure, public :: SGtoMRE0 => SGtoMRE0_rVector3D_MR
             !
             procedure, public :: fromSG => fromSG_rVector3D_MR
@@ -429,7 +429,7 @@ contains
     !> copying from variable resolution sub-grids to completely fill in the
     !> underlying fine grid.
     !
-    subroutine MRtoSG_rVector3D_MR( self, sg_v )
+    subroutine toSG_rVector3D_MR( self, sg_v )
         implicit none
         !
         class( rVector3D_MR_t ), intent( in ) :: self
@@ -523,16 +523,16 @@ contains
                         enddo
                         !
                     class default
-                        call errStop( "MRtoSG_rVector3D_MR > Unclassified grid" )
+                        call errStop( "toSG_rVector3D_MR > Unclassified grid" )
                     !
                 end select
                 !
             case default
-                call errStop( "MRtoSG_rVector3D_MR > Unrecognized grid type." )
+                call errStop( "toSG_rVector3D_MR > Unrecognized grid type." )
             !
         end select
         !
-    end subroutine MRtoSG_rVector3D_MR
+    end subroutine toSG_rVector3D_MR
     !
     !> No subroutine briefing
     !

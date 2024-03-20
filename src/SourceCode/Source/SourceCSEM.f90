@@ -162,14 +162,20 @@ contains
         call aModel%setCond( sigma_cell, ani_level )
         call aModel%setType( self%sigma%param_type )
         !
+        write( *, * ) "setCondAnomally_SourceCSEM 1"
+        !
         call self%sigma%metric%createVector( real_t, EDGE, cond_nomaly )
+        !allocate( cond_nomaly, source = rVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
         call aModel%PDEmapping( cond_nomaly )
+        !
+        write( *, * ) "setCondAnomally_SourceCSEM 2"
         !
         !> Map sigma to cond_edges vector
         call self%sigma%metric%createVector( real_t, EDGE, cond_anomaly )
+        !allocate( cond_anomaly, source = rVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
         call self%sigma%PDEmapping( cond_anomaly )
         !
-        !cond_anomaly = cond_anomaly - cond_nomaly
+        !> cond_anomaly = cond_anomaly - cond_nomaly
         call cond_anomaly%sub( cond_nomaly )
         !
     end subroutine setCondAnomally_SourceCSEM

@@ -24,9 +24,9 @@ module Vector
         procedure( interface_sum_cells_vector ), deferred, public :: sumCell
         procedure( interface_sum_cells_VTI_vector ), deferred, public :: sumCellVTI
         generic :: sumCells => sumCell, sumCellVTI
-		!
-		procedure( interface_get_real_vector ), deferred, public :: getReal
-		!
+        !
+        procedure( interface_get_real_vector ), deferred, public :: getReal
+        !
         procedure, public :: boundary => boundary_Vector
         procedure, public :: interior => interior_Vector
         !

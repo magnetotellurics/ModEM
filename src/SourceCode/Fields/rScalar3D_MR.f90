@@ -29,7 +29,7 @@ module rScalar3D_MR
             procedure, public :: lengthFull => lengthFull_rScalar3D_MR
             procedure, public :: findFull => findFull_rScalar3D_MR
             !
-            procedure, public :: MRtoSG => MRtoSG_rScalar3D_MR
+            procedure, public :: toSG => toSG_rScalar3D_MR
             procedure, public :: divFine => divFine_rScalar3D_MR
             !
             procedure, public :: fromSG => fromSG_rScalar3D_MR
@@ -415,12 +415,12 @@ contains
         !
     end function findFull_rScalar3D_MR
     !
-    !> MRtoSG
+    !> toSG
     !
     !> input self is of class rScalar3D_MR , output SGscalar is of class rScalar3D_SG
     !> this just copies contents of an MR cell into all subdividing fine grid cells
     !
-    subroutine MRtoSG_rScalar3D_MR( self, scalar_sg )
+    subroutine toSG_rScalar3D_MR( self, scalar_sg )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
@@ -435,11 +435,11 @@ contains
         !> Let's allocate scalar_sg before calling!  Might check first!
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "MRtoSG_rScalar3D_MR > self not allocated" )
+            call errStop( "toSG_rScalar3D_MR > self not allocated" )
         endif
         !
         if( .NOT. scalar_sg%is_allocated ) then
-            call errStop( "MRtoSG_rScalar3D_MR > scalar_sg not allocated" )
+            call errStop( "toSG_rScalar3D_MR > scalar_sg not allocated" )
         endif
         !
         select type( grid => self%grid )
@@ -480,11 +480,11 @@ contains
                 enddo
                 !
             class default
-                call errStop( "MRtoSG_rScalar3D_MR > Unclassified grid" )
+                call errStop( "toSG_rScalar3D_MR > Unclassified grid" )
             !
         end select
         !
-    end subroutine MRtoSG_rScalar3D_MR
+    end subroutine toSG_rScalar3D_MR
     !
     !> divFine
     !

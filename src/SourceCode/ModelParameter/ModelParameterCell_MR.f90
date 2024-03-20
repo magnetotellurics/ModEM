@@ -211,7 +211,7 @@ contains
         !
         dsigma_cell_sg = rScalar3D_SG_t( self%param_grid, CELL )
         !
-        call sigma_cell_mr%MRtoSG( dsigma_cell_sg )
+        call sigma_cell_mr%toSG( dsigma_cell_sg )
         !
         call dsigma%setCond( dsigma_cell_sg, 1 )
         !
@@ -355,7 +355,7 @@ contains
         implicit none
         !
         class( ModelParameterCell_MR_t ), intent( in ) :: self
-        type( rScalar3D_MR_t ), intent( in ) :: sigma_cell_al_mr
+        class( Scalar_t ), intent( in ) :: sigma_cell_al_mr
         class( Vector_t ), intent( inout ) :: e_vec
         !
         class( Vector_t ), allocatable :: e_vol
@@ -446,22 +446,30 @@ contains
         type( rScalar3D_MR_t ) :: sigma_cell_al_mr
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "PDEmapping_ModelParameterCell_SG > self not allocated" )
+            call errStop( "PDEmapping_ModelParameterCell_MR > self not allocated" )
         endif
         !
         if( .NOT. e_vec%is_allocated ) then
-            call errStop( "PDEmapping_ModelParameterCell_SG > e_vec not allocated" )
+            call errStop( "PDEmapping_ModelParameterCell_MR > e_vec not allocated" )
         endif
         !
         !> cell cond as MR with AirLayers
         sigma_cell_al_mr = rScalar3D_MR_t( self%metric%grid, CELL )
         !
+		write( *, * ) "PDEmapping_ModelParameterCell_MR 1"
+		!
         call self%modelToCell( self%air_cond, sigma_cell_al_mr )
         !
+		write( *, * ) "PDEmapping_ModelParameterCell_MR 2"
+		!
         call e_vec%zeros
         !
+		write( *, * ) "PDEmapping_ModelParameterCell_MR 3"
+		!
         call self%cellToEdge( sigma_cell_al_mr, e_vec )
         !
+		write( *, * ) "PDEmapping_ModelParameterCell_MR 4"
+		!
     end subroutine PDEmapping_ModelParameterCell_MR
     !
     !> Map the perturbation between two models onto a single Vector_t(e_vec).

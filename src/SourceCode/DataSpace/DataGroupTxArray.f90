@@ -319,6 +319,8 @@ contains
         !
     end subroutine setComplex_DataGroupTxArray
     !
+    !> No function briefing
+    !
     function countValuesGroupTxArray( data_tx_array ) result( counter )
         implicit none
         !
@@ -340,6 +342,8 @@ contains
         enddo
         !
     end function countValuesGroupTxArray
+    !
+    !> No function briefing
     !
     function count_DataGroupTxArray( data_tx_array ) result( counter )
         implicit none

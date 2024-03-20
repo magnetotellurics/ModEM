@@ -279,7 +279,7 @@ contains
                 !
                 temp_cvector_sg = cVector3D_SG_t( rhs%grid, rhs%grid_type )
                 !
-                call rhs%MRtoSG( temp_cvector_sg )
+                call rhs%toSG( temp_cvector_sg )
                 !
                 cvalue = self%dotProd( temp_cvector_sg )
                 !
@@ -467,7 +467,7 @@ contains
                 !
                 temp_cvector_sg = cVector3D_SG_t( cvector%grid, cvector%grid_type )
                 !
-                call cvector%MRtoSG( temp_cvector_sg )
+                call cvector%toSG( temp_cvector_sg )
                 !
                 call self%fromFullVector( temp_cvector_sg )
                 !
