@@ -428,36 +428,44 @@ contains
     !> copying from variable resolution sub-grids to completely fill in the
     !> underlying fine grid.
     !
-    subroutine toSG_cVector3D_MR( self, sg_v )
+    subroutine toSG_cVector3D_MR( self, vector_sg )
         implicit none
         !
         class( cVector3D_MR_t ), intent( in ) :: self
-        type( cVector3D_SG_t ), intent( inout ) :: sg_v
+        type( cVector3D_SG_t ), intent( inout ) :: vector_sg
         !
-        type( cVector3D_SG_t ) :: temp
+        type( cVector3D_SG_t ) :: temp_vector_sg
+        type( Grid3D_SG_t ) :: grid_sg
         integer :: x_nx, x_ny, x_nz
         integer :: y_nx, y_ny, y_nz
         integer :: z_nx, z_ny, z_nz
         integer :: last, Cs, i1, i2, i, k
         real( kind=prec ) :: w1, w2
         !
-        temp = cVector3D_SG_t( self%grid, self%grid_type )
+        !> Using a temporary Grid SG with AirLayers, for instantiate the vector_sg output
+        grid_sg = param_grid
         !
-        temp%x = 0; temp%y = 0; temp%z = 0
+        call grid_sg%setAirLayers
         !
-        x_nx = size(temp%x, 1)
-        x_ny = size(temp%x, 2)
-        x_nz = size(temp%x, 3)
+        vector_sg = cVector3D_SG_t( grid_sg, self%grid_type )
         !
-        y_nx = size(temp%y, 1)
-        y_ny = size(temp%y, 2)
-        y_nz = size(temp%y, 3)
+        temp_vector_sg = vector_sg
         !
-        z_nx = size(temp%z, 1)
-        z_ny = size(temp%z, 2)
-        z_nz = size(temp%z, 3)
+        temp_vector_sg%x = 0; temp_vector_sg%y = 0; temp_vector_sg%z = 0
         !
-        sg_v%x = 0; sg_v%y = 0; sg_v%z = 0
+        x_nx = size(temp_vector_sg%x, 1)
+        x_ny = size(temp_vector_sg%x, 2)
+        x_nz = size(temp_vector_sg%x, 3)
+        !
+        y_nx = size(temp_vector_sg%y, 1)
+        y_ny = size(temp_vector_sg%y, 2)
+        y_nz = size(temp_vector_sg%y, 3)
+        !
+        z_nx = size(temp_vector_sg%z, 1)
+        z_ny = size(temp_vector_sg%z, 2)
+        z_nz = size(temp_vector_sg%z, 3)
+        !
+        vector_sg%x = 0; vector_sg%y = 0; vector_sg%z = 0
         !
         select case( self%grid_type )
             !
@@ -476,22 +484,23 @@ contains
                             ! edges that aligned with sub-grid edge.
                             do i = 1, Cs
                                 !
-                                temp%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) = self%sub_vector(k)%x
-                                temp%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) = self%sub_vector(k)%y
+                                temp_vector_sg%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) = self%sub_vector(k)%x
+                                temp_vector_sg%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) = self%sub_vector(k)%y
                                 !
                                 w1 = 1. -( i - 1.)/Cs
                                 w2 = 1. - w1
                                 !
                                 if( i == 1 ) then
-                                    temp%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2) = self%sub_vector(k)%z
+                                    temp_vector_sg%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2) = self%sub_vector(k)%z
                                 else
                                     last = size( self%sub_vector(k)%z(:, 1, 1) )
-                                    temp%z(i:z_nx:Cs, 1:z_ny:Cs, i1:i2) = &
+                                    temp_vector_sg%z(i:z_nx:Cs, 1:z_ny:Cs, i1:i2) = &
                                     self%sub_vector(k)%z(1:last-1, :, :) * &
                                     w1 + self%sub_vector(k)%z(2:last, :, :) * w2
                                 endif
                                 !
                             enddo
+                            !
                             ! edges that subdivide the sub-grid
                             ! interpolate  in y and x directions
                             ! copy/interpolate x in y direction
@@ -501,23 +510,23 @@ contains
                                 w1 = 1. -( i - 1.)/Cs
                                 w2 = 1. - w1
                                 !
-                                temp%x(:, i:x_ny:Cs, i1:i2+1) = temp%x(:, 1:x_ny-Cs:Cs, i1:i2+1)*w1 + &
-                                temp%x(:, Cs+1:x_ny:Cs, i1:i2+1)*w2
+                                temp_vector_sg%x(:, i:x_ny:Cs, i1:i2+1) = temp_vector_sg%x(:, 1:x_ny-Cs:Cs, i1:i2+1)*w1 + &
+                                temp_vector_sg%x(:, Cs+1:x_ny:Cs, i1:i2+1)*w2
                                 !
-                                temp%y(i:y_nx:Cs, :, i1:i2+1) = temp%y(1:y_nx-Cs:Cs, :, i1:i2+1)*w1 + &
-                                temp%y(Cs+1:y_nx:Cs, :, i1:i2+1)*w2
+                                temp_vector_sg%y(i:y_nx:Cs, :, i1:i2+1) = temp_vector_sg%y(1:y_nx-Cs:Cs, :, i1:i2+1)*w1 + &
+                                temp_vector_sg%y(Cs+1:y_nx:Cs, :, i1:i2+1)*w2
                                 !
                                 ! added by zhhq, 2017
-                                temp%z(:, i:z_ny:Cs, i1:i2) = temp%z(:, 1:z_ny-Cs:Cs, i1:i2)*w1 + &
-                                temp%z(:, Cs+1:z_ny:Cs, i1:i2) * w2
-                                ! temp.z(i:Cs:end,i:Cs:end,i1:i2) = temp.z(:,1:Cs:end-Cs,i1:i2)*w1+ ...
-                                ! temp.z(:,Cs+1:Cs:end,i1:i2)*w2;
+                                temp_vector_sg%z(:, i:z_ny:Cs, i1:i2) = temp_vector_sg%z(:, 1:z_ny-Cs:Cs, i1:i2)*w1 + &
+                                temp_vector_sg%z(:, Cs+1:z_ny:Cs, i1:i2) * w2
+                                ! temp_vector_sg.z(i:Cs:end,i:Cs:end,i1:i2) = temp_vector_sg.z(:,1:Cs:end-Cs,i1:i2)*w1+ ...
+                                ! temp_vector_sg.z(:,Cs+1:Cs:end,i1:i2)*w2;
                                 ! added by zhhq, 2017
                             enddo
                             !
-                            sg_v%x(:, :, i1:i2+1) = sg_v%x(:, :, i1:i2+1) + temp%x(:, :, i1:i2+1)
-                            sg_v%y(:, :, i1:i2+1) = sg_v%y(:, :, i1:i2+1) + temp%y(:, :, i1:i2+1)
-                            sg_v%z(:, :, i1:i2)   = temp%z(:, :, i1:i2)
+                            vector_sg%x(:, :, i1:i2+1) = vector_sg%x(:, :, i1:i2+1) + temp_vector_sg%x(:, :, i1:i2+1)
+                            vector_sg%y(:, :, i1:i2+1) = vector_sg%y(:, :, i1:i2+1) + temp_vector_sg%y(:, :, i1:i2+1)
+                            vector_sg%z(:, :, i1:i2)   = temp_vector_sg%z(:, :, i1:i2)
                             !
                         enddo
                         !
@@ -645,7 +654,7 @@ contains
     !> Converts SG Vector object to MR by averaging
     !> used only for e0
     !
-    subroutine SGtoMRE0_cVector3D_MR(self, sg_vector)
+    subroutine SGtoMRE0_cVector3D_MR( self, sg_vector )
         implicit none
         !
         class( cVector3D_MR_t ), intent( inout ) :: self

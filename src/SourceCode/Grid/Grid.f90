@@ -90,6 +90,7 @@ module Grid
             !
             procedure, public :: setupAirLayers => setupAirLayers_Grid
             procedure, public :: updateAirLayers => updateAirLayers_Grid
+            procedure, public :: setAirLayers => setAirLayers_Grid
             !
             procedure, public :: nEdges => nEdges_Grid
             !
@@ -103,6 +104,8 @@ module Grid
     !
     !> Public Global Generic Grid objects
     class( Grid_t ), allocatable, target :: main_grid, param_grid
+    !
+    public :: getAirLayeredGrid
     !
     !> Details needed to unambiguously compute and/or store the air layers;
     !> method options are: mirror; fixed height; read from file
@@ -631,6 +634,24 @@ contains
         !write(*,*) '****************** Air Layers Added to Grid ************************'
         !call self%write()
     end subroutine updateAirLayers_Grid
+    !
+    !> No function briefing
+    !
+    subroutine setAirLayers_Grid( self, air_layer_out )
+        implicit none
+        !
+        class( Grid_t ), intent( inout ) :: self
+        type( TAirLayers ), intent( out ), optional :: air_layer_out
+        !
+        type( TAirLayers ) :: air_layer
+        !
+        call self%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
+        !
+        call self%updateAirLayers( air_layer%nz, air_layer%dz )
+        !
+        if( present( air_layer_out ) ) air_layer_out = air_layer
+        !
+    end subroutine setAirLayers_Grid
     !
     !> No subroutine briefing
     !

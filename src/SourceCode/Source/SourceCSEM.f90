@@ -12,8 +12,8 @@ module SourceCSEM
     character( len=19 ), parameter :: SRC_CSEM_DIPOLE1D = "SourceCSEM_Dipole1D"
     !
     character(:), allocatable :: get_1d_from
-    character( len=5 ), parameter :: FROM_FIXED_VALUE = "Fixed"
-    character( len=14 ), parameter :: FROM_GEOM_MEAN = "Geometric_mean"
+    character( len=5 ), parameter :: FROM_FIXED_VALUE = "Fixed_Value"
+    character( len=14 ), parameter :: FROM_GEOM_MEAN = "Geometric_Mean"
     character( len=14 ), parameter :: FROM_TX_GEOM_MEAN = "Mean_around_Tx"
     character( len=11 ), parameter :: FROM_TX_LOCATION = "Tx_Position"
     !
@@ -85,10 +85,7 @@ contains
                 !
                 sig1D(1:nzAir) = SIGMA_AIR
                 !
-                !> Verbose
-                write( *, "( a39, a14 )" ) "- Get 1D according to: ", trim( get_1d_from )
-                !
-                if( trim( get_1D_from ) == "Geometric_mean" ) then
+                if( trim( get_1D_from ) == "Geometric_Mean" ) then
                     !
                     do k = nzAir+1, nlay1D
                         !
@@ -162,13 +159,9 @@ contains
         call aModel%setCond( sigma_cell, ani_level )
         call aModel%setType( self%sigma%param_type )
         !
-        write( *, * ) "setCondAnomally_SourceCSEM 1"
-        !
         call self%sigma%metric%createVector( real_t, EDGE, cond_nomaly )
         !allocate( cond_nomaly, source = rVector3D_SG_t( self%sigma%metric%grid, EDGE ) )
         call aModel%PDEmapping( cond_nomaly )
-        !
-        write( *, * ) "setCondAnomally_SourceCSEM 2"
         !
         !> Map sigma to cond_edges vector
         call self%sigma%metric%createVector( real_t, EDGE, cond_anomaly )

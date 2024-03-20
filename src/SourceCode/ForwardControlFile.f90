@@ -186,7 +186,7 @@ contains
                     !
                 end select
                 !
-                write( *, "( A40, A20)" ) "Solver = ", solver_type
+                !write( *, "( A40, A20)" ) "Solver = ", solver_type
                 !
             endif
             !
@@ -207,7 +207,7 @@ contains
                     !
                 end select
                 !
-                write( *, "( A40, A20)" ) "FWD Solver = ", forward_solver_type
+                !write( *, "( A40, A20)" ) "FWD Solver = ", forward_solver_type
                 !
             endif
             !
@@ -226,7 +226,7 @@ contains
                         !
                 end select
                 !
-                write( *, "( A40, A20)" ) "MT Source = ", source_type_mt
+                !write( *, "( A40, A20)" ) "MT Source = ", source_type_mt
                 !
             endif
             !
@@ -245,7 +245,7 @@ contains
                         !
                 end select
                 !
-                write( *, "( A40, A20)" ) "CSEM Source = ", source_type_csem
+                !write( *, "( A40, A20)" ) "CSEM Source = ", source_type_csem
                 !
             endif
             !
@@ -254,9 +254,9 @@ contains
                 !
                 select case( self%get_1d_from )
                     !
-                    case( "Fixed" )
+                    case( "Fixed_Value" )
                         get_1d_from = FROM_FIXED_VALUE
-                    case( "Geometric_mean" )
+                    case( "Geometric_Mean" )
                         get_1d_from = FROM_GEOM_MEAN
                     case( "Mean_around_Tx" )
                         get_1d_from = FROM_TX_GEOM_MEAN
@@ -264,11 +264,11 @@ contains
                         get_1d_from = FROM_TX_LOCATION
                     case default
                         !
-                        call errStop( "ForwardControlFile_ctor > Wrong get_1d_from, use [Fixed|Geometric_mean|Mean_around_Tx|Tx_Position]" )
+                        call errStop( "ForwardControlFile_ctor > Wrong get_1d_from, use [Fixed_Value|Geometric_Mean|Mean_around_Tx|Tx_Position]" )
                         !
                 end select
                 !
-                write( *, "( A40, A20)" ) "Get 1D from = ", get_1d_from
+                !write( *, "( A40, A20)" ) "Get 1D from = ", get_1d_from
                 !
             endif
             !
@@ -286,7 +286,8 @@ contains
                         call errStop( "ForwardControlFile_ctor > Wrong model_method control, use [mirror|fixed height]" )
                     !
                 end select
-                write( *, "( A40, A20)" ) "Model Method = ", model_method
+                !
+                !write( *, "( A40, A20)" ) "Model Method = ", model_method
                 !
             endif
             !
@@ -295,7 +296,7 @@ contains
                 !
                 read( self%model_n_air_layer, "(I8)" ) model_n_air_layer
                 !
-                write( *, "( A40, I20)" ) "N Air Layers = ", model_n_air_layer
+                !write( *, "( A40, I20)" ) "N Air Layers = ", model_n_air_layer
                 !
             endif
             !
@@ -304,7 +305,7 @@ contains
                 !
                 read( self%model_max_height, "(f15.6)" ) model_max_height
                 !
-                write( *, "( A40, f20.2)" ) "Model Max Height = ", model_max_height
+                !write( *, "( A40, f20.2)" ) "Model Max Height = ", model_max_height
                 !
             endif
             !
@@ -313,7 +314,7 @@ contains
                 !
                 read( self%max_solver_iters, "(I8)" ) max_solver_iters
                 !
-                write( *, "( A40, I20)" ) "Solver Iters = ", max_solver_iters
+                write( *, "( A31, A9, I20)" ) solver_type, "Iters = ", max_solver_iters
                 !
             endif
             !
@@ -322,7 +323,16 @@ contains
                 !
                 read( self%max_solver_calls, "(I8)" ) max_solver_calls
                 !
-                write( *, "( A40, I20)" ) "Max Solver Calls = ", max_solver_calls
+                write( *, "( A27, A4, A9, I20)" ) "Max ", solver_type, " Calls = ", max_solver_calls
+                !
+            endif
+            !
+            ! Solver tolerance_solver
+            if( allocated( self%tolerance_solver ) ) then
+                !
+                read( self%tolerance_solver, * ) tolerance_solver
+                !
+                write( *, "( A27, A13, es20.2)" ) solver_type, " Tolerance = ", tolerance_solver
                 !
             endif
             !
@@ -332,15 +342,6 @@ contains
                 read( self%max_divcor_iters, "(I8)" ) max_divcor_iters
                 !
                 write( *, "( A40, I20)" ) "Divcor Iters = ", max_divcor_iters
-                !
-            endif
-            !
-            ! Solver tolerance_solver
-            if( allocated( self%tolerance_solver ) ) then
-                !
-                read( self%tolerance_solver, * ) tolerance_solver
-                !
-                write( *, "( A40, es20.2)" ) "Solver Tolerance = ", tolerance_solver
                 !
             endif
             !

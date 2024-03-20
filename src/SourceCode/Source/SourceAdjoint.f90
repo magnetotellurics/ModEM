@@ -156,8 +156,6 @@ contains
                         !
                     class is( rVector3D_MR_t )
                         !
-                        temp_vec_sg = rVector3D_SG_t( self%model_operator%metric%grid, EDGE )
-                        !
                         call v_edge%toSG( temp_vec_sg )
                         !
                         call self%E( pol )%div( temp_vec_sg )

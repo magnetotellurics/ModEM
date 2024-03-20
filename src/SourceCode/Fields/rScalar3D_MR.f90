@@ -424,8 +424,9 @@ contains
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
-        type( rScalar3D_SG_t ), intent( inout ) :: scalar_sg
+        type( rScalar3D_SG_t ), intent( out ) :: scalar_sg
         !
+        type( Grid3D_SG_t ) :: grid_sg
         integer :: i_grid, i, j, k, z, cs
         integer :: i1, i2, j1, j2, k1, k2
         !
@@ -441,6 +442,13 @@ contains
         if( .NOT. scalar_sg%is_allocated ) then
             call errStop( "toSG_rScalar3D_MR > scalar_sg not allocated" )
         endif
+        !
+        !> Using a temporary Grid SG with AirLayers, for instantiate the scalar_sg output
+        grid_sg = param_grid
+        !
+        call grid_sg%setAirLayers
+        !
+        scalar_sg = rScalar3D_SG_t( grid_sg, self%grid_type )
         !
         select type( grid => self%grid )
             !

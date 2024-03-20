@@ -277,8 +277,6 @@ contains
             !
             class is( cVector3D_MR_t )
                 !
-                temp_cvector_sg = cVector3D_SG_t( rhs%grid, rhs%grid_type )
-                !
                 call rhs%toSG( temp_cvector_sg )
                 !
                 cvalue = self%dotProd( temp_cvector_sg )
@@ -464,8 +462,6 @@ contains
                 deallocate( Iz, Jz, Kz, XYZ3 )
             !
             class is( cVector3D_MR_t )
-                !
-                temp_cvector_sg = cVector3D_SG_t( cvector%grid, cvector%grid_type )
                 !
                 call cvector%toSG( temp_cvector_sg )
                 !

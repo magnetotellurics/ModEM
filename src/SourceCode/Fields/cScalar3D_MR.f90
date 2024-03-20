@@ -426,6 +426,7 @@ contains
         class( cScalar3D_MR_t ), intent( in ) :: self
         type( cScalar3D_SG_t ), intent( out ) :: scalar_sg
         !
+        type( Grid3D_SG_t ) :: grid_sg
         integer :: i_grid, i, j, k, z, cs
         integer :: i1, i2, j1, j2, k1, k2
         !
@@ -433,7 +434,12 @@ contains
             call errStop( "toSG_cScalar3D_MR > self not allocated." )
         endif
         !
-        scalar_sg = cScalar3D_SG_t( self%grid, self%grid_type )
+        !> Using a temporary Grid SG with AirLayers, for instantiate the scalar_sg output
+        grid_sg = param_grid
+        !
+        call grid_sg%setAirLayers
+        !
+        scalar_sg = cScalar3D_SG_t( grid_sg, self%grid_type )
         !
         select type( grid => self%grid )
             !

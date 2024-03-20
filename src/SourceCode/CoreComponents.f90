@@ -89,9 +89,7 @@ contains
         !> Initialize main_grid, param_grid and sigma0 with ModelReader
         call model_reader%read( model_file_name, main_grid, sigma0, param_grid ) 
         !
-        call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-        !
-        call main_grid%updateAirLayers( air_layer%nz, air_layer%dz )
+        call main_grid%setAirLayers( air_layer )
         !
         ! Verbose
         write( *, "( a39 )" ) "Model Air Layers [i, dz(i)]:"
@@ -536,7 +534,7 @@ contains
         !
         ! Source parameters
         source_type_mt = SRC_MT_1D
-        get_1d_from = "Geometric_mean"
+        get_1d_from = "Geometric_Mean"
         !
         ! Model parameters
         model_method = MM_METHOD_FIXED_H
@@ -784,9 +782,9 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Source parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A66)" ) "source_type_mt [1D|2D]                                        : 1D"
-            write( ioFwdTmp, "(A72)" ) "source_type_csem [EM1D|Dipole1D]                              : Dipole1D"
-            write( ioFwdTmp, "(A78)" ) "get_1d_from [Fixed|Geometric_mean|Mean_around_Tx|Tx_Position] : Geometric_mean"
+            write( ioFwdTmp, "(A72)" ) "source_type_mt [1D|2D]                                              : 1D"
+            write( ioFwdTmp, "(A78)" ) "source_type_csem [EM1D|Dipole1D]                                    : Dipole1D"
+            write( ioFwdTmp, "(A84)" ) "get_1d_from [Fixed_Value|Geometric_Mean|Mean_around_Tx|Tx_Position] : Geometric_Mean"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"

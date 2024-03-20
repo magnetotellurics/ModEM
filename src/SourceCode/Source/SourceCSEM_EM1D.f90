@@ -101,10 +101,9 @@ contains
         !
         integer :: ifreq, icur, comm
         complex( kind=prec ) :: i_omega_mu
-        complex( kind=prec ), allocatable, dimension(:,:,:) :: x, y, z
         !
-        !> Verbose...
-        write( *, * ) "          - Extract CSEM Source from EM1D"
+        !> Verbose
+        write( *, "( a48, a14 )" ) "- SourceCSEM_EM1D according to: ", trim( get_1d_from )
         !
         call self%set1DModel
         !
@@ -127,7 +126,7 @@ contains
         !
         i_omega_mu = cmplx( 0., real( -1.0d0 * isign * mu_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
         !
-        !>
+        !>  CSEM has only one polarization, therefore E needs only one position
         allocate( self%E( 1 ) )
         !
         !> Construct E from E_p
@@ -185,7 +184,7 @@ contains
         enddo
         !
         counter = 1
-        !> E-field corresponing to these nodes is Ey
+        !> E-field corresponding to these nodes is Ey
         do iz = 1, grid%Nz+1    !Edge Z
             do iy = 1, grid%Ny      !Center y
                 do ix = 1, grid%Nx+1    !Edge x
@@ -196,7 +195,7 @@ contains
         enddo
         !
         counter = 1
-        !> E-field corresponing to these nodes is Ez
+        !> E-field corresponding to these nodes is Ez
         do iz = 1,grid%Nz !Center Z
             do iy = 1,grid%Ny+1 !Edge y
                 do ix = 1,grid%Nx+1 !Edge x
@@ -291,8 +290,7 @@ contains
         class( SourceCSEM_EM1D_t ), intent( in ) :: self
         type( backgrounddata ), intent( inout ) :: bgdat 
         !
-        type( Grid3D_SG_t ) :: temp_grid_al_sg
-        type( TAirLayers ) :: air_layer
+        type( Grid3D_SG_t ) :: grid_wal_sg
         integer( kind=int32 ) :: counter, ilay, ix, iy, iz, ierr
         integer( kind=int32 ) :: nx1, ny1, nz1 !> nr of points in my domain for which fields are computed
         !
@@ -361,38 +359,18 @@ contains
         bgdat%Ey = 0._real64
         bgdat%Ez = 0._real64
         !
-        !> Using always an SG grid with air_layers here !!!!
-        temp_grid_al_sg = param_grid
-        !
-        call temp_grid_al_sg%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-        !
-        call temp_grid_al_sg%updateAirLayers( air_layer%nz, air_layer%dz )
+        !> Using always an SG grid without air_layers here !!!!
+        grid_wal_sg = param_grid
         !
         counter = 1
         !> E-field corresponding to these nodes is Ex
-        do iz = 1, temp_grid_al_sg%Nz+1 !Edge Z
-            do iy = 1, temp_grid_al_sg%Ny+1 !Edge Y
-                do ix = 1, temp_grid_al_sg%Nx !Center X
+        do iz = 1, grid_wal_sg%Nz+1 !Edge Z
+            do iy = 1, grid_wal_sg%Ny+1 !Edge Y
+                do ix = 1, grid_wal_sg%Nx !Center X
                     !
-                    bgdat%Expos(counter,1) = temp_grid_al_sg%x_center(ix)
-                    bgdat%Expos(counter,2) = temp_grid_al_sg%y_edge(iy)
-                    bgdat%Expos(counter,3) = temp_grid_al_sg%z_edge(iz)
-                    !
-                    counter = counter + 1
-                    !
-                enddo
-            enddo
-        enddo
-        !
-        counter = 1
-        !> E-field corresponing to these nodes is Ey
-        do iz = 1, temp_grid_al_sg%Nz+1 !Edge Z
-            do iy = 1, temp_grid_al_sg%Ny !Center y
-                do ix = 1, temp_grid_al_sg%Nx+1 !Edge x
-                    !
-                    bgdat%Eypos(counter,1) = temp_grid_al_sg%x_edge(ix)
-                    bgdat%Eypos(counter,2) = temp_grid_al_sg%y_center(iy)
-                    bgdat%Eypos(counter,3) = temp_grid_al_sg%z_edge(iz)
+                    bgdat%Expos(counter,1) = grid_wal_sg%x_center(ix)
+                    bgdat%Expos(counter,2) = grid_wal_sg%y_edge(iy)
+                    bgdat%Expos(counter,3) = grid_wal_sg%z_edge(iz)
                     !
                     counter = counter + 1
                     !
@@ -401,14 +379,30 @@ contains
         enddo
         !
         counter = 1
-        !> E-field corresponing to these nodes is Ez
-        do iz = 1, temp_grid_al_sg%Nz !Center Z
-            do iy = 1, temp_grid_al_sg%Ny+1 !Edge y
-                do ix = 1, temp_grid_al_sg%Nx+1 !Edge x
+        !> E-field corresponding to these nodes is Ey
+        do iz = 1, grid_wal_sg%Nz+1 !Edge Z
+            do iy = 1, grid_wal_sg%Ny !Center y
+                do ix = 1, grid_wal_sg%Nx+1 !Edge x
                     !
-                    bgdat%Ezpos(counter,1)= temp_grid_al_sg%x_edge(ix)
-                    bgdat%Ezpos(counter,2) = temp_grid_al_sg%y_edge(iy)
-                    bgdat%Ezpos(counter,3) = temp_grid_al_sg%z_center(iz)
+                    bgdat%Eypos(counter,1) = grid_wal_sg%x_edge(ix)
+                    bgdat%Eypos(counter,2) = grid_wal_sg%y_center(iy)
+                    bgdat%Eypos(counter,3) = grid_wal_sg%z_edge(iz)
+                    !
+                    counter = counter + 1
+                    !
+                enddo
+            enddo
+        enddo
+        !
+        counter = 1
+        !> E-field corresponding to these nodes is Ez
+        do iz = 1, grid_wal_sg%Nz !Center Z
+            do iy = 1, grid_wal_sg%Ny+1 !Edge y
+                do ix = 1, grid_wal_sg%Nx+1 !Edge x
+                    !
+                    bgdat%Ezpos(counter,1)= grid_wal_sg%x_edge(ix)
+                    bgdat%Ezpos(counter,2) = grid_wal_sg%y_edge(iy)
+                    bgdat%Ezpos(counter,3) = grid_wal_sg%z_center(iz)
                     !
                     counter = counter + 1
                     !

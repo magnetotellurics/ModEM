@@ -4,8 +4,6 @@
 module SourceCSEM_Dipole1D
     !
     use SourceCSEM
-    use ModelParameterCell
-    use rVector3D_MR
     !
     type, extends( SourceCSEM_t ) :: SourceCSEM_Dipole1D_t
         !
@@ -91,10 +89,9 @@ contains
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
         !
-        type( rVector3D_SG_t ) :: temp_cond_anomaly_sg
-        type( Grid3D_SG_t ) :: temp_grid_al_sg
+        type( Grid3D_SG_t ) :: grid_sg
+        type( rVector3D_SG_t ) :: cond_anomaly_sg
         complex( kind=prec ) :: i_omega_mu
-        type( TAirLayers ) :: air_layer
         integer :: ix, iy, iz
         !
         !> Get the Transmitter setting:
@@ -118,59 +115,57 @@ contains
         lenTx1D = 00.d0            !> (m) Dipole length 0 = point dipole
         numIntegPts = 0            !> Number of points to use for Gauss quadrature integration for finite dipole
         !
-        !> Verbose...
-        write( *, * ) "          - Extract CSEM Source from Dipole 1D"
+        !> Verbose
+        write( *, "( a52, a14 )" ) "- SourceCSEM_Dipole1D according to: ", trim( get_1d_from )
         !
         call self%set1DModel
         !
-        !> Use always an SG grid with air_layers to initilize_1d_vectors !!!!
-        temp_grid_al_sg = param_grid
+        select type( grid => self%sigma%metric%grid )
+            !
+            class is( Grid3D_SG_t )
+                !
+                call initilize_1d_vectors( grid ) !> Initialize the 1D vectors where to compute the e_field field
+            !
+            class is( Grid3D_MR_t )
+                !
+                grid_sg = param_grid
+                !
+                call grid_sg%setAirLayers
+                !
+                call initilize_1d_vectors( grid_sg ) !> Initialize the 1D vectors where to compute the e_field field
+                !
+            class default
+                call errStop( "createE_SourceCSEM_Dipole1D > grid must be Grid3D_SG_t" )
+            !
+        end select
         !
-        call temp_grid_al_sg%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-        !
-        call temp_grid_al_sg%updateAirLayers( air_layer%nz, air_layer%dz )
-        !
-        call initilize_1d_vectors( temp_grid_al_sg )
-        !
-        !> Calculate e_field-Field by Key's code
-        call comp_dipole1D
-        !
-        write( *, * ) "createE_SourceCSEM_Dipole1D 2"
+        call comp_dipole1D !> Calculate e_field-Field by Key's code
         !
         call self%create_Ep_from_Dipole1D( self%sigma%metric%grid )
         !
-        write( *, * ) "createE_SourceCSEM_Dipole1D 3"
-        !
         deallocate( zlay1D )
         !
-        !> 
+        !>
         allocate( self%E( 1 ) )
         !
         self%E(1) = self%E_p
         !
-        write( *, * ) "createE_SourceCSEM_Dipole1D 4"
-        !
-        !call initilize_1d_vectors( grid ) !> Initialize the 1D vectors where to compute the e_field field
         select type( cond_anomaly => self%cond_anomaly )
             !
             class is( rVector3D_SG_t )
                 !
-                temp_cond_anomaly_sg = cond_anomaly
+                call self%E(1)%mult( cond_anomaly )
                 !
-            class is( rVector3D_MR_t )
+            class is( rVector3D_mr_t )
                 !
-                temp_cond_anomaly_sg = rVector3D_SG_t( cond_anomaly%grid, cond_anomaly%grid_type )
+                call cond_anomaly%toSG( cond_anomaly_sg )
                 !
-                call cond_anomaly%toSG( temp_cond_anomaly_sg )
+                call self%E(1)%mult( cond_anomaly_sg )
                 !
             class default
-                call errStop( "createE_SourceCSEM_Dipole1D > Unclassified self%cond_anomaly" )
+                call errStop( "createE_SourceCSEM_Dipole1D > grid must be Grid3D_SG_t" )
             !
         end select
-        !
-        call self%E(1)%mult( temp_cond_anomaly_sg )
-        !
-        write( *, * ) "createE_SourceCSEM_Dipole1D 5"
         !
         i_omega_mu = cmplx( 0., real( -1.0d0 * isign * mu_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
         !
@@ -361,3 +356,4 @@ contains
     end subroutine create_Ep_from_Dipole1D
     !
 end module SourceCSEM_Dipole1D
+!
