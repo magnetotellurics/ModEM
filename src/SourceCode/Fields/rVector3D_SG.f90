@@ -1237,8 +1237,8 @@ contains
             call errStop( "interpFunc_rVector3D_SG > interp not allocated." )
         endif
         !
-		write( *, * ) "interpFunc_rVector3D_SG"
-		!
+        write( *, * ) "interpFunc_rVector3D_SG"
+        !
         select type( grid => self%grid )
             !
             class is( Grid3D_SG_t )
@@ -1370,11 +1370,6 @@ contains
         enddo
         !
         deallocate( tmp )
-        !
-        !> ????
-        !ix = findloc( location(1) > xC, .TRUE., back = .TRUE., dim = 1 )
-        !iy = findloc( location(2) > yC, .TRUE., back = .TRUE., dim = 1 )
-        !iz = findloc( location(3) > zC, .TRUE., back = .TRUE., dim = 1 )
         !
         ! Find weights
         wx = (xC(ix + 1) - location(1))/(xC(ix + 1) - xC(ix))

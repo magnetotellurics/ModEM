@@ -56,7 +56,7 @@ contains
         call handleArguments
         !
         write( *, * )
-        write( *, "(a18, a8, a1, a6, a1)" ) "Start ModEM-OO at ", str_date, "_", str_time, "."
+        write( *, "(a18, a8, a1, a6, a1)" ) "Start ModEM at ", str_date, "_", str_time, "."
         write( *, * )
         !
         !> If it was passed by argument,
@@ -79,7 +79,7 @@ contains
         int_time = int( t_finish - t_start )
         !
         write( *, * )
-        write( *, * ) "Finish ModEM-OO: ", getLiteralTime( int_time ), aux_counter
+        write( *, * ) "Finish ModEM: ", getLiteralTime( int_time ), aux_counter
         !
         if( warning_counter .GT. 0 ) then
             !

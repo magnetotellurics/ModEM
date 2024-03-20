@@ -218,32 +218,42 @@ contains
                 !
                 deallocate(d)
                 !
-                ! Could merge into a single LT and UT matrix, or solve systems individually
-!                call BlkDiag_Cmplx( Lblk, self%L )
-!                call BlkDiag_Cmplx( Ublk, self%U )
-!
-!                MAJOR MODIFICATION (BUG FIX!)   after making full block diagonal matrix,
-!                  need to permute rows and columns back to original order (sorted by subgrids)
-!                   using Axx` as temp sparse matrix to form block diagonal -- then call SubMatrix to
-!                   permute rows and columns
-                call BlkDiag_Cmplx( Lblk, Axx)
-                open(unit=6666,file='Lblk.bin',form='unformatted')
-                call write_CSRasIJS_Cmplx(Axx,6666)
-                close(6666)
-                call SubMatrix_Cmplx(Axx, ir, ir, self%L)
-                self%L%lower= .TRUE.   !   the reordering used here does keeps this LT matrix
-                open(unit=6666,file='L_sort.bin',form='unformatted')
-                call write_CSRasIJS_Cmplx(self%L,6666)
-                close(6666)
+                !> Could merge into a single LT and UT matrix, or solve systems individually
+                !> call BlkDiag_Cmplx( Lblk, self%L )
+                !> call BlkDiag_Cmplx( Ublk, self%U )
+                !
+                !> MAJOR MODIFICATION (BUG FIX!)   after making full block diagonal matrix,
+                !> need to permute rows and columns back to original order (sorted by subgrids)
+                !> using Axx` as temp sparse matrix to form block diagonal -- then call SubMatrix to
+                !> permute rows and columns
+                !
+                call BlkDiag_Cmplx( Lblk, Axx )
+                !
+                !open(unit=6666,file='Lblk.bin',form='unformatted')
+                !call write_CSRasIJS_Cmplx(Axx,6666)
+                !close(6666)
+                !
+                call SubMatrix_Cmplx( Axx, ir, ir, self%L )
+                !
+                self%L%lower = .TRUE.   !> the reordering used here does keeps this LT matrix
+                !
+                !open(unit=6666,file='L_sort.bin',form='unformatted')
+                !call write_CSRasIJS_Cmplx(self%L,6666)
+                !close(6666)
+                !
                 call BlkDiag_Cmplx( Ublk, Axx )
-                open(unit=6666,file='Ublk.bin',form='unformatted')
-                call write_CSRasIJS_Cmplx(Axx,6666)
-                close(6666)
-                call SubMatrix_Cmplx(Axx, ir, ir, self%U)
-                self%U%upper= .TRUE.   !   the reordering used here does keeps this UT matrix
-                open(unit=6666,file='U_sort.bin',form='unformatted')
-                call write_CSRasIJS_Cmplx(self%U,6666)
-                close(6666)
+                !
+                !open(unit=6666,file='Ublk.bin',form='unformatted')
+                !call write_CSRasIJS_Cmplx(Axx,6666)
+                !close(6666)
+                !
+                call SubMatrix_Cmplx( Axx, ir, ir, self%U )
+                !
+                self%U%upper = .TRUE.   !   the reordering used here does keeps this UT matrix
+                !
+                !open(unit=6666,file='U_sort.bin',form='unformatted')
+                !call write_CSRasIJS_Cmplx(self%U,6666)
+                !close(6666)
                 !
                 call CMATtrans( self%L, self%LH )
                 call CMATtrans( self%U, self%UH )
@@ -373,4 +383,4 @@ contains
     end subroutine LUSolvePreConditioner_CC_SP_MR
     !
 end module PreConditioner_CC_SP_MR
-
+!

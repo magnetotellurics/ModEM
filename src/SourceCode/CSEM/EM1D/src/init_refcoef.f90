@@ -118,7 +118,7 @@ if(refl_var%refcoef_changed) then
     pvertall2(:,ikap) = sqrt(epsmuh(:) - epsmuratio(:)*phsq)
   enddo
 
-  !fix against acausal propagation (OK?????)
+  !fix against acausal propagation (OK?)
   do ilay=1,nlay
     pvertall2(ilay,:) = cmplx(real(pvertall2(ilay,:),kind=real64),abs(aimag(pvertall2(ilay,:))),kind=real64)
   enddo

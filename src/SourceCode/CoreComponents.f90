@@ -87,7 +87,6 @@ contains
         write( *, * ) "     < Model File: [", model_file_name, "]"
         !
         !> Initialize main_grid, param_grid and sigma0 with ModelReader
-        !> Only ModelReader_Weerachai by now ????
         call model_reader%read( model_file_name, main_grid, sigma0, param_grid ) 
         !
         call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
@@ -146,7 +145,7 @@ contains
     end subroutine handleModelFile
     !
     !> Read Perturbation Model File: instantiate pmodel with ModelReader
-    !> Only ModelReader_Weerachai by now ????
+    !> Only ModelReader_Weerachai implemented so far!
     !
     subroutine handlePModelFile( pmodel )
         implicit none
@@ -160,7 +159,7 @@ contains
         write( *, * ) "     < PModel File: [", pmodel_file_name, "]"
         !
         !> Read temp_grid and pmodel with ModelReader_Weerachai
-        call model_reader%Read( pmodel_file_name, temp_grid, pmodel ) 
+        call model_reader%read( pmodel_file_name, temp_grid, pmodel ) 
         !
         deallocate( temp_grid )
         !
@@ -463,7 +462,7 @@ contains
                         !
                     case( "-v", "--version" )
                         !
-                        write( *, * ) "    + ModEM-OO version "//VERSION
+                        write( *, * ) "    + ModEM version "//VERSION
                         stop
                         !
                     case( "-h", "--help" )

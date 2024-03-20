@@ -40,9 +40,6 @@ contains
         !
         call self%baseInit
         !
-        !> NEED THIS LINE ????
-        !if( allocated( self%solver )  ) deallocate( self%solver )
-        !
         select case( solver_type )
             !
             case( SLV_QMR )
@@ -85,13 +82,12 @@ contains
         !> Set omega for this ForwardSolver solver
         self%solver%omega = ( 2.0 * PI / period )
         !
-        !> Set conductivity for the model operator (again ????)
+        !> Set conductivity for the model operator
         call self%solver%preconditioner%model_operator%setCond( sigma, self%solver%omega )
         !
         !> Set preconditioner for this solver's preconditioner
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
         !
-        !> Set conductivity for the model operator
         call self%solver%preconditioner%model_operator%divCorSetUp
         !
         !> Set conductivity for the divergence_correction
@@ -111,8 +107,8 @@ contains
         class( Source_t ), intent( in ) :: source
         class( Vector_t ), allocatable, intent( out ) :: e_solution
         !
-        class( Vector_t ), allocatable :: temp_e, temp_vec
-        type( cVector3D_MR_t ) :: temp_e_mr
+        class( Vector_t ), allocatable :: source_e_vec, boundary_vec
+        type( cVector3D_MR_t ) :: source_e_vec_mr
         class( Scalar_t ), allocatable :: phi0
         integer :: i
         !
@@ -121,16 +117,16 @@ contains
             !
             class is( Grid3D_SG_t )
                 !
-                allocate( temp_e, source = source%E( pol ) )
+                allocate( source_e_vec, source = source%E( pol ) )
                 !
             class is( Grid3D_MR_t )
                 !
-                temp_e_mr = cVector3D_MR_t( grid, source%E( pol )%grid_type )
-                call temp_e_mr%fromSG( source%E( pol ) )
-                allocate( temp_e, source = temp_e_mr )
+                source_e_vec_mr = cVector3D_MR_t( grid, source%E( pol )%grid_type )
+                call source_e_vec_mr%fromSG( source%E( pol ) )
+                allocate( source_e_vec, source = source_e_vec_mr )
                 !
             class default
-               call errStop( "createESolution_ForwardSolver_IT > Unclassified Source grid." )
+               call errStop( "createESolution_ForwardSolver_IT_DC > Unclassified Source grid." )
             !
         end select
         !
@@ -141,7 +137,7 @@ contains
         if( source%non_zero_source ) then
             !
             !> Create phi0
-            call self%divergence_correction%rhsDivCor( self%solver%omega, temp_e, phi0 )
+            call self%divergence_correction%rhsDivCor( self%solver%omega, source_e_vec, phi0 )
             !
         endif
         !
@@ -205,17 +201,17 @@ contains
         !
         if( source%non_zero_bc ) then
             !
-            call source%rhs( pol )%v%boundary( temp_vec )
+            call source%rhs( pol )%v%boundary( boundary_vec )
             !
         else
             !
-            call temp_e%boundary( temp_vec )
+            call source_e_vec%boundary( boundary_vec )
             !
         endif
         !
-        call e_solution%add( temp_vec )
+        call e_solution%add( boundary_vec )
         !
-        deallocate( temp_vec )
+        deallocate( boundary_vec )
         !
     end subroutine createESolution_ForwardSolver_IT_DC
     !

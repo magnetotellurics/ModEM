@@ -5,9 +5,7 @@
 module ModelOperator_SP
     !
     use ModelOperator
-    use SpOptopology
     use SpOpTopology_MR
-    use MetricElements_SG
     use MetricElements_MR
     !
     type, abstract, extends( ModelOperator_t ) :: ModelOperator_SP_t
@@ -101,16 +99,16 @@ contains
         !
         call self%topology%curl( self%topology%T )
         !
-        open(unit = 6666,file = 'T.bin',form = 'unformatted')
-        call write_CSRasIJS_real(self%topology%T, 6666)
-        close(6666)
+        !open(unit = 6666,file = 'T.bin',form = 'unformatted')
+        !call write_CSRasIJS_real(self%topology%T, 6666)
+        !close(6666)
         !call writeIJS_Matrix( self%topology%T, 6666 )
         !
         call self%topology%grad( self%topology%G )
         !
-        open(unit = 6666,file = 'G.bin',form = 'unformatted')
-        call write_CSRasIJS_real(self%topology%G, 6666)
-        close(6666)
+        !open(unit = 6666,file = 'G.bin',form = 'unformatted')
+        !call write_CSRasIJS_real(self%topology%G, 6666)
+        !close(6666)
         !call writeIJS_Matrix( self%topology%G, 6667 )
         !
         allocate( self%VomegaMuSig( size( self%metric%grid%EDGEi ) ) )
@@ -134,25 +132,23 @@ contains
         type( spMatCSR_Real ) :: temp_matrix, Ttrans, CC
         integer :: m, n, nz
         real( kind=prec ), allocatable, dimension(:) :: temp_array
-        integer :: fid
-        !
-        !   write out metric elements as column vectors
-        open(unit = 6666,file = 'MetricElements.bin',form = 'unformatted')
-        temp_array = self%metric%edge_length%getArray()
-        write(6666) 'EL'   !   edge length
-        write(6666) temp_array
-        temp_array = self%metric%dual_edge_length%getArray()
-        write(6666) 'DL'   !   dual edge length
-        write(6666) temp_array
-        temp_array = self%metric%face_area%getArray()
-        write(6666) 'FA'   ! face area
-        write(6666) temp_array
-        temp_array = self%metric%dual_face_area%getArray()
-        write(6666) 'DA'   ! dual face area
-        write(6666) temp_array
-        close(6666)
-
-        
+        ! !
+        ! !   write out metric elements as column vectors
+        ! open(unit = 6666,file = 'MetricElements.bin',form = 'unformatted')
+        ! temp_array = self%metric%edge_length%getArray()
+        ! write(6666) 'EL'   !   edge length
+        ! write(6666) temp_array
+        ! temp_array = self%metric%dual_edge_length%getArray()
+        ! write(6666) 'DL'   !   dual edge length
+        ! write(6666) temp_array
+        ! temp_array = self%metric%face_area%getArray()
+        ! write(6666) 'FA'   ! face area
+        ! write(6666) temp_array
+        ! temp_array = self%metric%dual_face_area%getArray()
+        ! write(6666) 'DA'   ! dual face area
+        ! write(6666) temp_array
+        ! close(6666)
+        ! !
         m = self%topology%T%nRow
         n = self%topology%T%nCol
         nz = self%topology%T%row( self%topology%T%nRow + 1 ) - 1
@@ -160,7 +156,7 @@ contains
         call create_spMatCSR( m, n, nz, temp_matrix )
         call create_spMatCSR( n, m, nz, Ttrans )
         call create_spMatCSR( m, n, nz, CC )
-        !!
+        !
         call RMATxDIAG( self%topology%T, real( self%metric%edge_length%getArray(), kind=prec ), temp_matrix )
         !
         !> Create TCC for for multCurlT
@@ -183,9 +179,9 @@ contains
         !
         call DIAGxRMAT( temp_array, temp_matrix, CC )
         !
-        open(unit = 6666,file = 'CC.bin',form = 'unformatted')
-        call write_CSRasIJS_real(CC, 6666)
-        close(6666)
+        !open(unit = 6666,file = 'CC.bin',form = 'unformatted')
+        !call write_CSRasIJS_real(CC, 6666)
+        !close(6666)
         !
         call subMatrix_Real( CC, self%metric%grid%EDGEi, self%metric%grid%EDGEi, self%CCii )
         !
@@ -198,13 +194,14 @@ contains
         self%eqset = .TRUE.
         !
         call self%divCorInit
-        !
-        open(unit = 6666,file = 'Vdiv.bin',form = 'unformatted')
-        call write_CSRasIJS_real(self%Vdiv, 6666)
-        close(6666)
-        open(unit = 6666,file = 'Gd.bin',form = 'unformatted')
-        call write_CSRasIJS_real(self%Gd, 6666)
-        close(6666)
+        ! !
+        ! open(unit = 6666,file = 'Vdiv.bin',form = 'unformatted')
+        ! call write_CSRasIJS_real(self%Vdiv, 6666)
+        ! close(6666)
+        ! open(unit = 6666,file = 'Gd.bin',form = 'unformatted')
+        ! call write_CSRasIJS_real(self%Gd, 6666)
+        ! close(6666)
+        ! !
     end subroutine setEquations_ModelOperator_SP
     !
     !> No subroutine briefing
@@ -217,15 +214,15 @@ contains
         real( kind=prec ), intent( in ) :: omega_in
         !
         class( Vector_t ), allocatable:: sig_temp
-        class( Grid_t ), allocatable :: temp_grid_mr
         real( kind=prec ), allocatable, dimension(:) :: sig_vec_v, v_edge_v
         !
         call sigma%metric%createVector( real_t, EDGE, sig_temp )
         !
         call sigma%PDEmapping( sig_temp )
-        open(unit = 6666,file = 'SigmaEdge.bin',form = 'unformatted')
-        call sig_temp%write(6666)
-        close(6666)
+        !
+        !open(unit = 6666,file = 'SigmaEdge.bin',form = 'unformatted')
+        !call sig_temp%write(6666)
+        !close(6666)
         !
         sig_vec_v = sig_temp%getArray()
         !
@@ -342,13 +339,14 @@ contains
         !
         call deall_spMatCSR( VDs )
         call deall_spMatCSR( matrix )
-        open(unit = 6666,file = 'VDsG.bin',form = 'unformatted')
-        call write_CSRasIJS_real(self%VDsG,6666)
-        close(6666)
-        open(unit = 6666,file = 'Ds.bin',form = 'unformatted')
-        call write_CSRasIJS_real(self%Ds,6666)
-        close(6666)
-        !
+        ! !
+        ! open(unit = 6666,file = 'VDsG.bin',form = 'unformatted')
+        ! call write_CSRasIJS_real(self%VDsG,6666)
+        ! close(6666)
+        ! open(unit = 6666,file = 'Ds.bin',form = 'unformatted')
+        ! call write_CSRasIJS_real(self%Ds,6666)
+        ! close(6666)
+        ! !
         ! Setup preconditioner matrices: self%VDsG_L and self%VDsG_U
         call Dilu_Real( self%VDsG, self%VDsG_L, self%VDsG_U )
         !
@@ -448,7 +446,7 @@ contains
         complex( kind=prec ), allocatable, dimension(:) :: in_b_v, out_e_v
         !
         if( .NOT. in_b%is_allocated ) then
-            call errStop( "multAib_ModelOperator_SP > in_b not allocated" )
+            call errStop( "multCurlT_ModelOperator_SP > in_b not allocated" )
         endif
         !
         call self%metric%createVector( complex_t, EDGE, out_e )
@@ -465,6 +463,7 @@ contains
     end subroutine multCurlT_ModelOperator_SP
     !
     !> No subroutine briefing
+    !
     subroutine div_ModelOperator_SP( self, in_e, out_phi )
         implicit none
         !
@@ -633,6 +632,7 @@ contains
     end subroutine deallocate_ModelOperator_SP
     !
     !> No subroutine briefing
+    !
     subroutine print_ModelOperator_SP( self )
         implicit none
         !

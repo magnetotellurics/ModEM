@@ -101,7 +101,7 @@ contains
         class( Vector_t ), intent( inout ) :: e_solution
         class( Scalar_t ), intent( in ), optional :: phi0
         !
-        class( Vector_t ), allocatable :: temp_e
+        class( Vector_t ), allocatable :: temp_e_solution
         class( Scalar_t ), allocatable :: phiRHS, phiSol
         logical :: SourceTerm
         !
@@ -130,27 +130,24 @@ contains
         call phiRHS%mult( self%solver%preconditioner%model_operator%metric%v_node )
         !
         call self%solver%preconditioner%model_operator%metric%createScalar( complex_t, NODE, phiSol )
-!        call phiSol%zeros
         !
         !> solve system of equations -- solver will have to know about
         !>     (a) the equations to solve -- the Divergence Correction operator is modOp%divCGrad
         !>     (b) preconditioner: object, and preconditioner matrix
-
+        !
         call self%solver%solve( phiRHS, phiSol )
         !
-        !> Temporary Solution - Must be zeroed!????
-        allocate( temp_e, source = e_solution )
-        call temp_e%zeros
+        allocate( temp_e_solution, source = e_solution )
+        call temp_e_solution%zeros
         !
-        !> compute gradient of phiSol (Divergence correction for temp_e)
-        call self%solver%preconditioner%model_operator%grad( phiSol, temp_e )
+        !> compute gradient of phiSol (Divergence correction for temp_e_solution)
+        call self%solver%preconditioner%model_operator%grad( phiSol, temp_e_solution )
         !
         deallocate( phiSol )
         !
-        !> subtract Divergence Correction from temp_e
-        !>    e_solution = e_solution - temp_e
-        !
-        call e_solution%sub( temp_e )
+        !> subtract Divergence Correction from temp_e_solution
+        !>    e_solution = e_solution - temp_e_solution
+        call e_solution%sub( temp_e_solution )
         !
         !> divergence of the corrected output electrical field
         call self%solver%preconditioner%model_operator%divC( e_solution, phiRHS )

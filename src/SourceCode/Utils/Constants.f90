@@ -106,8 +106,8 @@ module Constants
     character( len=7 ), parameter :: INVERSE = "INVERSE"
     character( len=5 ), parameter :: DERIV = "DERIV"
     !
-    character( len=40 ), parameter :: DATA_FILE_TITLE_MT = "Synthetic 3D MT data written by ModEM-OO"
-    character( len=42 ), parameter :: DATA_FILE_TITLE_CSEM = "Synthetic 3D CSEM data written by ModEM-OO"
+    character( len=40 ), parameter :: DATA_FILE_TITLE_MT = "Synthetic 3D MT data written by ModEM"
+    character( len=42 ), parameter :: DATA_FILE_TITLE_CSEM = "Synthetic 3D CSEM data written by ModEM"
     !
     character( len=4 ), parameter :: LOGE = "LOGE"
     character( len=6 ), parameter :: LINEAR = "LINEAR"

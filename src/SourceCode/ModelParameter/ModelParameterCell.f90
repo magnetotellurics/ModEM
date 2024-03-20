@@ -275,7 +275,7 @@ contains
             !
         end select
         !
-        !> ????
+        !> NEED THIS LINE????
         !self%air_cond = rhs%air_cond
         !
     end subroutine linComb_ModelParameterCell
@@ -408,7 +408,7 @@ contains
             if( present( comment ) ) then
                 write( ioModelParam, * ) "# ", trim( comment )
             else
-                write( ioModelParam, * ) "# 3D MT model written by ModEM-OO in WS format"
+                write( ioModelParam, * ) "# 3D MT model written by ModEM in WS format"
             endif
             !
             !> Write grid geometry definitions

@@ -64,7 +64,7 @@ module rScalar3D_MR
             procedure, public :: divByField => divByField_rScalar3D_MR
             procedure, public :: divByValue => divByValue_rScalar3D_MR
             !
-            procedure, public :: SumToNode => SumToNode_rScalar3D_MR
+            procedure, public :: sumToNode => sumToNode_rScalar3D_MR
             !
             !> Miscellaneous
             procedure, public :: copyFrom => copyFrom_rScalar3D_MR
@@ -436,6 +436,10 @@ contains
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "MRtoSG_rScalar3D_MR > self not allocated" )
+        endif
+        !
+        if( .NOT. scalar_sg%is_allocated ) then
+            call errStop( "MRtoSG_rScalar3D_MR > scalar_sg not allocated" )
         endif
         !
         select type( grid => self%grid )
@@ -1178,7 +1182,7 @@ contains
     !> NOTE  as written the interfaces are computed as sums, but other nodes
     !> as averages!!!   I AM CHANGING EVERYTHING TO SUMS
     !
-    subroutine SumToNode_rScalar3D_MR( self, node_scalar, interior_only )
+    subroutine sumToNode_rScalar3D_MR( self, node_scalar, interior_only )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -1208,16 +1212,16 @@ contains
                         !> set nodes for interior of all sub-scalars
                         do i = 1, self%grid%n_grids
                             !
-                            call self%sub_scalar(i)%SumToNode( node_scalar%sub_scalar(i) )
+                            call self%sub_scalar(i)%sumToNode( node_scalar%sub_scalar(i), interior_only )
                             !
                         enddo
                         !
                         !>set coarse grid nodes on interfaces
-                        do i = 1, self%grid%n_grids-1
+                        do i = 1, self%grid%n_grids - 1
                             !
+                            !> upper layer is coarser  -- fill in bottom level nodes
                             if( self%sub_scalar(i)%grid%nx .LT. self%sub_scalar(i+1)%grid%nx ) then
                                 !
-                                !> upper layer is coarser  -- fill in bottom level nodes
                                 nxC = self%sub_scalar(i)%grid%nx
                                 nyC = self%sub_scalar(i)%grid%ny
                                 nzC = self%sub_scalar(i)%grid%nz
@@ -1226,14 +1230,16 @@ contains
                                 nzF = self%sub_scalar(i+1)%grid%nz
                                 !
                                 node_scalar%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC+1 ) = &
-                                    self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
-                                    self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
-                                    self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
-                                    self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
-                                    self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
-                                    self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
-                                    self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
-                                    self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
+                                       self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
+                                       self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                       self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
+                                       self%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC   ) + &
+                                      ! ADDED LINE 1232 ABOVE and COMMENTED BELOW
+                                      !self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
+                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
                                 !
                             else
                                 !
@@ -1244,15 +1250,18 @@ contains
                                 nyC = self%sub_scalar(i+1)%grid%ny
                                 nzC = self%sub_scalar(i+1)%grid%nz
                                 !
+                                
                                 node_scalar%sub_scalar(i+1)%v( 2:nxC,     2:nyC,     1   ) = &
-                                    self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
-                                    self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
-                                    self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
-                                    self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
-                                    self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
-                                    self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
-                                    self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
-                                    self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
+                                       self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
+                                       self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                       self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
+                                       self%sub_scalar(i+1)%v( 2:nxC,     2:nyC,     1   ) + &
+                                      ! ADDED LINE 1253 ABOVE and COMMENTED BELOW
+                                      !self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                         self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
+                                         self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
+                                         self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
+                                         self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
                                 !
                             endif
                             !
@@ -1268,7 +1277,7 @@ contains
             !
         end select
         !
-    end subroutine SumToNode_rScalar3D_MR
+    end subroutine sumToNode_rScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -1341,16 +1350,14 @@ contains
             class is( rScalar3D_MR_t )
                 !
                 if( allocated( rhs%sub_scalar ) ) then
+                    !
                     self%sub_scalar = rhs%sub_scalar
+                    !
                 else
                     call errStop( "copyFrom_rScalar3D_MR > rhs%sub_scalar not allocated" )
                 endif
                 !
                 self%is_allocated = .TRUE.
-            !
-            class is( rScalar3D_SG_t )
-                !
-                call errStop( "copyFrom_rScalar3D_MR > rScalar3D_SG_t" )
                 !
             class default
                 call errStop( "copyFrom_rScalar3D_MR > Unclassified rhs" )

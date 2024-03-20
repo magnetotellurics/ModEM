@@ -1377,10 +1377,6 @@ contains
         class( cScalar3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( .NOT. self%is_allocated ) then
-             call errStop( "copyFrom_cScalar3D_MR > self not allocated." )
-        endif
-        !
         if( .NOT. rhs%is_allocated ) then
             call errStop( "copyFrom_cScalar3D_MR > rhs not allocated" )
         endif

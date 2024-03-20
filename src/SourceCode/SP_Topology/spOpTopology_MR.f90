@@ -2,7 +2,7 @@
 !> SUMMARY
 !> 
 !> Defines differential operators of 3D rectangular grid
-!> Grad, Curl Fields are descritized on the edges.
+!> Grad, Curl Fields are discretized on the edges.
 !> This is the variant of the "classic" symmetric multi-res
 !> operators, for which fine grid interface edges are redundant, and
 !> coarse grid edges are active;

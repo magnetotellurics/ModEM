@@ -6,13 +6,11 @@ module ForwardSolver_IT
     use ForwardSolver
     use Solver_QMR
     use Solver_BICG
-	!use Solver_BICG_OMP
+    !use Solver_BICG_OMP
     !
     type, extends( ForwardSolver_t ) :: ForwardSolver_IT_t
         !
-        integer :: iter
-        !
-        integer :: max_solver_calls
+        integer :: iter, max_solver_calls
         !
         contains
             !
@@ -49,9 +47,6 @@ contains
         !write( *, * ) "Constructor ForwardSolver_IT_t"
         !
         call self%baseInit
-        !
-        !> NEED THIS LINE ????
-        !if( allocated( self%solver )  ) deallocate( self%solver )
         !
         select case( solver_type )
             !
@@ -93,20 +88,18 @@ contains
         !> Set omega for this ForwardSolver solver
         self%solver%omega = ( 2.0 * PI / period )
         !
-        !> Set conductivity for the model operator (again ????)
+        !> Set conductivity for the model operator
         call self%solver%preconditioner%model_operator%setCond( sigma, self%solver%omega )
         !
         !> Set preconditioner for this solver's preconditioner
         call self%solver%preconditioner%setPreconditioner( self%solver%omega )
-        !
-        !> Set conductivity for the model operator (again ????)
-        !call self%solver%preconditioner%model_operator%divCorSetUp
         !
         call self%initDiagnostics
         !
     end subroutine setFrequency_ForwardSolver_IT
     !
     !> No subroutine briefing
+    !
     subroutine setIterControl_ForwardSolver_IT( self )
         implicit none
         !
@@ -121,6 +114,7 @@ contains
     end subroutine setIterControl_ForwardSolver_IT
     !
     !> No subroutine briefing
+    !
     subroutine initDiagnostics_ForwardSolver_IT( self )
         implicit none
         !
@@ -137,6 +131,7 @@ contains
     end subroutine initDiagnostics_ForwardSolver_IT
     !
     !> No subroutine briefing
+    !
     subroutine zeroDiagnostics_ForwardSolver_IT( self )
         implicit none
         !
@@ -168,7 +163,7 @@ contains
             class is( Grid3D_SG_t )
                 !
                 allocate( source_e_vec, source = source%E( pol ) )
-            !
+                !
             class is( Grid3D_MR_t )
                 !
                 source_e_vec_mr = cVector3D_MR_t( grid, source%E( pol )%grid_type )
@@ -183,7 +178,7 @@ contains
         !> Create e_solution Vector
         call self%solver%preconditioner%model_operator%metric%createVector( complex_t, EDGE, e_solution )
         !
-        !> Inicialize FWD Solver
+        !> Initialize FWD Solver
         self%iter = 1
         !
         self%n_iter_actual = 0
@@ -193,6 +188,7 @@ contains
         !> 
         fwd_solver_loop: do
             !
+            !> 
             call self%solver%solve( source%rhs( pol )%v, e_solution )
             !
             do i = 1, self%solver%n_iter
@@ -243,6 +239,7 @@ contains
     end subroutine createESolution_ForwardSolver_IT
     !
     !> No subroutine briefing
+    !
     subroutine copyFrom_ForwardSolver_IT( self, rhs )
         implicit none
         !

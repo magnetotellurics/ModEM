@@ -1663,7 +1663,8 @@ contains
             call errStop( "interpFunc_cVector3D_MR > interp not allocated." )
         endif
         !
-        !> Find index of the sub_vector based on location(3) - ALWAYS THE FIRST FOR NOW ????
+        !> Find index of the sub_vector based on location(3)
+        !> USING ALWAYS THE FIRST sub_vector !!!!
         i_sub = 1
         !
         !>
@@ -1744,7 +1745,7 @@ contains
         class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( .NOT. rhs%is_allocated) then
+        if( .NOT. rhs%is_allocated ) then
             call errStop( "copyFrom_cVector3D_MR > rhs not allocated" )
         endif
         !

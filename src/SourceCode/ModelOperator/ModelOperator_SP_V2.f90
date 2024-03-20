@@ -241,9 +241,6 @@ contains
         M0earth = dual_face_area_v
         M1earth = SigEdge * dual_face_area_v
         !
-        !> WORKAROUND FOR LINE 295 DIV ????
-        !SigNode( self%metric%grid%NODEb ) = R_ONE
-        !
         M2earth = ( R_ONE / SigNode ) * ( Nearth / v_node_v )
         !
         M3earth = R_ONE / edge_length_v

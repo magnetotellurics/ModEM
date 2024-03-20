@@ -561,7 +561,7 @@ contains
         !
         deallocate( dsigma )
         !
-        !> FURTHER JOINT DEVELOPMENT ????
+        !> FURTHER JOINT DEVELOPMENT !!!!
         !call weightGradrients( s_hat, all_data, dHat, JTd )
         !
         call model_cov%multBy_CmSqrt( JTd, CmJTd )
@@ -960,7 +960,7 @@ contains
         !
     end subroutine lineSearchCubic
     !
-    !> ????
+    !> No subroutine briefing
     !
     subroutine writeHeaders()
         implicit none
@@ -1184,8 +1184,8 @@ contains
         ! endif
         ! !
     ! end subroutine weightGradrients
-    ! !
-    !> ????
+    !
+    !> No subroutine briefing
     !
     subroutine outputFiles_InversionNLCG( self, all_predicted_data, res, dsigma, mHat )
         implicit none

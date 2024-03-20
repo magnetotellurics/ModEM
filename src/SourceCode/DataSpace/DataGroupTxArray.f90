@@ -472,7 +472,6 @@ contains
         ! Verbose
         !write( *, * ) "     > Write Data to file: [", file_name, "]"
         !
-        ! ????
         n_data = countData( data_tx_array )
         !
         receiver_type = 0

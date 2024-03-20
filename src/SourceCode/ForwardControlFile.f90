@@ -11,6 +11,8 @@ module ForwardControlFile
     use Solver
     use SourceCSEM
     !
+    integer, allocatable, dimension(:) :: grid_layers
+    !
     type :: ForwardControlFile_t
         !
         !> FWD Components parameters
@@ -145,11 +147,11 @@ contains
                 !
                 call Parse( line_text, ",", args, p_nargs )
                 !
-                allocate( layers( p_nargs ) )
+                allocate( grid_layers( p_nargs ) )
                 !
                 do i = 1, p_nargs
                     !
-                    read( args(i), "(I8)" ) layers(i)
+                    read( args(i), "(I8)" ) grid_layers(i)
                     !
                 enddo
                 !
@@ -368,6 +370,8 @@ contains
         !
         if( allocated( self%grid_reader_type ) ) deallocate( self%grid_reader_type )
         if( allocated( self%grid_format ) ) deallocate( self%grid_format )
+        !
+        if( allocated( grid_layers ) ) deallocate( grid_layers )
         !
         if( allocated( self%forward_solver_type ) ) deallocate( self%forward_solver_type )
         !
