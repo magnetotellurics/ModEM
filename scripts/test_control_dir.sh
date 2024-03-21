@@ -3,7 +3,7 @@
 procs=9
 start_model="MR_TEST_INPUTS/MT/m0.rho"
 real_model="MR_TEST_INPUTS/MT/m.rho"
-data="MR_TEST_INPUTS/MT/d05.dat"
+data="MR_TEST_INPUTS/MT/d_05.dat"
 #
 FWD_CONTROLS=$(ls CONTROL_FILES/*)
 #
