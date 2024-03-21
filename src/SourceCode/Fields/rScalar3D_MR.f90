@@ -1215,50 +1215,48 @@ contains
                         enddo
                         !
                         !>set coarse grid nodes on interfaces
-                        do i = 1, self%grid%n_grids - 1
+                        do i = 1, self%grid%n_grids-1
                             !
-                            !> upper layer is coarser  -- fill in bottom level nodes
                             if( self%sub_scalar(i)%grid%nx .LT. self%sub_scalar(i+1)%grid%nx ) then
                                 !
+                                !> upper layer is coarser  -- fill in bottom level nodes
                                 nxC = self%sub_scalar(i)%grid%nx
                                 nyC = self%sub_scalar(i)%grid%ny
                                 nzC = self%sub_scalar(i)%grid%nz
+                                !
                                 nxF = self%sub_scalar(i+1)%grid%nx
                                 nyF = self%sub_scalar(i+1)%grid%ny
                                 nzF = self%sub_scalar(i+1)%grid%nz
                                 !
                                 node_scalar%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC+1 ) = &
-                                       self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
-                                       self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
-                                       self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
-                                       self%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC   ) + &
-                                      ! ADDED LINE 1232 ABOVE and COMMENTED BELOW
-                                      !self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
-                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
-                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
-                                     self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
-                                     self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
+                                  self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
+                                  self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                  self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
+                                  self%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC   ) + &
+                                self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
+                                self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
+                                self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
+                                self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
                                 !
                             else
                                 !
                                 nxF = self%sub_scalar(i)%grid%nx
                                 nyF = self%sub_scalar(i)%grid%ny
                                 nzF = self%sub_scalar(i)%grid%nz
+                                !
                                 nxC = self%sub_scalar(i+1)%grid%nx
                                 nyC = self%sub_scalar(i+1)%grid%ny
                                 nzC = self%sub_scalar(i+1)%grid%nz
                                 !
                                 node_scalar%sub_scalar(i+1)%v( 2:nxC,     2:nyC,     1   ) = &
-                                       self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
-                                       self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
-                                       self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
-                                       self%sub_scalar(i+1)%v( 2:nxC,     2:nyC,     1   ) + &
-                                      ! ADDED LINE 1253 ABOVE and COMMENTED BELOW
-                                      !self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
-                                         self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
-                                         self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
-                                         self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
-                                         self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
+                                self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
+                                self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
+                                self%sub_scalar(i+1)%v( 2:nxC,     2:nyC,   1   ) + &
+                                 self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
+                                 self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
+                                 self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
+                                 self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
                                 !
                             endif
                             !
