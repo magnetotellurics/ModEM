@@ -136,7 +136,7 @@ contains
                         call errStop( "ForwardControlFile_ctor > Wrong model_operator_type control, use [MF|SP|SP2]" )
                 end select
                 !
-                write( *, "( A40, A20)" ) "model_operator_type = ", model_operator_type
+                write( *, "( A35, A20)" ) "model_operator_type = ", model_operator_type
                 !
             endif
             !
@@ -161,13 +161,13 @@ contains
                 grid_format = GRID_SG
             endif
             !
-            write( *, "( A40, A20)" ) "Grid format = ", grid_format
+            write( *, "( A35, A20)" ) "Grid format = ", grid_format
             !
             ! Grid reader
             if( allocated( self%grid_reader_type ) ) then
                 !
                 ! TO BE IMPLEMENTED
-                write( *, "( A40, A20)" ) "Grid Reader = ", self%grid_reader_type
+                write( *, "( A35, A20)" ) "Grid Reader = ", self%grid_reader_type
                 !
             endif
             !
@@ -314,7 +314,7 @@ contains
                 !
                 read( self%max_solver_iters, "(I8)" ) max_solver_iters
                 !
-                write( *, "( A31, A9, I20)" ) solver_type, "Iters = ", max_solver_iters
+                write( *, "( A26, A9, I20)" ) solver_type, "Iters = ", max_solver_iters
                 !
             endif
             !
@@ -323,7 +323,7 @@ contains
                 !
                 read( self%max_solver_calls, "(I8)" ) max_solver_calls
                 !
-                write( *, "( A27, A4, A9, I20)" ) "Max ", solver_type, " Calls = ", max_solver_calls
+                write( *, "( A22, A4, A9, I20)" ) "Max ", solver_type, " Calls = ", max_solver_calls
                 !
             endif
             !
@@ -332,7 +332,7 @@ contains
                 !
                 read( self%tolerance_solver, * ) tolerance_solver
                 !
-                write( *, "( A27, A13, es20.2)" ) solver_type, " Tolerance = ", tolerance_solver
+                write( *, "( A22, A13, es20.2)" ) solver_type, " Tolerance = ", tolerance_solver
                 !
             endif
             !
@@ -341,7 +341,7 @@ contains
                 !
                 read( self%max_divcor_iters, "(I8)" ) max_divcor_iters
                 !
-                write( *, "( A40, I20)" ) "Divcor Iters = ", max_divcor_iters
+                write( *, "( A35, I20)" ) "Divcor Iters = ", max_divcor_iters
                 !
             endif
             !
@@ -350,9 +350,11 @@ contains
                 !
                 read( self%tolerance_divcor, * ) tolerance_divcor
                 !
-                write( *, "( A40, es20.2)" ) "Divcor Tolerance = ", tolerance_divcor
+                write( *, "( A35, es20.2)" ) "Divcor Tolerance = ", tolerance_divcor
                 !
             endif
+            !
+            write( *, * ) ""
             !
         endif
         !

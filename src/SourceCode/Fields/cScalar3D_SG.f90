@@ -682,8 +682,6 @@ contains
                 !
                 node_scalar = temp_node
                 !
-                !call node_scalar%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
-                !
             case default
                 call errStop( "sumToNode_cScalar3D_SG: undefined self%grid_type" )
         end select

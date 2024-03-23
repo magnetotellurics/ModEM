@@ -625,8 +625,6 @@ contains
              call errStop( "sumToNode_rScalar3D_SG > node_scalar not allocated." )
         endif
         !
-        !call self%switchStoreState( compound )
-        !
         is_interior_only = .FALSE.
         !
         if( present( interior_only ) ) is_interior_only = interior_only
@@ -657,11 +655,6 @@ contains
                      self%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
                 !
                 node_scalar = temp_node
-                !
-                !   For consistency with cell-to-edge perhaps best to omit this?
-                !    and call this routine sumToNode instead of just toNode
-                !   ACTUALLY THE way implemented and used is (slighty) wrong!
-                !call node_scalar%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
                 !
             case default
                 call errStop( "sumToNode_rScalar3D_SG: undefined self%grid_type" )
@@ -1003,3 +996,4 @@ contains
     end subroutine print_rScalar3D_SG
     !
 end module rScalar3D_SG
+!

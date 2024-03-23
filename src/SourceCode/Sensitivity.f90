@@ -23,7 +23,7 @@ contains
         class( ModelParameter_t ), allocatable :: sigma, dsigma
         !
         ! Verbose
-        write( *, * ) "     - Start jobJMult"
+        write( *, * ) "     - Start JMult"
         !
         if( has_pmodel_file ) then
             !
@@ -76,7 +76,7 @@ contains
         deallocate( sigma, dsigma )
         !
         ! Verbose
-        write( *, * ) "     - Finish jobJMult"
+        write( *, * ) "     - Finish JMult"
         !
     end subroutine jobJMult
     !
@@ -192,7 +192,7 @@ contains
         class( ModelParameter_t ), allocatable :: sigma, dsigma
         !
         ! Verbose
-        write( *, * ) "     - Start jobJMult_T"
+        write( *, * ) "     - Start jMult_T"
         !
         if( has_model_file ) then 
             !
@@ -237,7 +237,7 @@ contains
         deallocate( sigma, dsigma )
         !
         ! Verbose
-        write( *, * ) "     - Finish jobJMult_T"
+        write( *, * ) "     - Finish JMult_T"
         !
     end subroutine jobJMult_T
     !
@@ -256,9 +256,6 @@ contains
         !
         class( ModelParameter_t ), allocatable :: dsigma_tx
         integer :: i_tx, sol_index
-        !
-        ! Verbose
-        write( *, * ) "          - Start serialJMult_T"
         !
         sol_index = 0
         !
@@ -301,9 +298,6 @@ contains
             deallocate( dsigma_tx )
             !
         enddo
-        !
-        ! Verbose
-        !write( *, * ) "          - Finish serialJMult_T"
         !
     end subroutine serialJMult_T
     !
@@ -424,6 +418,8 @@ contains
         !
     end subroutine JMult_T_Tx
     !
+	!> No Subroutine briefing
+	!
     subroutine allocateLRows( Tx, Rx )
         implicit none
         !
@@ -447,6 +443,6 @@ contains
         endif
         !
     end subroutine allocateLRows
-        !
+    !
 end module Sensitivity
 !

@@ -40,18 +40,18 @@ contains
             ich = iachar (ch)
             !
             select case( ich )
-				!
-				case(9,32)      ! space or tab character
-					if(isp == 0) then
-						k = k + 1
-						outstr(k:k) = ' '
-					endif
-					isp = 1
-					!
-				case(33:)        ! not a space, quote, or control character
-					k = k + 1
-					outstr(k:k) = ch
-					isp = 0
+                !
+                case(9,32)      ! space or tab character
+                    if(isp == 0) then
+                        k = k + 1
+                        outstr(k:k) = ' '
+                    endif
+                    isp = 1
+                    !
+                case(33:)        ! not a space, quote, or control character
+                    k = k + 1
+                    outstr(k:k) = ch
+                    isp = 0
             end select
         enddo
         !
@@ -65,7 +65,7 @@ contains
     !> the delimiters contained in the string 'delims'. Preceding a delimiter in
     !> 'str' by a backslash (\) makes this particular instance not a delimiter.
     !> The integer output variable nargs contains the number of arguments found.
-	!
+    !
     subroutine Parse (str, delims, args, p_nargs)
         implicit none
         !
@@ -107,7 +107,7 @@ contains
     !> found delimiter. A delimiter in 'str' is treated like an ordinary
     !> character if it is preceded by a backslash (\). If the backslash
     !> character is desired in 'str', then precede it with another backslash.
-	!
+    !
     subroutine Split( str, delims, before, sep )
         implicit none
         !
@@ -273,3 +273,4 @@ contains
     end function Upper
     !
 end module String
+!

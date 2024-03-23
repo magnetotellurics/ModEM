@@ -3,7 +3,6 @@
 !
 module DataFile
     !
-    use Constants
     use String
     !
     use DataEntryArray
@@ -41,9 +40,9 @@ module DataFile
         !
         contains
             !
-            procedure, public :: baseInit => initializeDataFile
+            procedure, public :: baseInit => initialize_DataFile
             !
-            procedure, public :: baseDealloc => deallocateDataFile
+            procedure, public :: baseDealloc => deallocate_DataFile
             !
             procedure, public :: loadReceiversAndTransmitters
             !
@@ -54,7 +53,8 @@ module DataFile
 contains
     !
     !> No subroutine briefing
-    subroutine initializeDataFile( self )
+    !
+    subroutine initialize_DataFile( self )
         implicit none
         !
         class( DataFile_t ), intent( inout ) :: self
@@ -67,22 +67,24 @@ contains
         !
         conjugated_data = .FALSE.
         !
-    end subroutine initializeDataFile
+    end subroutine initialize_DataFile
     !
     !> No subroutine briefing
-    subroutine deallocateDataFile( self )
+    !
+    subroutine deallocate_DataFile( self )
         implicit none
         !
         class( DataFile_t ), intent( inout ) :: self
         !
-        if(allocated(self%data_entries)) deallocate( self%data_entries )
+        if( allocated( self%data_entries ) ) deallocate( self%data_entries )
         !
-        if(allocated(self%measured_data)) deallocate( self%measured_data )
+        if( allocated( self%measured_data ) ) deallocate( self%measured_data )
         !
-    end subroutine deallocateDataFile
+    end subroutine deallocate_DataFile
     !
     !> Procedure loadReceiversAndTransmitters
     !> Load all Receivers (Based on Location and Component type) and all Transmitters (Based on Period)
+    !
     subroutine loadReceiversAndTransmitters( self, data_entry )
         implicit none
         !
@@ -99,7 +101,7 @@ contains
         !
         call updateDataEntryArray( self%data_entries, data_entry )
         !
-        ! TRANSMITTERS
+        !> Instantiate a Transmitter
         select type ( data_entry )
             !
             class is ( DataEntryMT_t )
@@ -120,6 +122,7 @@ contains
         !
         deallocate( new_transmitter )
         !
+        !> Instantiate a Receiver
         rx_type = getIntReceiverType( data_entry%dtype )
         !
         select case( data_entry%dtype )
@@ -196,8 +199,8 @@ contains
                 receiver%units = "[]"
                 !
             case default
-                write( *, * ) "Unknown Receiver type :[", data_entry%dtype, "]"
-                call errStop( "loadReceiversAndTransmitters" )
+                !
+                call errStop( "loadReceiversAndTransmitters > Unknown Receiver type :["//data_entry%dtype//"]" )
             !
         end select
         !
@@ -308,7 +311,7 @@ contains
                     end select
                 !
                 class default
-                    call errStop( "loadReceiversAndTransmitters > unclassified Transmitter" )
+                    call errStop( "loadReceiversAndTransmitters > Unclassified Transmitter" )
                 !
             end select
             !
@@ -318,6 +321,7 @@ contains
     !
     !> Procedure getLineNumber
     !> Return the number of lines of a given file
+    !
     function getLineNumber( funit ) result( line_counter )
         implicit none
         !
@@ -339,11 +343,12 @@ contains
             endif
         enddo
         !
-10     return
+10      return
         !
     end function getLineNumber
     !
     !> Returns a pointer, allowing modifications directly to a DataGroup at a given index
+    !
     function getDataByIndex( data_array, i_data ) result( data_group )
         implicit none
         !
@@ -416,8 +421,6 @@ contains
         !> according to the arrangement of the Transmitter-Receiver pairs of the input
         if( .NOT. allocated( all_measured_data ) ) then
             !
-            write( *, * ) "     - Create All Measured Data"
-            !
             !> Create an array of DataGroupTx to store the predicted data in the same format as the measured data
             !> Enabling the use of grouped predicted data in future jobs (all_measured_data)
             do i_tx = 1, size( transmitters )
@@ -447,3 +450,4 @@ contains
     end subroutine contructMeasuredDataGroupTxArray
     !
 end module DataFile
+!
