@@ -29,7 +29,7 @@ module rScalar3D_MR
             procedure, public :: lengthFull => lengthFull_rScalar3D_MR
             procedure, public :: findFull => findFull_rScalar3D_MR
             !
-            procedure, public :: MRtoSG => MRtoSG_rScalar3D_MR
+            procedure, public :: toSG => toSG_rScalar3D_MR
             procedure, public :: divFine => divFine_rScalar3D_MR
             !
             procedure, public :: fromSG => fromSG_rScalar3D_MR
@@ -64,7 +64,7 @@ module rScalar3D_MR
             procedure, public :: divByField => divByField_rScalar3D_MR
             procedure, public :: divByValue => divByValue_rScalar3D_MR
             !
-            procedure, public :: SumToNode => SumToNode_rScalar3D_MR
+            procedure, public :: sumToNode => sumToNode_rScalar3D_MR
             !
             !> Miscellaneous
             procedure, public :: copyFrom => copyFrom_rScalar3D_MR
@@ -415,28 +415,30 @@ contains
         !
     end function findFull_rScalar3D_MR
     !
-    !> MRtoSG
+    !> toSG
     !
     !> input self is of class rScalar3D_MR , output SGscalar is of class rScalar3D_SG
     !> this just copies contents of an MR cell into all subdividing fine grid cells
     !
-    subroutine MRtoSG_rScalar3D_MR( self, scalar_sg )
+    subroutine toSG_rScalar3D_MR( self, scalar_sg )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( in ) :: self
-        type( rScalar3D_SG_t ), intent( inout ) :: scalar_sg
+        type( rScalar3D_SG_t ), intent( out ) :: scalar_sg
         !
         integer :: i_grid, i, j, k, z, cs
         integer :: i1, i2, j1, j2, k1, k2
         !
-        !> I THINK THIS IS WRONG -- self%grid is an MR grid, right????
-        !> or does call to rScalar3D_SG work with MR grid as input???
-        !> scalar_sg = rScalar3D_SG_t( self%grid, self%grid_type )
-        !> Let's allocate scalar_sg before calling!  Might check first!
-        !
         if( .NOT. self%is_allocated ) then
-            call errStop( "MRtoSG_rScalar3D_MR > self not allocated" )
+            call errStop( "toSG_rScalar3D_MR > self not allocated" )
         endif
+        !
+        if( .NOT. scalar_sg%is_allocated ) then
+            call errStop( "toSG_rScalar3D_MR > scalar_sg not allocated" )
+        endif
+        !
+        !> Using a temporary Grid SG with AirLayers, for instantiate the scalar_sg output
+        scalar_sg = rScalar3D_SG_t( self%grid, self%grid_type )
         !
         select type( grid => self%grid )
             !
@@ -476,11 +478,11 @@ contains
                 enddo
                 !
             class default
-                call errStop( "MRtoSG_rScalar3D_MR > Unclassified grid" )
+                call errStop( "toSG_rScalar3D_MR > Unclassified grid" )
             !
         end select
         !
-    end subroutine MRtoSG_rScalar3D_MR
+    end subroutine toSG_rScalar3D_MR
     !
     !> divFine
     !
@@ -1178,7 +1180,7 @@ contains
     !> NOTE  as written the interfaces are computed as sums, but other nodes
     !> as averages!!!   I AM CHANGING EVERYTHING TO SUMS
     !
-    subroutine SumToNode_rScalar3D_MR( self, node_scalar, interior_only )
+    subroutine sumToNode_rScalar3D_MR( self, node_scalar, interior_only )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
@@ -1208,7 +1210,7 @@ contains
                         !> set nodes for interior of all sub-scalars
                         do i = 1, self%grid%n_grids
                             !
-                            call self%sub_scalar(i)%SumToNode( node_scalar%sub_scalar(i) )
+                            call self%sub_scalar(i)%sumToNode( node_scalar%sub_scalar(i), interior_only )
                             !
                         enddo
                         !
@@ -1221,38 +1223,40 @@ contains
                                 nxC = self%sub_scalar(i)%grid%nx
                                 nyC = self%sub_scalar(i)%grid%ny
                                 nzC = self%sub_scalar(i)%grid%nz
+                                !
                                 nxF = self%sub_scalar(i+1)%grid%nx
                                 nyF = self%sub_scalar(i+1)%grid%ny
                                 nzF = self%sub_scalar(i+1)%grid%nz
                                 !
                                 node_scalar%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC+1 ) = &
-                                    self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
-                                    self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
-                                    self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
-                                    self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
-                                    self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
-                                    self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
-                                    self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
-                                    self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
+                                  self%sub_scalar(i)%v( 1:nxC-1,   1:nyC-1,   nzC   ) + &
+                                  self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC   ) + &
+                                  self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC   ) + &
+                                  self%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC   ) + &
+                                self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1     ) + &
+                                self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1     ) + &
+                                self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1     ) + &
+                                self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1     )
                                 !
                             else
                                 !
                                 nxF = self%sub_scalar(i)%grid%nx
                                 nyF = self%sub_scalar(i)%grid%ny
                                 nzF = self%sub_scalar(i)%grid%nz
+                                !
                                 nxC = self%sub_scalar(i+1)%grid%nx
                                 nyC = self%sub_scalar(i+1)%grid%ny
                                 nzC = self%sub_scalar(i+1)%grid%nz
                                 !
                                 node_scalar%sub_scalar(i+1)%v( 2:nxC,     2:nyC,     1   ) = &
-                                    self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
-                                    self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
-                                    self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
-                                    self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
-                                    self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
-                                    self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
-                                    self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
-                                    self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
+                                self%sub_scalar(i+1)%v( 1:nxC-1,   1:nyC-1,   1   ) + &
+                                self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
+                                self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
+                                self%sub_scalar(i+1)%v( 2:nxC,     2:nyC,   1   ) + &
+                                 self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
+                                 self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
+                                 self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
+                                 self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
                                 !
                             endif
                             !
@@ -1268,7 +1272,7 @@ contains
             !
         end select
         !
-    end subroutine SumToNode_rScalar3D_MR
+    end subroutine sumToNode_rScalar3D_MR
     !
     !> No subroutine briefing
     !
@@ -1341,16 +1345,14 @@ contains
             class is( rScalar3D_MR_t )
                 !
                 if( allocated( rhs%sub_scalar ) ) then
+                    !
                     self%sub_scalar = rhs%sub_scalar
+                    !
                 else
                     call errStop( "copyFrom_rScalar3D_MR > rhs%sub_scalar not allocated" )
                 endif
                 !
                 self%is_allocated = .TRUE.
-            !
-            class is( rScalar3D_SG_t )
-                !
-                call errStop( "copyFrom_rScalar3D_MR > rScalar3D_SG_t" )
                 !
             class default
                 call errStop( "copyFrom_rScalar3D_MR > Unclassified rhs" )

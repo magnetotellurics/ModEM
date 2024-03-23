@@ -35,6 +35,8 @@ module CoreComponents
     use DataFileStandard
     !
     !> Program Control Variables
+    character( len=100 ) :: str_msg
+    !
     character(8) :: str_date
     character(6) :: str_time
     character(50) :: outdir_name
@@ -43,10 +45,8 @@ module CoreComponents
     !
     character(:), allocatable :: fwd_control_file_name, inv_control_file_name
     character(:), allocatable :: model_file_name, pmodel_file_name
-    character(:), allocatable :: data_file_name
-    character(:), allocatable :: dsigma_file_name
-    character(:), allocatable :: cov_file_name
-    character(:), allocatable :: e_solution_file_name
+    character(:), allocatable :: data_file_name, dsigma_file_name
+    character(:), allocatable :: cov_file_name, e_solution_file_name
     !
     !> Program Control Flags
     logical :: has_outdir_name
@@ -71,7 +71,7 @@ module CoreComponents
     !
 contains
     !
-    !> Read Model File and instantiate global variables: main_grid, model_operator and sigma0
+    !> Read Model File and instantiate core global objects: main_grid, model_operator and sigma0
     !
     subroutine handleModelFile( sigma0 )
         implicit none
@@ -84,35 +84,33 @@ contains
         integer :: i
         !
         ! Verbose
-        write( *, * ) "     < Model File: [", model_file_name, "]"
+        write( *, * ) "     < Model File: ["//model_file_name//"]"
         !
         !> Initialize main_grid, param_grid and sigma0 with ModelReader
-        !> Only ModelReader_Weerachai by now ????
         call model_reader%read( model_file_name, main_grid, sigma0, param_grid ) 
         !
-        call main_grid%setupAirLayers( air_layer, model_method, model_n_air_layer, model_max_height )
-        !
-        call main_grid%updateAirLayers( air_layer%nz, air_layer%dz )
+        call main_grid%setAirLayers( air_layer )
         !
         ! Verbose
-        write( *, "( a39 )" ) "Model Air Layers [i, dz(i)]:"
+        write( *, "( a38 )" ) "Model Air Layers [i, dz(i)]:"
         !
         do i = air_layer%nz, 1, -(1)
             write( *, "( i20, f20.3 )" ) i, air_layer%dz(i)
         enddo
         !
-        write( *, * ) "          Air layers from the method [", trim( air_layer%method ), "]"
+        write( *, * ) "         Air layers from the method ["//trim( air_layer%method )//"]"
         !
-        write( *, "( a39, f12.3, a4 )" ) "Top of the air layers is at ", ( sum( air_layer%Dz ) / 1000. ), " km."
+        write( *, "( a38, f12.3, a4 )" ) "Top of the air layers is at ", ( sum( air_layer%Dz ) / 1000. ), " km."
         !
-        write( *, "( a33, f12.3 )" ) "Air layers Max Height ", air_layer%maxHeight
+        write( *, "( a32, f12.3 )" ) "Air layers Max Height ", air_layer%maxHeight
         !
-        write( *, "( a23, i6, a2, i6, a2, i6, a1 )" ) "dim(x,y,z):(", main_grid%nx, ", ", main_grid%ny, ", ", main_grid%nz, ")"
+        write( *, "( a22, i6, a2, i6, a2, i6, a1 )" ) "dim(x,y,z):(", main_grid%nx, ", ", main_grid%ny, ", ", main_grid%nz, ")"
         !
-        write( *, "( a30, f16.3, a2, f16.3, a2, f16.3, a4, f16.3 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+        write( *, "( a29, f16.3, a2, f16.3, a2, f16.3, a4, f16.3 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
         !
         !> Instantiate model_operator
         !> Specific type can be chosen via fwd control file
+        !> If none are found, use ModelOperator_MF_SG by default.
         select case( model_operator_type )
             !
             case( MODELOP_MF )
@@ -143,10 +141,12 @@ contains
         !
         call sigma0%setMetric( model_operator%metric )
         !
+        write( *, * ) ""
+        !
     end subroutine handleModelFile
     !
     !> Read Perturbation Model File: instantiate pmodel with ModelReader
-    !> Only ModelReader_Weerachai by now ????
+    !> Only ModelReader_Weerachai implemented so far !!!!
     !
     subroutine handlePModelFile( pmodel )
         implicit none
@@ -157,12 +157,14 @@ contains
         class( Grid_t ), allocatable :: temp_grid
         !
         ! Verbose
-        write( *, * ) "     < PModel File: [", pmodel_file_name, "]"
+        write( *, * ) "     < PModel File: ["//pmodel_file_name//"]"
         !
         !> Read temp_grid and pmodel with ModelReader_Weerachai
-        call model_reader%Read( pmodel_file_name, temp_grid, pmodel ) 
+        call model_reader%read( pmodel_file_name, temp_grid, pmodel ) 
         !
         deallocate( temp_grid )
+        !
+        write( *, * ) ""
         !
     end subroutine handlePModelFile
     !
@@ -174,11 +176,10 @@ contains
         !> Local object to dealt data, self-destructs at the end of the subroutine
         type( DataFileStandard_t ) :: data_file_standard
         !
-        character( len=100 ) :: str_msg
         integer :: i_tx, i_rx, n_rx, n_tx
         !
         !>
-        write( *, * ) "     < Data File: [", data_file_name, "]"
+        write( *, * ) "     < Data File: ["//data_file_name//"]"
         !
         data_file_standard = DataFileStandard_t( ioStartup, data_file_name )
         !
@@ -189,7 +190,11 @@ contains
         ! Verbose
         if( n_rx == data_file_standard%n_rx ) then
             !
-            write( *, * ) "          Checked ", n_rx, " Receivers."
+            if( n_rx == 1 ) then
+                write( *, "( A18, I5, A10 )" ) "Checked ", n_rx, " Receiver."
+            else
+                write( *, "( A18, I5, A11 )" ) "Checked ", n_rx, " Receivers."
+            endif
             !
         else
             !
@@ -200,7 +205,11 @@ contains
             !
         if( n_tx == data_file_standard%n_tx ) then
             !
-            write( *, * ) "          Checked ", n_tx, " Transmitters."
+            if( n_tx == 1 ) then
+                write( *, "( A18, I5, A13 )" ) "Checked ", n_tx, " Transmitter."
+            else
+                write( *, "( A18, I5, A14 )" ) "Checked ", n_tx, " Transmitters."
+            endif
             !
             do i_tx = 1, n_tx
                 call transmitters( i_tx )%Tx%print
@@ -213,9 +222,9 @@ contains
             !
         endif
         !
-        write( *, * ) "          Checked ", countData( all_measured_data ), " DataGroups."
+        write( *, "( A18, I5, A11 )" ) "Checked ", countData( all_measured_data ), " DataGroups."
         !
-        write( *, * ) "     - Creating Rx evaluation vectors"
+        write( *, "( A42)" ) "- Creating Rx evaluation vectors"
         !
         !> Calculate and store evaluation vectors on all Receivers
         do i_rx = 1, n_rx
@@ -223,6 +232,8 @@ contains
             call receivers( i_rx )%Rx%evaluationFunction( model_operator )
             !
         enddo
+        !
+        write( *, * ) ""
         !
     end subroutine handleDataFile
     !
@@ -244,9 +255,11 @@ contains
     subroutine handleInversionControlFile()
         implicit none
         !
-        write( *, * ) "     < INV control File: [", inv_control_file_name, "]"
+        write( *, * ) "     < INV control File: ["//inv_control_file_name//"]"
         !
         allocate( inv_control_file, source = InversionControlFile_t( ioStartup, inv_control_file_name ) )
+        !
+        write( *, * ) ""
         !
     end subroutine handleInversionControlFile
     !
@@ -260,7 +273,7 @@ contains
         type( rScalar3D_SG_t ) :: cell_cond
         !
         ! Verbose
-        write( *, * ) "     - Start jobSplitModel"
+        write( *, * ) "     - Start SplitModel"
         !
         if( has_model_file ) then
             !
@@ -287,7 +300,7 @@ contains
                 class is( Grid3D_MR_t )
                     allocate( aux_model, source = ModelParameterCell_MR_t( cell_cond, 1, model%param_type, grid%cs ) )
                 class default
-                    call errStop( "jobSplitModel > Unknow grid for ModelParameter" )
+                    call errStop( "jobSplitModel > Unknown grid for ModelParameter" )
                 !
             end select
             !
@@ -297,7 +310,7 @@ contains
             !
             write( *, * ) "               < Created ["//model_file_name//"_h] file."
             !
-            !> Set new model horizontal as the target vertical cond
+            !> Set new model horizontal as the target vertical conductivity
             cell_cond = model%getCond(2)
             !
             call aux_model%setCond( cell_cond, 1 )
@@ -309,7 +322,7 @@ contains
             deallocate( model, aux_model )
             !
             ! Verbose
-            write( *, * ) "     - Finish jobSplitModel"
+            write( *, * ) "     - Finish SplitModel"
             !
         endif
         !
@@ -325,7 +338,7 @@ contains
         !
         if( command_argument_count() == 0 ) then
             !
-            call printUsage()
+            call printUsage
             stop
             !
         else
@@ -463,12 +476,12 @@ contains
                         !
                     case( "-v", "--version" )
                         !
-                        write( *, * ) "    + ModEM-OO version "//VERSION
+                        write( *, * ) "    + ModEM version "//VERSION
                         stop
                         !
                     case( "-h", "--help" )
                         !
-                        call printHelp()
+                        call printHelp
                         stop
                         !
                     case( "-tmp", "--template" )
@@ -483,10 +496,10 @@ contains
                         !
                     case default
                         !
-                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown Argument: [", trim( argument ), "]"
-                        call printHelp()
-                        stop
-                    !
+                        write( str_msg, "( A55, I2, A5, I2, A1 )") "handleArguments > Unknown Argument: ["//trim( argument )//"]"
+                        call errStop( str_msg )
+                        call printHelp
+                        !
                 end select
                 !
                 argument = ""
@@ -497,7 +510,7 @@ contains
         !
     end subroutine handleArguments
     !
-    !> Set default values for all the control variables
+    !> Set the default values for all the control variables
     !
     subroutine setupDefaultParameters()
         implicit none
@@ -537,7 +550,7 @@ contains
         !
         ! Source parameters
         source_type_mt = SRC_MT_1D
-        get_1d_from = "Geometric_mean"
+        get_1d_from = "Geometric_Mean"
         !
         ! Model parameters
         model_method = MM_METHOD_FIXED_H
@@ -570,8 +583,6 @@ contains
                     !
             end select
             !
-            !write( *, * ) "outdir_name: [", trim( outdir_name ), "]"
-            !
         endif
         !
         !> Create a directory with the specified path <outdir_name>
@@ -580,7 +591,7 @@ contains
         !
     end subroutine createOutputDirectory
     !
-    !> Translate the input in seconds to a formated string 0d0h0m0s
+    !> Return a formated string 0d0h0m0s, translated from the input in seconds
     !
     function getLiteralTime( seconds ) result( str_time )
         implicit none
@@ -691,7 +702,7 @@ contains
         write( *, * ) "        Output:"
         write( *, * ) "        - 'all_predicted_data.dat' or the path specified by      [-pd]"
         write( *, * ) ""
-        write( *, * ) "    Inversion:"
+        write( *, * ) "    Inversion (INV):"
         write( *, * ) "        <ModEM> -i -m <rFile_Model> -d <rFile_Data>"
         write( *, * ) "        Output:"
         write( *, * ) "        - directory named 'Output_<date>_<time>' or specified by [-o]"
@@ -752,14 +763,14 @@ contains
         !
         integer :: ios
         !
-        open( unit = ioFwdTmp, file = "fwd_ctrl_template.txt", status="unknown", iostat=ios )
+        open( unit = ioFwdTmp, file = "fwd_ctrl_template.txt", status = "unknown", iostat = ios )
         !
         if( ios == 0 ) then
             !
             write( ioFwdTmp, "(A46)" ) "##############################################"
             write( ioFwdTmp, "(A46)" ) "# ModEM Forward Modeling Control File Template"
             write( ioFwdTmp, "(A46)" ) "#     Here are all supported parameters       "
-            write( ioFwdTmp, "(A46)" ) "#     Comment or remove to use default value  "
+            write( ioFwdTmp, "(A46)" ) "#     Comment or remove to use default values "
             write( ioFwdTmp, "(A46)" ) "##############################################"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A20)" ) "# <Field parameters>"
@@ -770,12 +781,12 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A33)" ) "#grid_header [ModEM|HDF5] : ModEM"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A55)" ) "#Coarsened Grid: Describe an array of 2*layers in size,"
+            write( ioFwdTmp, "(A57)" ) "#Coarsened Grid => Describe an array of 2*layers in size,"
             write( ioFwdTmp, "(A98)" ) "#                containing comma separated integer pairs, like <Coarse Factor, Number of Layers>."
             write( ioFwdTmp, "(A81)" ) "#                Ex.: 0,a,1,b,2,c => For 3 Layers, each with sizes a, b and c and"
             write( ioFwdTmp, "(A79)" ) "#                                    coarse factors of 0, 1 and 2 respectively."
-            write( ioFwdTmp, "(A64)" ) "#Standard Grid : Remove or leave the grid_format line commented."
-            write( ioFwdTmp, "(A48)" ) "#grid_format                       : 0,a,1,b,2,c"
+            write( ioFwdTmp, "(A66)" ) "#Standard Grid  => Remove or leave the grid_format line commented."
+            write( ioFwdTmp, "(A26)" ) "#grid_format : 0,a,1,b,2,c"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A20)" ) "# <Model parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
@@ -785,9 +796,9 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Source parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A66)" ) "source_type_mt [1D|2D]                                        : 1D"
-            write( ioFwdTmp, "(A72)" ) "source_type_csem [EM1D|Dipole1D]                              : Dipole1D"
-            write( ioFwdTmp, "(A78)" ) "get_1d_from [Fixed|Geometric_mean|Mean_around_Tx|Tx_Position] : Geometric_mean"
+            write( ioFwdTmp, "(A72)" ) "source_type_mt [1D|2D]                                              : 1D"
+            write( ioFwdTmp, "(A78)" ) "source_type_csem [EM1D|Dipole1D]                                    : Dipole1D"
+            write( ioFwdTmp, "(A84)" ) "get_1d_from [Fixed_Value|Geometric_Mean|Mean_around_Tx|Tx_Position] : Geometric_Mean"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
@@ -798,13 +809,13 @@ contains
             write( ioFwdTmp, "(A36)" ) "max_divcor_iters [100]         : 100"
             write( ioFwdTmp, "(A37)" ) "tolerance_solver [1E-7]        : 1E-7"
             write( ioFwdTmp, "(A37)" ) "tolerance_divcor [1E-5]        : 1E-5"
-            write( ioFwdTmp, "(A1)" ) "#"
+            write( ioFwdTmp, "(A1)", advance = "no" ) "#"
             !
             close( ioFwdTmp )
             !
         else
             !
-            call errStop( "printInversionControlFileTemplate > opening [fwd_ctrl_template.txt]" )
+            call errStop( "printInversionControlFileTemplate > Can't open [fwd_ctrl_template.txt]" )
             !
         endif
         !
@@ -838,13 +849,13 @@ contains
             write( ioInvTmp, "(A40)" ) "lambda_tol [1.0e-4]             : 1.0e-4"
             write( ioInvTmp, "(A37)" ) "lambda_div [10.]                : 10."
             write( ioInvTmp, "(A37)" ) "startdm [20.]                   : 20."
-            write( ioInvTmp, "(A1)" ) "#"
+            write( ioInvTmp, "(A1)", advance = "no" ) "#"
             !
             close( ioInvTmp )
             !
         else
             !
-            call errStop( "printInversionControlFileTemplate > opening [inv_ctrl_template.txt]" )
+            call errStop( "printInversionControlFileTemplate > Can't open [inv_ctrl_template.txt]" )
             !
         endif
         !

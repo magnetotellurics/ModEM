@@ -163,10 +163,13 @@ contains
         !
         call sigma_cell%sumToNode( sigma_node, .TRUE. )
         !
-        !> Later fix for SP2 - 27/02/2024!!!!
+        !> Later fix for SP2 - 27/02/2024 (WRONG)!!!!
+        !> QMR/BICG does NOT converge using the two statements below, or just the second
+        !>     - Converges slower than MF IT_DC using only the first (The way it is now).
+        !
         call sigma_node%div( self%metric%v_node )
         !
-        call sigma_node%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
+        !call sigma_node%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
         !
     end subroutine nodeCond_ModelParameterCell_SG
     !
@@ -348,9 +351,6 @@ contains
         k0 = self%metric%grid%NzAir
         k1 = k0 + 1
         k2 = self%metric%grid%Nz
-        !
-        !allocate( dsigma, source = self )
-        !dsigma = self
         !
         do i = 1, self%anisotropic_level
             !

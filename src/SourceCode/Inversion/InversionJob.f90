@@ -1,5 +1,5 @@
 !
-!> Module with a single job ????
+!> Module with a single job !!!!
 !
 module InversionJob
     !
@@ -58,7 +58,7 @@ contains
             call errStop( "jobInversion > Missing Model file!" )
         endif
         !
-        !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
+        !> Read Perturbation Model File: instantiate pmodel
         if( has_pmodel_file ) then 
             !
             deallocate( dsigma )

@@ -89,6 +89,8 @@ contains
         !
         class( SourceCSEM_Dipole1D_t ), intent( inout ) :: self
         !
+        type( Grid3D_SG_t ) :: grid_sg
+        type( rVector3D_SG_t ) :: cond_anomaly_sg
         complex( kind=prec ) :: i_omega_mu
         integer :: ix, iy, iz
         !
@@ -113,16 +115,25 @@ contains
         lenTx1D = 00.d0            !> (m) Dipole length 0 = point dipole
         numIntegPts = 0            !> Number of points to use for Gauss quadrature integration for finite dipole
         !
-        !> Verbose...
-        write( *, * ) "          - Extract CSEM Source from Dipole 1D"
+        !> Verbose
+        write( *, "( a52, a14 )" ) "- SourceCSEM_Dipole1D according to: ", trim( get_1d_from )
         !
         call self%set1DModel
         !
+        !> Initialize the 1D vectors where to compute the e_field field
         select type( grid => self%sigma%metric%grid )
             !
             class is( Grid3D_SG_t )
                 !
-                call initilize_1d_vectors( grid ) !> Initilize the 1D vectors where to compupte the e_field field
+                call initilize_1d_vectors( grid )
+            !
+            class is( Grid3D_MR_t )
+                !
+                grid_sg = param_grid
+                !
+                call grid_sg%setAirLayers
+                !
+                call initilize_1d_vectors( grid_sg )
                 !
             class default
                 call errStop( "createE_SourceCSEM_Dipole1D > grid must be Grid3D_SG_t" )
@@ -140,7 +151,22 @@ contains
         !
         self%E(1) = self%E_p
         !
-        call self%E(1)%mult( self%cond_anomaly )
+        select type( cond_anomaly => self%cond_anomaly )
+            !
+            class is( rVector3D_SG_t )
+                !
+                call self%E(1)%mult( cond_anomaly )
+                !
+            class is( rVector3D_mr_t )
+                !
+                call cond_anomaly%toSG( cond_anomaly_sg )
+                !
+                call self%E(1)%mult( cond_anomaly_sg )
+                !
+            class default
+                call errStop( "createE_SourceCSEM_Dipole1D > grid must be Grid3D_SG_t" )
+            !
+        end select
         !
         i_omega_mu = cmplx( 0., real( -1.0d0 * isign * mu_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
         !
@@ -331,3 +357,4 @@ contains
     end subroutine create_Ep_from_Dipole1D
     !
 end module SourceCSEM_Dipole1D
+!

@@ -981,7 +981,8 @@ contains
         !
     end subroutine createModelBuffer
     !
-    !> ????
+    !> No function briefing
+    !
     function allocateModelBuffer( model, is_embedded ) result( model_buffer_size )
         implicit none
         !
@@ -1607,7 +1608,8 @@ contains
         !
     end function unpackReceiverBuffer
     !
-    !> ????
+    !> No subroutine briefing
+    !
     subroutine createDataBuffer()
         implicit none
         !

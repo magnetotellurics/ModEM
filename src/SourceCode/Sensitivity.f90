@@ -23,8 +23,7 @@ contains
         class( ModelParameter_t ), allocatable :: sigma, dsigma
         !
         ! Verbose
-        !
-        write( *, * ) "     - Start jobJMult"
+        write( *, * ) "     - Start JMult"
         !
         if( has_pmodel_file ) then
             !
@@ -77,7 +76,7 @@ contains
         deallocate( sigma, dsigma )
         !
         ! Verbose
-        write( *, * ) "     - Finish jobJMult"
+        write( *, * ) "     - Finish JMult"
         !
     end subroutine jobJMult
     !
@@ -193,7 +192,7 @@ contains
         class( ModelParameter_t ), allocatable :: sigma, dsigma
         !
         ! Verbose
-        write( *, * ) "     - Start jobJMult_T"
+        write( *, * ) "     - Start jMult_T"
         !
         if( has_model_file ) then 
             !
@@ -238,7 +237,7 @@ contains
         deallocate( sigma, dsigma )
         !
         ! Verbose
-        write( *, * ) "     - Finish jobJMult_T"
+        write( *, * ) "     - Finish JMult_T"
         !
     end subroutine jobJMult_T
     !
@@ -257,9 +256,6 @@ contains
         !
         class( ModelParameter_t ), allocatable :: dsigma_tx
         integer :: i_tx, sol_index
-        !
-        ! Verbose
-        write( *, * ) "          - Start serialJMult_T"
         !
         sol_index = 0
         !
@@ -302,9 +298,6 @@ contains
             deallocate( dsigma_tx )
             !
         enddo
-        !
-        ! Verbose
-        !write( *, * ) "          - Finish serialJMult_T"
         !
     end subroutine serialJMult_T
     !
@@ -350,7 +343,6 @@ contains
         !
         do i_pol = 1, Tx%n_pol
             !
-            !call model_operator%metric%createVector( complex_t, EDGE, bSrc( i_pol )%v )
             allocate( bSrc( i_pol )%v, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
             !
             call bSrc( i_pol )%v%zeros
@@ -426,6 +418,8 @@ contains
         !
     end subroutine JMult_T_Tx
     !
+	!> No Subroutine briefing
+	!
     subroutine allocateLRows( Tx, Rx )
         implicit none
         !
@@ -433,21 +427,22 @@ contains
         class( Receiver_t ), intent( inout ) :: Rx
         !
         integer :: i_pol, i_comp
-        !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
+        !
         if( .NOT. allocated( Rx%lrows ) ) then
             !
             allocate( Rx%lrows( Tx%n_pol, Rx%n_comp ) )
             !
             do i_comp = 1, Rx%n_comp
                 do i_pol = 1, Tx%n_pol
+                    !
                     allocate( Rx%lrows( i_pol, i_comp )%v, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
-                    !call model_operator%metric%createVector( complex_t, EDGE, Rx%lrows( i_pol, i_comp )%v )
+                    !
                 enddo
             enddo
             !
         endif
         !
     end subroutine allocateLRows
-        !
+    !
 end module Sensitivity
 !

@@ -1076,6 +1076,7 @@ contains
                     self%y = self%y * rhs%y
                     self%z = self%z * rhs%z
                     !
+                    ! SG FWD ENTER HERE !!!!
                     !call errStop( "multByField_cVector3D_SG > rhs is rVector3D_SG_t" ) !!!!
                     !
                 class default
@@ -1281,6 +1282,7 @@ contains
                     self%y = self%y / rhs%y
                     self%z = self%z / rhs%z
                     !
+                    ! SG FWD ENTER HERE !!!!
                     !call errStop( "divByField_cVector3D_SG > rhs is rVector3D_SG_t" ) !!!!
                     !
                 class default
@@ -1442,7 +1444,7 @@ contains
         iz = size( tmp )
         !
         do i = size( tmp ), 1, -1 
-            if(tmp(i)) then
+            if( tmp(i) ) then
                 iz = i
                 exit
             endif
@@ -1450,12 +1452,7 @@ contains
         !
         deallocate( tmp )
         !
-        !> ????
-        !ix = findloc( location(1) > xC, .TRUE., back = .TRUE., dim = 1 )
-        !iy = findloc( location(2) > yC, .TRUE., back = .TRUE., dim = 1 )
-        !iz = findloc( location(3) > zC, .TRUE., back = .TRUE., dim = 1 )
-        !
-        ! Find weights
+        !> Find weights
         wx = ( xC(ix + 1) - location(1)) / (xC(ix + 1) - xC(ix) )
         !
         deallocate( xC )
@@ -1468,6 +1465,7 @@ contains
         !
         deallocate( zC )
         !
+        !>
         select type( interp )
             !
             class is( cVector3D_SG_t )
@@ -1604,10 +1602,6 @@ contains
         !
         class( cVector3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
-        !
-        !if( .NOT. self%is_allocated ) then
-            !call errStop( "copyFrom_cVector3D_SG > self not allocated." ) !!!!
-        !endif
         !
         if( .NOT. rhs%is_allocated ) then
             call errStop( "copyFrom_cVector3D_SG > rhs not allocated" )

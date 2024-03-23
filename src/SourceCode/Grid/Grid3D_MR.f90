@@ -60,8 +60,6 @@ module Grid3D_MR
     !
     public :: repMat
     !
-    integer, allocatable, dimension(:) :: layers
-    !
     interface Grid3D_MR_t
         module procedure Grid3D_MR_t_ctor
     end interface Grid3D_MR_t
@@ -75,7 +73,7 @@ contains
         !
         integer, intent( in ) :: nx, ny, nzAir, nzEarth
         real( kind=prec ), dimension(:), intent( in ) :: dx, dy, dz
-        integer, allocatable, dimension(:), intent( in ) :: layers
+        integer, dimension(:), intent( in ) :: layers
         !
         type( Grid3D_MR_t ) :: self
         !  
@@ -410,18 +408,22 @@ contains
         !
         logical :: TopBottom(2)
         !
-        !  perhaps some error checking
-        !   e.g., 0<iGrid<nGrid ????
-        if( iGrid .EQ. 1 ) then
-            TopBottom(1) = .TRUE.
+        if( ( iGrid >= 1 .AND. iGrid <= self%n_grids ) ) then
+            !
+            if( iGrid .EQ. 1 ) then
+                TopBottom(1) = .TRUE.
+            else
+                TopBottom(1) = self%cs( iGrid ) .LT. self%cs( iGrid - 1 )
+            endif
+            !
+            if( iGrid .EQ. self%n_grids ) then
+                TopBottom(2) = .TRUE.
+            else
+                TopBottom(2) = self%cs( iGrid ) .LT. self%cs( iGrid + 1 )
+            endif
+            !
         else
-            TopBottom(1) = self%cs( iGrid ) .LT. self%cs( iGrid - 1 )
-        endif
-        !
-        if( iGrid .EQ. self%n_grids ) then
-            TopBottom(2) = .TRUE.
-        else
-            TopBottom(2) = self%cs( iGrid ) .LT. self%cs( iGrid + 1 )
+            call errStop( "active_Grid3D_MR > iGrid outside range" )
         endif
         !
     end function active_Grid3D_MR
@@ -500,11 +502,11 @@ contains
             !
             TopBottom = self%active( iGrid )
             !
-            ! IF WHAT ????
             if( TopBottom(1) ) then
                 self%z_limits( 1, iGrid ) = 1
             else
                 self%z_limits( 1, iGrid ) = 2
+                !
                 call self%reduceActive( iGrid )
             endif
             !
@@ -512,6 +514,7 @@ contains
                 self%z_limits( 2, iGrid ) = self%sub_grid( iGrid )%nz + 1
             else
                 self%z_limits( 2, iGrid ) = self%sub_grid( iGrid )%nz
+                !
                 call self%reduceActive( iGrid )
             endif
         enddo

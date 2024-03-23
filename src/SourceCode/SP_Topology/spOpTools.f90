@@ -1593,24 +1593,33 @@ contains
         colT = 0
         !
         do i = 1, n
-            colT(c(i)) = i
+            colT( c(i) ) = i
         enddo
         !
         !> count number of entries in each row
         rowT = 0
         nz = 0
-        do i =1, m
+        !
+        do i = 1, m
             do j = A%row( r(i) ), A%row( r(i) + 1 ) - 1
-                if( colT( A%col(j) ) .GT. 0 ) then
-                    rowT(i) = rowT(i)+1
-                    nz = nz+1
+                !
+                if( ( A%col(j) >= 1 .AND. A%col(j) <= size( colT ) ) ) then ! THIS STATEMENT TO WORK
+                    !
+                    if( colT( A%col(j) ) .GT. 0 ) then
+                        rowT(i) = rowT(i)+1
+                        nz = nz+1
+                    endif
+                    !
+                else
+                    call errStop( "subMatrix_Real > A%col(j) is outside colT range - 1st - Bad MR Coarse!" )
                 endif
+                !
             enddo
         enddo
         !
         call create_spMatCSR( m, n, nz, B )
         !
-        !   set row array in output CSR matrix
+        !> set row array in output CSR matrix
         B%row(1) = 1
         do i = 1, B%nRow
             B%row(i+1) = B%row(i)+rowT(i)
@@ -1619,11 +1628,19 @@ contains
         do i =1, m
             kk = 0
             do j = A%row(r(i)), A%row(r(i)+1)-1
-                if(colT(A%col(j)).GT.0) then
-                    B%col(B%row(i)+kk) = colT(A%col(j))
-                    B%val(B%row(i)+kk) = A%val(j)
-                    kk = kk+1
+                !
+                if( ( A%col(j) >= 1 .AND. A%col(j) <= size( colT ) ) ) then ! THIS STATEMENT TO WORK
+                    !
+                    if( colT( A%col(j) ) .GT. 0 ) then
+                        B%col(B%row(i)+kk) = colT(A%col(j))
+                        B%val(B%row(i)+kk) = A%val(j)
+                        kk = kk+1
+                    endif
+                    !
+                else
+                    call errStop( "subMatrix_Real > A%col(j) outside colT range - 2nd - Bad MR Coarse!" )
                 endif
+                !
             enddo
         enddo
         !

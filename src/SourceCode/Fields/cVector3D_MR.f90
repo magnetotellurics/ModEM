@@ -29,8 +29,7 @@ module cVector3D_MR
             procedure, public :: lengthFull => lengthFull_cVector3D_MR
             procedure, public :: findFull => findFull_cVector3D_MR
             !
-            procedure, public :: MRtoSG => MRtoSG_cVector3D_MR
-            procedure, public :: SGtoMRE0 => SGtoMRE0_cVector3D_MR
+            procedure, public :: toSG => toSG_cVector3D_MR
             !
             procedure, public :: fromSG => fromSG_cVector3D_MR
             !
@@ -428,36 +427,38 @@ contains
     !> copying from variable resolution sub-grids to completely fill in the
     !> underlying fine grid.
     !
-    subroutine MRtoSG_cVector3D_MR( self, sg_v )
+    subroutine toSG_cVector3D_MR( self, vector_sg )
         implicit none
         !
         class( cVector3D_MR_t ), intent( in ) :: self
-        type( cVector3D_SG_t ), intent( inout ) :: sg_v
+        type( cVector3D_SG_t ), intent( inout ) :: vector_sg
         !
-        type( cVector3D_SG_t ) :: temp
+        type( cVector3D_SG_t ) :: temp_vector_sg
         integer :: x_nx, x_ny, x_nz
         integer :: y_nx, y_ny, y_nz
         integer :: z_nx, z_ny, z_nz
         integer :: last, Cs, i1, i2, i, k
         real( kind=prec ) :: w1, w2
         !
-        temp = cVector3D_SG_t( self%grid, self%grid_type )
+        vector_sg = cVector3D_SG_t( self%grid, self%grid_type )
         !
-        temp%x = 0; temp%y = 0; temp%z = 0
+        temp_vector_sg = vector_sg
         !
-        x_nx = size(temp%x, 1)
-        x_ny = size(temp%x, 2)
-        x_nz = size(temp%x, 3)
+        temp_vector_sg%x = 0; temp_vector_sg%y = 0; temp_vector_sg%z = 0
         !
-        y_nx = size(temp%y, 1)
-        y_ny = size(temp%y, 2)
-        y_nz = size(temp%y, 3)
+        x_nx = size(temp_vector_sg%x, 1)
+        x_ny = size(temp_vector_sg%x, 2)
+        x_nz = size(temp_vector_sg%x, 3)
         !
-        z_nx = size(temp%z, 1)
-        z_ny = size(temp%z, 2)
-        z_nz = size(temp%z, 3)
+        y_nx = size(temp_vector_sg%y, 1)
+        y_ny = size(temp_vector_sg%y, 2)
+        y_nz = size(temp_vector_sg%y, 3)
         !
-        sg_v%x = 0; sg_v%y = 0; sg_v%z = 0
+        z_nx = size(temp_vector_sg%z, 1)
+        z_ny = size(temp_vector_sg%z, 2)
+        z_nz = size(temp_vector_sg%z, 3)
+        !
+        vector_sg%x = 0; vector_sg%y = 0; vector_sg%z = 0
         !
         select case( self%grid_type )
             !
@@ -476,22 +477,23 @@ contains
                             ! edges that aligned with sub-grid edge.
                             do i = 1, Cs
                                 !
-                                temp%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) = self%sub_vector(k)%x
-                                temp%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) = self%sub_vector(k)%y
+                                temp_vector_sg%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) = self%sub_vector(k)%x
+                                temp_vector_sg%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) = self%sub_vector(k)%y
                                 !
                                 w1 = 1. -( i - 1.)/Cs
                                 w2 = 1. - w1
                                 !
                                 if( i == 1 ) then
-                                    temp%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2) = self%sub_vector(k)%z
+                                    temp_vector_sg%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2) = self%sub_vector(k)%z
                                 else
                                     last = size( self%sub_vector(k)%z(:, 1, 1) )
-                                    temp%z(i:z_nx:Cs, 1:z_ny:Cs, i1:i2) = &
+                                    temp_vector_sg%z(i:z_nx:Cs, 1:z_ny:Cs, i1:i2) = &
                                     self%sub_vector(k)%z(1:last-1, :, :) * &
                                     w1 + self%sub_vector(k)%z(2:last, :, :) * w2
                                 endif
                                 !
                             enddo
+                            !
                             ! edges that subdivide the sub-grid
                             ! interpolate  in y and x directions
                             ! copy/interpolate x in y direction
@@ -501,37 +503,37 @@ contains
                                 w1 = 1. -( i - 1.)/Cs
                                 w2 = 1. - w1
                                 !
-                                temp%x(:, i:x_ny:Cs, i1:i2+1) = temp%x(:, 1:x_ny-Cs:Cs, i1:i2+1)*w1 + &
-                                temp%x(:, Cs+1:x_ny:Cs, i1:i2+1)*w2
+                                temp_vector_sg%x(:, i:x_ny:Cs, i1:i2+1) = temp_vector_sg%x(:, 1:x_ny-Cs:Cs, i1:i2+1)*w1 + &
+                                temp_vector_sg%x(:, Cs+1:x_ny:Cs, i1:i2+1)*w2
                                 !
-                                temp%y(i:y_nx:Cs, :, i1:i2+1) = temp%y(1:y_nx-Cs:Cs, :, i1:i2+1)*w1 + &
-                                temp%y(Cs+1:y_nx:Cs, :, i1:i2+1)*w2
+                                temp_vector_sg%y(i:y_nx:Cs, :, i1:i2+1) = temp_vector_sg%y(1:y_nx-Cs:Cs, :, i1:i2+1)*w1 + &
+                                temp_vector_sg%y(Cs+1:y_nx:Cs, :, i1:i2+1)*w2
                                 !
                                 ! added by zhhq, 2017
-                                temp%z(:, i:z_ny:Cs, i1:i2) = temp%z(:, 1:z_ny-Cs:Cs, i1:i2)*w1 + &
-                                temp%z(:, Cs+1:z_ny:Cs, i1:i2) * w2
-                                ! temp.z(i:Cs:end,i:Cs:end,i1:i2) = temp.z(:,1:Cs:end-Cs,i1:i2)*w1+ ...
-                                ! temp.z(:,Cs+1:Cs:end,i1:i2)*w2;
+                                temp_vector_sg%z(:, i:z_ny:Cs, i1:i2) = temp_vector_sg%z(:, 1:z_ny-Cs:Cs, i1:i2)*w1 + &
+                                temp_vector_sg%z(:, Cs+1:z_ny:Cs, i1:i2) * w2
+                                ! temp_vector_sg.z(i:Cs:end,i:Cs:end,i1:i2) = temp_vector_sg.z(:,1:Cs:end-Cs,i1:i2)*w1+ ...
+                                ! temp_vector_sg.z(:,Cs+1:Cs:end,i1:i2)*w2;
                                 ! added by zhhq, 2017
                             enddo
                             !
-                            sg_v%x(:, :, i1:i2+1) = sg_v%x(:, :, i1:i2+1) + temp%x(:, :, i1:i2+1)
-                            sg_v%y(:, :, i1:i2+1) = sg_v%y(:, :, i1:i2+1) + temp%y(:, :, i1:i2+1)
-                            sg_v%z(:, :, i1:i2)   = temp%z(:, :, i1:i2)
+                            vector_sg%x(:, :, i1:i2+1) = vector_sg%x(:, :, i1:i2+1) + temp_vector_sg%x(:, :, i1:i2+1)
+                            vector_sg%y(:, :, i1:i2+1) = vector_sg%y(:, :, i1:i2+1) + temp_vector_sg%y(:, :, i1:i2+1)
+                            vector_sg%z(:, :, i1:i2)   = temp_vector_sg%z(:, :, i1:i2)
                             !
                         enddo
                         !
                     class default
-                        call errStop( "MRtoSG_cVector3D_MR > Unclassified grid" )
+                        call errStop( "toSG_cVector3D_MR > Unclassified grid" )
                     !
                 end select
                 !
             case default
-                call errStop( "MRtoSG_cVector3D_MR > Unrecognized grid type." )
+                call errStop( "toSG_cVector3D_MR > Unrecognized grid type." )
             !
         end select
         !
-    end subroutine MRtoSG_cVector3D_MR
+    end subroutine toSG_cVector3D_MR
     !
     !> No subroutine briefing
     !
@@ -641,89 +643,6 @@ contains
         end select
         !
     end subroutine fromSG_cVector3D_MR
-    !
-    !> Converts SG Vector object to MR by averaging
-    !> used only for e0
-    !
-    subroutine SGtoMRE0_cVector3D_MR(self, sg_vector)
-        implicit none
-        !
-        class( cVector3D_MR_t ), intent( inout ) :: self
-        type( cVector3D_SG_t ), intent( in ) :: sg_vector
-        !
-        class( Grid_t ), pointer :: grid
-        !
-        integer :: x_nx, x_ny, x_nz
-        integer :: y_nx, y_ny, y_nz
-        integer :: z_nx, z_ny, z_nz
-        integer :: last, Cs, i1, i2, i, k
-        !
-        grid => sg_vector%grid
-        !
-        x_nx = size(sg_vector%x, 1)
-        x_ny = size(sg_vector%x, 2)
-        x_nz = size(sg_vector%x, 3)
-        !
-        y_nx = size(sg_vector%y, 1)
-        y_ny = size(sg_vector%y, 2)
-        y_nz = size(sg_vector%y, 3)
-        !
-        z_nx = size(sg_vector%z, 1)
-        z_ny = size(sg_vector%z, 2)
-        z_nz = size(sg_vector%z, 3)
-        !
-        select type( grid => self%grid )
-            !
-            class is( Grid3D_MR_t )
-                !
-                do k = 1, grid%n_grids
-                    !
-                    Cs = 2**grid%coarseness(k, 1)
-                    i1 = grid%coarseness(k, 3)
-                    i2 = grid%coarseness(k, 4)
-                    !
-                    do i = 1, Cs
-                        !
-                        last = size(grid%Dx)
-                        self%sub_vector(k)%x = self%sub_vector(k)%x + &
-                        sg_vector%x(i:x_nx:Cs, 1:x_ny:Cs, i1:i2+1) *    &
-                        repMat(grid%Dx(i:last:Cs), &
-                        1, &
-                        grid%sub_grid(k)%Ny + 1, &
-                        grid%sub_grid(k)%Nz + 1, .false.)
-
-                        last = size(grid%Dy)
-                        self%sub_vector(k)%y = self%sub_vector(k)%y + &
-                        sg_vector%y(1:y_nx:Cs, i:y_ny:Cs, i1:i2+1) *  & 
-                        repMat(grid%Dy(i:last:Cs), &
-                        grid%sub_grid(k)%Nx + 1, &
-                        1, &
-                        grid%sub_grid(k)%Nz + 1, .TRUE.)
-                        !
-                    enddo
-                    !
-                    self%sub_vector(k)%x = self%sub_vector(k)%x / &
-                    repMat(grid%sub_grid(k)%Dx, &
-                    1, &
-                    grid%sub_grid(k)%Ny + 1, &
-                    grid%sub_grid(k)%Nz + 1, .false.)
-                    !
-                    self%sub_vector(k)%y = self%sub_vector(k)%y / &
-                    repMat(grid%sub_grid(k)%Dy, &
-                    grid%sub_grid(k)%Nx + 1, &
-                    1, &
-                    grid%sub_grid(k)%Nz + 1, .TRUE.)
-                    !
-                    self%sub_vector(k)%z = sg_vector%z(1:z_nx:Cs, 1:z_ny:Cs, i1:i2)
-                    !
-                enddo
-                !
-            class default
-                call errStop( "SGtoMRE0_cVector3D_MR > Unclassified grid" )
-            !
-        end select
-        !
-    end subroutine SGtoMRE0_cVector3D_MR
     !
     !> No subroutine briefing
     !
@@ -1663,7 +1582,8 @@ contains
             call errStop( "interpFunc_cVector3D_MR > interp not allocated." )
         endif
         !
-        !> Find index of the sub_vector based on location(3) - ALWAYS THE FIRST FOR NOW ????
+        !> Find index of the sub_vector based on location(3)
+        !> USING ALWAYS THE FIRST sub_vector !!!!
         i_sub = 1
         !
         !>
@@ -1744,7 +1664,7 @@ contains
         class( cVector3D_MR_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( .NOT. rhs%is_allocated) then
+        if( .NOT. rhs%is_allocated ) then
             call errStop( "copyFrom_cVector3D_MR > rhs not allocated" )
         endif
         !

@@ -264,8 +264,7 @@ contains
                         self%cell_cond(i)%v = a1 * self%cell_cond(i)%v + a2 * rhs%cell_cond(i)%v
                         !
                     else
-                        write( *, * ) "Error: linComb_ModelParameterCell > Incompatible rhs cell_cond (", i, ")!"
-                        stop
+                        call errStop( "linComb_ModelParameterCell > Incompatible rhs cell_cond" )
                     endif
                     !
                 enddo
@@ -274,9 +273,6 @@ contains
                 call errStop( "linComb_ModelParameterCell > undefined rhs" )
             !
         end select
-        !
-        !> ????
-        !self%air_cond = rhs%air_cond
         !
     end subroutine linComb_ModelParameterCell
     !
@@ -408,7 +404,7 @@ contains
             if( present( comment ) ) then
                 write( ioModelParam, * ) "# ", trim( comment )
             else
-                write( ioModelParam, * ) "# 3D MT model written by ModEM-OO in WS format"
+                write( ioModelParam, * ) "# 3D MT model written by ModEM in WS format"
             endif
             !
             !> Write grid geometry definitions

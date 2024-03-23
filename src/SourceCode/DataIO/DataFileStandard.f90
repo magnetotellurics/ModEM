@@ -23,6 +23,7 @@ contains
     !
     !> Procedure DataFileStandard_ctor
     !> Read line by line of the data file, create Data Entry objects (MT, MT_REF or CSEM)
+    !
     function DataFileStandard_ctor( funit, fname ) result( self )
         implicit none
         !
@@ -62,6 +63,7 @@ contains
             csem_counter = 0
             !
             do
+                !
                 read( funit, "(a)", END = 10 ) full_line_text
                 line_text = adjustl( full_line_text )
                 line_text = trim( line_text )
@@ -249,7 +251,7 @@ contains
                              read( args(3), * ) n_rx
                              !
                              header_counter = header_counter + 1
-                             write( *, "(A17, I8, A5, A20, A2, A15, A3, I8, A9, I8, A5)" ) "Header", header_counter, " -> (", trim(actual_type), ", ", trim(units_in_file( size( units_in_file ) )%str), "): ", n_tx, " Txs and ", n_rx, " Rxs."
+                             write( *, "(A16, I4, A5, A20, A2, A15, A3, I5, A9, I5, A5)" ) "Header", header_counter, " -> (", trim(actual_type), ", ", trim(units_in_file( size( units_in_file ) )%str), "): ", n_tx, " Txs and ", n_rx, " Rxs."
                              !
                              self%n_rx = self%n_rx + n_rx
                              self%n_tx = self%n_tx + n_tx
@@ -269,8 +271,8 @@ contains
             ! Verbose
             !write( *, * ) "          ", trim( self%units ), " to ", trim( units_in_file ), " => ", self%SI_factor
             !
-            if( mt_counter > 0 )   write( *, * ) "          Read ", mt_counter,   " MT Entries"
-            if( csem_counter > 0 ) write( *, * ) "          Read ", csem_counter, " CSEM Entries"
+            if( mt_counter > 0 )   write( *, "(A17, I4, A12)" ) "Readed ", mt_counter,   " MT Entries."
+            if( csem_counter > 0 ) write( *, "(A17, I4, A13)" ) "Readed ", csem_counter, " CSEM Entries"
             !
             call self%contructMeasuredDataGroupTxArray()
             !

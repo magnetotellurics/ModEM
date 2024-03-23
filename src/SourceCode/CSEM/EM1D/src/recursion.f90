@@ -1452,7 +1452,7 @@ subroutine set_fresnelcoef_TM(kappa,pvert)
 
     !vertical slowness for each layer
     pvert(:) = sqrt(epsmuh(:) - epsmuratio(:)*phsq)
-    !fix against acausal propagation (OK??????)
+    !fix against acausal propagation (OK?)
     pvert = cmplx(real(pvert,kind=real64),abs(aimag(pvert)),kind=real64)
 
     !reflection and transmission coefficients through interfaces

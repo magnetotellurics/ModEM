@@ -1,5 +1,5 @@
 !
-!> Module with the ForwardModeling routines
+!> Module with the Forward Modeling routines
 !
 module ForwardModeling
 !
@@ -47,7 +47,7 @@ contains
     end subroutine solveAll
     !
     !> Calculate E_Solution(e_sol_0) for a single Transmitter
-    !> ForwardSolver must be allocated
+    !> Tx%forward_solver must be previously allocated !!!!
     !
     subroutine solveTx( sigma, Tx )
         implicit none
@@ -57,12 +57,12 @@ contains
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
-        !> Instantiate Transmitter's Source - According to transmitter type and chosen via control file
+        !> Instantiate Transmitter's Source - According to transmitter type and chosen via fwd control file
         select type( Tx )
             !
             class is( TransmitterMT_t )
                 !
-                !> Instantiate the MT Source - Specific type can be chosen via control file
+                !> Instantiate the MT Source - Specific type can be chosen via fwd control file
                 select case( source_type_mt )
                     !
                     case( SRC_MT_1D )
@@ -72,6 +72,8 @@ contains
                     case( SRC_MT_2D )
                         !
                         !call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
+                        !
+                        call errStop( "solveTx > SourceMT_2D not implemented yet!" )
                         !
                     case( "" )
                         !
@@ -124,8 +126,9 @@ contains
         !
     end subroutine solveTx
     !
-    !> Routine to run a full ForwardModeling job 
-    !> and deliver the result(PredictedData) in a text file <all_predicted_data.dat>
+    !> Routine to execute a full ForwardModeling job 
+    !> Outputting its result(PredictedData) into a text file
+    !> Default <all_predicted_data.dat> or specified by argument -pd|--predicted
     !
     subroutine jobForwardModeling()
         implicit none
@@ -135,7 +138,7 @@ contains
         class( ModelParameter_t ), allocatable :: sigma
         !
         ! Verbose
-        write( *, * ) "     - Start jobForwardModeling"
+        write( *, * ) "     - Start ForwardModeling"
         !
         if( has_model_file ) then
             !
@@ -147,13 +150,14 @@ contains
         !
         if( has_data_file ) then
             !
-            call handleDataFile()
+            call handleDataFile
         !
         else
             call errStop( "jobForwardModeling > Missing Data file!" )
         endif
         !
-        !>
+        !> If path is specified by argument -es|--esolution
+        !> Write e_sol_0 to a binary file at this path
         if( has_e_solution_file ) call writeAllESolutionHeader( size( transmitters ), transmitters(1)%Tx%n_pol, e_solution_file_name )
         !
         all_predicted_data = all_measured_data
@@ -162,7 +166,7 @@ contains
         !
         call broadcastBasicComponents()
         !
-        !> Deallocate global FWD components not used by the Master process
+        !> Deallocate global FWD Objects not used by the Master process
         deallocate( model_operator, main_grid )
         !
         call masterForwardModelling( sigma, all_predicted_data )
@@ -182,7 +186,7 @@ contains
         deallocate( sigma )
         !
         ! Verbose
-        write( *, * ) "     - Finish jobForwardModeling"
+        write( *, * ) "     - Finish ForwardModeling"
         !
     end subroutine jobForwardModeling
     !
@@ -203,15 +207,10 @@ contains
         type( DataGroup_t ) :: data_group
         integer :: i_tx, n_tx, i_rx, sol_index
         !
-        ! Verbose
-        write( *, * ) "          - Start Forward Modeling"
-        !
         sol_index = 0
         !
         !> Set i_sol if present
         if( present( i_sol ) ) sol_index = i_sol
-        !
-        !call model_operator%metric%setGridIndexArrays( model_operator%metric%grid )
         !
         !>
         n_tx = size( transmitters )
@@ -227,7 +226,7 @@ contains
             call solveTx( sigma, Tx )
             !
             ! Verbose
-            write( *, * ) "                    - Calculate Predicted Data"
+            write( *, "(A36)" ) "- Calculate Predicted Data"
             !
             !> Loop for each Receiver related to this Transmitter
             do i_rx = 1, size( Tx%receiver_indexes )
@@ -242,9 +241,6 @@ contains
             enddo
             !
         enddo
-        !
-        ! Verbose
-        write( *, * ) "          - Finish Forward Modeling"
         !
     end subroutine serialForwardModeling
     !
@@ -301,7 +297,7 @@ contains
         integer :: ios
         character( len=20 ) :: version
         !
-        version = "Modem-OO "//VERSION
+        version = "ModEM "//VERSION
         !
         open( ioESolution, file = file_name, action = "write", form = "unformatted", iostat = ios )
         !
@@ -322,7 +318,6 @@ contains
             call errStop( "writeAllESolutionHeader > Unable to open file ["//file_name//"]!" )
             !
         endif
-        !
         !
     end subroutine writeAllESolutionHeader
     !

@@ -339,14 +339,29 @@ contains
     !
     !> No procedure briefing
     !
-    pure function sigMap_Linear( x, job ) result( y )
+    pure function sigMap_Linear( x, p_job ) result( y )
         implicit none
         !
         real( kind=prec ), intent( in ) :: x
-        character(*), intent( in ), optional :: job
+        character(*), intent( in ), optional :: p_job
         real( kind=prec ) :: y
         !
-        y = x
+        character(:), allocatable :: job
+        !
+        if( .NOT. present( p_job ) ) then
+            job = FORWARD
+        else
+            job = p_job
+        endif
+        !
+        select case( job )
+            !
+            case( FORWARD, INVERSE )
+                y = x
+            case( DERIV )
+                y = R_ONE
+            !
+        end select
         !
     end function sigMap_Linear
     !
@@ -369,9 +384,7 @@ contains
         !
         select case( job )
             !
-            case( FORWARD )
-                y = exp( x )
-            case( DERIV )
+            case( FORWARD, DERIV )
                 y = exp( x )
             case( INVERSE )
                 y = log( x )
@@ -403,7 +416,7 @@ contains
         !
     end subroutine initialize_ModelParameter
     !
-    !
+    !> No subroutine briefing
     !
     subroutine deallocate_ModelParameter( self )
         implicit none

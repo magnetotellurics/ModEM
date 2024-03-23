@@ -49,7 +49,7 @@ module rScalar3D_SG
             procedure, public :: divByField => divByField_rScalar3D_SG
             procedure, public :: divByValue => divByValue_rScalar3D_SG
             !
-            procedure, public :: SumToNode => SumToNode_rScalar3D_SG
+            procedure, public :: sumToNode => sumToNode_rScalar3D_SG
             !
             !> Getters & Setters
             !
@@ -606,7 +606,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine SumToNode_rScalar3D_SG( self, node_scalar, interior_only )
+    subroutine sumToNode_rScalar3D_SG( self, node_scalar, interior_only )
         implicit none
         !
         class( rScalar3D_SG_t ), intent( inout ) :: self
@@ -624,8 +624,6 @@ contains
         if( .NOT. node_scalar%is_allocated ) then
              call errStop( "sumToNode_rScalar3D_SG > node_scalar not allocated." )
         endif
-        !
-        !call self%switchStoreState( compound )
         !
         is_interior_only = .FALSE.
         !
@@ -658,16 +656,11 @@ contains
                 !
                 node_scalar = temp_node
                 !
-                !   For consistency with cell-to-edge perhaps best to omit this?
-                !    and call this routine SumToNode instead of just toNode
-                !   ACTUALLY THE way implemented and used is (slighty) wrong!
-                !call node_scalar%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
-                !
             case default
                 call errStop( "sumToNode_rScalar3D_SG: undefined self%grid_type" )
         end select
         !
-    end subroutine SumToNode_rScalar3D_SG
+    end subroutine sumToNode_rScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -1003,3 +996,4 @@ contains
     end subroutine print_rScalar3D_SG
     !
 end module rScalar3D_SG
+!

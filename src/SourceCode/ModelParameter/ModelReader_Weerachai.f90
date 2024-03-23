@@ -16,7 +16,7 @@ module ModelReader_Weerachai
         !
      contains
         !
-        procedure, public :: read => readModelReaderWeerachai
+        procedure, public :: read => read_ModelReader_Weerachai
         !
     end type ModelReader_Weerachai_t
     !
@@ -24,7 +24,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine readModelReaderWeerachai( self, file_name, grid, model, param_grid ) 
+    subroutine read_ModelReader_Weerachai( self, file_name, grid, model, param_grid ) 
         implicit none
         !
         class( ModelReader_Weerachai_t ), intent( in ) :: self
@@ -63,19 +63,19 @@ contains
             allocate( dy(ny) )
             allocate( dz(nzAir + nzEarth) )
             !
-            read(ioPrm, *) (dx(j), j = 1, nx)
-            read(ioPrm, *) (dy(j), j = 1, ny)
-            read(ioPrm, *) (dz(j), j = nzAir + 1, nzAir + nzEarth)
+            read( ioPrm, * ) ( dx(j), j = 1, nx )
+            read( ioPrm, * ) ( dy(j), j = 1, ny )
+            read( ioPrm, * ) ( dz(j), j = nzAir + 1, nzAir + nzEarth )
             !
             if( someIndex /= 0 ) then
-                call errStop( "readModelReaderWeerachai > Mapping not supported." )
+                call errStop( "read_ModelReader_Weerachai > Mapping not supported." )
             endif
             !
             !> By default assume "LINEAR RHO" -
             !> Weerachai"s linear resistivity format
             if( index( someChar, "LOGE" ) > 0 ) then
                 paramType = LOGE
-            elseif( index( someChar, "LOG10" ) > 0) then
+            elseif( index( someChar, "LOG10" ) > 0 ) then
                 paramType = LOG_10
             else
                 paramType = LINEAR
@@ -90,11 +90,11 @@ contains
                     !
                 case( GRID_MR )
                     !
-                    allocate( grid, source = Grid3D_MR_t( nx, ny, nzAir, nzEarth, dx, dy, dz, layers ) )
+                    allocate( grid, source = Grid3D_MR_t( nx, ny, nzAir, nzEarth, dx, dy, dz, grid_layers ) )
                     !
                 case default
                     !
-                    call warning( "readModelReaderWeerachai > grid_format not provided, using Grid3D_SG_t." )
+                    call warning( "read_ModelReader_Weerachai > grid_format not provided, using Grid3D_SG_t." )
                     !
                     allocate( grid, source = Grid3D_SG_t( nx, ny, nzAir, nzEarth, dx, dy, dz ) )
                     !
@@ -161,9 +161,9 @@ contains
                         class is( Grid3D_SG_t )
                             allocate( model, source = ModelParameterCell_SG_t( cell_cond_sg, 1, paramType ) )
                         class is( Grid3D_MR_t )
-                            allocate( model, source = ModelParameterCell_MR_t( cell_cond_sg, 1, paramType, layers ) )
+                            allocate( model, source = ModelParameterCell_MR_t( cell_cond_sg, 1, paramType, grid_layers ) )
                         class default
-                            call errStop( "readModelReaderWeerachai > Unknown grid for ModelParameter" )
+                            call errStop( "read_ModelReader_Weerachai > Unknown grid for ModelParameter" )
                         !
                     end select
                     !
@@ -180,9 +180,9 @@ contains
                             class is( Grid3D_SG_t )
                                 allocate( model, source = ModelParameterCell_SG_t( cell_cond_sg, 2, paramType ) )
                             class is( Grid3D_MR_t )
-                                allocate( model, source = ModelParameterCell_MR_t( cell_cond_sg, 2, paramType, layers ) )
+                                allocate( model, source = ModelParameterCell_MR_t( cell_cond_sg, 2, paramType, grid_layers ) )
                             class default
-                                call errStop( "readModelReaderWeerachai > Unknow grid for VTI ModelParameter" )
+                                call errStop( "read_ModelReader_Weerachai > Unknown grid for VTI ModelParameter" )
                             !
                         end select
                         !
@@ -192,20 +192,22 @@ contains
                 !
             enddo
             !
-            !> ALWAYS convert modelParam to natural log for computations ????
+            !> Always convert modelparam to natural log for computations !!!!
             paramType = LOGE
             call model%setType( paramType )
             !
             !> End - Reading cells conductivity values.
             !
             !> In case the grid origin is stored next (in meters!)...
-            read(ioPrm, *, iostat = io_stat) ox, oy, oz
+            read( ioPrm, *, iostat = io_stat ) ox, oy, oz
             !
             !> Defaults to the grid center at the Earth"s surface
-            if(io_stat /= 0) then
-                 ox = -sum(dx)/2.0
-                 oy = -sum(dy)/2.0
-                 oz = R_ZERO
+            if( io_stat /= 0 ) then
+                !
+                ox = -sum(dx) / 2.0
+                oy = -sum(dy) / 2.0
+                oz = R_ZERO
+                !
             endif
             !
             call grid%setOrigin( ox, oy, oz )
@@ -220,10 +222,10 @@ contains
             close( ioPrm )
             !
         else
-            call errStop( "Error opening ["//file_name//"] in readModelReaderWeerachai" )
+            call errStop( "Error opening ["//file_name//"] in read_ModelReader_Weerachai" )
         endif
         !
-    end subroutine readModelReaderWeerachai
+    end subroutine read_ModelReader_Weerachai
     !
 end module ModelReader_Weerachai
 !

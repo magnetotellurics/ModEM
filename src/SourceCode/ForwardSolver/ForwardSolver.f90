@@ -50,6 +50,7 @@ module ForwardSolver
     abstract interface
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_frequency_foward_solver( self, sigma, period )
             import :: ForwardSolver_t, ModelParameter_t, prec
             !
@@ -60,8 +61,8 @@ module ForwardSolver
         end subroutine interface_set_frequency_foward_solver
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_iter_foward_solver( self )
-            !
             import :: ForwardSolver_t
             !
             class( ForwardSolver_t ), intent( inout ) :: self
@@ -69,6 +70,7 @@ module ForwardSolver
         end subroutine interface_set_iter_foward_solver
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_init_diag_foward_solver( self )
             import :: ForwardSolver_t
             !
@@ -77,6 +79,7 @@ module ForwardSolver
         end subroutine interface_init_diag_foward_solver
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_zero_diag_foward_solver( self )
             import :: ForwardSolver_t
             !
@@ -84,7 +87,8 @@ module ForwardSolver
             !
         end subroutine interface_zero_diag_foward_solver
         !
-        !> No interface function briefing
+        !> No interface subroutine briefing
+        !
         subroutine interface_create_e_solution_foward_solver( self, pol, source, e_solution )
             import :: ForwardSolver_t, Source_t, Vector_t
             !
@@ -96,10 +100,13 @@ module ForwardSolver
         end subroutine interface_create_e_solution_foward_solver
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_copy_from_foward_solver( self, rhs )
-            import :: ForwardSolver_t            
+            import :: ForwardSolver_t
+            !
             class( ForwardSolver_t ), intent( inout ) :: self
             class( ForwardSolver_t ), intent( in ) :: rhs
+            !
         end subroutine interface_copy_from_foward_solver
         !
     end interface
@@ -107,6 +114,7 @@ module ForwardSolver
 contains
     !
     !> No subroutine briefing
+    !
     subroutine initializeForwardSolver( self )
         implicit none
         !
@@ -123,6 +131,7 @@ contains
     end subroutine initializeForwardSolver
     !
     !> No subroutine briefing
+    !
     subroutine deallocateForwardSolver( self )
         implicit none
         !
@@ -135,3 +144,4 @@ contains
     end subroutine deallocateForwardSolver
     !
 end module ForwardSolver
+!

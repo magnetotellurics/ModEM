@@ -196,7 +196,7 @@ contains
         !> Now the actual adjoint mapping -- reverse order from fwd
         !
         !> multiply sigma_cell_al_mr by dsigma_cell_mr, considering AirLayers just for the first sub_grid2
-        !> THIS NEEDS TO BE GENERALIZED ????
+        !> This needs to be generalized !!!!
         nz_air = self%metric%grid%NzAir
         !
         sigma_cell_mr%sub_scalar(1)%v = sigma_cell_mr%sub_scalar(1)%v * &
@@ -209,10 +209,7 @@ contains
             !
         enddo
         !
-        dsigma_cell_sg = rScalar3D_SG_t( self%param_grid, CELL )
-        !
-        !   this is adjoint of fromSG
-        call sigma_cell_mr%MRtoSG( dsigma_cell_sg )
+        call sigma_cell_mr%toSG( dsigma_cell_sg )
         !
         call dsigma%setCond( dsigma_cell_sg, 1 )
         !
@@ -239,13 +236,12 @@ contains
         character(:), allocatable :: job
         integer :: i_grid, nz_air
         logical :: dPDE
-        type( Grid3D_MR_t ) :: temp_grid_mr
+        type( Grid3D_MR_t ) :: temp_grid_mr 
         type( rScalar3D_MR_t ) :: sigma_cell_mr, dsigma_cell_mr
         !
         dPDE = present( dsigma )
         !
         select type( grid => self%metric%grid )
-            !   If metric contains the MR grid why do we need to make a local copy????
             !
             class is( Grid3D_MR_t )
                 !
@@ -310,13 +306,12 @@ contains
         !
     end subroutine modelToCell_ModelParameterCell_MR
     !
-    !> This routine averages cells to nodes --- I think this can be generic
+    !> This routine can be more generic !!!!
     !
     subroutine cellToNode_ModelParameterCell_MR( self, sigma_cell, node_cond )
         implicit none
         !
         class( ModelParameterCell_MR_t ), intent( in ) :: self
-        !  make input cell cond more generic ????
         class( Scalar_t ), intent( in ) :: sigma_cell
         class( Scalar_t ), intent( inout ) :: node_cond
         !
@@ -328,7 +323,6 @@ contains
         !> node_cond: sumCells does not modify boundaries, so no need to set to 0
         call temp_scalar%mult( self%metric%v_cell )
         !
-        !call sigma_cell%SumToNode( node_cond ) -> MAYBE GARY MEANT THIS: ????
         call temp_scalar%sumToNode( node_cond )
         !
         !  NOTE: indented code computes sum of cell volumes -- could compute once and save
@@ -343,7 +337,7 @@ contains
         !
         deallocate( temp_scalar )
         !
-        call node_vol%setAllBoundary( C_ONE ) !IT WAS R_ONE, PROBLEM????
+        call node_vol%setAllBoundary( C_ONE )
         !
         call node_cond%div( node_vol )
         !
@@ -351,14 +345,13 @@ contains
         !
     end subroutine cellToNode_ModelParameterCell_MR
     !
-    !> This routine averages cells to edges --- I think this can be generic
+    !> This routine can be more generic !!!!
     !
     subroutine cellToEdge_ModelParameterCell_MR( self, sigma_cell_al_mr, e_vec )
         implicit none
         !
         class( ModelParameterCell_MR_t ), intent( in ) :: self
-        !  make input cell cond more generic ?????
-        type( rScalar3D_MR_t ), intent( in ) :: sigma_cell_al_mr
+        class( Scalar_t ), intent( in ) :: sigma_cell_al_mr
         class( Vector_t ), intent( inout ) :: e_vec
         !
         class( Vector_t ), allocatable :: e_vol
@@ -385,7 +378,7 @@ contains
         !
         call e_vol%sumCells( self%metric%v_cell )
         !
-        call e_vol%setAllBoundary( C_ONE ) !IT WAS R_ONE, PROBLEM????
+        call e_vol%setAllBoundary( C_ONE )
         !
         call e_vec%div( e_vol )
         !
@@ -418,17 +411,13 @@ contains
         !
         call e_vol%sumCells( self%metric%v_cell )
         !
-        call e_vol%setAllBoundary( C_ONE ) !IT WAS R_ONE, PROBLEM????
+        call e_vol%setAllBoundary( C_ONE )
         !
         allocate( temp_e_vec, source = e_vec )
         !
         call temp_e_vec%div( e_vol )
         !
         deallocate( e_vol )
-        !
-        !> cell cond as MR with AirLayers
-        !    maybe this should be allocated before calling this routine ????
-        !call self%metric%createScalar( real_t, CELL, sigma_cell_al )
         !
         call temp_e_vec%sumEdges( sigma_cell_al, .TRUE. )
         !
@@ -449,11 +438,11 @@ contains
         type( rScalar3D_MR_t ) :: sigma_cell_al_mr
         !
         if( .NOT. self%is_allocated ) then
-            call errStop( "PDEmapping_ModelParameterCell_SG > self not allocated" )
+            call errStop( "PDEmapping_ModelParameterCell_MR > self not allocated" )
         endif
         !
         if( .NOT. e_vec%is_allocated ) then
-            call errStop( "PDEmapping_ModelParameterCell_SG > e_vec not allocated" )
+            call errStop( "PDEmapping_ModelParameterCell_MR > e_vec not allocated" )
         endif
         !
         !> cell cond as MR with AirLayers
@@ -517,12 +506,12 @@ contains
         call self%metric%createScalar( real_t, CELL, sigma_cell_al )    !sigma_cell_al SHOULD BE GENERIC FOR edgeToCell...
         !
         call self%edgeToCell( e_vec, sigma_cell_al )                    !... HERE!
-		!
-		sigma_cell_al_mr = rScalar3D_MR_t( sigma_cell_al%grid, sigma_cell_al%grid_type )
-		!
+        !
+        sigma_cell_al_mr = rScalar3D_MR_t( sigma_cell_al%grid, sigma_cell_al%grid_type )
+        !
         select type( sigma_cell_al )
             !
-            ! ALWAYS THIS CASE BECAUSE GETREAL IN PMult_t_Tx!!!!
+            !> ALWAYS THIS CASE BECAUSE OF getReal USED IN PMult_t_Tx !!!!
             class is( rScalar3D_MR_t )
                 !
                 do i = 1, size( sigma_cell_al%sub_scalar )
@@ -568,8 +557,6 @@ contains
         call sigma_node%zeros
         !
         call self%cellToNode( sigma_cell_al_mr, sigma_node )
-        !
-        !deallocate( sigma_cell_al_mr )
         !
     end subroutine nodeCond_ModelParameterCell_MR
     !

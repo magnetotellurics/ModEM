@@ -89,9 +89,7 @@ module Source
                     !
                 class is( cVector3D_MR_t )
                     !
-                    temp_e_sg = cVector3D_SG_t( Ei%grid, Ei%grid_type )
-                    !
-                    call Ei%MRtoSG( temp_e_sg )
+                    call Ei%toSG( temp_e_sg )
                     !
                     self%E(i) = temp_e_sg
                     !

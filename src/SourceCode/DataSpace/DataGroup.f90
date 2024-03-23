@@ -153,7 +153,7 @@ contains
         !
     end subroutine setValuesDataGroup
     !
-    !> ????
+    !> No subroutine briefing
     !
     subroutine zerosDataGroup( self )
         implicit none
@@ -209,7 +209,7 @@ contains
         !
     end subroutine subDataGroup
     !
-    !> ????
+    !> No subroutine briefing
     !
     subroutine linCombDataGroup( self, a, b, d_in, d_out )
         implicit none
@@ -293,7 +293,8 @@ contains
         !
     end subroutine linCombDataGroup
     !
-    !> ????
+    !> No function briefing
+    !
     function dotProdDataGroup( self, d_in ) result( rvalue )
         implicit none
         !

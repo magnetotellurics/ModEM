@@ -270,16 +270,13 @@ contains
                     !
                     else
                         call errStop( "dotProd_cVectorSparse3D_SG > IJK out of bounds for dotProdSparse" )
-                    !
                     endif
                     !
                 enddo
             !
             class is( cVector3D_MR_t )
                 !
-                temp_cvector_sg = cVector3D_SG_t( rhs%grid, rhs%grid_type )
-                !
-                call rhs%MRtoSG( temp_cvector_sg )
+                call rhs%toSG( temp_cvector_sg )
                 !
                 cvalue = self%dotProd( temp_cvector_sg )
                 !
@@ -373,8 +370,6 @@ contains
             !
             class is( cVector3D_SG_t )
                 !
-                !call cvector%switchStoreState( compound )
-                !
                 Ix = cvector%x
                 Jx = cvector%x
                 Kx = cvector%x
@@ -465,9 +460,7 @@ contains
             !
             class is( cVector3D_MR_t )
                 !
-                temp_cvector_sg = cVector3D_SG_t( cvector%grid, cvector%grid_type )
-                !
-                call cvector%MRtoSG( temp_cvector_sg )
+                call cvector%toSG( temp_cvector_sg )
                 !
                 call self%fromFullVector( temp_cvector_sg )
                 !

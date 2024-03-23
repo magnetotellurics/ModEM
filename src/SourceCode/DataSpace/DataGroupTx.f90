@@ -100,7 +100,7 @@ contains
         !
     end subroutine subDataGroupTx
     !
-    !> ????
+    !> No subroutine briefing
     !
     subroutine normalizeDataGroupTx( self, norm )
         implicit none

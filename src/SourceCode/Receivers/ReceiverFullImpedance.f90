@@ -69,6 +69,7 @@ contains
     end function ReceiverFullImpedance_ctor
     !
     !> No subroutine briefing
+    !
     subroutine ReceiverFullImpedance_dtor( self )
         implicit none
         !
@@ -81,7 +82,7 @@ contains
     end subroutine ReceiverFullImpedance_dtor
     !
     !> No subroutine briefing
-     !
+    !
     subroutine predictedData_FullImpedance( self, transmitter, data_group )
         implicit none
         !
@@ -97,12 +98,9 @@ contains
         call transmitter%getSolutionVector( 1, tx_e_1 )
         call transmitter%getSolutionVector( 2, tx_e_2 )
         !
-        call tx_e_1%print( 6666 )
-        call tx_e_2%print( 6667 )
-        !
         comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
         !
-        allocate( EE(2,2) )
+        allocate( EE( 2, 2 ) )
         !
         EE(1,1) = self%Lex%dotProd( tx_e_1 )
         EE(2,1) = self%Ley%dotProd( tx_e_1 )
@@ -114,6 +112,7 @@ contains
         !write( *, * ) EE(2,1), EE(2,2)
         !
         allocate( BB( 2, 2 ) )
+        !
         BB(1,1) = self%Lbx%dotProd( tx_e_1 )
         BB(2,1) = self%Lby%dotProd( tx_e_1 )
         BB(1,2) = self%Lbx%dotProd( tx_e_2 )
@@ -130,7 +129,7 @@ contains
         det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
         !
         if( allocated( self%I_BB ) ) deallocate( self%I_BB )
-        allocate( self%I_BB(2,2) )
+        allocate( self%I_BB( 2, 2 ) )
         !
         if( det /= 0 ) then
             self%I_BB(1,1) =  BB(2,2) / det
@@ -164,6 +163,7 @@ contains
     end subroutine predictedData_FullImpedance
     !
     !> No subroutine briefing
+    !
     subroutine setLRows_FullImpedance( self, transmitter )
         implicit none
         !
@@ -197,10 +197,9 @@ contains
                 allocate( Le, source = full_ley )
             endif
             !
-            !> ????
-            call Le%multAdd( -self%response( 2 * (Ei-1) + 1 ) * comega, full_lbx ) ! 1 & 3
+            call Le%multAdd( -self%response( 2 * (Ei-1) + 1 ) * comega, full_lbx ) ! Positions 1 & 3
             !
-            call Le%multAdd( -self%response( 2 * Ei ) * comega, full_lby )         ! 2 & 4
+            call Le%multAdd( -self%response( 2 * Ei ) * comega, full_lby )         ! Positions 2 & 4
             !
             !> Loop over two impedance rows
             do row = 1, 2
@@ -213,7 +212,7 @@ contains
                     !
                     self%lrows( pol, comp )%v = Le
                     !
-                    !> ????
+                    !> NECESSARY FOR FULL VECTOR LROWS ????
                     call self%lrows( pol, comp )%v%mult( -self%I_BB( pol, row ) )
                     !
                 enddo
@@ -263,6 +262,7 @@ contains
     end function isEqual_FullImpedance
     !
     !> No subroutine briefing
+    !
     subroutine print_FullImpedance( self )
         implicit none
         !
@@ -273,3 +273,4 @@ contains
     end subroutine print_FullImpedance
     !
 end module ReceiverFullImpedance
+!
