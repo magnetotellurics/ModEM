@@ -68,7 +68,7 @@ module DataGroupTxArray
     end interface countData
     !
     interface countValues
-        module procedure :: countValuesGroupTxArray
+        module procedure :: countValues_DataGroupTxArray
     end interface countValues
     !
     interface getData
@@ -138,7 +138,7 @@ contains
         !
     end subroutine zeros_DataGroupTxArray
     !
-    !> No subroutine briefing
+    !> No function briefing
     !
     function dotProd_DataGroupTxArray( data_tx_array_1, data_tx_array_2 ) result( rvalue )
         implicit none
@@ -321,7 +321,7 @@ contains
     !
     !> No function briefing
     !
-    function countValuesGroupTxArray( data_tx_array ) result( counter )
+    function countValues_DataGroupTxArray( data_tx_array ) result( counter )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
@@ -341,7 +341,7 @@ contains
             !
         enddo
         !
-    end function countValuesGroupTxArray
+    end function countValues_DataGroupTxArray
     !
     !> No function briefing
     !
@@ -569,7 +569,6 @@ contains
             !
         else
             call errStop( "write_DataGroupTxArray > cant opening ["//file_name//"]!" )
-            stop
         endif
         !
     end subroutine write_DataGroupTxArray
@@ -631,8 +630,7 @@ contains
                     write( ioPredData, * ) "#   Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error"
                     !
                 case default
-                    write( *, * ) "Unknown receiver type :[", receiver%rx_type, "]"
-                    call errStop( "DataGroupTxArray > writeHeader_DataGroupTxArray()" )
+                    call errStop( "DataGroupTxArray > writeHeader_DataGroupTxArray > Unknown receiver type" )
                 !
             end select
             !
