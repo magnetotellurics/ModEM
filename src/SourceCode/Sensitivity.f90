@@ -418,8 +418,8 @@ contains
         !
     end subroutine JMult_T_Tx
     !
-	!> No Subroutine briefing
-	!
+    !> No Subroutine briefing
+    !
     subroutine allocateLRows( Tx, Rx )
         implicit none
         !

@@ -266,9 +266,6 @@ contains
             !
         enddo
         !
-        !> Verbose
-        !write( *, * ) "     - Finish masterJMult"
-        !
     end subroutine masterJMult
     !
     !> Calculate dsigma in parallel for all transmitters
@@ -453,8 +450,6 @@ contains
         job_info%job_name = job_dsigma_model
         !
         job_info%model_size = allocateModelBuffer( dsigma, .FALSE. )
-        !
-        !write( *, "(A45, i8)" ) "dsigma = ", job_info%model_size
         !
         do worker_id = 1, ( mpi_size - 1 )
             !
