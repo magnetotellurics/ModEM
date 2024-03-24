@@ -11,11 +11,9 @@ module WorkerMPI
     public :: workerMainLoop
     public :: workerSolve
     public :: workerForwardModelling
-    public :: workerJMult
-    public :: workerJMult_T
+    public :: workerJMult, workerJMult_T
     public :: handleBasicComponents
-    public :: handleSigmaModel
-    public :: handleDSigmaModel
+    public :: handleSigmaModel, handleDSigmaModel
     public :: setTxForwardSolver
     !
 contains
@@ -71,6 +69,8 @@ contains
             end select
             !
         enddo
+        !
+        if( allocated( model_buffer ) ) deallocate( model_buffer )
         !
         if( allocated( sigma ) ) deallocate( sigma )
         !

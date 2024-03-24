@@ -1035,8 +1035,9 @@ contains
         !
         if( .NOT. is_embedded ) then
             !
-            !> CHECK THIS LATER !!!!
-            if( .NOT. allocated( model_buffer ) ) allocate( model_buffer( model_buffer_size ) )
+            if( allocated( model_buffer ) ) deallocate( model_buffer )
+            !
+            allocate( model_buffer( model_buffer_size ) )
             !
             model_buffer = ""
             !
