@@ -149,14 +149,14 @@ contains
         call R%linComb( b, C_MinusOne, C_ONE )
         !
         !> Norm of rhs, residual
-        bnorm = SQRT( b%dotProd( b ) )
+        bnorm = CDSQRT( b%dotProd( b ) )
         !
         !> this usually means an inadequate model, in which case Maxwell"s fails
         if( isnan( real( abs( bnorm ), kind=prec ) ) ) then
             call errStop( "solve_Solver_QMR > b in QMR contains NaNs" )
         endif
         !
-        rnorm = SQRT( R%dotProd( R ) )
+        rnorm = CDSQRT( R%dotProd( R ) )
         !
         !> Initial guess relative error
         self%iter = 1
@@ -165,12 +165,12 @@ contains
         VT = R 
         ilu_adjoint = .FALSE.
         call self%preconditioner%LTsolve( VT, Y, ilu_adjoint )
-        RHO = SQRT( Y%dotProd( Y ) )
+        RHO = CDSQRT( Y%dotProd( Y ) )
         !
         WT = R 
         ilu_adjoint = .TRUE.
         call self%preconditioner%UTsolve( WT, Z, ilu_adjoint )
-        PSI = SQRT( Z%dotProd( Z ) )
+        PSI = CDSQRT( Z%dotProd( Z ) )
         GAMM = C_ONE
         ETA = C_MinusONE
         !
@@ -250,7 +250,7 @@ contains
             RHO1 = RHO
             ilu_adjoint = .FALSE.
             call self%preconditioner%LTsolve( VT, Y, ilu_adjoint )
-            RHO = SQRT( Y%dotProd( Y ) )
+            RHO = CDSQRT( Y%dotProd( Y ) )
             !
             adjoint = .TRUE.
             !
@@ -261,7 +261,7 @@ contains
             !
             ilu_adjoint = .TRUE.
             call self%preconditioner%UTsolve( WT, Z, ilu_adjoint )
-            PSI = SQRT( Z%dotProd( Z ) )
+            PSI = CDSQRT( Z%dotProd( Z ) )
             !
             if( self%iter .GT. 1 ) then
                 THET1 = THET
@@ -269,7 +269,7 @@ contains
             !
             THET = RHO / ( GAMM * ABS( BETA ) )
             GAMM1 = GAMM
-            GAMM = C_ONE / SQRT( C_ONE + THET * THET )
+            GAMM = C_ONE / CDSQRT( C_ONE + THET * THET )
             !
             if( GAMM .EQ. C_ZERO ) then
                 call errStop( "solve_Solver_QMR > GAMM fails to converge" )

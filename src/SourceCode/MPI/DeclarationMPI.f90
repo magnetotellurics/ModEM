@@ -197,6 +197,7 @@ contains
     !
     !> Pack initial memory buffer for ForwardModelling
     !> Gathering in the same place the necessary information about Grid, Model and arrays of Transmitters and Receivers.
+    !
     subroutine packBasicComponentsBuffer
         implicit none
         !
@@ -258,6 +259,7 @@ contains
     !
     !> Unpack initial memory buffer for ForwardModelling how were they packaged
     !> Instantiating Grid, Model and arrays of Transmitters and Receivers.
+    !
     subroutine unpackBasicComponentsBuffer()
         implicit none
         !
@@ -341,6 +343,7 @@ contains
     end subroutine unpackBasicComponentsBuffer
     !
     !> Receive grid from any target
+    !
     subroutine receiveBasicComponents( target_id )
         implicit none
         !
@@ -357,6 +360,7 @@ contains
     end subroutine receiveBasicComponents
     !
     !> Send basic components to target_id
+    !
     subroutine sendBasicComponents( target_id )
         implicit none
         !
@@ -368,7 +372,7 @@ contains
         !
     end subroutine sendBasicComponents
     !
-    !> No subroutine briefing
+    !> No function briefing
     !
     RECURSIVE function allocateGridBuffer( grid, is_embedded ) result( grid_buffer_size )
         implicit none
@@ -1012,10 +1016,12 @@ contains
             !
             class is( ModelParameterCell_t )
                 !
-                model_buffer_size = model_buffer_size + allocateGridBuffer( model%param_grid, .TRUE. )
+                model_buffer_size = model_buffer_size + allocateGridBuffer( param_grid, .TRUE. )
                 !
                 do i = 1, model%anisotropic_level
+                    !
                     model_buffer_size = model_buffer_size + allocateScalarBuffer( model%getCond(i) )
+                    !
                 enddo
                 !
             class default
@@ -1039,7 +1045,7 @@ contains
         !
     end function allocateModelBuffer
     !
-    !
+    !> No subroutine briefing
     !
     subroutine packModelBuffer( model, parent_buffer, parent_buffer_size, index )
         implicit none
@@ -1078,7 +1084,7 @@ contains
             !
             class is( ModelParameterCell_t )
                 !
-                call packGridBuffer( model%param_grid, parent_buffer, parent_buffer_size, index )
+                call packGridBuffer( param_grid, parent_buffer, parent_buffer_size, index )
                 !
                 do i = 1, model%anisotropic_level
                     call packScalarBuffer( model%getCond(i), parent_buffer, parent_buffer_size, index )
@@ -1091,7 +1097,7 @@ contains
         !
     end subroutine packModelBuffer
     !
-    !
+    !> No subroutine briefing
     !
     subroutine unpackModelBuffer( model, parent_buffer, parent_buffer_size, index )
         implicit none
@@ -1197,6 +1203,7 @@ contains
     end subroutine receiveModel
     !
     !> Send model to target_id
+    !
     subroutine sendModel( model, target_id )
         implicit none
         !
@@ -1244,7 +1251,7 @@ contains
                 call MPI_PACK_SIZE( len( transmitter%dipole ), MPI_CHARACTER, main_comm, nbytes(4), ierr )
                 !
             class default
-               stop "allocateTransmitterBuffer: Unclassified transmitter"
+               call errStop( "allocateTransmitterBuffer: Unclassified transmitter" )
             !
         end select
         !
@@ -1298,7 +1305,7 @@ contains
                 call MPI_PACK( transmitter%dipole, len( transmitter%dipole ), MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
                 !
             class default
-               stop "allocateTransmitterBuffer: Unclassified transmitter"
+               call errStop( "packTransmitterBuffer: Unclassified transmitter" )
             !
         end select
         !
@@ -1330,8 +1337,7 @@ contains
                 allocate( TransmitterCSEM_t :: transmitter )
                 !
             case default
-               write( *, * ) "unpackTransmitterBuffer: Unknown transmitter case: ", transmitter_derived_type
-               stop
+               call errStop( "unpackTransmitterBuffer: Unknown transmitter case" )
             !
         end select
         !
@@ -1370,7 +1376,7 @@ contains
                 call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%dipole, transmitter_dipole, MPI_CHARACTER, main_comm, ierr )
                 !
             class default
-                stop "unpackTransmitterBuffer: Unclassified transmitter!"
+               call errStop( "unpackTransmitterBuffer: Unclassified transmitter!" )
             !
         end select
         !
@@ -1429,7 +1435,7 @@ contains
                 if( receiver%azimuth == 5.0 ) receiver_size_bytes = receiver_size_bytes + allocateCSparseVectorBuffer( receiver%Lbz )
                 !
             class default
-               stop "allocateReceiverBuffer: Unclassified receiver"
+               call errStop( "allocateReceiverBuffer: Unclassified receiver" )
             !
         end select
         !
@@ -1443,6 +1449,7 @@ contains
     end function allocateReceiverBuffer
     !
     !> No subroutine briefing
+    !
     subroutine packReceiverBuffer( receiver, parent_buffer, parent_buffer_size, index )
         implicit none
         !
@@ -1516,7 +1523,7 @@ contains
                     call packCSparseVectorBuffer( receiver%Lbz, parent_buffer, parent_buffer_size, index )
                 !
             class default
-               stop "packReceiverBuffer: Unclassified receiver"
+               call errStop( "packReceiverBuffer: Unclassified receiver" )
             !
         end select
         !
@@ -1594,7 +1601,7 @@ contains
                     call unpackCSparseVectorBuffer( receiver%Lbz, main_grid, parent_buffer, parent_buffer_size, index )
                 !
             case default
-               stop "unpackReceiverBuffer: Unclassified receiver"
+               call errStop( "unpackReceiverBuffer: Unclassified receiver" )
             !
         end select
         !
@@ -1621,7 +1628,8 @@ contains
         !
     end subroutine createDataBuffer
     !
-    !>
+    !> No function briefing
+    !
     function allocateDataBuffer( tx_data ) result( data_buffer_size )
         implicit none
         !
@@ -1656,6 +1664,7 @@ contains
     end function allocateDataBuffer
     !
     !> No subroutine briefing
+    !
     subroutine packDataBuffer( tx_data )
         implicit none
         !
@@ -1687,6 +1696,7 @@ contains
     end subroutine packDataBuffer
     !
     !> UNPACK data_buffer TO all_predicted_data STRUCT
+    !
     subroutine unpackDataBuffer( tx_data )
         implicit none
         !
@@ -1740,6 +1750,7 @@ contains
     end subroutine unpackDataBuffer
     !
     !> Receive a DataGroupTx from any target
+    !
     subroutine receiveData( tx_data, target_id )
         implicit none
         !
@@ -1758,6 +1769,7 @@ contains
     end subroutine receiveData
     !
     !> Send a DataGroupTx to any target
+    !
     subroutine sendData( tx_data, target_id )
         !
         type( DataGroupTx_t ), intent( in ) :: tx_data
@@ -1773,6 +1785,7 @@ contains
     end subroutine sendData
     !
     !> ALLOCATE job_info_buffer
+    !
     subroutine allocateJobInfoBuffer
         !
         integer nbytes1, nbytes2, nbytes3
@@ -1791,6 +1804,7 @@ contains
     end subroutine allocateJobInfoBuffer
     !
     !> PACK job_info STRUCT TO job_info_buffer
+    !
     subroutine packJobInfoBuffer
         !
         integer :: index
@@ -1811,6 +1825,7 @@ contains
     end subroutine packJobInfoBuffer
     !
     !> UNPACK job_info_buffer TO job_info STRUCT
+    !
     subroutine unpackJobInfoBuffer
         !
         integer :: index
@@ -1831,6 +1846,7 @@ contains
     end subroutine unpackJobInfoBuffer
     !
     !> RECEIVE job_info FROM ANY TARGET
+    !
     subroutine receiveFromAny()
         !
         call allocateJobInfoBuffer
@@ -1846,6 +1862,7 @@ contains
     end subroutine receiveFromAny
     !
     !> RECEIVE job_info FROM target_id
+    !
     subroutine receiveFrom( target_id )
         !
         integer, intent( in ) :: target_id
@@ -1861,6 +1878,7 @@ contains
     end subroutine receiveFrom
     !
     !> SEND job_info FROM target_id
+    !
     subroutine sendTo( target_id )
         !
         integer, intent( in ) :: target_id
@@ -1876,6 +1894,7 @@ contains
     end subroutine sendTo
     !
     !> Allocate the buffer for a single Scalar Field
+    !
     RECURSIVE function allocateScalarBuffer( scalar ) result( scalar_buffer_size )
         implicit none
         !
@@ -1938,6 +1957,7 @@ contains
     end function allocateScalarBuffer
     !
     !> Pack the info for a single Scalar Field
+    !
     RECURSIVE subroutine packScalarBuffer( scalar, parent_buffer, parent_buffer_size, index )
         implicit none
         !
@@ -2258,6 +2278,7 @@ contains
     end function allocateVectorBuffer
     !
     !> Pack the info for a single Vector Field
+    !
     RECURSIVE subroutine packVectorBuffer( vector, parent_buffer, parent_buffer_size, index )
         implicit none
         !
@@ -2293,7 +2314,7 @@ contains
             !
         end select
         !
-        !> Pack commom field properties
+        !> Pack common field properties
         call MPI_PACK( vector%grid_type, 4, MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( vector%nx, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         call MPI_PACK( vector%ny, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
@@ -2486,6 +2507,7 @@ contains
     end subroutine unpackVectorBuffer
     !
     !> Allocate the buffer for a single cVectorSparse3D_SG
+    !
     function allocateCSparseVectorBuffer( sp_vector ) result( vector_size_bytes )
         implicit none
         !
@@ -2514,6 +2536,7 @@ contains
     end function allocateCSparseVectorBuffer
     !
     !> No subroutine briefing
+    !
     subroutine packCSparseVectorBuffer( sp_vector, parent_buffer, parent_buffer_size, index )
         implicit none
         !
@@ -2590,6 +2613,7 @@ contains
     end subroutine unpackCSparseVectorBuffer
     !
     !> Return a one-dimensional array from a two-dimensional one
+    !
     function BiArrayToArray( d2_array ) result( d1_array )
         !
         real( kind=prec ), intent( in ) :: d2_array(:,:)
@@ -2606,6 +2630,7 @@ contains
     end function BiArrayToArray
     !
     !> Return a two-dimensional array from a one-dimensional and its sizes
+    !
     function arrayToBiArray( d1_array, x, y ) result ( d2_array )
         !
         real( kind=prec ), intent( in ) :: d1_array(:)
