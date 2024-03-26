@@ -27,17 +27,14 @@ module ModelParameterCell_MR
             !
             procedure, public :: nodeCond => nodeCond_ModelParameterCell_MR
             !
+            procedure, public :: modelToCell => modelToCell_ModelParameterCell_MR
+            procedure, public :: cellToModel => cellToModel_ModelParameterCell_MR
+            !
             !> Dimensioned operations
             procedure, public :: slice1D => slice1D_ModelParameterCell_MR
             procedure, public :: slice2D => slice2D_ModelParameterCell_MR
             !
             procedure, public :: avgModel1D => avgModel1D_ModelParameterCell_MR
-            !
-            procedure, public :: cellToNode => cellToNode_ModelParameterCell_MR
-            procedure, public :: edgeToCell => edgeToCell_ModelParameterCell_MR
-            procedure, public :: cellToEdge => cellToEdge_ModelParameterCell_MR
-            procedure, public :: cellToModel => cellToModel_ModelParameterCell_MR
-            procedure, public :: modelToCell => modelToCell_ModelParameterCell_MR
             !
     end type ModelParameterCell_MR_t
     !
@@ -138,294 +135,9 @@ contains
         !
         call self%baseDealloc
         !
-        call self%deallocCell
+        call self%deallCell
         !
     end subroutine ModelParameterCell_MR_dtor
-    !
-    !> This is the adjoint of modelToCell_ModelParameterCell_MR -- only used for dPDEmapping
-    !
-    subroutine cellToModel_ModelParameterCell_MR( self, sigma_cell_al_mr, dsigma )
-        implicit none
-        !
-        class( ModelParameterCell_MR_t ), intent( in ) :: self
-        type( rScalar3D_MR_t ), intent( in )  :: sigma_cell_al_mr
-        class( ModelParameter_t ), intent( inout ) :: dsigma
-        !
-        integer :: i_grid, nz_air
-        type( Grid3D_MR_t ) :: temp_grid_mr
-        type( rScalar3D_MR_t ) :: sigma_cell_mr, dsigma_cell_mr
-        type( rScalar3D_SG_t ) :: dsigma_cell_sg
-        !
-        if( .NOT. sigma_cell_al_mr%is_allocated ) then
-            call errStop( "cellToModel_ModelParameterCell_MR > sigma_cell_al_mr not allocated" )
-        endif
-        !
-        if( .NOT. dsigma%is_allocated ) then
-            call errStop( "cellToModel_ModelParameterCell_MR > dsigma not allocated" )
-        endif
-        !
-        !  set MR grid -- need this as a preliminary step for fwd and adjt
-        select type( grid => self%metric%grid )
-            !
-            class is( Grid3D_MR_t )
-                !
-                temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
-                self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
-                self%param_grid%dy, self%param_grid%dz, grid%cs )
-                !
-            class default
-                !
-                call errStop( "cellToModel_ModelParameterCell_MR > Grid must be MR!" )
-                !
-        end select
-        !
-        !> cell cond as MR without AirLayers  -- will need this to compute sigma on MR grid cells
-        !   again same preliminaries for fwd and adjt
-        sigma_cell_mr = rScalar3D_MR_t( temp_grid_mr, CELL )
-        !
-        call sigma_cell_mr%fromSG( self%cell_cond(1) )
-        !
-        !> sigMapping for all sub-grids (applied to background model parameter)
-        do i_grid = 1, size( sigma_cell_mr%sub_scalar )
-            !
-            sigma_cell_mr%sub_scalar( i_grid )%v =   & 
-            self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ), DERIV )
-            !
-        enddo
-        !
-        !> Now the actual adjoint mapping -- reverse order from fwd
-        !
-        !> multiply sigma_cell_al_mr by dsigma_cell_mr, considering AirLayers just for the first sub_grid2
-        !> This needs to be generalized !!!!
-        nz_air = self%metric%grid%NzAir
-        !
-        sigma_cell_mr%sub_scalar(1)%v = sigma_cell_mr%sub_scalar(1)%v * &
-        sigma_cell_al_mr%sub_scalar(1)%v( :,:,nz_air+1:sigma_cell_al_mr%sub_scalar(1)%nz )
-        !
-        do i_grid = 2, size( sigma_cell_mr%sub_scalar )
-            !
-            sigma_cell_mr%sub_scalar( i_grid )%v =  sigma_cell_mr%sub_scalar( i_grid )%v * &
-            sigma_cell_al_mr%sub_scalar(i_grid)%v
-            !
-        enddo
-        !
-        call sigma_cell_mr%toSG( dsigma_cell_sg )
-        !
-        call dsigma%setCond( dsigma_cell_sg, 1 )
-        !
-    end subroutine cellToModel_ModelParameterCell_MR
-    !
-    !> Idea: no matter what the grid is (SG or MR) a routine like this
-    !> uses conductivity array(s) in self (always SG at present -- but might change this???)
-    !> and returns the "full array" including air layers on the appropriate (SG or MR) grid
-    !> this is where SG and MR differ - so might be able to make more routines generic
-    !> (for example define key generic routines in base ModelParameter_Cell class)
-    !> 
-    !> COMPLICATION so that this can also be used for both PDE mapping and dPDE mapping:
-    !> optional argument dsigma also a model parameter defined on SG grid needs to be converted
-    !> to MR and multiplied by sigma (from self)
-    !
-    subroutine modelToCell_ModelParameterCell_MR( self, airValue, sigma_cell_al_mr, dsigma )
-        implicit none
-        !
-        class( ModelParameterCell_MR_t ), intent( in ) :: self
-        real( kind=prec ), intent ( in ) :: airValue
-        type( rScalar3D_MR_t ), intent( inout )  :: sigma_cell_al_mr
-        class( ModelParameter_t ), intent( in ), optional :: dsigma
-        !
-        character(:), allocatable :: job
-        integer :: i_grid, nz_air
-        logical :: dPDE
-        type( Grid3D_MR_t ) :: temp_grid_mr 
-        type( rScalar3D_MR_t ) :: sigma_cell_mr, dsigma_cell_mr
-        !
-        dPDE = present( dsigma )
-        !
-        select type( grid => self%metric%grid )
-            !
-            class is( Grid3D_MR_t )
-                !
-                temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
-                self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
-                self%param_grid%dy, self%param_grid%dz, grid%cs )
-                !
-            class default
-                call errStop( "modelToCell_ModelParameterCell_MR > Grid must be MR!" )
-            !
-        end select
-        !
-        !> cell cond as MR without AirLayers
-        sigma_cell_mr = rScalar3D_MR_t( temp_grid_mr, CELL )
-        !
-        call sigma_cell_mr%fromSG( self%cell_cond(1) )
-        !
-        if ( dPDE ) then
-            !
-            !> convert dsigma to MR w/o airlayers
-            job = DERIV
-            !
-            dsigma_cell_mr = rScalar3D_MR_t( temp_grid_mr, CELL )
-            !
-            call dsigma_cell_mr%fromSG( dsigma%getCond(1) )
-            !
-        else
-            job = FORWARD
-        endif
-        !
-        !> Considering AirLayers just for the first sub_grid
-        !    THIS NEEDS TO BE GENERALIZED
-        nz_air = self%metric%grid%NzAir
-        !
-        sigma_cell_al_mr%sub_scalar(1)%v( :, :, 1:nz_air ) = airValue 
-        !
-        sigma_cell_al_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) = &
-        self%sigMap( real( sigma_cell_mr%sub_scalar(1)%v, kind=prec ), job )
-        !
-        !> sigMapping for the next sub-grids
-        do i_grid = 2, size( sigma_cell_mr%sub_scalar )
-            !
-            sigma_cell_al_mr%sub_scalar( i_grid )%v = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
-            !
-        enddo
-        !
-        if( dPDE ) then
-            !
-            !> multiply sigma_cell_al_mr by dsigma_cell_mr
-            sigma_cell_al_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) = &
-            sigma_cell_al_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) * &
-            dsigma_cell_mr%sub_scalar(1)%v
-            !
-            do i_grid = 2, size( sigma_cell_mr%sub_scalar )
-                !
-                sigma_cell_al_mr%sub_scalar( i_grid )%v = sigma_cell_al_mr%sub_scalar( i_grid )%v * &
-                dsigma_cell_mr%sub_scalar(i_grid)%v
-                !
-            enddo
-            !
-        endif
-        !
-    end subroutine modelToCell_ModelParameterCell_MR
-    !
-    !> This routine can be more generic !!!!
-    !
-    subroutine cellToNode_ModelParameterCell_MR( self, sigma_cell, node_cond )
-        implicit none
-        !
-        class( ModelParameterCell_MR_t ), intent( in ) :: self
-        class( Scalar_t ), intent( in ) :: sigma_cell
-        class( Scalar_t ), intent( inout ) :: node_cond
-        !
-        class( Scalar_t ), allocatable :: node_vol, temp_scalar
-        !
-        !> 1) create temporary copy of sigma_cell
-        allocate( temp_scalar, source = sigma_cell )
-        !
-        !> node_cond: sumCells does not modify boundaries, so no need to set to 0
-        call temp_scalar%mult( self%metric%v_cell )
-        !
-        call temp_scalar%sumToNode( node_cond )
-        !
-        !  NOTE: indented code computes sum of cell volumes -- could compute once and save
-        !     but probably not worth doing -- think about this
-        !> node_vol: Boundaries set to one, to avoid NaNs at the last division.
-        call self%metric%createScalar( real_t, NODE, node_vol )
-        !
-        !> 2) create temporary copy of v_cell
-        temp_scalar = self%metric%v_cell
-        !
-        call temp_scalar%sumToNode( node_vol )
-        !
-        deallocate( temp_scalar )
-        !
-        call node_vol%setAllBoundary( C_ONE )
-        !
-        call node_cond%div( node_vol )
-        !
-        deallocate( node_vol )
-        !
-    end subroutine cellToNode_ModelParameterCell_MR
-    !
-    !> This routine can be more generic !!!!
-    !
-    subroutine cellToEdge_ModelParameterCell_MR( self, sigma_cell_al_mr, e_vec )
-        implicit none
-        !
-        class( ModelParameterCell_MR_t ), intent( in ) :: self
-        class( Scalar_t ), intent( in ) :: sigma_cell_al_mr
-        class( Vector_t ), intent( inout ) :: e_vec
-        !
-        class( Vector_t ), allocatable :: e_vol
-        class( Scalar_t ), allocatable :: temp_sigma_cell_al_mr
-        !
-        !> Create temporary copy of sigma_cell_al_mr
-        allocate( temp_sigma_cell_al_mr, source = sigma_cell_al_mr )
-        !
-        !> E_VEC: sumCells does not modify boundaries, so no need to set to 0
-        call temp_sigma_cell_al_mr%mult( self%metric%v_cell )
-        !
-        call e_vec%sumCells( temp_sigma_cell_al_mr )
-        !
-        deallocate( temp_sigma_cell_al_mr )
-        !
-        !  NOTE: indented code computes edge volume (or it would if we multiplied
-        !       by 0.25)  -- since this is saved in MetricElements
-        !   this can be done once and saved.  BUT the following algorithm should be used for
-        !    MR -- for edges on the interface this will be different from what is computed 
-        !   Need to check that this is consistent with other uses of V_edge in MR forward
-        !    solver ...
-        !> E_VOL: Boundaries set to one, to avoid NaNs at the last division.
-        call self%metric%createVector( real_t, EDGE, e_vol )
-        !
-        call e_vol%sumCells( self%metric%v_cell )
-        !
-        call e_vol%setAllBoundary( C_ONE )
-        !
-        call e_vec%div( e_vol )
-        !
-        deallocate( e_vol )
-        !
-    end subroutine cellToEdge_ModelParameterCell_MR
-    !
-    !> this is the adjoint of cellToEdge_ModelParameterCell_MR
-    !
-    subroutine edgeToCell_ModelParameterCell_MR( self, e_vec, sigma_cell_al )
-        implicit none
-        !
-        class( ModelParameterCell_MR_t ), intent( in ) :: self
-        class( Vector_t ), intent( in ) :: e_vec
-        class( Scalar_t ), allocatable, intent( inout ) :: sigma_cell_al
-        !
-        class( Vector_t ), allocatable :: temp_e_vec, e_vol
-        !
-        if( .NOT. e_vec%is_allocated ) then
-            call errStop( "edgeToCell_ModelParameterCell_MR > e_vec not allocated" )
-        endif
-        !
-        if( .NOT. sigma_cell_al%is_allocated ) then
-            call errStop( "edgeToCell_ModelParameterCell_MR > sigma_cell_al not allocated" )
-        endif
-        !
-        !> again computing  edge volumes, and could use v_edge from Metric Elements 
-        !   IF the computation of that is modified
-        call self%metric%createVector( real_t, EDGE, e_vol )
-        !
-        call e_vol%sumCells( self%metric%v_cell )
-        !
-        call e_vol%setAllBoundary( C_ONE )
-        !
-        allocate( temp_e_vec, source = e_vec )
-        !
-        call temp_e_vec%div( e_vol )
-        !
-        deallocate( e_vol )
-        !
-        call temp_e_vec%sumEdges( sigma_cell_al, .TRUE. )
-        !
-        deallocate( temp_e_vec )
-        !
-        call sigma_cell_al%mult( self%metric%v_cell )
-        !
-    end subroutine edgeToCell_ModelParameterCell_MR
     !
     !> perhaps this, and similar, can now go into Base ModelParameter_Cell class?
     !
@@ -559,6 +271,178 @@ contains
         call self%cellToNode( sigma_cell_al_mr, sigma_node )
         !
     end subroutine nodeCond_ModelParameterCell_MR
+    !
+    !> Idea: no matter what the grid is (SG or MR) a routine like this
+    !> uses conductivity array(s) in self (always SG at present -- but might change this???)
+    !> and returns the "full array" including air layers on the appropriate (SG or MR) grid
+    !> this is where SG and MR differ - so might be able to make more routines generic
+    !> (for example define key generic routines in base ModelParameter_Cell class)
+    !> 
+    !> COMPLICATION so that this can also be used for both PDE mapping and dPDE mapping:
+    !> optional argument dsigma also a model parameter defined on SG grid needs to be converted
+    !> to MR and multiplied by sigma (from self)
+    !
+    subroutine modelToCell_ModelParameterCell_MR( self, air_value, sigma_cell, dsigma )
+        implicit none
+        !
+        class( ModelParameterCell_MR_t ), intent( in ) :: self
+        real( kind=prec ), intent ( in ) :: air_value
+        class( Scalar_t ), intent( inout )  :: sigma_cell
+        class( ModelParameter_t ), intent( in ), optional :: dsigma
+        !
+        character(:), allocatable :: job
+        integer :: i_grid, nz_air
+        logical :: dPDE
+        type( Grid3D_MR_t ) :: temp_grid_mr
+        type( rScalar3D_MR_t ) :: sigma_cell_mr, dsigma_cell_mr, temp_sigma_cell_mr
+        !
+        dPDE = present( dsigma )
+        !
+        select type( grid => self%metric%grid )
+            !
+            class is( Grid3D_MR_t )
+                !
+                temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
+                self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
+                self%param_grid%dy, self%param_grid%dz, grid%cs )
+                !
+            class default
+                call errStop( "modelToCell_ModelParameterCell_MR > Grid must be MR!" )
+            !
+        end select
+        !
+        !> cell cond as MR without AirLayers
+        sigma_cell_mr = rScalar3D_MR_t( temp_grid_mr, CELL )
+        !
+        call sigma_cell_mr%fromSG( self%cell_cond(1) )
+        !
+        if ( dPDE ) then
+            !
+            !> convert dsigma to MR w/o airlayers
+            job = DERIV
+            !
+            dsigma_cell_mr = rScalar3D_MR_t( temp_grid_mr, CELL )
+            !
+            call dsigma_cell_mr%fromSG( dsigma%getCond(1) )
+            !
+        else
+            job = FORWARD
+        endif
+        !
+        !> Temporary MR Scalar allowing access its specific properties
+        temp_sigma_cell_mr = sigma_cell
+        !
+        !> Considering AirLayers just for the first sub_grid
+        !    THIS NEEDS TO BE GENERALIZED
+        nz_air = self%metric%grid%NzAir
+        !
+        temp_sigma_cell_mr%sub_scalar(1)%v( :, :, 1:nz_air ) = air_value 
+        !
+        temp_sigma_cell_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) = &
+        self%sigMap( real( sigma_cell_mr%sub_scalar(1)%v, kind=prec ), job )
+        !
+        !> sigMapping for the next sub-grids
+        do i_grid = 2, size( sigma_cell_mr%sub_scalar )
+            !
+            temp_sigma_cell_mr%sub_scalar( i_grid )%v = self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ) )
+            !
+        enddo
+        !
+        if( dPDE ) then
+            !
+            !> multiply temp_sigma_cell_mr by dsigma_cell_mr
+            temp_sigma_cell_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) = &
+            temp_sigma_cell_mr%sub_scalar(1)%v( :, :, nz_air+1:sigma_cell_mr%sub_scalar(1)%nz ) * &
+            dsigma_cell_mr%sub_scalar(1)%v
+            !
+            do i_grid = 2, size( sigma_cell_mr%sub_scalar )
+                !
+                temp_sigma_cell_mr%sub_scalar( i_grid )%v = temp_sigma_cell_mr%sub_scalar( i_grid )%v * &
+                dsigma_cell_mr%sub_scalar(i_grid)%v
+                !
+            enddo
+            !
+        endif
+        !
+        sigma_cell = temp_sigma_cell_mr
+        !
+    end subroutine modelToCell_ModelParameterCell_MR
+    !
+    !> This is the adjoint of modelToCell_ModelParameterCell_MR -- only used for dPDEmapping
+    !
+    subroutine cellToModel_ModelParameterCell_MR( self, sigma_cell, dsigma )
+        implicit none
+        !
+        class( ModelParameterCell_MR_t ), intent( in ) :: self
+        class( Scalar_t ), intent( in ) :: sigma_cell
+        class( ModelParameter_t ), intent( inout ) :: dsigma
+        !
+        integer :: i_grid, nz_air
+        type( Grid3D_MR_t ) :: temp_grid_mr
+        type( rScalar3D_MR_t ) :: temp_sigma_cell_mr, sigma_cell_mr, dsigma_cell_mr
+        type( rScalar3D_SG_t ) :: dsigma_cell_sg
+        !
+        if( .NOT. sigma_cell%is_allocated ) then
+            call errStop( "cellToModel_ModelParameterCell_MR > sigma_cell not allocated" )
+        endif
+        !
+        if( .NOT. dsigma%is_allocated ) then
+            call errStop( "cellToModel_ModelParameterCell_MR > dsigma not allocated" )
+        endif
+        !
+        !  set MR grid -- need this as a preliminary step for fwd and adjt
+        select type( grid => self%metric%grid )
+            !
+            class is( Grid3D_MR_t )
+                !
+                temp_grid_mr = Grid3D_MR_t( self%param_grid%nx, self%param_grid%ny, &
+                self%param_grid%nzAir, self%param_grid%nzEarth, self%param_grid%dx, &
+                self%param_grid%dy, self%param_grid%dz, grid%cs )
+                !
+            class default
+                !
+                call errStop( "cellToModel_ModelParameterCell_MR > Grid must be MR!" )
+                !
+        end select
+        !
+        !> cell cond as MR without AirLayers  -- will need this to compute sigma on MR grid cells
+        !   again same preliminaries for fwd and adjt
+        sigma_cell_mr = rScalar3D_MR_t( temp_grid_mr, CELL )
+        !
+        call sigma_cell_mr%fromSG( self%cell_cond(1) )
+        !
+        !> sigMapping for all sub-grids (applied to background model parameter)
+        do i_grid = 1, size( sigma_cell_mr%sub_scalar )
+            !
+            sigma_cell_mr%sub_scalar( i_grid )%v =   & 
+            self%sigMap( real( sigma_cell_mr%sub_scalar( i_grid )%v, kind=prec ), DERIV )
+            !
+        enddo
+        !
+        !> Temporary MR Scalar allowing access its specific properties
+        temp_sigma_cell_mr = sigma_cell
+        !
+        !> Now the actual adjoint mapping -- reverse order from fwd
+        !
+        !> multiply temp_sigma_cell_mr by dsigma_cell_mr, considering AirLayers just for the first sub_grid2
+        !> This needs to be generalized !!!!
+        nz_air = self%metric%grid%NzAir
+        !
+        sigma_cell_mr%sub_scalar(1)%v = sigma_cell_mr%sub_scalar(1)%v * &
+        temp_sigma_cell_mr%sub_scalar(1)%v( :,:,nz_air+1:temp_sigma_cell_mr%sub_scalar(1)%nz )
+        !
+        do i_grid = 2, size( sigma_cell_mr%sub_scalar )
+            !
+            sigma_cell_mr%sub_scalar( i_grid )%v =  sigma_cell_mr%sub_scalar( i_grid )%v * &
+            temp_sigma_cell_mr%sub_scalar( i_grid )%v
+            !
+        enddo
+        !
+        call sigma_cell_mr%toSG( dsigma_cell_sg )
+        !
+        call dsigma%setCond( dsigma_cell_sg, 1 )
+        !
+    end subroutine cellToModel_ModelParameterCell_MR
     !
     !> No subroutine briefing
     !

@@ -17,8 +17,17 @@ module ModelParameterCell
         !
         contains
             !
+            !> Interfaces
+            procedure( interface_cell_to_model_parameter ), deferred, public :: cellToModel
+            !
+            procedure( interface_model_to_cell_model_parameter ), deferred, public :: modelToCell
+            !
             !> Procedures
-            procedure, public :: deallocCell => deallocCell_ModelParameterCell
+            procedure, public :: cellToNode => cellToNode_ModelParameterCell
+            procedure, public :: edgeToCell => edgeToCell_ModelParameterCell
+            procedure, public :: cellToEdge => cellToEdge_ModelParameterCell
+            !
+            procedure, public :: deallCell => deallCell_ModelParameterCell
             !
             procedure, public :: setMetric => setMetric_ModelParameterCell
             !
@@ -46,18 +55,167 @@ module ModelParameterCell
             !
     end type ModelParameterCell_t
     !
+    abstract interface
+        !
+        !> This is the adjoint of modelToCell_ModelParameterCell_MR -- only used for dPDEmapping
+        subroutine interface_cell_to_model_parameter( self, sigma_cell, dsigma )
+            import :: ModelParameterCell_t, Scalar_t, ModelParameter_t
+            !
+            class( ModelParameterCell_t ), intent( in ) :: self
+            class( Scalar_t ), intent( in )  :: sigma_cell
+            class( ModelParameter_t ), intent( inout ) :: dsigma
+            !
+        end subroutine interface_cell_to_model_parameter
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_model_to_cell_model_parameter( self, air_value, sigma_cell, dsigma )
+            import :: ModelParameterCell_t, prec, Scalar_t, ModelParameter_t
+            !
+            class( ModelParameterCell_t ), intent( in ) :: self
+            real( kind=prec ), intent ( in ) :: air_value
+            class( Scalar_t ), intent( inout )  :: sigma_cell
+            class( ModelParameter_t ), intent( in ), optional :: dsigma
+            !
+        end subroutine interface_model_to_cell_model_parameter
+        !
+    end interface
+    !
 contains
+    !
+    !> This routine can be more generic !!!!
+    !
+    subroutine cellToNode_ModelParameterCell( self, sigma_cell, node_cond )
+        implicit none
+        !
+        class( ModelParameterCell_t ), intent( in ) :: self
+        class( Scalar_t ), intent( in ) :: sigma_cell
+        class( Scalar_t ), intent( inout ) :: node_cond
+        !
+        class( Scalar_t ), allocatable :: node_vol, temp_scalar
+        !
+        !> 1) create temporary copy of sigma_cell
+        allocate( temp_scalar, source = sigma_cell )
+        !
+        !> node_cond: sumCells does not modify boundaries, so no need to set to 0
+        call temp_scalar%mult( self%metric%v_cell )
+        !
+        call temp_scalar%sumToNode( node_cond )
+        !
+        !  NOTE: indented code computes sum of cell volumes -- could compute once and save
+        !     but probably not worth doing -- think about this
+        !> node_vol: Boundaries set to one, to avoid NaNs at the last division.
+        call self%metric%createScalar( real_t, NODE, node_vol )
+        !
+        !> 2) create temporary copy of v_cell
+        temp_scalar = self%metric%v_cell
+        !
+        call temp_scalar%sumToNode( node_vol )
+        !
+        call node_vol%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
+        !
+        deallocate( temp_scalar )
+        !
+        call node_vol%setAllBoundary( C_ONE )
+        !
+        call node_cond%div( node_vol )
+        !
+        deallocate( node_vol )
+        !
+    end subroutine cellToNode_ModelParameterCell
+    !
+    !> This routine can be more generic !!!!
+    !
+    subroutine cellToEdge_ModelParameterCell( self, sigma_cell, e_vec )
+        implicit none
+        !
+        class( ModelParameterCell_t ), intent( in ) :: self
+        class( Scalar_t ), intent( in ) :: sigma_cell
+        class( Vector_t ), intent( inout ) :: e_vec
+        !
+        class( Vector_t ), allocatable :: e_vol
+        class( Scalar_t ), allocatable :: temp_sigma_cell
+        !
+        !> Create temporary copy of sigma_cell
+        allocate( temp_sigma_cell, source = sigma_cell )
+        !
+        !> E_VEC: sumCells does not modify boundaries, so no need to set to 0
+        call temp_sigma_cell%mult( self%metric%v_cell )
+        !
+        call e_vec%sumCells( temp_sigma_cell )
+        !
+        deallocate( temp_sigma_cell )
+        !
+        !  NOTE: indented code computes edge volume (or it would if we multiplied
+        !       by 0.25)  -- since this is saved in MetricElements
+        !   this can be done once and saved.  BUT the following algorithm should be used for
+        !    MR -- for edges on the interface this will be different from what is computed 
+        !   Need to check that this is consistent with other uses of V_edge in MR forward
+        !    solver ...
+        !> E_VOL: Boundaries set to one, to avoid NaNs at the last division.
+        call self%metric%createVector( real_t, EDGE, e_vol )
+        !
+        call e_vol%sumCells( self%metric%v_cell )
+        !
+        call e_vol%setAllBoundary( C_ONE )
+        !
+        call e_vec%div( e_vol )
+        !
+        deallocate( e_vol )
+        !
+    end subroutine cellToEdge_ModelParameterCell
+    !
+    !> this is the adjoint of cellToEdge_ModelParameterCell
+    !
+    subroutine edgeToCell_ModelParameterCell( self, e_vec, sigma_cell )
+        implicit none
+        !
+        class( ModelParameterCell_t ), intent( in ) :: self
+        class( Vector_t ), intent( in ) :: e_vec
+        class( Scalar_t ), allocatable, intent( inout ) :: sigma_cell
+        !
+        class( Vector_t ), allocatable :: temp_e_vec, e_vol
+        !
+        if( .NOT. e_vec%is_allocated ) then
+            call errStop( "edgeToCell_ModelParameterCell > e_vec not allocated" )
+        endif
+        !
+        if( .NOT. sigma_cell%is_allocated ) then
+            call errStop( "edgeToCell_ModelParameterCell > sigma_cell not allocated" )
+        endif
+        !
+        !> again computing  edge volumes, and could use v_edge from Metric Elements 
+        !   IF the computation of that is modified
+        call self%metric%createVector( real_t, EDGE, e_vol )
+        !
+        call e_vol%sumCells( self%metric%v_cell )
+        !
+        call e_vol%setAllBoundary( C_ONE )
+        !
+        allocate( temp_e_vec, source = e_vec )
+        !
+        call temp_e_vec%div( e_vol )
+        !
+        deallocate( e_vol )
+        !
+        call temp_e_vec%sumEdges( sigma_cell, .TRUE. )
+        !
+        deallocate( temp_e_vec )
+        !
+        call sigma_cell%mult( self%metric%v_cell )
+        !
+    end subroutine edgeToCell_ModelParameterCell
     !
     !> No subroutine briefing
     !
-    subroutine deallocCell_ModelParameterCell( self )
+    subroutine deallCell_ModelParameterCell( self )
         implicit none
         !
         class( ModelParameterCell_t ), intent( inout ) :: self
         !
         if( allocated( self%cell_cond ) ) deallocate( self%cell_cond )
         !
-    end subroutine deallocCell_ModelParameterCell
+    end subroutine deallCell_ModelParameterCell
     !
     !> No subroutine briefing
     !
@@ -513,4 +671,5 @@ contains
         !
     end subroutine print_ModelParameterCell
     !
-end Module ModelParameterCell
+end module ModelParameterCell
+!

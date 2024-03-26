@@ -17,11 +17,14 @@ module ModelParameterCell_SG
             final :: ModelParameterCell_SG_dtor
             !
             !> Mappings
-            procedure, public :: nodeCond => nodeCond_ModelParameterCell_SG
-            !
             procedure, public :: PDEmapping => PDEmapping_ModelParameterCell_SG
             procedure, public :: dPDEmapping => dPDEmapping_ModelParameterCell_SG
             procedure, public :: dPDEmapping_T => dPDEmapping_T_ModelParameterCell_SG
+            !
+            procedure, public :: nodeCond => nodeCond_ModelParameterCell_SG
+            !
+            procedure, public :: modelToCell => modelToCell_ModelParameterCell_SG
+            procedure, public :: cellToModel => cellToModel_ModelParameterCell_SG
             !
             !> Dimensioned operations
             procedure, public :: slice1D => slice1D_ModelParameterCell_SG
@@ -126,52 +129,9 @@ contains
         !
         call self%baseDealloc
         !
-        call self%deallocCell
+        call self%deallCell
         !
     end subroutine ModelParameterCell_SG_dtor
-    !
-    !> Map cell_cond to nodes
-    !
-    subroutine nodeCond_ModelParameterCell_SG( self, sigma_node )
-        implicit none
-        !
-        class( ModelParameterCell_SG_t ), intent( in ) :: self
-        class( Scalar_t ), intent( inout ) :: sigma_node
-        !
-        integer :: k0, k1, k2
-        type( rScalar3D_SG_t ) :: sigma_cell
-        !
-        if( .NOT. self%is_allocated ) then
-            call errStop( "nodeCond_ModelParameterCell_SG > self not allocated" )
-        endif
-        !
-        if( .NOT. sigma_node%is_allocated ) then
-            call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
-        endif
-        !
-        k0 = self%metric%grid%NzAir
-        k1 = k0 + 1
-        k2 = self%metric%grid%Nz
-        !
-        sigma_cell = rScalar3D_SG_t( sigma_node%grid, CELL )
-        !
-        sigma_cell%v( :, :, 1:k0 ) = self%air_cond
-        !
-        sigma_cell%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v, kind=prec ) )
-        !
-        call sigma_cell%mult( self%metric%v_cell )
-        !
-        call sigma_cell%sumToNode( sigma_node, .TRUE. )
-        !
-        !> Later fix for SP2 - 27/02/2024 (WRONG)!!!!
-        !> QMR/BICG does NOT converge using the two statements below, or just the second
-        !>     - Converges slower than MF IT_DC using only the first (The way it is now).
-        !
-        call sigma_node%div( self%metric%v_node )
-        !
-        !call sigma_node%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
-        !
-    end subroutine nodeCond_ModelParameterCell_SG
     !
     !> Map the entire model cells into a single edge Vector_t (e_vec).
     !
@@ -375,6 +335,154 @@ contains
         deallocate( sigma_cells )
         !
     end subroutine dPDEmapping_T_ModelParameterCell_SG
+    !
+    !> Map cell_cond to nodes
+    !
+    !> No subroutine briefing
+    !
+    subroutine nodeCond_ModelParameterCell_SG( self, sigma_node )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        class( Scalar_t ), intent( inout ) :: sigma_node
+        !
+        type( rScalar3D_SG_t ) :: sigma_cell
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "nodeCond_ModelParameterCell_SG > self not allocated" )
+        endif
+        !
+        if( .NOT. sigma_node%is_allocated ) then
+            call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
+        endif
+        !
+        sigma_cell = rScalar3D_SG_t( sigma_node%grid, CELL )
+        !
+        call self%modelToCell( self%air_cond, sigma_cell )
+        !
+        call sigma_node%zeros
+        !
+        call self%cellToNode( sigma_cell, sigma_node )
+        !
+    end subroutine nodeCond_ModelParameterCell_SG
+    !
+	! !> 
+	! !
+    ! subroutine nodeCond_ModelParameterCell_SG( self, sigma_node )
+        ! implicit none
+        ! !
+        ! class( ModelParameterCell_SG_t ), intent( in ) :: self
+        ! class( Scalar_t ), intent( inout ) :: sigma_node
+        ! !
+        ! integer :: k0, k1, k2
+        ! type( rScalar3D_SG_t ) :: sigma_cell
+        ! !
+        ! if( .NOT. self%is_allocated ) then
+            ! call errStop( "nodeCond_ModelParameterCell_SG > self not allocated" )
+        ! endif
+        ! !
+        ! if( .NOT. sigma_node%is_allocated ) then
+            ! call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
+        ! endif
+        ! !
+        ! k0 = self%metric%grid%NzAir
+        ! k1 = k0 + 1
+        ! k2 = self%metric%grid%Nz
+        ! !
+        ! sigma_cell = rScalar3D_SG_t( sigma_node%grid, CELL )
+        ! !
+        ! sigma_cell%v( :, :, 1:k0 ) = self%air_cond
+        ! !
+        ! sigma_cell%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v, kind=prec ) )
+        ! !
+        ! call sigma_cell%mult( self%metric%v_cell )
+        ! !
+        ! call sigma_cell%sumToNode( sigma_node, .TRUE. )
+        ! !
+        ! !> Later fix for SP2 - 27/02/2024 (WRONG)!!!!
+        ! !> QMR/BICG does NOT converge using the two statements below, or just the second
+        ! !>     - Converges slower than MF IT_DC using only the first (The way it is now).
+        ! !
+        ! call sigma_node%div( self%metric%v_node )
+        ! !
+        ! !call sigma_node%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
+        ! !
+    ! end subroutine nodeCond_ModelParameterCell_SG
+    ! !
+    !> This routine was originally implemented for MR models
+    !> Later adapted for SG models, check !!!!
+    !
+    subroutine modelToCell_ModelParameterCell_SG( self, air_value, sigma_cell, dsigma )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        real( kind=prec ), intent ( in ) :: air_value
+        class( Scalar_t ), intent( inout )  :: sigma_cell
+        class( ModelParameter_t ), intent( in ), optional :: dsigma
+        !
+        character(:), allocatable :: job
+        integer :: k0, k1, k2
+        logical :: dPDE
+        type( rScalar3D_SG_t ) :: temp_sigma_cell
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "modelToCell_ModelParameterCell_SG > self not allocated" )
+        endif
+        !
+        if( .NOT. sigma_cell%is_allocated ) then
+            call errStop( "modelToCell_ModelParameterCell_SG > sigma_cell not allocated" )
+        endif
+        !
+        dPDE = present( dsigma )
+        !
+        if ( dPDE ) then
+            !
+            job = DERIV
+            !
+            if( .NOT. dsigma%is_allocated ) then
+                call errStop( "modelToCell_ModelParameterCell_SG > dsigma not allocated" )
+            endif
+            !
+        else
+            job = FORWARD
+        endif
+        !
+        k0 = self%metric%grid%nzAir
+        k1 = k0 + 1
+        k2 = self%metric%grid%Nz
+        !
+        !> Temporary scalar of specific type, allowing access to v
+        temp_sigma_cell = sigma_cell
+        !
+        temp_sigma_cell%v( :, :, 1:k0 ) = air_value
+        !
+        temp_sigma_cell%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v, kind=prec ), job )
+        !
+        if( dPDE ) then
+            !
+            !> multiply temp_sigma_cell by dsigma cond
+            call temp_sigma_cell%mult( dsigma%getCond(1) )
+            !
+        endif
+        !
+        !> SHOULD BE OUT OR ALLOCATABLE ????
+        sigma_cell = temp_sigma_cell
+        !
+    end subroutine modelToCell_ModelParameterCell_SG
+    !
+    !> This routine was originally implemented for MR models
+    !> Later adapted for SG models, check !!!!
+    !
+    subroutine cellToModel_ModelParameterCell_SG( self, sigma_cell, dsigma )
+        implicit none
+        !
+        class( ModelParameterCell_SG_t ), intent( in ) :: self
+        class( Scalar_t ), intent( in )  :: sigma_cell
+        class( ModelParameter_t ), intent( inout ) :: dsigma
+        !
+        call errStop( "cellToModel_ModelParameterCell_SG > must be implemented!" )
+        !
+    end subroutine cellToModel_ModelParameterCell_SG
     !
     !> No subroutine briefing
     !
