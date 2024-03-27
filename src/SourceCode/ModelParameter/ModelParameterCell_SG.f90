@@ -142,7 +142,7 @@ contains
         class( Vector_t ), intent( inout ) :: e_vec
         !
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: sigma_cells
-        integer :: i, k0, k1, k2
+        integer :: i
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "PDEmapping_ModelParameterCell_SG > self not allocated" )
@@ -154,17 +154,9 @@ contains
         !
         allocate( sigma_cells( self%anisotropic_level ) )
         !
-        k0 = self%metric%grid%nzAir
-        k1 = k0 + 1
-        k2 = self%metric%grid%Nz
-        !
         do i = 1, self%anisotropic_level
             !
-            sigma_cells(i) = rScalar3D_SG_t( self%metric%grid, CELL )
-            !
-            sigma_cells(i)%v( :, :, 1:k0 ) = self%air_cond
-            !
-            sigma_cells(i)%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(i)%v, kind=prec ) )
+            call self%modelToCell( self%air_cond, sigma_cells(i) )
             !
             call sigma_cells(i)%mult( self%metric%v_cell )
             !
@@ -200,7 +192,7 @@ contains
         !
         type( rScalar3D_SG_t ), allocatable, dimension(:) :: sigma_cells
         type( rScalar3D_SG_t ) :: dsigma_cond
-        integer :: i, k0, k1, k2
+        integer :: i, k1, k2
         !
         if( .NOT. self%is_allocated ) then
             call errStop( "dPDEmapping_ModelParameterCell_SG > self not allocated" )
@@ -216,18 +208,14 @@ contains
         !
         call e_vec%zeros
         !
-        k0 = self%metric%grid%NzAir
-        k1 = k0 + 1
+        k1 = self%metric%grid%NzAir + 1
         k2 = self%metric%grid%Nz
         !
         allocate( sigma_cells( self%anisotropic_level ) )
         !
         do i = 1, self%anisotropic_level
             !
-            !> Create and initialize sigma_cells with zeros
-            sigma_cells(i) = rScalar3D_SG_t( self%metric%grid, CELL )
-            !
-            sigma_cells(i)%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(i)%v, kind=prec ), DERIV )
+            call self%modelToCell( R_ZERO, sigma_cells(i) )
             !
             dsigma_cond = dsigma%getCond(i)
             !
@@ -247,7 +235,7 @@ contains
             call e_vec%sumCells( sigma_cells(1), sigma_cells(2) )
             !
         else
-            call errStop( "dPDEmapping_ModelParameterCell_SG > unsupported anisotropy level" )
+            call errStop( "dPDEmapping_ModelParameterCell_SG > Unsupported anisotropy level" )
         endif
         !
         call e_vec%mult( cmplx( 0.25_prec, 0.0, kind=prec ) )
@@ -366,8 +354,8 @@ contains
         !
     end subroutine nodeCond_ModelParameterCell_SG
     !
-	! !> 
-	! !
+    ! !> 
+    ! !
     ! subroutine nodeCond_ModelParameterCell_SG( self, sigma_node )
         ! implicit none
         ! !

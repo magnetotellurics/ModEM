@@ -171,26 +171,24 @@ contains
     !> Map the perturbation between two models onto a single Vector_t(e_vec).
     !
     subroutine dPDEmapping_ModelParameterCell_MR( self, dsigma, e_vec )
-    implicit none
-    !
-    class( ModelParameterCell_MR_t ), intent( in ) :: self
-    class( ModelParameter_t ), intent( in ) :: dsigma
-    class( Vector_t ), allocatable, intent( inout ) :: e_vec
-    !
-    type( rScalar3D_MR_t ) :: sigma_cell_al_mr
-    !
-    !> cell cond as MR with AirLayers
-    sigma_cell_al_mr = rScalar3D_MR_t( self%metric%grid, CELL )
-    !
-    ! difference with PDEmapping: set air layers to zero, pass optional argument dsigma
-    call self%modelToCell( R_ZERO, sigma_cell_al_mr, dsigma )
-    !
-    call e_vec%zeros
-    !
-    call self%cellToEdge( sigma_cell_al_mr, e_vec )
-    !
-    !deallocate( sigma_cell_al_mr )
-    !
+        implicit none
+        !
+        class( ModelParameterCell_MR_t ), intent( in ) :: self
+        class( ModelParameter_t ), intent( in ) :: dsigma
+        class( Vector_t ), allocatable, intent( inout ) :: e_vec
+        !
+        type( rScalar3D_MR_t ) :: sigma_cell_al_mr
+        !
+        !> cell cond as MR with AirLayers
+        sigma_cell_al_mr = rScalar3D_MR_t( self%metric%grid, CELL )
+        !
+        ! difference with PDEmapping: set air layers to zero, pass optional argument dsigma
+        call self%modelToCell( R_ZERO, sigma_cell_al_mr, dsigma )
+        !
+        call e_vec%zeros
+        !
+        call self%cellToEdge( sigma_cell_al_mr, e_vec )
+        !
     end subroutine dPDEmapping_ModelParameterCell_MR
     !
     !> Transpose the perturbation represented in a Vector_t(e_vec), to a new dsigma model.
@@ -223,7 +221,6 @@ contains
         !
         select type( sigma_cell_al )
             !
-            !> ALWAYS THIS CASE BECAUSE OF getReal USED IN PMult_t_Tx !!!!
             class is( rScalar3D_MR_t )
                 !
                 do i = 1, size( sigma_cell_al%sub_scalar )

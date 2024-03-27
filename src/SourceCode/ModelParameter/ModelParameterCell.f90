@@ -107,14 +107,16 @@ contains
         !> node_vol: Boundaries set to one, to avoid NaNs at the last division.
         call self%metric%createScalar( real_t, NODE, node_vol )
         !
+        deallocate( temp_scalar )
+        !
         !> 2) create temporary copy of v_cell
-        temp_scalar = self%metric%v_cell
+        allocate( temp_scalar, source = self%metric%v_cell )
         !
         call temp_scalar%sumToNode( node_vol )
         !
-        call node_vol%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
-        !
         deallocate( temp_scalar )
+        !
+        call node_vol%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
         !
         call node_vol%setAllBoundary( C_ONE )
         !
