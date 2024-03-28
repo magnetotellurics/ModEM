@@ -177,7 +177,7 @@ module TransmitterMT
         !
         integer :: iRx
         !
-        write( *, "( A30, I8, A9, es16.5, A6, I8)" ) &
+        write( *, "( A30, I8, A9, es10.2, A6, I8)" ) &
         "TransmitterMT", self%i_tx, &
         ", Period=",    self%period, &
         ", NRx=", size( self%receiver_indexes )

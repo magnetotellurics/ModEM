@@ -20,6 +20,8 @@ module rScalar3D_MR
             !
             procedure, public :: setIndexArrays => setIndexArrays_rScalar3D_MR
             !
+            procedure, public :: getV => getV_rScalar3D_MR
+            !
             procedure, public :: getArray => getArray_rScalar3D_MR
             procedure, public :: setArray => setArray_rScalar3D_MR
             !
@@ -1273,6 +1275,27 @@ contains
         end select
         !
     end subroutine sumToNode_rScalar3D_MR
+    !
+    !> No function briefing
+    !
+    function getV_rScalar3D_MR( self ) result( v )
+        implicit none
+        !
+        class( rScalar3D_MR_t ), intent( in ) :: self
+        !
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
+        !
+        type( rScalar3D_SG_t ) :: scalar_sg
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getV_rScalar3D_MR > self not allocated." )
+        endif
+        !
+        call self%toSG( scalar_sg )
+        !
+        v = cmplx( scalar_sg%v, R_ZERO, kind=prec )
+        !
+    end function getV_rScalar3D_MR
     !
     !> No subroutine briefing
     !

@@ -53,6 +53,8 @@ module rScalar3D_SG
             !
             !> Getters & Setters
             !
+            procedure, public :: getV => getV_rScalar3D_SG
+            !
             procedure, public :: getArray => getArray_rScalar3D_SG
             procedure, public :: setArray => setArray_rScalar3D_SG
             !
@@ -127,7 +129,7 @@ contains
             self%Nxyz = product( self%NdV )
             !
         else
-            call errStop( "rScalar3D_SG_ctor > Unable to allocate rScalar - invalid grid supplied" )
+            call errStop( "rScalar3D_SG_ctor > self not allocated" )
         endif
         !
     end function rScalar3D_SG_ctor
@@ -693,6 +695,23 @@ contains
         !
     end subroutine divByField_rScalar3D_SG
     !
+    !> No function briefing
+    !
+    function getV_rScalar3D_SG( self ) result( v )
+        implicit none
+        !
+        class( rScalar3D_SG_t ), intent( in ) :: self
+        !
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getV_rScalar3D_SG > self not allocated." )
+        endif
+        !
+        v = cmplx( self%v, R_ZERO, kind=prec )
+        !
+    end function getV_rScalar3D_SG
+    !
     !> No subroutine briefing
     !
     function getArray_rScalar3D_SG( self ) result( array )
@@ -754,8 +773,6 @@ contains
                 !
                 self%v = rhs%v
                 !
-                self%is_allocated = .TRUE.
-            !
             class is( iScalar3D_SG_t )
                 !
                 self%NdV = rhs%NdV
@@ -763,12 +780,12 @@ contains
                 !
                 self%v = rhs%v
                 !
-                self%is_allocated = .TRUE.
-                !
             class default
                 call errStop( "copyFrom_rScalar3D_SG > Unclassified rhs" )
                 !
         end select
+        !
+        self%is_allocated = .TRUE.
         !
     end subroutine copyFrom_rScalar3D_SG
     !

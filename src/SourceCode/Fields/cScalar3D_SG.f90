@@ -53,6 +53,8 @@ module cScalar3D_SG
             !
             !> Getters & Setters
             !
+            procedure, public :: getV => getV_cScalar3D_SG
+            !
             procedure, public :: getArray => getArray_cScalar3D_SG
             procedure, public :: setArray => setArray_cScalar3D_SG
             !
@@ -722,6 +724,23 @@ contains
         endif
         !
     end subroutine divByField_cScalar3D_SG
+    !
+    !> No function briefing
+    !
+    function getV_cScalar3D_SG( self ) result( v )
+        implicit none
+        !
+        class( cScalar3D_SG_t ), intent( in ) :: self
+        !
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getV_cScalar3D_SG > self not allocated." )
+        endif
+        !
+        v = self%v
+        !
+    end function getV_cScalar3D_SG
     !
     !> No subroutine briefing
     !

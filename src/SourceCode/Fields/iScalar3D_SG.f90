@@ -53,6 +53,8 @@ module iScalar3D_SG
             !
             !> Getters & Setters
             !
+            procedure, public :: getV => getV_iScalar3D_SG
+            !
             procedure, public :: getArray => getArray_iScalar3D_SG
             procedure, public :: setArray => setArray_iScalar3D_SG
             !
@@ -691,6 +693,23 @@ contains
         endif
         !
     end subroutine divByField_iScalar3D_SG
+    !
+    !> No function briefing
+    !
+    function getV_iScalar3D_SG( self ) result( v )
+        implicit none
+        !
+        class( iScalar3D_SG_t ), intent( in ) :: self
+        !
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getV_iScalar3D_SG > self not allocated." )
+        endif
+        !
+        v = cmplx( self%v, R_ZERO, kind=prec )
+        !
+    end function getV_iScalar3D_SG
     !
     !> No subroutine briefing
     !

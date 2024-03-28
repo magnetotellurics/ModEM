@@ -15,6 +15,8 @@ module Scalar
             !> Scalar Interfaces
             procedure( interface_sum_to_node_scalar ), deferred, public :: sumToNode
             !
+            procedure( interface_get_v_scalar ), deferred, public :: getV
+            !
             !> Scalar Routines
             !
             procedure, public :: boundary => boundary_Scalar
@@ -41,6 +43,17 @@ module Scalar
             logical, intent( in ), optional :: interior_only
             !
         end subroutine interface_sum_to_node_scalar
+        !
+        !> No interface subroutine briefing
+        !
+        function interface_get_v_scalar( self ) result( v )
+            import :: Scalar_t, prec
+            !
+            class( Scalar_t ), intent( in ) :: self
+            !
+            complex( kind=prec ), allocatable, dimension(:,:,:) :: v
+            !
+        end function interface_get_v_scalar
         !
     end interface
     !

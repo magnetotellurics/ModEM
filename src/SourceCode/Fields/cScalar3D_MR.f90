@@ -20,6 +20,8 @@ module cScalar3D_MR
             !
             procedure, public :: setIndexArrays => setIndexArrays_cScalar3D_MR
             !
+            procedure, public :: getV => getV_cScalar3D_MR
+            !
             procedure, public :: getArray => getArray_cScalar3D_MR
             procedure, public :: setArray => setArray_cScalar3D_MR
             !
@@ -1323,6 +1325,27 @@ contains
         ! self%s_v = s_v
         ! !
     end subroutine setSV_cScalar3D_MR
+    !
+    !> No function briefing
+    !
+    function getV_cScalar3D_MR( self ) result( v )
+        implicit none
+        !
+        class( cScalar3D_MR_t ), intent( in ) :: self
+        !
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
+        !
+        type( cScalar3D_SG_t ) :: scalar_sg
+        !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getV_cScalar3D_MR > self not allocated." )
+        endif
+        !
+        call self%toSG( scalar_sg )
+        !
+        v = scalar_sg%v
+        !
+    end function getV_cScalar3D_MR
     !
     !> No subroutine briefing
     !

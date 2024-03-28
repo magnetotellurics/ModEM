@@ -156,6 +156,8 @@ contains
         !
         do i = 1, self%anisotropic_level
             !
+            sigma_cells(i) = rScalar3D_SG_t( self%metric%grid, CELL )
+            !
             call self%modelToCell( self%air_cond, sigma_cells(i) )
             !
             call sigma_cells(i)%mult( self%metric%v_cell )
@@ -214,6 +216,8 @@ contains
         allocate( sigma_cells( self%anisotropic_level ) )
         !
         do i = 1, self%anisotropic_level
+            !
+            sigma_cells(i) = rScalar3D_SG_t( self%metric%grid, CELL )
             !
             call self%modelToCell( R_ZERO, sigma_cells(i) )
             !
