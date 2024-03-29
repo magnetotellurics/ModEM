@@ -1182,15 +1182,13 @@ contains
     !> NOTE  as written the interfaces are computed as sums, but other nodes
     !> as averages!!!   I AM CHANGING EVERYTHING TO SUMS
     !
-    subroutine sumToNode_rScalar3D_MR( self, node_scalar, interior_only )
+    subroutine sumToNode_rScalar3D_MR( self, node_scalar )
         implicit none
         !
         class( rScalar3D_MR_t ), intent( inout ) :: self
         class( Scalar_t ), intent( inout ) :: node_scalar
-        logical, intent( in ), optional :: interior_only
         !
         integer :: v_xend, v_yend, v_zend
-        logical :: is_interior_only
         integer :: i, nxF, nyF, nzF, nxC, nyC, nzC
         !
         if( .NOT. self%is_allocated ) then
@@ -1212,7 +1210,7 @@ contains
                         !> set nodes for interior of all sub-scalars
                         do i = 1, self%grid%n_grids
                             !
-                            call self%sub_scalar(i)%sumToNode( node_scalar%sub_scalar(i), interior_only )
+                            call self%sub_scalar(i)%sumToNode( node_scalar%sub_scalar(i) )
                             !
                         enddo
                         !

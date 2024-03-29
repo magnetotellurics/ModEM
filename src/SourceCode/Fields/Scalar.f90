@@ -36,11 +36,10 @@ module Scalar
         !
         !> No interface subroutine briefing
         !
-        subroutine interface_sum_to_node_scalar( self, node_scalar, interior_only )
+        subroutine interface_sum_to_node_scalar( self, node_scalar )
             import :: Scalar_t
             !
             class( Scalar_t ), intent( inout ) :: self, node_scalar
-            logical, intent( in ), optional :: interior_only
             !
         end subroutine interface_sum_to_node_scalar
         !
@@ -100,3 +99,4 @@ contains
     end subroutine interior_Scalar
     !
 end module Scalar
+!

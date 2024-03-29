@@ -358,49 +358,6 @@ contains
         !
     end subroutine nodeCond_ModelParameterCell_SG
     !
-    ! !> 
-    ! !
-    ! subroutine nodeCond_ModelParameterCell_SG( self, sigma_node )
-        ! implicit none
-        ! !
-        ! class( ModelParameterCell_SG_t ), intent( in ) :: self
-        ! class( Scalar_t ), intent( inout ) :: sigma_node
-        ! !
-        ! integer :: k0, k1, k2
-        ! type( rScalar3D_SG_t ) :: sigma_cell
-        ! !
-        ! if( .NOT. self%is_allocated ) then
-            ! call errStop( "nodeCond_ModelParameterCell_SG > self not allocated" )
-        ! endif
-        ! !
-        ! if( .NOT. sigma_node%is_allocated ) then
-            ! call errStop( "nodeCond_ModelParameterCell_SG > sigma_node not allocated" )
-        ! endif
-        ! !
-        ! k0 = self%metric%grid%NzAir
-        ! k1 = k0 + 1
-        ! k2 = self%metric%grid%Nz
-        ! !
-        ! sigma_cell = rScalar3D_SG_t( sigma_node%grid, CELL )
-        ! !
-        ! sigma_cell%v( :, :, 1:k0 ) = self%air_cond
-        ! !
-        ! sigma_cell%v( :, :, k1:k2 ) = self%sigMap( real( self%cell_cond(1)%v, kind=prec ) )
-        ! !
-        ! call sigma_cell%mult( self%metric%v_cell )
-        ! !
-        ! call sigma_cell%sumToNode( sigma_node, .TRUE. )
-        ! !
-        ! !> Later fix for SP2 - 27/02/2024 (WRONG)!!!!
-        ! !> QMR/BICG does NOT converge using the two statements below, or just the second
-        ! !>     - Converges slower than MF IT_DC using only the first (The way it is now).
-        ! !
-        ! call sigma_node%div( self%metric%v_node )
-        ! !
-        ! !call sigma_node%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
-        ! !
-    ! end subroutine nodeCond_ModelParameterCell_SG
-    ! !
     !> This routine was originally implemented for MR models
     !> Later adapted for SG models, check !!!!
     !

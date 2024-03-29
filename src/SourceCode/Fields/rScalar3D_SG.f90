@@ -608,16 +608,14 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine sumToNode_rScalar3D_SG( self, node_scalar, interior_only )
+    subroutine sumToNode_rScalar3D_SG( self, node_scalar )
         implicit none
         !
         class( rScalar3D_SG_t ), intent( inout ) :: self
         class( Scalar_t ), intent( inout ) :: node_scalar
-        logical, intent( in ), optional :: interior_only
         !
         type( rScalar3D_SG_t ) :: temp_node
         integer :: v_xend, v_yend, v_zend
-        logical :: is_interior_only
         !
         if( .NOT. self%is_allocated ) then
              call errStop( "sumToNode_rScalar3D_SG > self not allocated." )
@@ -625,14 +623,6 @@ contains
         !
         if( .NOT. node_scalar%is_allocated ) then
              call errStop( "sumToNode_rScalar3D_SG > node_scalar not allocated." )
-        endif
-        !
-        is_interior_only = .FALSE.
-        !
-        if( present( interior_only ) ) is_interior_only = interior_only
-        !
-        if( is_interior_only ) then
-            call self%setAllBoundary( C_ZERO )
         endif
         !
         temp_node = rScalar3D_SG_t( self%grid, NODE )

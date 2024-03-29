@@ -1166,15 +1166,13 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine sumToNode_cScalar3D_MR( self, node_scalar, interior_only )
+    subroutine sumToNode_cScalar3D_MR( self, node_scalar )
         implicit none
         !
         class( cScalar3D_MR_t ), intent( inout ) :: self
         class( Scalar_t ), intent( inout ) :: node_scalar
-        logical, intent( in ), optional :: interior_only
         !
         integer :: v_xend, v_yend, v_zend
-        logical :: is_interior_only
         integer :: i, nxF, nyF, nzF, nxC, nyC, nzC
         !
         if( .NOT. self%is_allocated ) then
@@ -1258,73 +1256,7 @@ contains
             !
         end select
         !
-        ! select type( node_scalar )
-            ! !
-            ! class is( cScalar3D_MR_t )
-                ! !
-                ! select case( self%grid_type )
-                    ! !
-                    ! case( CELL )
-                        ! !
-                        ! do i = 1, self%grid%n_grids
-                            ! !
-                            ! is_interior_only = .FALSE.
-                            ! !
-                            ! if( present( interior_only ) ) is_interior_only = interior_only
-                            ! !
-                            ! if( is_interior_only ) then
-                                ! call self%sub_scalar(i)%setAllBoundary( C_ZERO )
-                            ! endif
-                            ! !
-                            ! v_xend = size( self%sub_scalar(i)%v, 1 )
-                            ! v_yend = size( self%sub_scalar(i)%v, 2 )
-                            ! v_zend = size( self%sub_scalar(i)%v, 3 )
-                            ! !
-                            ! !> Interior
-                            ! node_scalar%sub_scalar(i)%v( 2:v_xend, 2:v_yend, 2:v_zend ) = &
-                            ! self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
-                            ! self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
-                            ! self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
-                            ! self%sub_scalar(i)%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
-                            ! self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
-                            ! self%sub_scalar(i)%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
-                            ! self%sub_scalar(i)%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
-                            ! self%sub_scalar(i)%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
-                            ! !
-                        ! enddo
-                        ! !
-                    ! case default
-                        ! call errStop( "sumToNode_cScalar3D_MR just for CELL type" )
-                ! end select
-                ! !
-            ! class default
-                ! call errStop( "sumToNode_cScalar3D_MR > Unclassified node_scalar" )
-            ! !
-        ! end select
-        ! !
     end subroutine sumToNode_cScalar3D_MR
-    !
-    !> No subroutine briefing
-    !
-    subroutine setSV_cScalar3D_MR( self, s_v )
-        implicit none
-        !
-        class( cScalar3D_MR_t ), intent( inout ) :: self
-        complex( kind=prec ), dimension(:), intent( in ) :: s_v
-        !
-        call errStop( "setSV_cScalar3D_MR not implemented!" )
-        ! !
-        ! if( .NOT. self%is_allocated ) then
-            ! call errStop( "setSV_cScalar3D_MR > self not allocated." )
-        ! endif
-        ! !
-        ! call self%switchStoreState( singleton )
-        ! !
-        ! if( allocated( self%v ) ) deallocate( self%v )
-        ! !
-        ! self%s_v = s_v
-        ! !
-    end subroutine setSV_cScalar3D_MR
     !
     !> No function briefing
     !
@@ -1516,3 +1448,4 @@ contains
     end subroutine print_cScalar3D_MR
     !
 end module cScalar3D_MR
+!
