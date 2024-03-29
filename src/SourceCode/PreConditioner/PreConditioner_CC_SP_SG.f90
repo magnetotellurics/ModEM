@@ -150,7 +150,8 @@ contains
                 !
                 call CSR_R2Cdiag( CCxx, d, Axx )
                 !
-                call dilu_Cmplx( Axx, Lblk(1), Ublk(1) )
+                call ilu0_Cmplx( Axx, Lblk(1), Ublk(1) )
+                !call dilu_Cmplx( Axx, Lblk(1), Ublk(1) )
                 !
                 deallocate(d)
                 !
@@ -164,7 +165,8 @@ contains
                 !
                 call CSR_R2Cdiag( CCxx, d, Axx )
                 !
-                call dilu_Cmplx( Axx, Lblk(2), Ublk(2) )
+                call ilu0_Cmplx( Axx, Lblk(2), Ublk(2) )
+                !call dilu_Cmplx( Axx, Lblk(2), Ublk(2) )
                 !
                 deallocate(d)
                 !
@@ -178,7 +180,8 @@ contains
                 !
                 call CSR_R2Cdiag( CCxx, d, Axx )
                 !
-                call dilu_Cmplx( Axx, Lblk(3), Ublk(3) )
+                call ilu0_Cmplx( Axx, Lblk(3), Ublk(3) )
+                !call dilu_Cmplx( Axx, Lblk(3), Ublk(3) )
                 !
                 deallocate(d)
                 !

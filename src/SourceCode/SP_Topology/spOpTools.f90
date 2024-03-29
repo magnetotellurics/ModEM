@@ -2357,7 +2357,7 @@ contains
     !> consumption by storing the L and U in the original sparse matrix 
     !> structure of A(as ILU0 does not have any fill-ins).
     !
-    subroutine ilu0_Cmplx(A, L, U)
+    subroutine ilu0_Cmplx( A, L, U )
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: A
@@ -2375,7 +2375,7 @@ contains
         Atmp%row=A%row
         Atmp%col=A%col
         Atmp%val=A%val
-        call sort_spMatCSR(Atmp) ! sort the col indices in A
+        call sort_spMatCSR(Atmp) ! sort the col indexes in A
         d = C_ZERO
         do i=1, Atmp%nRow ! loop through rows
             !
