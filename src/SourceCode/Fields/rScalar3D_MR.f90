@@ -435,10 +435,6 @@ contains
             call errStop( "toSG_rScalar3D_MR > self not allocated" )
         endif
         !
-        if( .NOT. scalar_sg%is_allocated ) then
-            call errStop( "toSG_rScalar3D_MR > scalar_sg not allocated" )
-        endif
-        !
         !> Using a temporary Grid SG with AirLayers, for instantiate the scalar_sg output
         scalar_sg = rScalar3D_SG_t( self%grid, self%grid_type )
         !
