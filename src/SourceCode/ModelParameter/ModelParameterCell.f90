@@ -116,9 +116,9 @@ contains
         !
         deallocate( temp_scalar )
         !
-        call node_vol%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
+        !call node_vol%mult( cmplx( 0.125_prec, 0.0, kind=prec ) )
         !
-        call node_vol%setAllBoundary( C_ONE )
+        !call node_vol%setAllBoundary( C_ONE )
         !
         call node_cond%div( node_vol )
         !
