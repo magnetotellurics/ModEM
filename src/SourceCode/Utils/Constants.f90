@@ -8,7 +8,7 @@ module Constants
     implicit none
     !
     !> Program Version
-    character( len=5 ), parameter :: VERSION = "1.0.1"
+    character( len=5 ), parameter :: VERSION = "2.0.0"
     !
     !> FIELD TYPES
     integer, parameter :: real_t = 1
