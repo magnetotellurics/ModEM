@@ -10,7 +10,7 @@ module DeclarationMPI
     !use mpi_f08
     !
     !> MPI variables
-    integer :: main_comm, mpi_rank, mpi_size, ierr
+    integer :: main_comm, mpi_rank
     !
     integer :: tag = 2023, master_id = 0
     !

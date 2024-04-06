@@ -37,6 +37,8 @@ module CoreComponents
     !> Program Control Variables
     character( len=100 ) :: str_msg
     !
+    integer :: mpi_size, ierr
+    !
     character(8) :: str_date
     character(6) :: str_time
     character(50) :: outdir_name
@@ -186,6 +188,20 @@ contains
         n_rx = size( receivers )
         !
         n_tx = size( transmitters )
+        !
+#ifdef MPI
+        !
+        if( mpi_size /= n_tx + 1 ) then
+            !
+            call warning( "Mandatory to use (nTx + 1) MPI processes!" )
+            !
+            write( str_msg, "( I4, A41 )" ) n_tx + 1, " MPI procs for this particular Data File."
+            !
+            call errStop( str_msg )
+            !
+        endif 
+        !
+#endif
         !
         ! Verbose
         if( n_rx == data_file_standard%n_rx ) then

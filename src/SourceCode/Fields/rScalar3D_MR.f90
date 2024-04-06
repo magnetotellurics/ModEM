@@ -1229,10 +1229,10 @@ contains
                                   self%sub_scalar(i)%v( 2:nxC,     1:nyC-1,   nzC ) + &
                                   self%sub_scalar(i)%v( 1:nxC-1,   2:nyC,     nzC ) + &
                                   self%sub_scalar(i)%v( 2:nxC,     2:nyC,     nzC ) + &
-                                self%sub_scalar(i+1)%v( 2:2:nxF-2, 2:2:nyF-2, 1   ) + &
-                                self%sub_scalar(i+1)%v( 3:2:nxF-1, 2:2:nyF-2, 1   ) + &
-                                self%sub_scalar(i+1)%v( 2:2:nxF-2, 3:2:nyF-1, 1   ) + &
-                                self%sub_scalar(i+1)%v( 3:2:nxF-1, 3:2:nyF-1, 1   )
+                                self%sub_scalar(i+1)%v( 2:nxF-2:2, 2:nyF-2:2, 1   ) + &
+                                self%sub_scalar(i+1)%v( 3:nxF-1:2, 2:nyF-2:2, 1   ) + &
+                                self%sub_scalar(i+1)%v( 2:nxF-2:2, 3:nyF-1:2, 1   ) + &
+                                self%sub_scalar(i+1)%v( 3:nxF-1:2, 3:nyF-1:2, 1   )
                                 !
                             else
                                 !
@@ -1249,10 +1249,10 @@ contains
                                 self%sub_scalar(i+1)%v( 2:nxC,     1:nyC-1,   1   ) + &
                                 self%sub_scalar(i+1)%v( 1:nxC-1,   2:nyC,     1   ) + &
                                 self%sub_scalar(i+1)%v( 2:nxC,     2:nyC,   1     ) + &
-                                  self%sub_scalar(i)%v( 2:2:nxF-2, 2:2:nyF-2, nzF ) + &
-                                  self%sub_scalar(i)%v( 3:2:nxF-1, 2:2:nyF-2, nzF ) + &
-                                  self%sub_scalar(i)%v( 2:2:nxF-2, 3:2:nyF-1, nzF ) + &
-                                  self%sub_scalar(i)%v( 3:2:nxF-1, 3:2:nyF-1, nzF )
+                                  self%sub_scalar(i)%v( 2:nxF-2:2, 2:nyF-2:2, nzF ) + &
+                                  self%sub_scalar(i)%v( 3:nxF-1:2, 2:nyF-2:2, nzF ) + &
+                                  self%sub_scalar(i)%v( 2:nxF-2:2, 3:nyF-1:2, nzF ) + &
+                                  self%sub_scalar(i)%v( 3:nxF-1:2, 3:nyF-1:2, nzF )
                                 !
                             endif
                             !
