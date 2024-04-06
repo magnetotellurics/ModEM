@@ -8,6 +8,7 @@ module Sensitivity
     !> Public module routines
     public :: jobJMult, serialJMult, JMult_Tx
     public :: jobJMult_T, serialJMult_T, JMult_T_Tx
+    public :: allocateLRows
     !
 contains
     !
@@ -22,8 +23,7 @@ contains
         class( ModelParameter_t ), allocatable :: sigma, dsigma
         !
         ! Verbose
-        !
-        write( *, * ) "     - Start jobJMult"
+        write( *, * ) "     - Start JMult"
         !
         if( has_pmodel_file ) then
             !
@@ -36,11 +36,11 @@ contains
                 call dsigma%setMetric( model_operator%metric )
                 !
             else
-                stop "Error: jobJMult > Missing Model file!"
+                call errStop( "jobJMult > Missing Model file!" )
             endif
             !
         else
-            stop "Error: jobJMult > Missing Perturbation Model file!"
+            call errStop( "jobJMult > Missing Perturbation Model file!" )
         endif
         !
         if( has_data_file ) then
@@ -48,7 +48,7 @@ contains
             call handleDataFile
             !
         else
-            stop "Error: jobJMult > Missing Data file!"
+            call errStop( "jobJMult > Missing Data file!" )
         endif
         !
 #ifdef MPI
@@ -76,7 +76,7 @@ contains
         deallocate( sigma, dsigma )
         !
         ! Verbose
-        write( *, * ) "     - Finish jobJMult"
+        write( *, * ) "     - Finish JMult"
         !
     end subroutine jobJMult
     !
@@ -88,11 +88,12 @@ contains
     subroutine serialJMult( sigma, dsigma, JmHat )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma, dsigma
+        class( ModelParameter_t ), intent( inout ) :: sigma, dsigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: JmHat
         !
         integer :: i_data_tx
         class( Transmitter_t ), pointer :: Tx
+        type( SourceAdjoint_t ) :: source_adjoint
         !
         if( allocated( JmHat ) ) deallocate( JmHat )
         !
@@ -106,8 +107,10 @@ contains
             !
             call Tx%forward_solver%setFrequency( sigma, Tx%period )
             !
-            !> Switch Transmitter's source to SourceInteriorForce
-            call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
+            source_adjoint = Tx%PMult( sigma, dsigma, model_operator )
+            !
+            !> Switch Transmitter's source to SourceAdjoint
+            call Tx%setSource( source_adjoint )
             !
             call Tx%solve
             !
@@ -126,7 +129,7 @@ contains
         type( DataGroupTx_t ), intent( inout ) :: JmHat_tx
         !
         class( Vector_t ), allocatable :: lrows
-        complex( kind=prec ) :: lrows_x_esens
+        complex( kind=prec ) :: sum_esens_dot_lrows
         integer :: i_data, i_comp, i_pol
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
@@ -140,28 +143,33 @@ contains
             !> Pointer to the data's Receiver
             Rx => getReceiver( JmHat_tx%data( i_data )%i_rx )
             !
+            !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
+            if( .NOT. allocated( Rx%lrows ) ) then
+                call allocateLRows( Tx, Rx )
+            endif
+            !
             call Rx%setLRows( Tx )
             !
             !> Loop over components
             do i_comp = 1, JmHat_tx%data( i_data )%n_comp
                 !
-                lrows_x_esens = C_ZERO
+                sum_esens_dot_lrows = C_ZERO
                 !
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
                     !
-                    allocate( lrows, source = Rx%lrows( i_pol, i_comp ) )
+                    allocate( lrows, source = Rx%lrows( i_pol, i_comp )%v )
                     !
                     !> NECESSARY FOR FULL VECTOR LROWS ????
                     call lrows%conjugate
                     !
-                    lrows_x_esens = lrows_x_esens + Tx%e_sens( i_pol )%dotProd( lrows )
+                    sum_esens_dot_lrows = sum_esens_dot_lrows + Tx%e_sens( i_pol )%v%dotProd( lrows )
                     !
                     deallocate( lrows )
                     !
                 enddo
                 !
-                call JmHat_tx%data( i_data )%set( i_comp, -real( lrows_x_esens, kind=prec ), real( aimag( lrows_x_esens ), kind=prec ) )
+                call JmHat_tx%data( i_data )%set( i_comp, -real( sum_esens_dot_lrows, kind=prec ), real( aimag( sum_esens_dot_lrows ), kind=prec ) )
                 !
                 !write( *, * ) "serialJMult Z: ", JmHat_tx%data( i_data )%reals( i_comp ), JmHat_tx%data( i_data )%imaginaries( i_comp )
                 !
@@ -184,14 +192,14 @@ contains
         class( ModelParameter_t ), allocatable :: sigma, dsigma
         !
         ! Verbose
-        write( *, * ) "     - Start jobJMult_T"
+        write( *, * ) "     - Start jMult_T"
         !
         if( has_model_file ) then 
             !
             call handleModelFile( sigma )
             !
         else
-            stop "Error: jobJMult_T > Missing Model file!"
+            call errStop( "jobJMult_T > Missing Model file!" )
         endif
         !
         if( has_data_file ) then 
@@ -199,7 +207,7 @@ contains
             call handleDataFile
             !
         else
-            stop "Error: jobJMult_T > Missing Data file!"
+            call errStop( "jobJMult_T > Missing Data file!" )
         endif
         !
 #ifdef MPI
@@ -229,7 +237,7 @@ contains
         deallocate( sigma, dsigma )
         !
         ! Verbose
-        write( *, * ) "     - Finish jobJMult_T"
+        write( *, * ) "     - Finish JMult_T"
         !
     end subroutine jobJMult_T
     !
@@ -240,19 +248,14 @@ contains
     subroutine serialJMult_T( sigma, all_data, dsigma, i_sol, s_hat )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         integer, intent( in ), optional :: i_sol
-        class( ModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
+        type( GenModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
         !
-        class( Transmitter_t ), pointer :: Tx
         class( ModelParameter_t ), allocatable :: dsigma_tx
-        class( Scalar_t ), allocatable, dimension(:) :: temp_scalar
         integer :: i_tx, sol_index
-        !
-        ! Verbose
-        !write( *, * ) "          - Start serialJMult_T"
         !
         sol_index = 0
         !
@@ -268,7 +271,14 @@ contains
             call dsigma%zeros
             !
         else
-            stop "Error: serialJMult_T > sigma not allocated"
+            call errStop( "serialJMult_T > sigma not allocated" )
+        endif
+        !
+        !> Allocate s_hat array
+        if( present( s_hat ) ) then
+            !
+            allocate( s_hat( size( transmitters ) ) )
+            !
         endif
         !
         !> Loop over all transmitters
@@ -278,8 +288,7 @@ contains
             !
             if( present( s_hat ) ) then
                 !
-                !if( allocated( s_hat( i_tx ) ) ) deallocate( s_hat( i_tx ) )
-                !allocate( s_hat( i_tx ), source = dsigma_tx )
+                allocate( s_hat( i_tx )%m, source = dsigma_tx )
                 !
             endif
             !
@@ -290,14 +299,11 @@ contains
             !
         enddo
         !
-        ! Verbose
-        !write( *, * ) "          - Finish serialJMult_T"
-        !
     end subroutine serialJMult_T
     !
     !> Calculate dsigma for the data_tx's transmitter:
     !>     Create a rhs from LRows * residual data for all receivers related to the transmitter.
-    !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
+    !>     Solve ESens on the transmitter using a transpose SourceAdjoint, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
     !
     subroutine JMult_T_Tx( sigma, tx_data, tx_dsigma, i_sol )
@@ -305,11 +311,12 @@ contains
         !
         class( ModelParameter_t ), intent( in ) :: sigma
         type( DataGroupTx_t ), intent( in ) :: tx_data
-        class( ModelParameter_t ), allocatable, intent( inout ) :: tx_dsigma
+        class( ModelParameter_t ), allocatable, intent( out ) :: tx_dsigma
         integer, intent( in ), optional :: i_sol
         !
         class( Vector_t ), allocatable :: lrows
-        class( Vector_t ), allocatable, dimension(:) :: bSrc
+        type( GenVector_t ), allocatable, dimension(:) :: bSrc
+        type( SourceAdjoint_t ) :: source_adjoint
         class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
         type( DataGroup_t ) :: data_group
@@ -332,12 +339,13 @@ contains
         Tx%i_sol = sol_index
         !
         !> Initialize bSrc( n_pol ) with zeros
-        allocate( cVector3D_SG_t :: bSrc( Tx%n_pol ) )
+        allocate( bSrc( Tx%n_pol ) )
         !
         do i_pol = 1, Tx%n_pol
             !
-            bSrc( i_pol ) = cVector3D_SG_t( tx_dsigma%metric%grid, EDGE )
-            call bSrc( i_pol )%zeros
+            allocate( bSrc( i_pol )%v, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
+            !
+            call bSrc( i_pol )%v%zeros
             !
         enddo
         !
@@ -348,6 +356,11 @@ contains
             !
             !> Pointer to the data's Receiver
             Rx => getReceiver( tx_data%data( i_data )%i_rx )
+            !
+            !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
+            if( .NOT. allocated( Rx%lrows ) ) then
+                call allocateLRows( Tx, Rx )
+            endif
             !
             call Rx%setLRows( Tx )
             !
@@ -366,11 +379,11 @@ contains
                 !> Loop over polarizations
                 do i_pol = 1, Tx%n_pol
                     !
-                    allocate( lrows, source = Rx%lrows( i_pol, i_comp ) )
+                    allocate( lrows, source = Rx%lrows( i_pol, i_comp )%v )
                     !
                     call lrows%mult( tx_data_cvalue )
                     !
-                    call bSrc( i_pol )%add( lrows )
+                    call bSrc( i_pol )%v%add( lrows )
                     !
                     deallocate( lrows )
                     !
@@ -383,25 +396,53 @@ contains
         !> NECESSARY FOR FULL VECTOR LROWS ????
         do i_pol = 1, Tx%n_pol
             !
-            call bSrc( i_pol )%mult( C_MinusOne )
+            call bSrc( i_pol )%v%mult( C_MinusOne )
             !
         enddo
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
-        !> Switch Transmitter's source to SourceInteriorForce, with transpose = .TRUE.
-        call Tx%setSource( SourceInteriorForce_t( model_operator, sigma, Tx%period, .TRUE. ) )
+        source_adjoint = SourceAdjoint_t( model_operator, sigma, Tx%period, .TRUE. )
+        !
+        !> Switch Transmitter's source to SourceAdjoint, with transpose = .TRUE.
+        call Tx%setSource( source_adjoint )
         !
         call Tx%source%setE( bSrc )
         !
         deallocate( bSrc )
         !
-        !> Solve Transmitter's e_sens with the new SourceInteriorForce
+        !> Solve Transmitter's e_sens with the new SourceAdjoint
         call Tx%solve
         !
         call Tx%PMult_t( sigma, tx_dsigma )
         !
     end subroutine JMult_T_Tx
+    !
+    !> No Subroutine briefing
+    !
+    subroutine allocateLRows( Tx, Rx )
+        implicit none
+        !
+        class( Transmitter_t ), intent( in ) :: Tx
+        class( Receiver_t ), intent( inout ) :: Rx
+        !
+        integer :: i_pol, i_comp
+        !
+        if( .NOT. allocated( Rx%lrows ) ) then
+            !
+            allocate( Rx%lrows( Tx%n_pol, Rx%n_comp ) )
+            !
+            do i_comp = 1, Rx%n_comp
+                do i_pol = 1, Tx%n_pol
+                    !
+                    allocate( Rx%lrows( i_pol, i_comp )%v, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
+                    !
+                enddo
+            enddo
+            !
+        endif
+        !
+    end subroutine allocateLRows
     !
 end module Sensitivity
 !

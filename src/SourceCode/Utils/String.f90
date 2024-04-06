@@ -1,19 +1,4 @@
 !
-!> This file is part of the ModEM modeling and inversion package.
-!>
-!> LICENSING information
-!>
-!> Copyright (C) 2020 ModEM research group.
-!> Contact: http://
-!>
-!> GNU General Public License Usage
-!> This file may be used under the terms of the GNU
-!> General Public License version 3.0 as published by the Free Software
-!> Foundation and appearing in the file LICENSE.GPL included in the
-!> packaging of this file.  Please review the following information to
-!> ensure the GNU General Public License version 3.0 requirements will be
-!> met: http://www.gnu.org/copyleft/gpl.html.
-!>
 !> SUMMARY
 !>
 !> Some Fortran Character Utilities:
@@ -33,7 +18,8 @@ contains
     !
     !> Converts multiple spaces and tabs to single spaces; 
     !> Deletes control characters;
-    !> Removes initial spaces.    
+    !> Removes initial spaces.
+    !
     subroutine Compact (str)
         implicit none 
         !
@@ -53,18 +39,19 @@ contains
             ch = str(i:i)
             ich = iachar (ch)
             !
-            select case(ich)
-            case(9,32)      ! space or tab character
-                if(isp == 0) then
-                    k = k + 1
-                    outstr(k:k) = ' '
-                endif
-                isp = 1
+            select case( ich )
                 !
-            case(33:)        ! not a space, quote, or control character
-                k = k + 1
-                outstr(k:k) = ch
-                isp = 0
+                case(9,32)      ! space or tab character
+                    if(isp == 0) then
+                        k = k + 1
+                        outstr(k:k) = ' '
+                    endif
+                    isp = 1
+                    !
+                case(33:)        ! not a space, quote, or control character
+                    k = k + 1
+                    outstr(k:k) = ch
+                    isp = 0
             end select
         enddo
         !
@@ -78,6 +65,7 @@ contains
     !> the delimiters contained in the string 'delims'. Preceding a delimiter in
     !> 'str' by a backslash (\) makes this particular instance not a delimiter.
     !> The integer output variable nargs contains the number of arguments found.
+    !
     subroutine Parse (str, delims, args, p_nargs)
         implicit none
         !
@@ -119,10 +107,11 @@ contains
     !> found delimiter. A delimiter in 'str' is treated like an ordinary
     !> character if it is preceded by a backslash (\). If the backslash
     !> character is desired in 'str', then precede it with another backslash.
-    subroutine Split (str, delims, before, sep)
+    !
+    subroutine Split( str, delims, before, sep )
         implicit none
         !
-        character(len = *) :: str, delims, before
+        character( len=* ) :: str, delims, before
         character, optional :: sep
         !
         logical :: pres
@@ -132,38 +121,38 @@ contains
         !
         pres = present (sep)
         lenstr = len_trim (str)
-        if(lenstr == 0) return        ! string str is empty
+        if(lenstr == 0) return    ! string str is empty
         k = 0
-        ibsl = 0                    ! backslash initially inactive
+        ibsl = 0                  ! backslash initially inactive
         before = ' '
         do i = 1, lenstr
             ch = str(i:i)
-            if(ibsl == 1) then        ! backslash active
+            if(ibsl == 1) then    ! backslash active
                 k = k + 1
                 before(k:k) = ch
                 ibsl = 0
                 cycle
             endif
-            if(ch == '\\') then    ! backslash with backslash inactive
+            if(ch == '\\') then   ! backslash with backslash inactive
                 k = k + 1
                 before(k:k) = ch
                 ibsl = 1
                 cycle
             endif
             ipos = index (delims, ch)
-            if(ipos == 0) then        ! character is not a delimiter
+            if(ipos == 0) then    ! character is not a delimiter
                 k = k + 1
                 before(k:k) = ch
                 cycle
             endif
-            if(ch /= ' ') then        ! character is a delimiter that is not a space
+            if(ch /= ' ') then          ! character is a delimiter that is not a space
                 str = str(i+1:)
                 if(pres) sep = ch
                 exit
             endif
-            cha = str(i+1:i+1)        ! character is a space delimiter
+            cha = str(i+1:i+1)          ! character is a space delimiter
             iposa = index (delims, cha)
-            if(iposa > 0) then        ! next character is a delimiter
+            if(iposa > 0) then          ! next character is a delimiter
                 str = str(i+2:)
                 if(pres) sep=cha
                 exit
@@ -284,3 +273,4 @@ contains
     end function Upper
     !
 end module String
+!

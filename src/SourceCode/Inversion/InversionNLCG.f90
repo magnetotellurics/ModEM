@@ -24,13 +24,15 @@ module InversionNLCG
         ! optional relaxation parameter (Renormalized Steepest Descent algorithm)
         real( kind=prec ) :: gamma
         !
+        real( kind=prec ) :: g_norm
+        !
         contains
             !
             final :: InversionNLCG_dtor
             !
-            procedure, public :: solve => solveInversionNLCG
+            procedure, public :: solve => solve_InversionNLCG
             !
-            procedure, public :: outputFiles => outputFilesInversionNLCG
+            procedure, public :: outputFiles => outputFiles_InversionNLCG
             !
             procedure, private :: func, gradient, updateDampingParameter
             !
@@ -38,9 +40,8 @@ module InversionNLCG
             !
     end type InversionNLCG_t
     !
-    logical :: is_complex = .TRUE.
-    !
-    private :: weightGradrients, writeHeaders
+    !private :: weightGradrients
+    private :: writeHeaders
     !
     interface InversionNLCG_t
         module procedure InversionNLCG_ctor
@@ -57,7 +58,7 @@ contains
         !
         !write( *, * ) "Constructor InversionNLCG_t"
         !
-        call self%init
+        call self%baseInit
         !
         !> NLCG Default Parameters
         ! the factor that ensures sufficient decrease in the line search >=1e-4
@@ -109,7 +110,7 @@ contains
     end function InversionNLCG_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !
     subroutine InversionNLCG_dtor( self )
         implicit none
@@ -122,7 +123,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine solveInversionNLCG( self, all_data, sigma, dsigma )
+    subroutine solve_InversionNLCG( self, all_data, sigma, dsigma )
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
@@ -154,12 +155,21 @@ contains
         !
         self%iter = 0
         !
+        !> Write func plot header
+        open( unit = ioFuncPlot, file = trim( outdir_name )//"/"//trim( outdir_name )//".func_plot", action = "write", form = "formatted", iostat = ios )
+        if( ios == 0 ) then
+            write( ioFuncPlot, * ) "SS, n_data, mNorm, nModel, F, RMS"
+            close( ioFuncPlot )
+        else
+            call errStop( "solve_InversionNLCG > cant open ["//trim( outdir_name )//".func_plot]." )
+        endif
+        !
+        !> Open main Inversion log 
         open( unit = ioInvLog, file = trim( outdir_name )//"/NLCG.log", status="unknown", position="append", iostat=ios )
         !
         if( ios == 0 ) then
             !
-            write( 1983, * ) "SS, Ndata, mNorm, nModel, F, RMS"
-            !
+            !> Write log starting messages
             write( *, "( a50, es12.5 )" ) "The initial damping parameter lambda is ", self%lambda
             write( *, "( a64, f12.6 )" ) "The initial line search step size (in model units) is ", self%startdm
             !
@@ -168,14 +178,15 @@ contains
             !
             ! starting model contains the rough deviations from the prior
             allocate( mHat, source = dsigma )
+            mHat = dsigma
             !
             !  compute the penalty functional and predicted data
             i_sol = 0
             !
             call func( self, all_data, sigma, mHat, r_value, m_norm, dHat, i_sol, self%rms )
             !
-            call printf( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
-            call printf( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
+            call printLog( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
+            call printLog( "START", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
             !
             n_func = 1
             !
@@ -183,6 +194,12 @@ contains
             call model_cov%multBy_CmSqrt( mHat, dsigma )
             !
             call dsigma%linComb( ONE, ONE, sigma )
+            !
+            !> Initialize Gradient Model
+            allocate( grad, source = sigma )
+            grad = sigma
+            !
+            call grad%zeros
             !
             !> compute gradient of the full penalty functional
             call gradient( self, all_data, sigma, mHat, grad, dHat, i_sol )
@@ -193,7 +210,7 @@ contains
             write( ioInvLog, "( a42, es12.5 )" ) "GRAD: initial norm of the gradient is", g_norm
             !
             if( g_norm < TOL6 ) then
-                stop "Error: NLCGsolver: Problem with your gradient computations: first gradient is zero"
+                call errStop( "solve_InversionNLCG > Problem with your gradient computations: first gradient is zero" )
             else
                 !
                 self%alpha = self%startdm / g_norm
@@ -207,22 +224,30 @@ contains
             nCG = 0
             !
             allocate( g, source = grad )
+            g = grad
+            !
+            allocate( gPrev, source = grad )
+            gPrev = grad
             !
             call g%linComb( MinusONE, R_ZERO, grad )
             !
             allocate( h, source = g )
+            h = g
             !
             call self%outputFiles( dHat, all_data, dsigma, mHat )
             !
-            write( 1982, * ) "Iter, Alpha, Beta, gNorm, RMS"
+            !> Write Inversion plot header
+            open( unit = ioInvPlot, file = trim( outdir_name )//"/"//trim( outdir_name )//".inv_plot", status="unknown", iostat=ios )
+            if( ios == 0 ) then
+                write( ioInvPlot, * ) "Iter, Alpha, Beta, gNorm, RMS"
+                close( ioInvPlot )
+            else
+                call errStop( "solve_InversionNLCG > cant open ["//trim( outdir_name )//"/"//trim( outdir_name )//".inv_plot"//"]" )
+            endif
             !
             do! while( rms .GE. self%rms_tol .AND. self%iter .LT. self%max_iters )
                 !
-                write( 1982, * ) self%iter, ", ", &
-                                    self%alpha, ", ", &
-                                    self%beta, ", ", &
-                                    g_norm, ", ", &
-                                    self%rms
+                call self%printInvPlot( g_norm )
                 !
                 !  test for convergence ...
                 if( self%rms .LT. self%rms_tol .OR. self%iter .GE. self%max_iters ) then
@@ -253,24 +278,21 @@ contains
                         !
                     case( "Quadratic" )
                         !
-                        stop "Error: NLCGsolver: Quadratic Line Search not Implemented"
+                        call errStop( "solve_InversionNLCG > Quadratic Line Search not implemented." )
                         !
                     case( "Wolfe" )
                         !
-                        stop "Error: NLCGsolver: Wolfe Line Search not Implemented"
+                        call errStop( "solve_InversionNLCG > Wolfe Line Search not implemented." )
                         !
                     case default
-                        stop "Error: NLCGsolver: Unknown line search requested in NLCG"
+                        call errStop( "solve_InversionNLCG > Unknown Line Search requested!" )
                     !
                 end select
                 !
                 n_func = n_func + nLS
                 !
-                if( allocated( gPrev ) ) deallocate( gPrev )
-                allocate( gPrev, source = g )
-                !
-                if( allocated( g ) ) deallocate( g )
-                allocate( g, source = grad )
+                gPrev = g
+                g = grad
                 !
                 call g%linComb( MinusONE, R_ZERO, grad )
                 !
@@ -287,8 +309,8 @@ contains
                 !
                 m_norm = mHat%dotProd( mHat ) / n_model
                 !
-                call printf( "with", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
-                call printf( "with", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
+                call printLog( "with", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
+                call printLog( "with", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
                 !
                 ! write out the intermediate model solution and responses
                 call model_cov%multBy_CmSqrt( mHat, dsigma )
@@ -334,13 +356,12 @@ contains
                     !
                     !> restart
                     write( *, * ) "Restarting NLCG with the damping parameter updated"
-                    call printf( "to", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
+                    call printLog( "to", self%lambda, self%alpha, r_value, m_norm, self%rms, .TRUE. )
                     !
                     write( ioInvLog, * ) "Restarting NLCG with the damping parameter updated"
-                    call printf( "to", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
+                    call printLog( "to", self%lambda, self%alpha, r_value, m_norm, self%rms, .FALSE. )
                     !
-                    if( allocated( h ) ) deallocate( h )
-                    allocate( h, source = g )
+                    h = g
                     !
                     nCG = 0
                     !
@@ -382,15 +403,21 @@ contains
                     !
                 endif
                 !
-                if( allocated( h ) ) deallocate( h )
-                allocate( h, source = g )
+                h = g
                 !
                 call h%linComb( ONE, self%beta, h )
                 !
             enddo
             !
+            deallocate( grad )
+            deallocate( g )
+            deallocate( gPrev )
+            deallocate( h )
+            !
             !> multiply by C^{1/2} and add m_0
             call model_cov%multBy_CmSqrt( mHat, dsigma )
+            !
+            deallocate( mHat )
             !
             call dsigma%linComb( ONE, ONE, sigma )
             !
@@ -404,17 +431,13 @@ contains
             ! Verbose
             write( *, * ) "     - Finish Inversion NLCG, output files in [", trim( outdir_name ), "]"
             !
-            if( allocated( gPrev ) ) deallocate( gPrev )
-            deallocate( mHat, grad, g, h )
-            !
         else
             !
-            write( *, * ) "Error opening [", trim( outdir_name )//"/NLCG.log", "] in writeData!"
-            stop
+            call errStop( "solve_InversionNLCG > opening ["//trim( outdir_name )//"/NLCG.log] in writeData!" )
             !
         endif
         !
-    end subroutine solveInversionNLCG
+    end subroutine solve_InversionNLCG
     !
     !> Compute the full penalty functional F
     !> Also output the predicted data and the EM solution
@@ -425,7 +448,8 @@ contains
         !
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( in ) :: sigma, mHat
+        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: mHat
         real( kind=prec ), intent( inout ) :: F, m_norm
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: dHat
         integer, intent( inout ) :: i_sol
@@ -434,7 +458,7 @@ contains
         type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
         class( ModelParameter_t ), allocatable :: dsigma
         real( kind=prec ) :: SS
-        integer :: Ndata, n_model
+        integer :: n_data, n_model
         !
         ! compute the smoothed model parameter vector
         call model_cov%multBy_CmSqrt( mHat, dsigma )
@@ -451,6 +475,8 @@ contains
         call serialForwardModeling( dsigma, dHat, i_sol )
 #endif
         !
+        deallocate( dsigma )
+        !
         !> initialize res
         res = all_data
         !
@@ -462,18 +488,16 @@ contains
         !
         call normalizeData( Nres, 2 )
         !
-        !call setComplex( Nres, is_complex )
-        !
         SS = dotProdData( res, Nres )
         !
-        Ndata = countValues( res )
+        n_data = countValues( res )
         !
         m_norm = mHat%dotProd( mHat )
         !
         n_model = mHat%countModel()
         !
         !> penalty functional = sum of squares + scaled model norm
-        F = SS / Ndata + ( self%lambda * m_norm / n_model )
+        F = SS / n_data + ( self%lambda * m_norm / n_model )
         !
         !> scale m_norm for output
         m_norm = m_norm / n_model
@@ -481,13 +505,11 @@ contains
         ! if required, compute the Root Mean Squared misfit
         if( present( rms ) ) then
             !
-            rms = sqrt( SS / Ndata )
+            rms = sqrt( SS / n_data )
             !
         endif
         !
-        write( 1983, * ) SS, ", ", Ndata, ", ", m_norm, ", ", n_model, ", ", F, ", ", rms
-        !
-        deallocate( dsigma )
+        call printFuncPlot( SS, n_data, m_norm, n_model, F, rms )
         !
     end subroutine func
     !
@@ -506,15 +528,15 @@ contains
         !
         class( InversionNLCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( in ) :: sigma, mHat
-        class( ModelParameter_t ), allocatable, intent( inout ) :: grad
+        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: mHat, grad
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: dHat
         integer, intent( in ) :: i_sol
         !
-        real( kind=prec ) :: Ndata, n_model
+        real( kind=prec ) :: n_data, n_model
         type( DataGroupTx_t ), allocatable, dimension(:) :: res
         class( ModelParameter_t ), allocatable :: dsigma, JTd, CmJTd
-        class( ModelParameter_t ), allocatable, dimension(:) :: s_hat
+        type( GenModelParameter_t ), allocatable, dimension(:) :: s_hat
         !
         ! compute the smoothed model parameter vector
         call model_cov%multBy_CmSqrt( mHat, dsigma )
@@ -525,27 +547,11 @@ contains
         ! initialize res
         res = all_data
         !
-        ! compute residual: res = (all_data-dHat)/Ndata
+        ! compute residual: res = (all_data-dHat)/n_data
         !call linCombData( ONE, all_data, MinusONE, dHat, res )
         call subData( res, dHat )
         !
         call normalizeData( res, 2 )
-        !
-        !> ALLOCATE S_HAT ????
-        select type( sigma )
-            !
-            class is( ModelParameterCell_SG_t )
-                !
-                allocate( ModelParameterCell_SG_t :: s_hat( size( all_data ) ) )
-                !
-            class is( ModelParameterCell_SG_VTI_t )
-                !
-                allocate( ModelParameterCell_SG_VTI_t :: s_hat( size( all_data ) ) )
-                !
-            class default
-               call errStop( "gradient > Unclassified model" )
-            !
-        end select
         !
 #ifdef MPI
         call masterJMult_T( dsigma, res, JTd, i_sol, s_hat )
@@ -553,27 +559,27 @@ contains
         call serialJMult_T( dsigma, res, JTd, i_sol, s_hat )
 #endif
         !
-        write( 1984, * ) self%iter, JTd%dotProd( JTd )
+        deallocate( dsigma )
         !
-        !> FURTHER JOINT DEVELOPMENT ????
+        !> FURTHER JOINT DEVELOPMENT !!!!
         !call weightGradrients( s_hat, all_data, dHat, JTd )
         !
         call model_cov%multBy_CmSqrt( JTd, CmJTd )
+        !
+        deallocate( JTd )
         !
         ! compute the number of data and model parameters for scaling
         n_model = mHat%countModel()
         !
         ! multiply by 2 (to be consistent with the formula)
         ! and add the gradient of the model norm
-        Ndata = countValues( dHat )
+        n_data = countValues( dHat )
         !
-        ! Initialize Grad with CmJTd, and linComb with mHat
-        if( allocated( grad ) ) deallocate( grad )
-        allocate( grad, source = CmJTd )
+        grad = CmJTd
         !
-        call grad%linComb( MinusTWO / Ndata, TWO * self%lambda / n_model, mHat )
+        deallocate( CmJTd )
         !
-        deallocate( dsigma, JTd, CmJTd )
+        call grad%linComb( MinusTWO / n_data, TWO * self%lambda / n_model, mHat )
         !
     end subroutine gradient
     !
@@ -583,7 +589,7 @@ contains
         implicit none
         !
         class( InversionNLCG_t ), intent( inout ) :: self
-        class( ModelParameter_t ), allocatable, intent( in ) :: mHat
+        class( ModelParameter_t ), allocatable, intent( inout ) :: mHat
         real( kind=prec ), intent( inout ) :: F
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
         !
@@ -656,8 +662,8 @@ contains
     !>     f(alpha) < f(0) + c alpha f"(0).
     !
     !> The optional relaxation parameter gamma is needed for algorithms
-    !> like the Renormalised Steepest Descent (RSD). See the dynamical
-    !> systems in optimisation research (Pronzato et al [2000, 2001]).
+    !> like the Renormalized Steepest Descent (RSD). See the dynamical
+    !> systems in optimization research (Pronzato et al [2000, 2001]).
     !> To the best of my knowledge, it is not useful for NLCG.
     !
     subroutine lineSearchCubic( self, all_data, sigma, h, mHat, &
@@ -666,8 +672,8 @@ contains
         !
         class( InversionNLCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( in ) :: sigma, h    ! search direction
-        class( ModelParameter_t ), allocatable, intent( inout ) :: mHat
+        class( ModelParameter_t ), allocatable, intent( in ) :: sigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: h, mHat
         real( kind=prec ), intent( inout ) :: f
         class( ModelParameter_t ), allocatable, intent( inout ) :: grad
         integer, intent( out ) :: niter
@@ -688,6 +694,7 @@ contains
         niter = 0
         !
         allocate( mHat_0, source = mHat )
+        mHat_0 = mHat
         !
         f_0 = f
         !
@@ -709,6 +716,7 @@ contains
         !
         ! compute the trial mHat, f, dHat, e_all, rms
         allocate( mHat_1, source = mHat_0 )
+        mHat_1 = mHat_0
         !
         call mHat_1%linComb( ONE, alpha_1, h )
         !
@@ -716,14 +724,15 @@ contains
         !
         call self%func( all_data, sigma, mHat_1, f_1, mNorm_1, dHat_1, i_sol, rms_1 )
         !
-        call printf( "STARTLS", self%lambda, self%alpha, f_1, mNorm_1, rms_1, .TRUE. )
-        call printf( "STARTLS", self%lambda, self%alpha, f_1, mNorm_1, rms_1, .FALSE. )
+        call printLog( "STARTLS", self%lambda, self%alpha, f_1, mNorm_1, rms_1, .TRUE. )
+        call printLog( "STARTLS", self%lambda, self%alpha, f_1, mNorm_1, rms_1, .FALSE. )
         !
         niter = niter + 1
         !
         if( f_1 - f_0 >= R_LARGE ) then
-            write( *, * ) "Error: lineSearchCubic > Try a smaller starting r_value of alpha."
-            stop
+            !
+            call errStop( "lineSearchCubic > Try a smaller starting r_value of alpha." )
+            !
         endif
         !
         ! try fitting a quadratic
@@ -739,8 +748,7 @@ contains
             dHat = dHat_1
             i_sol = 1
             !
-            if( allocated( mHat ) ) deallocate( mHat )
-            allocate( mHat, source = mHat_1 )
+            mHat = mHat_1
             !
             self%rms = rms_1
             !
@@ -749,8 +757,7 @@ contains
             ! compute the gradient and exit
             if( relaxation ) then
                 !
-                if( allocated( mHat ) ) deallocate( mHat )
-                allocate( mHat, source = mHat_0 )
+                mHat = mHat_0
                 !
                 call mHat%linComb( ONE, gamma * self%alpha, h )
                 !
@@ -758,8 +765,8 @@ contains
                 !
                 call self%func( all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
                 !
-                call printf( "RELAX", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
-                call printf( "RELAX", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
+                call printLog( "RELAX", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+                call printLog( "RELAX", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
                 !
             endif
             !
@@ -777,8 +784,7 @@ contains
         ! otherwise compute the functional at the minimizer of the quadratic
         self%alpha = -b / ( TWO * a )
         !
-        if( allocated( mHat ) ) deallocate( mHat )
-        allocate( mHat, source = mHat_0 )
+        mHat = mHat_0
         !
         call mHat%linComb( ONE, self%alpha, h )
         !
@@ -786,8 +792,8 @@ contains
         !
         call func( self, all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
         !
-        call printf( "QUADLS", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
-        call printf( "QUADLS", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
+        call printLog( "QUADLS", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+        call printLog( "QUADLS", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
         !
         niter = niter + 1
         !
@@ -802,8 +808,7 @@ contains
                 dHat = dHat_1
                 i_sol = 1
                 !
-                if( allocated( mHat ) ) deallocate( mHat )
-                allocate( mHat, source = mHat_1 )
+                mHat = mHat_1
                 !
                 self%rms = rms_1
                 f = f_1
@@ -813,8 +818,7 @@ contains
             ! compute the gradient and exit
             if( relaxation ) then
                 !
-                if( allocated( mHat ) ) deallocate( mHat )
-                allocate( mHat, source = mHat_0 )
+                mHat = mHat_0
                 !
                 call mHat%linComb( ONE, gamma * self%alpha, h )
                 !
@@ -822,8 +826,8 @@ contains
                 !
                 call self%func( all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
                 !
-                call printf( "QUADLS_RLX", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
-                call printf( "QUADLS_RLX", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
+                call printLog( "QUADLS_RLX", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+                call printLog( "QUADLS_RLX", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
                 !
             endif
             !
@@ -838,13 +842,13 @@ contains
             !
         endif
         !
-        ! this should not happen, but in practice it is possible to end up with
-        ! a function increase at this point (e.g. in the current global code).
-        ! Most likely, this is due to an inaccuracy in the gradient computations.
-        ! In this case, we avoid an infinite loop by exiting line search.
-        ! It is also possible that both f_1 and f are worse than the starting r_value!
-        ! Then, take whichever is smaller. Ideally, want to decrease the tolerance
-        ! for gradient computations if this happens.
+        !> this should not happen, but in practice it is possible to end up with
+        !> a function increase at this point (e.g. in the current global code).
+        !> Most likely, this is due to an inaccuracy in the gradient computations.
+        !> In this case, we avoid an infinite loop by exiting line search.
+        !> It is also possible that both f_1 and f are worse than the starting r_value!
+        !> Then, take whichever is smaller. Ideally, want to decrease the tolerance
+        !> for gradient computations if this happens.
         if( f > f_0 ) then
             !
             write( *, * ) "Unable to fit a quadratic due to bad gradient estimate, exiting line search"
@@ -872,8 +876,7 @@ contains
                 self%alpha = ( -b + sqrt( b*b - 3*a*g_0 ) ) / ( 3 * a )
                 !
                 ! compute the penalty functional
-                if( allocated( mHat ) ) deallocate( mHat )
-                allocate( mHat, source = mHat_0 )
+                mHat = mHat_0
                 !
                 call mHat%linComb( ONE, self%alpha, h )
                 !
@@ -881,8 +884,8 @@ contains
                 !
                 call self%func( all_data, sigma, mHat, f, m_norm, dHat, i_sol, self%rms )
                 !
-                call printf( "CUBICLS", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
-                call printf( "CUBICLS", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
+                call printLog( "CUBICLS", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+                call printLog( "CUBICLS", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
                 !
                 niter = niter + 1
                 !
@@ -901,7 +904,7 @@ contains
                 ! check that the function still decreases to avoid infinite loops in case of a bug
                 if( abs( f_j - f_i ) < TOL8 ) then
                     !
-                    write( *, * ) achar(27)//"[91m# Warning:"//achar(27)//"[0m exiting cubic search since the function no longer decreases!"
+                    call warning( "Exiting cubic search since the function no longer decreases!" )
                     write( ioInvLog, * ) "Warning: exiting cubic search since the function no longer decreases!"
                     !
                     exit
@@ -925,8 +928,7 @@ contains
             dHat = dHat_1
             i_sol = 1
             !
-            if( allocated( mHat ) ) deallocate( mHat )
-            allocate( mHat, source = mHat_1 )
+            mHat = mHat_1
             !
             self%rms = rms_1
             f = f_1
@@ -936,8 +938,7 @@ contains
         ! compute gradient of the full penalty functional and exit
         if( relaxation ) then
             !
-            if( allocated( mHat ) ) deallocate( mHat )
-            allocate( mHat, source = mHat_0 )
+            mHat = mHat_0
             !
             call mHat%linComb( ONE, gamma * self%alpha, h )
             !
@@ -945,21 +946,21 @@ contains
             !
             call self%func( all_data, sigma, mHat, f,m_norm, dHat, i_sol, self%rms )
             !
-            call printf( "RELAX2", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
-            call printf( "RELAX2", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
+            call printLog( "RELAX2", self%lambda, self%alpha, f, m_norm, self%rms, .TRUE. )
+            call printLog( "RELAX2", self%lambda, self%alpha, f, m_norm, self%rms, .FALSE. )
             !
         endif
         !
         call self%gradient( all_data, sigma, mHat, grad, dHat, i_sol )
         !
-        write( *, * ) "Gradient computed, line search finished"
-        write( ioInvLog, * ) "Gradient computed, line search finished"
+        write( *, * ) "Gradient computed, lineSearchCubic finished"
+        write( ioInvLog, * ) "Gradient computed, lineSearchCubic finished"
         !
         deallocate( mHat_0, mHat_1 )
         !
     end subroutine lineSearchCubic
     !
-    !> ????
+    !> No subroutine briefing
     !
     subroutine writeHeaders()
         implicit none
@@ -995,7 +996,7 @@ contains
                         write( ioGradRMS, "( A12, i3, A2 )", advance = "no" ) "CSEM", i_tx, ", "
                         !
                     class default
-                        stop "Error: writeHeaders > Unclassified Transmitter"
+                        call errStop( "writeHeaders > Unclassified Transmitter" )
                     !
                 end select
                 !
@@ -1008,181 +1009,190 @@ contains
         close( ioGradRMS )
         !
     end subroutine writeHeaders
-    !
-    subroutine weightGradrients( s_hat, d, dHat, JTd )
-        implicit none
-        !
-        class( ModelParameter_t ), allocatable, dimension(:), intent( in ) :: s_hat
-        type( DataGroupTx_t ), dimension(:), intent( in ) :: d, dHat
-        class( ModelParameter_t ), intent( inout ) :: JTd
-        !
-        integer :: Ndata, i_tx, n_tx, ios
-        class( Scalar_t ), allocatable, dimension(:) :: shat_cond
-        real( kind=prec ) :: grad_norm, rms, SS
-        real( kind=prec ) :: sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
-        real( kind=prec ) :: sum_tx_rms, mt_rms, csem_rms
-        type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
-        real( kind=prec ), allocatable, dimension(:) :: tx_weights, tx_grad_norms, tx_rms
-        !
-        !> Open a file for output the operations realized on the gradient
-        open( unit = ioGradLog, file = trim( outdir_name )//"/GradNLCG.log", status="unknown", position="append", iostat=ios )
-        !
-        open( unit = ioGradNorm, file = trim( outdir_name )//"/GradNorm.log", status="unknown", position="append", iostat=ios )
-        !
-        open( unit = ioGradRMS, file = trim( outdir_name )//"/GradRMS.log", status="unknown", position="append", iostat=ios )
-        !
-        if( ios == 0 ) then
-            !
-            write( ioGradLog, * ) "##########################"
-            !
-            res = d
-            !
-            !> res = res - dHat
-            call subData( res, dHat )
-            !
-            Nres = res
-            call normalizeData( Nres, 2 )
-            !
-            !> Zero the variables for summation
-            sum_tx_grad_norm = 0.0
-            sum_tx_rms = 0.0
-            mt_grad_norm = 0.0
-            csem_grad_norm = 0.0
-            mt_rms = 0.0
-            csem_rms = 0.0
-            !
-            !> Allocate arrays to store values for each of the n_tx transmitters
-            n_tx = size( transmitters )
-            !
-            allocate( tx_weights( n_tx ) )
-            allocate( tx_grad_norms( n_tx ) )
-            allocate( tx_rms( n_tx ) )
-            !
-            do i_tx = 1, n_tx
-                !
-                tx_grad_norms( i_tx ) = sqrt( s_hat( i_tx )%dotProd( s_hat( i_tx ) ) )
-                !
-                write( ioGradNorm, "( f15.3, A1 )", advance = "no" ) tx_grad_norms( i_tx ), ","
-                !
-                tx_rms( i_tx ) = sqrt( res( i_tx )%dotProd( Nres( i_tx ) ) / ( size( Nres( i_tx )%data ) * Nres( i_tx )%data(1)%n_comp * 2 ) )
-                !
-                write( ioGradRMS, "( f15.3, A1 )", advance = "no" ) tx_rms( i_tx ), ","
-                !
-                !> Instantiate Transmitter's Source - According to transmitter type and chosen via control file
-                select type( Tx => getTransmitter( i_tx ) )
-                    !
-                    class is( TransmitterMT_t )
-                        !
-                        mt_grad_norm = mt_grad_norm + tx_grad_norms( i_tx )
-                        mt_rms = mt_rms + tx_rms( i_tx )
-                        !
-                        write( *, * ) "MT > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
-                        write( ioGradLog, * ) "MT > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
-                        !
-                    class is( TransmitterCSEM_t )
-                        !
-                        csem_grad_norm = csem_grad_norm + tx_grad_norms( i_tx )
-                        csem_rms = csem_rms + tx_rms( i_tx )
-                        !
-                        write( *, * ) "CSEM > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
-                        write( ioGradLog, * ) "CSEM > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
-                        !
-                    class default
-                        stop "Error: handleGradVectorsNLCG > Unclassified Transmitter"
-                    !
-                end select
-                !
-                sum_tx_grad_norm = sum_tx_grad_norm + tx_grad_norms( i_tx )
-                sum_tx_rms = sum_tx_rms + tx_rms( i_tx )
-                !
-            enddo
-            !
-            grad_norm = real( sqrt( JTd%dotProd( JTd ) ), kind=prec )
-            !
-            write( *, * ) "MODEL GRAD NORM: ", grad_norm
-            write( ioGradLog, * ) "MODEL GRAD NORM: ", grad_norm
-            !
-            write( *, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
-            write( ioGradLog, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
-            !
-            SS = dotProdData( res, Nres )
-            !
-            Ndata = countValues( res )
-            !
-            rms = sqrt( SS / Ndata )
-            !
-            write( *, * ) "RMS: ", rms
-            !
-            write( ioGradRMS, "( f15.3 )" ) rms
-            !
-            close( ioGradRMS )
-            !
-            write( ioGradLog, * ) "RMS: ", rms
-            !
-            write( *, * ) "AVG/SUM TX RMS = MT + CSEM", sum_tx_rms/n_tx, sum_tx_rms, mt_rms, csem_rms
-            write( ioGradLog, * ) "AVG/SUM TX RMS = MT + CSEM", sum_tx_rms/n_tx, sum_tx_rms, mt_rms, csem_rms
-            !
-            do i_tx = 1, n_tx
-                !
-                tx_weights( i_tx ) = sum_tx_grad_norm / ( tx_grad_norms( i_tx ) * n_tx )
-                !
-            enddo
-            !
-            write( *, * ) "TX WEIGHTS: ", tx_weights
-            write( ioGradLog, * ) "TX WEIGHTS: ", tx_weights
-            !
-            if( joint_type /= INV_UNWEIGHTED ) then
-                !
-                !> Set back the weighted gradient conductivity
-                call JTd%zeros
-                !
-                do i_tx = 1, n_tx
-                    !
-                    call s_hat( i_tx )%getCond( shat_cond )
-                    !
-                    !call shat_cond%mult( tx_weights( i_tx ) )
-                    !
-                    !> ADAPT TO THE WHOLE MODEL
-                    !call JTd%linComb( ONE, ONE, grad_cond )
-                    !
-                enddo
-                !
-            endif
-            !
-            deallocate( shat_cond )
-            !
-            grad_norm = real( sqrt( JTd%dotProd( JTd ) ), kind=prec )
-            !
+    ! !
+    ! subroutine weightGradrients( s_hat, d, dHat, JTd )
+        ! implicit none
+        ! !
+        ! type( GenModelParameter_t ), allocatable, dimension(:), intent( in ) :: s_hat
+        ! type( DataGroupTx_t ), dimension(:), intent( in ) :: d, dHat
+        ! class( ModelParameter_t ), intent( inout ) :: JTd
+        ! !
+        ! integer :: n_data, i, i_tx, n_tx, ios
+        ! class( Scalar_t ), allocatable, dimension(:) :: shat_cond, JTd_cond
+        ! real( kind=prec ) :: grad_norm, rms, SS
+        ! real( kind=prec ) :: sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
+        ! real( kind=prec ) :: sum_tx_rms, mt_rms, csem_rms
+        ! type( DataGroupTx_t ), allocatable, dimension(:) :: res, Nres
+        ! real( kind=prec ), allocatable, dimension(:) :: tx_weights, tx_grad_norms, tx_rms
+        ! !
+        ! !> Open a file for output the operations realized on the gradient
+        ! open( unit = ioGradLog, file = trim( outdir_name )//"/GradNLCG.log", status="unknown", position="append", iostat=ios )
+        ! !
+        ! open( unit = ioGradNorm, file = trim( outdir_name )//"/GradNorm.log", status="unknown", position="append", iostat=ios )
+        ! !
+        ! open( unit = ioGradRMS, file = trim( outdir_name )//"/GradRMS.log", status="unknown", position="append", iostat=ios )
+        ! !
+        ! if( ios == 0 ) then
+            ! !
+            ! write( ioGradLog, * ) "##########################"
+            ! !
+            ! res = d
+            ! !
+            ! !> res = res - dHat
+            ! call subData( res, dHat )
+            ! !
+            ! Nres = res
+            ! call normalizeData( Nres, 2 )
+            ! !
+            ! !> Zero the variables for summation
+            ! sum_tx_grad_norm = 0.0
+            ! sum_tx_rms = 0.0
+            ! mt_grad_norm = 0.0
+            ! csem_grad_norm = 0.0
+            ! mt_rms = 0.0
+            ! csem_rms = 0.0
+            ! !
+            ! !> Allocate arrays to store values for each of the n_tx transmitters
+            ! n_tx = size( transmitters )
+            ! !
+            ! allocate( tx_weights( n_tx ) )
+            ! allocate( tx_grad_norms( n_tx ) )
+            ! allocate( tx_rms( n_tx ) )
+            ! !
+            ! do i_tx = 1, n_tx
+                ! !
+                ! tx_grad_norms( i_tx ) = sqrt( s_hat( i_tx )%m%dotProd( s_hat( i_tx ) ) )
+                ! !
+                ! write( ioGradNorm, "( f15.3, A1 )", advance = "no" ) tx_grad_norms( i_tx ), ","
+                ! !
+                ! tx_rms( i_tx ) = sqrt( res( i_tx )%dotProd( Nres( i_tx ) ) / ( size( Nres( i_tx )%data ) * Nres( i_tx )%data(1)%n_comp * 2 ) )
+                ! !
+                ! write( ioGradRMS, "( f15.3, A1 )", advance = "no" ) tx_rms( i_tx ), ","
+                ! !
+                ! !> Instantiate Transmitter's Source - According to transmitter type and chosen via control file
+                ! select type( Tx => getTransmitter( i_tx ) )
+                    ! !
+                    ! class is( TransmitterMT_t )
+                        ! !
+                        ! mt_grad_norm = mt_grad_norm + tx_grad_norms( i_tx )
+                        ! mt_rms = mt_rms + tx_rms( i_tx )
+                        ! !
+                        ! write( *, * ) "MT > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        ! write( ioGradLog, * ) "MT > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        ! !
+                    ! class is( TransmitterCSEM_t )
+                        ! !
+                        ! csem_grad_norm = csem_grad_norm + tx_grad_norms( i_tx )
+                        ! csem_rms = csem_rms + tx_rms( i_tx )
+                        ! !
+                        ! write( *, * ) "CSEM > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        ! write( ioGradLog, * ) "CSEM > GRAD_NORM, RMS: ", tx_grad_norms( i_tx ), tx_rms( i_tx )
+                        ! !
+                    ! class default
+                        ! call errStop( "handleGradVectorsNLCG > Unclassified Transmitter" )
+                    ! !
+                ! end select
+                ! !
+                ! sum_tx_grad_norm = sum_tx_grad_norm + tx_grad_norms( i_tx )
+                ! sum_tx_rms = sum_tx_rms + tx_rms( i_tx )
+                ! !
+            ! enddo
+            ! !
+            ! grad_norm = real( sqrt( JTd%dotProd( JTd ) ), kind=prec )
+            ! !
+            ! write( *, * ) "MODEL GRAD NORM: ", grad_norm
+            ! write( ioGradLog, * ) "MODEL GRAD NORM: ", grad_norm
+            ! !
+            ! write( *, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
+            ! write( ioGradLog, * ) "SUM TX GRAD NORM = MT + CSEM", sum_tx_grad_norm, mt_grad_norm, csem_grad_norm
+            ! !
+            ! SS = dotProdData( res, Nres )
+            ! !
+            ! n_data = countValues( res )
+            ! !
+            ! rms = sqrt( SS / n_data )
+            ! !
+            ! write( *, * ) "RMS: ", rms
+            ! !
+            ! write( ioGradRMS, "( f15.3 )" ) rms
+            ! !
+            ! close( ioGradRMS )
+            ! !
+            ! write( ioGradLog, * ) "RMS: ", rms
+            ! !
+            ! write( *, * ) "AVG/SUM TX RMS = MT + CSEM", sum_tx_rms/n_tx, sum_tx_rms, mt_rms, csem_rms
+            ! write( ioGradLog, * ) "AVG/SUM TX RMS = MT + CSEM", sum_tx_rms/n_tx, sum_tx_rms, mt_rms, csem_rms
+            ! !
+            ! do i_tx = 1, n_tx
+                ! !
+                ! tx_weights( i_tx ) = sum_tx_grad_norm / ( tx_grad_norms( i_tx ) * n_tx )
+                ! !
+            ! enddo
+            ! !
+            ! write( *, * ) "TX WEIGHTS: ", tx_weights
+            ! write( ioGradLog, * ) "TX WEIGHTS: ", tx_weights
+            ! !
+            ! if( joint_type /= INV_UNWEIGHTED ) then
+                ! !
+                ! !> Set back the weighted gradient conductivity
+                ! call JTd%zeros
+                ! !
+                ! JTd_cond = JTd%getCond()
+                ! !
+                ! do i_tx = 1, n_tx
+                    ! !
+                    ! shat_cond = s_hat( i_tx )%m%getCond()
+                    ! !
+                    ! do i = 1, size( shat_cond )
+                        ! !
+                        ! call shat_cond(i)%mult( tx_weights( i_tx ) )
+                        ! !
+                        ! !
+                        ! !> ADAPT TO THE WHOLE MODEL
+                        ! call JTd_cond(i)%linComb( ONE, ONE, shat_cond(i) )
+                        ! !
+                    ! enddo
+                    ! !
+                    
+                ! enddo
+                ! !
+                ! call JTd%setCond( JTd_cond )
+                ! !
+            ! endif
+            ! !
+            ! deallocate( shat_cond )
+            ! !
+            ! grad_norm = real( sqrt( JTd%dotProd( JTd ) ), kind=prec )
+            ! !
             
-            write( *, * ) "FINAL GRAD NORM: ", grad_norm
-            !
-            write( ioGradNorm, "( f15.3 )" ) grad_norm
-            !
-            close( ioGradNorm )
-            !
-            write( ioGradLog, * ) "FINAL GRAD NORM: ", grad_norm
-            !
-            deallocate( tx_weights, tx_grad_norms, tx_rms )
-            !
-            close( ioGradLog )
-            !
-        else
-            !
-            write( *, * ) "Error opening [", trim( outdir_name )//"/GradNLCG.log", "] in handleGradVectorsNLCG!"
-            stop
-            !
-        endif
-        !
-    end subroutine weightGradrients
+            ! write( *, * ) "FINAL GRAD NORM: ", grad_norm
+            ! !
+            ! write( ioGradNorm, "( f15.3 )" ) grad_norm
+            ! !
+            ! close( ioGradNorm )
+            ! !
+            ! write( ioGradLog, * ) "FINAL GRAD NORM: ", grad_norm
+            ! !
+            ! deallocate( tx_weights, tx_grad_norms, tx_rms )
+            ! !
+            ! close( ioGradLog )
+            ! !
+        ! else
+            ! !
+            ! call errStop( "weightGradrients > cant open ["//trim( outdir_name )//"/GradNLCG.log!" )
+            ! !
+        ! endif
+        ! !
+    ! end subroutine weightGradrients
     !
-    !> ????
+    !> No subroutine briefing
     !
-    subroutine outputFilesInversionNLCG( self, all_predicted_data, res, dsigma, mHat )
+    subroutine outputFiles_InversionNLCG( self, all_predicted_data, res, dsigma, mHat )
         implicit none
         !
         class( InversionNLCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
-        class( ModelParameter_t ), intent( in ) :: dsigma, mHat
+        class( ModelParameter_t ), intent( inout ) :: dsigma, mHat
         !
         character(100) :: out_file_name
         character(3) :: char3
@@ -1209,7 +1219,7 @@ contains
         !
         call mHat%write( trim( out_file_name ) )
         !
-    end subroutine outputFilesInversionNLCG
+    end subroutine outputFiles_InversionNLCG
     !
 end module InversionNLCG
 !

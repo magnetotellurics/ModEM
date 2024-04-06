@@ -1,5 +1,5 @@
 !
-!> Module with the ForwardModeling routines
+!> Module with the Forward Modeling routines
 !
 module ForwardModeling
 !
@@ -23,7 +23,7 @@ contains
     subroutine solveAll( sigma )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         !
         class( Transmitter_t ), pointer :: Tx
         integer :: i_tx
@@ -47,22 +47,22 @@ contains
     end subroutine solveAll
     !
     !> Calculate E_Solution(e_sol_0) for a single Transmitter
-    !> ForwardSolver must be allocated
+    !> Tx%forward_solver must be previously allocated !!!!
     !
     subroutine solveTx( sigma, Tx )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         class( Transmitter_t ), pointer, intent( inout ) :: Tx
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
-        !> Instantiate Transmitter's Source - According to transmitter type and chosen via control file
+        !> Instantiate Transmitter's Source - According to transmitter type and chosen via fwd control file
         select type( Tx )
             !
             class is( TransmitterMT_t )
                 !
-                !> Instantiate the MT Source - Specific type can be chosen via control file
+                !> Instantiate the MT Source - Specific type can be chosen via fwd control file
                 select case( source_type_mt )
                     !
                     case( SRC_MT_1D )
@@ -71,18 +71,19 @@ contains
                         !
                     case( SRC_MT_2D )
                         !
-                        call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
+                        !call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
+                        !
+                        call errStop( "solveTx > SourceMT_2D not implemented yet!" )
                         !
                     case( "" )
                         !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > MT Source type not provided, using SourceMT_1D_t."
+                        call warning( "solveTx > MT Source type not provided, using SourceMT_1D_t." )
                         !
                         call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
                         !
                     case default
                         !
-                        write( *, * ) "Wrong MT Source type: [", source_type_mt, "]"
-                        stop
+                        call errStop( "solveTx > Wrong MT Source type: ["//source_type_mt//"]" )
                         !
                 end select
                 !
@@ -101,19 +102,18 @@ contains
                         !
                     case( "" )
                         !
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m solveTx > CSEM Source type not provided, using Dipole1D."
+                        call warning( "solveTx > CSEM Source type not provided, using Dipole1D." )
                         !
                         call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                         !
                     case default
                         !
-                        write( *, * ) "Wrong CSEM Source type: [", source_type_csem, "]"
-                        stop
+                        call errStop( "solveTx > Wrong CSEM Source type: ["//source_type_csem//"]" )
                         !
                 end select
                 !
             class default
-                stop "Error: solveTx > Unclassified Transmitter"
+                call errStop( "solveTx > Unclassified Transmitter" )
             !
         end select
         !
@@ -126,8 +126,9 @@ contains
         !
     end subroutine solveTx
     !
-    !> Routine to run a full ForwardModeling job 
-    !> and deliver the result(PredictedData) in a text file <all_predicted_data.dat>
+    !> Routine to execute a full ForwardModeling job 
+    !> Outputting its result(PredictedData) into a text file
+    !> Default <all_predicted_data.dat> or specified by argument -pd|--predicted
     !
     subroutine jobForwardModeling()
         implicit none
@@ -137,25 +138,26 @@ contains
         class( ModelParameter_t ), allocatable :: sigma
         !
         ! Verbose
-        write( *, * ) "     - Start jobForwardModeling"
+        write( *, * ) "     - Start ForwardModeling"
         !
         if( has_model_file ) then
             !
             call handleModelFile( sigma )
         !
         else
-            stop "Error: jobForwardModeling > Missing Model file!"
+            call errStop( "jobForwardModeling > Missing Model file!" )
         endif
         !
         if( has_data_file ) then
             !
-            call handleDataFile()
+            call handleDataFile
         !
         else
-            stop "Error: jobForwardModeling > Missing Data file!"
+            call errStop( "jobForwardModeling > Missing Data file!" )
         endif
         !
-        !>
+        !> If path is specified by argument -es|--esolution
+        !> Write e_sol_0 to a binary file at this path
         if( has_e_solution_file ) call writeAllESolutionHeader( size( transmitters ), transmitters(1)%Tx%n_pol, e_solution_file_name )
         !
         all_predicted_data = all_measured_data
@@ -164,7 +166,7 @@ contains
         !
         call broadcastBasicComponents()
         !
-        !> Deallocate global FWD components not used by the Master process
+        !> Deallocate global FWD Objects not used by the Master process
         deallocate( model_operator, main_grid )
         !
         call masterForwardModelling( sigma, all_predicted_data )
@@ -173,7 +175,7 @@ contains
         !
 #else
         !
-        call createDistributeForwardSolver()
+        call createDistributeForwardSolver
         !
         call serialForwardModeling( sigma, all_predicted_data )
         !
@@ -184,7 +186,7 @@ contains
         deallocate( sigma )
         !
         ! Verbose
-        write( *, * ) "     - Finish jobForwardModeling"
+        write( *, * ) "     - Finish ForwardModeling"
         !
     end subroutine jobForwardModeling
     !
@@ -196,7 +198,7 @@ contains
     subroutine serialForwardModeling( sigma, all_predicted_data, i_sol )
         implicit none
         !
-        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), intent( inout ) :: sigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
         integer, intent( in ), optional :: i_sol
         !
@@ -204,9 +206,6 @@ contains
         class( Receiver_t ), pointer :: Rx
         type( DataGroup_t ) :: data_group
         integer :: i_tx, n_tx, i_rx, sol_index
-        !
-        ! Verbose
-        write( *, * ) "          - Start Forward Modeling"
         !
         sol_index = 0
         !
@@ -227,7 +226,7 @@ contains
             call solveTx( sigma, Tx )
             !
             ! Verbose
-            write( *, * ) "               - Calculate Predicted Data"
+            write( *, "(A36)" ) "- Calculate Predicted Data"
             !
             !> Loop for each Receiver related to this Transmitter
             do i_rx = 1, size( Tx%receiver_indexes )
@@ -242,9 +241,6 @@ contains
             enddo
             !
         enddo
-        !
-        ! Verbose
-        write( *, * ) "          - Finish Forward Modeling"
         !
     end subroutine serialForwardModeling
     !
@@ -261,20 +257,23 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case( forward_solver_type )
             !
+            case( FWD_IT )
+                !
+                allocate( forward_solver, source = ForwardSolver_IT_t( model_operator, solver_type ) )
+                !
             case( FWD_IT_DC )
                 !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
                 !
             case( "" )
                 !
-                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m createDistributeForwardSolver > Forward Solver type not provided, using IT_DC."
+                call warning( "createDistributeForwardSolver > Forward Solver type not provided, using IT_DC." )
                 !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
                 !
             case default
                 !
-                write( *, * ) "Wrong Forward Solver type: [", forward_solver_type, "]"
-                stop
+                call errStop( "createDistributeForwardSolver > Wrong Forward Solver type: ["//forward_solver_type//"]" )
                 !
         end select
         !
@@ -298,7 +297,7 @@ contains
         integer :: ios
         character( len=20 ) :: version
         !
-        version = "Modem-OO "//VERSION
+        version = "ModEM "//VERSION
         !
         open( ioESolution, file = file_name, action = "write", form = "unformatted", iostat = ios )
         !
@@ -316,11 +315,9 @@ contains
             !
         else
             !
-            write( *, * ) "Error opening file in writeAllESolutionHeader [", file_name, "]!"
-            stop
+            call errStop( "writeAllESolutionHeader > Unable to open file ["//file_name//"]!" )
             !
         endif
-        !
         !
     end subroutine writeAllESolutionHeader
     !

@@ -18,13 +18,17 @@ module Inversion
         !
         contains
             !
-            procedure, public :: init => initializeInversion
-            !
             procedure( interface_solve_inversion ), deferred, public :: solve
             !
             procedure( interface_output_files_inversion ), deferred, public :: outputFiles
             !
+            procedure, public :: baseInit => initializeInversion
+            !
+            procedure, public :: printInvPlot
+            !
     end type Inversion_t
+    !
+    public :: printLog, printFuncPlot, printInvPlot
     !
     abstract interface
         !
@@ -45,7 +49,7 @@ module Inversion
             !
             class( Inversion_t ), intent( in ) :: self
             type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
-            class( ModelParameter_t ), intent( in ) :: dsigma, mHat
+            class( ModelParameter_t ), intent( inout ) :: dsigma, mHat
             !
         end subroutine interface_output_files_inversion
         !
@@ -94,7 +98,30 @@ contains
     !> that can be used for evaluating the gradient
     !> Assuming that the model norm is already scaled by Nmodel
     !
-    subroutine printf( comment, lambda, alpha, f, mNorm, rms, on_screen )
+    subroutine printInvPlot( self, g_norm )
+        implicit none
+        !
+        class( Inversion_t ), intent( inout ) :: self
+        real( kind=prec ), intent( in ) :: g_norm
+        !
+        integer :: ios
+        !
+        open( unit = ioInvPlot, file = trim( outdir_name )//"/"//trim( outdir_name )//".inv_plot", &
+        status="unknown", position="append", iostat=ios )
+        !
+        if( ios == 0 ) then
+            !
+            write( ioInvPlot, * ) self%iter, ", ", self%alpha, ", ", &
+                                  self%beta, ", ", g_norm, ", ",  self%rms
+            !
+            close( ioInvPlot )
+        else
+            call errStop( "printFuncPlot > cant open ioInvPlot" )
+        endif
+        !
+    end subroutine printInvPlot
+    !
+    subroutine printLog( comment, lambda, alpha, f, mNorm, rms, on_screen )
         implicit none
         !
         character(*), intent( in ) :: comment
@@ -102,26 +129,66 @@ contains
         logical, intent( in ) :: on_screen
         !
         integer :: io_unit, ios
-        logical :: is_opened
+        logical :: is_open
         !
         if( on_screen ) then
-            !
             io_unit = 0
-            !
         else
             !
             io_unit = ioInvLog
             !
+            inquire( file = trim( outdir_name )//"/NLCG.log", opened = is_open )
+            !
+            if( .NOT. is_open ) then
+                !
+                open( unit = io_unit, file = trim( outdir_name )//"/NLCG.log", status="unknown", position="append", iostat=ios )
+                !
+            endif
+            !
         endif
         !
-        write( io_unit,"(a10)",advance="no" ) trim(comment)//":"
-        write( io_unit,"(a3,es15.3)",advance="no" ) " f=", f
-        write( io_unit,"(a4,es15.3)",advance="no" ) " m2=", mNorm
-        write( io_unit,"(a5,f15.3)",advance="no" ) " rms=", rms
-        write( io_unit,"(a8,es15.3)",advance="no" ) " lambda=", lambda
-        write( io_unit,"(a7,es15.3)") " alpha=", alpha
+        write( io_unit, "(a10)", advance="no" ) trim(comment)//":"
+        write( io_unit, "(a3,es15.3)", advance="no" ) " f=", f
+        write( io_unit, "(a4,es15.3)", advance="no" ) " m2=", mNorm
+        write( io_unit, "(a5,f15.3)", advance="no" ) " rms=", rms
+        write( io_unit, "(a8,es15.3)", advance="no" ) " lambda=", lambda
+        write( io_unit, "(a7,es15.3)") " alpha=", alpha
         !
-    end subroutine printf
+        if( .NOT. on_screen ) then
+            !
+            close( io_unit )
+            !
+            open( unit = io_unit, file = trim( outdir_name )//"/NLCG.log", status="unknown", position="append", iostat=ios )
+            !
+        endif
+        !
+    end subroutine printLog
+    !
+    subroutine printFuncPlot( SS, Ndata, m_norm, n_model, F, rms )
+        implicit none
+        !
+        real( kind=prec ), intent( in ) :: SS
+        integer, intent( in ) :: Ndata
+        real( kind=prec ), intent( in ) :: m_norm
+        integer, intent( in ) :: n_model
+        real( kind=prec ), intent( in ) :: F, rms
+        !
+        integer :: ios
+        !
+        open( unit = ioFuncPlot, &
+        file = trim( outdir_name )//"/"//trim( outdir_name )//".func_plot", &
+        status="unknown", position="append", iostat=ios )
+        !
+        if( ios == 0 ) then
+            !
+            write( ioFuncPlot, * ) SS, ", ", Ndata, ", ", m_norm, ", ", n_model, ", ", F, ", ", rms
+            !
+            close( ioFuncPlot )
+        else
+            call errStop( "printFuncPlot > cant open ioFuncPlot" )
+        endif
+        !
+    end subroutine printFuncPlot
     !
 end module Inversion
 !

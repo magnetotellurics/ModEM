@@ -4,7 +4,7 @@
 module DataGroup
     !
     use String
-    use Constants
+    use Utilities
     !
     !> Global file path name for data files
     character(:), allocatable :: predicted_data_file_name, jmhat_data_file_name
@@ -23,26 +23,26 @@ module DataGroup
             !
             final :: DataGroup_dtor
             !
-            procedure, public :: put => putValuesDataGroup
+            procedure, public :: put => putValues_DataGroup
             !
-            procedure, public :: set => setValuesDataGroup
+            procedure, public :: set => setValues_DataGroup
             !
-            procedure, public :: sub => subDataGroup
+            procedure, public :: sub => sub_DataGroup
             !
-            procedure, public :: linComb => linCombDataGroup
+            procedure, public :: linComb => linComb_DataGroup
             !
-            procedure, public :: dotProd => dotProdDataGroup
+            procedure, public :: dotProd => dotProd_DataGroup
             !
-            procedure, public :: normalize => normalizeDataGroup
+            procedure, public :: normalize => normalize_DataGroup
             !
-            procedure, public :: zeros => zerosDataGroup
+            procedure, public :: zeros => zeros_DataGroup
             !
-            procedure, public :: isEqual => isEqualDg
+            procedure, public :: isEqual => isEqual_DataGroup
             !
-            procedure, public :: copyFrom => copyFromDataGroup
+            procedure, public :: copyFrom => copyFrom_DataGroup
             generic :: assignment(=) => copyFrom
             !
-            procedure, public :: print => printDataGroup
+            procedure, public :: print => print_DataGroup
             !
     end type DataGroup_t
     !
@@ -122,7 +122,7 @@ contains
     !
     !> Add values to arrays in position and increments the internal counter.
     !
-    subroutine putValuesDataGroup( self, rvalue, imaginary, error )
+    subroutine putValues_DataGroup( self, rvalue, imaginary, error )
         implicit none
         !
         class( DataGroup_t ), intent( inout ) :: self
@@ -136,11 +136,11 @@ contains
         !
         self%counter = self%counter + 1
         !
-    end subroutine putValuesDataGroup
+    end subroutine putValues_DataGroup
     !
     !> Set the values at a given index of these arrays.
     !
-    subroutine setValuesDataGroup( self, comp_id, rvalue, imaginary )
+    subroutine setValues_DataGroup( self, comp_id, rvalue, imaginary )
         implicit none
         !
         class( DataGroup_t ), intent( inout ) :: self
@@ -151,11 +151,11 @@ contains
         !
         self%imaginaries( comp_id ) = imaginary
         !
-    end subroutine setValuesDataGroup
+    end subroutine setValues_DataGroup
     !
-    !> ????
+    !> No subroutine briefing
     !
-    subroutine zerosDataGroup( self )
+    subroutine zeros_DataGroup( self )
         implicit none
         !
         class( DataGroup_t ), intent( inout ) :: self
@@ -168,11 +168,11 @@ contains
         !
         self%error_bar = .FALSE.
         !
-    end subroutine zerosDataGroup
+    end subroutine zeros_DataGroup
     !
-    !>
+    !> No subroutine briefing
     !
-    subroutine normalizeDataGroup( self, norm )
+    subroutine normalize_DataGroup( self, norm )
         implicit none
         !
         class( DataGroup_t ), intent( inout ) :: self
@@ -181,7 +181,7 @@ contains
         integer :: nn
         !
         if( .NOT. self%error_bar ) then
-            stop "Error: normalizeDataGroup > no error bars to normalize"
+            call errStop( "normalize_DataGroup > no error bars to normalize" )
         endif
         !
         if( present( norm ) ) then
@@ -194,10 +194,11 @@ contains
         !
         self%imaginaries = self%imaginaries / ( self%errors ** nn )
         !
-    end subroutine normalizeDataGroup
+    end subroutine normalize_DataGroup
     !
-    !> Subtraction
-    subroutine subDataGroup( self, d_in )
+    !> No subroutine briefing
+    !
+    subroutine sub_DataGroup( self, d_in )
         implicit none
         !
         class( DataGroup_t ), intent( inout ) :: self
@@ -207,11 +208,11 @@ contains
         !
         self%imaginaries = self%imaginaries - d_in%imaginaries
         !
-    end subroutine subDataGroup
+    end subroutine sub_DataGroup
     !
-    !> ????
+    !> No subroutine briefing
     !
-    subroutine linCombDataGroup( self, a, b, d_in, d_out )
+    subroutine linComb_DataGroup( self, a, b, d_in, d_out )
         implicit none
         !
         class( DataGroup_t ), intent( in ) :: self, d_in
@@ -219,39 +220,39 @@ contains
         class( DataGroup_t ), intent( inout ) :: d_out
         !
         if( .NOT. self%is_allocated ) then
-            stop "Error: linCombDataGroup > self not allocated"
+            call errStop( "linComb_DataGroup > self not allocated" )
         endif
         !
         if( .NOT. d_in%is_allocated ) then
-            stop "Error: linCombDataGroup > d_in not allocated"
+            call errStop( "linComb_DataGroup > d_in not allocated" )
         endif
         !
         if( .NOT. d_out%is_allocated ) then
-            stop "Error: linCombDataGroup > d_out not allocated"
+            call errStop( "linComb_DataGroup > d_out not allocated" )
         endif
         !
         if( self%i_tx /= d_in%i_tx  ) then
-            stop "Error: linCombDataGroup > different data txs: d1 and d2"
+            call errStop( "linComb_DataGroup > different data txs: d1 and d2" )
         endif
         !
         if( self%i_rx /= d_in%i_rx  ) then
-            stop "Error: linCombDataGroup > different data rxs: d1 and d2"
+            call errStop( "linComb_DataGroup > different data rxs: d1 and d2" )
         endif
         !
         if( self%n_comp /= d_in%n_comp  ) then
-            stop "Error: linCombDataGroup > different data n_comp: d1 and d2"
+            call errStop( "linComb_DataGroup > different data n_comp: d1 and d2" )
         endif
         !
         if( self%i_tx /= d_out%i_tx  ) then
-            stop "Error: linCombDataGroup > different data txs: d1 and d_out"
+            call errStop( "linComb_DataGroup > different data txs: d1 and d_out" )
         endif
         !
         if( self%i_rx /= d_out%i_rx  ) then
-            stop "Error: linCombDataGroup > different data rxs: d1 and d_out"
+            call errStop( "linComb_DataGroup > different data rxs: d1 and d_out" )
         endif
         !
         if( self%n_comp /= d_out%n_comp  ) then
-            stop "Error: linCombDataGroup > different data n_comp: d1 and d_out"
+            call errStop( "linComb_DataGroup > different data n_comp: d1 and d_out" )
         endif
         !
         d_out%error_bar = self%error_bar .OR. d_in%error_bar
@@ -270,7 +271,7 @@ contains
         if( self%error_bar .AND. d_in%error_bar ) then
             !
             if( abs(a) > R_ZERO .AND. abs(b) > R_ZERO ) then
-                stop "Error: linCombDataGroup > unable to add two data vectors with error bars"
+                call errStop( "linComb_DataGroup > unable to add two data vectors with error bars" )
             elseif( abs(a) > R_ZERO ) then
                 !
                 d_out%errors = a * self%errors
@@ -291,19 +292,18 @@ contains
             !
         endif
         !
-    end subroutine linCombDataGroup
+    end subroutine linComb_DataGroup
     !
-    !> ????
-    function dotProdDataGroup( self, d_in ) result( rvalue )
+    !> No function briefing
+    !
+    function dotProd_DataGroup( self, d_in ) result( rvalue )
         implicit none
         !
         class( DataGroup_t ), intent( in ) :: self, d_in
         !
         real( kind=prec ) :: rvalue
         !
-        rvalue = R_ZERO
-        !
-        rvalue = rvalue + sum( self%reals * d_in%reals )
+        rvalue = sum( self%reals * d_in%reals )
         rvalue = rvalue + sum( self%imaginaries * d_in%imaginaries )
         !
         !write( *, * ) "COMPLEX DOT PRODUCT: ", self%is_complex .AND. d_in%is_complex
@@ -311,10 +311,11 @@ contains
             !rvalue = rvalue + sum( self%imaginaries * d_in%imaginaries )
         !endif
         !
-    end function dotProdDataGroup
+    end function dotProd_DataGroup
     !
     !> Return if it is similar to another DataGroup.
-    function isEqualDg( self, other ) result ( equal )
+    !
+    function isEqual_DataGroup( self, other ) result ( equal )
         implicit none
         !
         class( DataGroup_t ), intent( in ) :: self
@@ -341,17 +342,18 @@ contains
             !
         enddo
         !
-    end function isEqualDg
+    end function isEqual_DataGroup
     !
     !> Copy/Assign (= operator) all content from another DataGroup.
-    subroutine copyFromDataGroup( self, d_in )
+    !
+    subroutine copyFrom_DataGroup( self, d_in )
         implicit none
         !
         class( DataGroup_t ), intent( inout ) :: self
         type( DataGroup_t ), intent( in ) :: d_in
         !
         if( .NOT. d_in%is_allocated ) then
-            stop "Error: copyFromDataGroup > d_in not allocated"
+            call errStop( "copyFrom_DataGroup > d_in not allocated" )
         endif
         !
         self%i_dg = d_in%i_dg
@@ -379,10 +381,11 @@ contains
         !
         self%is_complex = d_in%is_complex
         !
-    end subroutine copyFromDataGroup
+    end subroutine copyFrom_DataGroup
     !
     !> Print the entire contents of the DataGroup on the screen.
-    subroutine printDataGroup( self )
+    !
+    subroutine print_DataGroup( self )
         implicit none
         !
         class( DataGroup_t ), intent( in ) :: self
@@ -401,6 +404,7 @@ contains
             !
         enddo
         !
-    end subroutine printDataGroup
+    end subroutine print_DataGroup
     !
 end module DataGroup
+!

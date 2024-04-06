@@ -1,5 +1,5 @@
 !
-!> Module with a single job ????
+!> Module with a single job !!!!
 !
 module InversionJob
     !
@@ -34,7 +34,7 @@ contains
             call handleModelFile( sigma )
             !
             !> Instantiate ModelCovariance
-            allocate( model_cov, source = ModelCovarianceRec_t( sigma ) )
+            allocate( model_cov, source = ModelCovariance_t( sigma ) )
             !
             if( has_cov_file ) then 
                 !
@@ -43,20 +43,22 @@ contains
                 write( *, * ) "     < Cov File: [", cov_file_name, "]"
                 !
             else
-				call warning( "jobInversion > Missing Covariance file!" )
-                !write( *, * ) achar(27)//"[91m# Warning:"//achar(27)//"[0m jobInversion > Missing Covariance file!"
+                !
+                call warning( "jobInversion > Missing Covariance file!" )
+                !
             endif
             !
             !> Initialize pmodel with Zeros
             allocate( dsigma, source = sigma )
+            dsigma = sigma
             !
             call dsigma%zeros
             !
         else
-            stop "Error: jobInversion > Missing Model file!"
+            call errStop( "jobInversion > Missing Model file!" )
         endif
         !
-        !> Read Perturbation Model File: instantiate pmodel (NOT USING RIGHT NOW ????)
+        !> Read Perturbation Model File: instantiate pmodel
         if( has_pmodel_file ) then 
             !
             deallocate( dsigma )
@@ -77,7 +79,7 @@ contains
             call handleDataFile
             !
         else
-            stop "Error: jobInversion > Missing Data file!"
+            call errStop( "jobInversion > Missing Data file!" )
         endif
         !
 #ifdef MPI
@@ -103,7 +105,7 @@ contains
                 !
             case default
                 !
-                stop "Error: jobInversion > Undefined inversion_type"
+                call errStop( "jobInversion > Undefined inversion_type" )
                 !
         end select
         !

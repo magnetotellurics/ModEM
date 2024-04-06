@@ -4,13 +4,14 @@
 module iScalar3D_SG
     !
     use Scalar
-    use Grid3D_SG
     !
     type, extends( Scalar_t ) :: iScalar3D_SG_t
         !
-        integer( kind=prec ), allocatable, dimension(:, :, :) :: v
+        integer, dimension(3) :: NdV
         !
-        integer( kind=prec ), allocatable, dimension(:) :: sv
+        integer :: Nxyz
+        !
+        integer( kind=prec ), allocatable, dimension(:,:,:) :: v
         !
         contains
             !
@@ -20,7 +21,6 @@ module iScalar3D_SG
             !> Boundary operations
             procedure, public :: setAllBoundary => setAllBoundary_iScalar3D_SG
             procedure, public :: setOneBoundary => setOneBoundary_iScalar3D_SG
-            procedure, public :: intBdryIndices => intBdryIndices_iScalar3D_SG
             !
             !> Dimensioning operations
             procedure, public :: length => length_iScalar3D_SG
@@ -49,13 +49,16 @@ module iScalar3D_SG
             procedure, public :: divByField => divByField_iScalar3D_SG
             procedure, public :: divByValue => divByValue_iScalar3D_SG
             !
-            !> Miscellaneous
+            procedure, public :: sumToNode => sumToNode_iScalar3D_SG
+            !
+            !> Getters & Setters
+            !
             procedure, public :: getV => getV_iScalar3D_SG
-            procedure, public :: setV => setV_iScalar3D_SG
             !
             procedure, public :: getArray => getArray_iScalar3D_SG
             procedure, public :: setArray => setArray_iScalar3D_SG
-            procedure, public :: switchStoreState => switchStoreState_iScalar3D_SG
+            !
+            !> Miscellaneous
             procedure, public :: copyFrom => copyFrom_iScalar3D_SG
             !
             !> I/O operations
@@ -81,19 +84,18 @@ contains
         !
         type( iScalar3D_SG_t ) :: self
         !
-        integer :: nx, ny, nz, nzAir, nz_earth
+        integer :: nx, ny, nz, nzAir
         integer :: status
         !
         !write( *, * ) "Constructor iScalar3D_SG"
         !
-        call self%init
+        call self%baseInit
         !
         self%grid => grid
         self%grid_type = grid_type
         !
         !> Grid dimensions
         call grid%getDimensions( nx, ny, nz, nzAir )
-        nz_earth = nz - nzAir
         !
         self%nx = nx
         self%ny = ny
@@ -101,41 +103,34 @@ contains
         !
         !> allocate memory for x,y,z ;
         !> self%allocated will be true if all allocations succeed
+        !
         self%is_allocated = .TRUE.
         !
         if( grid_type == NODE ) then
              !
-             allocate(self%v(nx + 1, ny + 1, nz + 1), STAT = status)    
+             allocate( self%v(nx + 1, ny + 1, nz + 1), stat=status )
              self%NdV = (/self%nx + 1, self%ny + 1, self%nz + 1/)
              !
         elseif( grid_type == CELL ) then
              !
-             allocate(self%v(nx, ny, nz), STAT = status) 
+             allocate(self%v(nx, ny, nz), stat=status) 
              self%NdV = (/self%nx, self%ny, self%nz/)
              !
-        elseif( grid_type == CELL_EARTH ) then
-             !
-             self%nz = nz_earth
-             allocate(self%v(nx, ny, nz_earth), STAT = status)
-             self%NdV = (/nx, ny, nz_earth/)
-             !
         else
-            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m iScalar3D_SG_ctor > unrecognized grid type: [", grid_type, "]"
-            stop
+            call errStop( "iScalar3D_SG_ctor > unrecognized grid type: ["//grid_type//"]" )
         endif
         !
-        self%is_allocated = self%is_allocated.AND.(status .EQ. 0)
+        self%is_allocated = self%is_allocated .AND. ( status .EQ. 0 )
         !
         if( self%is_allocated ) then
-             self%v = R_ZERO
+            !
+            self%v = R_ZERO
+            !
+            self%Nxyz = product( self%NdV )
+            !
         else
-             stop "Error: iScalar3D_SG_ctor > Unable to allocate rScalar - invalid grid supplied"
+            call errStop( "iScalar3D_SG_ctor > Unable to allocate rScalar - invalid grid supplied" )
         endif
-        !
-        self%Nxyz = product( self%NdV )
-        !
-        call self%setIndexArrays
-        call self%zeros
         !
     end function iScalar3D_SG_ctor
     !
@@ -148,10 +143,11 @@ contains
         !
         !write( *, * ) "Destructor iScalar3D_SG"
         !
-        call self%dealloc
+        if( .NOT. self%is_allocated ) then
+            call errStop( "iScalar3D_SG_dtor > self not allocated." )
+        endif
         !
         if( allocated( self%v ) ) deallocate( self%v )
-        if( allocated( self%sv ) ) deallocate( self%sv )
         !
         self%nx = 0
         self%ny = 0
@@ -170,20 +166,20 @@ contains
         class( iScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setAllBoundary_iScalar3D_SG > self not allocated." )
         endif
         !
         select case( self%grid_type )
             !
-            case( NODE, CELL, CELL_EARTH ) 
+            case( NODE, CELL ) 
                 !
                 self%v((/1, self%NdV(1)/), :, :) = cvalue
                 self%v(:, (/1, self%NdV(2)/), :) = cvalue
                 self%v(:, :, (/1, self%NdV(3)/)) = cvalue
                 !
             case default
-                stop "Error: setAllBoundary_iScalar3D_SG > Grid type not recognized."
+                call errStop( "setAllBoundary_iScalar3D_SG > grid_type ["//self%grid_type//"] not recognized." )
             !
         end select
         !
@@ -198,10 +194,11 @@ contains
         character(*), intent( in ) :: bdry
         complex( kind=prec ), intent( in ) :: cvalue
         logical, intent( in ), optional :: int_only
+        !
         logical :: int_only_p
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setOneBoundary_iScalar3D_SG > self not allocated." )
         endif
         !
         if( .NOT. present( int_only ) ) then
@@ -213,7 +210,7 @@ contains
         select case( self%grid_type )
             !
             case( NODE )
-                if( int_only_p) then
+                if( int_only_p ) then
                     select case(bdry)
                         case("x1")
                             self%v(1, 2:self%NdV(2)-1, 2:self%NdV(3)-1) = cvalue 
@@ -262,81 +259,11 @@ contains
                 end select
                 !
             case default
-                stop "Error: setOneBoundary_iScalar3D_SG > Invalid grid type"
+                call errStop( "setOneBoundary_iScalar3D_SG > Invalid grid type" )
             !
         end select
         !
     end subroutine setOneBoundary_iScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine intBdryIndices_iScalar3D_SG( self, ind_i, ind_b )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
-        integer, allocatable, intent( out ) :: ind_i(:), ind_b(:)
-        !
-        integer :: nVecT, nBdry, nb, ni, i
-        complex( kind=prec ), allocatable :: temp(:)
-        type( iScalar3D_SG_t ) :: phi
-        !
-        if( self%is_allocated ) then
-            !
-            phi = iScalar3D_SG_t( self%grid, self%grid_type )
-            !
-        else
-            stop "Error: intBdryIndices_iScalar3D_SG > Not allocated. Exiting."
-        endif
-        !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
-        endif
-        !
-        select case( self%grid_type )
-            !
-            case( NODE )
-                 !
-                 phi%v(1,:,:) = 1
-                 phi%v(phi%nx+1,:,:) = 1
-                 phi%v(:,1,:) = 1
-                 phi%v(:,phi%ny+1,:) = 1
-                 phi%v(:,:,1) = 1
-                 phi%v(:,:,phi%nz+1) = 1
-                 !
-                 temp = phi%getArray()
-                 !
-            case default
-                 stop "Error: intBdryIndices_iScalar3D_SG: Unknown self%grid_type"
-                 !
-        end select
-        !
-        nVecT = size( phi%v )
-        nBdry = 0
-        do i = 1, nVecT
-             nBdry = nBdry + nint( real( temp(i), kind=prec ) )
-        enddo
-        !
-        if( allocated(ind_i)) deallocate(ind_i)
-        allocate(ind_i(nVecT - nBdry))
-        !
-        if( allocated(ind_b)) deallocate(ind_b)
-        allocate(ind_b(nBdry))
-        !
-        nb = 0
-        ni = 0
-        do i = 1, nVecT
-             if( nint( real( temp(i), kind=prec ) ) .EQ. 1) then
-                nb = nb+1
-                ind_b(nb) = i
-             else
-                ni = ni+1
-                ind_i(ni) = i
-             endif
-        enddo
-        !
-        deallocate( temp )
-        !
-    end subroutine intBdryIndices_iScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -370,8 +297,8 @@ contains
         integer :: y1, y2
         integer :: z1, z2
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setVecComponents_iScalar3D_SG > self not allocated." )
         endif
         !
         x1 = xmin; x2 = xmax
@@ -387,7 +314,7 @@ contains
         if( zmin == 0) z1 = self%NdV(3)
         if( zmax <= 0) z2 = self%NdV(3) + zmax
         !
-        self%v(x1:x2:xstep, y1:y2:ystep, z1:z2:zstep) = rvalue
+        self%v( x1:x2:xstep, y1:y2:ystep, z1:z2:zstep ) = rvalue
         !
     end subroutine setVecComponents_iScalar3D_SG
     !
@@ -398,21 +325,11 @@ contains
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
         !
-        if( .NOT. self%is_allocated) then
-             stop "Error: zeros_iScalar3D_SG > self not allocated."
+        if( .NOT. self%is_allocated ) then
+            call errStop( "zeros_iScalar3D_SG > self not allocated." )
         endif
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%v = R_ZERO
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%sv = R_ZERO
-            !
-        else
-            stop "Error: zeros_iScalar3D_SG > Unknown store_state!"
-        endif
+        self%v = R_ZERO
         !
     end subroutine zeros_iScalar3D_SG
     !
@@ -423,7 +340,7 @@ contains
         !
         class( iScalar3D_SG_t ), intent( inout ) :: self
         !
-        stop "Error: conjugate_iScalar3D_SG: do not try to conjugate a real scalar!"
+        call errStop( "conjugate_iScalar3D_SG: do not try to conjugate a integer scalar!" )
         !
     end subroutine conjugate_iScalar3D_SG
     !
@@ -435,37 +352,29 @@ contains
         class( iScalar3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
-        if( .NOT. rhs%is_allocated) then
-             stop "Error: add_iScalar3D_SG > rhs not allocated."
+        if( .NOT. self%is_allocated ) then
+            call errStop( "add_iScalar3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. rhs%is_allocated ) then
+            call errStop( "add_iScalar3D_SG > rhs not allocated." )
         endif
         !
         if( self%isCompatible( rhs ) ) then
-            !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
             !
             select type( rhs )
                 !
                 class is( iScalar3D_SG_t )
                     !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v + rhs%v
-                        !
-                    elseif( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv + rhs%sv
-                        !
-                    else
-                        stop "Error: add_iScalar3D_SG > Unknown rhs store_state!"
-                    endif
+                    self%v = self%v + rhs%v
                     !
                 class default
-                    stop "Error: add_iScalar3D_SG: undefined rhs"
+                    call errStop( "add_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
             end select
             !
         else
-            stop "Error: add_iScalar3D_SG > Incompatible inputs."
+            call errStop( "add_iScalar3D_SG > Incompatible inputs." )
         endif
         !
     end subroutine add_iScalar3D_SG
@@ -479,33 +388,26 @@ contains
         class( Field_t ), intent( in ) :: rhs
         complex( kind=prec ), intent( in ) :: c1, c2
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "linComb_iScalar3D_SG > self not allocated." )
+        endif
+        !
         !>  linear combination, in place: self = c1*self+c2*rhs
-        if( self%isCompatible(rhs)) then
-            !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
+        if( self%isCompatible( rhs ) ) then
             !
             select type( rhs )
                 !
                 class is( iScalar3D_SG_t )
                     !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = c1 * self%v + c2 * rhs%v
-                        !
-                    elseif( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = c1 * self%sv + c2 * rhs%sv
-                        !
-                    else
-                        stop "Error: linComb_iScalar3D_SG > Unknown rhs store_state!"
-                    endif
+                    self%v = c1 * self%v + c2 * rhs%v
                     !
                 class default
-                    stop "Error: linComb_iScalar3D_SG: undefined rhs"
+                    call errStop( "linComb_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
             end select
+            !
         else
-            stop "Error: linComb_iScalar3D_SG > Incompatible rhs"
+            call errStop( "linComb_iScalar3D_SG > Incompatible rhs" )
         endif
         !
     end subroutine linComb_iScalar3D_SG
@@ -518,17 +420,11 @@ contains
         class( iScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%v = self%v - cvalue
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%sv = self%sv - cvalue
-            !
-        else
-            stop "Error: subValue_iScalar3D_SG > Unknown self store_state!"
+        if( .NOT. self%is_allocated ) then
+            call errStop( "subValue_iScalar3D_SG > self not allocated." )
         endif
+        !
+        self%v = self%v - cvalue
         !
     end subroutine subValue_iScalar3D_SG
     !
@@ -540,33 +436,25 @@ contains
         class( iScalar3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "subField_iScalar3D_SG > self not allocated." )
+        endif
+        !
         if( self%isCompatible( rhs ) ) then
-            !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
             !
             select type( rhs )
                 !
                 class is( iScalar3D_SG_t )
                     !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v - rhs%v
-                        !
-                    elseif( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv - rhs%sv
-                        !
-                    else
-                        stop "Error: subField_iScalar3D_SG > Unknown rhs store_state!"
-                    endif
+                    self%v = self%v - rhs%v
                     !
                 class default
-                    stop "Error: subField_iScalar3D_SG: undefined rhs"
+                    call errStop( "subField_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
             end select
             !
         else
-            stop "Error: subField_iScalar3D_SG > Incompatible inputs."
+            call errStop( "subField_iScalar3D_SG > Incompatible inputs." )
         endif
         !
     end subroutine subField_iScalar3D_SG
@@ -579,17 +467,11 @@ contains
         class( iScalar3D_SG_t ), intent( inout ) :: self
         real( kind=prec ), intent( in ) :: rvalue
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%v = self%v * rvalue
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%sv = self%sv * rvalue
-            !
-        else
-            stop "Error: multByReal_iScalar3D_SG > Unknown self store_state!"
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multByReal_iScalar3D_SG > self not allocated." )
         endif
+        !
+        self%v = self%v * rvalue
         !
     end subroutine multByReal_iScalar3D_SG
     !
@@ -601,17 +483,11 @@ contains
         class( iScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%v = self%v * cvalue
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%sv = self%sv * cvalue
-            !
-        else
-            stop "Error: multByComplex_iScalar3D_SG > Unknown self store_state!"
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multByComplex_iScalar3D_SG > self not allocated." )
         endif
+        !
+        self%v = self%v * cvalue
         !
     end subroutine multByComplex_iScalar3D_SG
     !
@@ -623,33 +499,25 @@ contains
         class( iScalar3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multByField_iScalar3D_SG > self not allocated." )
+        endif
+        !
         if( self%isCompatible( rhs ) ) then
-            !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
             !
             select type( rhs )
                 !
                 class is( iScalar3D_SG_t )
                     !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v * rhs%v
-                        !
-                    elseif( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv * rhs%sv
-                        !
-                    else
-                        stop "Error: multByField_iScalar3D_SG > Unknown rhs store_state!"
-                    endif
+                    self%v = self%v * rhs%v
                     !
                 class default
-                    stop "Error: multByField_iScalar3D_SG: undefined rhs"
+                    call errStop( "multByField_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
             end select
             !
         else
-            stop "Error: multByField_iScalar3D_SG: incompatible rhs"
+            call errStop( "multByField_iScalar3D_SG > incompatible rhs" )
         endif
         !
     end subroutine multByField_iScalar3D_SG
@@ -663,34 +531,25 @@ contains
         complex( kind=prec ), intent( in ) :: cvalue
         class( Field_t ), intent( in ) :: rhs
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "multAdd_iScalar3D_SG > self not allocated." )
+        endif
+        !
         if( self%isCompatible( rhs ) ) then
-            !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
             !
             select type( rhs )
                 !
-                class is( iScalar3D_SG_t ) 
+                class is( iScalar3D_SG_t )
                     !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v + cvalue * rhs%v
-                        !
-                    elseif( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv + cvalue * rhs%sv
-                        !
-                    else
-                        stop "Error: multAdd_iScalar3D_SG > Unknown rhs store_state!"
-                    endif
+                    self%v = self%v + cvalue * rhs%v
                     !
                 class default
-                    stop "Error: multAdd_iScalar3D_SG > rhs undefined."
-                    !
+                    call errStop( "multAdd_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
+                !
             end select
             !
-            !
         else
-            stop "Error: multAdd_iScalar3D_SG >Incompatible inputs."
+            call errStop( "multAdd_iScalar3D_SG > Incompatible inputs." )
         endif
         !
     end subroutine multAdd_iScalar3D_SG
@@ -705,37 +564,25 @@ contains
         !
         complex( kind=prec ) :: cvalue
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "dotProd_iScalar3D_SG > self not allocated." )
+        endif
+        !
         if( self%isCompatible( rhs ) ) then
             !
-            if( self%store_state == rhs%store_state ) then
+            select type( rhs )
                 !
-                select type( rhs )
+                class is( iScalar3D_SG_t )
                     !
-                    class is( iScalar3D_SG_t )
-                        !
-                        if( rhs%store_state .EQ. compound ) then
-                            !
-                            cvalue = cmplx( sum( self%v * rhs%v ), 0.0, kind=prec )
-                            !
-                        elseif( rhs%store_state .EQ. singleton ) then
-                            !
-                            cvalue = cmplx( sum( self%sv * rhs%sv ), 0.0, kind=prec )
-                            !
-                        else
-                            stop "Error: dotProdRVector3D_SG > Unknown rhs store_state!"
-                        endif
-                        !
-                    class default
-                        stop "Error: dotProd_iScalar3D_SG > undefined rhs"
+                    cvalue = sum( self%v * rhs%v )
                     !
-                end select
+                class default
+                    call errStop( "dotProd_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
-            else
-                stop "Error: dotProd_iScalar3D_SG > Incompatible store_state"
-            endif
+            end select
             !
         else
-            stop "Error: dotProd_iScalar3D_SG > Incompatible rhs"
+            call errStop( "dotProd_iScalar3D_SG > Incompatible rhs" )
         endif
         !
     end function dotProd_iScalar3D_SG
@@ -748,19 +595,61 @@ contains
         class( iScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), intent( in ) :: cvalue
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%v = self%v / cvalue
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%sv = self%sv / cvalue
-            !
-        else
-            stop "Error: divByValue_iScalar3D_SG > Unknown self store_state!"
+        if( .NOT. self%is_allocated ) then
+            call errStop( "divByValue_iScalar3D_SG > self not allocated." )
         endif
         !
+        self%v = self%v / cvalue
+        !
     end subroutine divByValue_iScalar3D_SG
+    !
+    !> No subroutine briefing
+    !
+    subroutine sumToNode_iScalar3D_SG( self, node_scalar )
+        implicit none
+        !
+        class( iScalar3D_SG_t ), intent( inout ) :: self
+        class( Scalar_t ), intent( inout ) :: node_scalar
+        !
+        type( iScalar3D_SG_t ) :: temp_node
+        integer :: v_xend, v_yend, v_zend
+        !
+        if( .NOT. self%is_allocated ) then
+             call errStop( "sumToNode_iScalar3D_SG > self not allocated." )
+        endif
+        !
+        if( .NOT. node_scalar%is_allocated ) then
+             call errStop( "sumToNode_iScalar3D_SG > node_scalar not allocated." )
+        endif
+        !
+        temp_node = iScalar3D_SG_t( self%grid, NODE )
+        !
+        select case( self%grid_type )
+            !
+            case( CELL )
+                !
+                v_xend = size( self%v, 1 )
+                v_yend = size( self%v, 2 )
+                v_zend = size( self%v, 3 )
+                !
+                !> Interior
+                temp_node%v( 2:v_xend-1, 2:v_yend-1, 2:v_zend-1 ) = &
+                self%v( 1:v_xend-1, 1:v_yend-1, 1:v_zend-1 ) + &
+                self%v( 2:v_xend  , 1:v_yend-1, 1:v_zend-1 ) + &
+                self%v( 1:v_xend-1, 2:v_yend  , 1:v_zend-1 ) + &
+                self%v( 1:v_xend-1, 1:v_yend-1, 2:v_zend   ) + &
+                self%v( 2:v_xend  , 2:v_yend  , 1:v_zend-1 ) + &
+                self%v( 2:v_xend  , 1:v_yend-1, 2:v_zend   ) + &
+                self%v( 1:v_xend-1, 2:v_yend  , 2:v_zend   ) + &
+                self%v( 2:v_xend  , 2:v_yend  , 2:v_zend   )
+                !
+                node_scalar = temp_node
+                !
+            case default
+                call errStop( "sumToNode_iScalar3D_SG: undefined self%grid_type" )
+        end select
+        !
+    end subroutine sumToNode_iScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -770,33 +659,25 @@ contains
         class( iScalar3D_SG_t ), intent( inout ) :: self
         class( Field_t ), intent( in ) :: rhs
         !
+        if( .NOT. self%is_allocated ) then
+            call errStop( "divByField_iScalar3D_SG > self not allocated." )
+        endif
+        !
         if( self%isCompatible( rhs ) ) then
-            !
-            if( self%store_state /= rhs%store_state ) call self%switchStoreState
             !
             select type( rhs )
                 !
                 class is( iScalar3D_SG_t )
                     !
-                    if( rhs%store_state .EQ. compound ) then
-                        !
-                        self%v = self%v / rhs%v
-                        !
-                    elseif( rhs%store_state .EQ. singleton ) then
-                        !
-                        self%sv = self%sv / rhs%sv
-                        !
-                    else
-                        stop "Error: divByField_iScalar3D_SG > Unknown rhs store_state!"
-                    endif
+                    self%v = self%v / rhs%v
                     !
                 class default
-                    stop "Error: divByField_iScalar3D_SG: undefined rhs"
+                    call errStop( "divByField_iScalar3D_SG > rhs must be Scalar (try vec%scl)!" )
                 !
             end select
             !
         else
-            stop "Error: divByField_iScalar3D_SG: incompatible rhs"
+            call errStop( "divByField_iScalar3D_SG: incompatible rhs" )
         endif
         !
     end subroutine divByField_iScalar3D_SG
@@ -808,23 +689,15 @@ contains
         !
         class( iScalar3D_SG_t ), intent( in ) :: self
         !
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        complex( kind=prec ), allocatable, dimension(:,:,:) :: v
         !
-        v = cmplx( self%v, 0.0, kind=prec )
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getV_iScalar3D_SG > self not allocated." )
+        endif
+        !
+        v = cmplx( self%v, R_ZERO, kind=prec )
         !
     end function getV_iScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine setV_iScalar3D_SG( self, v )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
-        complex( kind=prec ), allocatable, intent( in ) :: v(:, :, :)
-        !
-        self%v = real( v, kind=prec )
-        !
-    end subroutine setV_iScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -834,18 +707,13 @@ contains
         class( iScalar3D_SG_t ), intent( in ) :: self
         complex( kind=prec ), allocatable, dimension(:) :: array
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            allocate( array( self%length() ) )
-            array = (/reshape( cmplx( self%v, 0.0, kind=prec ), (/self%Nxyz, 1/))/)
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            array = self%sv
-            !
-        else
-            stop "Error: getArray_iScalar3D_SG > Unknown store_state!"
+        if( .NOT. self%is_allocated ) then
+            call errStop( "getArray_iScalar3D_SG > self not allocated." )
         endif
+        !
+        allocate( array( self%length() ) )
+        !
+        array = (/reshape( self%v, (/self%Nxyz, 1/))/)
         !
     end function getArray_iScalar3D_SG
     !
@@ -857,75 +725,13 @@ contains
         class( iScalar3D_SG_t ), intent( inout ) :: self
         complex( kind=prec ), dimension(:), intent( in ) :: array
         !
-        if( self%store_state .EQ. compound ) then
-            !
-            self%v = reshape( real( array, kind=prec ), (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
-            !
-        elseif( self%store_state .EQ. singleton ) then
-            !
-            self%sv = array
-            !
-        else
-            stop "Error: setArray_iScalar3D_SG > Unknown store_state!"
+        if( .NOT. self%is_allocated ) then
+            call errStop( "setArray_iScalar3D_SG > self not allocated." )
         endif
         !
+        self%v = reshape( array, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
+        !
     end subroutine setArray_iScalar3D_SG
-    !
-    !> No subroutine briefing
-    !
-    subroutine switchStoreState_iScalar3D_SG( self )
-        implicit none
-        !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
-        !
-        integer :: nzAir
-        !
-        select case( self%store_state )
-            !
-            case( compound )
-                !
-                allocate( self%sv( self%length() ) )
-                !
-                self%sv = (/reshape( self%v, (/self%Nxyz, 1/))/)
-                !
-                deallocate( self%v )
-                !
-                self%store_state = singleton
-                !
-            case( singleton )
-                !
-                if( self%grid_type == NODE ) then
-                    !
-                    allocate( self%v( self%nx + 1, self%ny + 1, self%nz + 1 ) )
-                    !
-                elseif( self%grid_type == CELL ) then
-                    !
-                    allocate( self%v( self%nx, self%ny, self%nz ) )
-                    !
-                elseif( self%grid_type == CELL_EARTH ) then
-                    !
-                    call self%grid%getDimensions( self%nx, self%ny, self%nz, nzAir )
-                    !
-                    allocate( self%v( self%nx, self%ny, self%nz - nzAir ) )
-                    !
-                else
-                     write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m switchStoreStateCScalar3D_SG > unrecognized grid type: [", self%grid_type, "]"
-                     stop
-                endif
-                !
-                self%v = reshape( self%sv, (/self%NdV(1), self%NdV(2), self%NdV(3)/) )
-                !
-                deallocate( self%sv )
-                !
-                self%store_state = compound
-                !
-            case default
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m switchStoreState_iScalar3D_SG > Unknown store_state :[", self%store_state, "]"
-                stop
-            !
-        end select
-        !
-    end subroutine switchStoreState_iScalar3D_SG
     !
     !> No subroutine briefing
     !
@@ -936,7 +742,7 @@ contains
         class( Field_t ), intent( in ) :: rhs
         !
         if( .NOT. rhs%is_allocated ) then
-            stop "Error: copyFrom_iScalar3D_SG > rhs not allocated"
+            call errStop( "copyFrom_iScalar3D_SG > rhs not allocated" )
         endif
         !
         self%grid => rhs%grid
@@ -944,13 +750,6 @@ contains
         self%nx = rhs%nx
         self%ny = rhs%ny
         self%nz = rhs%nz
-        self%store_state = rhs%store_state
-        !
-        if( allocated( rhs%ind_interior ) ) &
-        self%ind_interior = rhs%ind_interior
-        !
-        if( allocated( rhs%ind_boundaries ) ) &
-        self%ind_boundaries = rhs%ind_boundaries
         !
         select type( rhs )
             !
@@ -959,24 +758,14 @@ contains
                 self%NdV = rhs%NdV
                 self%Nxyz = rhs%Nxyz
                 !
-                if( rhs%store_state .EQ. compound ) then
-                    !
-                    self%v = rhs%v
-                    !
-                elseif( rhs%store_state .EQ. singleton ) then
-                    !
-                    self%sv = rhs%sv
-                    !
-                else
-                    stop "Error: copyFrom_iScalar3D_SG > Unknown store_state!"
-                endif
+                self%v = rhs%v
+                !
+                self%is_allocated = .TRUE.
                 !
             class default
-                stop "Error: copyFrom_iScalar3D_SG > Unclassified rhs"
+                call errStop( "copyFrom_iScalar3D_SG > Unclassified rhs" )
             !
         end select
-        !
-        self%is_allocated = .TRUE.
         !
     end subroutine copyFrom_iScalar3D_SG
     !
@@ -990,14 +779,14 @@ contains
         character(:), allocatable, intent( in ), optional :: ftype
         !
         integer :: Nx, Ny, Nz
-        character(4) :: grid_type
+        character( len=4 ) :: grid_type
         integer :: i, j, k, k1, k2, istat
-        real( kind=prec ), allocatable :: temp(:)
+        real( kind=prec ), allocatable, dimension(:) :: temp
         logical :: ok, hasname, binary
         character(:), allocatable :: fname, isbinary
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
+        if( .NOT. self%is_allocated ) then
+            call errStop( "read_iScalar3D_SG > self not allocated." )
         endif
         !
         if( .NOT. present( ftype ) ) then
@@ -1008,9 +797,9 @@ contains
              binary = .FALSE.
         endif
         !
-        !inquire( funit, opened = ok, named = hasname, name = fname, unformatted = isbinary )
+        inquire( funit, opened = ok, named = hasname, name = fname, unformatted = isbinary )
         !
-        !if( ok ) then
+        if( ok ) then
             !
             !> check that the file is unformatted if binary, formatted if ascii
             !
@@ -1032,21 +821,19 @@ contains
                  if( istat /= 0) exit
                  !
                  if( (k1 < 0) .OR. (k2 > Nz)) then
-                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m iScalar3D_SG::read_iScalar3D_SG: "
-                        write( *, * ) "      While reading the ", i, "th block."
-                        stop
+                        write( *, * ) "While reading the ", i, "th block."
+                        call errStop( "read_iScalar3D_SG." )
                  elseif( k1 > k2) then
-                        write( *, * ) "Warning: iScalar3D_SG::read_iScalar3D_SG: "
-                        write( *, * ) "                Block ", i, " will be ignored."
+                        write( *, * ) "Block ", i, " will be ignored."
+                        call errStop( "read_iScalar3D_SG." )
                  endif
                  !
                  do j = Nx, 1, -1
                         read(funit, *, iostat = istat) temp
                         
                         if( istat /= 0) then
-                             write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m iScalar3D_SG::read_iScalar3D_SG: "
-                             write( *, * ) "            While reading the ", j, "th row in ", i,"th block."
-                             stop
+                             write( *, * ) "While reading the ", j, "th row in ", i,"th block."
+                             call errStop( "read_iScalar3D_SG." )
                         endif
                         
                         do k = k1, k2
@@ -1062,9 +849,9 @@ contains
             !
             deallocate( temp )
             !
-        !else
-            !stop "Error: read_iScalar3D_SG: unable to open file"
-        !endif
+        else
+            call errStop( "read_iScalar3D_SG: unable to open file" )
+        endif
         !
     end subroutine read_iScalar3D_SG
     !
@@ -1083,13 +870,8 @@ contains
         logical :: ok, hasname, binary
         character(80) :: fname, isbinary
         !
-        if(  .NOT. self%is_allocated) then
-             stop "Error: write_iScalar3D_SG > Not allocated"
-        endif
-        !
-        !> Make sure the store_state is compound
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
+        if( .NOT. self%is_allocated ) then
+            call errStop( "write_iScalar3D_SG > self not allocated." )
         endif
         !
         if(  .NOT. present( ftype ) ) then
@@ -1106,16 +888,10 @@ contains
             !
             if( (index(isbinary, "yes") > 0 .OR. index(isbinary, "YES") > 0) &
                      .AND. .NOT. binary) then             
-                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m write_iScalar3D_SG > Unable to write vector to unformatted file ", &
-                            trim(fname), "."
-                 !
-                 stop
+                 call errStop( "write_iScalar3D_SG > Unable to write vector to unformatted file ["//trim(fname)//"]." )
             elseif( (index(isbinary,"no") > 0 .OR. index(isbinary,"NO") > 0) &
                      .AND.binary) then
-                 write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m write_iScalar3D_SG > Unable to write vector to formatted file ", &
-                            trim(fname), "."
-                 !
-                 stop
+                 call errStop( "write_iScalar3D_SG > Unable to write vector to formatted file ["//trim(fname)//"]." )
             endif
             !
             if( binary) then
@@ -1149,7 +925,7 @@ contains
                 write( funit, "(2i5)", iostat = istat ) k1, k2
                 !
                 if( istat /= 0) then
-                    stop "Error: write_iScalar3D_SG > Failed while writing to file."
+                    call errStop( "write_iScalar3D_SG > Failed while writing to file." )
                 endif
                 !
                 temp = self%v(:, :, k1)
@@ -1170,7 +946,7 @@ contains
             deallocate( temp )
             !
         else
-            stop "Error: readRVector3D_SG: unable to open file"
+            call errStop( "write_iScalar3D_SG: unable to open file" )
         endif
         !
     end subroutine write_iScalar3D_SG
@@ -1180,15 +956,15 @@ contains
     subroutine print_iScalar3D_SG( self, io_unit, title, append )
         implicit none
         !
-        class( iScalar3D_SG_t ), intent( inout ) :: self
+        class( iScalar3D_SG_t ), intent( in ) :: self
         integer, intent( in ), optional :: io_unit
         character(*), intent( in ), optional :: title
         logical, intent( in ), optional :: append
         !
-        integer :: ix, iy, iz,funit
+        integer :: ix, iy, iz, funit
         !
-        if( self%store_state /= compound ) then
-             call self%switchStoreState
+        if( .NOT. self%is_allocated ) then
+            call errStop( "print_iScalar3D_SG > self not allocated." )
         endif
         !
         if( present( io_unit ) ) then
@@ -1196,23 +972,25 @@ contains
         else
             funit = 0    !>    usually this will work to write to standard output
         endif
-        if(present(title)) then
-          write(funit,*) title
+        !
+        if( present(title) ) then
+            write(funit,*) title
         endif
         !
         write( funit, * ) self%nx, self%ny, self%nz
         !
-        write(funit,*) "scalar field"
+        write(funit,*) "iScalar3D_SG"
         do ix = 1, self%nx
-             do iy = 1, self%ny
-                  do iz = 1, self%nz
-                        if( self%v( ix, iy, iz ) /= 0 ) then
-                            write(funit,*) ix,iy,iz, ":[", self%v( ix, iy, iz ), "]"
-                        endif
-                  enddo
-             enddo
+            do iy = 1, self%ny
+                do iz = 1, self%nz
+                    if( self%v( ix, iy, iz ) /= 0 ) then
+                        write(funit,*) ix,iy,iz, ":[", self%v( ix, iy, iz ), "]"
+                    endif
+                enddo
+            enddo
         enddo
         !
     end subroutine print_iScalar3D_SG
     !
 end module iScalar3D_SG
+!

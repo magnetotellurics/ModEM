@@ -3,12 +3,13 @@
 !
 module Transmitter
     !
+    use Utilities
     use FileUnits
     use ForwardSolver
     use ModelParameter
     use ModelOperator
     use SourceCSEM
-    use SourceInteriorForce
+    use SourceAdjoint
     use rVector3D_SG
     !
     type, abstract :: Transmitter_t
@@ -21,7 +22,7 @@ module Transmitter
         !
         class( ForwardSolver_t ), pointer :: forward_solver
         !
-        class( Vector_t ), allocatable, dimension(:) :: e_sol_0, e_sol_1, e_sens
+        type( GenVector_t ), allocatable, dimension(:) :: e_sol_0, e_sol_1, e_sens
         !
         integer, allocatable, dimension(:) :: receiver_indexes
         !
@@ -33,9 +34,9 @@ module Transmitter
             !
             procedure( interface_print_tx ), deferred, public :: print
             !
-            procedure, public :: init => initializeTx
+            procedure, public :: baseInit => initializeTx
             !
-            procedure, public :: dealloc => deallocateTx
+            procedure, public :: baseDealloc => deallocateTx
             !
             procedure, public :: updateFwdKey => updateFwdKeyTx
             !
@@ -104,15 +105,63 @@ module Transmitter
             !
             class( Transmitter_t ), intent( inout ) :: self
             !
+            integer :: itx, ntx
+            !
             if( allocated( self%source ) ) deallocate( self%source )
             !
-            if( allocated( E_p ) ) deallocate( E_p )
+            if( allocated( self%e_sol_0 ) ) then
+                !
+                ntx = size( self%e_sol_0 )
+                !
+                if( ntx == 1 ) then
+                    if( allocated( self%e_sol_0(1)%v ) ) deallocate( self%e_sol_0(1)%v )
+                else
+                    do itx = ntx, 1, -(1)
+                        !
+                        if( allocated( self%e_sol_0( itx )%v ) ) deallocate( self%e_sol_0( itx )%v )
+                        !
+                    enddo
+                endif
+                !
+                deallocate( self%e_sol_0 )
+                !
+            endif
             !
-            if( allocated( self%e_sol_0 ) ) deallocate( self%e_sol_0 )
+            if( allocated( self%e_sol_1 ) ) then
+                !
+                ntx = size( self%e_sol_1 )
+                !
+                if( ntx == 1 ) then
+                    if( allocated( self%e_sol_1(1)%v ) ) deallocate( self%e_sol_1(1)%v )
+                else
+                    do itx = ntx, 1, -(1)
+                        !
+                        if( allocated( self%e_sol_1( itx )%v ) ) deallocate( self%e_sol_1( itx )%v )
+                        !
+                    enddo
+                endif
+                !
+                deallocate( self%e_sol_1 )
+                !
+            endif
             !
-            if( allocated( self%e_sol_1 ) ) deallocate( self%e_sol_1 )
-            !
-            if( allocated( self%e_sens ) ) deallocate( self%e_sens )
+            if( allocated( self%e_sens ) ) then
+                !
+                ntx = size( self%e_sens )
+                !
+                if( ntx == 1 ) then
+                    if( allocated( self%e_sens(1)%v ) ) deallocate( self%e_sens(1)%v )
+                else
+                    do itx = ntx, 1, -(1)
+                        !
+                        if( allocated( self%e_sens( itx )%v ) ) deallocate( self%e_sens( itx )%v )
+                        !
+                    enddo
+                endif
+                !
+                deallocate( self%e_sens )
+                !
+            endif
             !
             if( allocated( self%receiver_indexes ) ) deallocate( self%receiver_indexes )
             !
@@ -195,35 +244,41 @@ module Transmitter
             !
             class( Transmitter_t ), intent( in ) :: self
             integer, intent( in ) :: pol
-            class( Vector_t ), pointer, intent( out ) :: solution
+            class( Vector_t ), allocatable, intent( out ) :: solution
             !
             if( self%i_sol == 0 ) then
-                allocate( solution, source = self%e_sol_0( pol ) )
+                !
+                allocate( solution, source = self%e_sol_0( pol )%v )
+                !
             else
-                allocate( solution, source = self%e_sol_1( pol ) )
+                !
+                allocate( solution, source = self%e_sol_1( pol )%v )
+                !
             endif
             !
         end subroutine getSolutionVectorTx
         !
-        !> Returns a SourceInteriorForce from two distinct models, with the same ModelOperator.
+        !> Returns a SourceAdjoint from two distinct models, with the same ModelOperator.
         !
         function PMult_Tx( self, sigma, dsigma, model_operator ) result( source_int_force )
             implicit none
             !
             class( Transmitter_t ), intent( inout ) :: self
-            class( ModelParameter_t ), intent( in ) :: sigma, dsigma
+            class( ModelParameter_t ), intent( inout ) :: sigma
+            class( ModelParameter_t ), intent( in ) :: dsigma
             class( ModelOperator_t ), intent( in ) :: model_operator
             !
-            type( SourceInteriorForce_t ) :: source_int_force
+            type( SourceAdjoint_t ) :: source_int_force
             !
-            class( Vector_t ), allocatable, dimension(:) :: bSrc
-            class( Vector_t ), pointer :: solution
-            type( rVector3D_SG_t ) :: map_e_vector
+            type( GenVector_t ), allocatable, dimension(:) :: bSrc
+            class( Vector_t ), allocatable :: solution, map_e_vector
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
             !
             ! Verbose
             !write( *, * ) "               - Start PMult"
+            !
+            call model_operator%metric%createVector( real_t, EDGE, map_e_vector )
             !
             !> Get map_e_vector from dPDEmapping
             call sigma%dPDEmapping( dsigma, map_e_vector )
@@ -231,24 +286,24 @@ module Transmitter
             minus_i_omega_mu = -isign * mu_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
             !
             !> Initialize and fill bSrc
-            allocate( cVector3D_SG_t :: bSrc( self%n_pol ) )
+            allocate( bSrc( self%n_pol ) )
             !
             do pol = 1, self%n_pol
                 !
                 call self%getSolutionVector( pol, solution )
                 !
-                bSrc( pol ) = solution
+                allocate( bSrc( pol )%v, source = solution )
                 !
                 deallocate( solution )
                 !
-                call bSrc( pol )%mult( map_e_vector )
+                call bSrc( pol )%v%mult( map_e_vector )
                 !
-                call bSrc( pol )%mult( minus_i_omega_mu )
+                call bSrc( pol )%v%mult( minus_i_omega_mu )
                 !
             enddo
             !
-            !> Instantiates the source and sets its E, creating Rhs from it.
-            source_int_force = SourceInteriorForce_t( model_operator, sigma, self%period )
+            !> Instantiates the source and sets its E, creating rhs from it.
+            source_int_force = SourceAdjoint_t( model_operator, sigma, self%period )
             !
             call source_int_force%setE( bSrc )
             !
@@ -262,24 +317,32 @@ module Transmitter
         !
         !> Defines a new model (dsigma) from a previous model and e_sens for this transmitter.
         !
-        subroutine PMult_t_Tx( self, sigma, dsigma )
+        subroutine PMult_t_Tx( self, sigma, dsigma, dsigma_img )
             implicit none
             !
             class( Transmitter_t ), intent( in ) :: self
             class( ModelParameter_t ), intent( in ) :: sigma
             class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+            class( ModelParameter_t ), allocatable, intent( inout ), optional :: dsigma_img
             !
-            class( Vector_t ), allocatable, dimension(:) :: eSens
-            class( Vector_t ), pointer :: solution
-            class( Vector_t ), allocatable :: real_sens
+            class( GenVector_t ), allocatable, dimension(:) :: eSens
+            class( Vector_t ), allocatable :: solution, real_sens
             complex( kind=prec ) :: minus_i_omega_mu
             integer :: pol
             !
             ! Verbose
             !write( *, * ) "               - Start PMult_t"
             !
+            if( present( dsigma_img ) ) then
+                call errStop( "PMult_t_Tx > dsigma_img not implemented yet!" )
+            endif
+            !
             if( .NOT. allocated( self%e_sens ) ) then
-                stop "Error: PMult_t_Tx > eSens not allocated on the Tx"
+                call errStop( "PMult_t_Tx > eSens not allocated on the Tx" )
+            endif
+            !
+            if( .NOT. sigma%is_allocated ) then
+                call errStop( "PMult_t_Tx > sigma not allocated" )
             endif
             !
             !> Copy e_sens to a local variable to keep its original value.
@@ -287,7 +350,7 @@ module Transmitter
             !
             call self%getSolutionVector( 1, solution )
             !
-            call eSens(1)%mult( solution )
+            call eSens(1)%v%mult( solution )
             !
             deallocate( solution )
             !
@@ -296,27 +359,32 @@ module Transmitter
                 !
                 call self%getSolutionVector( pol, solution )
                 !
-                call eSens( pol )%mult( solution )
+                call eSens( pol )%v%mult( solution )
                 !
                 deallocate( solution )
                 !
-                call eSens(1)%add( eSens( pol ) )
+                call eSens(1)%v%add( eSens( pol )%v )
                 !
             enddo
             !
             minus_i_omega_mu = -isign * mu_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
             !
-            call eSens(1)%mult( minus_i_omega_mu )
+            call eSens(1)%v%mult( minus_i_omega_mu )
             !
-            call eSens(1)%getReal( real_sens )
-            !
-            !> Free up local memory
-            deallocate( eSens )
+            call eSens(1)%v%getReal( real_sens )
             !
             !> Get dsigma from dPDEmapping_T, using first position of eSens
             call sigma%dPDEmapping_T( real_sens, dsigma )
             !
             deallocate( real_sens )
+            !
+            !> NEEDS TO MULTIPLY eSens(1) FROM SOMETHING !!!!
+            !> NOT USED YET IN OO
+            !if( present( dsigma_img ) ) then
+                !
+                !call sigma%dPDEmapping_T( eSens(1), dsigma_img )
+                !
+            !endif
             !
         end subroutine PMult_t_Tx
         !
@@ -344,13 +412,13 @@ module Transmitter
                 open( ioESolution, action = "write", position = "append", form = "unformatted", iostat = ios )
                 !
                 if( ios /= 0 ) then
-                    stop "Error opening file in solveTransmitterMT: e_solution"
+                    call errStop( "writeESolution > unable to open file" )
                 else
                     !
                     !> write the frequency header - 1 record
                     write( ioESolution ) omega, self%i_tx, i_pol, ModeName
                     !
-                    call self%e_sol_0( i_pol )%write( ioESolution )
+                    call self%e_sol_0( i_pol )%v%write( ioESolution )
                     !
                     close( ioESolution )
                     !

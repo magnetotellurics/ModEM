@@ -16,7 +16,7 @@ module TransmitterArray
     type( Tx_t ), allocatable, dimension(:), target :: transmitters
     !
     public :: getTransmitter, printTransmitterArray, countTransmitterTypes
-    public :: updateTransmitterArray, deallocateTransmitterArray
+    public :: updateTransmitterArray!, deallocateTransmitterArray
     !
 contains
     !
@@ -29,18 +29,16 @@ contains
         !
         integer :: iTx, n_tx
         type( Tx_t ), allocatable, dimension(:) :: temp_array
-        type( Tx_t ), allocatable :: temp_tx
         !
         if( .NOT. allocated( transmitters ) ) then
             !
             allocate( transmitters(1) )
-            allocate( Tx_t :: temp_tx )
-            temp_tx%Tx = new_tx
-            i_tx = 1
-            temp_tx%Tx%i_tx = 1
-            transmitters(1) = temp_tx
             !
-            deallocate( temp_tx )
+            allocate( transmitters(1)%Tx, source = new_tx )
+            !
+            i_tx = 1
+            !
+            transmitters(1)%Tx%i_tx = 1
             !
         else
             !
@@ -54,19 +52,22 @@ contains
             enddo
             !
             allocate( temp_array( n_tx + 1 ) )
+            !
             temp_array( 1 : n_tx ) = transmitters
-            allocate( Tx_t :: temp_tx )
-            temp_tx%Tx = new_tx
-            temp_tx%Tx%i_tx = n_tx + 1
+            !
+            allocate( temp_array( n_tx + 1 )%Tx, source = new_tx )
+            !
+            temp_array( n_tx + 1 )%Tx%i_tx = n_tx + 1
+            !
             i_tx = n_tx + 1
             !
-            temp_array( n_tx + 1 ) = temp_tx
+            !call deallocateTransmitterArray()
             !
-            call deallocateTransmitterArray()
+            deallocate( transmitters )
             !
             allocate( transmitters, source = temp_array )
             !
-            deallocate( temp_tx, temp_array )
+            deallocate( temp_array )
             !
         endif
         !
@@ -84,35 +85,33 @@ contains
         tx => transmitters( iTx )%Tx
         !
     end function getTransmitter
-    !
-    !> No subroutine briefing
-    subroutine deallocateTransmitterArray()
-        implicit none
-        !
-        integer :: ntx, itx
-        !
-        !write( *, * ) "deallocateTransmitterArray:", size( transmitters )
-        !
-        if( allocated( transmitters ) ) then
-            !
-            ntx = size( transmitters )
-            !
-            if( ntx == 1 ) then
-                if( allocated( transmitters(1)%Tx ) ) deallocate( transmitters(1)%Tx )
-            else
-                do itx = ntx, 1, -(1)
-                    !
-                    if( allocated( transmitters( itx )%Tx ) ) deallocate( transmitters( itx )%Tx )
-                    !
-                enddo
-            endif
-            !
-            deallocate( transmitters )
-            !
-        endif
-        !
-    end subroutine deallocateTransmitterArray
-    !
+    ! !
+    ! !> No subroutine briefing
+    ! subroutine deallocateTransmitterArray()
+        ! implicit none
+        ! !
+        ! integer :: ntx, itx
+        ! !
+        ! if( allocated( transmitters ) ) then
+            ! !
+            ! ntx = size( transmitters )
+            ! !
+            ! if( ntx == 1 ) then
+                ! if( allocated( transmitters(1)%Tx ) ) deallocate( transmitters(1)%Tx )
+            ! else
+                ! do itx = ntx, 1, -(1)
+                    ! !
+                    ! if( allocated( transmitters( itx )%Tx ) ) deallocate( transmitters( itx )%Tx )
+                    ! !
+                ! enddo
+            ! endif
+            ! !
+            ! deallocate( transmitters )
+            ! !
+        ! endif
+        ! !
+    ! end subroutine deallocateTransmitterArray
+    ! !
     !> Prints the content of the transmitters on screen
     subroutine printTransmitterArray()
         implicit none

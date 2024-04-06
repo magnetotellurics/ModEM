@@ -38,7 +38,7 @@ module TransmitterMT
         !
         !write( *, * ) "Constructor TransmitterMT_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%n_pol = 2
         !
@@ -51,7 +51,7 @@ module TransmitterMT
     end function TransmitterMT_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !
     subroutine TransmitterMT_dtor( self )
         implicit none
@@ -60,7 +60,7 @@ module TransmitterMT
         !
         !write( *, * ) "Destructor TransmitterMT_t:", self%id
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine TransmitterMT_dtor
     !
@@ -75,14 +75,14 @@ module TransmitterMT
         integer :: i_pol
         !
         if( .NOT. allocated( self%source ) ) then
-            stop "Error: solveTransmitterMT > source not allocated!"
+            call errStop( "solveTransmitterMT > source not allocated!" )
         endif
         !
         !> First allocate e_sol_0 or e_sens, according to the Source case
         if( self%source%calc_sens ) then
             !
             if( allocated( self%e_sens ) ) deallocate( self%e_sens )
-            allocate( cVector3D_SG_t :: self%e_sens(2) )
+            allocate( self%e_sens(2) )
             !
         else
             !
@@ -90,12 +90,12 @@ module TransmitterMT
             if( self%i_sol == 0 ) then
                 !
                 if( allocated( self%e_sol_0 ) ) deallocate( self%e_sol_0 )
-                allocate( cVector3D_SG_t :: self%e_sol_0(2) )
+                allocate( self%e_sol_0(2) )
                 !
             else
                 !
                 if( allocated( self%e_sol_1 ) ) deallocate( self%e_sol_1 )
-                allocate( cVector3D_SG_t :: self%e_sol_1(2) )
+                allocate( self%e_sol_1(2) )
                 !
             endif
             !
@@ -108,30 +108,37 @@ module TransmitterMT
             !> Verbose
             if( self%source%calc_sens ) then
                 !
-                write( *, "( a44, es10.2, a6, i2 )" ) "- Solving MT e_sens Tx for period=", self%period, ", pol=", i_pol
+                write( *, "( a47, es10.2, a6, i2 )" ) "- Solving MT e_sens for period=", self%period, ", pol=", i_pol
                 !
-                call self%forward_solver%createESolution( i_pol, self%source, self%e_sens( i_pol ) )
+                call self%forward_solver%createESolution( i_pol, self%source, self%e_sens( i_pol )%v )
                 !
             else
                 !
                 if( self%i_sol == 0 ) then
                     !
-                    write( *, "( a42, es10.2, a6, i2 )" ) "- Solving MT e_sol_0 for period=", self%period, ", pol=", i_pol
+                    write( *, "( a48, es10.2, a6, i2 )" ) "- Solving MT e_sol_0 for period=", self%period, ", pol=", i_pol
                     !
-                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_0( i_pol ) )
+                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_0( i_pol )%v )
                     !
                 else
                     !
-                    write( *, "( a42, es10.2, a6, i2 )" ) "- Solving MT e_sol_1 for period=", self%period, ", pol=", i_pol
+                    write( *, "( a48, es10.2, a6, i2 )" ) "- Solving MT e_sol_1 for period=", self%period, ", pol=", i_pol
                     !
-                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_1( i_pol ) )
+                    call self%forward_solver%createESolution( i_pol, self%source, self%e_sol_1( i_pol )%v )
                     !
                 endif
                 !
             endif
             !
         enddo
-        !
+        ! !
+        ! open(unit = 6666,file = 'Esol1.bin',form = 'unformatted')
+        ! call self%e_sol_0(1)%v%write( 6666)
+        ! close(6666)
+        ! open(unit = 6666,file = 'Esol2.bin',form = 'unformatted')
+        ! call self%e_sol_0(2)%v%write( 6666)
+        ! close(6666)
+        ! !
     end subroutine solveTransmitterMT
     !
     !> No subroutine briefing
@@ -170,7 +177,7 @@ module TransmitterMT
         !
         integer :: iRx
         !
-        write( *, "( A30, I8, A9, es16.5, A6, I8)" ) &
+        write( *, "( A30, I8, A9, es10.2, A6, I8)" ) &
         "TransmitterMT", self%i_tx, &
         ", Period=",    self%period, &
         ", NRx=", size( self%receiver_indexes )
@@ -178,3 +185,4 @@ module TransmitterMT
     end subroutine printTransmitterMT
     !
 end module TransmitterMT
+!

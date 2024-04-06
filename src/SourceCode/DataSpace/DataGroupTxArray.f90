@@ -24,51 +24,51 @@ module DataGroupTxArray
     !> Module routines
     !> Routines for data operations
     interface subData
-        module procedure :: subDataGroupTxArray
+        module procedure :: sub_DataGroupTxArray
     end interface subData
     !
     interface zerosData
-        module procedure :: zerosDataGroupTxArray
+        module procedure :: zeros_DataGroupTxArray
     end interface zerosData
     !
     interface dotProdData
-        module procedure :: dotProdDataGroupTxArray
+        module procedure :: dotProd_DataGroupTxArray
     end interface dotProdData
     !
     interface linCombData
-        module procedure :: linCombDataGroupTxArray
+        module procedure :: linComb_DataGroupTxArray
     end interface linCombData
     !
     interface scMultData
-        module procedure :: scMultDataGroupTxArray
+        module procedure :: scMult_DataGroupTxArray
     end interface scMultData
     !
     interface scMultAddData
-        module procedure :: scMultAddDataGroupTxArray
+        module procedure :: scMultAdd_DataGroupTxArray
     end interface scMultAddData
     !
     interface normalizeData
-        module procedure :: normalizeDataGroupTxArray
+        module procedure :: normalize_DataGroupTxArray
     end interface normalizeData
     !
     interface normalizeDataWith
-        module procedure :: normalizeWithDataGroupTxArray
+        module procedure :: normalizeWith_DataGroupTxArray
     end interface normalizeDataWith
     !
     interface setErrorBar
-        module procedure :: setErrorBarDataGroupTxArray
+        module procedure :: setErrorBar_DataGroupTxArray
     end interface setErrorBar
     !
     interface setComplex
-        module procedure :: setComplexDataGroupTxArray
+        module procedure :: setComplex_DataGroupTxArray
     end interface setComplex
     !
     interface countData
-        module procedure :: countDataGroupTxArray
+        module procedure :: count_DataGroupTxArray
     end interface countData
     !
     interface countValues
-        module procedure :: countValuesGroupTxArray
+        module procedure :: countValues_DataGroupTxArray
     end interface countValues
     !
     interface getData
@@ -76,28 +76,28 @@ module DataGroupTxArray
     end interface getData
     !
     interface updateData
-        module procedure :: updateDataGroupTxArray
+        module procedure :: update_DataGroupTxArray
     end interface updateData
     !
     interface deallocateData
-        module procedure :: deallocateDataGroupTxArray
+        module procedure :: deallocate_DataGroupTxArray
     end interface deallocateData
     !
     interface writeData
-        module procedure :: writeDataGroupTxArray
+        module procedure :: write_DataGroupTxArray
     end interface writeData
     !
     interface printData
-        module procedure :: printDataGroupTxArray
+        module procedure :: print_DataGroupTxArray
     end interface printData
     !
-    private :: writeHeaderDataGroupTxArray
+    private :: writeHeader_DataGroupTxArray
     !
 contains
     !
     !> No subroutine briefing
     !
-    subroutine subDataGroupTxArray( data_tx_array_1, data_tx_array_2 )
+    subroutine sub_DataGroupTxArray( data_tx_array_1, data_tx_array_2 )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array_1
@@ -107,7 +107,7 @@ contains
         !
         if( size( data_tx_array_1 ) /= size( data_tx_array_2 ) ) then
             !
-            stop "Error: subDataGroupTxArray > different array sizes"
+            call errStop( "sub_DataGroupTxArray > different array sizes" )
             !
         else
             !
@@ -119,11 +119,11 @@ contains
             !
         endif
         !
-    end subroutine subDataGroupTxArray
+    end subroutine sub_DataGroupTxArray
     !
     !> No subroutine briefing
     !
-    subroutine zerosDataGroupTxArray( data_tx_array )
+    subroutine zeros_DataGroupTxArray( data_tx_array )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array
@@ -136,11 +136,11 @@ contains
             !
         enddo
         !
-    end subroutine zerosDataGroupTxArray
+    end subroutine zeros_DataGroupTxArray
     !
-    !> No subroutine briefing
+    !> No function briefing
     !
-    function dotProdDataGroupTxArray( data_tx_array_1, data_tx_array_2 ) result( rvalue )
+    function dotProd_DataGroupTxArray( data_tx_array_1, data_tx_array_2 ) result( rvalue )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array_1, data_tx_array_2
@@ -151,7 +151,7 @@ contains
         !
         if( size( data_tx_array_1 ) /= size( data_tx_array_2 ) ) then
             !
-            stop "Error: dotProdDataGroupTxArray > different array sizes"
+            call errStop( "dotProd_DataGroupTxArray > different array sizes" )
             !
         else
             !
@@ -165,11 +165,11 @@ contains
             !
         endif
         !
-    end function dotProdDataGroupTxArray
+    end function dotProd_DataGroupTxArray
     !
     !> No subroutine briefing
     !
-    subroutine linCombDataGroupTxArray( a, d1, b, d2, dOut )
+    subroutine linComb_DataGroupTxArray( a, d1, b, d2, dOut )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( in ) :: d1, d2
@@ -179,11 +179,11 @@ contains
         integer :: i
         !
         if( size( d1 ) /= size( d2 ) ) then
-            stop "Error: linCombDataGroupTxArray > different array sizes: d1, d2"
+            call errStop( "linComb_DataGroupTxArray > different array sizes: d1, d2" )
         endif
         !
         if( size( d1 ) /= size( dOut ) ) then
-            stop "Error: linCombDataGroupTxArray > different array sizes: d1, dOut"
+            call errStop( "linComb_DataGroupTxArray > different array sizes: d1, dOut" )
         endif
         !
         do i = 1, size( d1 )
@@ -192,11 +192,11 @@ contains
             !
         enddo
         !
-    end subroutine linCombDataGroupTxArray
+    end subroutine linComb_DataGroupTxArray
     !
     !> No subroutine briefing
     !
-    subroutine scMultDataGroupTxArray( rvalue, data_tx_array_in, data_tx_array_out )
+    subroutine scMult_DataGroupTxArray( rvalue, data_tx_array_in, data_tx_array_out )
         implicit none
         !
         real( kind=prec ), intent( in ) :: rvalue
@@ -205,11 +205,11 @@ contains
         !
         call linCombData( R_ZERO, data_tx_array_in, rvalue, data_tx_array_in, data_tx_array_out )
         !
-    end subroutine scMultDataGroupTxArray
+    end subroutine scMult_DataGroupTxArray
     !
     !> No subroutine briefing
     !
-    subroutine scMultAddDataGroupTxArray( rvalue, data_tx_array_in, data_tx_array_out )
+    subroutine scMultAdd_DataGroupTxArray( rvalue, data_tx_array_in, data_tx_array_out )
         implicit none
         !
         real( kind=prec ), intent( in ) :: rvalue
@@ -218,11 +218,11 @@ contains
         !
         call linCombData( rvalue, data_tx_array_in, ONE, data_tx_array_out, data_tx_array_out )
         !
-    end subroutine scMultAddDataGroupTxArray
+    end subroutine scMultAdd_DataGroupTxArray
     !
     !> No subroutine briefing
     !
-    subroutine normalizeDataGroupTxArray( data_tx_array, norm )
+    subroutine normalize_DataGroupTxArray( data_tx_array, norm )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array
@@ -246,11 +246,11 @@ contains
             !
         enddo
         !
-    end subroutine normalizeDataGroupTxArray
+    end subroutine normalize_DataGroupTxArray
     !
     !> No subroutine briefing
     !
-    subroutine normalizeWithDataGroupTxArray( norm, data_tx_array_in, data_tx_array_out )
+    subroutine normalizeWith_DataGroupTxArray( norm, data_tx_array_in, data_tx_array_out )
         implicit none
         !
         integer, intent( in ) :: norm
@@ -273,11 +273,11 @@ contains
             !
         enddo
         !
-    end subroutine normalizeWithDataGroupTxArray
+    end subroutine normalizeWith_DataGroupTxArray
     !
     !> No subroutine briefing
     !
-    subroutine setErrorBarDataGroupTxArray( data_tx_array, error_bar )
+    subroutine setErrorBar_DataGroupTxArray( data_tx_array, error_bar )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array
@@ -295,11 +295,11 @@ contains
             !
         enddo
         !
-    end subroutine setErrorBarDataGroupTxArray
+    end subroutine setErrorBar_DataGroupTxArray
     !
     !> No subroutine briefing
     !
-    subroutine setComplexDataGroupTxArray( data_tx_array, is_complex )
+    subroutine setComplex_DataGroupTxArray( data_tx_array, is_complex )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( inout ) :: data_tx_array
@@ -317,9 +317,11 @@ contains
             !
         enddo
         !
-    end subroutine setComplexDataGroupTxArray
+    end subroutine setComplex_DataGroupTxArray
     !
-    function countValuesGroupTxArray( data_tx_array ) result( counter )
+    !> No function briefing
+    !
+    function countValues_DataGroupTxArray( data_tx_array ) result( counter )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
@@ -339,9 +341,11 @@ contains
             !
         enddo
         !
-    end function countValuesGroupTxArray
+    end function countValues_DataGroupTxArray
     !
-    function countDataGroupTxArray( data_tx_array ) result( counter )
+    !> No function briefing
+    !
+    function count_DataGroupTxArray( data_tx_array ) result( counter )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
@@ -358,7 +362,7 @@ contains
             !
         enddo
         !
-    end function countDataGroupTxArray
+    end function count_DataGroupTxArray
     !
     !> Return a pointer, allowing directly modifications to a specific DataGroup at a given index
     !
@@ -392,7 +396,7 @@ contains
     !
     !> Dynamically add a new DataGroupTx to the array, always via reallocation.
     !
-    subroutine updateDataGroupTxArray( data_tx_array, data_tx )
+    subroutine update_DataGroupTxArray( data_tx_array, data_tx )
         implicit none
         !
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: data_tx_array
@@ -425,24 +429,24 @@ contains
             !
         endif
         !
-    end subroutine updateDataGroupTxArray
+    end subroutine update_DataGroupTxArray
     !
     !> Deallocate all DataGroups of a particular DataGroupTxArray
     !
-    subroutine deallocateDataGroupTxArray( data_tx_array )
+    subroutine deallocate_DataGroupTxArray( data_tx_array )
         implicit none
         !
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: data_tx_array
         !
         integer :: i, n_dtx
         !
-        !write( *, * ) "deallocateDataGroupTxArray:", size( data_tx_array )
+        !write( *, * ) "deallocate_DataGroupTxArray:", size( data_tx_array )
         !
         n_dtx = size( data_tx_array )
         !
         if( n_dtx == 1 ) then
             deallocate( data_tx_array(1)%data )
-        else
+        elseif( n_dtx .GT. 0 ) then
             do i = n_dtx, 1, -(1)
                 deallocate( data_tx_array(i)%data )
             enddo
@@ -450,12 +454,12 @@ contains
         !
         deallocate( data_tx_array )
         !
-    end subroutine deallocateDataGroupTxArray
+    end subroutine deallocate_DataGroupTxArray
     !
     !> Write one DataGroupTxArray, with its proper Rx headers, 
     !> into to the file <file_name>
     !
-    subroutine writeDataGroupTxArray( data_tx_array, file_name )
+    subroutine write_DataGroupTxArray( data_tx_array, file_name )
         implicit none
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: data_tx_array
@@ -472,7 +476,6 @@ contains
         ! Verbose
         !write( *, * ) "     > Write Data to file: [", file_name, "]"
         !
-        ! ????
         n_data = countData( data_tx_array )
         !
         receiver_type = 0
@@ -495,7 +498,7 @@ contains
                 !
                 !> Write header if changed data type
                 !> Increase type_index
-                call writeHeaderDataGroupTxArray( receiver, receiver_type, type_index )
+                call writeHeader_DataGroupTxArray( receiver, receiver_type, type_index )
                 !
                 !write( *, * ) "receiver%units, units_in_file( type_index )%str: [", receiver%units, "],[", units_in_file( type_index )%str, "]"
                 !
@@ -550,7 +553,7 @@ contains
                             write( ioPredData, "( a8, 3es15.6 )" ) trim( receiver%comp_names(j)%str ), real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), r_error
                             !
                         class default
-                            stop "Error: writeDataGroupTxArray: Unclassified data_group!"
+                            call errStop( "write_DataGroupTxArray: Unclassified data_group!" )
                         !
                     end select
                     !
@@ -565,15 +568,14 @@ contains
             close( ioPlot )
             !
         else
-            write( *, * ) "Error opening [", file_name, "] in writeDataGroupTxArray!"
-            stop
+            call errStop( "write_DataGroupTxArray > cant opening ["//file_name//"]!" )
         endif
         !
-    end subroutine writeDataGroupTxArray
+    end subroutine write_DataGroupTxArray
     !
     !> Call the print routine of each DataGroupTx in the array
     !
-    subroutine printDataGroupTxArray( data_tx_array, title )
+    subroutine print_DataGroupTxArray( data_tx_array, title )
         implicit none
         !
         type( DataGroupTx_t ), dimension(:), intent( in ) :: data_tx_array
@@ -591,11 +593,11 @@ contains
             !
         enddo
         !
-    end subroutine printDataGroupTxArray
+    end subroutine print_DataGroupTxArray
     !
     !> Write a header into the DataGroupTxArray text file
     !
-    subroutine writeHeaderDataGroupTxArray( receiver, receiver_type, type_index )
+    subroutine writeHeader_DataGroupTxArray( receiver, receiver_type, type_index )
         implicit none
         !
         class( Receiver_t ), intent( in ) :: receiver
@@ -628,8 +630,7 @@ contains
                     write( ioPredData, * ) "#   Tx_Dipole Tx_Period(s) Tx_Moment(Am) Tx_Azi Tx_Dip Tx_X(m) Tx_Y(m) Tx_Z(m) Code X(m) Y(m) Z(m) Component Real Imag Error"
                     !
                 case default
-                    write( *, * ) "Unknown receiver type :[", receiver%rx_type, "]"
-                    stop "Error: DataGroupTxArray > writeHeaderDataGroupTxArray()"
+                    call errStop( "DataGroupTxArray > writeHeader_DataGroupTxArray > Unknown receiver type" )
                 !
             end select
             !
@@ -650,7 +651,7 @@ contains
             !
         endif
         !
-    end subroutine writeHeaderDataGroupTxArray
+    end subroutine writeHeader_DataGroupTxArray
     !
 end module DataGroupTxArray
 !

@@ -17,9 +17,9 @@ module InversionDCG
             !
             final :: InversionDCG_dtor
             !
-            procedure, public :: solve => solveInversionDCG
+            procedure, public :: solve => solve_InversionDCG
             !
-            procedure, public :: outputFiles => outputFilesInversionDCG
+            procedure, public :: outputFiles => outputFiles_InversionDCG
             !
             procedure, private :: Calc_FWD, CG_DS_standard, MultA_DS
             !
@@ -40,7 +40,7 @@ contains
         !
         !write( *, * ) "Constructor InversionDCG_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%max_grad_iters = 20
         self%error_tol = 10E-4
@@ -67,7 +67,7 @@ contains
     end function InversionDCG_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !
     subroutine InversionDCG_dtor( self )
         implicit none
@@ -82,7 +82,7 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine solveInversionDCG( self, all_data, sigma, dsigma )
+    subroutine solve_InversionDCG( self, all_data, sigma, dsigma )
         implicit none
         !
         class( InversionDCG_t ), intent( inout ) :: self
@@ -198,7 +198,7 @@ contains
             !
         endif
         !
-    end subroutine solveInversionDCG
+    end subroutine solve_InversionDCG
     !
     !> No subroutine briefing
     !
@@ -207,7 +207,7 @@ contains
         !
         class( InversionDCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
-        class( ModelParameter_t ), allocatable, intent( in ) :: dsigma, mHat
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma, mHat
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: res
         real( kind=prec ), intent( out ) :: F, mNorm
@@ -219,13 +219,9 @@ contains
         all_predicted_data = all_data
         !
 #ifdef MPI
-        !
         call masterForwardModelling( dsigma, all_predicted_data )
-        !
 #else
-        !
         call serialForwardModeling( dsigma, all_predicted_data )
-        !
 #endif
         !
         res = all_data
@@ -258,7 +254,7 @@ contains
         class( InversionDCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: b
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: x
-        class( ModelParameter_t ), allocatable, intent( in ) :: dsigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         !
         type( DataGroupTx_t ), allocatable, dimension(:) :: r, p, Ap
@@ -308,7 +304,7 @@ contains
             !
             self%beta = r_norm / r_norm_pre
             !
-            ! Compute new p: p = r + beta*p    
+            ! Compute new p: p = r + beta * p
             call linCombData( ONE, r, self%beta, p, p )
             !
             self%iter = self%iter + 1
@@ -331,7 +327,7 @@ contains
         !
         class( InversionDCG_t ), intent( inout ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: p
-        class( ModelParameter_t ), allocatable, intent( in ) :: dsigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_data
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: Ap
         !
@@ -374,12 +370,12 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine outputFilesInversionDCG( self, all_predicted_data, res, dsigma, mHat )
+    subroutine outputFiles_InversionDCG( self, all_predicted_data, res, dsigma, mHat )
         implicit none
         !
         class( InversionDCG_t ), intent( in ) :: self
         type( DataGroupTx_t ), allocatable, dimension(:), intent( in ) :: all_predicted_data, res
-        class( ModelParameter_t ), intent( in ) :: dsigma, mHat
+        class( ModelParameter_t ), intent( inout ) :: dsigma, mHat
         !
         character(100) :: out_file_name
         character(3) :: char3
@@ -406,7 +402,7 @@ contains
         !
         call mHat%write( trim( out_file_name ) )
         !
-    end subroutine outputFilesInversionDCG
+    end subroutine outputFiles_InversionDCG
     !
 end module InversionDCG
 !

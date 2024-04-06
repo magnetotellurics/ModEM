@@ -4,12 +4,12 @@
 !> Recursive autoregression
 !>
 !
-module ModelCovarianceRec
+module ModelCovariance
     !
     use Constants
     use ModelParameterCell_SG
-    use ModelParameterCell_SG_VTI
     use cVectorSparse3D_SG
+    use rScalar3D_SG
     use iScalar3D_SG
     !
     !> define the mask for air and ocean here. By default, we do not switch off
@@ -19,7 +19,7 @@ module ModelCovarianceRec
     integer, parameter, private :: OCEAN = 9
     integer, parameter, private :: FREE  = 1 ! anything 1-8
     !
-    type :: ModelCovarianceRec_t
+    type :: ModelCovariance_t
         !
         !> Dimensions of the grid
         integer :: Nx, Ny, NzEarth
@@ -44,7 +44,7 @@ module ModelCovarianceRec
         !
         contains
             !
-            final :: ModelCovarianceRec_dtor
+            final :: ModelCovariance_dtor
             !
             procedure, public :: multBy_Cm
             procedure, public :: multBy_CmSqrt
@@ -52,28 +52,29 @@ module ModelCovarianceRec
             procedure, public :: read_CmSqrt
             procedure, public :: RecursiveAR
             procedure, public :: RecursiveARInv
-            procedure, public :: SmoothX
-            procedure, public :: SmoothY
-            procedure, public :: SmoothZ
+            procedure, public :: SmoothX, SmoothY, SmoothZ
             procedure, public :: Scaling
             !
     end type
     !
-    interface ModelCovarianceRec_t
-         module procedure ModelCovarianceRec_ctor
-    end interface ModelCovarianceRec_t
+    !> Public Global ModelCovariance object
+    class( ModelCovariance_t ), allocatable :: model_cov
+    !
+    interface ModelCovariance_t
+         module procedure ModelCovariance_ctor
+    end interface ModelCovariance_t
     !
 contains
     !
     !> Initializes self variable stored in RecursiveAR.hd. If cfile
     !> is specified, gets this information from file.
-    function ModelCovarianceRec_ctor( m, cfile ) result( self )
+    function ModelCovariance_ctor( m, cfile ) result( self )
         implicit none
         !
         class( ModelParameter_t ), allocatable, intent( in ) :: m
         character(*), intent( in ), optional :: cfile
         !
-        type( ModelCovarianceRec_t ) :: self
+        type( ModelCovariance_t ) :: self
         !
         integer :: istat
         logical :: exists
@@ -82,15 +83,17 @@ contains
         self%Nx = m%metric%grid%Nx
         self%Ny = m%metric%grid%Ny
         self%NzEarth = m%metric%grid%NzEarth
+        !
         allocate( self%Sx(self%NzEarth), STAT=istat )
         allocate( self%Sy(self%NzEarth), STAT=istat )
+        !
         self%Sx = 0.3
         self%Sy = 0.3
         self%Sz = 0.3
         !
         self%S%is_allocated = .FALSE.
         !
-        self%mask = iScalar3D_SG_t( m%metric%grid, CELL_EARTH )
+        self%mask = iScalar3D_SG_t( m%metric%grid, CELL )
         self%mask%v = FREE
         !
         self%N = 1
@@ -105,27 +108,25 @@ contains
                 call self%read_CmSqrt( cfile )
             else
                 !
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unable to find the input covariance file [", trim( cfile ), "]!"
-                stop
+                call errStop( "ModelCovariance_ctor > Unable to find the input covariance file ["//trim( cfile )//"]!" )
                 !
             endif
             !
             if( ( self%Nx /= m%metric%grid%Nx ) .OR. ( self%Ny /= m%metric%grid%Ny ) .OR. ( self%NzEarth /= m%metric%grid%NzEarth ) ) then
                 !
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Grid dimensions do not match in input covariance file [", trim( cfile ), "]!"
-                stop
+                call errStop( "ModelCovariance_ctor > Grid dimensions do not match in input covariance file ["//trim( cfile )//"]!" )
                 !
             endif
             !
         endif
         !
-    end function ModelCovarianceRec_ctor
+    end function ModelCovariance_ctor
     !
     !> No subroutine briefing
-    subroutine ModelCovarianceRec_dtor( self )
+    subroutine ModelCovariance_dtor( self )
         implicit none
         !
-        type( ModelCovarianceRec_t ), intent( inout ) :: self
+        type( ModelCovariance_t ), intent( inout ) :: self
         !
         integer :: istat
         !
@@ -134,7 +135,7 @@ contains
         !call deall_iscalar( self%mask )
         self%is_allocated = .FALSE.
         !
-    end subroutine ModelCovarianceRec_dtor
+    end subroutine ModelCovariance_dtor
     !
     !> Multiplies by the full model covariance,
     !> which is viewed as a smoothing operator. Intended
@@ -146,39 +147,27 @@ contains
     subroutine multBy_Cm( self, target_model )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         class( ModelParameter_t ), allocatable, intent( inout ) :: target_model
         !
-        class( ModelParameter_t ), allocatable :: temp_model
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        integer :: i
+        type( rScalar3D_SG_t ) :: target_cond, temp_cond
         !
-        allocate( temp_model, source = target_model )
+        if( .NOT. target_model%is_allocated ) then
+            call errStop( "multBy_Cm > target_model not allocated!" )
+        endif
         !
-        select type( temp_model )
+        do i = 1, size( target_model%getCond() )
             !
-            class is( ModelParameterCell_SG_t )
-                !
-                select type( target_model )
-                    !
-                    class is( ModelParameterCell_SG_t )
-                        !
-                        v = target_model%cell_cond(1)%getV()
-                        !
-                        call self%RecursiveAR( temp_model%cell_cond(1)%getV(), v, 2 )
-                        !
-                        call target_model%cell_cond(1)%setV( v )
-                        !
-                    class default
-                        stop "Error: multBy_Cm > Unclassified target_model"
-                    !
-                end select
-                !
-            class default
-                stop "Error: multBy_Cm > Unclassified temp_model"
+            target_cond = target_model%getCond(i)
             !
-        end select
-        !
-        deallocate( temp_model )
+            temp_cond = target_cond
+            !
+            call self%RecursiveAR( temp_cond%v, target_cond%v, 2 )
+            !
+            call target_model%setCond( target_cond, i )
+            !
+        enddo
         !
     end subroutine multBy_Cm
     !
@@ -192,36 +181,32 @@ contains
     subroutine multBy_CmSqrt( self, mhat, dsigma )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
-        class( ModelParameter_t ), allocatable, intent( in ) :: mhat
+        class( ModelCovariance_t ), intent( in ) :: self
+        class( ModelParameter_t ), intent( in ) :: mhat
         class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
         !
-        class( Scalar_t ), allocatable, dimension(:) :: mhat_cell_cond, dsigma_cell_cond
-        complex( kind=prec ), allocatable :: dsigma_v(:, :, :)
+        type( rScalar3D_SG_t ) :: mhat_cond, dsigma_cond
         integer :: i
+        !
+        if( .NOT. mhat%is_allocated ) then
+            call errStop( "multBy_CmSqrt > mhat not allocated!" )
+        endif
         !
         if( allocated( dsigma ) ) deallocate( dsigma )
         allocate( dsigma, source = mhat )
+        dsigma = mhat
         !
-        call mhat%getCond( mhat_cell_cond )
-        !
-        allocate( dsigma_cell_cond, source = mhat_cell_cond )
-        !
-        do i = 1, size( mhat_cell_cond )
+        do i = 1, mhat%anisotropic_level
             !
-            dsigma_v = mhat_cell_cond(i)%getV()
+            mhat_cond = mhat%getCond(i)
             !
-            call self%RecursiveAR( mhat_cell_cond(i)%getV(), dsigma_v, self%N )
+            dsigma_cond = dsigma%getCond(i)
             !
-            call dsigma_cell_cond(i)%setV( dsigma_v )
+            call self%RecursiveAR( mhat_cond%v, dsigma_cond%v, self%N )
+            !
+            call dsigma%setCond( dsigma_cond, i )
             !
         enddo
-        !
-        deallocate( mhat_cell_cond )
-        !
-        call dsigma%setCond( dsigma_cell_cond )
-        !
-        deallocate( dsigma_cell_cond )
         !
     end subroutine multBy_CmSqrt
     !
@@ -232,40 +217,32 @@ contains
     !> the modelParam module. Before this routine can be called,
     !> it has to be initialized by calling create_CmSqrt(m).
     !
-    function multBy_CmSqrtInv( self, dm ) result ( mhat )
+    function multBy_CmSqrtInv( self, dsigma ) result( mhat )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
-        class( ModelParameter_t ), allocatable, intent( in ) :: dm
+        class( ModelCovariance_t ), intent( in ) :: self
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+        !
         class( ModelParameter_t ), allocatable :: mhat
         !
-        complex( kind=prec ), allocatable :: v(:, :, :)
+        type( rScalar3D_SG_t ) :: dsigma_cond, mhat_cond
+        integer :: i
         !
-        mhat = dm
+        if( allocated( mhat ) ) deallocate( mhat )
+        allocate( mhat, source = dsigma )
+        mhat = dsigma
         !
-        select type( mhat )
+        do i = 1, size( dsigma%getCond() )
             !
-            class is( ModelParameterCell_SG_t )
-                !
-                select type( dm )
-                    !
-                    class is( ModelParameterCell_SG_t )
-                        !
-                        v = mhat%cell_cond(1)%getV()
-                        !
-                        call self%RecursiveARInv( dm%cell_cond(1)%getV(), v, self%N )
-                        !
-                        call mhat%cell_cond(1)%setV( v )
-                        !
-                    class default
-                        stop "Error: multBy_CmSqrtInv > Unclassified dm"
-                    !
-                end select
-                !
-            class default
-                stop "Error: multBy_CmSqrtInv > Unclassified mhat"
+            dsigma_cond = dsigma%getCond(i)
             !
-        end select
+            mhat_cond = mhat%getCond(i)
+            !
+            call self%RecursiveARInv( dsigma_cond%v, mhat_cond%v, self%N )
+            !
+            call mhat%setCond( mhat_cond, i )
+            !
+        enddo
         !
     end function multBy_CmSqrtInv
     !
@@ -307,7 +284,7 @@ contains
     subroutine read_CmSqrt( self, cfile )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( inout ) :: self
+        class( ModelCovariance_t ), intent( inout ) :: self
         character(*), intent( in ) :: cfile
         !
         !> Exception rules
@@ -317,7 +294,7 @@ contains
         integer :: k1, k2, Nx, Ny, Nz, NzEarth, nrules, nS, i, j, k, n, ios, istat
         !
         if( .NOT. self%is_allocated ) then
-            stop "Error: Model covariance must be is_allocated before reading from file in read_CmSqrt"
+            call errStop( "read_CmSqrt > Model covariance must be is_allocated before reading from file!" )
         endif
         !
         open( unit=ioCovariance, file=cfile, form="formatted", status="old", iostat = ios )
@@ -325,7 +302,7 @@ contains
         if( ios == 0 ) then
             !
             !> skip the 16 lines header
-            do j = 1,16
+            do j = 1, 16
                 read( ioCovariance, * )
             enddo
             !
@@ -363,35 +340,37 @@ contains
             !
             i = 1
             do
-                 read( ioCovariance, *, iostat = istat ) k1, k2
-                 !
-                 if( istat /= 0) exit
-                 !
-                 if( ( k1 < 0 ) .OR. ( k2 > Nz ) ) then
-                        write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m read_CmSqrt > While reading the ", i, "th block."
-                        stop
-                 elseif( k1 > k2) then
-                        write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m read_CmSqrt > Block ", i, " will be ignored."
-                 endif
-                 !
-                 do j = Nx, 1, -1
-                        !
-                        read(ioCovariance, *, iostat = istat) temp
-                        !
-                        if( istat /= 0) then
-                             write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m read_CmSqrt > While reading the ", j, "th row in ", i,"th block."
-                             stop
-                        endif
-                        !
-                        do k = k1, k2
-                             self%mask%v(j, :, k) = temp
-                        enddo
-                 enddo
-                 !
-                 if( k == Nz) exit
-                 !
-                 i = i + 1
-                 !
+                !
+                read( ioCovariance, *, iostat = istat ) k1, k2
+                !
+                if( istat /= 0) exit
+                !
+                if( ( k1 < 0 ) .OR. ( k2 > Nz ) ) then
+                    write( *, * ) "Error: read_CmSqrt > While reading the ", i, "th block!"
+                    stop
+                elseif( k1 > k2) then
+                    write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m read_CmSqrt > Block ", i, " will be ignored."
+                endif
+                !
+                do j = Nx, 1, -1
+                !
+                read(ioCovariance, *, iostat = istat) temp
+                !
+                if( istat /= 0) then
+                    write( *, * ) "Error: read_CmSqrt > While reading the ", j, "th row in ", i,"th block."
+                    stop
+                endif
+                !
+                do k = k1, k2
+                     self%mask%v(j, :, k) = temp
+                enddo
+                !
+                enddo
+                !
+                if( k == Nz) exit
+                !
+                i = i + 1
+                !
             enddo
             !
             deallocate( temp )
@@ -399,8 +378,7 @@ contains
             close( ioCovariance )
             !
         else
-            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m read_CmSqrt > Cant open file [", cfile, "]!"
-            stop
+            call errStop( "read_CmSqrt > Cant open file ["//cfile//"]!" )
         endif
         !
         !> create a huge sparse vector to make sure we accommodate all smoothing exceptions
@@ -466,9 +444,9 @@ contains
     subroutine RecursiveAR( self, w, v, n )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
-        complex( kind=prec ), intent( in ) :: w(:,:,:)
-        complex( kind=prec ), intent( out ) :: v(:,:,:)
+        class( ModelCovariance_t ), intent( in ) :: self
+        real( kind=prec ), intent( in ) :: w(:,:,:)
+        real( kind=prec ), intent( out ) :: v(:,:,:)
         integer, intent( in ) :: n
         integer :: Nx, Ny, NzEarth, i, j, k, iSmooth
         !
@@ -478,7 +456,7 @@ contains
         !
         if( maxval( abs(shape(w) - shape(v) ) ) > 0 ) then
             !
-            stop "Error: The input arrays should be of the same shapes in RecursiveAR!"
+            call errStop( "RecursiveAR > The input arrays should be of the same shapes!" )
             !
         endif
         !
@@ -572,9 +550,9 @@ contains
     subroutine RecursiveARInv( self, w, v, n)
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
-        complex( kind=prec ), intent( in ) :: w(:,:,:)
-        complex( kind=prec ), intent( out ) :: v(:,:,:)
+        class( ModelCovariance_t ), intent( in ) :: self
+        real( kind=prec ), intent( in ) :: w(:,:,:)
+        real( kind=prec ), intent( out ) :: v(:,:,:)
         integer, intent( in ) :: n
         !
         integer :: Nx, Ny, NzEarth, i, j, k, iSmooth, istat
@@ -585,7 +563,8 @@ contains
         NzEarth = size( w, 3 )
         !
         if( maxval( abs( shape(w) - shape(v) ) ) > 0 ) then
-            stop "Error: The input arrays should be of the same shapes in RecursiveARInv"
+            !
+            call errStop( "RecursiveARInv > The input arrays should be of the same shapes in RecursiveARInv" )
         endif
         !
         allocate( u( Nx, Ny, NzEarth ), stat=istat )
@@ -686,27 +665,28 @@ contains
     end subroutine RecursiveARInv
     !
     !> computes the smoothing coefficient in the x-direction based on self
+    !
     function SmoothX( self, i, j, k ) result( alpha )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         integer, intent( in ) :: i, j, k
         real( kind=prec ) :: alpha
         !
         integer :: n
         !
         if( .NOT. associated( self%Sx ) ) then
-            stop "Error: self%Sx has to be is_allocated before calling SmoothX"
+            call errStop( "SmoothX > self%Sx has to be is_allocated before calling this" )
         endif
         !
         alpha = self%Sx(k)
         !
         if((i < 1) .OR. (i > self%Nx)) then
-            stop "Error: index i out of bounds in SmoothX(i,j,k)"
+            call errStop( "SmoothX > index i out of bounds in SmoothX(i,j,k)" )
         elseif((j < 1) .OR. (j > self%Ny)) then
-            stop "Error: index j out of bounds in SmoothX(i,j,k)"
+            call errStop( "SmoothX > index j out of bounds in SmoothX(i,j,k)" )
         elseif((k < 1) .OR. (k > self%NzEarth)) then
-            stop "Error: index k out of bounds in SmoothX(i,j,k)"
+            call errStop( "SmoothX > index k out of bounds in SmoothX(i,j,k)" )
         endif
         !
         if( self%S%is_allocated .AND. (self%S%nCoeff > 0) ) then
@@ -728,24 +708,24 @@ contains
     function SmoothY( self, i, j, k ) result( beta )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         integer, intent( in ) :: i, j, k
         real( kind=prec ) :: beta
         !
         integer :: n
         !
         if( .NOT. associated( self%Sy ) ) then
-            stop "Error: self%Sy has to be is_allocated before calling SmoothY"
+            call errStop( "SmoothY > self%Sy has to be is_allocated before calling this" )
         endif
         !
         beta = self%Sy(k)
         !
         if( ( i < 1 ) .OR. ( i > self%Nx ) ) then
-            stop "Error: index i out of bounds in SmoothY(i,j,k)"
-        elseif((j < 1) .OR. (j > self%Ny)) then
-            stop "Error: index j out of bounds in SmoothY(i,j,k)"
-        elseif((k < 1) .OR. (k > self%NzEarth)) then
-            stop "Error: index k out of bounds in SmoothY(i,j,k)"
+            call errStop( "SmoothY > index i out of bounds in Y(i,j,k)" )
+        elseif( (j < 1) .OR. ( j > self%Ny) ) then
+            call errStop( "SmoothY > index j out of bounds in Y(i,j,k)" )
+        elseif( (k < 1) .OR. ( k > self%NzEarth) ) then
+            call errStop( "SmoothY > index k out of bounds in Y(i,j,k)" )
         endif
         !
         if( self%S%is_allocated .AND. ( self%S%nCoeff > 0 ) ) then
@@ -767,7 +747,7 @@ contains
     function SmoothZ( self, i, j, k ) result( gamma )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         integer, intent( in ) :: i, j, k
         real( kind=prec ) :: gamma
         !
@@ -776,11 +756,11 @@ contains
         gamma = self%Sz
         !
         if((i < 1) .OR. (i > self%Nx)) then
-            stop "Error: index i out of bounds in SmoothZ(i,j,k)"
+            call errStop( "SmoothZ > index i out of bounds in Z(i,j,k)" )
         elseif((j < 1) .OR. (j > self%Ny)) then
-            stop "Error: index j out of bounds in SmoothZ(i,j,k)"
+            call errStop( "SmoothZ > index j out of bounds in Z(i,j,k)" )
         elseif((k < 1) .OR. (k > self%NzEarth)) then
-            stop "Error: index k out of bounds in SmoothZ(i,j,k)"
+            call errStop( "SmoothZ > index k out of bounds in Z(i,j,k)" )
         endif
         !
         if( self%S%is_allocated .AND. ( self%S%nCoeff > 0 ) ) then
@@ -802,16 +782,16 @@ contains
     function Scaling( self, i, j, k ) result( c )
         implicit none
         !
-        class( ModelCovarianceRec_t ), intent( in ) :: self
+        class( ModelCovariance_t ), intent( in ) :: self
         integer, intent( in ) :: i,j,k
         real( kind=prec ) :: c, alpha, beta, gamma
         !
         if((i < 1) .OR. (i > self%Nx)) then
-            stop "Error: index i out of bounds in Scaling(i,j,k)"
+            call errStop( "Scaling > index i out of bounds in Scaling(i,j,k)" )
         elseif((j < 1) .OR. (j > self%Ny)) then
-            stop "Error: index j out of bounds in Scaling(i,j,k)"
+            call errStop( "Scaling > index j out of bounds in Scaling(i,j,k)" )
         elseif((k < 1) .OR. (k > self%NzEarth)) then
-            stop "Error: index k out of bounds in Scaling(i,j,k)"
+            call errStop( "Scaling > index k out of bounds in Scaling(i,j,k)" )
         endif
         !
         alpha = self%SmoothX( i, j, k )
@@ -828,4 +808,4 @@ contains
         !
     end function Scaling
     !
-end Module ModelCovarianceRec
+end Module ModelCovariance

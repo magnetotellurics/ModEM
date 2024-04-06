@@ -1,14 +1,9 @@
 !
 !> Derived class to define a MT Source with boundary data computed by 1D solutions
-!>
-!> *************
-!>
+!
 module SourceMT_1D
     !
-    use Constants
-    use cVector3D_SG
     use Source
-    use ModelOperator
     use ModelParameter1D
     use Forward1D
     !
@@ -33,6 +28,7 @@ module SourceMT_1D
 contains
     !
     !> SourceMT_1D constructor
+    !
     function SourceMT_1D_ctor( model_operator, sigma, period ) result( self )
         implicit none
         !
@@ -44,7 +40,7 @@ contains
         !
         !write( *, * ) "Constructor SourceMT_1D_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%model_operator => model_operator
         !
@@ -57,7 +53,8 @@ contains
     end function SourceMT_1D_ctor
     !
     !> Deconstructor routine:
-    !>     Call the base routine dealloc().
+    !>     Call the base routine baseDealloc().
+    !
     subroutine SourceMT_1D_dtor( self )
         implicit none
         !
@@ -65,11 +62,12 @@ contains
         !
         !write( *, * ) "Destructor SourceMT_1D_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine SourceMT_1D_dtor
     !
-    !> Set self%E from forward modeling 1D
+    !> Set self%E from Forward Modeling 1D
+    !
     subroutine createE_SourceMT_1D( self )
         implicit none
         !
@@ -78,7 +76,6 @@ contains
         type( ModelParameter1D_t ) :: model_parameter_1D
         type( Forward1D_t ) :: forward_1D
         complex( kind=prec ), allocatable, dimension(:) :: E1D
-        !
         integer :: ix, iy, pol
         !
         !> Get Model1D from average conductivity 3D
@@ -94,50 +91,62 @@ contains
         !> Solve 1D and store the result in E1D structure
         call forward_1D%solve( E1D )
         !
-        !> 
-        allocate( cVector3D_SG_t :: self%E( 2 ) )
+        allocate( self%E( 2 ) )
         !
         do pol = 1, 2
             !
-            self%E( pol ) = cVector3D_SG_t( self%model_operator%metric%grid, EDGE )
+            self%E( pol ) = cVector3D_SG_t( self%sigma%metric%grid, EDGE )
             !
-            !> Fill e_vector (cVector3D_SG) from E1D (Esoln1DTM_t)
+            !> Fill e_vector (Vector_t) from E1D (Esoln1DTM_t)
             !>     Note that Ez components are all left set to 9
-            select type( E => self%E( pol ) )
+            !
+            !> 1st polarization case: Only y components are non-zero
+            if( pol == 1 ) then
                 !
-                class is( cVector3D_SG_t )
-                    !
-                    !> 1st polarization case: Only y components are non-zero
-                    if( pol == 1 ) then
-                        do ix = 1, self%model_operator%metric%grid%nx+1
-                            do iy = 1, self%model_operator%metric%grid%ny
-                                E%y( ix, iy, : ) = E1D
-                            enddo
-                        enddo
-                    !
-                    !> 2nd polarization case: Only x components are non-zero
-                    else
-                        do ix = 1, self%model_operator%metric%grid%nx
-                            do iy = 1, self%model_operator%metric%grid%ny+1
-                                E%x( ix, iy, : ) = E1D
-                            enddo
-                        enddo
-                        !
-                    endif
-                    !
-                class default
-                    stop "Error: createE_SourceMT_1D: Unclassified Vector"
-            end select
+                do ix = 1, self%model_operator%metric%grid%nx+1
+                    do iy = 1, self%model_operator%metric%grid%ny
+                        self%E( pol )%y( ix, iy, : ) = E1D
+                    enddo
+                enddo
+            !
+            !> 2nd polarization case: Only x components are non-zero
+            elseif( pol == 2 ) then
+                !
+                do ix = 1, self%model_operator%metric%grid%nx
+                    do iy = 1, self%model_operator%metric%grid%ny+1
+                        self%E( pol )%x( ix, iy, : ) = E1D
+                    enddo
+                enddo
+            !
+            !> Something wrong with MT polarizations
+            else
+                write( *, * ) "Polarization =", pol
+                call errStop( "createE_SourceMT_1D > Wrong polarization value" )
+            endif
             !
         enddo
         !
         deallocate( E1D )
         !
-        call self%createRHS()
-        !
+        call self%createRHS
+        ! !
+        ! open(unit = 6666,file = 'RHS1.bin',form = 'unformatted')
+        ! call self%rhs(1)%v%write( 6666)
+        ! close(6666)
+        ! open(unit = 6666,file = 'RHS2.bin',form = 'unformatted')
+        ! call self%rhs(2)%v%write( 6666)
+        ! close(6666)
+        ! open(unit = 6666,file = 'srcE1.bin',form = 'unformatted')
+        ! call self%E(1)%write( 6666)
+        ! close(6666)
+        ! open(unit = 6666,file = 'srcE2.bin',form = 'unformatted')
+        ! call self%E(2)%write( 6666)
+        ! close(6666)
+        ! !
     end subroutine createE_SourceMT_1D
     !
-    !> Set RHS from self%E
+    !> Build the proper Source RHS from its E
+    !
     subroutine createRHS_SourceMT_1D( self )
         implicit none
         !
@@ -146,24 +155,46 @@ contains
         class( Vector_t ), allocatable :: e_boundary
         !
         integer :: pol
+        type( cVector3D_MR_t ) :: temp_vec_mr
         !
-        if( allocated( self%rhs ) ) deallocate( self%rhs )
-        allocate( cVector3D_SG_t :: self%rhs( 2 ) )
+        allocate( self%rhs( 2 ) )
         !
         do pol = 1, 2
             !
-            call self%E( pol )%boundary( e_boundary )
+            !> Check if grid is MR 
+            !> RHS calculated as MR vector
+            select type( grid => self%model_operator%metric%grid )
+                !
+                class is( Grid3D_SG_t )
+                    !
+                    call self%E( pol )%boundary( e_boundary )
+                    !
+                    allocate( self%rhs( pol )%v, source = cVector3D_SG_t( grid, EDGE ) )
+                    !
+                class is( Grid3D_MR_t )
+                    !
+                    temp_vec_mr = cVector3D_MR_t( grid, self%E( pol )%grid_type )
+                    !
+                    call temp_vec_mr%fromSG( self%E( pol ) )
+                    !
+                    call temp_vec_mr%boundary( e_boundary )
+                    !
+                    allocate( self%rhs( pol )%v, source = cVector3D_MR_t( grid, EDGE ) )
+                    !
+                class default
+                    call errStop( "createRHS_SourceMT_1D > model_operator must be SP V1 or V2" )
+                !
+            end select
             !
-            self%rhs( pol ) = cVector3D_SG_t( self%model_operator%metric%grid, EDGE )
-            !
-            call self%model_operator%MultAib( e_boundary, self%rhs( pol ) )
+            call self%model_operator%MultAib( e_boundary, self%rhs( pol )%v )
             !
             deallocate( e_boundary )
             !
-            call self%rhs( pol )%mult( C_MinusOne )
+            call self%rhs( pol )%v%mult( C_MinusOne )
             !
         enddo
         !
     end subroutine createRHS_SourceMT_1D
     !
 end module SourceMT_1D
+!

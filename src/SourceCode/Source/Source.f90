@@ -3,9 +3,10 @@
 !
 module Source
     !
-    use Constants
+    use Utilities
     use ModelOperator
     use ModelParameter
+    use cVector3D_MR
     !
     character(:), allocatable :: source_type_mt
     character( len=11 ), parameter :: SRC_MT_1D = "SourceMT_1D"
@@ -19,15 +20,20 @@ module Source
         !
         real( kind=prec ) :: period
         !
-        class( Vector_t ), allocatable, dimension(:) :: rhs, E
+        type( cVector3D_SG_t ), allocatable, dimension(:) :: E
+        !
+        type( GenVector_t ), allocatable, dimension(:) :: rhs
         !
         logical :: non_zero_source, non_zero_bc, calc_sens, for_transpose
         !
+        !> Global primary electrical Field
+        type( cVector3D_SG_t ) :: E_p
+        !
         contains
             !
-            procedure, public :: init => initialize_Source
+            procedure, public :: baseInit => initialize_Source
             !
-            procedure, public :: dealloc => deallocate_Source
+            procedure, public :: baseDealloc => deallocate_Source
             !
             procedure, public :: setE => setE_Source
             !
@@ -42,18 +48,16 @@ module Source
     abstract interface
         !
         subroutine interface_create_e_source( self )
-            !
             import :: Source_t
-            class( Source_t ), intent( inout ) :: self
             !
+            class( Source_t ), intent( inout ) :: self
         end subroutine interface_create_e_source
         !
         !> No interface subroutine briefing
         subroutine interface_create_rhs_source( self )
-            !
             import :: Source_t
-            class( Source_t ), intent( inout ) :: self
             !
+            class( Source_t ), intent( inout ) :: self
         end subroutine interface_create_rhs_source
         !
     end interface
@@ -61,19 +65,42 @@ module Source
     contains
     !
     !> No subroutine briefing
+    !
     subroutine setE_Source( self, E )
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
-        class( Vector_t ), dimension(:), intent( in ) :: E
+        type( GenVector_t ), allocatable, dimension(:), intent( in ) :: E
         !
-        integer :: pol
+        type( cVector3D_SG_t ) :: temp_e_sg
+        integer :: i, size_e
         !
-        if( allocated( self%E ) ) deallocate( self%E )
+        size_e = size( E )
         !
-        allocate( self%E, source = E )
+        allocate( self%E( size_e ) )
         !
-        call self%createRHS()
+        do i = 1, size_e
+            !> RHS calculated as MR vector
+            select type( Ei => E(i)%v )
+                !
+                class is( cVector3D_SG_t )
+                    !
+                    self%E(i) = Ei
+                    !
+                class is( cVector3D_MR_t )
+                    !
+                    call Ei%toSG( temp_e_sg )
+                    !
+                    self%E(i) = temp_e_sg
+                    !
+                class default
+                    call errStop( "setE_Source > model_operator must be SP V1 or V2" )
+                !
+            end select
+            !
+        enddo
+        !
+        call self%createRHS
         !
     end subroutine setE_Source
     !
@@ -82,13 +109,9 @@ module Source
         implicit none
         !
         class( Source_t ), intent( inout ) :: self
-        class( Vector_t ), dimension(:), intent( in ) :: rhs
+        type( GenVector_t ), allocatable, dimension(:) :: rhs
         !
-        integer :: pol
-        !
-        if( allocated( self%rhs ) ) deallocate( self%rhs )
-        !
-        allocate( self%rhs, source = rhs )
+        self%rhs = rhs
         !
     end subroutine setRHS_Source
     !
@@ -125,5 +148,5 @@ module Source
         deallocate( self%E )
         !
     end subroutine deallocate_Source
-	!
+    !
 end module Source

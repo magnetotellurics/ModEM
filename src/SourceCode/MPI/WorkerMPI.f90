@@ -11,11 +11,9 @@ module WorkerMPI
     public :: workerMainLoop
     public :: workerSolve
     public :: workerForwardModelling
-    public :: workerJMult
-    public :: workerJMult_T
+    public :: workerJMult, workerJMult_T
     public :: handleBasicComponents
-    public :: handleSigmaModel
-    public :: handleDSigmaModel
+    public :: handleSigmaModel, handleDSigmaModel
     public :: setTxForwardSolver
     !
 contains
@@ -71,6 +69,8 @@ contains
             end select
             !
         enddo
+        !
+        if( allocated( model_buffer ) ) deallocate( model_buffer )
         !
         if( allocated( sigma ) ) deallocate( sigma )
         !
@@ -175,7 +175,9 @@ contains
         !> Point to the transmitter specified by the master process 
         Tx => getTransmitter( job_info%i_tx )
         !
-        !> Switch Transmitter's source to SourceInteriorForce from PMult
+        call Tx%forward_solver%setFrequency( sigma, Tx%period )
+        !
+        !> Switch Transmitter's source to SourceAdjoint from PMult
         call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
         !
         !> Solve e_sens with the new Source
@@ -199,7 +201,7 @@ contains
     !> Receive data_tx from master process
     !> Calculate tx_dsigma for the data_tx's transmitter with JMult_T_Tx
     !>     Create a rhs from LRows * residual data for all receivers related to the transmitter.
-    !>     Solve ESens on the transmitter using a transpose SourceInteriorForce, with the new rhs.
+    !>     Solve ESens on the transmitter using a transpose SourceAdjoint, with the new rhs.
     !>     Call Tx%PMult to get a new ModelParameter dsigma.
     !> Send dsigma%cell_cond_h to master process
     !> Require previous call of workerSolve or masterSolveAll
@@ -246,18 +248,35 @@ contains
         !
         !write( *, "( a30, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", job_info%basic_comp_size, " bytes."
         !
-        select type( main_grid )
+        !> Instantiate model_operator
+        !> Specific type can be chosen via fwd control file
+        select case( model_operator_type )
             !
-            class is( Grid3D_SG_t )
+            case( MODELOP_MF )
                 !
-                allocate( model_operator, source = ModelOperator_MF_t( main_grid ) )
+                allocate( model_operator, source = ModelOperator_MF_SG_t( main_grid ) )
                 !
-                call model_operator%setEquations
+            case( MODELOP_SP )
                 !
-            class default
-                stop "Error: handleBasicComponents > Unclassified main_grid"
-            !
+                allocate( model_operator, source = ModelOperator_SP_V1_t( main_grid ) )
+                !
+            case( MODELOP_SP2 )
+                !
+                allocate( model_operator, source = ModelOperator_SP_V2_t( main_grid ) )
+                !
+            case( "" )
+                !
+                call warning( "handleModelFile > model_operator_type not provided, using ModelOperator_MF_SG_t." )
+                !
+                allocate( model_operator, source = ModelOperator_MF_SG_t( main_grid ) )
+                !
+            case default
+                !
+                call errStop( "handleModelFile > Wrong Model Operator type: ["//model_operator_type//"]" )
+                !
         end select
+        !
+        call model_operator%setEquations
         !
     end subroutine handleBasicComponents
     !
@@ -274,8 +293,6 @@ contains
         !write( *, "( a30, i5, a11, i10, a11 )" ) "Worker", mpi_rank, " Received: ", job_info%model_size, " bytes."
         !
         call sigma%setMetric( model_operator%metric )
-        !
-        call model_operator%setCond( sigma )
         !
     end subroutine handleSigmaModel
     !
@@ -306,20 +323,23 @@ contains
         !> Instantiate the ForwardSolver - Specific type can be chosen via control file
         select case( forward_solver_type )
             !
+            case( FWD_IT )
+                !
+                allocate( forward_solver, source = ForwardSolver_IT_t( model_operator, solver_type ) )
+                !
             case( FWD_IT_DC )
                 !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
                 !
             case( "" )
                 !
-                write( *, * ) "     "//achar(27)//"[91m# Warning:"//achar(27)//"[0m setTxForwardSolver > Forward Solver type not provided, using IT_DC."
+                call warning( "setTxForwardSolver > Forward Solver type not provided, using IT_DC." )
                 !
-                allocate( forward_solver, source = ForwardSolverIT_DC_t( model_operator, QMR ) )
+                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
                 !
             case default
                 !
-                write( *, * ) "Error: Wrong Forward Solver type: [", forward_solver_type, "]"
-                stop
+                call errStop( "setTxForwardSolver > Wrong Forward Solver type: ["//forward_solver_type//"]." )
                 !
         end select
         !

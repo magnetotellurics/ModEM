@@ -1,23 +1,31 @@
 !
 !> math_constants.f90 defines math constants and other parameters
 !
-!> AUTHORS    Gary Egbert, Anna Kelbert & Naser Meqbel
+!> AUTHORS: Gary Egbert, Anna Kelbert, Naser Meqbel & Paulo Werdt
 !>     College of Earth, Ocean and Atmospheric Sciences.
 !
 module Constants
     implicit none
     !
     !> Program Version
-    character( len=5 ), parameter :: VERSION = "1.0.1"
+    character( len=5 ), parameter :: VERSION = "2.0.0"
     !
-    !> VECTOR
+    !> FIELD TYPES
+    integer, parameter :: real_t = 1
+    integer, parameter :: complex_t = 2
+    integer, parameter :: integer_t = 3
+    !
+    !> INDEXES TYPES
+    integer, parameter :: ind_boundary = 1
+    integer, parameter :: ind_interior = 2
+    !
+    !> VECTOR TYPES
     character( len=4 ), parameter :: EDGE = "EDGE"
     character( len=4 ), parameter :: FACE = "FACE"
     !
-    !> SCALAR
+    !> SCALAR TYPES
     character( len=4 ), parameter :: NODE = "NODE"
     character( len=4 ), parameter :: CELL = "CELL"
-    character( len=10 ), parameter :: CELL_EARTH = "CELL EARTH"
     !
     !> Possible node types:
     character( len=5 ), parameter :: XFACE = "XFACE"
@@ -93,8 +101,8 @@ module Constants
     character( len=7 ), parameter :: INVERSE = "INVERSE"
     character( len=5 ), parameter :: DERIV = "DERIV"
     !
-    character( len=40 ), parameter :: DATA_FILE_TITLE_MT = "Synthetic 3D MT data written by ModEM-OO"
-    character( len=42 ), parameter :: DATA_FILE_TITLE_CSEM = "Synthetic 3D CSEM data written by ModEM-OO"
+    character( len=40 ), parameter :: DATA_FILE_TITLE_MT = "Synthetic 3D MT data written by ModEM"
+    character( len=42 ), parameter :: DATA_FILE_TITLE_CSEM = "Synthetic 3D CSEM data written by ModEM"
     !
     character( len=4 ), parameter :: LOGE = "LOGE"
     character( len=6 ), parameter :: LINEAR = "LINEAR"

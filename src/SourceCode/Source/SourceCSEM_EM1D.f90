@@ -7,14 +7,13 @@ module SourceCSEM_EM1D
     use EM1D
     use TransmitterCSEM
     use TransmitterArray
-    use ModelParameterCell_SG
-    use ModelParameterCell_SG_VTI
+    use ModelParameterCell
     !
     type, extends( SourceCSEM_t ) :: SourceCSEM_EM1D_t
         !
         integer :: i_tx
         !
-        type( rVector3D_SG_t ) :: cond_anomaly_h, cond_anomaly_v
+        class( Vector_t ), allocatable :: cond_anomaly_h, cond_anomaly_v
         !
         !> (S/m) Layer conductivities in the both directions used in VTI
         real( kind=prec ), dimension(:), allocatable, private :: sig1D_h, sig1D_v
@@ -24,8 +23,6 @@ module SourceCSEM_EM1D
             final :: SourceCSEM_EM1D_dtor
             !
             procedure, public :: createE => createE_SourceCSEM_EM1D
-            !
-            procedure, public :: createRHS => createRHS_SourceCSEM_EM1D
             !
             procedure, public :: set1DModel => set1DModel_SourceCSEM_EM1D
             !
@@ -52,7 +49,7 @@ contains
         !
         !write( *, * ) "Constructor SourceCSEM_EM1D_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%model_operator => model_operator
         !
@@ -71,7 +68,7 @@ contains
     end function SourceCSEM_EM1D_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     subroutine SourceCSEM_EM1D_dtor( self )
         implicit none
         !
@@ -79,7 +76,7 @@ contains
         !
         !write( *, * ) "Destructor SourceCSEM_EM1D_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
         if( allocated( sig1D ) ) deallocate( sig1D )
         !
@@ -105,8 +102,8 @@ contains
         integer :: ifreq, icur, comm
         complex( kind=prec ) :: i_omega_mu
         !
-        !> Verbose...
-        write( *, * ) "          - Extract CSEM Source from EM1D"
+        !> Verbose
+        write( *, "( a48, a14 )" ) "- SourceCSEM_EM1D according to: ", trim( get_1d_from )
         !
         call self%set1DModel
         !
@@ -129,28 +126,17 @@ contains
         !
         i_omega_mu = cmplx( 0., real( -1.0d0 * isign * mu_0 * ( 2.0 * PI / self%period ), kind=prec ), kind=prec )
         !
-        !> Construct E from E_p
-        allocate( self%E(1), source = E_p )
+        !>  CSEM has only one polarization, therefore E needs only one position
+        allocate( self%E( 1 ) )
         !
-        select type( E => self%E(1) )
-            !
-            class is( cVector3D_SG_t )
-                !
-                select type( E_P )
-                    !
-                    class is( cVector3D_SG_t )
-                        !
-                        E%x = self%cond_anomaly_h%getAxis("x") * E_P%x
-                        E%y = self%cond_anomaly_h%getAxis("y") * E_P%y
-                        E%z = self%cond_anomaly_v%getAxis("z") * E_P%z
-                        !
-                    class default
-                        stop "createE_SourceCSEM_EM1D > Unclassified E_P"
-                end select
-                !
-            class default
-                stop "createE_SourceCSEM_EM1D > Unclassified E"
-        end select
+        !> Construct E from E_p
+        self%E(1) = self%E_p
+        !
+        self%E(1)%x = self%cond_anomaly_h%getAxis("x") * self%E_P%x
+        !
+        self%E(1)%y = self%cond_anomaly_h%getAxis("y") * self%E_P%y
+        !
+        self%E(1)%z = self%cond_anomaly_v%getAxis("z") * self%E_P%z
         !
         call self%E(1)%mult( i_omega_mu )
         !
@@ -182,68 +168,44 @@ contains
         !
         integer ix, iy, iz, counter
         !
-        if( allocated( E_p ) ) deallocate( E_p )
-        allocate( E_p, source = cVector3D_SG_t( grid, EDGE ) )
+        self%E_p = cVector3D_SG_t( grid, EDGE )
         !
         !> Fill e_vector (cVector3D_SG) from E2D (Esoln2DTM_t)
-        select type( E_P )
-            !
-            class is( cVector3D_SG_t )
-                !
-                counter = 1
-                !> E-field corresponding to these nodes is Ex
-                do iz = 1,grid%Nz+1    !Edge Z
-                    do iy = 1,grid%Ny+1     !Edge Y
-                        do ix = 1,grid%Nx       !Center X
-                            E_p%x(ix,iy,iz) = bgdat%Ex(counter)
-                            counter = counter + 1
-                        enddo
-                    enddo
+        !
+        counter = 1
+        !> E-field corresponding to these nodes is Ex
+        do iz = 1,grid%Nz+1    !Edge Z
+            do iy = 1,grid%Ny+1     !Edge Y
+                do ix = 1,grid%Nx       !Center X
+                    self%E_p%x(ix,iy,iz) = bgdat%Ex(counter)
+                    counter = counter + 1
                 enddo
-                !
-                counter = 1
-                !> E-field corresponing to these nodes is Ey
-                do iz = 1, grid%Nz+1    !Edge Z
-                    do iy = 1, grid%Ny      !Center y
-                        do ix = 1, grid%Nx+1    !Edge x
-                            E_p%y(ix,iy,iz) = bgdat%Ey(counter)
-                            counter = counter + 1
-                        enddo
-                    enddo
+            enddo
+        enddo
+        !
+        counter = 1
+        !> E-field corresponding to these nodes is Ey
+        do iz = 1, grid%Nz+1    !Edge Z
+            do iy = 1, grid%Ny      !Center y
+                do ix = 1, grid%Nx+1    !Edge x
+                    self%E_p%y(ix,iy,iz) = bgdat%Ey(counter)
+                    counter = counter + 1
                 enddo
-                !
-                counter = 1
-                !> E-field corresponing to these nodes is Ez
-                do iz = 1,grid%Nz !Center Z
-                    do iy = 1,grid%Ny+1 !Edge y
-                        do ix = 1,grid%Nx+1 !Edge x
-                            E_p%z(ix,iy,iz) = bgdat%Ez(counter)
-                            counter = counter + 1
-                        enddo
-                    enddo
+            enddo
+        enddo
+        !
+        counter = 1
+        !> E-field corresponding to these nodes is Ez
+        do iz = 1,grid%Nz !Center Z
+            do iy = 1,grid%Ny+1 !Edge y
+                do ix = 1,grid%Nx+1 !Edge x
+                    self%E_p%z(ix,iy,iz) = bgdat%Ez(counter)
+                    counter = counter + 1
                 enddo
-                !
-            class default
-                stop "create_Ep_from_EM1D > Unclassified E_P"
-        end select
+            enddo
+        enddo
         !
     end subroutine create_Ep_from_EM1D
-    !
-    !> Set RHS from self%E
-    !
-    subroutine createRHS_SourceCSEM_EM1D( self )
-        implicit none
-        !
-        class( SourceCSEM_EM1D_t ), intent( inout ) :: self
-        !
-        if( allocated( self%rhs ) ) deallocate( self%rhs )
-        allocate( cVector3D_SG_t :: self%rhs(1) )
-        !
-        self%rhs(1) = self%E(1)
-        !
-        call self%rhs(1)%mult( self%model_operator%metric%Vedge )
-        !
-    end subroutine createRHS_SourceCSEM_EM1D
     !
     !> this is a private routine, used to extract layer averages from
     !> a 3D conductivity parameter (sigma) and set up
@@ -256,33 +218,66 @@ contains
         !
         class( SourceCSEM_EM1D_t ), intent( inout ) :: self
         !
-        integer :: ani_level
-        class( Scalar_t ), allocatable, dimension(:) :: sigma_cell
+        type( rScalar3D_SG_t ) :: sigma_cell
+        !real( kind=prec ), dimension( nlay1D ):: sig_h, sig_v, zlay0
+        integer :: i, k
         !
-        call self%sigma%getCond( sigma_cell )
-        !
-        ani_level = size( sigma_cell )
-        !
-        if( ani_level == 1 .OR. ani_level == 2 ) then
+        if( self%sigma%anisotropic_level == 1 .OR. self%sigma%anisotropic_level == 2 ) then
             !
             !> Horizontal
+            sigma_cell = self%sigma%getCond(1)
+            !
             if( allocated( self%sig1D_h ) ) deallocate( self%sig1D_h )
-            allocate( self%sig1D_h( sigma_cell(1)%grid%Nz ) )
+            allocate( self%sig1D_h( sigma_cell%grid%Nz ) )
             !
             call self%setCondAnomally( self%cond_anomaly_h, 1 )
             !
             self%sig1D_h = sig1D
             !
             !> Vertical
-            if( allocated( self%sig1D_v ) ) deallocate( self%sig1D_v )
-            allocate( self%sig1D_v( sigma_cell( ani_level )%grid%Nz ) )
+            sigma_cell = self%sigma%getCond( self%sigma%anisotropic_level )
             !
-            call self%setCondAnomally( self%cond_anomaly_v, ani_level )
+            if( allocated( self%sig1D_v ) ) deallocate( self%sig1D_v )
+            allocate( self%sig1D_v( sigma_cell%grid%Nz ) )
+            !
+            call self%setCondAnomally( self%cond_anomaly_v, self%sigma%anisotropic_level )
             !
             self%sig1D_v = sig1D
-            !
+            ! !
+            ! !> Merge Layers (Michael Commer)
+            ! i = nlay1D
+            ! !
+            ! k = 1
+            ! sig_h(1) = SIGMA_AIR
+            ! sig_v(1) = sig_h(1)
+            ! zlay0(1) = 0d0
+            ! !
+            ! ! air layer
+            ! do i = sigma_cell%grid%nzAir + 1, nlay1D
+                ! ! if either sig_H or sig_V change from layer k to k+1, add new layer
+                ! if( abs( self%sig1D_h(i) - sig_h( k ) ) > SIGMA_MIN .OR. abs( self%sig1D_v(i) - sig_v( k ) ) > SIGMA_MIN ) then
+                    ! !
+                    ! k = k + 1
+                    ! sig_h( k ) = self%sig1D_h(i)
+                    ! sig_v( k ) = self%sig1D_v(i)
+                    ! zlay0( k ) = zlay1D(i)
+                    ! !
+                ! endif
+            ! enddo
+            ! !
+            ! ! reset temp. 1D-model arrays
+            ! do i = 1, k ! new layers
+                ! !
+                ! self%sig1D_h(i) = sig_h(i)
+                ! self%sig1D_v(i) = sig_v(i)
+                ! zlay1D(i) = zlay0(i)
+                ! !
+            ! enddo
+            ! !
+            ! nlay1D = k
+            ! !
         else
-            stop "Error: set1DModel_SourceCSEM_EM1D > Anisotropy with level above 2 not yet supported"
+            call errStop( "set1DModel_SourceCSEM_EM1D > Anisotropy with level above 2 not yet supported" )
         endif
         !
     end subroutine set1DModel_SourceCSEM_EM1D
@@ -295,8 +290,9 @@ contains
         class( SourceCSEM_EM1D_t ), intent( in ) :: self
         type( backgrounddata ), intent( inout ) :: bgdat 
         !
+        type( Grid3D_SG_t ) :: grid_wal_sg
         integer( kind=int32 ) :: counter, ilay, ix, iy, iz, ierr
-        integer( kind=int32 ) :: nx1, ny1, nz1 !nr of points in my domain for which fields are computed
+        integer( kind=int32 ) :: nx1, ny1, nz1 !> nr of points in my domain for which fields are computed
         !
         bgdat%nlay= nlay1D
         !allocate vectors for medium properties
@@ -348,6 +344,7 @@ contains
         ix = bgdat%nEx * 1.5_real64
         iy = bgdat%nEy * 1.5_real64
         iz = bgdat%nEz * 1.5_real64
+        !
         allocate(bgdat%Ex(ix),bgdat%Ey(iy),bgdat%Ez(iz), stat=ierr )
         if( ierr .NE. 0 ) call alloc_error(pid,'Out-backgroundfield','E fields', ierr )
         !
@@ -362,41 +359,53 @@ contains
         bgdat%Ey = 0._real64
         bgdat%Ez = 0._real64
         !
+        !> Using always an SG grid without air_layers here !!!!
+        grid_wal_sg = param_grid
+        !
         counter = 1
         !> E-field corresponding to these nodes is Ex
-        do iz = 1, self%sigma%metric%grid%Nz+1 !Edge Z
-            do iy = 1, self%sigma%metric%grid%Ny+1 !Edge Y
-                do ix = 1,self%sigma%metric%grid%Nx !Center X
-                    bgdat%Expos(counter,1) = self%sigma%metric%grid%x_center(ix)
-                    bgdat%Expos(counter,2) = self%sigma%metric%grid%y_edge(iy)
-                    bgdat%Expos(counter,3) = self%sigma%metric%grid%z_edge(iz)
+        do iz = 1, grid_wal_sg%Nz+1 !Edge Z
+            do iy = 1, grid_wal_sg%Ny+1 !Edge Y
+                do ix = 1, grid_wal_sg%Nx !Center X
+                    !
+                    bgdat%Expos(counter,1) = grid_wal_sg%x_center(ix)
+                    bgdat%Expos(counter,2) = grid_wal_sg%y_edge(iy)
+                    bgdat%Expos(counter,3) = grid_wal_sg%z_edge(iz)
+                    !
                     counter = counter + 1
+                    !
                 enddo
             enddo
         enddo
         !
         counter = 1
-        !> E-field corresponing to these nodes is Ey
-        do iz = 1,self%sigma%metric%grid%Nz+1 !Edge Z
-            do iy = 1,self%sigma%metric%grid%Ny !Center y
-                do ix = 1,self%sigma%metric%grid%Nx+1 !Edge x
-                    bgdat%Eypos(counter,1) = self%sigma%metric%grid%x_edge(ix)
-                    bgdat%Eypos(counter,2) = self%sigma%metric%grid%y_center(iy)
-                    bgdat%Eypos(counter,3) = self%sigma%metric%grid%z_edge(iz)
+        !> E-field corresponding to these nodes is Ey
+        do iz = 1, grid_wal_sg%Nz+1 !Edge Z
+            do iy = 1, grid_wal_sg%Ny !Center y
+                do ix = 1, grid_wal_sg%Nx+1 !Edge x
+                    !
+                    bgdat%Eypos(counter,1) = grid_wal_sg%x_edge(ix)
+                    bgdat%Eypos(counter,2) = grid_wal_sg%y_center(iy)
+                    bgdat%Eypos(counter,3) = grid_wal_sg%z_edge(iz)
+                    !
                     counter = counter + 1
+                    !
                 enddo
             enddo
         enddo
         !
         counter = 1
-        !> E-field corresponing to these nodes is Ez
-        do iz = 1,self%sigma%metric%grid%Nz !Center Z
-            do iy = 1,self%sigma%metric%grid%Ny+1 !Edge y
-                do ix = 1,self%sigma%metric%grid%Nx+1 !Edge x
-                    bgdat%Ezpos(counter,1)= self%sigma%metric%grid%x_edge(ix)
-                    bgdat%Ezpos(counter,2) = self%sigma%metric%grid%y_edge(iy)
-                    bgdat%Ezpos(counter,3) = self%sigma%metric%grid%z_center(iz)
+        !> E-field corresponding to these nodes is Ez
+        do iz = 1, grid_wal_sg%Nz !Center Z
+            do iy = 1, grid_wal_sg%Ny+1 !Edge y
+                do ix = 1, grid_wal_sg%Nx+1 !Edge x
+                    !
+                    bgdat%Ezpos(counter,1)= grid_wal_sg%x_edge(ix)
+                    bgdat%Ezpos(counter,2) = grid_wal_sg%y_edge(iy)
+                    bgdat%Ezpos(counter,3) = grid_wal_sg%z_center(iz)
+                    !
                     counter = counter + 1
+                    !
                 enddo
             enddo
         enddo
@@ -460,7 +469,7 @@ contains
                 src%cur( 1, 1 ) = C_ONE
                 !
             class default
-                stop "Error: createSourceData > Not a CSEM Transmitter"
+                call errStop( "createSourceData > Not a CSEM Transmitter" )
             !
         end select
         !

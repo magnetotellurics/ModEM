@@ -101,7 +101,7 @@ subroutine background_hom_unified(bgdat,src,ifreq,icur)
       src_j(2) = dlwy * cur
       src_j(3) = 0._real64
 
-      elsrc = .true.
+      elsrc = .TRUE.
       magsrc = .false.
     end select
 

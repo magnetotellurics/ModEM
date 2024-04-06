@@ -86,7 +86,7 @@ contains
         !
         if( size( self%data ) /= size( rhs%data ) ) then
             !
-            stop "Error: subDataGroupTx > different data sizes"
+            call errStop( "subDataGroupTx > different data sizes" )
             !
         else
             !
@@ -100,7 +100,7 @@ contains
         !
     end subroutine subDataGroupTx
     !
-    !> ????
+    !> No subroutine briefing
     !
     subroutine normalizeDataGroupTx( self, norm )
         implicit none
@@ -278,7 +278,7 @@ contains
         !
         if( size( self%data ) /= size( data_tx%data ) ) then
             !
-            stop "Error: dotProdDataGroupTx > different data sizes"
+            call errStop( "dotProdDataGroupTx > different data sizes" )
             !
         else
             !
@@ -306,19 +306,19 @@ contains
         integer :: i
         !
         if( self%i_tx /= data_tx%i_tx ) then
-            stop "Error: linCombDataGroupTx > different data txs: d1 and d2"
+            call errStop( "linCombDataGroupTx > different data txs: d1 and d2" )
         endif
         !
         if( size( self%data ) /= size( data_tx%data ) ) then
-            stop "Error: linCombDataGroupTx > different data sizes: d1 and d2"
+            call errStop( "linCombDataGroupTx > different data sizes: d1 and d2" )
         endif
         !
         if( self%i_tx /= data_tx_out%i_tx ) then
-            stop "Error: linCombDataGroupTx > different data txs: d1 and d_out"
+            call errStop( "linCombDataGroupTx > different data txs: d1 and d_out" )
         endif
         !
         if( size( self%data ) /= size( data_tx_out%data ) ) then
-            stop "Error: linCombDataGroupTx > different data sizes: d1 and d_out"
+            call errStop( "linCombDataGroupTx > different data sizes: d1 and d_out" )
         endif
         !
         do i = 1, size( self%data )

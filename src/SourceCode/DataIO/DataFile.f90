@@ -3,7 +3,6 @@
 !
 module DataFile
     !
-    use Constants
     use String
     !
     use DataEntryArray
@@ -41,9 +40,9 @@ module DataFile
         !
         contains
             !
-            procedure, public :: init => initializeDataFile
+            procedure, public :: baseInit => initialize_DataFile
             !
-            procedure, public :: dealloc => deallocateDataFile
+            procedure, public :: baseDealloc => deallocate_DataFile
             !
             procedure, public :: loadReceiversAndTransmitters
             !
@@ -54,7 +53,8 @@ module DataFile
 contains
     !
     !> No subroutine briefing
-    subroutine initializeDataFile( self )
+    !
+    subroutine initialize_DataFile( self )
         implicit none
         !
         class( DataFile_t ), intent( inout ) :: self
@@ -67,22 +67,24 @@ contains
         !
         conjugated_data = .FALSE.
         !
-    end subroutine initializeDataFile
+    end subroutine initialize_DataFile
     !
     !> No subroutine briefing
-    subroutine deallocateDataFile( self )
+    !
+    subroutine deallocate_DataFile( self )
         implicit none
         !
         class( DataFile_t ), intent( inout ) :: self
         !
-        deallocate( self%data_entries )
+        if( allocated( self%data_entries ) ) deallocate( self%data_entries )
         !
-        deallocate( self%measured_data )
+        if( allocated( self%measured_data ) ) deallocate( self%measured_data )
         !
-    end subroutine deallocateDataFile
+    end subroutine deallocate_DataFile
     !
     !> Procedure loadReceiversAndTransmitters
     !> Load all Receivers (Based on Location and Component type) and all Transmitters (Based on Period)
+    !
     subroutine loadReceiversAndTransmitters( self, data_entry )
         implicit none
         !
@@ -90,7 +92,8 @@ contains
         class( DataEntry_t ), intent( in ) :: data_entry
         !
         class( Receiver_t ), allocatable :: receiver
-        class( Transmitter_t ), pointer :: transmitter
+        class( Transmitter_t ), allocatable :: new_transmitter
+        class( Transmitter_t ), pointer :: ptr_transmitter
         class( DataGroup_t ), pointer :: data_group
         integer :: i_tx, n_tx, i_rx, rx_type, i_dg
         real( kind=prec ) :: azimuth, SI_factor, r_error
@@ -98,23 +101,28 @@ contains
         !
         call updateDataEntryArray( self%data_entries, data_entry )
         !
-        ! TRANSMITTERS
+        !> Instantiate a Transmitter
         select type ( data_entry )
             !
             class is ( DataEntryMT_t )
                 !
-                i_tx = updateTransmitterArray( TransmitterMT_t( data_entry%period ) )
+                allocate( new_transmitter, source = TransmitterMT_t( data_entry%period ) )
                 !
             class is ( DataEntryMT_REF_t )
                 !
-                i_tx = updateTransmitterArray( TransmitterMT_t( data_entry%period ) )
+                allocate( new_transmitter, source = TransmitterMT_t( data_entry%period ) )
                 !
             class is ( DataEntryCSEM_t )
                 !
-                i_tx = updateTransmitterArray( TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%tx_azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
+                allocate( new_transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%tx_azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
                 !
         end select
         !
+        i_tx = updateTransmitterArray( new_transmitter )
+        !
+        deallocate( new_transmitter )
+        !
+        !> Instantiate a Receiver
         rx_type = getIntReceiverType( data_entry%dtype )
         !
         select case( data_entry%dtype )
@@ -168,15 +176,15 @@ contains
                 !
             case( "Full_Interstation_TF" )
                 !
-                stop "Error: DataManager.f08: loadReceiversAndTransmitters(): To implement Full_Interstation_TF !!!!"
+                call errStop( "loadReceiversAndTransmitters > To implement Full_Interstation_TF!" )
                 !
             case( "Off_Diagonal_Rho_Phase" )
                 !
-                stop "Error: DataManager.f08: loadReceiversAndTransmitters(): To implement Off_Diagonal_Rho_Phase !!!!"
+                call errStop( "loadReceiversAndTransmitters > To implement Off_Diagonal_Rho_Phase!" )
                 !
             case( "Phase_Tensor" )
                 !
-                stop "Error: DataManager.f08: loadReceiversAndTransmitters(): To implement Phase_Tensor !!!!"
+                call errStop( "loadReceiversAndTransmitters > To implement Phase_Tensor!" )
                 !
             case( "Off_Diagonal_Impedance" )
                 !
@@ -191,8 +199,8 @@ contains
                 receiver%units = "[]"
                 !
             case default
-                write( *, * ) "Unknown Receiver type :[", data_entry%dtype, "]"
-                stop "Error: DataFile > loadReceiversAndTransmitters"
+                !
+                call errStop( "loadReceiversAndTransmitters > Unknown Receiver type :["//data_entry%dtype//"]" )
             !
         end select
         !
@@ -263,9 +271,9 @@ contains
         !> Loop over transmitters
         do i_tx = 1, n_tx
             !
-            transmitter => getTransmitter( i_tx )
+            ptr_transmitter => getTransmitter( i_tx )
             !
-            select type( transmitter )
+            select type( ptr_transmitter )
                 !
                 class is( TransmitterMT_t )
                     !
@@ -273,9 +281,9 @@ contains
                         !
                         class is( DataEntryMT_t )
                             !
-                            if( ABS( transmitter%period - data_entry%period ) < TOL6 ) then
+                            if( ABS( ptr_transmitter%period - data_entry%period ) < TOL6 ) then
                                 !
-                                call transmitter%updateReceiverIndexesArray( i_rx )
+                                call ptr_transmitter%updateReceiverIndexesArray( i_rx )
                                 !
                                 exit
                                 !
@@ -289,12 +297,12 @@ contains
                         !
                         class is( DataEntryCSEM_t )
                             !
-                            if( ABS( transmitter%period - data_entry%period ) < TOL6      .AND.   &
-                                     transmitter%location(1) == data_entry%tx_location(1) .AND.   &
-                                     transmitter%location(2) == data_entry%tx_location(2) .AND.   &
-                                     transmitter%location(3) == data_entry%tx_location(3) ) then
+                            if( ABS( ptr_transmitter%period - data_entry%period ) < TOL6      .AND.   &
+                                     ptr_transmitter%location(1) == data_entry%tx_location(1) .AND.   &
+                                     ptr_transmitter%location(2) == data_entry%tx_location(2) .AND.   &
+                                     ptr_transmitter%location(3) == data_entry%tx_location(3) ) then
                                 !
-                                call transmitter%updateReceiverIndexesArray( i_rx )
+                                call ptr_transmitter%updateReceiverIndexesArray( i_rx )
                                 !
                                 exit
                                 !
@@ -303,7 +311,7 @@ contains
                     end select
                 !
                 class default
-                    stop "Error: DataFile.f90 > loadReceiversAndTransmitters > unclassified Transmitter"
+                    call errStop( "loadReceiversAndTransmitters > Unclassified Transmitter" )
                 !
             end select
             !
@@ -313,6 +321,7 @@ contains
     !
     !> Procedure getLineNumber
     !> Return the number of lines of a given file
+    !
     function getLineNumber( funit ) result( line_counter )
         implicit none
         !
@@ -334,11 +343,12 @@ contains
             endif
         enddo
         !
-10     return
+10      return
         !
     end function getLineNumber
     !
     !> Returns a pointer, allowing modifications directly to a DataGroup at a given index
+    !
     function getDataByIndex( data_array, i_data ) result( data_group )
         implicit none
         !
@@ -401,7 +411,7 @@ contains
         !
         class( DataFile_t ), intent( inout ) :: self
         !
-        !> Auxiliary variable to group data under a single transmitter index
+        !> Auxiliary variable to group data under a single ptr_transmitter index
         class( DataGroupTx_t ), allocatable :: tx_data
         !
         !> Local indexes
@@ -410,8 +420,6 @@ contains
         !> If is the first time, create the predicted data array, 
         !> according to the arrangement of the Transmitter-Receiver pairs of the input
         if( .NOT. allocated( all_measured_data ) ) then
-            !
-            write( *, * ) "     - Create All Measured Data"
             !
             !> Create an array of DataGroupTx to store the predicted data in the same format as the measured data
             !> Enabling the use of grouped predicted data in future jobs (all_measured_data)
@@ -436,9 +444,10 @@ contains
             enddo
             !
         else
-            stop "Error: contructMeasuredDataGroupTxArray > Unnecessary recreation of predicted data array"
+            call errStop( "contructMeasuredDataGroupTxArray > Unnecessary recreation of predicted data array" )
         endif
         !
     end subroutine contructMeasuredDataGroupTxArray
     !
 end module DataFile
+!

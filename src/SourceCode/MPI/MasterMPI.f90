@@ -34,7 +34,7 @@ contains
             call broadcastSigma( sigma )
             !
         else
-            stop "Error: masterSolveAll > sigma not allocated"
+            call errStop( "masterSolveAll > sigma not allocated" )
         endif
         !
         !> Initialize MPI control variables
@@ -60,7 +60,7 @@ contains
         !> Send 1 transmitter to first available worker
         do while( i_tx < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             tx_received = tx_received + 1
             i_tx = i_tx + 1
@@ -75,7 +75,7 @@ contains
         !> Receive job_done from each worker
         do while( tx_received < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             tx_received = tx_received + 1
             !
@@ -112,7 +112,7 @@ contains
             call broadcastSigma( sigma )
             !
         else
-            stop "Error: masterForwardModelling > sigma not allocated"
+            call errStop( "masterForwardModelling > sigma not allocated" )
         endif
         !
         if( allocated( all_predicted_data ) ) deallocate( all_predicted_data )
@@ -146,7 +146,7 @@ contains
         !> Send 1 transmitter to first available worker
         do while( i_tx < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveData( all_predicted_data( job_info%i_tx ), job_info%worker_rank )
             !
@@ -167,7 +167,7 @@ contains
         !> Receive job_done from each worker
         do while( tx_received < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveData( all_predicted_data( job_info%i_tx ), job_info%worker_rank )
             !
@@ -196,7 +196,7 @@ contains
             call broadcastSigma( sigma )
             !
         else
-            stop "Error: masterJMult > sigma not allocated"
+            call errStop( "masterJMult > sigma not allocated" )
         endif
         !
         !> Send dSigma to all workers
@@ -205,7 +205,7 @@ contains
             call broadcastDSigma( dsigma )
             !
         else
-            stop "Error: masterJMult > sigma not allocated"
+            call errStop( "masterJMult > sigma not allocated" )
         endif
         !
         if( allocated( JmHat ) ) deallocate( JmHat )
@@ -238,7 +238,7 @@ contains
         !> Send 1 transmitter to first available worker
         do while( i_tx < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveData( JmHat( job_info%i_tx ), job_info%worker_rank )
             !
@@ -258,16 +258,13 @@ contains
         !> Receive job_done from each worker
         do while( tx_received < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveData( JmHat( job_info%i_tx ), job_info%worker_rank )
             !
             tx_received = tx_received + 1
             !
         enddo
-        !
-        !> Verbose
-        !write( *, * ) "     - Finish masterJMult"
         !
     end subroutine masterJMult
     !
@@ -280,7 +277,7 @@ contains
         type( DataGroupTx_t ), dimension(:), intent( in ) :: all_data
         class( ModelParameter_t ), allocatable, intent( out ) :: dsigma
         integer, intent( in ), optional :: i_sol
-        class( ModelParameter_t ), allocatable, dimension(:), intent( inout ), optional :: s_hat
+        type( GenModelParameter_t ), allocatable, dimension(:), intent( out ), optional :: s_hat
         !
         class( ModelParameter_t ), allocatable :: tx_dsigma
         !
@@ -306,7 +303,7 @@ contains
             call dsigma%zeros
             !
         else
-            stop "Error: masterJMult_T > sigma not allocated"
+            call errStop( "masterJMult_T > sigma not allocated" )
         endif
         !
         !> Initialize MPI control variables
@@ -333,15 +330,20 @@ contains
             !
         enddo
         !
+        !> Allocate s_hat array
+        if( present( s_hat ) ) then
+            allocate( s_hat( size( transmitters ) ) )
+        endif
+        !
         !> Send 1 transmitter to first available worker
         do while( i_tx < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveModel( tx_dsigma, job_info%worker_rank )
             !
             if( present( s_hat ) ) then
-                s_hat( job_info%i_tx ) = tx_dsigma
+                allocate( s_hat( job_info%i_tx )%m, source = tx_dsigma )
             endif
             !
             call dsigma%linComb( ONE, ONE, tx_dsigma )
@@ -363,12 +365,12 @@ contains
         !> Receive job_done from each worker
         do while( tx_received < size( transmitters ) )
             !
-            call receiveFromAny()
+            call receiveFromAny
             !
             call receiveModel( tx_dsigma, job_info%worker_rank )
             !
             if( present( s_hat ) ) then
-                s_hat( job_info%i_tx ) = tx_dsigma
+                allocate( s_hat( job_info%i_tx )%m, source = tx_dsigma )
             endif
             !
             call dsigma%linComb( ONE, ONE, tx_dsigma )
@@ -448,8 +450,6 @@ contains
         job_info%job_name = job_dsigma_model
         !
         job_info%model_size = allocateModelBuffer( dsigma, .FALSE. )
-        !
-        !write( *, "(A45, i8)" ) "dsigma = ", job_info%model_size
         !
         do worker_id = 1, ( mpi_size - 1 )
             !

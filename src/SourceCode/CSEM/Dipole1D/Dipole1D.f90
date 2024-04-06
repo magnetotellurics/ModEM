@@ -155,7 +155,7 @@ module dipole1d
     integer, public                             :: n1D          ! number of receiver sites
     real(8), dimension(:), allocatable, public  :: x1D, y1D, z1D   
 !
-! Option to only compute electric fields.  lbcomp = .false. or .true. 
+! Option to only compute electric fields.  lbcomp = .false. or .TRUE. 
 !
     logical, public :: lbcomp  
 !
@@ -203,10 +203,10 @@ module dipole1d
 ! Inversion sensitivity computations:
 !
 
-    logical, public :: linversion  ! set =.true. to output the field derivatives with respect to conductivity
+    logical, public :: linversion  ! set =.TRUE. to output the field derivatives with respect to conductivity
 !
 !  Electric and magnetic field derivatives with respect to layer conductivities
-!  This are computed when linversion = .true.
+!  This are computed when linversion = .TRUE.
 ! 
     complex(8),dimension(:,:), allocatable, public :: dexdsig,deydsig,djzdsig,dbxdsig,dbydsig,dbzdsig !dexdsig(i,j) = df_i / dsig_j   
     
@@ -301,7 +301,7 @@ module dipole1d
     complex(8), private  :: exh,eyh,jzh,bxh,byh,bzh
     complex(8), private  :: exv,eyv,jzv,bxv,byv,bzv,ext,bxt  
     
-    ! includes these if linversion = .true.
+    ! includes these if linversion = .TRUE.
     complex(8), dimension(:), allocatable, private :: dexhdsig,deyhdsig,djzhdsig
     complex(8), dimension(:), allocatable, private :: dbxhdsig,dbyhdsig,dbzhdsig
     complex(8), dimension(:), allocatable, private :: dexvdsig,deyvdsig,djzvdsig
@@ -317,7 +317,7 @@ module dipole1d
     integer, private    :: nlam_interp   ! number of interpolation index points in lambda
     integer, private    :: iptr          ! a pointer to the last interpolation indices, used for quickly finding next indices
     real(8), dimension(:), allocatable, private :: lam_interp      ! interpolation index points 
-    integer, dimension(:), allocatable, private :: iRxLayerInterp  ! Mapping from layer i to interpolation array column, so that
+    integer, allocatable, dimension(:), private :: iRxLayerInterp  ! Mapping from layer i to interpolation array column, so that
                                                                    ! we only store interp coeffs in layers with receivers...can be
                                                                    ! a huge savings in memory for models with 1000's layers
 !
@@ -388,7 +388,7 @@ module dipole1d
     outputdomain1D  = 'spatial'      ! Assume spatial domain comps
     lbcomp          = .false.        ! This is changed to true if magnetics in data file
     sdm1D           = 1.0            ! (Am), dipole moment. Normalize to unit source moment
-    lUseSpline1D    = .true.         ! Use spline interpolation for faster 1D computations
+    lUseSpline1D    = .TRUE.         ! Use spline interpolation for faster 1D computations
     linversion      = .false.        ! Compute derivatives with respect to sigma(layers)
     phaseConvention = 'lag'          ! The usual default is lag, where phase becomes larger positive values with increasing range.
     lenTx1D         = 0.d0           ! (m) Dipole length 0 = point dipole
@@ -794,7 +794,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
         / real ( k, kind = 8 )
       pkm1 = pk
       pk = pkp1
-    end do
+    enddo
     
     d1 = real ( order, kind = 8 ) * ( pkm1 - x0 * pk )
     
@@ -834,7 +834,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
     weight(mp1mi) = 2.0D+00 * ( 1.0D+00 - xtemp * xtemp ) / ( fx * fx )
     
-    end do
+    enddo
     
     if( mod ( order, 2 ) == 1 ) then
     xtab(1) = 0.0D+00
@@ -849,14 +849,14 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     iback = order + 1 - i
     xtab(iback) = xtab(iback-ncopy)
     weight(iback) = weight(iback-ncopy)
-    end do
+    enddo
     !
     !  Reflect values for the negative abscissas.
     !
     do i = 1, order - nmove
     xtab(i) = - xtab(order+1-i)
     weight(i) = weight(order+1-i)
-    end do
+    enddo
     
     return
     end subroutine 
@@ -1738,13 +1738,13 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !
         if( sin(dipTx1D*pi/180.).eq.0. ) then  ! if dip is 0 or 180, then no VED computation needed
             lved = .false.
-            lhed = .true.
+            lhed = .TRUE.
         elseif( sin(dipTx1D*pi/180.).eq.1. ) then  ! kwk debug: change this and above to tolerance statements
-            lved = .true.
+            lved = .TRUE.
             lhed = .false. 
         else  ! both ved and hed needed
-            lved = .true.
-            lhed = .true.
+            lved = .TRUE.
+            lhed = .TRUE.
         endif
 !
 ! (kx,y,z) domain solution requested:
@@ -1760,8 +1760,8 @@ subroutine legendre_compute_dr ( order, xtab, weight )
 !         = 2   HED pointing along y
 !         = 3   VED pointing along z
 !
-        if(kxmode /= 3) lhed = .true.
-        if(kxmode == 3) lved = .true.
+        if(kxmode /= 3) lhed = .TRUE.
+        if(kxmode == 3) lved = .TRUE.
 
 !
 ! Initialize CT filter coefficients:
@@ -4098,7 +4098,7 @@ subroutine legendre_compute_dr ( order, xtab, weight )
     
     real(8)     :: lamtest, lam_hed_min, lam_hed_max, lam_ved_min, lam_ved_max, pot_coef_tol
 
-    integer, dimension(:), allocatable :: ilayersInterp
+    integer, allocatable, dimension(:) :: ilayersInterp
 
     logical :: linversionIn
     

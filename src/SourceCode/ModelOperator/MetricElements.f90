@@ -3,165 +3,222 @@
 !
 module MetricElements
     !
-    use Grid
-    use Vector
-    use Scalar
+    use cVector3D_MR
+    use iScalar3D_SG
     !
     type, abstract :: MetricElements_t
         !
+        !> Generic grid
         class( Grid_t ), pointer :: grid
         !
-        class( Vector_t ), allocatable :: Edgelength
-        class( Vector_t ), allocatable :: FaceArea
-        class( Vector_t ), allocatable :: DualFaceArea
-        class( Vector_t ), allocatable :: DualEdgelength
-        class( Vector_t ), allocatable :: Vedge
+        class( Vector_t ), allocatable :: edge_length, dual_edge_length
         !
-        class( Scalar_t ), allocatable :: Vnode
-        class( Scalar_t ), allocatable :: Vcell
+        class( Vector_t ), allocatable :: face_area, dual_face_area
+        !
+        class( Vector_t ), allocatable :: v_edge
+        !
+        class( Scalar_t ), allocatable :: v_node, v_cell
         !
      contains
         !
-        procedure, public :: dealloc => deallocateMetricElements
+        procedure( interface_set_edge_length_metric_elements ), deferred, public :: setEdgeLength
+        procedure( interface_set_face_area_metric_elements ), deferred, public :: setFaceArea
+        procedure( interface_set_dual_edge_length_metric_elements ), deferred, public :: setDualEdgeLength
+        procedure( interface_set_dual_face_area_metric_elements ), deferred, public :: setDualFaceArea
+        procedure( interface_set_cell_volume_metric_elements ), deferred, public :: setCellVolume
+        procedure( interface_set_edge_volume_metric_elements ), deferred, public :: setEdgeVolume
+        procedure( interface_set_node_volume_metric_elements ), deferred, public :: setNodeVolume
         !
-        procedure, public :: setMetricElements
+        procedure( interface_set_grid_index_arrays_metric_elements ), deferred, public :: setGridIndexArrays
         !
-        procedure( interface_set_edge_length_metric_elements ), deferred, public :: SetEdgelength
-        procedure( interface_set_face_area_metric_elements ), deferred, public :: SetFaceArea
-        procedure( interface_set_dual_edge_length_metric_elements ), deferred, public :: SetDualEdgelength
-        procedure( interface_set_dual_face_area_metric_elements ), deferred, public :: SetDualFaceArea
-        procedure( interface_set_cell_volume_metric_elements ), deferred, public :: SetCellVolume
-        procedure( interface_set_edge_volume_metric_elements ), deferred, public :: SetEdgeVolume
-        procedure( interface_set_node_volume_metric_elements ), deferred, public :: SetNodeVolume
+        !procedure( interface_boundary_index_metric_elements ), deferred, public :: boundaryIndex
+        !
+        procedure( interface_create_scalar_metric_elements ), deferred, public :: createScalar
+        !
+        procedure( interface_create_vector_metric_elements ), deferred, public :: createVector
+        !
+        procedure, public :: baseDealloc => deallocate_MetricElements
+        !
+        procedure, public :: alloc => allocate_MetricElements
+        !
+        procedure, public :: setup => setup_MetricElements
         !
     end type MetricElements_t
     !
     abstract interface
         !
-        !> No function briefing
-        function interface_get_scalar_metric_elements( self, grid_type, model_operator_type ) result( scalar )
-            import :: MetricElements_t, Scalar_t
-            class( MetricElements_t ), intent( in ) :: self
-            character( len=4 ), intent( in ), optional :: grid_type
-            character( len=10 ), intent( in ), optional :: model_operator_type
-            class( Scalar_t ), allocatable :: scalar
-        end function interface_get_scalar_metric_elements
-        !
-        !> No function briefing
-        function interface_get_vector_metric_elements( self, grid_type, model_operator_type ) result( vector )
-            import :: MetricElements_t, Vector_t
-            class( MetricElements_t ), intent( in ) :: self
-            character( len=4 ), intent( in ), optional :: grid_type
-            character( len=10 ), intent( in ), optional :: model_operator_type
-            class( Vector_t ), allocatable :: vector
-        end function interface_get_vector_metric_elements
-        !
-        !> No function briefing
-        function interface_create_scalar_metric_elements( self, grid_type, model_operator_type ) result( scalar )
-            import :: MetricElements_t, Scalar_t
-            class( MetricElements_t ), intent( in ) :: self
-            character( len=4 ), intent( in ), optional :: grid_type
-            character( len=10 ), intent( in ), optional :: model_operator_type
-            class( Scalar_t ), allocatable :: scalar
-        end function interface_create_scalar_metric_elements
-        !
-        !> No function briefing
-        function interface_create_vector_metric_elements( self, grid_type, model_operator_type ) result( vector )
-            import :: MetricElements_t, Vector_t
-            class( MetricElements_t ), intent( in ) :: self
-            character( len=4 ), intent( in ), optional :: grid_type
-            character( len=10 ), intent( in ), optional :: model_operator_type
-            class( Vector_t ), allocatable :: vector
-        end function interface_create_vector_metric_elements
-        !
-        !> No function briefing
-        function interface_create_field_metric_elements( self, v_type, grid_type, model_operator_type ) result( field )
-            import :: MetricElements_t, Field_t
-            class( MetricElements_t ), intent( in ) :: self
-            character( len=6 ), intent( in ), optional :: v_type
-            character( len=4 ), intent( in ), optional :: grid_type
-            character( len=10 ), intent( in ), optional :: model_operator_type
-            class( Field_t ), allocatable :: field
-        end function interface_create_field_metric_elements
-        !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_edge_length_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_edge_length_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_face_area_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_face_area_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_dual_edge_length_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_dual_edge_length_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_dual_face_area_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_dual_face_area_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_cell_volume_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_cell_volume_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_edge_volume_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_edge_volume_metric_elements
         !
         !> No interface subroutine briefing
+        !
         subroutine interface_set_node_volume_metric_elements( self )
             import :: MetricElements_t
+            !
             class( MetricElements_t ), intent( inout ) :: self
+            !
         end subroutine interface_set_node_volume_metric_elements
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_set_grid_index_arrays_metric_elements( self, grid )
+            import :: MetricElements_t, Grid_t
+            !
+            class( MetricElements_t ), intent( in) :: self
+            class( Grid_t ), intent( inout ) :: grid
+            !
+        end subroutine interface_set_grid_index_arrays_metric_elements
+        !
+        !> No interface subroutine briefing
+        !
+        subroutine interface_set_limits_metric_elements( self, node_type, nx, ny, nz )
+            import :: MetricElements_t
+            !
+            class( MetricElements_t ), intent( in ) :: self
+            character(*), intent( in ) :: node_type
+            integer, intent( out ) :: nx, ny, nz
+            !
+        end subroutine interface_set_limits_metric_elements
+        ! 
+        !subroutine interface_boundary_index_metric_elements( self, grid_type, INDb, INDi )
+            ! import :: MetricElements_t
+            ! !
+            ! class( MetricElements_t ), intent( in ) :: self
+            ! character(*), intent( in ) :: grid_type
+            ! integer, allocatable, dimension(:), intent( inout ) :: INDb, INDi
+            ! !
+        ! end subroutine interface_boundary_index_metric_elements
+        !
+        subroutine interface_create_scalar_metric_elements( self, scalar_type, grid_type, scalar )
+            import :: MetricElements_t, Scalar_t
+            !
+            class( MetricElements_t ), intent( in ) :: self
+            integer, intent( in ) :: scalar_type
+            character( len=4 ), intent( in ) :: grid_type
+            class( Scalar_t ), allocatable, intent( out ) :: scalar
+            !
+        end subroutine interface_create_scalar_metric_elements
+        !
+        !> Create proper vector from the Grid
+        !
+        subroutine interface_create_vector_metric_elements( self, vector_type, grid_type, vector )
+            import :: MetricElements_t, Vector_t
+            !
+            class( MetricElements_t ), intent( in ) :: self
+            integer, intent( in ) :: vector_type
+            character( len=4 ), intent( in ) :: grid_type
+            class( Vector_t ), allocatable, intent( out ) :: vector
+            !
+        end subroutine interface_create_vector_metric_elements
         !
     end interface
     !
 contains
     !
     !> No subroutine briefing
-    subroutine SetMetricElements( self )
+    !
+    subroutine setup_MetricElements( self )
         implicit none
         !
         class( MetricElements_t ), intent( inout ) :: self
         !
-        call self%setEdgelength()
-        call self%setFaceArea()
-        call self%setDualEdgelength()
-        call self%setDualFaceArea()
-        call self%setEdgeVolume()
+        call self%setEdgeLength
+        call self%setFaceArea
+        call self%setDualEdgeLength
+        call self%setDualFaceArea
+        call self%setEdgeVolume
         !
-        call self%setCellVolume()
-        call self%setNodeVolume()
+        call self%setCellVolume
+        call self%setNodeVolume
         !
-    end subroutine SetMetricElements
+    end subroutine setup_MetricElements
     !
     !> No subroutine briefing
-    subroutine deallocateMetricElements( self )
+    !
+    subroutine allocate_MetricElements( self )
         implicit none
         !
         class( MetricElements_t ), intent( inout ) :: self
         !
-        if( allocated( self%Edgelength ) ) deallocate( self%Edgelength )
-        if( allocated( self%FaceArea ) ) deallocate( self%FaceArea )
-        if( allocated( self%DualFaceArea ) ) deallocate( self%DualFaceArea )
-        if( allocated( self%DualEdgelength ) ) deallocate( self%DualEdgelength )
-        if( allocated( self%Vedge ) ) deallocate( self%Vedge )
+        call self%createVector( real_t, EDGE, self%edge_length )
+        call self%createVector( real_t, FACE, self%dual_edge_length )
+        call self%createVector( real_t, FACE, self%face_area )
+        call self%createVector( real_t, EDGE, self%dual_face_area )
         !
-        if( allocated( self%Vnode ) ) deallocate( self%Vnode )
-        if( allocated( self%Vcell ) ) deallocate( self%Vcell )
+        call self%createVector( real_t, EDGE, self%v_edge )
         !
-    end subroutine deallocateMetricElements
+        call self%createScalar( real_t, NODE, self%v_node )
+        call self%createScalar( real_t, CELL, self%v_cell )
+        !
+    end subroutine allocate_MetricElements
+    !
+    !> No subroutine briefing
+    !
+    subroutine deallocate_MetricElements( self )
+        implicit none
+        !
+        class( MetricElements_t ), intent( inout ) :: self
+        !
+        if( allocated( self%edge_length ) ) deallocate( self%edge_length )
+        if( allocated( self%face_area ) ) deallocate( self%face_area )
+        if( allocated( self%dual_face_area ) ) deallocate( self%dual_face_area )
+        if( allocated( self%dual_edge_length ) ) deallocate( self%dual_edge_length )
+        if( allocated( self%v_edge ) ) deallocate( self%v_edge )
+        !
+        if( allocated( self%v_node ) ) deallocate( self%v_node )
+        if( allocated( self%v_cell ) ) deallocate( self%v_cell )
+        !
+    end subroutine deallocate_MetricElements
     !
 end module MetricElements

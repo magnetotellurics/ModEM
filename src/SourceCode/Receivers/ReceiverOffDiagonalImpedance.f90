@@ -13,13 +13,13 @@ module ReceiverOffDiagonalImpedance
             !
             final :: ReceiverOffDiagonalImpedance_dtor
             !
-            procedure, public :: setLRows => setLRowsOffDiagonalImpedance
+            procedure, public :: predictedData => predictedData_OffDiagonalImpedance
             !
-            procedure, public :: predictedData => predictedDataOffDiagonalImpedance
+            procedure, public :: setLRows => setLRows_OffDiagonalImpedance
             !
-            procedure, public :: isEqualRx => isEqualOffDiagonalImpedance
+            procedure, public :: isEqualRx => isEqual_OffDiagonalImpedance
             !
-            procedure, public :: print => printReceiverOffDiagonalImpedance
+            procedure, public :: print => print_OffDiagonalImpedance
             !
     end type ReceiverOffDiagonalImpedance_t
     !
@@ -43,7 +43,7 @@ contains
         !
         !> write( *, * ) "Constructor ReceiverOffDiagonalImpedance_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%location = location
         !
@@ -79,26 +79,12 @@ contains
         !
         !> write( *, * ) "Destructor ReceiverOffDiagonalImpedance_t"
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine ReceiverOffDiagonalImpedance_dtor
     !
     !> No subroutine briefing
-    subroutine setLRowsOffDiagonalImpedance( self, transmitter )
-        implicit none
-        !
-        class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
-        !
-        stop "setLRowsOffDiagonalImpedance to be implemented"
-        !
-        if( allocated( self%lrows ) ) deallocate( self%lrows )
-        allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
-        !
-    end subroutine setLRowsOffDiagonalImpedance
-    !
-    !> No subroutine briefing
-    subroutine predictedDataOffDiagonalImpedance( self, transmitter, data_group )
+    subroutine predictedData_OffDiagonalImpedance( self, transmitter, data_group )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
@@ -108,82 +94,80 @@ contains
         integer :: i, j, ij
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:), EE(:,:)
-        class( Vector_t ), pointer :: tx_e_1, tx_e_2
+        class( Vector_t ), allocatable :: tx_e_1, tx_e_2
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !
         allocate( EE(2,2) )
         !
         call transmitter%getSolutionVector( 1, tx_e_1 )
-        !
         call transmitter%getSolutionVector( 2, tx_e_2 )
         !
-        select type( tx_e_1 )
-            !
-            class is( cVector3D_SG_t )
-                !
-                select type( tx_e_2 )
-                    !
-                    class is( cVector3D_SG_t )
-                        !
-                        EE(1,1) = self%Lex%dotProd( tx_e_1 )
-                        EE(2,1) = self%Ley%dotProd( tx_e_1 )
-                        EE(1,2) = self%Lex%dotProd( tx_e_2 )
-                        EE(2,2) = self%Ley%dotProd( tx_e_2 )
-                        !
-                        allocate( BB(2,2) )
-                        !
-                        BB(1,1) = self%Lbx%dotProd( tx_e_1 )
-                        BB(2,1) = self%Lby%dotProd( tx_e_1 )
-                        BB(1,2) = self%Lbx%dotProd( tx_e_2 )
-                        BB(2,2) = self%Lby%dotProd( tx_e_2 )
-                        !
-                        BB = isign * BB * comega
-                        !
-                        det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
-                        !
-                        allocate( I_BB(2,2) )
-                        !
-                        if( det /= 0 ) then
-                            I_BB(1,1) =  BB(2,2) / det
-                            I_BB(2,2) =  BB(1,1) / det
-                            I_BB(1,2) = -BB(1,2) / det
-                            I_BB(2,1) = -BB(2,1) / det
-                        else
-                            stop "ReceiverOffDiagonalImpedance.f90: Determinant is Zero!"
-                        endif
-                        !
-                        deallocate( BB )
-                        !
-                        allocate( self%response( 2 ) )
-                        !
-                        self%response(1) = EE(1,1) * I_BB(1,2) + EE(1,2) * I_BB(2,2)
-                        self%response(2) = EE(2,1) * I_BB(1,1) + EE(2,2) * I_BB(2,1)
-                        !
-                        deallocate( EE )
-                        deallocate( I_BB )
-                        !
-                        if( present( data_group ) ) then
-                            !
-                            call self%savePredictedData( transmitter, data_group )
-                            !
-                        endif
-                        !
-                    class default
-                        stop "evaluationFunctionRx: Unclassified transmitter%e_all_2"
-                end select
-                !
-                deallocate( tx_e_1, tx_e_2 )
-                !
-            class default
-                stop "evaluationFunctionRx: Unclassified transmitter%e_all_1"
-        end select
+        EE(1,1) = self%Lex%dotProd( tx_e_1 )
+        EE(2,1) = self%Ley%dotProd( tx_e_1 )
+        EE(1,2) = self%Lex%dotProd( tx_e_2 )
+        EE(2,2) = self%Ley%dotProd( tx_e_2 )
         !
-    end subroutine predictedDataOffDiagonalImpedance
+        allocate( BB(2,2) )
+        !
+        BB(1,1) = self%Lbx%dotProd( tx_e_1 )
+        BB(2,1) = self%Lby%dotProd( tx_e_1 )
+        BB(1,2) = self%Lbx%dotProd( tx_e_2 )
+        BB(2,2) = self%Lby%dotProd( tx_e_2 )
+        !
+        deallocate( tx_e_1, tx_e_2 )
+        !
+        BB = isign * BB * comega
+        !
+        det = BB(1,1) * BB(2,2) - BB(1,2) * BB(2,1)
+        !
+        allocate( I_BB(2,2) )
+        !
+        if( det /= 0 ) then
+            I_BB(1,1) =  BB(2,2) / det
+            I_BB(2,2) =  BB(1,1) / det
+            I_BB(1,2) = -BB(1,2) / det
+            I_BB(2,1) = -BB(2,1) / det
+        else
+            call errStop( "predictedData_OffDiagonalImpedance > Determinant is Zero!" )
+        endif
+        !
+        deallocate( BB )
+        !
+        allocate( self%response( 2 ) )
+        !
+        self%response(1) = EE(1,1) * I_BB(1,2) + EE(1,2) * I_BB(2,2)
+        self%response(2) = EE(2,1) * I_BB(1,1) + EE(2,2) * I_BB(2,1)
+        !
+        deallocate( EE )
+        deallocate( I_BB )
+        !
+        if( present( data_group ) ) then
+            !
+            call self%savePredictedData( transmitter, data_group )
+            !
+        endif
+        !
+    end subroutine predictedData_OffDiagonalImpedance
     !
     !> No subroutine briefing
     !
-    function isEqualOffDiagonalImpedance( self, other ) result( equal )
+    subroutine setLRows_OffDiagonalImpedance( self, transmitter )
+        implicit none
+        !
+        class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
+        class( Transmitter_t ), intent( in ) :: transmitter
+        !
+        call errStop( "setLRows_OffDiagonalImpedance to be implemented" )
+        !
+        !if( allocated( self%lrows ) ) deallocate( self%lrows )
+        !allocate( cVector3D_SG_t :: self%lrows( transmitter%n_pol, self%n_comp ) )
+        !
+    end subroutine setLRows_OffDiagonalImpedance
+    !
+    !> No subroutine briefing
+    !
+    function isEqual_OffDiagonalImpedance( self, other ) result( equal )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( in ) :: self
@@ -209,16 +193,16 @@ contains
             !
         end select
         !
-    end function isEqualOffDiagonalImpedance
+    end function isEqual_OffDiagonalImpedance
     !
     !> No subroutine briefing
-    subroutine printReceiverOffDiagonalImpedance( self )
+    subroutine print_OffDiagonalImpedance( self )
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( in ) :: self
         !
         write( *, * ) "Print ReceiverOffDiagonalImpedance_t: ", self%i_rx
         !
-    end subroutine printReceiverOffDiagonalImpedance
+    end subroutine print_OffDiagonalImpedance
     !
 end module ReceiverOffDiagonalImpedance

@@ -36,7 +36,7 @@ contains
         !
         !write( *, * ) "Constructor DataEntryMT_t"
         !
-        call self%init
+        call self%baseInit
         !
         self%i_de = i_de
         self%dtype = dtype
@@ -53,7 +53,7 @@ contains
     end function DataEntryMT_ctor
     !
     !> Deconstructor routine:
-    !>     Calls the base routine dealloc().
+    !>     Calls the base routine baseDealloc().
     !
     subroutine DataEntryMT_dtor( self )
         implicit none
@@ -62,7 +62,7 @@ contains
         !
         !write( *, * ) "Destructor DataEntryMT_t:", self%id
         !
-        call self%dealloc
+        call self%baseDealloc
         !
     end subroutine DataEntryMT_dtor
     !

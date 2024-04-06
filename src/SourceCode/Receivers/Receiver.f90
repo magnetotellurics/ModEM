@@ -1,5 +1,4 @@
-!*************
-!>
+!
 !> Abstract Base class to define a Receiver
 !
 module Receiver
@@ -25,7 +24,7 @@ module Receiver
         !
         type( cVectorSparse3D_SG_t ) :: Lex, Ley, Lez, Lbx, Lby, Lbz
         !
-        class( Vector_t ), allocatable, dimension(:,:) :: lrows
+        type( GenVector_t ), allocatable, dimension(:,:) :: lrows
         !
         type( String_t ), allocatable, dimension(:) :: EHxy, comp_names
         !
@@ -41,13 +40,15 @@ module Receiver
             procedure( interface_print_receiver ), deferred, public :: print
             !
             !> Base routines
-            procedure, public :: evaluationFunction => evaluationFunctionRx
+            procedure, public :: evaluationFunction => evaluationFunction_Receiver
             !
-            procedure, public :: savePredictedData => savePredictedDataRx
+            procedure, public :: savePredictedData => savePredictedData_Receiver
             !
-            procedure, public :: init => initializeRx
+            procedure, public :: baseInit => initialize_Receiver
             !
-            procedure, public :: dealloc => deallocateRx
+            procedure, public :: baseDealloc => deallocate_Receiver
+            !
+            procedure, private :: deallocateLRows
             !
     end type Receiver_t
     !
@@ -67,52 +68,42 @@ module Receiver
         !
         !> No interface subroutine briefing
         subroutine interface_predicted_data_receiver( self, transmitter, data_group )
-            !
             import :: Receiver_t, Transmitter_t, DataGroup_t
             !
             class( Receiver_t ), intent( inout ) :: self
             class( Transmitter_t ), intent( in ) :: transmitter
             type( DataGroup_t ), intent( out ), optional :: data_group
-            !
         end subroutine interface_predicted_data_receiver
         !
         !> No interface subroutine briefing
         subroutine interface_save_receiver_receiver( self, tx )
-            !
             import :: Receiver_t, Transmitter_t
             !
             class( Receiver_t ), intent( in ) :: self
             class( Transmitter_t ), intent( in ) :: tx
-            !
         end subroutine interface_save_receiver_receiver
         !
         !> No interface subroutine briefing
         subroutine interface_save_receiver( self, tx )
-            !
             import :: Receiver_t, Transmitter_t
             !
             class( Receiver_t ), intent( inout ) :: self
             class( Transmitter_t ), intent( in ) :: tx
-            !
         end subroutine interface_save_receiver
         !
         !> No interface function briefing
         function interface_is_equal_receiver( self, other ) result( equal )
-            !
             import :: Receiver_t
             !
             class( Receiver_t ), intent( in ) :: self, other
             logical :: equal
-            !
         end function interface_is_equal_receiver
         !
         !> No interface subroutine briefing
         subroutine interface_print_receiver( self )
-            !
             import :: Receiver_t
             !
             class( Receiver_t ), intent( in ) :: self
-            !
         end subroutine interface_print_receiver
         !
     end interface
@@ -120,7 +111,8 @@ module Receiver
 contains
     !
     !> No subroutine briefing
-    subroutine initializeRx( self )
+    !
+    subroutine initialize_Receiver( self )
         implicit none
         !
         class( Receiver_t ), intent( inout ) :: self
@@ -139,10 +131,11 @@ contains
         !
         self%interpolation_set = .FALSE.
         !
-    end subroutine initializeRx
+    end subroutine initialize_Receiver
     !
     !> No subroutine briefing
-    subroutine deallocateRx( self )
+    !
+    subroutine deallocate_Receiver( self )
         implicit none
         !
         class( Receiver_t ), intent( inout ) :: self
@@ -169,102 +162,139 @@ contains
         !
         if( allocated( self%response ) ) deallocate( self%response )
         !
-        if( allocated( self%lrows ) ) deallocate( self%lrows )
+        call self%deallocateLRows
         !
-    end subroutine deallocateRx
+    end subroutine deallocate_Receiver
     !
     !> No subroutine briefing
-    subroutine evaluationFunctionRx( self, model_operator )
+    !
+    subroutine deallocateLRows( self )
+        implicit none
+        !
+        class( Receiver_t ), intent( inout ) :: self
+        !
+        integer :: ntx, i, j
+        !
+        if( allocated( self%lrows ) ) then
+            !
+            do j = size( self%lrows, 2 ), 1, -(1)
+                !
+                do i = size( self%lrows, 1 ), 1, -(1)
+                    !
+                    if( allocated( self%lrows( i, j )%v ) ) deallocate( self%lrows( i, j )%v )
+                    !
+                enddo
+                !
+            enddo
+            !
+            deallocate( self%lrows )
+            !
+        endif
+        !
+    end subroutine deallocateLRows
+    !
+    !> No subroutine briefing
+    !
+    subroutine evaluationFunction_Receiver( self, model_operator )
         implicit none
         !
         class( Receiver_t ), intent( inout ) :: self
         class( ModelOperator_t ), intent( in ) :: model_operator
-        class( Vector_t ), allocatable :: temp_full_vec
         !
         integer :: k
-        !
-        class( Vector_t ), allocatable :: e_h, lh
+        class( Vector_t ), allocatable :: e_b, interp_comp, temp_full_vec
         !
         do k = 1, size( self%EHxy )
             !
+            !> Create e_b vector with proper type
+            !> Electrical(E) - EDGE and Magnetic(B) - FACE
             select case( self%EHxy(k)%str )
                 !
                 case( "Ex", "Ey", "Ez" )
-                    allocate( e_h, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
+                    !
+                    call model_operator%metric%createVector( complex_t, EDGE, e_b )
+                    !
+                    call model_operator%metric%createVector( complex_t, EDGE, interp_comp )
                     !
                 case( "Bx", "By", "Bz" )
-                    allocate( e_h, source = cVector3D_SG_t( model_operator%metric%grid, FACE ) )
+                    !
+                    call model_operator%metric%createVector( complex_t, FACE, e_b )
+                    !
+                    call model_operator%metric%createVector( complex_t, FACE, interp_comp )
                     !
                 case default
-                    stop "Error: evaluationFunctionRx: Unknown EHxy"
+                    call errStop( "evaluationFunction_Receiver > Unknown EHxy" )
+                !
             end select
             !
+            !> Different behavior for E and B components
             select case( self%EHxy(k)%str )
                 !
                 case( "Ex" )
                     !
-                    call e_h%interpFunc( self%location, "x", temp_full_vec )
+                    call e_b%interpFunc( self%location, "x", interp_comp )
                     !
-                    call self%Lex%fromFullVector( temp_full_vec )
+                    call self%Lex%fromFullVector( interp_comp )
                     !
                 case( "Ey" )
                     !
-                    call e_h%interpFunc( self%location, "y", temp_full_vec )
+                    call e_b%interpFunc( self%location, "y", interp_comp )
                     !
-                    call self%Ley%fromFullVector( temp_full_vec )
+                    call self%Ley%fromFullVector( interp_comp )
                     !
                 case( "Ez" )
                     !
-                    call e_h%interpFunc( self%location, "z", temp_full_vec )
+                    call e_b%interpFunc( self%location, "z", interp_comp )
                     !
-                    call self%Lez%fromFullVector( temp_full_vec )
+                    call self%Lez%fromFullVector( interp_comp )
                     !
                 case( "Bx" )
                     !
-                    call e_h%interpFunc( self%location, "x", lh )
+                    call e_b%interpFunc( self%location, "x", interp_comp )
                     !
-                    allocate( temp_full_vec, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
+                    call model_operator%metric%createVector( complex_t, EDGE, temp_full_vec )
                     !
-                    call model_operator%multCurlT( lh, temp_full_vec )
-                    !
-                    deallocate( lh )
+                    call model_operator%multCurlT( interp_comp, temp_full_vec )
                     !
                     call self%Lbx%fromFullVector( temp_full_vec )
                     !
+                    deallocate( temp_full_vec )
+                    !
                 case( "By" )
                     !
-                    call e_h%interpFunc( self%location, "y", lh )
+                    call e_b%interpFunc( self%location, "y", interp_comp )
                     !
-                    allocate( temp_full_vec, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
+                    call model_operator%metric%createVector( complex_t, EDGE, temp_full_vec )
                     !
-                    call model_operator%multCurlT( lh, temp_full_vec )
-                    !
-                    deallocate( lh )
+                    call model_operator%multCurlT( interp_comp, temp_full_vec )
                     !
                     call self%Lby%fromFullVector( temp_full_vec )
                     !
+                    deallocate( temp_full_vec )
+                    !
                 case( "Bz" )
                     !
-                    call e_h%interpFunc( self%location, "z", lh )
+                    call e_b%interpFunc( self%location, "z", interp_comp )
                     !
-                    allocate( temp_full_vec, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
+                    call model_operator%metric%createVector( complex_t, EDGE, temp_full_vec )
                     !
-                    call model_operator%multCurlT( lh, temp_full_vec )
-                    !
-                    deallocate( lh )
+                    call model_operator%multCurlT( interp_comp, temp_full_vec )
                     !
                     call self%Lbz%fromFullVector( temp_full_vec )
                     !
+                    deallocate( temp_full_vec )
+                    !
             end select
             !
-            deallocate( e_h, temp_full_vec )
+            deallocate( e_b, interp_comp )
             !
         enddo
         !
-    end subroutine evaluationFunctionRx
+    end subroutine evaluationFunction_Receiver
     !
     !> No subroutine briefing
-    subroutine savePredictedDataRx( self, transmitter, data_group )
+    !
+    subroutine savePredictedData_Receiver( self, transmitter, data_group )
         implicit none
         !
         class( Receiver_t ), intent( in ) :: self
@@ -289,7 +319,7 @@ contains
             !
         enddo
         !
-    end subroutine savePredictedDataRx
+    end subroutine savePredictedData_Receiver
     !
     !> No subroutine briefing
     !
@@ -325,8 +355,7 @@ contains
             case( 12 )
                 str_receiver_type = "Full_Vertical_Magnetic"
             case default
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown receiver type :[", int_receiver_type, "]"
-                stop "Receiver.f08: getStringReceiverType()"
+                call errStop( "getStringReceiverType > Unknown receiver type" )
             !
         end select
         !
@@ -368,14 +397,14 @@ contains
             case( "Full_Vertical_Magnetic" )
                 int_receiver_type = 12
             case default
-                write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown receiver type :[", str_receiver_type, "]"
-                stop "Receiver.f08: getIntReceiverType()"
+                call errStop( "getIntReceiverType > Unknown receiver type :["//str_receiver_type//"]" )
             !
         end select
         !
     end function getIntReceiverType
     !
-    !> ????
+    !> No subroutine briefing
+    !
     function ImpUnits( oldUnits, newUnits ) result( SI_factor )
         implicit none
         !
@@ -408,8 +437,7 @@ contains
             ! SI units for B
             factor1 = ONE
         else
-            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown input units in ImpUnits: [", trim( oldUnits ), "]"
-            stop
+            call errStop( "ImpUnits > Unknown input units ["//trim( oldUnits )//"]" )
         endif
         !
         ! now convert [V/m]/[T] to the new units
@@ -429,8 +457,7 @@ contains
             ! SI units for B
             factor2 = ONE
         else
-            write( *, * ) "     "//achar(27)//"[31m# Error:"//achar(27)//"[0m Unknown output units in ImpUnits: [", trim( newUnits ), "]"
-            stop
+            call errStop( "ImpUnits > Unknown output units ["//trim( newUnits )//"]" )
         endif
         !
         SI_factor = factor1 * factor2
@@ -438,3 +465,4 @@ contains
     end function ImpUnits
     !
 end module Receiver
+!

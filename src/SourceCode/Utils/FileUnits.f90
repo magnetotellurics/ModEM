@@ -6,28 +6,36 @@ module FileUnits
     !
     implicit none
     !
-    integer, parameter :: ioStartup = 10018
+    integer, parameter :: ioStartup = 1
     !
-    integer, parameter :: ioPredData = 10019
+    integer, parameter :: ioPredData = 2
     !
-    integer, parameter :: ioESolution = 10020
+    integer, parameter :: ioESolution = 3
     !
-    integer, parameter :: ioModelParam = 10021
+    integer, parameter :: ioModelParam = 4
     !
-    integer, parameter :: ioFwdTmp = 10022
+    integer, parameter :: ioFwdTmp = 5
     !
-    integer, parameter :: ioCovariance = 10023
+    integer, parameter :: ioCovariance = 6
     !
-    integer, parameter :: ioInvLog = 10024
+    integer, parameter :: ioInvLog = 7
     !
-    integer, parameter :: ioInvTmp = 10025
+    integer, parameter :: ioInvPlot = 8
     !
-    integer, parameter :: ioGradLog = 10026
+    integer, parameter :: ioFuncPlot = 9
     !
-    integer, parameter :: ioGradNorm = 10027
+    integer, parameter :: ioInvTmp = 10
     !
-    integer, parameter :: ioGradRMS = 10028
+    integer, parameter :: ioGradLog = 11
     !
-    integer, parameter :: ioPlot = 10029
+    integer, parameter :: ioGradNorm = 12
+    !
+    integer, parameter :: ioGradRMS = 13
+    !
+    integer, parameter :: ioPlot = 14
+    !
+    integer, parameter :: ioWarning = 15
+    !
+    integer, parameter :: ioNodeInfo = 16
     !
 end module FileUnits
