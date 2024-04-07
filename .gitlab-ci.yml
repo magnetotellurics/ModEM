@@ -10,8 +10,8 @@ stages:
 #
 #
 # MAIN BEFORE SCRIPT
-before_script:
-        - echo "START MAIN SCRIPT"
+#before_script:
+#        - echo "START MAIN SCRIPT"
 # #
 # # BUILD JOB: BUILD modem_on BINARY, STORE ON CACHE AND CREATE DOWNLOADABLE ARTIFACT
 # build_modem_on:
