@@ -771,7 +771,7 @@ contains
         !
     end subroutine printHelp
     !
-    !> Create a template text file called [fwd_ctrl_template.txt] 
+    !> Create a template text file called [control.fwd] 
     !> with all supported parameters for the Forward Modeling Control File
     !
     subroutine printForwardControlFileTemplate()
@@ -779,15 +779,15 @@ contains
         !
         integer :: ios
         !
-        open( unit = ioFwdTmp, file = "fwd_ctrl_template.txt", status = "unknown", iostat = ios )
+        open( unit = ioFwdTmp, file = "control.fwd", status = "unknown", iostat = ios )
         !
         if( ios == 0 ) then
             !
-            write( ioFwdTmp, "(A46)" ) "##############################################"
-            write( ioFwdTmp, "(A46)" ) "# ModEM Forward Modeling Control File Template"
-            write( ioFwdTmp, "(A46)" ) "#     Here are all supported parameters       "
-            write( ioFwdTmp, "(A46)" ) "#     Comment or remove to use default values "
-            write( ioFwdTmp, "(A46)" ) "##############################################"
+            write( ioFwdTmp, "(A51)" ) "###################################################"
+            write( ioFwdTmp, "(A51)" ) "# ModEM Forward Modeling Control File Template    #"
+            write( ioFwdTmp, "(A51)" ) "#     Here are all supported editable parameters  #"
+            write( ioFwdTmp, "(A51)" ) "#     Comment or remove to use its default value  #"
+            write( ioFwdTmp, "(A69)" ) "##################################################-id:"//str_date//"_"//str_time
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A20)" ) "# <Field parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
@@ -795,13 +795,12 @@ contains
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A19)" ) "# <Grid parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A33)" ) "#grid_header [ModEM|HDF5] : ModEM"
+            write( ioFwdTmp, "(A85)" ) "#For MR Grid => Uncomment grid_format line, give to it an array of 2*nLayers in size,"
+            write( ioFwdTmp, "(A85)" ) "#               containing integers pairs (Coarse Factor, Depth) separated by commas."
+            write( ioFwdTmp, "(A85)" ) "#                  Ex.: 0,a,1,b,2,c -- Sets 3 Layers, with a, b, c respective Depths,"
+            write( ioFwdTmp, "(A85)" ) "#                                      and Coarse Factors of 0, 1 and 2 respectively."
+            write( ioFwdTmp, "(A55)" ) "#For SG Grid => Remove or comment out grid_format line."
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A57)" ) "#Coarsened Grid => Describe an array of 2*layers in size,"
-            write( ioFwdTmp, "(A98)" ) "#                containing comma separated integer pairs, like <Coarse Factor, Number of Layers>."
-            write( ioFwdTmp, "(A81)" ) "#                Ex.: 0,a,1,b,2,c => For 3 Layers, each with sizes a, b and c and"
-            write( ioFwdTmp, "(A79)" ) "#                                    coarse factors of 0, 1 and 2 respectively."
-            write( ioFwdTmp, "(A66)" ) "#Standard Grid  => Remove or leave the grid_format line commented."
             write( ioFwdTmp, "(A26)" ) "#grid_format : 0,a,1,b,2,c"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A20)" ) "# <Model parameters>"
@@ -813,12 +812,12 @@ contains
             write( ioFwdTmp, "(A21)" ) "# <Source parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A72)" ) "source_type_mt [1D|2D]                                              : 1D"
-            write( ioFwdTmp, "(A78)" ) "source_type_csem [EM1D|Dipole1D]                                    : Dipole1D"
+            write( ioFwdTmp, "(A74)" ) "source_type_csem [EM1D|Dipole1D]                                    : EM1D"
             write( ioFwdTmp, "(A84)" ) "get_1d_from [Fixed_Value|Geometric_Mean|Mean_around_Tx|Tx_Position] : Geometric_Mean"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A36)" ) "solver_type [QMR|BICG]         : QMR"
+            write( ioFwdTmp, "(A37)" ) "solver_type [QMR|BICG]         : BICG"
             write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
             write( ioFwdTmp, "(A35)" ) "max_solver_iters [80]          : 80"
             write( ioFwdTmp, "(A35)" ) "max_solver_calls [20]          : 20"
@@ -831,13 +830,13 @@ contains
             !
         else
             !
-            call errStop( "printInversionControlFileTemplate > Can't open [fwd_ctrl_template.txt]" )
+            call errStop( "printForwardControlFileTemplate > Can't open [control.fwd]" )
             !
         endif
         !
     end subroutine printForwardControlFileTemplate
     !
-    !> Create a template text file called [inv_ctrl_template.txt] 
+    !> Create a template text file called [control.inv] 
     !> with all supported parameters for the Inversion Control File
     !
     subroutine printInversionControlFileTemplate()
@@ -845,15 +844,15 @@ contains
         !
         integer :: ios
         !
-        open( unit = ioInvTmp, file = "inv_ctrl_template.txt", status="unknown", iostat=ios )
+        open( unit = ioInvTmp, file = "control.inv", status="unknown", iostat=ios )
         !
         if( ios == 0 ) then
             !
-            write( ioInvTmp, "(A46)" ) "##############################################"
-            write( ioInvTmp, "(A46)" ) "# ModEM Inversion Control File Template       "
-            write( ioInvTmp, "(A46)" ) "#     Here are all supported parameters       "
-            write( ioInvTmp, "(A46)" ) "#     Comment or remove to use default values "
-            write( ioInvTmp, "(A46)" ) "##############################################"
+            write( ioInvTmp, "(A51)" ) "###################################################"
+            write( ioInvTmp, "(A51)" ) "# ModEM Inversion Control File Template           #"
+            write( ioInvTmp, "(A51)" ) "#     Here are all supported editable parameters  #"
+            write( ioInvTmp, "(A51)" ) "#     Comment or remove to use its default value  #"
+            write( ioInvTmp, "(A69)" ) "##################################################-id:"//str_date//"_"//str_time
             write( ioInvTmp, "(A1)" )  "#"
             write( ioInvTmp, "(A38)" ) "inversion_type [DCG|NLCG]       : NLCG"
             write( ioInvTmp, "(A44)" ) "joint_type [Unweighted|TxBased] : Unweighted"
@@ -871,7 +870,7 @@ contains
             !
         else
             !
-            call errStop( "printInversionControlFileTemplate > Can't open [inv_ctrl_template.txt]" )
+            call errStop( "printInversionControlFileTemplate > Can't open [control.inv]" )
             !
         endif
         !
