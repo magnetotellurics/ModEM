@@ -185,24 +185,41 @@ contains
                 !
                 deallocate(d)
                 !
+                write( *, * ) "setPreConditioner_CC_SP_SG 1:"
+                !
                 ! Could merge into a single LT and UT matrix, or solve systems individually
                 call BlkDiag_Cmplx( Lblk, self%L )
                 call BlkDiag_Cmplx( Ublk, self%U )
                 !
+                write( *, * ) "setPreConditioner_CC_SP_SG 2A:", self%L%nRow, self%L%nCol
+                !
                 call CMATtrans( self%L, self%LH )
+                !
+                write( *, * ) "setPreConditioner_CC_SP_SG 2B:", self%LH%nRow, self%LH%nCol, self%U%nRow, self%U%nCol
+                !
                 call CMATtrans( self%U, self%UH )
+                !
+                write( *, * ) "setPreConditioner_CC_SP_SG 3o"
+                !
+                write( *, * ) "setPreConditioner_CC_SP_SG 3:", self%UH%nRow, self%UH%nCol
                 !
                 deallocate( ix, iy, iz )
                 !
                 call deall_spMatCSR( CCxx )
                 call deall_spMatCSR( Axx )
                 !
+                write( *, * ) "setPreConditioner_CC_SP_SG 4:"
+                !
                 do j = 1, 3
                     call deall_spMatCSR( Lblk(j) )
                     call deall_spMatCSR( Ublk(j) )
                 enddo
                 !
+                write( *, * ) "setPreConditioner_CC_SP_SG 5:"
+                !
                 deallocate( Lblk, Ublk )
+                !
+                write( *, * ) "setPreConditioner_CC_SP_SG 6:"
                 !
             class default
                 call errStop( "setPreConditioner_CC_SP_SG: Unclassified ModelOperator" )

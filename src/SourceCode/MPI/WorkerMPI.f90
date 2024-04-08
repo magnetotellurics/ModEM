@@ -266,13 +266,13 @@ contains
                 !
             case( "" )
                 !
-                call warning( "handleModelFile > model_operator_type not provided, using ModelOperator_MF_SG_t." )
+                call warning( "handleBasicComponents > model_operator_type not provided, using ModelOperator_MF_SG_t." )
                 !
                 allocate( model_operator, source = ModelOperator_MF_SG_t( main_grid ) )
                 !
             case default
                 !
-                call errStop( "handleModelFile > Wrong Model Operator type: ["//model_operator_type//"]" )
+                call errStop( "handleBasicComponents > Wrong Model Operator type: ["//model_operator_type//"]" )
                 !
         end select
         !

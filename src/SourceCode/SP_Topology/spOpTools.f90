@@ -421,7 +421,7 @@ contains
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: C
-        type(spMatIJS_Cmplx), intent( inout ) :: S
+        type( spMatIJS_Cmplx ), intent( inout ) :: S
         integer :: ij, i, j
         ! for now no error checking
         if(.NOT.S%is_allocated) then
@@ -490,41 +490,54 @@ contains
     !> this, since spMatIJS converted from spMatCSR will
     !> already be ordered
     !
-    subroutine IJS2CSR_Cmplx(S, C)
+    subroutine IJS2CSR_Cmplx( S, C )
         implicit none
         !
         type(spMatIJS_Cmplx), intent( in ) :: S
         type( spMatCSR_Cmplx ), intent( inout ) :: C
         integer :: i, j, nz
         integer, allocatable, dimension(:) :: rowT
-
-        allocate(rowT(S%nRow+1))
-
-        if(.NOT.C%is_allocated) then
-        stop "Error: IJS2CSR_Cmplx > allocate output matrix before call"
+        !
+        write( *, * ) "IJS2CSR_Cmplx 1"
+        !
+        allocate( rowT(S%nRow+1) )
+        !
+        write( *, * ) "IJS2CSR_Cmplx 2"
+        !
+        if( .NOT. C%is_allocated ) then
+            call errStop( "IJS2CSR_Cmplx > allocate output matrix before call" )
         endif
-
+        !
+        write( *, * ) "IJS2CSR_Cmplx 3"
+        !
         !   first pass: find numbers of columns in each row of output
         rowT = 0
         nz = size(S%I)
         do i = 1, nz
-        rowT(S%I(i)) = rowT(S%I(i))+1
+            rowT(S%I(i)) = rowT(S%I(i))+1
         enddo
         !   set row array in output CSR matrix
         C%row(1) = 1
         do i = 1, C%nRow
-        C%row(i+1) = C%row(i)+rowT(i)
+            C%row(i+1) = C%row(i)+rowT(i)
         enddo
-
+        !
+        write( *, * ) "IJS2CSR_Cmplx 4"
+        !
         !    now fill in columns and values
         rowT = 0
         do i = 1, nz
-        j = C%row(S%I(i)) +rowT(S%I(i))
-        C%col(j) = S%J(i)
-        C%val(j) = S%S(i) 
-        rowT(S%I(i)) = rowT(S%I(i))+1
+            j = C%row(S%I(i)) +rowT(S%I(i))
+            C%col(j) = S%J(i)
+            C%val(j) = S%S(i) 
+            rowT(S%I(i)) = rowT(S%I(i))+1
         enddo
-        deallocate(rowT)
+        !
+        write( *, * ) "IJS2CSR_Cmplx 5"
+        !
+        deallocate( rowT )
+        !
+        write( *, * ) "IJS2CSR_Cmplx 6"
         !
     end subroutine IJS2CSR_Cmplx
     !
@@ -1057,37 +1070,69 @@ contains
         integer :: i, nz, temp
         logical :: conjugate
         !
+        write( *, * ) "CMATtrans A:", A%nCol, A%nRow
+        !
         conjugate = .TRUE.
         !
-        if(present(Conj)) then 
-        conjugate = Conj
+        if( present( Conj ) ) then 
+            conjugate = Conj
         endif
+        !
         nz = A%row(A%nRow+1)-1
-        call create_spMatCSR(A%nCol, A%nRow, nz, Atrans)
-        call create_spMatIJS(A%nRow, A%nCol, nz, B)
-        call CSR2IJS(A, B)
+        !
+        call create_spMatCSR( A%nCol, A%nRow, nz, Atrans )
+        !
+        write( *, * ) "CMATtrans Atrans:", Atrans%nCol, Atrans%nRow
+        !
+        call create_spMatIJS( A%nRow, A%nCol, nz, B )
+        !
+        write( *, * ) "CMATtrans B1:", B%nCol, B%nRow
+        !
+        call CSR2IJS( A, B )
+        !
+        write( *, * ) "CMATtrans B2:", B%nCol, B%nRow
+        !
         do i = 1, nz
-        temp = B%I(i)
-        B%I(i) = B%J(i)
-        B%J(i) = temp
+            !
+            temp = B%I(i)
+            B%I(i) = B%J(i)
+            B%J(i) = temp
+            !
         enddo
-        if(conjugate) then
-        B%S = conjg(B%S)
+        !
+        write( *, * ) "CMATtrans C:", B%nCol, B%nRow
+        !
+        if( conjugate ) then
+            B%S = conjg(B%S)
         endif
+        !
+        write( *, * ) "CMATtrans D:", B%nCol, B%nRow
+        !
         temp = B%nRow
         B%nRow = B%nCol
         B%nCol = temp
         !
-        call IJS2CSR(B, Atrans)
+        write( *, * ) "CMATtrans E:", B%nCol, B%nRow
+        !
+        call IJS2CSR( B, Atrans )
+        !
+        write( *, * ) "CMATtrans E_1:", Atrans%nCol, Atrans%nRow
+        !
         call deall_spMATIJS(B)
-        if(A%lower) then
-        Atrans%upper = .TRUE.
-        endif 
-        if(A%upper) then
-        Atrans%lower = .TRUE.
+        !
+        write( *, * ) "CMATtrans E_2:", A%lower, A%upper
+        !
+        if( A%lower ) then
+            Atrans%upper = .TRUE.
         endif 
         !
-    end subroutine
+        if( A%upper ) then
+            Atrans%lower = .TRUE.
+        endif 
+        !
+        write( *, * ) "CMATtrans F:", Atrans%lower, Atrans%upper
+        !
+    end subroutine CMATtrans
     !
     !> No subroutine briefing
     !

@@ -322,6 +322,7 @@ contains
     end subroutine updateFileUnitsArray
     !
     !> No subroutine briefing
+    !
     subroutine DataFileStandard_dtor( self )
         implicit none
         !
@@ -334,3 +335,4 @@ contains
     end subroutine DataFileStandard_dtor
     !
 end module DataFileStandard
+!

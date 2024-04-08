@@ -143,10 +143,11 @@ module Source
         !
         class( Source_t ), intent( inout ) :: self
         !
-        deallocate( self%rhs )
+        if( allocated( self%rhs ) ) deallocate( self%rhs )
         !
-        deallocate( self%E )
+        if( allocated( self%E ) ) deallocate( self%E )
         !
     end subroutine deallocate_Source
     !
 end module Source
+!

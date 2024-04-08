@@ -214,7 +214,7 @@ contains
             !
         else
             !
-            write( str_msg, "( A55, I2, A5, I2, A1 )") "handleDataFile > Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
+            write( str_msg, "( A55, I4, A5, I4, A1 )") "handleDataFile > Number of Rx mismatched from Header :[", n_rx, " and ", data_file_standard%n_rx, "]"
             call errStop( str_msg )
             !
         endif
@@ -237,8 +237,6 @@ contains
             call errStop( str_msg )
             !
         endif
-        !
-        write( *, "( A18, I5, A11 )" ) "Checked ", countData( all_measured_data ), " DataGroups."
         !
         write( *, "( A42)" ) "- Creating Rx evaluation vectors"
         !

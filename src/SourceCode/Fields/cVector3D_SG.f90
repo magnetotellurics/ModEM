@@ -632,11 +632,11 @@ contains
              call errStop( "sumCell_cVector3D_SG > self not allocated." )
         endif
         !
-        if( .NOT. grid_type == CELL ) then
+        if( .NOT. cell_in%is_allocated ) then
              call errStop( "sumCell_cVector3D_SG > cell_in not allocated." )
         endif
         !
-        if( .NOT. grid_type == CELL ) then
+        if( .NOT. cell_in%grid_type == CELL ) then
             call errStop( "sumCell_cVector3D_SG > Only CELL type supported." )
         endif
         !
@@ -648,7 +648,7 @@ contains
         !
         select type( cell_in )
             !
-            class is( cScalar3D_SG_t )
+            class is( rScalar3D_SG_t )
                 !
                 v_xend = size( cell_in%v, 1 )
                 v_yend = size( cell_in%v, 2 )
@@ -663,7 +663,7 @@ contains
                             do iy = 2, self%grid%ny
                                 do iz = 2, self%grid%nz
                                     self%x(ix, iy, iz) = ( cell_in%v(ix, iy-1, iz-1) + cell_in%v(ix, iy, iz-1) + &
-                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz) )! / 4.0d0
+                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz) )
                                 enddo
                                 !
                                 self%x(ix, iy, 1) =  cell_in%v(ix, iy-1, 1) + cell_in%v(ix, iy, 1 )
@@ -677,7 +677,7 @@ contains
                             do iy = 1, self%grid%ny
                                 do iz = 2, self%grid%nz
                                     self%y(ix, iy, iz) = ( cell_in%v(ix-1, iy, iz-1) + cell_in%v(ix, iy, iz-1) + &
-                                    cell_in%v(ix-1, iy, iz) + cell_in%v(ix, iy, iz) )! / 4.0d0
+                                    cell_in%v(ix-1, iy, iz) + cell_in%v(ix, iy, iz) )
                                 enddo
                                 !
                                 self%y(ix, iy, 1) =  cell_in%v(ix-1, iy, 1) + cell_in%v(ix, iy, 1)
@@ -691,7 +691,7 @@ contains
                             do iy = 2, self%grid%ny
                                 do iz = 1, self%grid%nz
                                     self%z(ix, iy, iz) = ( cell_in%v(ix-1, iy-1, iz) + cell_in%v(ix-1, iy, iz) + &
-                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz) )! / 4.0d0
+                                    cell_in%v(ix, iy-1, iz) + cell_in%v(ix, iy, iz) )
                                 enddo
                             enddo
                         enddo
@@ -1335,16 +1335,16 @@ contains
                                 allocate(yC(size(grid%dy) + 1))
                                 allocate(zC(size(grid%dz) + 1))
                                 !
-                                xC = CumSum(grid%del_x)
-                                yC = CumSum([0._prec, grid%dy])
-                                zC = CumSum([0._prec, grid%dz])
+                                xC = CumSum(grid%del_x)          ! grid%xCenter
+                                yC = CumSum([0._prec, grid%dy])  ! grid%yEdge
+                                zC = CumSum([0._prec, grid%dz])  ! grid%zEdge
                                 !
                             case("y")
                                 !
                                 allocate(xC(size(grid%dx) + 1))
                                 allocate(yC(size(grid%del_y)))
                                 allocate(zC(size(grid%dz) + 1))
-                                !
+                                
                                 xC = CumSum([0._prec, grid%dx])
                                 yC = CumSum([grid%del_y])
                                 zC = CumSum([0._prec, grid%dz])

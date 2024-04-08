@@ -1261,9 +1261,9 @@ contains
                                 !
                             case("y")
                                 !
-                                allocate(xC(size(grid%dx) + 1))   !   etc.
+                                allocate(xC(size(grid%dx) + 1))
                                 allocate(yC(size(grid%del_y)))
-                                allocate(zC(size(grid%dz)))
+                                allocate(zC(size(grid%dz) + 1))
                                 
                                 xC = CumSum([0._prec, grid%dx])
                                 yC = CumSum([grid%del_y])
@@ -1334,6 +1334,7 @@ contains
                 !
             class default
                 call errStop( "interpFunc_rVector3D_SG > Undefined grid" )
+			!
         end select
         !
         tmp = location(1) >= xC

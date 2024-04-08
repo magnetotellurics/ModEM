@@ -41,7 +41,10 @@ contains
         complex( kind=prec ), intent( in ) :: a(:)
         !
         complex( kind=prec ), allocatable :: r(:)
+        !
         integer :: n, j
+        !
+        write( *, * ) "CumSum_complex"
         !
         n = size(a)
         allocate(r(n))

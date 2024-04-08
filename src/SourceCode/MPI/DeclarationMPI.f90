@@ -2513,25 +2513,27 @@ contains
         !
         type( cVectorSparse3D_SG_t ), intent( in ):: sp_vector
         !
-        integer :: i, nbytes(7), vector_size_bytes
+        integer :: i, nbytes(8), vector_size_bytes
+		!
+		vector_size_bytes = 1
         !
-        call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, vector_size_bytes, ierr )
+        call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes(1), ierr )
         !
-        if( sp_vector%is_allocated ) then
+        !if( sp_vector%is_allocated ) then
              !
-             call MPI_PACK_SIZE( 4, MPI_CHARACTER, main_comm, nbytes(1), ierr )
-             call MPI_PACK_SIZE( 6, MPI_INTEGER, main_comm, nbytes(2), ierr )
-             call MPI_PACK_SIZE( size( sp_vector%i ), MPI_INTEGER, main_comm, nbytes(3), ierr )
-             call MPI_PACK_SIZE( size( sp_vector%j ), MPI_INTEGER, main_comm, nbytes(4), ierr )
-             call MPI_PACK_SIZE( size( sp_vector%k ), MPI_INTEGER, main_comm, nbytes(5), ierr )
-             call MPI_PACK_SIZE( size( sp_vector%xyz ), MPI_INTEGER, main_comm, nbytes(6), ierr )
-             call MPI_PACK_SIZE( size( sp_vector%c ), MPI_DOUBLE_COMPLEX, main_comm, nbytes(7), ierr )
+             call MPI_PACK_SIZE( 4, MPI_CHARACTER, main_comm, nbytes(2), ierr )
+             call MPI_PACK_SIZE( 6, MPI_INTEGER, main_comm, nbytes(3), ierr )
+             call MPI_PACK_SIZE( size( sp_vector%i ), MPI_INTEGER, main_comm, nbytes(4), ierr )
+             call MPI_PACK_SIZE( size( sp_vector%j ), MPI_INTEGER, main_comm, nbytes(5), ierr )
+             call MPI_PACK_SIZE( size( sp_vector%k ), MPI_INTEGER, main_comm, nbytes(6), ierr )
+             call MPI_PACK_SIZE( size( sp_vector%xyz ), MPI_INTEGER, main_comm, nbytes(7), ierr )
+             call MPI_PACK_SIZE( size( sp_vector%c ), MPI_DOUBLE_COMPLEX, main_comm, nbytes(8), ierr )
              !
              do i = 1, size( nbytes )
                  vector_size_bytes = vector_size_bytes + nbytes(i)
              enddo
              !
-        endif
+        !endif
         !
     end function allocateCSparseVectorBuffer
     !
@@ -2547,7 +2549,7 @@ contains
         !
         call MPI_PACK( sp_vector%is_allocated, 1, MPI_LOGICAL, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         !
-        if( sp_vector%is_allocated ) then
+        !if( sp_vector%is_allocated ) then
              !
              call MPI_PACK( sp_vector%grid_type, 4, MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
              call MPI_PACK( sp_vector%nCoeff, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
@@ -2562,7 +2564,7 @@ contains
              call MPI_PACK( sp_vector%xyz(1), size( sp_vector%xyz ), MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
              call MPI_PACK( sp_vector%c(1), size( sp_vector%c ), MPI_DOUBLE_COMPLEX, parent_buffer, parent_buffer_size, index, main_comm, ierr )
              !
-        endif
+        !endif
         !
     end subroutine packCSparseVectorBuffer
     !
@@ -2581,7 +2583,7 @@ contains
         !
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, sp_vector%is_allocated, 1, MPI_LOGICAL, main_comm, ierr )
         !
-        if( sp_vector%is_allocated ) then
+        !if( sp_vector%is_allocated ) then
             !
             sp_vector%grid => grid
             !
@@ -2608,7 +2610,7 @@ contains
             allocate( sp_vector%c( vector_n_c ) )
             call MPI_UNPACK( parent_buffer, parent_buffer_size, index, sp_vector%c(1), vector_n_c, MPI_DOUBLE_COMPLEX, main_comm, ierr )
             !
-        endif
+        !endif
         !
     end subroutine unpackCSparseVectorBuffer
     !

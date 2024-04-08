@@ -145,18 +145,22 @@ contains
         !> For one polarization (CSEM n_pol = 1)
         if( self%source%calc_sens ) then
             !
-            write( *, "( a49, es10.2)" ) "- Solving CSEM e_sens for period=", self%period
+            write( *, "( a49, es10.2, a3, f10.2, a2, f10.2, a2, f10.2, a1)" ) &
+            "- Solving CSEM e_sens for period=", self%period, &
+            " =>", self%location(1), "x ", self%location(2), "y ", self%location(3), "z"
             !
             call self%forward_solver%createESolution( 1, self%source, self%e_sens(1)%v )
             !
-            !> TALK WITH GARY AND NASER
+            !> TALK WITH GARY AND NASER ????
             call self%e_sens(1)%v%mult( C_MinusONE )
             !
         else
             !
             if( self%i_sol == 0 ) then
                 !
-                write( *, "( a50, es10.2)" ) "- Solving CSEM e_sol_0 for period=", self%period
+                write( *, "( a50, es10.2, a3, f10.2, a2, f10.2, a2, f10.2, a1)" ) &
+                "- Solving CSEM e_sol_0 for period=", self%period, &
+                " =>", self%location(1), "x ", self%location(2), "y ", self%location(3), "z"
                 !
                 call self%forward_solver%createESolution( 1, self%source, self%e_sol_0(1)%v )
                 !
@@ -164,7 +168,9 @@ contains
                 !
             else
                 !
-                write( *, "( a50, es10.2)" ) "- Solving CSEM e_sol_1 for period=", self%period
+                write( *, "( a50, es10.2, a3, f10.2, a2, f10.2, a2, f10.2, a1)" ) &
+                "- Solving CSEM e_sol_1 for period=", self%period, &
+                " =>", self%location(1), "x ", self%location(2), "y ", self%location(3), "z"
                 !
                 call self%forward_solver%createESolution( 1, self%source, self%e_sol_1(1)%v )
                 !
@@ -194,3 +200,4 @@ contains
     end subroutine printTransmitterCSEM
     !
 end module TransmitterCSEM
+!

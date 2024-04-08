@@ -222,17 +222,28 @@ module Transmitter
             !
         end subroutine updateReceiverIndexesArray
         !
-        !> Allocate the source of this transmitter if it is allocated.
-        !> And define a new source for this transmitter, sent as an argument.
+        !> Set a new source for the transmitter
+        !> Allocating it, if required
         !
-        subroutine setSourceTx( self, source )
+        subroutine setSourceTx( self, source_in )
             implicit none
             !
             class( Transmitter_t ), intent( inout ) :: self
-            class( Source_t ), intent( in ) :: source
-            !
-            if( allocated( self%source ) ) deallocate( self%source )
-            allocate( self%source, source = source )
+            class( Source_t ), intent( in ) :: source_in
+            ! !
+            ! if( .NOT. self%is_allocated ) then
+                ! call errStop( "setSourceTx > self not allocated" )
+            ! endif
+            ! !
+            ! if( .NOT. source_in%is_allocated ) then
+                ! call errStop( "setSourceTx > source_in not allocated" )
+            ! endif
+            ! !
+            if( allocated( self%source ) ) then
+                self%source = source_in
+            else
+                allocate( self%source, source = source_in )
+            endif
             !
         end subroutine setSourceTx
         !
@@ -429,3 +440,4 @@ module Transmitter
         end subroutine writeESolution
         !
 end module Transmitter
+!

@@ -55,6 +55,8 @@ contains
         class( ModelParameter_t ), intent( inout ) :: sigma
         class( Transmitter_t ), pointer, intent( inout ) :: Tx
         !
+        class( Source_t ), allocatable :: source
+        !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
         !> Instantiate Transmitter's Source - According to transmitter type and chosen via fwd control file
@@ -67,11 +69,11 @@ contains
                     !
                     case( SRC_MT_1D )
                         !
-                        call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
+                        allocate( source, source = SourceMT_1D_t( model_operator, sigma, Tx%period ) )
                         !
                     case( SRC_MT_2D )
                         !
-                        !call Tx%setSource( SourceMT_2D_t( model_operator, sigma, Tx%period ) )
+                        !allocate( source, source = SourceMT_2D_t( model_operator, sigma, Tx%period ) )
                         !
                         call errStop( "solveTx > SourceMT_2D not implemented yet!" )
                         !
@@ -79,7 +81,7 @@ contains
                         !
                         call warning( "solveTx > MT Source type not provided, using SourceMT_1D_t." )
                         !
-                        call Tx%setSource( SourceMT_1D_t( model_operator, sigma, Tx%period ) )
+                        allocate( source, source = SourceMT_1D_t( model_operator, sigma, Tx%period ) )
                         !
                     case default
                         !
@@ -94,17 +96,17 @@ contains
                     !
                     case( SRC_CSEM_EM1D )
                         !
-                        call Tx%setSource( SourceCSEM_EM1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%i_tx ) )
+                        allocate( source, source = SourceCSEM_EM1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%i_tx ) )
                         !
                     case( SRC_CSEM_DIPOLE1D )
                         !
-                        call Tx%setSource( SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
+                        allocate( source, source = SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
                         !
                     case( "" )
                         !
                         call warning( "solveTx > CSEM Source type not provided, using EM1D." )
                         !
-                        call Tx%setSource( SourceCSEM_EM1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%i_tx ) )
+                        allocate( source, source = SourceCSEM_EM1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%i_tx ) )
                         !
                     case default
                         !
@@ -116,6 +118,8 @@ contains
                 call errStop( "solveTx > Unclassified Transmitter" )
             !
         end select
+        !
+        call Tx%setSource( source )
         !
         call Tx%source%createE
         !

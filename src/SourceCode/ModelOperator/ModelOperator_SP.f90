@@ -99,22 +99,12 @@ contains
         !
         call self%topology%curl( self%topology%T )
         !
-        !open(unit = 6666,file = 'T.bin',form = 'unformatted')
-        !call write_CSRasIJS_real(self%topology%T, 6666)
-        !close(6666)
-        !call writeIJS_Matrix( self%topology%T, 6666 )
-        !
         call self%topology%grad( self%topology%G )
-        !
-        !open(unit = 6666,file = 'G.bin',form = 'unformatted')
-        !call write_CSRasIJS_real(self%topology%G, 6666)
-        !close(6666)
-        !call writeIJS_Matrix( self%topology%G, 6667 )
         !
         allocate( self%VomegaMuSig( size( self%metric%grid%EDGEi ) ) )
         !
         !> set a default omega
-        self%omega = 0.0
+        self%omega = R_ZERO
         !
         self%is_allocated = .TRUE.
         !
@@ -132,23 +122,7 @@ contains
         type( spMatCSR_Real ) :: temp_matrix, Ttrans, CC
         integer :: m, n, nz
         real( kind=prec ), allocatable, dimension(:) :: temp_array
-        ! !
-        ! !   write out metric elements as column vectors
-        ! open(unit = 6666,file = 'MetricElements.bin',form = 'unformatted')
-        ! temp_array = self%metric%edge_length%getArray()
-        ! write(6666) 'EL'   !   edge length
-        ! write(6666) temp_array
-        ! temp_array = self%metric%dual_edge_length%getArray()
-        ! write(6666) 'DL'   !   dual edge length
-        ! write(6666) temp_array
-        ! temp_array = self%metric%face_area%getArray()
-        ! write(6666) 'FA'   ! face area
-        ! write(6666) temp_array
-        ! temp_array = self%metric%dual_face_area%getArray()
-        ! write(6666) 'DA'   ! dual face area
-        ! write(6666) temp_array
-        ! close(6666)
-        ! !
+        !
         m = self%topology%T%nRow
         n = self%topology%T%nCol
         nz = self%topology%T%row( self%topology%T%nRow + 1 ) - 1
@@ -179,10 +153,6 @@ contains
         !
         call DIAGxRMAT( temp_array, temp_matrix, CC )
         !
-        !open(unit = 6666,file = 'CC.bin',form = 'unformatted')
-        !call write_CSRasIJS_real(CC, 6666)
-        !close(6666)
-        !
         call subMatrix_Real( CC, self%metric%grid%EDGEi, self%metric%grid%EDGEi, self%CCii )
         !
         call subMatrix_Real( CC, self%metric%grid%EDGEi, self%metric%grid%EDGEb, self%CCib )
@@ -194,14 +164,7 @@ contains
         self%eqset = .TRUE.
         !
         call self%divCorInit
-        ! !
-        ! open(unit = 6666,file = 'Vdiv.bin',form = 'unformatted')
-        ! call write_CSRasIJS_real(self%Vdiv, 6666)
-        ! close(6666)
-        ! open(unit = 6666,file = 'Gd.bin',form = 'unformatted')
-        ! call write_CSRasIJS_real(self%Gd, 6666)
-        ! close(6666)
-        ! !
+        !
     end subroutine setEquations_ModelOperator_SP
     !
     !> No subroutine briefing
@@ -219,10 +182,6 @@ contains
         call sigma%metric%createVector( real_t, EDGE, sig_temp )
         !
         call sigma%PDEmapping( sig_temp )
-        !
-        !open(unit = 6666,file = 'SigmaEdge.bin',form = 'unformatted')
-        !call sig_temp%write(6666)
-        !close(6666)
         !
         sig_vec_v = sig_temp%getArray()
         !
