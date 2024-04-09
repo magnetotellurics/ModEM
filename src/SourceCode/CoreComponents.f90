@@ -37,8 +37,6 @@ module CoreComponents
     !> Program Control Variables
     character( len=100 ) :: str_msg
     !
-    integer :: mpi_size, ierr
-    !
     character(8) :: str_date
     character(6) :: str_time
     character(50) :: outdir_name
@@ -97,18 +95,18 @@ contains
         write( *, "( a38 )" ) "Model Air Layers [i, dz(i)]:"
         !
         do i = air_layer%nz, 1, -(1)
-            write( *, "( i20, f20.3 )" ) i, air_layer%dz(i)
+            write( *, "( i20, f12.2 )" ) i, air_layer%dz(i)
         enddo
         !
         write( *, * ) "         Air layers from the method ["//trim( air_layer%method )//"]"
         !
-        write( *, "( a38, f12.3, a4 )" ) "Top of the air layers is at ", ( sum( air_layer%Dz ) / 1000. ), " km."
+        write( *, "( a38, f8.2, a3 )" ) "Top of the air layers is at ", ( sum( air_layer%Dz ) / 1000. ), " km"
         !
-        write( *, "( a32, f12.3 )" ) "Air layers Max Height ", air_layer%maxHeight
+        write( *, "( a33, f12.2 )" ) "Air layers Max Height: ", air_layer%maxHeight
         !
-        write( *, "( a22, i6, a2, i6, a2, i6, a1 )" ) "dim(x,y,z):(", main_grid%nx, ", ", main_grid%ny, ", ", main_grid%nz, ")"
+        write( *, "( a27, i4, a2, i4, a2, i4, a1 )" ) "Model Dimension: ", main_grid%nx, "x ", main_grid%ny, "y ", main_grid%nz, "z"
         !
-        write( *, "( a29, f16.3, a2, f16.3, a2, f16.3, a4, f16.3 )" ) "o(x,y,z) * rotDeg:(", main_grid%ox, ", ", main_grid%oy, ", ", main_grid%oz, ") * ", main_grid%rotDeg
+        write( *, "( a29, f8.2, a1, f8.2, a1, f8.2, a3, f8.2 )" ) "o(x,y,z) * rotDeg: ", main_grid%ox, " ", main_grid%oy, " ", main_grid%oz, " * ", main_grid%rotDeg
         !
         !> Instantiate model_operator
         !> Specific type can be chosen via fwd control file
@@ -147,7 +145,7 @@ contains
         !
     end subroutine handleModelFile
     !
-    !> Read Perturbation Model File: instantiate pmodel with ModelReader
+    !> Read Perturbation Model File: instantiate pModel with ModelReader
     !> Only ModelReader_Weerachai implemented so far !!!!
     !
     subroutine handlePModelFile( pmodel )
@@ -207,9 +205,9 @@ contains
         if( n_rx == data_file_standard%n_rx ) then
             !
             if( n_rx == 1 ) then
-                write( *, "( A18, I5, A10 )" ) "Checked ", n_rx, " Receiver."
+                write( *, "( A18, I5, A9 )" ) "Checked ", n_rx, " Receiver"
             else
-                write( *, "( A18, I5, A11 )" ) "Checked ", n_rx, " Receivers."
+                write( *, "( A18, I5, A10 )" ) "Checked ", n_rx, " Receivers"
             endif
             !
         else
@@ -222,9 +220,9 @@ contains
         if( n_tx == data_file_standard%n_tx ) then
             !
             if( n_tx == 1 ) then
-                write( *, "( A18, I5, A13 )" ) "Checked ", n_tx, " Transmitter."
+                write( *, "( A18, I5, A12 )" ) "Checked ", n_tx, " Transmitter"
             else
-                write( *, "( A18, I5, A14 )" ) "Checked ", n_tx, " Transmitters."
+                write( *, "( A18, I5, A13 )" ) "Checked ", n_tx, " Transmitters"
             endif
             !
             do i_tx = 1, n_tx
@@ -238,7 +236,7 @@ contains
             !
         endif
         !
-        write( *, "( A42)" ) "- Creating Rx evaluation vectors"
+        write( *, "( A41 )" ) "- Creating Rx Evaluation Vectors"
         !
         !> Calculate and store evaluation vectors on all Receivers
         do i_rx = 1, n_rx

@@ -10,7 +10,6 @@ module ForwardSolver
     use Solver_CC
     !
     character(:), allocatable :: forward_solver_type
-    character( len=21 ), parameter :: FWD_FILE = "ForwardSolverFromFile"
     character( len=16 ), parameter :: FWD_IT = "ForwardSolver_IT"
     character( len=19 ), parameter :: FWD_IT_DC = "ForwardSolver_IT_DC"
     !

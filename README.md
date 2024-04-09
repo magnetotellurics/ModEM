@@ -2,21 +2,30 @@
 #
 ModEM-2.0.0 - User Guide | Package Instructions
 
-	ModEM (Modular Electromagnetic) program for inversion of 3D Magneto-Telluric datasets,
+	ModEM (Modular Electromagnetic) is a program for inversion of 3D EM datasets,
 	originally developed at Oregon State University using Fortran 95,
 	with numerous extensions of the code by various collaborators over the past decade.
 	In order to put together the best approaches developed since its conception,
-	plus bringing new capabilities into a leaner code, such as support for:
+	into a leaner and more easily extended/maintained code, a new ModEM version 
+    	has been implemented, using Fortran 2003 Object Oriented features.
+	The new version (referred to as MOdEM_OO) implements new capabilities including:
 
-		- Controlled Source Electromagnetic Method (CSEM) datasets.
-		- Anisotropic models featuring Vertical Transverse Isotropy (VTI).
-		- Resolution of linear systems using Multi-Resolution (MR) Grids.
+		- Controlled Source Electromagnetic (CSEM) datasets.
+		- Anisotropic models with Vertical Transverse Isotropy (VTI).
+		- The Multi-Resolution (MR) Grids described in Cherevotova et al. (2018).
 
-	A new ModEM version has been implemented, using Fortran 2003 Object Oriented features.
-	Therefore, here we present a quick User Guide for the first release of it.
+	The code is of course not nearly as throughly tested as the stable ModEM code previously
+	distributed to academic users. Additional work will be required to improved efficiency
+	and parallelization. Furthermore, due to copyright issues we do not provide the 1D solver
+	required for CSEM (primary field computations). Further details on making use of CSEM
+	capabilities are provided in a separate document.
+
+	Here we present a quick User Guide for the first release of ModEM_OO.
+	Note that in the following, model and data files are in the standard ASCII formats,
+	same as used for the stable Mod3DMT code.
 
 
-	1. Getting Start.
+	1. Getting Started
 
 		1.1. Extract ModEM-2.0.0/
 
@@ -24,7 +33,7 @@ ModEM-2.0.0 - User Guide | Package Instructions
 
 			1.1.2. For Microsoft systems (Windows OS),
 					we recommend installing a latest Windows Subsystem for Linux (WSL).
-					Freely available at the Microsoft Store.
+					This was fully developed on Ubuntu 22.02.3 LTS OS. Freely from Microsoft Store.
 					Then follow the next steps using the WSL command prompt.
 
 		1.2. Installing ModEM dependencies (make; gfortran; MPI; blas, lapack and fftw3 libs).
@@ -33,7 +42,7 @@ ModEM-2.0.0 - User Guide | Package Instructions
 
 				bash ../scripts/install_dependencies.sh
 
-		1.3. Compiling|Installing ModEM.
+		1.3. Compiling|Installing ModEM_OO.
 
 			- Must be done within the src/ folder.
 
@@ -48,8 +57,10 @@ ModEM-2.0.0 - User Guide | Package Instructions
 					bash ../scripts/compile_serial_mpi.sh
 
 				Notes:
-					- Users who just want to use ModEM can go to step 2.
+					- Users who just want to use ModEM_OO can go to step 2.
 					- Executables and Makefiles can be renamed at will.
+					- it is possible that some users may have to create Makefiles,
+						and then edit path names for libraries and include files.
 
 				- To create only ModEM_MPI executable, run:
 
@@ -77,6 +88,12 @@ ModEM-2.0.0 - User Guide | Package Instructions
 
 
 	2. Running ModEM.
+		
+		Code execution is controlled (as in Mod3DMT) through command line arguments, and control
+		files setting options and parameters. In contrast to Mod3DMT, command line arguments can
+		be given in any order. Note also that a range of options for grids, model operators,
+		solvers, and forward modeling approaches are supported in a single executable and these are
+		set in the forward control file, which will thus almost always be necessary.
 
 		- To use the Serial Version (from Makefile or Script respectively), just run:
 
@@ -86,7 +103,7 @@ ModEM-2.0.0 - User Guide | Package Instructions
 
 			mpirun -np <NPROCS> ./ModEM_MPI
 
-		Note: If everything was done correctly, minimal usage instructions will appear on the screen.
+		Note: If everything was done correctly, minimal usage instructions will then appear on the screen.
 				Exactly as shown in 3.1.
 
 		2.1. ModEM command line arguments.
@@ -117,7 +134,7 @@ ModEM-2.0.0 - User Guide | Package Instructions
 						[-pd], [--predicted]	Sets the path to output the Predicted Data File.
 
 						[-es], [--esolution]	Enables and sets a path to output a binary file,
-												containing solved electric fields for all TXs.
+												containing solved electric fields for all transmitters.
 
 						[-cf], [--ctrl_fwd]		Sets the path to a input Control File with FWD parameters.
 												(Shown in 2.2.5.1.)
@@ -125,7 +142,7 @@ ModEM-2.0.0 - User Guide | Package Instructions
 			2.2.2. [-i]	Inversion (INV).
 
 				- To perform a INV job using default parameters,
-					just Model and Data Files are needed, preceded by -m and -d flags respectively, as follows:
+					just Model and Data Files paths are required after -m and -d flags respectively, as follows:
 
 					./ModEM -i -m <MODEL_PATH> -d <DATA_PATH>
 
@@ -164,9 +181,9 @@ ModEM-2.0.0 - User Guide | Package Instructions
 
 					- More flagged file paths can be used in a jMult command line:
 
-						[-jm], [--jmhat]		Sets the path to the result jmhat ???? Data File.
+						[-jm], [--jmhat]		Sets the path to the resultant JmHat Data File.
 
-						[-cf], [--ctrl_fwd]		Sets the path to a input Control File with FWD parameters.
+						[-cf], [--ctrl_fwd]		Sets the path to an input Control File with FWD parameters.
 												(Shown in 2.2.5.1.)
 
 			2.2.4. [-jt]	Transposed J Multiplication (jMult_T).
@@ -176,14 +193,14 @@ ModEM-2.0.0 - User Guide | Package Instructions
 
 					./ModEM -jt -m <MODEL_PATH> -d <DATA_PATH>
 
-				- Outputting one Model File, named 'dsigma.rho',
+				- Outputting a single Model File, named 'dsigma.rho',
 					in the same dimensions as the inputed one, containing ???? calculated by jMult_T.
 
 				2.2.1.1. jMult_T supported options.
 
 					- Other paths preceded by flags fit on a jMult_T execution line:
 
-						[-dm], [--dmodel]		Sets the path to output dsigma ???? Model File.
+						[-dm], [--dmodel]		Sets the path to output dSigma ???? Model File.
 
 						[-cf], [--ctrl_fwd]		Sets the path to a input Control File with FWD parameters.
 												(Shown in 2.2.5.1.)
@@ -207,9 +224,9 @@ ModEM-2.0.0 - User Guide | Package Instructions
 						model_n_air_layer [10]             : 10
 						model_max_height [200.]            : 200.
 						source_type_mt [1D|2D]                                              : 1D
-						source_type_csem [EM1D|Dipole1D]                                    : Dipole1D
+						source_type_csem [EM1D|Dipole1D]                                    : EM1D
 						get_1d_from [Fixed_Value|Geometric_Mean|Mean_around_Tx|Tx_Position] : Geometric_Mean
-						solver_type [QMR|BICG]         : QMR
+						solver_type [QMR|BICG]         : BICG
 						forward_solver_type [IT|IT_DC] : IT_DC
 						max_solver_iters [80]          : 80
 						max_solver_calls [20]          : 20
@@ -233,41 +250,42 @@ ModEM-2.0.0 - User Guide | Package Instructions
 						startdm [20.]                   : 20.
 
 				Notes:
-
-					- Templates are generated containing the exact same default values used by ModEM.
+					- Templates are generated containing the exact same default values used by ModEM_OO.
 					- Allowed values and ranges are described in brackets for each parameter,
 						setting them outside of these throws runtime errors.
 					- Any parameter can be removed or commented out, causing the use of its default value.
 
 
-	3. ModEM Standards.
+	3. ModEM_OO Standards.
 
-		3.1. ModEM_2.0.0 Minimal Usage:
+		3.1. ModEM_OO_1.0.0 Minimal Usage:
 
 					Forward Modeling (FWD):
-						<ModEM> -f -m <rFile_Model> -d <rFile_Data>
+						<ModEM_OO> -f -m <rFile_Model> -d <rFile_Data>
 						Output:
 						- 'all_predicted_data.dat' or the path specified by      [-pd]
 
 					Inversion (INV):
-						<ModEM> -i -m <rFile_Model> -d <rFile_Data>
+						<ModEM_OO> -i -m <rFile_Model> -d <rFile_Data>
 						Output:
 						- directory named 'Output_<date>_<time>' or specified by [-o]
 
 					Jacobian Multiplication (JMult):
-						<ModEM> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>
+						<ModEM_OO> -j -m <rFile_Model> -pm <rFile_pModel> -d <rFile_Data>
 						Output:
 						- 'jmhat.dat' or the path specified by                   [-jm]
 
 					Transposed J Multiplication (JMult_T):
-						<ModEM> -jt -m <rFile_Model> -d <rFile_Data>
+						<ModEM_OO> -jt -m <rFile_Model> -d <rFile_Data>
 						Output:
 						- 'dsigma.rho' or the path specified by                  [-dm]
 
 					Other options:
-						<ModEM> -h or <ModEM> --help
+						<ModEM_OO> -h or <ModEM_OO> --help
 
-		3.2. ModEM_2.0.0 Options:
+			See Mod3DMT documentation for further details about Jmult, JMult_T options.
+
+		3.2. ModEM_OO_1.0.0 Options:
 
 					Flags to define a job:
 						[-f],  [--forward]   :  Forward Modeling.
@@ -294,11 +312,11 @@ ModEM-2.0.0 - User Guide | Package Instructions
 
 		3.3. Using VTI anisotropic Models.
 
-			- ModEM format presents its Model Files with a four line header,
-				describing three-dimensionality (nx, ny, nz) and cell sizes for each dimension.
+			- ModEM standard format presents its Model Files with a four line header,
+				describing grid dimensions (nx, ny, nz) and cell sizes for each dimension.
 				Followed by a block of nx*ny*nz resistivity values, ended by 3D origin and 1D rotation lines.
 				VTI Models take into account different horizontal and vertical resistivities,
-				to use it in ModEM, add the flag VTI to the end of header's first line, as follows:
+				It is enabled in ModEM_OO by the following changes to its Model Files:
 
 					---------------------------------------------
 					1st header line:  nx    ny    nz   ? type
@@ -306,29 +324,32 @@ ModEM-2.0.0 - User Guide | Package Instructions
 						  Isotropic: <nx>  <ny>  <nz>  0 LOGE
 					Anisotropic VTI: <nx>  <ny>  <nz>  0 LOGE VTI
 
-			- Then instead of one, two resistivity blocks with the same dimensions (nx, ny, nz).
-				Where the first refers to horizontal values and the second to vertical ones.
+			- Then instead of one, two blocks of values in sequence with the same dimension (nx, ny, nz).
+				The first referring to horizontal resistivities and the second to the vertical ones.
 
 		3.4. Using Multi-Resolution grids.
 
 			- ModEM's first approach to work with Multi-Resolution grids, aims to gain performance
-				by simplifying its mesh calculations. By coarsening some layers of the original grid,
-				enlarging its cells by a given factor, keeping best resolution for interesting layers.
+				by reducing the grid spacing at depth. By coarsening some layers of the original grid,
+				enlarging its cells by a factor of 2, keeping best resolution for interesting layers.
+				This follows the development given in Cherevatova et al., (2018).
 
 				Resolution of an input grid can be modified through the 'grid_format' parameter, 
-				enabled when present and uncommented in the FWD Control File.
+				enabled if present and uncommented in the FWD Control File.
 				This variable expects an array with G [factor, depth] integer pairs, where:
 
 					- G		= number of layer groups, into which the original grid will be subdivided.
 					- factor= coarse intensity, groups are coarsened exponentially according to 2** factor,
-								where 0 represents the best possible resolution and ? the maximum coarseness ????
+						where 0 represents the highest resolution. 
 					- depth	= amount of layers in a group.
 
 				For instance:
 
 					grid_format : 0,a,1,b,2,c
 
-				- Sets 3 layer groups, with a, b, c layers of depth and coarse factors of 0, 1 and 2, respectively.
+				- Sets 3 layer groups, with a, b, c layers of depth and coarseness factors of 0, 1 and 2, respectively,
+					corresponding to cells of the highest resolution (0), and with resolutions reduced by factors of
+					2 and 4 respectively (coarseness 1, 2)
 
 				And:
 
@@ -339,10 +360,17 @@ ModEM-2.0.0 - User Guide | Package Instructions
 					Reducing by half the resolution of the second group,
 					and making the last ten layers four times coarser.
 
+			- Notes: At present, it is not possible to coarsen the grid air layers,
+						which are always added to the first group of layers at the top of the model.
+				Coarseness can only change by one level (factor of 2) between adjacent grids.
 
-	4. Package extras. ????
+	SOMEWHERE NEED TO SAY SOMETHING ABOUT 1D background model for CSEM -- I.e., how to get Dipole1D and install.
+	And how do we deal with makefile, etc. for a version w/o CSEM ????
 
-		4.1. Test Sets containing validated examples of ModEM input files:
+	
+	4. Package extra features.
+
+		4.1. Test Sets containing validated examples of ModEM_OO input files:
 				models, data, covariances and controls, can be found in the inputs/ folder.
 
 		4.2. Published articles and additional information about ModEM can be checked at the docs/ folder.
@@ -350,8 +378,11 @@ ModEM-2.0.0 - User Guide | Package Instructions
 		4.3. ModEM add-on programs are provided in the tools/ folder, such as:
 
 			4.3.1. 3DGrid ????
+				NEED TO ASK NASER.   From my perspective make  NO mention of 3DGrid.   It is not my program!
 
 			4.3.2. A JavaScript tool for electrical solution visualization ????
+				Certainly not now!   
+
 
 		4.4. Extensive Doxygen Source Code documentation can be found at:
 
@@ -360,3 +391,7 @@ ModEM-2.0.0 - User Guide | Package Instructions
 		4.5. Contacts ????
 
 			paulowerdt@on.br - developer
+			egbert@coas.oregonstate.edu
+
+			Maybe Sergio?
+			

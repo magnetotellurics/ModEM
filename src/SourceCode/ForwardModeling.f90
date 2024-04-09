@@ -142,14 +142,15 @@ contains
         class( ModelParameter_t ), allocatable :: sigma
         !
         ! Verbose
-        write( *, * ) "     - Start ForwardModeling"
+        write( *, "( A30 )" ) "- Start Forward Modeling"
+        write( *, * ) ""
         !
         if( has_model_file ) then
             !
             call handleModelFile( sigma )
         !
         else
-            call errStop( "jobForwardModeling > Missing Model file!" )
+            call errStop( "jobForwardModeling > Missing Model File!" )
         endif
         !
         if( has_data_file ) then
@@ -157,10 +158,10 @@ contains
             call handleDataFile
         !
         else
-            call errStop( "jobForwardModeling > Missing Data file!" )
+            call errStop( "jobForwardModeling > Missing Data File!" )
         endif
         !
-        !> If path is specified by argument -es|--esolution
+        !> If path is specified by argument -es|-- esolution
         !> Write e_sol_0 to a binary file at this path
         if( has_e_solution_file ) call writeAllESolutionHeader( size( transmitters ), transmitters(1)%Tx%n_pol, e_solution_file_name )
         !
@@ -168,7 +169,7 @@ contains
         !
 #ifdef MPI
         !
-        call broadcastBasicComponents()
+        call broadcastBasicComponents
         !
         !> Deallocate global FWD Objects not used by the Master process
         deallocate( model_operator, main_grid )
@@ -190,7 +191,8 @@ contains
         deallocate( sigma )
         !
         ! Verbose
-        write( *, * ) "     - Finish ForwardModeling"
+        write( *, * ) ""
+        write( *, "( A31 )" ) "- Finish Forward Modeling"
         !
     end subroutine jobForwardModeling
     !
@@ -230,7 +232,7 @@ contains
             call solveTx( sigma, Tx )
             !
             ! Verbose
-            write( *, "(A36)" ) "- Calculate Predicted Data"
+            write( *, "( A36 )" ) "- Calculate Predicted Data"
             !
             !> Loop for each Receiver related to this Transmitter
             do i_rx = 1, size( Tx%receiver_indexes )
@@ -258,7 +260,7 @@ contains
         !
         if( allocated( forward_solver ) ) deallocate( forward_solver )
         !
-        !> Instantiate the ForwardSolver - Specific type can be chosen via control file
+        !> Instantiate the ForwardSolver - Specific type can be set via control file
         select case( forward_solver_type )
             !
             case( FWD_IT )
@@ -271,13 +273,24 @@ contains
                 !
             case( "" )
                 !
-                call warning( "createDistributeForwardSolver > Forward Solver type not provided, using IT_DC." )
-                !
-                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
+                !> Set the best forward_solver_type according to the model_operator_type.
+                if( model_operator_type .EQ. MODELOP_MF .OR. model_operator_type .EQ. MODELOP_SP ) then
+                    !
+                    call warning( "Parameter forward_solver_type not provided, using IT_DC." )
+                    !
+                    allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
+                    !
+                elseif( model_operator_type .EQ. MODELOP_SP2 ) then
+                    !
+                    call warning( "Parameter forward_solver_type not provided, using IT." )
+                    !
+                    allocate( forward_solver, source = ForwardSolver_IT_t( model_operator, solver_type ) )
+                    !
+                endif
                 !
             case default
                 !
-                call errStop( "createDistributeForwardSolver > Wrong Forward Solver type: ["//forward_solver_type//"]" )
+                call errStop( "createDistributeForwardSolver > Wrong forward_solver_type: ["//forward_solver_type//"]" )
                 !
         end select
         !

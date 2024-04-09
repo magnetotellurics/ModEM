@@ -29,12 +29,19 @@ contains
         implicit none
         !
         character(*), intent( in ) :: msg
+        !
+        !> System Bip!
+        write( *, * ) char(7)
+        !
         write( *, * ) achar(27)//"[31m# Error:"//achar(27)//"[0m "//trim( msg )
         !
-!#ifdef MPI
+#ifdef MPI
         !
-        !call MPI_Finalize( ierr )
-!#endif
+        call MPI_Abort( main_comm, error_code, ierr )
+        !
+        call MPI_Finalize( ierr )
+        !
+#endif
         !
         stop
         !
@@ -46,6 +53,10 @@ contains
         implicit none
         !
         character(*), intent( in ) :: msg
+        !
+        !> System Bip!
+        write( *, * ) char(7)
+        !
         write( *, * ) achar(27)//"[91m# Warning:"//achar(27)//"[0m "//trim( msg )
         !
         warning_counter = warning_counter + 1

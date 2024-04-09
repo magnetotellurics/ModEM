@@ -56,7 +56,7 @@ contains
         !
         !write( *,* ) "Constructor InversionControlFile_t"
         !
-        call Compact( fname )
+        call compact( fname )
         !
         open( unit = funit, file = fname, iostat = io_stat, status = "old" )
         !

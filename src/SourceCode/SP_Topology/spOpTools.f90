@@ -393,15 +393,16 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine CSR2IJS_Real(C, S)
+    subroutine CSR2IJS_Real( C, S )
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: C
-        type(spMatIJS_Real), intent( inout ) :: S
+        type( spMatIJS_Real ), intent( inout ) :: S
+        !
         integer :: ij, i, j
         ! for now no error checking
         if(.NOT.S%is_allocated) then
-            stop "Error: CSR2IJS_Real > allocate output matrix before call"
+            call errStop( "CSR2IJS_Real > allocate output matrix before call" )
         endif
         ij = 0
         do i=1, C%nRow
@@ -417,15 +418,17 @@ contains
     !
     !> No subroutine briefing
     !
-    subroutine CSR2IJS_Cmplx(C, S)
+    subroutine CSR2IJS_Cmplx( C, S )
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: C
         type( spMatIJS_Cmplx ), intent( inout ) :: S
+        !
         integer :: ij, i, j
+        !
         ! for now no error checking
         if(.NOT.S%is_allocated) then
-        stop "Error: CSR2IJS_Cmplx > allocate output matrix before call"
+            call errStop( "CSR2IJS_Cmplx > allocate output matrix before call" )
         endif
         ij = 0
         do i=1, C%nRow
@@ -493,38 +496,32 @@ contains
     subroutine IJS2CSR_Cmplx( S, C )
         implicit none
         !
-        type(spMatIJS_Cmplx), intent( in ) :: S
+        type( spMatIJS_Cmplx ), intent( in ) :: S
         type( spMatCSR_Cmplx ), intent( inout ) :: C
+        !
         integer :: i, j, nz
         integer, allocatable, dimension(:) :: rowT
         !
-        write( *, * ) "IJS2CSR_Cmplx 1"
-        !
-        allocate( rowT(S%nRow+1) )
-        !
-        write( *, * ) "IJS2CSR_Cmplx 2"
+        allocate( rowT( S%nRow + 1 ) )
         !
         if( .NOT. C%is_allocated ) then
             call errStop( "IJS2CSR_Cmplx > allocate output matrix before call" )
         endif
         !
-        write( *, * ) "IJS2CSR_Cmplx 3"
-        !
-        !   first pass: find numbers of columns in each row of output
+        !> first pass: find numbers of columns in each row of output
         rowT = 0
         nz = size(S%I)
         do i = 1, nz
             rowT(S%I(i)) = rowT(S%I(i))+1
         enddo
-        !   set row array in output CSR matrix
+        !
+        !> set row array in output CSR matrix
         C%row(1) = 1
         do i = 1, C%nRow
             C%row(i+1) = C%row(i)+rowT(i)
         enddo
         !
-        write( *, * ) "IJS2CSR_Cmplx 4"
-        !
-        !    now fill in columns and values
+        !> now fill in columns and values
         rowT = 0
         do i = 1, nz
             j = C%row(S%I(i)) +rowT(S%I(i))
@@ -533,11 +530,7 @@ contains
             rowT(S%I(i)) = rowT(S%I(i))+1
         enddo
         !
-        write( *, * ) "IJS2CSR_Cmplx 5"
-        !
         deallocate( rowT )
-        !
-        write( *, * ) "IJS2CSR_Cmplx 6"
         !
     end subroutine IJS2CSR_Cmplx
     !
@@ -573,59 +566,59 @@ contains
     !
     !> Multiply a complex vector x by a real sparse CSR matrix A 
     !
-    subroutine RMATxRVEC(A, x, y)
+    !> Lets start coding this with little checking -- assume
+    !> everything is allocated and correct on entry
+    !
+    subroutine RMATxRVEC( A, x, y )
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: A
         real( kind=prec ), dimension(:), intent( in ) :: x
         real( kind=prec ), dimension(:), intent( inout ) :: y
-
+        !
         integer :: i, j
-
-        ! lets start coding this with little checking -- assume
-        ! everything is allocated and correct on entry
-
+        !
         if(A%nCol.NE.size(x)) then
-        stop "Error: RMATxRVEC > matrix and vector sizes incompatible"
+            call errStop( "RMATxRVEC > matrix and vector sizes incompatible" )
         endif
-
+        !
         do i = 1, A%nRow
-        y(i) = 0.0
-        do j = A%row(i), A%row(i+1)-1 
-        y(i) = y(i)+A%val(j)*x(A%col(j))
+            y(i) = R_ZERO
+            do j = A%row(i), A%row(i+1)-1 
+                y(i) = y(i)+A%val(j)*x(A%col(j))
+            enddo
         enddo
-        enddo
-        return
+        !
     end subroutine RMATxRVEC
     !
     !> Multiply a complex vector x by a complex sparse CSR matrix A 
     !
-    subroutine CMATxCVEC(A, x, y)
+    !> Lets start coding this with little error checking -- assume
+    !> everything is allocated and correct on entry
+    !
+    subroutine CMATxCVEC( A, x, y )
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: A
         complex( kind=prec ), dimension(:), intent( in ) :: x
         complex( kind=prec ), dimension(:), intent( inout ) :: y
-
+        !
         integer :: i, j
-
-        ! lets start coding this with little error checking -- assume
-        ! everything is allocated and correct on entry
-
+        !
         if(A%nCol.NE.size(x)) then
-        stop "Error: CMATxCVEC > matrix and vector sizes incompatible"
+            call errStop( "CMATxCVEC > matrix and vector sizes incompatible" )
         endif
-
+        !
         do i = 1, A%nRow
-        y(i) = 0.0
-        do j = A%row(i), A%row(i+1)-1 
-        y(i) = y(i)+A%val(j)*x(A%col(j))
+            y(i) = R_ZERO
+            do j = A%row(i), A%row(i+1)-1 
+                y(i) = y(i)+A%val(j)*x(A%col(j))
+            enddo
         enddo
-        enddo
-        return
+        !
     end subroutine CMATxCVEC
     !
-    !> matix-vector multiplication
+    !> matrix-vector multiplication
     !
     subroutine RMATxRMAT( A, B, C )
         implicit none
@@ -643,7 +636,7 @@ contains
         allocate( colT( nColMax ) )
         !
         if( A%nCol .NE. B%nRow ) then
-            stop "Error: RMATxRMAT > matrix sizes incompatible"
+            call errStop( "RMATxRMAT > matrix sizes incompatible" )
         endif
         !
         !> first pass: find numbers of columns in each row of output matrix C
@@ -759,21 +752,21 @@ contains
         !
     end subroutine RMATxRMAT
     !
-    !> Matix-vector multiplication, complex version
+    !> Matrix-vector multiplication, complex version
     !
     subroutine CMATxCMAT( A, B, C )
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: A, B
         type( spMatCSR_Cmplx ), intent( out ) :: C
-
+        !
         integer :: i, j, k, nColMax, nCol, m, n, nz, jj, i1, i2, l
         integer, allocatable, dimension(:) :: colT
         integer, allocatable, dimension(:) :: rowT
-        logical new
+        logical :: new
 
         if(A%nCol.NE.B%nRow) then
-        stop "Error: CMATxCMAT > matrix sizes incompatible"
+            call errStop( "CMATxCMAT > matrix sizes incompatible" )
         endif
 
         allocate(rowT(A%nRow+1))
@@ -912,19 +905,19 @@ contains
         return
     end subroutine DIAGxRMAT
     !
-    !> Premultiply sparse matrix A by diagonal matrix D complex version
+    !> Pre-Multiply sparse matrix A by diagonal matrix D complex version
     !
     subroutine DIAGxCMAT( D, A, B )
         implicit none
         !
-        type( spMatCSR_Cmplx ), intent( in ) :: A
         complex( kind=prec ), intent( in ), dimension(:) :: D
+        type( spMatCSR_Cmplx ), intent( in ) :: A
         type( spMatCSR_Cmplx ), intent( out ) :: B
-
+        !
         integer :: i, j, m, n, nz
-
+        !
         if(A%nRow.NE.size(D)) then
-        stop "Error: DIAGxCMAT > matrix sizes incompatible"
+            call errStop( "DIAGxCMAT > matrix sizes incompatible" )
         endif
         if(.NOT.sameSizeCSR_Cmplx(A, B)) then
         if(B%is_allocated) then
@@ -944,7 +937,7 @@ contains
         B%col(j) = A%col(j)
         enddo
         enddo
-        return
+        !
     end subroutine DIAGxCMAT
     !
     !  postmultiply sparse matrix A by diagonal matrix D
@@ -1022,19 +1015,19 @@ contains
         !
     end subroutine RMATxDIAG
     !
-    !> Postmultiply sparse matrix A by diagonal matrix D complex version
+    !> Post Multiply sparse matrix A by diagonal matrix D complex version
     !
-    subroutine CMATxDIAG(A, D, B)
+    subroutine CMATxDIAG( A, D, B )
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: A
         real( kind=prec ), intent( in ), dimension(:) :: D
         type( spMatCSR_Cmplx ), intent( inout ) :: B
-
+        !
         integer :: i, j, m, n, nz
-
+        !
         if(A%nCol.NE.size(D)) then
-        stop "Error: CMATxDIAG > matrix sizes incompatible"
+            call errStop( "CMATxDIAG > matrix sizes incompatible" )
         endif
         if(.NOT.sameSizeCSR_Cmplx(A, B)) then
         if(B%is_allocated) then
@@ -1045,17 +1038,17 @@ contains
         nz = A%row(A%nRow+1)-1
         call create_spMatCSR(m, n, nz, B)  
         endif
-
+        !
         B%row(1) = 1
         do i = 1, A%nRow 
-        B%row(i+1) = A%row(i+1)
-        do j = A%row(i), A%row(i+1)-1
-        B%val(j) = A%val(j)*D(A%col(j))
-        B%col(j) = A%col(j)
-        enddo
+            B%row(i+1) = A%row(i+1)
+            do j = A%row(i), A%row(i+1)-1
+                B%val(j) = A%val(j)*D(A%col(j))
+                B%col(j) = A%col(j)
+            enddo
         enddo
         !
-    end subroutine
+    end subroutine CMATxDIAG
     !
     !> No subroutine briefing
     !
@@ -1070,27 +1063,19 @@ contains
         integer :: i, nz, temp
         logical :: conjugate
         !
-        write( *, * ) "CMATtrans A:", A%nCol, A%nRow
-        !
         conjugate = .TRUE.
         !
         if( present( Conj ) ) then 
             conjugate = Conj
         endif
         !
-        nz = A%row(A%nRow+1)-1
+        nz = A%row( A%nRow + 1 ) - 1
         !
         call create_spMatCSR( A%nCol, A%nRow, nz, Atrans )
         !
-        write( *, * ) "CMATtrans Atrans:", Atrans%nCol, Atrans%nRow
-        !
         call create_spMatIJS( A%nRow, A%nCol, nz, B )
         !
-        write( *, * ) "CMATtrans B1:", B%nCol, B%nRow
-        !
         call CSR2IJS( A, B )
-        !
-        write( *, * ) "CMATtrans B2:", B%nCol, B%nRow
         !
         do i = 1, nz
             !
@@ -1100,27 +1085,17 @@ contains
             !
         enddo
         !
-        write( *, * ) "CMATtrans C:", B%nCol, B%nRow
-        !
         if( conjugate ) then
             B%S = conjg(B%S)
         endif
-        !
-        write( *, * ) "CMATtrans D:", B%nCol, B%nRow
         !
         temp = B%nRow
         B%nRow = B%nCol
         B%nCol = temp
         !
-        write( *, * ) "CMATtrans E:", B%nCol, B%nRow
-        !
         call IJS2CSR( B, Atrans )
         !
-        write( *, * ) "CMATtrans E_1:", Atrans%nCol, Atrans%nRow
-        !
         call deall_spMATIJS(B)
-        !
-        write( *, * ) "CMATtrans E_2:", A%lower, A%upper
         !
         if( A%lower ) then
             Atrans%upper = .TRUE.
@@ -1129,8 +1104,6 @@ contains
         if( A%upper ) then
             Atrans%lower = .TRUE.
         endif 
-        !
-        write( *, * ) "CMATtrans F:", Atrans%lower, Atrans%upper
         !
     end subroutine CMATtrans
     !
@@ -1565,17 +1538,18 @@ contains
     !
     !> Extract diagonal part of matrix A in CSR storage
     !
-    subroutine diag_Real(A, D)
+    subroutine diag_Real( A, D )
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: A
-        real( kind=prec ), allocatable, intent( inout ) :: D(:)
+        real( kind=prec ), allocatable, dimension(:), intent( inout ) :: D
+        !
         integer :: n, m, i, j
-
+        !
         m = A%nRow
         n = A%nCol
         if(n.NE.m) then
-        stop "Error: diag_Real > diag only works for square matrices"
+        call errStop( "diag_Real > diag only works for square matrices" )
         endif
         if(allocated(D)) then
         deallocate(D)
@@ -1593,17 +1567,18 @@ contains
     !
     !> Extract diagonal part of matrix A in CSR storage
     !
-    subroutine diag_Cmplx(A, D)
+    subroutine diag_Cmplx( A, D )
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: A
-        complex( kind=prec ), allocatable, intent( inout ) :: D(:)
+        complex( kind=prec ), allocatable, dimension(:), intent( inout ) :: D
+        !
         integer :: n, m, i, j
-
+        !
         m = A%nRow
         n = A%nCol
         if(n.NE.m) then
-        stop "Error: diag_Cmplx > diag only works for square matrices"
+        call errStop( "diag_Cmplx > diag only works for square matrices" )
         endif
         if(allocated(D)) then
         deallocate(D)
@@ -1617,6 +1592,7 @@ contains
         endif
         enddo
         enddo
+        !
     end subroutine diag_Cmplx
     !
     !> Extract submatrix of A with rows and columns given by integer arrays r and c 
@@ -1858,7 +1834,7 @@ contains
     !> number of non-zero elements in each submatrix important!
     !> the submatrix B is modified to use zero-based index(as Petsc)
     !
-    subroutine splitRMAT(A, i, np, B, isizes)
+    subroutine splitRMAT( A, i, np, B, isizes )
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: A  ! original matrix
@@ -1874,7 +1850,7 @@ contains
         allocate(colT(A%nCol))
         colT =(/(j, j=1, A%nCol) /)
         if(A%nrow .LT. np) then
-            stop "Error: splitRMAT > number of process is larger than number of rows!"
+            call errStop( "splitRMAT > number of process is larger than number of rows!" )
         elseif(np.EQ.1) then
             !write( *, * ) "only one process, returning the original Matrix"
             m = A%nRow
@@ -1939,7 +1915,7 @@ contains
         allocate(colT(A%nCol))
         colT =(/(j, j=1, A%nCol) /)
         if(A%nrow .LT. np) then
-            stop "Error: splitCMAT > number of processes is larger than number of rows!"
+            call errStop( "splitCMAT > number of processes is larger than number of rows!" )
         elseif(np.EQ.1) then
             !write( *, * ) "only one process, returning the original Matrix"
             m = A%nRow
@@ -1994,15 +1970,15 @@ contains
         integer :: i, j
         !
         if( L%nRow .NE. L%nCol ) then
-            stop "Error: LTsolve_Cmplx > sparse matrix must be square"
+            call errStop( "LTsolve_Cmplx > sparse matrix must be square" )
         endif
         !
         if( .NOT. L%lower ) then
-            stop "Error: LTsolve_Cmplx > sparse matrix must be lower triangular"
+            call errStop( "LTsolve_Cmplx > sparse matrix must be lower triangular" )
         endif 
         !
         if( size(x) .NE. L%nRow ) then
-            stop "Error: LTsolve_Cmplx > output vector x not of correct size"
+            call errStop( "LTsolve_Cmplx > output vector x not of correct size" )
         endif
         !
         do i = 1, L%nRow
@@ -2023,7 +1999,7 @@ contains
     !> Solve system Ux = b for complex vector x, upper triangular U
     !> here real or cmplx refers to U; x is always complex
     !
-    subroutine UTsolve_Cmplx(U, b, x)
+    subroutine UTsolve_Cmplx( U, b, x )
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( in ) :: U
@@ -2034,13 +2010,13 @@ contains
         complex( kind=prec ) :: d
 
         if(U%nRow .NE.U%nCol) then
-        stop "Error: UTsolve_Cmplx > sparse matrix must be square"
+        call errStop( "UTsolve_Cmplx > sparse matrix must be square" )
         endif 
         if(.NOT.U%upper) then
-        stop "Error: UTsolve_Cmplx > sparse matrix must be upper triangular"
+        call errStop( "UTsolve_Cmplx > sparse matrix must be upper triangular" )
         endif 
         if(size(x).NE.U%nRow) then
-        stop "Error: UTsolve_Cmplx > output vector x not of correct size"
+        call errStop( "UTsolve_Cmplx > output vector x not of correct size" )
         endif 
         do i = U%nRow, 1, -1
         x(i) = b(i)
@@ -2054,11 +2030,11 @@ contains
         enddo
         x(i) = x(i)/d
         enddo
-        return
+        !
     end subroutine UTsolve_Cmplx
     !
     !> Solve system Lx = b for complex vector x, lower triangular L
-    !> here real or cmplx refers to L; x is always complex
+    !> here real or complex refers to L; x is always complex
     !
     subroutine LTsolve_Real( L, b, x )
         implicit none
@@ -2066,18 +2042,18 @@ contains
         type( spMatCSR_Real ), intent( in ) :: L
         complex( kind=prec ), dimension(:), intent( in ) :: b
         complex( kind=prec ), dimension(:), intent( inout ) :: x
-
+        !
         real( kind=prec ) :: d
         integer :: i, j
-
+        !
         if(L%nRow .NE.L%nCol) then
-        stop "Error: LTsolve_Real > sparse matrix must be square"
+        call errStop( "LTsolve_Real > sparse matrix must be square" )
         endif 
         if(.NOT.L%lower) then
-        stop "Error: LTsolve_Real > sparse matrix must be lower triangular"
+        call errStop( "LTsolve_Real > sparse matrix must be lower triangular" )
         endif 
         if(size(x).NE.L%nRow) then
-        stop "Error: LTsolve_Real > output vector x not of correct size"
+        call errStop( "LTsolve_Real > output vector x not of correct size" )
         endif 
         do i = 1, L%nRow
         x(i) = b(i)
@@ -2091,7 +2067,7 @@ contains
         enddo
         x(i) = x(i)/d
         enddo
-        return 
+        ! 
     end subroutine LTsolve_Real
     !
     !> Solve system Ux = b for complex vector x, upper triangular U
@@ -2108,15 +2084,15 @@ contains
         real( kind=prec ) :: d
         !
         if( U%nRow .NE. U%nCol ) then
-            stop "Error: UTsolve_Real > sparse matrix must be square"
+            call errStop( "UTsolve_Real > sparse matrix must be square" )
         endif
         !
         if( .NOT. U%upper ) then
-            stop "Error: UTsolve_Real > sparse matrix must be upper triangular"
+            call errStop( "UTsolve_Real > sparse matrix must be upper triangular" )
         endif
         !
         if( size(x) .NE. U%nRow ) then
-            stop "Error: UTsolve_Real > output vector x not of correct size"
+            call errStop( "UTsolve_Real > output vector x not of correct size" )
         endif
         !
         do i = U%nRow, 1, -1
@@ -2466,7 +2442,7 @@ contains
         enddo
         call upperTri(Atmp, U)
         call deall_spMatCSR(Atmp)
-        return
+        !
     end subroutine ilu0_Cmplx
     !
     !> A simple but not at all intuitive ILU0 routine with CSR sparse matrix 
@@ -2478,16 +2454,17 @@ contains
     !> consumption by storing the L and U in the original sparse matrix 
     !> structure of A(as ILU0 does not have any fill-ins).
     !
-    subroutine ilu0_Real(A, L, U)
+    subroutine ilu0_Real( A, L, U )
         implicit none
         !
         type( spMatCSR_Real ), intent( in ) :: A
         type( spMatCSR_Real ), intent( inout ) :: L, U
+        !
         type( spMatCSR_Real ) :: Atmp
         real( kind=prec ), allocatable, dimension(:):: d
         real( kind=prec ) :: piv
         integer :: n, m, nz, i, j, j2, k, p
-
+        !
         allocate(d(A%nRow))
         n = A%nRow
         m = A%nCol
@@ -2500,14 +2477,14 @@ contains
         d = 0.0
         do i=1, Atmp%nRow ! loop through rows
         p=Atmp%row(i) ! mark the first none zero element in current row
-
+        !
         do j=Atmp%row(i), Atmp%row(i+1)-1 ! loop through columns
         if(Atmp%col(j).eq.i) then !diagonal
         d(i) = Atmp%val(j) ! store previous diagonal elements
         exit ! exit as we reached the last element in L
         elseif(Atmp%col(j).LT.i) then
         if(d(Atmp%col(j)).eq.0.0) then
-        stop "Error: ilu0_Real > zero pivoting in ILU0 "
+            call errStop( "ilu0_Real > zero pivoting in ILU0" )
         endif 
         ! first divide each row in L with diagonal elements
         Atmp%val(j) = Atmp%val(j)/d(Atmp%col(j))
@@ -2525,9 +2502,9 @@ contains
         enddo
         p = p + 1 ! 
         endif
-
+        !
         enddo
-
+        !
         enddo
         deallocate(d)
         call lowerTri(Atmp, L)
@@ -2536,12 +2513,13 @@ contains
         ! ONLY IF col is properly sorted
         L%val(L%row(i)-1) = 1.0
         enddo
+        !
         call upperTri(Atmp, U)
         call deall_spMatCSR(Atmp)
-        return
+        !
     end subroutine ilu0_Real
     !
-    !> Matix-Matrix sum, real version
+    !> Matrix-Matrix sum, real version
     !
     subroutine RMATplusRMAT( A, B, C, tol )
         implicit none
@@ -2552,18 +2530,18 @@ contains
         !
         type( spMatCSR_Real ) :: Ctemp
         integer :: i, j, k, m, n, nz, jj, i1, j1, j2, nnz, nzero
-        logical               new
+        logical :: new
         real( kind=prec ) :: test, droptol, temp
         !
         !   test for size consistency
         if((A%nCol.NE.B%nCol).and.(A%nRow.NE.B%nRow)) then
-        stop "Error: RMATplusRMAT > matrix sizes incompatible"
+            call errStop( "RMATplusRMAT > matrix sizes incompatible" )
         endif
         !    tolerance for dropping small entries derived as sums
         if(present(tol)) then
         droptol = tol
         else
-        droptol = 0.0_dp
+        droptol = R_ZERO
         endif
 
         !    create Ctemp  with space for all possible entries
@@ -2586,7 +2564,7 @@ contains
         new = .TRUE.
         do j = A%row(i), A%row(i+1)-1
         if(B%col(k).eq.A%col(j)) then
-        !   add maatrix elements
+        !   add matrix elements
         new =.FALSE.
         jj = j1+j-A%row(i)
         temp = B%val(k)+A%val(j)
@@ -2604,7 +2582,7 @@ contains
         exit
         endif
         enddo
-
+        !
         if(new) then
         j2 = j2+1
         Ctemp%row(i) = Ctemp%row(i)+1
@@ -2615,7 +2593,7 @@ contains
         j1 = j2+1
         enddo
         !   Now Ctemp contains all sums, but possibly some zeros where
-        !    A and B values have cancelled out.   Also Ctemp%row contains
+        !    A and B values have canceled out.   Also Ctemp%row contains
         !      number of elements(including possible zeros), not limits
         !    of col and val arrays.   So clean up Ctemp, put results in C
         nz = sum(Ctemp%row(1:m)) - nzero
@@ -2642,66 +2620,75 @@ contains
         C%row(m+1) = nz
         call deall_spMatCSR(Ctemp)
         !
-        end subroutine RMATplusRMAT
-        !
-        ! sort the CSR col indices(and correspnding vals) in each row into
-        ! ascent order
-        ! reorder col indices like col:  4  1  3  2 -> 1  2  3  4
-        !                          val:  3  1  1 -1 -> 1 -1  1  2 
-        subroutine sort_spMatCSR_real(A)
+    end subroutine RMATplusRMAT
+    !
+    !> sort the CSR col indexes(and corresponding values) in each row into ascent order
+    !> reorder col indexes like col:  4  1  3  2 -> 1  2  3  4
+    !                          val:  3  1  1 -1 -> 1 -1  1  2 
+    subroutine sort_spMatCSR_real( A )
         implicit none
         !
         type( spMatCSR_Real ), intent( inout ) :: A
+        !
         integer :: i, j1, j2, k
         integer, allocatable, dimension(:) :: idx
         real( kind=prec ), allocatable, dimension(:) :: col
+        !
         do i = 2, A%nRow+1
-        j1=A%row(i-1)
-        j2=A%row(i)-1
-        allocate(col(j2-j1+1))
-        allocate(idx(j2-j1+1))
-        idx=(/(k, k=j1, j2, 1)/)
-        col=real(A%col(j1:j2))
-        call QSort(col, idx) 
-        A%col(j1:j2)=int(col)
-        A%val(j1:j2)=A%val(idx)
-        deallocate(col)
-        deallocate(idx)
+            j1=A%row(i-1)
+            j2=A%row(i)-1
+            allocate(col(j2-j1+1))
+            allocate(idx(j2-j1+1))
+            idx=(/(k, k=j1, j2, 1)/)
+            col=real(A%col(j1:j2))
+            call QSort(col, idx) 
+            A%col(j1:j2)=int(col)
+            A%val(j1:j2)=A%val(idx)
+            deallocate(col)
+            deallocate(idx)
         enddo
-    end subroutine
+        !
+    end subroutine sort_spMatCSR_real
     !
-    !> Sort the CSR col indices(and correspnding vals) in each row into ascent order
-    !> reorder col indices like col:  4  1  3  2 -> 1  2  3  4
+    !> Sort the CSR col indexes(and corresponding values) in each row into ascent order
+    !> reorder col indexes like col:  4  1  3  2 -> 1  2  3  4
     !>                          val:  3  1  1 -1 -> 1 -1  1  2
     !
-    subroutine sort_spMatCSR_Cmplx(A)
+    subroutine sort_spMatCSR_Cmplx( A )
         implicit none
         !
         type( spMatCSR_Cmplx ), intent( inout ) :: A
+        !
         integer :: i, j1, j2, k
         integer, allocatable, dimension(:) :: idx
         real( kind=prec ), allocatable, dimension(:) :: col
-        do i = 2, A%nRow+1
-        j1=A%row(i-1)
-        j2=A%row(i)-1
-        allocate(col(j2-j1+1))
-        allocate(idx(j2-j1+1))
-        idx=(/(k, k=j1, j2, 1)/)
-        col=real(A%col(j1:j2))
-        call QSort(col, idx) 
-        !write( *, * ) "current row is: ", i-1
-        !write( *, * ) A%col(j1:j2)
-        A%col(j1:j2)=int(col)
-        A%val(j1:j2)=A%val(idx)
-        deallocate(col)
-        deallocate(idx)
+        !
+        do i = 2, A%nRow + 1
+            !
+            j1 = A%row(i-1)
+            j2 = A%row(i)-1
+            !
+            allocate(col(j2-j1+1))
+            allocate(idx(j2-j1+1))
+            !
+            idx = (/(k, k=j1, j2, 1)/)
+            col = real(A%col(j1:j2))
+            !
+            call QSort( col, idx ) 
+            !
+            A%col(j1:j2)=int(col)
+            A%val(j1:j2)=A%val(idx)
+            !
+            deallocate( col, idx )
+            !
         enddo
-    end subroutine
+        !
+    end subroutine sort_spMatCSR_Cmplx
     !
-    !> Silly subroutine to convert the real CSR sp matrix into complex
+    !> Silly subroutine to convert the real CSR SP matrix into complex
     !> WARNING: for now this is only used to form PETSc mat structure
     !>
-    !> this assumes the matrix indices starts from ZERO instead of ONE
+    !> this assumes the matrix indexes starts from ZERO instead of ONE
     !> need to be modified to use in other circumstances
     !
     subroutine RMAT2CMAT( R, C )
@@ -2714,12 +2701,15 @@ contains
         !
         m = R%nRow
         n = R%nCol
-        nnz = R%row(R%nRow+1)
-        call create_spMatCSR_Cmplx(m, n, nnz, C)
+        nnz = R%row( R%nRow + 1 )
+        !
+        call create_spMatCSR_Cmplx( m, n, nnz, C )
+        !
         C%row = R%row
         C%col = R%col
         C%val = R%val
         !
-    end subroutine
+    end subroutine RMAT2CMAT
     !
 end module SpOpTools
+!

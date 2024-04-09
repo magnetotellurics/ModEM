@@ -20,7 +20,7 @@ contains
     !> Deletes control characters;
     !> Removes initial spaces.
     !
-    subroutine Compact (str)
+    subroutine compact (str)
         implicit none 
         !
         character(len = *) :: str
@@ -57,7 +57,7 @@ contains
         !
         str = adjustl (outstr)
         !
-    end subroutine Compact
+    end subroutine compact
     !
     !> PARSE
     !>
@@ -77,7 +77,7 @@ contains
         integer :: lenstr, isp, ich, k, i, na
         !
         strsav = str
-        call Compact (str)
+        call compact (str)
         na = size (args)
         do i = 1, na
             args(i) = ' '

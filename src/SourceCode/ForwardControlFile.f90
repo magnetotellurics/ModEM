@@ -59,7 +59,7 @@ contains
         !
         !write( *,* ) "Constructor ForwardControlFile_t"
         !
-        call Compact( fname )
+        call compact( fname )
         !
         open( unit = funit, file = fname, iostat = io_stat, status = "old" )
         !
@@ -133,10 +133,10 @@ contains
                         model_operator_type = MODELOP_SP2
                     case default
                         !
-                        call errStop( "ForwardControlFile_ctor > Wrong model_operator_type control, use [MF|SP|SP2]" )
+                        call errStop( "ForwardControlFile_ctor > Wrong model_operator_type, use [MF|SP|SP2]" )
                 end select
                 !
-                write( *, "( A35, A20)" ) "model_operator_type = ", model_operator_type
+                write( *, "( A35, A20 )" ) "model_operator_type = ", model_operator_type
                 !
             endif
             !
@@ -151,7 +151,7 @@ contains
                 !
                 do i = 1, p_nargs
                     !
-                    read( args(i), "(I8)" ) grid_layers(i)
+                    read( args(i), "( I8 )" ) grid_layers(i)
                     !
                 enddo
                 !
@@ -161,13 +161,13 @@ contains
                 grid_format = GRID_SG
             endif
             !
-            write( *, "( A35, A20)" ) "Grid format = ", grid_format
+            write( *, "( A35, A20 )" ) "Grid Format = ", grid_format
             !
             ! Grid reader
             if( allocated( self%grid_reader_type ) ) then
                 !
                 ! TO BE IMPLEMENTED
-                write( *, "( A35, A20)" ) "Grid Reader = ", self%grid_reader_type
+                write( *, "( A35, A20 )" ) "Grid Reader = ", self%grid_reader_type
                 !
             endif
             !
@@ -182,11 +182,9 @@ contains
                         solver_type = SLV_BICG
                     case default
                         !
-                        call errStop( "ForwardControlFile_ctor > Wrong solver control, use [QMR|BICG]" )
+                        call errStop( "ForwardControlFile_ctor > Wrong solver_type, use [QMR|BICG]" )
                     !
                 end select
-                !
-                !write( *, "( A40, A20)" ) "Solver = ", solver_type
                 !
             endif
             !
@@ -195,23 +193,19 @@ contains
                 !
                 select case( self%forward_solver_type )
                     !
-                    case( "FILE" )
-                        forward_solver_type = FWD_FILE
                     case( "IT" )
                         forward_solver_type = FWD_IT
                     case( "IT_DC" )
                         forward_solver_type = FWD_IT_DC
                     case default
                         !
-                        call errStop( "ForwardControlFile_ctor > Wrong forward_solver control, use [FILE|IT|IT_DC]" )
+                        call errStop( "ForwardControlFile_ctor > Wrong forward_solver_type, use [IT|IT_DC]" )
                     !
                 end select
                 !
-                !write( *, "( A40, A20)" ) "FWD Solver = ", forward_solver_type
-                !
             endif
             !
-            ! MT Source_type
+            ! MT source_type
             if( allocated( self%source_type_mt ) ) then
                 !
                 select case( self%source_type_mt )
@@ -222,15 +216,13 @@ contains
                         source_type_mt = SRC_MT_2D
                     case default
                         !
-                        call errStop( "ForwardControlFile_ctor > Wrong MT Source control, use [1D|2D]" )
+                        call errStop( "ForwardControlFile_ctor > Wrong source_type_mt, use [1D|2D]" )
                         !
                 end select
                 !
-                !write( *, "( A40, A20)" ) "MT Source = ", source_type_mt
-                !
             endif
             !
-            ! CSEM Source_type
+            ! CSEM source_type
             if( allocated( self%source_type_csem ) ) then
                 !
                 select case( self%source_type_csem )
@@ -241,11 +233,9 @@ contains
                         source_type_csem = SRC_CSEM_DIPOLE1D
                     case default
                         !
-                        call errStop( "ForwardControlFile_ctor > Wrong CSEM Source control, use [EM1D|Dipole1D]" )
+                        call errStop( "ForwardControlFile_ctor > Wrong source_type_csem, use [EM1D|Dipole1D]" )
                         !
                 end select
-                !
-                !write( *, "( A40, A20)" ) "CSEM Source = ", source_type_csem
                 !
             endif
             !
@@ -268,8 +258,6 @@ contains
                         !
                 end select
                 !
-                !write( *, "( A40, A20)" ) "Get 1D from = ", get_1d_from
-                !
             endif
             !
             ! Model method
@@ -283,11 +271,9 @@ contains
                         model_method = MM_METHOD_MIRROR
                     case default
                         !
-                        call errStop( "ForwardControlFile_ctor > Wrong model_method control, use [mirror|fixed height]" )
+                        call errStop( "ForwardControlFile_ctor > Wrong model_method, use [mirror|fixed height]" )
                     !
                 end select
-                !
-                !write( *, "( A40, A20)" ) "Model Method = ", model_method
                 !
             endif
             !
@@ -296,16 +282,12 @@ contains
                 !
                 read( self%model_n_air_layer, "(I8)" ) model_n_air_layer
                 !
-                !write( *, "( A40, I20)" ) "N Air Layers = ", model_n_air_layer
-                !
             endif
             !
             ! Model max height
             if( allocated( self%model_max_height ) ) then
                 !
                 read( self%model_max_height, "(f15.6)" ) model_max_height
-                !
-                !write( *, "( A40, f20.2)" ) "Model Max Height = ", model_max_height
                 !
             endif
             !
@@ -341,7 +323,7 @@ contains
                 !
                 read( self%max_divcor_iters, "(I8)" ) max_divcor_iters
                 !
-                write( *, "( A35, I20)" ) "Divcor Iters = ", max_divcor_iters
+                write( *, "( A35, I20)" ) "DivCorr Iters = ", max_divcor_iters
                 !
             endif
             !
@@ -350,9 +332,26 @@ contains
                 !
                 read( self%tolerance_divcor, * ) tolerance_divcor
                 !
-                write( *, "( A35, es20.2)" ) "Divcor Tolerance = ", tolerance_divcor
+                write( *, "( A35, es20.2)" ) "DivCorr Tolerance = ", tolerance_divcor
                 !
             endif
+            !
+            !> Performance tips for the users
+            select case( forward_solver_type )
+                !
+                case( FWD_IT )
+                    !
+                    if( model_operator_type .EQ. MODELOP_MF .OR. model_operator_type .EQ. MODELOP_SP ) then
+                        call warning( "Better to use forward_solver_type: IT_DC!" )
+                    endif
+                    !
+                case( FWD_IT_DC )
+                    !
+                    if( model_operator_type .EQ. MODELOP_SP2 ) then
+                        call warning( "Better to use forward_solver_type: IT!" )
+                    endif
+                    !
+            end select
             !
             write( *, * ) ""
             !

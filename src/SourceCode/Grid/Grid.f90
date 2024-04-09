@@ -15,8 +15,8 @@ module Grid
     real( kind=prec ) :: model_max_height
     !
     character(:), allocatable :: grid_format
-    character( len=12 ), parameter :: GRID_SG = "StandardGrid"
-    character( len=19 ), parameter :: GRID_MR = "MultiresolutionGrid"
+    character( len=13 ), parameter :: GRID_SG = "Standard Grid"
+    character( len=21 ), parameter :: GRID_MR = "Multi-Resolution Grid"
     !
     character(:), allocatable :: model_method
     character( len=12 ), parameter :: MM_METHOD_FIXED_H = "fixed height"

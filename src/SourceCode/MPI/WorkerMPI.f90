@@ -82,7 +82,7 @@ contains
         !
         int_time = int( t_finish - t_start )
         !
-        write( *, "( a25, i5, a50 )" )  "Worker", mpi_rank, " finished: "//getLiteralTime( int_time )
+        !write( *, "( a25, i5, a50 )" )  "Worker", mpi_rank, " finished: "//getLiteralTime( int_time )
         !
         call MPI_Finalize( ierr )
         !
@@ -167,8 +167,9 @@ contains
     subroutine workerJMult()
         implicit none
         !
-        class( Transmitter_t ), pointer :: Tx
         type( DataGroupTx_t ) :: tx_data
+        class( Transmitter_t ), pointer :: Tx
+        class( Source_t ), allocatable :: source
         !
         call receiveData( tx_data, master_id )
         !
@@ -177,8 +178,10 @@ contains
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
+        allocate( source, source = Tx%PMult( sigma, dsigma, model_operator ) )
+        !
         !> Switch Transmitter's source to SourceAdjoint from PMult
-        call Tx%setSource( Tx%PMult( sigma, dsigma, model_operator ) )
+        call Tx%setSource( source )
         !
         !> Solve e_sens with the new Source
         call Tx%solve
@@ -333,9 +336,20 @@ contains
                 !
             case( "" )
                 !
-                call warning( "setTxForwardSolver > Forward Solver type not provided, using IT_DC." )
-                !
-                allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
+                !> Set the best forward_solver_type according to the model_operator_type.
+                if( model_operator_type .EQ. MODELOP_MF .OR. model_operator_type .EQ. MODELOP_SP ) then
+                    !
+                    call warning( "Parameter forward_solver_type not provided, using IT_DC." )
+                    !
+                    allocate( forward_solver, source = ForwardSolver_IT_DC_t( model_operator, solver_type ) )
+                    !
+                elseif( model_operator_type .EQ. MODELOP_SP2 ) then
+                    !
+                    call warning( "Parameter forward_solver_type not provided, using IT." )
+                    !
+                    allocate( forward_solver, source = ForwardSolver_IT_t( model_operator, solver_type ) )
+                    !
+                endif
                 !
             case default
                 !

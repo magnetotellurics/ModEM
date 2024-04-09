@@ -178,6 +178,8 @@ contains
                 !
                 d = model_operator%VomegaMuSig(iz)
                 !
+                deallocate( ix, iy, iz )
+                !
                 call CSR_R2Cdiag( CCxx, d, Axx )
                 !
                 call ilu0_Cmplx( Axx, Lblk(3), Ublk(3) )
@@ -185,41 +187,24 @@ contains
                 !
                 deallocate(d)
                 !
-                write( *, * ) "setPreConditioner_CC_SP_SG 1:"
-                !
                 ! Could merge into a single LT and UT matrix, or solve systems individually
                 call BlkDiag_Cmplx( Lblk, self%L )
                 call BlkDiag_Cmplx( Ublk, self%U )
                 !
-                write( *, * ) "setPreConditioner_CC_SP_SG 2A:", self%L%nRow, self%L%nCol
-                !
                 call CMATtrans( self%L, self%LH )
                 !
-                write( *, * ) "setPreConditioner_CC_SP_SG 2B:", self%LH%nRow, self%LH%nCol, self%U%nRow, self%U%nCol
-                !
+                !> Running MPI with 13th Gen Intel processors, CSEM with SP1/SP2 crashes here !!!!
                 call CMATtrans( self%U, self%UH )
-                !
-                write( *, * ) "setPreConditioner_CC_SP_SG 3o"
-                !
-                write( *, * ) "setPreConditioner_CC_SP_SG 3:", self%UH%nRow, self%UH%nCol
-                !
-                deallocate( ix, iy, iz )
                 !
                 call deall_spMatCSR( CCxx )
                 call deall_spMatCSR( Axx )
-                !
-                write( *, * ) "setPreConditioner_CC_SP_SG 4:"
                 !
                 do j = 1, 3
                     call deall_spMatCSR( Lblk(j) )
                     call deall_spMatCSR( Ublk(j) )
                 enddo
                 !
-                write( *, * ) "setPreConditioner_CC_SP_SG 5:"
-                !
                 deallocate( Lblk, Ublk )
-                !
-                write( *, * ) "setPreConditioner_CC_SP_SG 6:"
                 !
             class default
                 call errStop( "setPreConditioner_CC_SP_SG: Unclassified ModelOperator" )
@@ -331,4 +316,4 @@ contains
     end subroutine LUSolvePreConditioner_CC_SP_SG
     !
 end module PreConditioner_CC_SP_SG
-
+!

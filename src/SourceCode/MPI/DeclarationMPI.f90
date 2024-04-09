@@ -5,13 +5,6 @@ module DeclarationMPI
     !
     use CoreComponents
     !
-    !include 'mpif.h'
-    use mpi
-    !use mpi_f08
-    !
-    !> MPI variables
-    integer :: main_comm, mpi_rank
-    !
     integer :: tag = 2023, master_id = 0
     !
     !> Flags for Polymorphic Objects
@@ -138,11 +131,11 @@ contains
         !
         integer :: basic_comp_size
         !
-        integer :: i, last_size, nbytes(12)
+        integer :: i, n_rx, last_size, nbytes(12)
         !
         basic_comp_size = 1
         !
-        write( *, "(A45)" ) "Component's memory in bytes:"
+        write( *, "(A44)" ) "MPI Worker's Memory Budget:"
         !
         call MPI_PACK_SIZE( 16, MPI_INTEGER, main_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, main_comm, nbytes(2), ierr )
@@ -159,7 +152,7 @@ contains
         !
         basic_comp_size = basic_comp_size + allocateGridBuffer( main_grid, .TRUE. )
         !
-        write( *, "(A45, i8)" ) "Main Grid = ", basic_comp_size
+        write( *, "( A45, i8 )" ) "Main Grid = ", basic_comp_size
         !
         last_size = basic_comp_size
         !
@@ -169,23 +162,27 @@ contains
             !
         enddo
         !
-        write( *, "(A45, i8)" ) "Transmitters Array = ", basic_comp_size - last_size
+        write( *, "( A45, i8 )" ) "Transmitters = ", basic_comp_size - last_size
         !
         last_size = basic_comp_size
         !
-        do i = 1, size( receivers )
+        n_rx = size( receivers )
+        !
+        do i = 1, n_rx
             !
             basic_comp_size = basic_comp_size + allocateReceiverBuffer( getReceiver(i) )
             !
         enddo
         !
-        write( *, "(A45, i8)" ) "Receivers Array = ", basic_comp_size - last_size
+        write( *, "( A45, i8 )" ) "Receivers = ", basic_comp_size - last_size
         !
         do i = 1, size( nbytes )
              basic_comp_size = basic_comp_size + nbytes(i)
         enddo
         !
-        write( *, "(A45, i8)" ) "Total = ", basic_comp_size
+        write( *, "( A45, i8, A3, i3, A7, f8.2, A3 )" ) "Total = ", basic_comp_size, " * ", ( mpi_size - 1 ), " TXs = ", real( ( basic_comp_size * ( mpi_size - 1 ) ) / 1048576.0 ), " MB"
+        !
+        write( *, * ) ""
         !
         if( allocated( basic_comp_buffer ) ) deallocate( basic_comp_buffer )
         !
@@ -2514,8 +2511,8 @@ contains
         type( cVectorSparse3D_SG_t ), intent( in ):: sp_vector
         !
         integer :: i, nbytes(8), vector_size_bytes
-		!
-		vector_size_bytes = 1
+        !
+        vector_size_bytes = 1
         !
         call MPI_PACK_SIZE( 1, MPI_LOGICAL, main_comm, nbytes(1), ierr )
         !

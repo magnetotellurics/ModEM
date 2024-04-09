@@ -5,7 +5,17 @@
 !>     College of Earth, Ocean and Atmospheric Sciences.
 !
 module Constants
-    implicit none
+    !
+#ifdef MPI
+    !
+    !include 'mpif.h'
+    use mpi
+    !use mpi_f08
+    !
+    !> MPI variables
+    integer :: main_comm, mpi_rank, mpi_size, error_code, ierr
+    !
+#endif
     !
     !> Program Version
     character( len=5 ), parameter :: VERSION = "2.0.0"

@@ -51,7 +51,7 @@ contains
         !
         self%file_name = fname
         !
-        call Compact( fname )
+        call compact( fname )
         !
         open( unit = funit, file = fname, iostat = io_stat, status = "old" )
         !
@@ -203,7 +203,7 @@ contains
                     header_line_counter = 0
                     !
                 else
-                     !# Synthetic 3D MT data written in Matlab
+                     !# Synthetic 3D MT data written in MatLab
                      !# Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
                      !> Full_Impedance
                      !> exp(-i\omega t)
@@ -212,7 +212,8 @@ contains
                      !> 0.000 0.000
                      !> 4 2
                      header_line_counter = header_line_counter + 1
-                     selectcase( header_line_counter )
+                     !
+                     select case( header_line_counter )
                          !
                          !> Main Header, Data Fields
                          case( 1, 2 )
@@ -251,7 +252,7 @@ contains
                              read( args(3), * ) n_rx
                              !
                              header_counter = header_counter + 1
-                             write( *, "(A16, I4, A5, A20, A2, A15, A3, I5, A9, I5, A5)" ) "Header", header_counter, " -> (", trim(actual_type), ", ", trim(units_in_file( size( units_in_file ) )%str), "): ", n_tx, " Txs and ", n_rx, " Rxs."
+                             write( *, "( A16, I4, A3, A36, A3, I5, A5, I5, A4 )" ) "Header", header_counter, " -> ", trim( actual_type )//" "//trim( units_in_file( size( units_in_file ) )%str ), " : ", n_tx, " TXs ", n_rx, " RXs"
                              !
                              self%n_rx = self%n_rx + n_rx
                              self%n_tx = self%n_tx + n_tx
@@ -271,10 +272,10 @@ contains
             ! Verbose
             !write( *, * ) "          ", trim( self%units ), " to ", trim( units_in_file ), " => ", self%SI_factor
             !
-            if( mt_counter > 0 )   write( *, "(A17, I4, A12)" ) "Readed ", mt_counter,   " MT Entries."
-            if( csem_counter > 0 ) write( *, "(A17, I4, A13)" ) "Readed ", csem_counter, " CSEM Entries"
+            if( mt_counter > 0 ) write( *, "( A15, I4, A11 )" ) "Read ", mt_counter, " MT Entries"
+            if( csem_counter > 0 ) write( *, "( A15, I4, A13 )" ) "Read ", csem_counter, " CSEM Entries"
             !
-            call self%contructMeasuredDataGroupTxArray()
+            call self%contructMeasuredDataGroupTxArray
             !
         else
             !

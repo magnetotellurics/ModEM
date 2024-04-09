@@ -7,9 +7,9 @@ module ModelOperator
     use ModelParameter
     !
     character(:), allocatable :: model_operator_type
-    character( len=10 ), parameter :: MODELOP_MF = "MatrixFree"
-    character( len=12 ), parameter :: MODELOP_SP = "SparseMatrix"
-    character( len=14 ), parameter :: MODELOP_SP2 = "SparseMatrixV2"
+    character( len=11 ), parameter :: MODELOP_MF = "Matrix Free"
+    character( len=13 ), parameter :: MODELOP_SP = "Sparse Matrix"
+    character( len=16 ), parameter :: MODELOP_SP2 = "Sparse Matrix V2"
     !
     type, abstract :: ModelOperator_t
         !
@@ -225,3 +225,4 @@ contains
     end subroutine baseDealloc_ModelOperator
     !
 end module ModelOperator
+!
