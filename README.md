@@ -1,20 +1,20 @@
 
 ModEM_OO - User Guide | Package Instructions - 04/09/2024
 
-    ModEM (Modular Electromagnetic) is a program for inversion of 3D EM datasets,
-    originally developed at Oregon State University using Fortran 95,
+    ModEM (Modular Electromagnetic) is a software for inversion of 3D EM datasets,
+    originally developed at Oregon State University using Fortran 90,
     with numerous extensions of the code by various collaborators over the past decade.
     In order to put together the best approaches developed since its conception,
     into a leaner and more easily extended/maintained code, a new ModEM version 
     has been implemented, using Fortran 2003 Object Oriented features.
-    Result of a partnership project between Observatório Nacional and Shell-Brazil.
-    The new version (referred to as ModEM_OO) implements new capabilities including:
+    Result of a partnership project between Observatório Nacional and Shell-Brasil,
+    this version (referred to as ModEM_OO) implements new capabilities including:
 
         - Controlled Source Electromagnetic (CSEM) datasets.
         - Anisotropic models with Vertical Transverse Isotropy (VTI).
         - The Multi-Resolution (MR) Grids described in Cherevotova et al. (2018).
 
-    The code is of course not nearly as throughly tested as the stable ModEM code previously
+    The code is of course not nearly as throughly tested as the stable Mod3DMT code previously
     distributed to academic users. Additional work will be required to improved efficiency
     and parallelization. Furthermore, due to copyright issues we do not provide the 1D solver
     required for CSEM (primary field computations). Further details on making use of CSEM
@@ -177,7 +177,7 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
                 - This job results one Data File, named 'jmhat.dat',
                   formatted as the inputed one, containing jMult calculations ????
 
-                2.2.1.1. jMult supported options.
+                2.2.3.1. jMult supported options.
 
                     - More flagged file paths can be used in a jMult command line:
 
@@ -196,7 +196,7 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
                 - Outputting a single Model File, named 'dsigma.rho',
                   in the same dimensions as the inputed one, containing ???? calculated by jMult_T.
 
-                2.2.1.1. jMult_T supported options.
+                2.2.4.1. jMult_T supported options.
 
                     - Other paths preceded by flags fit on a jMult_T execution line:
 
@@ -218,7 +218,7 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
 
                     - Making it possible to edit core features that control FWD, such as:
 
-                        model_operator_type [MF|SP|SP2] : MF
+                        model_operator_type [MF|SP|SP2] : MF 
                         grid_format : 0,a,1,b,2,c
                         model_method [mirror|fixed height] : fixed height
                         model_n_air_layer [10]             : 10
@@ -236,7 +236,7 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
 
                 2.2.5.2. Inversion Control File - 'control.inv'
 
-                    - Enabling the change of key parameters that govern INV iterations, such as:
+                    - Allowing modification of values of the variables that govern INV iterations, such as:
 
                         inversion_type [DCG|NLCG]       : NLCG
                         joint_type [Unweighted|TxBased] : Unweighted
@@ -387,11 +387,14 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
 
             https://on.multiphysics.gitlab.io/modem-oo/
 
-        4.5. Contacts.
+        4.5. GitLab releases of packages at:
+
+            https://gitlab.com/on.multiphysics/modem-oo/-/releases/
+
+        4.6. Contacts.
 
             sergio@on.br                   - Sergio Fontes    - Project's Coordinator.
             
             egbert@coas.oregonstate.edu    - Gary Egbert      - Creator of ModEM.
             
             paulowerdt@on.br               - Paulo Werdt      - ModEM_OO Developer.
-

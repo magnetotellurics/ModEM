@@ -28,7 +28,7 @@ module Inversion
             !
     end type Inversion_t
     !
-    public :: printLog, printFuncPlot, printInvPlot
+    public :: printLog, printFuncPlot
     !
     abstract interface
         !

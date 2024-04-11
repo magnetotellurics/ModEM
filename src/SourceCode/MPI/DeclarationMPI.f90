@@ -131,7 +131,7 @@ contains
         !
         integer :: basic_comp_size
         !
-        integer :: i, n_rx, last_size, nbytes(12)
+        integer :: i, n_rx, last_size, nbytes(13)
         !
         basic_comp_size = 1
         !
@@ -149,6 +149,7 @@ contains
         call MPI_PACK_SIZE( len( inversion_type ), MPI_CHARACTER, main_comm, nbytes(10), ierr )
         call MPI_PACK_SIZE( len( joint_type ), MPI_CHARACTER, main_comm, nbytes(11), ierr )
         call MPI_PACK_SIZE( len( e_solution_file_name ), MPI_CHARACTER, main_comm, nbytes(12), ierr )
+        call MPI_PACK_SIZE( 15, MPI_CHARACTER, main_comm, nbytes(13), ierr )
         !
         basic_comp_size = basic_comp_size + allocateGridBuffer( main_grid, .TRUE. )
         !
@@ -237,6 +238,7 @@ contains
         call MPI_PACK( inversion_type, len( inversion_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( joint_type, len( joint_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( e_solution_file_name, len( e_solution_file_name ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
+        call MPI_PACK( run_tag, 15, MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         !
         call packGridBuffer( main_grid, basic_comp_buffer, job_info%basic_comp_size, index )
         !
@@ -321,6 +323,8 @@ contains
         !
         allocate( character( n_e_solution_file_name ) :: e_solution_file_name )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, e_solution_file_name, n_e_solution_file_name, MPI_CHARACTER, main_comm, ierr )
+        !
+        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, run_tag, 15, MPI_CHARACTER, main_comm, ierr )
         !
         ! Grid
         call unpackGridBuffer( main_grid, basic_comp_buffer, job_info%basic_comp_size, index )

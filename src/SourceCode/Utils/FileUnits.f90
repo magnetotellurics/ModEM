@@ -1,6 +1,5 @@
 !
-!> defines I/O file unit information, used throughout the code
-!> 
+!> Defines I/O file unit information, used throughout the code
 !
 module FileUnits
     !
@@ -39,3 +38,4 @@ module FileUnits
     integer, parameter :: ioNodeInfo = 16
     !
 end module FileUnits
+!

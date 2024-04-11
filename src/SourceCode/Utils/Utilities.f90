@@ -2,9 +2,14 @@ module Utilities
     !
     use Constants
     use FileUnits
-    !use DeclarationMPI
     !
     integer :: warning_counter = 0
+    !
+    character( len=200 ) :: str_msg
+    !
+    character( len=15 ) :: run_tag
+    !
+    character( len=50 ) :: outdir_name
     !
     public :: clean, minNode, maxNode
     public :: errStop, warning, writeWarning
@@ -73,20 +78,69 @@ contains
         integer :: ios
         !
         open( unit = ioWarning, &
-        file = "Warnings.log", &
+        file = "warnings_"//run_tag//".log", &
         status = "unknown", position = "append", iostat = ios )
         !
         if( ios == 0 ) then
             !
-            write( ioWarning, * ) warning_counter
-            write( ioWarning, * ) "    -"//trim( msg )
-            write( ioWarning, * )
+            write( ioWarning, * ) warning_counter, ":", trim( msg )
+            !
+            close( ioWarning )
             !
         else
-            call errStop( "writeWarning > cant open [Warnings.log]" )
+            call errStop( "writeWarning > cant open [warnings_"//run_tag//".log]" )
         endif
         !
     end subroutine writeWarning
+    !
+    !> Return the number of lines at warning file
+    !
+    subroutine printWarningBrief()
+        implicit none
+        !
+        integer :: ios, counter
+        logical :: exist_warnings
+        character(100) :: line_text
+        !
+        counter = 0
+        !
+        inquire( unit = ioWarning, exist = exist_warnings )
+        !
+        if( exist_warnings ) then
+            !
+            open( unit = ioWarning, file = "warnings_"//run_tag//".log", iostat = ios )
+            !
+            if( ios == 0 ) then
+                !
+                do
+                    !
+                    read( ioWarning, "(A)", iostat = ios ) line_text
+                    !
+                    if ( ios /= 0 ) exit
+                    !
+                    counter = counter + 1
+                    !
+                end do
+                !
+                close( ioWarning )
+                !
+                write( str_msg, "( I4, A49 )" ) counter, " entries listed in [warnings_"//run_tag//".log]"
+                !
+                write( *, * ) ""
+                !
+                write( *, * ) achar(27)//"[91m# Warning:"//achar(27)//"[0m "//str_msg
+                !
+            else
+                call errStop( "printWarningBrief > cant open [warnings_"//run_tag//".log]." )
+            endif
+            !
+        else
+            !
+            write( *, * )
+            !
+        endif
+        !
+    end subroutine printWarningBrief
     !
     !> Timer utilities: set timer
     !

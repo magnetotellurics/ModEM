@@ -38,14 +38,17 @@ contains
     subroutine runProgram()
         implicit none
         !
-        character( len=20 ) :: str_msg
         real( kind=prec ) :: t_start, t_finish
+        character(8) :: str_date
+        character(6) :: str_time
         integer :: int_time
-        !
-        call date_and_time( str_date, str_time )
         !
         !> Start runtime countdown
         call cpu_time( t_start )
+        !
+        !> Create date_time running id tag
+        call date_and_time( str_date, str_time )
+        run_tag = str_date//"_"//str_time
         !
         modem_job = "unknown"
         !
@@ -56,7 +59,8 @@ contains
         call handleArguments
         !
         write( *, * )
-        write( *, * ) "Start ModEM at "//str_date//"_"//str_time//"."
+        write( *, * ) "Start ModEM_"//VERSION
+        write( *, * ) "     - runtime id: "//run_tag
         write( *, * )
         !
         !> If it was passed by argument,
@@ -81,15 +85,7 @@ contains
         write( *, * )
         write( *, * ) "Finish ModEM: "//getLiteralTime( int_time )
         !
-        if( warning_counter .GT. 0 ) then
-            !
-            write( str_msg, "(I2)") warning_counter
-            !
-            call warning( str_msg )
-            !
-        endif
-        !
-        write( *, * )
+        call printWarningBrief
         !
     end subroutine runProgram
     !

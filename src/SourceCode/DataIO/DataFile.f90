@@ -319,34 +319,6 @@ contains
         !
     end subroutine loadReceiversAndTransmitters
     !
-    !> Procedure getLineNumber
-    !> Return the number of lines of a given file
-    !
-    function getLineNumber( funit ) result( line_counter )
-        implicit none
-        !
-        integer, intent( in ) :: funit
-        !
-        integer :: line_counter
-        character(80) :: line_text
-        !
-        line_counter = 0
-        !
-        rewind( funit )
-        !
-        do
-            read( funit, "(a)", END = 10 ) line_text
-            line_text = adjustl( line_text )
-            if( index( line_text, "#" ) .EQ. 0 ) then
-                !
-                line_counter = line_counter + 1
-            endif
-        enddo
-        !
-10      return
-        !
-    end function getLineNumber
-    !
     !> Returns a pointer, allowing modifications directly to a DataGroup at a given index
     !
     function getDataByIndex( data_array, i_data ) result( data_group )

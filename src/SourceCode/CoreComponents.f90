@@ -35,11 +35,6 @@ module CoreComponents
     use DataFileStandard
     !
     !> Program Control Variables
-    character( len=100 ) :: str_msg
-    !
-    character(8) :: str_date
-    character(6) :: str_time
-    character(50) :: outdir_name
     !
     character(:), allocatable :: modem_job
     !
@@ -583,11 +578,11 @@ contains
                 !
                 case( DCG )
                     !
-                    write( outdir_name, "(a11, a8, a1, a6)" ) "DCG_Output_", str_date, "_", str_time
+                    write( outdir_name, * ) "DCG_Output_"//run_tag
                     !
                 case( NLCG )
                     !
-                    write( outdir_name, "(a12, a8, a1, a6)" ) "NLCG_Output_", str_date, "_", str_time
+                    write( outdir_name, * ) "NLCG_Output_"//run_tag
                     !
                 case default
                     !
@@ -779,42 +774,48 @@ contains
         !
         if( ios == 0 ) then
             !
-            write( ioFwdTmp, "(A51)" ) "###################################################"
-            write( ioFwdTmp, "(A51)" ) "# ModEM Forward Modeling Control File Template    #"
-            write( ioFwdTmp, "(A51)" ) "#     Here are all supported editable parameters  #"
-            write( ioFwdTmp, "(A51)" ) "#     Comment or remove to use its default value  #"
-            write( ioFwdTmp, "(A69)" ) "##################################################-id:"//str_date//"_"//str_time
+            write( ioFwdTmp, "(A56)" ) "########################################################"
+            write( ioFwdTmp, "(A56)" ) "# ModEM_"//VERSION//" - Forward Modeling Control File Template #"
+            write( ioFwdTmp, "(A56)" ) "#    All supported editable parameters are listed here #"
+            write( ioFwdTmp, "(A56)" ) "#    Remove or comment any, to use its default value   #"
+            write( ioFwdTmp, "(A74)" ) "#######################################################-id:"//run_tag
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A20)" ) "# <Field parameters>"
+            write( ioFwdTmp, "(A27)" ) "### <Model/Grid Parameters>"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A58)" ) "## Matrix Free or Sparse Matrices methods for LSE solving."
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A36)" ) "model_operator_type [MF|SP|SP2] : MF"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A19)" ) "# <Grid parameters>"
-            write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A85)" ) "#For MR Grid => Uncomment grid_format line, give to it an array of 2*nLayers in size,"
-            write( ioFwdTmp, "(A85)" ) "#               containing integers pairs (Coarse Factor, Depth) separated by commas."
-            write( ioFwdTmp, "(A85)" ) "#                  Ex.: 0,a,1,b,2,c -- Sets 3 Layers, with a, b, c respective Depths,"
-            write( ioFwdTmp, "(A85)" ) "#                                      and Coarse Factors of 0, 1 and 2 respectively."
-            write( ioFwdTmp, "(A55)" ) "#For SG Grid => Remove or comment out grid_format line."
+            write( ioFwdTmp, "(A87)" ) "## For MR Grid => Uncomment grid_format line, give to it an array of 2*nGroups in size,"
+            write( ioFwdTmp, "(A87)" ) "##                containing integers pairs (Coarse Factor, Depth) separated by commas."
+            write( ioFwdTmp, "(A87)" ) "##                    Ex.: 0,a,1,b,2,c - Define 3 groups, with a, b, c layers of Depth,"
+            write( ioFwdTmp, "(A87)" ) "##                                       and Coarse Factors of 0, 1 and 2 respectively."
+            write( ioFwdTmp, "(A53)" ) "## For SG Grid => Remove or comment grid_format line."
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A26)" ) "#grid_format : 0,a,1,b,2,c"
-            write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A20)" ) "# <Model parameters>"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A49)" ) "model_method [mirror|fixed height] : fixed height"
             write( ioFwdTmp, "(A39)" ) "model_n_air_layer [10]             : 10"
             write( ioFwdTmp, "(A41)" ) "model_max_height [200.]            : 200."
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A21)" ) "# <Source parameters>"
+            write( ioFwdTmp, "(A23)" ) "### <Source Parameters>"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A46)" ) "## MT/CSEM Primary Fields acquisition methods."
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A72)" ) "source_type_mt [1D|2D]                                              : 1D"
             write( ioFwdTmp, "(A74)" ) "source_type_csem [EM1D|Dipole1D]                                    : EM1D"
             write( ioFwdTmp, "(A84)" ) "get_1d_from [Fixed_Value|Geometric_Mean|Mean_around_Tx|Tx_Position] : Geometric_Mean"
             write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A21)" ) "# <Solver parameters>"
+            write( ioFwdTmp, "(A23)" ) "### <Solver Parameters>"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A59)" ) "## Quasi-Minimal Residual or Bi-Conjugate Gradient solvers."
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A37)" ) "solver_type [QMR|BICG]         : BICG"
+            write( ioFwdTmp, "(A1)" )  "#"
+            write( ioFwdTmp, "(A64)" ) "## Iterative FWD Solvers - with or without Divergence Correction."
+            write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A38)" ) "forward_solver_type [IT|IT_DC] : IT_DC"
+            write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A35)" ) "max_solver_iters [80]          : 80"
             write( ioFwdTmp, "(A35)" ) "max_solver_calls [20]          : 20"
             write( ioFwdTmp, "(A36)" ) "max_divcor_iters [100]         : 100"
@@ -844,11 +845,12 @@ contains
         !
         if( ios == 0 ) then
             !
-            write( ioInvTmp, "(A51)" ) "###################################################"
-            write( ioInvTmp, "(A51)" ) "# ModEM Inversion Control File Template           #"
-            write( ioInvTmp, "(A51)" ) "#     Here are all supported editable parameters  #"
-            write( ioInvTmp, "(A51)" ) "#     Comment or remove to use its default value  #"
-            write( ioInvTmp, "(A69)" ) "##################################################-id:"//str_date//"_"//str_time
+            !
+            write( ioInvTmp, "(A56)" ) "########################################################"
+            write( ioInvTmp, "(A56)" ) "#  ModEM_"//VERSION//" - Inversion Control File Template       #"
+            write( ioInvTmp, "(A56)" ) "#    All supported editable parameters are listed here #"
+            write( ioInvTmp, "(A56)" ) "#    Remove or comment any, to use its default value   #"
+            write( ioInvTmp, "(A74)" ) "#######################################################-id:"//run_tag
             write( ioInvTmp, "(A1)" )  "#"
             write( ioInvTmp, "(A38)" ) "inversion_type [DCG|NLCG]       : NLCG"
             write( ioInvTmp, "(A44)" ) "joint_type [Unweighted|TxBased] : Unweighted"
