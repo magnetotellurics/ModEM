@@ -1,6 +1,5 @@
-#04/09/2024
-#
-ModEM_OO-1.0.0 - User Guide | Package Instructions
+
+ModEM_OO - User Guide | Package Instructions - 04/09/2024
 
     ModEM (Modular Electromagnetic) is a program for inversion of 3D EM datasets,
     originally developed at Oregon State University using Fortran 95,
@@ -8,7 +7,8 @@ ModEM_OO-1.0.0 - User Guide | Package Instructions
     In order to put together the best approaches developed since its conception,
     into a leaner and more easily extended/maintained code, a new ModEM version 
     has been implemented, using Fortran 2003 Object Oriented features.
-    The new version (referred to as MOdEM_OO) implements new capabilities including:
+    Result of a partnership project between Observatório Nacional and Shell-Brazil.
+    The new version (referred to as ModEM_OO) implements new capabilities including:
 
         - Controlled Source Electromagnetic (CSEM) datasets.
         - Anisotropic models with Vertical Transverse Isotropy (VTI).
@@ -341,18 +341,15 @@ ModEM_OO-1.0.0 - User Guide | Package Instructions
 
                   - G      = number of layer groups, into which the original grid will be subdivided.
                   - factor = coarse intensity, groups are coarsened exponentially according to 2** factor,
-                               where 0 represents the highest resolution. 
+                             where 0 represents the highest resolution. 
                   - depth  = amount of layers in a group.
 
                   For instance:
 
                       grid_format : 0,a,1,b,2,c
 
-                  - Sets 3 layer groups, with a, b, c layers of depth and coarseness factors of 0, 1 and 2, respectively,
-                    corresponding to cells of the highest resolution (0), and with resolutions reduced by factors of
-                    2 and 4 respectively (coarseness 1, 2)
-
-                  And:
+                  - Sets 3 layer groups, with a, b, c layers of depth
+                    and coarseness factors of 0, 1 and 2, respectively.
 
                       grid_format : 0,10,1,10,0,10,2,10
 
@@ -390,9 +387,11 @@ ModEM_OO-1.0.0 - User Guide | Package Instructions
 
             https://on.multiphysics.gitlab.io/modem-oo/
 
-        4.5. Contacts ????
+        4.5. Contacts.
 
-            paulowerdt@on.br - developer
-            egbert@coas.oregonstate.edu
+            sergio@on.br                   - Sergio Fontes    - Project's Coordinator.
+            
+            egbert@coas.oregonstate.edu    - Gary Egbert      - Creator of ModEM.
+            
+            paulowerdt@on.br               - Paulo Werdt      - ModEM_OO Developer.
 
-            Maybe Sergio ????
