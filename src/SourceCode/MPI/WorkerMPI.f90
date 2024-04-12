@@ -93,14 +93,9 @@ contains
     subroutine workerSolve()
         implicit none
         !
-        class( Transmitter_t ), pointer :: Tx
+        call setTxForwardSolver( transmitters( job_info%i_tx ) )
         !
-        !> Point to the transmitter specified by the master process 
-        Tx => getTransmitter( job_info%i_tx )
-        !
-        call setTxForwardSolver( Tx )
-        !
-        call solveTx( sigma, Tx )
+        call solveTx( sigma, transmitters( job_info%i_tx ) )
         !
         !> Send job done to master
         job_info%job_name = job_done
@@ -118,29 +113,27 @@ contains
     subroutine workerForwardModelling()
         implicit none
         !
-        class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
         type( DataGroupTx_t ) :: tx_data
         type( DataGroup_t ) :: data_group
-        integer :: i_rx
+        integer :: i_tx, i_rx
         !
         call receiveData( tx_data, master_id )
         !
-        !> Point to the transmitter specified by the master process 
-        Tx => getTransmitter( job_info%i_tx )
+		i_tx = job_info%i_tx
+		!
+        transmitters( i_tx )%i_sol = job_info%sol_index
         !
-        Tx%i_sol = job_info%sol_index
+        call setTxForwardSolver( transmitters( i_tx ) )
         !
-        call setTxForwardSolver( Tx )
-        !
-        call solveTx( sigma, Tx )
+        call solveTx( sigma, transmitters( i_tx ) )
         !
         !> Loop for each Receiver related to the Transmitter
-        do i_rx = 1, size( Tx%receiver_indexes )
+        do i_rx = 1, size( transmitters( i_tx )%receiver_indexes )
             !
-            Rx => getReceiver( Tx%receiver_indexes( i_rx ) )
+            Rx => getReceiver( transmitters( i_tx )%receiver_indexes( i_rx ) )
             !
-            call Rx%predictedData( Tx, data_group )
+            call Rx%predictedData( transmitters( i_tx ), data_group )
             !
             call tx_data%setValues( data_group )
             !
@@ -167,24 +160,23 @@ contains
     subroutine workerJMult()
         implicit none
         !
+		integer :: i_tx
         type( DataGroupTx_t ) :: tx_data
-        class( Transmitter_t ), pointer :: Tx
         class( Source_t ), allocatable :: source
         !
         call receiveData( tx_data, master_id )
         !
-        !> Point to the transmitter specified by the master process 
-        Tx => getTransmitter( job_info%i_tx )
+		i_tx = job_info%i_tx
+		!
+        call transmitters( i_tx )%forward_solver%setFrequency( sigma, transmitters( i_tx )%period )
         !
-        call Tx%forward_solver%setFrequency( sigma, Tx%period )
-        !
-        allocate( source, source = Tx%PMult( sigma, dsigma, model_operator ) )
+        allocate( source, source = transmitters( i_tx )%PMult( sigma, dsigma, model_operator ) )
         !
         !> Switch Transmitter's source to SourceAdjoint from PMult
-        call Tx%setSource( source )
+        call transmitters( i_tx )%setSource( source )
         !
         !> Solve e_sens with the new Source
-        call Tx%solve
+        call transmitters( i_tx )%solve
         !
         !> serialJMult for the same Tx
         call JMult_Tx( tx_data )
@@ -192,7 +184,7 @@ contains
         !> Send job done and tx_data to master process
         job_info%job_name = job_done
         job_info%worker_rank = mpi_rank
-        job_info%i_tx = Tx%i_tx
+        job_info%i_tx = i_tx
         job_info%data_size = allocateDataBuffer( tx_data )
         !
         call sendTo( master_id )
@@ -214,16 +206,10 @@ contains
         !
         class( ModelParameter_t ), allocatable :: tx_dsigma
         type( DataGroupTx_t ) :: tx_data
-        class( Transmitter_t ), pointer :: Tx
         !
         call receiveData( tx_data, master_id )
         !
-        !> Point to the transmitter specified by the master process 
-        Tx => getTransmitter( job_info%i_tx )
-        !
-        Tx%i_sol = job_info%sol_index
-        !
-        call JMult_T_Tx( sigma, tx_data, tx_dsigma, Tx%i_sol )
+        call JMult_T_Tx( sigma, tx_data, tx_dsigma, job_info%sol_index )
         !
         !> Send job done and tx_dsigma's conductivity to master process
         job_info%job_name = job_done
@@ -319,7 +305,7 @@ contains
     subroutine setTxForwardSolver( Tx )
         implicit none
         !
-        class( Transmitter_t ), pointer, intent( inout ) :: Tx
+        type( TransmitterMT_t ), intent( inout ) :: Tx
         !
         if( allocated( forward_solver ) ) deallocate( forward_solver )
         !

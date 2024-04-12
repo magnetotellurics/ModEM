@@ -8,18 +8,11 @@ module DataFile
     use DataEntryArray
     use DataEntryMT
     use DataEntryMT_REF
-    use DataEntryCSEM
     !
     use ReceiverFullImpedance
     use ReceiverFullVerticalMagnetic
     use ReceiverOffDiagonalImpedance
-    use ReceiverSingleField
-    use ReceiverExyAmpliPhase
     use ReceiverArray
-    !
-    use TransmitterMT
-    use TransmitterCSEM
-    use TransmitterArray
     !
     use DataGroupTxArray
     !
@@ -92,11 +85,10 @@ contains
         class( DataEntry_t ), intent( in ) :: data_entry
         !
         class( Receiver_t ), allocatable :: receiver
-        class( Transmitter_t ), allocatable :: new_transmitter
-        class( Transmitter_t ), pointer :: ptr_transmitter
+        type( TransmitterMT_t ) :: new_transmitter
         class( DataGroup_t ), pointer :: data_group
         integer :: i_tx, n_tx, i_rx, rx_type, i_dg
-        real( kind=prec ) :: azimuth, SI_factor, r_error
+        real( kind=prec ) :: SI_factor, r_error
         complex( kind=prec ) :: c_value
         !
         call updateDataEntryArray( self%data_entries, data_entry )
@@ -106,68 +98,21 @@ contains
             !
             class is ( DataEntryMT_t )
                 !
-                allocate( new_transmitter, source = TransmitterMT_t( data_entry%period ) )
+                new_transmitter = TransmitterMT_t( data_entry%period )
                 !
             class is ( DataEntryMT_REF_t )
                 !
-                allocate( new_transmitter, source = TransmitterMT_t( data_entry%period ) )
-                !
-            class is ( DataEntryCSEM_t )
-                !
-                allocate( new_transmitter, source = TransmitterCSEM_t( data_entry%period, data_entry%tx_location, data_entry%tx_azimuth, data_entry%dip, data_entry%moment, data_entry%dipole ) )
+                new_transmitter = TransmitterMT_t( data_entry%period )
                 !
         end select
         !
         i_tx = updateTransmitterArray( new_transmitter )
-        !
-        deallocate( new_transmitter )
         !
         !> Instantiate a Receiver
         rx_type = getIntReceiverType( data_entry%dtype )
         !
         select case( data_entry%dtype )
             !
-            case( "Ex_Field" )
-                !
-                azimuth = 1.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
-                !
-                receiver%units = "[V/m]"
-                !
-            case( "Ey_Field" )
-                !
-                azimuth = 2.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
-                !
-                receiver%units = "[V/m]"
-                !
-            case( "Bx_Field" )
-                !
-                azimuth = 3.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
-                !
-                receiver%units = "[T]"
-                !
-            case( "By_Field" )
-                !
-                azimuth = 4.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
-                !
-                receiver%units = "[T]"
-                !
-            case( "Bz_Field" )
-                !
-                azimuth = 5.0
-                allocate( receiver, source = ReceiverSingleField_t( data_entry%location, azimuth, rx_type ) )
-                !
-                receiver%units = "[T]"
-                !
-            case( "Exy_Ampli_Phase" )
-                !
-                allocate( receiver, source = ReceiverExyAmpliPhase_t( data_entry%location, data_entry%azimuth, rx_type ) )
-                !
-                receiver%units = "[]"
-                !
             case( "Full_Impedance" )
                 !
                 allocate( receiver, source = ReceiverFullImpedance_t( data_entry%location, rx_type ) )
@@ -271,47 +216,20 @@ contains
         !> Loop over transmitters
         do i_tx = 1, n_tx
             !
-            ptr_transmitter => getTransmitter( i_tx )
-            !
-            select type( ptr_transmitter )
+            select type( data_entry )
                 !
-                class is( TransmitterMT_t )
+                class is( DataEntryMT_t )
                     !
-                    select type( data_entry )
+                    if( ABS( transmitters( i_tx )%period - data_entry%period ) < TOL6 ) then
                         !
-                        class is( DataEntryMT_t )
-                            !
-                            if( ABS( ptr_transmitter%period - data_entry%period ) < TOL6 ) then
-                                !
-                                call ptr_transmitter%updateReceiverIndexesArray( i_rx )
-                                !
-                                exit
-                                !
-                            endif
-                            !
-                    end select
-                    !
-                class is( TransmitterCSEM_t )
-                    !
-                    select type( data_entry )
+                        call transmitters( i_tx )%updateReceiverIndexesArray( i_rx )
                         !
-                        class is( DataEntryCSEM_t )
-                            !
-                            if( ABS( ptr_transmitter%period - data_entry%period ) < TOL6      .AND.   &
-                                     ptr_transmitter%location(1) == data_entry%tx_location(1) .AND.   &
-                                     ptr_transmitter%location(2) == data_entry%tx_location(2) .AND.   &
-                                     ptr_transmitter%location(3) == data_entry%tx_location(3) ) then
-                                !
-                                call ptr_transmitter%updateReceiverIndexesArray( i_rx )
-                                !
-                                exit
-                                !
-                            endif
-                            !
-                    end select
+                        exit
+                        !
+                    endif
                 !
                 class default
-                    call errStop( "loadReceiversAndTransmitters > Unclassified Transmitter" )
+                    call errStop( "loadReceiversAndTransmitters > Unclassified data_entry" )
                 !
             end select
             !
@@ -383,7 +301,7 @@ contains
         !
         class( DataFile_t ), intent( inout ) :: self
         !
-        !> Auxiliary variable to group data under a single ptr_transmitter index
+        !> Auxiliary variable to group data under a single actual_transmitter index
         class( DataGroupTx_t ), allocatable :: tx_data
         !
         !> Local indexes

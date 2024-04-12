@@ -10,8 +10,6 @@ module DataGroupTxArray
     !
     use ReceiverArray
     !
-    use TransmitterMT
-    use TransmitterCSEM
     use TransmitterArray
     !
     !> Global array of data
@@ -328,16 +326,13 @@ contains
         !
         integer :: counter
         !
-        integer :: i, j, k
-        class( Transmitter_t ), pointer :: Tx
+        integer :: i
         !
         counter = 0
         !
         do i = 1, size( data_tx_array )
             !
-            Tx => getTransmitter( data_tx_array(i)%i_tx )
-            !
-            counter = counter + size( data_tx_array(i)%data ) * 2 * ( Tx%n_pol ** 2 )
+            counter = counter + size( data_tx_array(i)%data ) * 2 * ( transmitters( data_tx_array(i)%i_tx )%n_pol ** 2 )
             !
         enddo
         !
@@ -465,7 +460,6 @@ contains
         type( DataGroupTx_t ), allocatable, dimension(:) :: data_tx_array
         character(*), intent( in ) :: file_name
         !
-        class( Transmitter_t ), pointer :: transmitter
         class( Receiver_t ), pointer :: receiver
         type( DataGroup_t ), pointer :: data_group
         !
@@ -504,8 +498,6 @@ contains
                 !
                 SI_factor = ImpUnits( receiver%units, units_in_file( type_index )%str )
                 !
-                transmitter => getTransmitter( data_group%i_tx )
-                !
                 do j = 1, data_group%n_comp
                     !
                     if( conjugated_data ) then
@@ -532,30 +524,7 @@ contains
                     !
                     c_value = c_value * SI_factor
                     !
-                    select type( transmitter )
-                        !
-                        class is( TransmitterMT_t )
-                            !
-                            write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) transmitter%period, trim(receiver%code), R_ZERO, R_ZERO, receiver%location(1), receiver%location(2), receiver%location(3), trim( receiver%comp_names(j)%str ), real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), r_error
-                            !
-                        class is( TransmitterCSEM_t )
-                            !
-                            write( ioPredData, "( a8 )", advance = "no" ) trim( transmitter%dipole )
-                            write( ioPredData, "( a1 )", advance = "no" ) " "
-                            write( ioPredData, "( 2es12.6 )", advance = "no" ) transmitter%period
-                            write( ioPredData, "( a1 )", advance = "no" ) " "
-                            write( ioPredData, "( 2es12.6 )", advance = "no" ) transmitter%moment
-                            !
-                            write( ioPredData, "( 2f9.3, 3f12.3 )", advance = "no" ) transmitter%azimuth, transmitter%dip, transmitter%location
-                            write( ioPredData, "( a1 )",  advance = "no" ) " "
-                            write( ioPredData, "( a20, 3f12.3 )", advance = "no" ) adjustl( trim( receiver%code ) ), receiver%location
-                            write( ioPredData, "( a1 )", advance = "no" ) " "
-                            write( ioPredData, "( a8, 3es15.6 )" ) trim( receiver%comp_names(j)%str ), real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), r_error
-                            !
-                        class default
-                            call errStop( "write_DataGroupTxArray: Unclassified data_group!" )
-                        !
-                    end select
+                    write( ioPredData, "(es12.6, 1X, A, 1X, f15.3, f15.3, f15.3, f15.3, f15.3, 1X, A, 1X, es16.6, es16.6, es16.6)" ) transmitters( data_group%i_tx )%period, trim( receiver%code ), R_ZERO, R_ZERO, receiver%location(1), receiver%location(2), receiver%location(3), trim( receiver%comp_names(j)%str ), real( c_value, kind=prec ), real( aimag( c_value ), kind=prec ), r_error
                     !
                     write( ioPlot, * ) sqrt( real( c_value, kind=prec )**2 + real( aimag( c_value ), kind=prec )**2 )
                     !

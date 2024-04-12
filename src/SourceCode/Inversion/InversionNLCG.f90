@@ -982,23 +982,8 @@ contains
                 !
             else
                 !
-                !> Instantiate Transmitter's Source - According to transmitter type and chosen via control file
-                select type( Tx => getTransmitter( i_tx ) )
-                    !
-                    class is( TransmitterMT_t )
-                        !
-                        write( ioGradNorm, "( A12, i3, A2 )", advance = "no" ) "MT", i_tx, ", "
-                        write( ioGradRMS, "( A12, i3, A2 )", advance = "no" ) "MT", i_tx, ", "
-                        !
-                    class is( TransmitterCSEM_t )
-                        !
-                        write( ioGradNorm, "( A12, i3, A2 )", advance = "no" ) "CSEM", i_tx, ", "
-                        write( ioGradRMS, "( A12, i3, A2 )", advance = "no" ) "CSEM", i_tx, ", "
-                        !
-                    class default
-                        call errStop( "writeHeaders > Unclassified Transmitter" )
-                    !
-                end select
+                write( ioGradNorm, "( A12, i3, A2 )", advance = "no" ) "MT", i_tx, ", "
+                write( ioGradRMS, "( A12, i3, A2 )", advance = "no" ) "MT", i_tx, ", "
                 !
             endif
             !
@@ -1070,7 +1055,7 @@ contains
                 ! write( ioGradRMS, "( f15.3, A1 )", advance = "no" ) tx_rms( i_tx ), ","
                 ! !
                 ! !> Instantiate Transmitter's Source - According to transmitter type and chosen via control file
-                ! select type( Tx => getTransmitter( i_tx ) )
+                ! select type( Tx = getTransmitter( i_tx ) )
                     ! !
                     ! class is( TransmitterMT_t )
                         ! !

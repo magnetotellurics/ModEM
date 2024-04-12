@@ -19,14 +19,11 @@ module CoreComponents
     !
     use SourceMT_1D
     use SourceMT_2D
-    use SourceCSEM_EM1D
-    use SourceCSEM_Dipole1D
     use SourceAdjoint
     !
     use ReceiverFullImpedance
     use ReceiverFullVerticalMagnetic
     use ReceiverOffDiagonalImpedance
-    use ReceiverSingleField
     !
     use DataGroupTxArray
     !
@@ -221,7 +218,7 @@ contains
             endif
             !
             do i_tx = 1, n_tx
-                call transmitters( i_tx )%Tx%print
+                call transmitters( i_tx )%print
             enddo
             !
         else
@@ -557,7 +554,8 @@ contains
         !
         ! Source parameters
         source_type_mt = SRC_MT_1D
-        get_1d_from = "Geometric_Mean"
+        !source_type_csem = SRC_CSEM_EM1D
+        !get_1d_from = "Geometric_Mean"
         !
         ! Model parameters
         model_method = MM_METHOD_FIXED_H
@@ -673,9 +671,9 @@ contains
         if( allocated( solver_type ) ) deallocate( solver_type )
         if( allocated( forward_solver_type ) ) deallocate( forward_solver_type )
         if( allocated( source_type_mt ) ) deallocate( source_type_mt )
-        if( allocated( source_type_csem ) ) deallocate( source_type_csem )
+        !if( allocated( source_type_csem ) ) deallocate( source_type_csem )
+        !if( allocated( get_1d_from ) ) deallocate( get_1d_from )
         if( allocated( model_method ) ) deallocate( model_method )
-        if( allocated( get_1d_from ) ) deallocate( get_1d_from )
         !
         if( allocated( predicted_data_file_name ) ) deallocate( predicted_data_file_name )
         if( allocated( jmhat_data_file_name ) ) deallocate( jmhat_data_file_name )
@@ -797,14 +795,6 @@ contains
             write( ioFwdTmp, "(A49)" ) "model_method [mirror|fixed height] : fixed height"
             write( ioFwdTmp, "(A39)" ) "model_n_air_layer [10]             : 10"
             write( ioFwdTmp, "(A41)" ) "model_max_height [200.]            : 200."
-            write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A23)" ) "### <Source Parameters>"
-            write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A46)" ) "## MT/CSEM Primary Fields acquisition methods."
-            write( ioFwdTmp, "(A1)" )  "#"
-            write( ioFwdTmp, "(A72)" ) "source_type_mt [1D|2D]                                              : 1D"
-            write( ioFwdTmp, "(A74)" ) "source_type_csem [EM1D|Dipole1D]                                    : EM1D"
-            write( ioFwdTmp, "(A84)" ) "get_1d_from [Fixed_Value|Geometric_Mean|Mean_around_Tx|Tx_Position] : Geometric_Mean"
             write( ioFwdTmp, "(A1)" )  "#"
             write( ioFwdTmp, "(A23)" ) "### <Solver Parameters>"
             write( ioFwdTmp, "(A1)" )  "#"

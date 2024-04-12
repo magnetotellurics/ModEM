@@ -37,11 +37,10 @@ contains
         !
         character(:), allocatable :: line_text, actual_type, code, code_ref, component, dipole
         integer :: iDe, io_stat, p_nargs, n_tx, n_rx
-        integer :: header_counter, header_line_counter, mt_counter, csem_counter
+        integer :: header_counter, header_line_counter, mt_counter
         real( kind=prec ) :: period, rvalue, imaginary, error
         real( kind=prec ) :: xyz_ref(3), latitude_ref, longitude_ref
-        real( kind=prec ) :: latitude, longitude, xyz(3), tx_xyz(3)
-        real( kind=prec ) :: moment, tx_azimuth, dip, azimuth
+        real( kind=prec ) :: latitude, longitude, xyz(3)
         !
         class( DataEntry_t ), pointer :: data_entry
         !
@@ -60,7 +59,6 @@ contains
             header_counter = 0
             header_line_counter = 0
             mt_counter = 0
-            csem_counter = 0
             !
             do
                 !
@@ -131,66 +129,6 @@ contains
                             call self%loadReceiversAndTransmitters( data_entry )
                             !
                             mt_counter = mt_counter + 1
-                            !
-                        !> SingleField file line
-                        case( "Ex_Field", "Ey_Field", "Bx_Field", "By_Field", "Bz_Field" )
-                            !
-                            !# Dipole Period(s) Moment(Am) Azi Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Real Imag, Error
-                            !
-                            dipole = args(1)
-                            read( args(2), * ) period
-                            read( args(3), * ) moment
-                            read( args(4), * ) tx_azimuth
-                            read( args(5), * ) dip
-                            read( args(6), * ) tx_xyz(1)
-                            read( args(7), * ) tx_xyz(2)
-                            read( args(8), * ) tx_xyz(3)
-                            code = trim( args(9) )
-                            read( args(10), * ) xyz(1)
-                            read( args(11), * ) xyz(2)
-                            read( args(12), * ) xyz(3)
-                            component = trim( args(13) )
-                            read( args(14), * ) rvalue
-                            read( args(15), * ) imaginary
-                            read( args(16), * ) error
-                            !
-                            allocate( data_entry, source = DataEntryCSEM_t( iDe, actual_type,    &
-                            dipole, period, moment, tx_azimuth, dip, tx_xyz,    &
-                            code, xyz, component, rvalue, imaginary, error ) )
-                            !
-                            call self%loadReceiversAndTransmitters( data_entry )
-                            !
-                            csem_counter = csem_counter + 1
-                            !
-                        !> Exy_Ampli_Phase file line
-                        case( "Exy_Ampli_Phase" )
-                            !
-                            !# Dipole Period(s) Moment(Am) Azi Dip Tx_X(m) Tx_Y(x) Tx_Z(m) Code X(m) Y(x) Z(m) Component Ampli Error tx_azimuth
-                            !
-                            dipole = args(1)
-                            read( args(2), * ) period
-                            read( args(3), * ) moment
-                            read( args(4), * ) tx_azimuth
-                            read( args(5), * ) dip
-                            read( args(6), * ) tx_xyz(1)
-                            read( args(7), * ) tx_xyz(2)
-                            read( args(8), * ) tx_xyz(3)
-                            code = trim( args(9) )
-                            read( args(10), * ) xyz(1)
-                            read( args(11), * ) xyz(2)
-                            read( args(12), * ) xyz(3)
-                            component = trim( args(13) )
-                            read( args(14), * ) rvalue
-                            read( args(15), * ) error
-                            read( args(16), * ) azimuth
-                            !
-                            allocate( data_entry, source = DataEntryCSEM_t( iDe, actual_type,    &
-                            dipole, period, moment, tx_azimuth, dip, tx_xyz,    &
-                            code, xyz, component, rvalue, R_ZERO, error, azimuth ) )
-                            !
-                            call self%loadReceiversAndTransmitters( data_entry )
-                            !
-                            csem_counter = csem_counter + 1
                             !
                         case default
                             !
@@ -273,7 +211,6 @@ contains
             !write( *, * ) "          ", trim( self%units ), " to ", trim( units_in_file ), " => ", self%SI_factor
             !
             if( mt_counter > 0 ) write( *, "( A15, I4, A11 )" ) "Read ", mt_counter, " MT Entries"
-            if( csem_counter > 0 ) write( *, "( A15, I4, A13 )" ) "Read ", csem_counter, " CSEM Entries"
             !
             call self%contructMeasuredDataGroupTxArray
             !

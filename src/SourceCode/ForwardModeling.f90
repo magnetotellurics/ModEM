@@ -25,7 +25,6 @@ contains
         !
         class( ModelParameter_t ), intent( inout ) :: sigma
         !
-        class( Transmitter_t ), pointer :: Tx
         integer :: i_tx
         !
         ! Verbose
@@ -34,10 +33,7 @@ contains
         !> Loop over all Transmitters
         do i_tx = 1, size( transmitters )
             !
-            !> Point to the current Transmitter
-            Tx => getTransmitter( i_tx )
-            !
-            call solveTx( sigma, Tx )
+            call solveTx( sigma, transmitters( i_tx ) )
             !
         enddo
         !
@@ -53,71 +49,13 @@ contains
         implicit none
         !
         class( ModelParameter_t ), intent( inout ) :: sigma
-        class( Transmitter_t ), pointer, intent( inout ) :: Tx
+        type( TransmitterMT_t ), intent( inout ) :: Tx
         !
         class( Source_t ), allocatable :: source
         !
         call Tx%forward_solver%setFrequency( sigma, Tx%period )
         !
-        !> Instantiate Transmitter's Source - According to transmitter type and chosen via fwd control file
-        select type( Tx )
-            !
-            class is( TransmitterMT_t )
-                !
-                !> Instantiate the MT Source - Specific type can be chosen via fwd control file
-                select case( source_type_mt )
-                    !
-                    case( SRC_MT_1D )
-                        !
-                        allocate( source, source = SourceMT_1D_t( model_operator, sigma, Tx%period ) )
-                        !
-                    case( SRC_MT_2D )
-                        !
-                        !allocate( source, source = SourceMT_2D_t( model_operator, sigma, Tx%period ) )
-                        !
-                        call errStop( "solveTx > SourceMT_2D not implemented yet!" )
-                        !
-                    case( "" )
-                        !
-                        call warning( "solveTx > MT Source type not provided, using SourceMT_1D_t." )
-                        !
-                        allocate( source, source = SourceMT_1D_t( model_operator, sigma, Tx%period ) )
-                        !
-                    case default
-                        !
-                        call errStop( "solveTx > Wrong MT Source type: ["//source_type_mt//"]" )
-                        !
-                end select
-                !
-            class is( TransmitterCSEM_t )
-                !
-                !> Instantiate the CSEM Source - Specific type can be chosen via control file
-                select case( source_type_csem )
-                    !
-                    case( SRC_CSEM_EM1D )
-                        !
-                        allocate( source, source = SourceCSEM_EM1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%i_tx ) )
-                        !
-                    case( SRC_CSEM_DIPOLE1D )
-                        !
-                        allocate( source, source = SourceCSEM_Dipole1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%dip, Tx%azimuth, Tx%moment ) )
-                        !
-                    case( "" )
-                        !
-                        call warning( "solveTx > CSEM Source type not provided, using EM1D." )
-                        !
-                        allocate( source, source = SourceCSEM_EM1D_t( model_operator, sigma, Tx%period, Tx%location, Tx%i_tx ) )
-                        !
-                    case default
-                        !
-                        call errStop( "solveTx > Wrong CSEM Source type: ["//source_type_csem//"]" )
-                        !
-                end select
-                !
-            class default
-                call errStop( "solveTx > Unclassified Transmitter" )
-            !
-        end select
+        allocate( source, source = SourceMT_1D_t( model_operator, sigma, Tx%period ) )
         !
         call Tx%setSource( source )
         !
@@ -163,7 +101,7 @@ contains
         !
         !> If path is specified by argument -es|-- esolution
         !> Write e_sol_0 to a binary file at this path
-        if( has_e_solution_file ) call writeAllESolutionHeader( size( transmitters ), transmitters(1)%Tx%n_pol, e_solution_file_name )
+        if( has_e_solution_file ) call writeAllESolutionHeader( size( transmitters ), transmitters(1)%n_pol, e_solution_file_name )
         !
         all_predicted_data = all_measured_data
         !
@@ -208,7 +146,6 @@ contains
         type( DataGroupTx_t ), allocatable, dimension(:), intent( inout ) :: all_predicted_data
         integer, intent( in ), optional :: i_sol
         !
-        class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
         type( DataGroup_t ) :: data_group
         integer :: i_tx, n_tx, i_rx, sol_index
@@ -224,23 +161,20 @@ contains
         !> Loop over all Transmitters
         do i_tx = 1, n_tx
             !
-            !> Pointer to the Transmitter
-            Tx => getTransmitter( i_tx )
+            transmitters( i_tx )%i_sol = sol_index
             !
-            Tx%i_sol = sol_index
-            !
-            call solveTx( sigma, Tx )
+            call solveTx( sigma, transmitters( i_tx ) )
             !
             ! Verbose
             write( *, "( A42 )" ) "- Calculate Predicted Data"
             !
             !> Loop for each Receiver related to this Transmitter
-            do i_rx = 1, size( Tx%receiver_indexes )
+            do i_rx = 1, size( transmitters( i_tx )%receiver_indexes )
                 !
                 !> Pointer to the Tx Receiver
-                Rx => getReceiver( Tx%receiver_indexes( i_rx ) )
+                Rx => getReceiver( transmitters( i_tx )%receiver_indexes( i_rx ) )
                 !
-                call Rx%predictedData( Tx, data_group )
+                call Rx%predictedData( transmitters( i_tx ), data_group )
                 !
                 call all_predicted_data( i_tx )%setValues( data_group )
                 !
@@ -255,7 +189,6 @@ contains
     subroutine createDistributeForwardSolver()
         implicit none
         !
-        class( Transmitter_t ), pointer :: Tx
         integer :: i_tx
         !
         if( allocated( forward_solver ) ) deallocate( forward_solver )
@@ -296,9 +229,7 @@ contains
         !
         do i_tx = 1, size( transmitters )
             !
-            Tx => getTransmitter( i_tx )
-            !
-            Tx%forward_solver => forward_solver
+            transmitters( i_tx )%forward_solver => forward_solver
             !
         enddo
         !

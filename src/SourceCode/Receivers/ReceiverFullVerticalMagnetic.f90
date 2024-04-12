@@ -102,7 +102,7 @@ contains
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
+        type( TransmitterMT_t ), intent( in ) :: transmitter
         !
         call errStop( "setLRows_FullVerticalMagnetic to be implemented" )
         !
@@ -116,15 +116,15 @@ contains
         implicit none
         !
         class( ReceiverFullVerticalMagnetic_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
+        type( TransmitterMT_t ), intent( in ) :: transmitter
         type( DataGroup_t ), intent( out ), optional :: data_group
         !
         complex( kind=prec ) :: comega, det
         complex( kind=prec ), allocatable :: BB(:,:), I_BB(:,:)
         class( Vector_t ), allocatable :: tx_e_1, tx_e_2
         !
-        call transmitter%getSolutionVector( 1, tx_e_1 )
-        call transmitter%getSolutionVector( 2, tx_e_2 )
+        call transmitter%getSolution( 1, tx_e_1 )
+        call transmitter%getSolution( 2, tx_e_2 )
         !
         comega = cmplx( 0.0, 1./ ( 2.0 * PI / transmitter%period ), kind=prec )
         !

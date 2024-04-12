@@ -5,7 +5,7 @@ module Receiver
     !
     use String
     use DataGroup
-    use Transmitter
+    use TransmitterMT
     use cVectorSparse3D_SG
     !
     type, abstract :: Receiver_t
@@ -60,35 +60,35 @@ module Receiver
         !
         !> No interface subroutine briefing
         subroutine interface_set_lrows_receiver( self, transmitter )
-            import :: Receiver_t, Transmitter_t
+            import :: Receiver_t, TransmitterMT_t
             !
             class( Receiver_t ), intent( inout ) :: self
-            class( Transmitter_t ), intent( in ) :: transmitter
+            type( TransmitterMT_t ), intent( in ) :: transmitter
         end subroutine interface_set_lrows_receiver
         !
         !> No interface subroutine briefing
         subroutine interface_predicted_data_receiver( self, transmitter, data_group )
-            import :: Receiver_t, Transmitter_t, DataGroup_t
+            import :: Receiver_t, TransmitterMT_t, DataGroup_t
             !
             class( Receiver_t ), intent( inout ) :: self
-            class( Transmitter_t ), intent( in ) :: transmitter
+            type( TransmitterMT_t ), intent( in ) :: transmitter
             type( DataGroup_t ), intent( out ), optional :: data_group
         end subroutine interface_predicted_data_receiver
         !
         !> No interface subroutine briefing
         subroutine interface_save_receiver_receiver( self, tx )
-            import :: Receiver_t, Transmitter_t
+            import :: Receiver_t, TransmitterMT_t
             !
             class( Receiver_t ), intent( in ) :: self
-            class( Transmitter_t ), intent( in ) :: tx
+            type( TransmitterMT_t ), intent( in ) :: tx
         end subroutine interface_save_receiver_receiver
         !
         !> No interface subroutine briefing
         subroutine interface_save_receiver( self, tx )
-            import :: Receiver_t, Transmitter_t
+            import :: Receiver_t, TransmitterMT_t
             !
             class( Receiver_t ), intent( inout ) :: self
-            class( Transmitter_t ), intent( in ) :: tx
+            type( TransmitterMT_t ), intent( in ) :: tx
         end subroutine interface_save_receiver
         !
         !> No interface function briefing
@@ -298,7 +298,7 @@ contains
         implicit none
         !
         class( Receiver_t ), intent( in ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
+        type( TransmitterMT_t ), intent( in ) :: transmitter
         type( DataGroup_t ), intent( out ) :: data_group
         !
         real( kind=prec ) :: real_part, imaginary, error

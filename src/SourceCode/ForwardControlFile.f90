@@ -9,7 +9,6 @@ module ForwardControlFile
     use Grid3D_MR
     use ForwardSolver
     use Solver
-    use SourceCSEM
     !
     integer, allocatable, dimension(:) :: grid_layers
     !
@@ -19,7 +18,6 @@ module ForwardControlFile
         character(:), allocatable :: model_operator_type
         !
         character(:), allocatable :: grid_reader_type, grid_format, solver_type, forward_solver_type
-        character(:), allocatable :: source_type_mt, source_type_csem, get_1d_from
         character(:), allocatable :: model_method, model_n_air_layer, model_max_height
         !
         !> Solver parameters
@@ -89,12 +87,6 @@ contains
                         self%forward_solver_type = trim( args(2) )
                     elseif( index( line_text, "solver_type" ) > 0 ) then
                         self%solver_type = trim( args(2) )
-                    elseif( index( line_text, "source_type_mt" ) > 0 ) then
-                        self%source_type_mt = trim( args(2) )
-                    elseif( index( line_text, "source_type_csem" ) > 0 ) then
-                        self%source_type_csem = trim( args(2) )
-                    elseif( index( line_text, "get_1d_from" ) > 0 ) then
-                        self%get_1d_from = trim( args(2) )
                     elseif( index( line_text, "model_method" ) > 0 ) then
                         self%model_method = trim( args(2) )
                     elseif( index( line_text, "model_n_air_layer" ) > 0 ) then
@@ -201,61 +193,6 @@ contains
                         !
                         call errStop( "ForwardControlFile_ctor > Wrong forward_solver_type, use [IT|IT_DC]" )
                     !
-                end select
-                !
-            endif
-            !
-            ! MT source_type
-            if( allocated( self%source_type_mt ) ) then
-                !
-                select case( self%source_type_mt )
-                    !
-                    case( "1D" )
-                        source_type_mt = SRC_MT_1D
-                    case( "2D" )
-                        source_type_mt = SRC_MT_2D
-                    case default
-                        !
-                        call errStop( "ForwardControlFile_ctor > Wrong source_type_mt, use [1D|2D]" )
-                        !
-                end select
-                !
-            endif
-            !
-            ! CSEM source_type
-            if( allocated( self%source_type_csem ) ) then
-                !
-                select case( self%source_type_csem )
-                    !
-                    case( "EM1D" )
-                        source_type_csem = SRC_CSEM_EM1D
-                    case( "Dipole1D" )
-                        source_type_csem = SRC_CSEM_DIPOLE1D
-                    case default
-                        !
-                        call errStop( "ForwardControlFile_ctor > Wrong source_type_csem, use [EM1D|Dipole1D]" )
-                        !
-                end select
-                !
-            endif
-            !
-            ! CSEM Source_type
-            if( allocated( self%get_1d_from ) ) then
-                !
-                select case( self%get_1d_from )
-                    !
-                    case( "Fixed_Value" )
-                        get_1d_from = FROM_FIXED_VALUE
-                    case( "Geometric_Mean" )
-                        get_1d_from = FROM_GEOM_MEAN
-                    case( "Mean_around_Tx" )
-                        get_1d_from = FROM_TX_GEOM_MEAN
-                    case( "Tx_Position" )
-                        get_1d_from = FROM_TX_LOCATION
-                    case default
-                        !
-                        call errStop( "ForwardControlFile_ctor > Wrong get_1d_from, use [Fixed_Value|Geometric_Mean|Mean_around_Tx|Tx_Position]" )
-                        !
                 end select
                 !
             endif
@@ -376,9 +313,6 @@ contains
         if( allocated( grid_layers ) ) deallocate( grid_layers )
         !
         if( allocated( self%forward_solver_type ) ) deallocate( self%forward_solver_type )
-        !
-        if( allocated( self%source_type_mt ) ) deallocate( self%source_type_mt )
-        if( allocated( self%source_type_csem ) ) deallocate( self%source_type_csem )
         !
         if( allocated( self%model_method ) ) deallocate( self%model_method )
         if( allocated( self%model_n_air_layer ) ) deallocate( self%model_n_air_layer )

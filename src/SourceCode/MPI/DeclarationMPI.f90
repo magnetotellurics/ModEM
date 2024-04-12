@@ -29,15 +29,12 @@ module DeclarationMPI
     integer, parameter :: model_parameter_cell_sg = 1
     integer, parameter :: model_parameter_cell_mr = 2
     !
-    integer :: transmitter_derived_type, transmitters_size
-    integer, parameter :: transmitter_mt = 1
-    integer, parameter :: transmitter_csem = 2
+    integer :: transmitters_size
     !
     integer :: receiver_derived_type, receivers_size
     integer, parameter :: receiver_full_impedance = 1
     integer, parameter :: receiver_full_vertical_magnetic = 2
     integer, parameter :: receiver_off_diagonal_impedance = 3
-    integer, parameter :: receiver_single_field = 4
     !
     !> Labels for ModEM jobs
     character( len=15 ) :: job_master = "MASTER_JOB"
@@ -131,25 +128,22 @@ contains
         !
         integer :: basic_comp_size
         !
-        integer :: i, n_rx, last_size, nbytes(13)
+        integer :: i, n_rx, last_size, nbytes(10)
         !
         basic_comp_size = 1
         !
         write( *, "(A44)" ) "MPI Worker's Memory Budget:"
         !
-        call MPI_PACK_SIZE( 16, MPI_INTEGER, main_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 13, MPI_INTEGER, main_comm, nbytes(1), ierr )
         call MPI_PACK_SIZE( 3, MPI_DOUBLE_PRECISION, main_comm, nbytes(2), ierr )
         call MPI_PACK_SIZE( len( model_operator_type ), MPI_CHARACTER, main_comm, nbytes(3), ierr )
         call MPI_PACK_SIZE( len( model_method ), MPI_CHARACTER, main_comm, nbytes(4), ierr )
-        call MPI_PACK_SIZE( len( source_type_mt ), MPI_CHARACTER, main_comm, nbytes(5), ierr )
-        call MPI_PACK_SIZE( len( source_type_csem ), MPI_CHARACTER, main_comm, nbytes(6), ierr )
-        call MPI_PACK_SIZE( len( get_1d_from ), MPI_CHARACTER, main_comm, nbytes(7), ierr )
-        call MPI_PACK_SIZE( len( solver_type ), MPI_CHARACTER, main_comm, nbytes(8), ierr )
-        call MPI_PACK_SIZE( len( forward_solver_type ), MPI_CHARACTER, main_comm, nbytes(9), ierr )
-        call MPI_PACK_SIZE( len( inversion_type ), MPI_CHARACTER, main_comm, nbytes(10), ierr )
-        call MPI_PACK_SIZE( len( joint_type ), MPI_CHARACTER, main_comm, nbytes(11), ierr )
-        call MPI_PACK_SIZE( len( e_solution_file_name ), MPI_CHARACTER, main_comm, nbytes(12), ierr )
-        call MPI_PACK_SIZE( 15, MPI_CHARACTER, main_comm, nbytes(13), ierr )
+        call MPI_PACK_SIZE( len( solver_type ), MPI_CHARACTER, main_comm, nbytes(5), ierr )
+        call MPI_PACK_SIZE( len( forward_solver_type ), MPI_CHARACTER, main_comm, nbytes(6), ierr )
+        call MPI_PACK_SIZE( len( inversion_type ), MPI_CHARACTER, main_comm, nbytes(7), ierr )
+        call MPI_PACK_SIZE( len( joint_type ), MPI_CHARACTER, main_comm, nbytes(8), ierr )
+        call MPI_PACK_SIZE( len( e_solution_file_name ), MPI_CHARACTER, main_comm, nbytes(9), ierr )
+        call MPI_PACK_SIZE( 15, MPI_CHARACTER, main_comm, nbytes(10), ierr )
         !
         basic_comp_size = basic_comp_size + allocateGridBuffer( main_grid, .TRUE. )
         !
@@ -159,7 +153,7 @@ contains
         !
         do i = 1, size( transmitters )
             !
-            basic_comp_size = basic_comp_size + allocateTransmitterBuffer( getTransmitter(i) )
+            basic_comp_size = basic_comp_size + allocateTransmitterBuffer( transmitters(i) )
             !
         enddo
         !
@@ -210,9 +204,6 @@ contains
         call MPI_PACK( max_divcor_iters, 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( model_operator_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( model_method ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( len( source_type_mt ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( len( source_type_csem ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( len( get_1d_from ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( solver_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( forward_solver_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( len( inversion_type ), 1, MPI_INTEGER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
@@ -230,9 +221,6 @@ contains
         ! 9 Strings
         call MPI_PACK( model_operator_type, len( model_operator_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( model_method, len( model_method ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( source_type_mt, len( source_type_mt ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( source_type_csem, len( source_type_csem ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
-        call MPI_PACK( get_1d_from, len( get_1d_from ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( solver_type, len( solver_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( forward_solver_type, len( forward_solver_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
         call MPI_PACK( inversion_type, len( inversion_type ), MPI_CHARACTER, basic_comp_buffer, job_info%basic_comp_size, index, main_comm, ierr )
@@ -244,7 +232,7 @@ contains
         !
         do i = 1, size( transmitters )
              !
-             call packTransmitterBuffer( getTransmitter(i), basic_comp_buffer, job_info%basic_comp_size, index )
+             call packTransmitterBuffer( transmitters(i), basic_comp_buffer, job_info%basic_comp_size, index )
              !
         enddo
         !
@@ -263,8 +251,8 @@ contains
         implicit none
         !
         integer :: i, index, tx_id, n_transmitters, n_receivers
-        integer :: n_model_operator_type, n_model_method, n_source_type_mt, n_source_type_csem
-        integer :: n_get_1d_from, n_solver_type, n_forward_solver_type, n_inversion_type
+        integer :: n_model_operator_type, n_model_method
+        integer :: n_solver_type, n_forward_solver_type, n_inversion_type
         integer :: n_joint_type, n_e_solution_file_name
         !
         index = 1
@@ -276,9 +264,6 @@ contains
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, max_divcor_iters, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_model_operator_type, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_model_method, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_source_type_mt, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_source_type_csem, 1, MPI_INTEGER, main_comm, ierr )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_get_1d_from, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_solver_type, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_forward_solver_type, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, n_inversion_type, 1, MPI_INTEGER, main_comm, ierr )
@@ -299,15 +284,6 @@ contains
         !
         allocate( character( n_model_method ) :: model_method )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, model_method, n_model_method, MPI_CHARACTER, main_comm, ierr )
-        !
-        allocate( character( n_source_type_mt ) :: source_type_mt )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, source_type_mt, n_source_type_mt, MPI_CHARACTER, main_comm, ierr )
-        !
-        allocate( character( n_source_type_csem ) :: source_type_csem )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, source_type_csem, n_source_type_csem, MPI_CHARACTER, main_comm, ierr )
-        !
-        allocate( character( n_get_1d_from ) :: get_1d_from )
-        call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, get_1d_from, n_get_1d_from, MPI_CHARACTER, main_comm, ierr )
         !
         allocate( character( n_solver_type ) :: solver_type )
         call MPI_UNPACK( basic_comp_buffer, job_info%basic_comp_size, index, solver_type, n_solver_type, MPI_CHARACTER, main_comm, ierr )
@@ -1226,35 +1202,17 @@ contains
     function allocateTransmitterBuffer( transmitter ) result( transmitter_size_bytes )
         implicit none
         !
-        class( Transmitter_t ), intent( in ) :: transmitter
+        type( TransmitterMT_t ), intent( in ) :: transmitter
         integer :: i, transmitter_size_bytes
         integer, allocatable, dimension(:) :: nbytes
         !
         transmitter_size_bytes = 0
         !
-        select type( transmitter )
-            !
-            class is( TransmitterMT_t )
-                !
-                allocate( nbytes(3) )
-                !
-                call MPI_PACK_SIZE( 12, MPI_INTEGER, main_comm, nbytes(1), ierr )
-                call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, main_comm, nbytes(2), ierr )
-                call MPI_PACK_SIZE( size( transmitter%receiver_indexes ), MPI_INTEGER, main_comm, nbytes(3), ierr )
-                !
-             class is( TransmitterCSEM_t )
-                !
-                allocate( nbytes(4) )
-                !
-                call MPI_PACK_SIZE( 13, MPI_INTEGER, main_comm, nbytes(1), ierr )
-                call MPI_PACK_SIZE( 7, MPI_DOUBLE_PRECISION, main_comm, nbytes(2), ierr )
-                call MPI_PACK_SIZE( size( transmitter%receiver_indexes ), MPI_INTEGER, main_comm, nbytes(3), ierr )
-                call MPI_PACK_SIZE( len( transmitter%dipole ), MPI_CHARACTER, main_comm, nbytes(4), ierr )
-                !
-            class default
-               call errStop( "allocateTransmitterBuffer: Unclassified transmitter" )
-            !
-        end select
+        allocate( nbytes(3) )
+        !
+        call MPI_PACK_SIZE( 11, MPI_INTEGER, main_comm, nbytes(1), ierr )
+        call MPI_PACK_SIZE( 1, MPI_DOUBLE_PRECISION, main_comm, nbytes(2), ierr )
+        call MPI_PACK_SIZE( size( transmitter%receiver_indexes ), MPI_INTEGER, main_comm, nbytes(3), ierr )
         !
         do i = 1, size( nbytes )
             transmitter_size_bytes = transmitter_size_bytes + nbytes(i)
@@ -1266,49 +1224,19 @@ contains
     subroutine packTransmitterBuffer( transmitter, parent_buffer, parent_buffer_size, index )
         implicit none
         !
-        class( Transmitter_t ), intent( in ) :: transmitter
+        type( TransmitterMT_t ), intent( in ) :: transmitter
         character, dimension(:), allocatable, intent( inout ) :: parent_buffer
         integer, intent( in ) :: parent_buffer_size
         integer, intent( inout ) :: index
         !
         integer :: i
         !
-        select type( transmitter )
-            !
-            class is( TransmitterMT_t )
-                !
-                !> TYPE
-                call MPI_PACK( transmitter_mt, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                !
-                call MPI_PACK( transmitter%i_tx, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%n_pol, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%fwd_key(1), 8, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( size( transmitter%receiver_indexes ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%period, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%receiver_indexes(1), size( transmitter%receiver_indexes ), MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                !
-            class is( TransmitterCSEM_t )
-                !
-                !> TYPE
-                call MPI_PACK( transmitter_csem, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                !
-                call MPI_PACK( transmitter%i_tx, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%n_pol, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%fwd_key(1), 8, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( size( transmitter%receiver_indexes ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( len( transmitter%dipole ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%period, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%location(1), 3, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%azimuth, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%dip, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%moment, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%receiver_indexes(1), size( transmitter%receiver_indexes ), MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( transmitter%dipole, len( transmitter%dipole ), MPI_CHARACTER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                !
-            class default
-               call errStop( "packTransmitterBuffer: Unclassified transmitter" )
-            !
-        end select
+        call MPI_PACK( transmitter%i_tx, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( transmitter%n_pol, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( transmitter%fwd_key(1), 8, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( size( transmitter%receiver_indexes ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( transmitter%period, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
+        call MPI_PACK( transmitter%receiver_indexes(1), size( transmitter%receiver_indexes ), MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
         !
     end subroutine packTransmitterBuffer
     !
@@ -1321,65 +1249,20 @@ contains
         integer, intent( in ) :: parent_buffer_size
         integer, intent( inout ) :: index
         !
-        class( Transmitter_t ), allocatable :: transmitter
+        type( TransmitterMT_t ) :: transmitter
         !
-        integer :: transmitter_receiver_indexes, transmitter_dipole
-        !
-        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter_derived_type, 1, MPI_INTEGER, main_comm, ierr )
-        !
-        select case( transmitter_derived_type )
-            !
-            case( transmitter_mt )
-                !
-                allocate( TransmitterMT_t :: transmitter )
-                !
-            case( transmitter_csem )
-                !
-                allocate( TransmitterCSEM_t :: transmitter )
-                !
-            case default
-               call errStop( "unpackTransmitterBuffer: Unknown transmitter case" )
-            !
-        end select
+        integer :: transmitter_receiver_indexes
         !
         transmitter%i_sol = 0
         !
-        select type( transmitter )
-            !
-            class is( TransmitterMT_t )
-                !
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%i_tx, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%n_pol, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%fwd_key(1), 8, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter_receiver_indexes, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%period, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-                !
-                allocate( transmitter%receiver_indexes( transmitter_receiver_indexes ) )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%receiver_indexes(1), transmitter_receiver_indexes, MPI_INTEGER, main_comm, ierr )
-            !
-            class is( TransmitterCSEM_t )
-                !
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%i_tx, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%n_pol, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%fwd_key(1), 8, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter_receiver_indexes, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter_dipole, 1, MPI_INTEGER, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%period, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%location(1), 3, MPI_DOUBLE_PRECISION, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%azimuth, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%dip, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%moment, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-                !
-                allocate( transmitter%receiver_indexes( transmitter_receiver_indexes ) )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%receiver_indexes(1), transmitter_receiver_indexes, MPI_INTEGER, main_comm, ierr )
-                !
-                allocate( character( transmitter_dipole ) :: transmitter%dipole )
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%dipole, transmitter_dipole, MPI_CHARACTER, main_comm, ierr )
-                !
-            class default
-               call errStop( "unpackTransmitterBuffer: Unclassified transmitter!" )
-            !
-        end select
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%i_tx, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%n_pol, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%fwd_key(1), 8, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter_receiver_indexes, 1, MPI_INTEGER, main_comm, ierr )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%period, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
+        !
+        allocate( transmitter%receiver_indexes( transmitter_receiver_indexes ) )
+        call MPI_UNPACK( parent_buffer, parent_buffer_size, index, transmitter%receiver_indexes(1), transmitter_receiver_indexes, MPI_INTEGER, main_comm, ierr )
         !
     end function unpackTransmitterBuffer
     !
@@ -1424,16 +1307,6 @@ contains
                 receiver_size_bytes = receiver_size_bytes + allocateCSparseVectorBuffer( receiver%Ley )
                 receiver_size_bytes = receiver_size_bytes + allocateCSparseVectorBuffer( receiver%Lbx )
                 receiver_size_bytes = receiver_size_bytes + allocateCSparseVectorBuffer( receiver%Lby )
-                !
-             class is( ReceiverSingleField_t )
-                !
-                call MPI_PACK_SIZE( 4, MPI_DOUBLE_PRECISION, main_comm, nbytes(2), ierr )
-                !
-                if( receiver%azimuth == 1.0 ) receiver_size_bytes = receiver_size_bytes + allocateCSparseVectorBuffer( receiver%Lex )
-                if( receiver%azimuth == 2.0 ) receiver_size_bytes = receiver_size_bytes + allocateCSparseVectorBuffer( receiver%Ley )
-                if( receiver%azimuth == 3.0 ) receiver_size_bytes = receiver_size_bytes + allocateCSparseVectorBuffer( receiver%Lbx )
-                if( receiver%azimuth == 4.0 ) receiver_size_bytes = receiver_size_bytes + allocateCSparseVectorBuffer( receiver%Lby )
-                if( receiver%azimuth == 5.0 ) receiver_size_bytes = receiver_size_bytes + allocateCSparseVectorBuffer( receiver%Lbz )
                 !
             class default
                call errStop( "allocateReceiverBuffer: Unclassified receiver" )
@@ -1502,27 +1375,6 @@ contains
                 call packCSparseVectorBuffer( receiver%Lbx, parent_buffer, parent_buffer_size, index )
                 call packCSparseVectorBuffer( receiver%Lby, parent_buffer, parent_buffer_size, index )
                 !
-             class is( ReceiverSingleField_t )
-                !
-                call MPI_PACK( receiver_single_field, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                !
-                call MPI_PACK( receiver%i_rx, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( receiver%rx_type, 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( len( receiver%code ), 1, MPI_INTEGER, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( receiver%location(1), 3, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                call MPI_PACK( receiver%azimuth, 1, MPI_DOUBLE_PRECISION, parent_buffer, parent_buffer_size, index, main_comm, ierr )
-                !
-                if( receiver%azimuth == 1.0 ) &
-                    call packCSparseVectorBuffer( receiver%Lex, parent_buffer, parent_buffer_size, index )
-                if( receiver%azimuth == 2.0 ) &
-                    call packCSparseVectorBuffer( receiver%Ley, parent_buffer, parent_buffer_size, index )
-                if( receiver%azimuth == 3.0 ) &
-                    call packCSparseVectorBuffer( receiver%Lbx, parent_buffer, parent_buffer_size, index )
-                if( receiver%azimuth == 4.0 ) &
-                    call packCSparseVectorBuffer( receiver%Lby, parent_buffer, parent_buffer_size, index )
-                if( receiver%azimuth == 5.0 ) &
-                    call packCSparseVectorBuffer( receiver%Lbz, parent_buffer, parent_buffer_size, index )
-                !
             class default
                call errStop( "packReceiverBuffer: Unclassified receiver" )
             !
@@ -1548,7 +1400,7 @@ contains
         integer :: receiver_id, receiver_type, code_size
         !
         character(:), allocatable :: code
-        real( kind=prec ) :: receiver_location(3), receiver_azymuth
+        real( kind=prec ) :: receiver_location(3)
         !
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, receiver_derived_type, 1, MPI_INTEGER, main_comm, ierr )
         call MPI_UNPACK( parent_buffer, parent_buffer_size, index, receiver_id, 1, MPI_INTEGER, main_comm, ierr )
@@ -1583,23 +1435,6 @@ contains
                 call unpackCSparseVectorBuffer( receiver%Ley, main_grid, parent_buffer, parent_buffer_size, index )
                 call unpackCSparseVectorBuffer( receiver%Lbx, main_grid, parent_buffer, parent_buffer_size, index )
                 call unpackCSparseVectorBuffer( receiver%Lby, main_grid, parent_buffer, parent_buffer_size, index )
-                !
-            case( receiver_single_field )
-                !
-                call MPI_UNPACK( parent_buffer, parent_buffer_size, index, receiver_azymuth, 1, MPI_DOUBLE_PRECISION, main_comm, ierr )
-                !
-                allocate( receiver, source = ReceiverSingleField_t( receiver_location, receiver_azymuth, receiver_type ) )
-                !
-                if( receiver_azymuth == 1.0 ) &
-                    call unpackCSparseVectorBuffer( receiver%Lex, main_grid, parent_buffer, parent_buffer_size, index )
-                if( receiver_azymuth == 2.0 ) &
-                    call unpackCSparseVectorBuffer( receiver%Ley, main_grid, parent_buffer, parent_buffer_size, index )
-                if( receiver_azymuth == 3.0 ) &
-                    call unpackCSparseVectorBuffer( receiver%Lbx, main_grid, parent_buffer, parent_buffer_size, index )
-                if( receiver_azymuth == 4.0 ) &
-                    call unpackCSparseVectorBuffer( receiver%Lby, main_grid, parent_buffer, parent_buffer_size, index )
-                if( receiver_azymuth == 5.0 ) &
-                    call unpackCSparseVectorBuffer( receiver%Lbz, main_grid, parent_buffer, parent_buffer_size, index )
                 !
             case default
                call errStop( "unpackReceiverBuffer: Unclassified receiver" )

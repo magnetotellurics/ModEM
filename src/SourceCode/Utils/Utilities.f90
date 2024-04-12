@@ -103,8 +103,9 @@ contains
         character(100) :: line_text
         !
         counter = 0
+        exist_warnings = .FALSE.
         !
-        inquire( unit = ioWarning, exist = exist_warnings )
+        inquire( file = "warnings_"//run_tag//".log", exist = exist_warnings )
         !
         if( exist_warnings ) then
             !

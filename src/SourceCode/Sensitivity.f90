@@ -92,7 +92,6 @@ contains
         type( DataGroupTx_t ), allocatable, dimension(:), intent( out ) :: JmHat
         !
         integer :: i_data_tx
-        class( Transmitter_t ), pointer :: Tx
         type( SourceAdjoint_t ) :: source_adjoint
         !
         if( allocated( JmHat ) ) deallocate( JmHat )
@@ -102,17 +101,14 @@ contains
         !> Loop over All DataGroupTxs
         do i_data_tx = 1, size( JmHat )
             !
-            !> Pointer to the transmitter leading the current data
-            Tx => getTransmitter( i_data_tx )
+            call transmitters( i_data_tx )%forward_solver%setFrequency( sigma, transmitters( i_data_tx )%period )
             !
-            call Tx%forward_solver%setFrequency( sigma, Tx%period )
-            !
-            source_adjoint = Tx%PMult( sigma, dsigma, model_operator )
+            source_adjoint = transmitters( i_data_tx )%PMult( sigma, dsigma, model_operator )
             !
             !> Switch Transmitter's source to SourceAdjoint
-            call Tx%setSource( source_adjoint )
+            call transmitters( i_data_tx )%setSource( source_adjoint )
             !
-            call Tx%solve
+            call transmitters( i_data_tx )%solve
             !
             call JMult_Tx( JmHat( i_data_tx ) )
             !
@@ -131,11 +127,7 @@ contains
         class( Vector_t ), allocatable :: lrows
         complex( kind=prec ) :: sum_esens_dot_lrows
         integer :: i_data, i_comp, i_pol
-        class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
-        !
-        !> Point to the JmHat's Transmitter
-        Tx => getTransmitter( JmHat_tx%i_tx )
         !
         !> Loop over data
         do i_data = 1, size( JmHat_tx%data )
@@ -145,10 +137,10 @@ contains
             !
             !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
             if( .NOT. allocated( Rx%lrows ) ) then
-                call allocateLRows( Tx, Rx )
+                call allocateLRows( transmitters( JmHat_tx%i_tx ), Rx )
             endif
             !
-            call Rx%setLRows( Tx )
+            call Rx%setLRows( transmitters( JmHat_tx%i_tx ) )
             !
             !> Loop over components
             do i_comp = 1, JmHat_tx%data( i_data )%n_comp
@@ -156,14 +148,14 @@ contains
                 sum_esens_dot_lrows = C_ZERO
                 !
                 !> Loop over polarizations
-                do i_pol = 1, Tx%n_pol
+                do i_pol = 1, transmitters( JmHat_tx%i_tx )%n_pol
                     !
                     allocate( lrows, source = Rx%lrows( i_pol, i_comp )%v )
                     !
                     !> NECESSARY FOR FULL VECTOR LROWS ????
                     call lrows%conjugate
                     !
-                    sum_esens_dot_lrows = sum_esens_dot_lrows + Tx%e_sens( i_pol )%v%dotProd( lrows )
+                    sum_esens_dot_lrows = sum_esens_dot_lrows + transmitters( JmHat_tx%i_tx )%e_sens( i_pol )%v%dotProd( lrows )
                     !
                     deallocate( lrows )
                     !
@@ -317,7 +309,6 @@ contains
         class( Vector_t ), allocatable :: lrows
         type( GenVector_t ), allocatable, dimension(:) :: bSrc
         type( SourceAdjoint_t ) :: source_adjoint
-        class( Transmitter_t ), pointer :: Tx
         class( Receiver_t ), pointer :: Rx
         type( DataGroup_t ) :: data_group
         complex( kind=prec ) :: tx_data_cvalue
@@ -333,15 +324,12 @@ contains
         !
         call tx_dsigma%zeros
         !
-        !> Pointer to the tx_data's Transmitter
-        Tx => getTransmitter( tx_data%i_tx )
-        !
-        Tx%i_sol = sol_index
+        transmitters( tx_data%i_tx )%i_sol = sol_index
         !
         !> Initialize bSrc( n_pol ) with zeros
-        allocate( bSrc( Tx%n_pol ) )
+        allocate( bSrc( transmitters( tx_data%i_tx )%n_pol ) )
         !
-        do i_pol = 1, Tx%n_pol
+        do i_pol = 1, transmitters( tx_data%i_tx )%n_pol
             !
             allocate( bSrc( i_pol )%v, source = cVector3D_SG_t( model_operator%metric%grid, EDGE ) )
             !
@@ -359,10 +347,10 @@ contains
             !
             !> Allocate LRows matrix [ n_pol = 2, n_comp = 4 ]
             if( .NOT. allocated( Rx%lrows ) ) then
-                call allocateLRows( Tx, Rx )
+                call allocateLRows( transmitters( tx_data%i_tx ), Rx )
             endif
             !
-            call Rx%setLRows( Tx )
+            call Rx%setLRows( transmitters( tx_data%i_tx ) )
             !
             !> Loop over the data components
             do i_comp = 1, data_group%n_comp
@@ -377,7 +365,7 @@ contains
                 !write( *, * ) "serialJMult_T Z: ", tx_data_cvalue
                 !
                 !> Loop over polarizations
-                do i_pol = 1, Tx%n_pol
+                do i_pol = 1, transmitters( tx_data%i_tx )%n_pol
                     !
                     allocate( lrows, source = Rx%lrows( i_pol, i_comp )%v )
                     !
@@ -394,27 +382,27 @@ contains
         enddo
         !
         !> NECESSARY FOR FULL VECTOR LROWS ????
-        do i_pol = 1, Tx%n_pol
+        do i_pol = 1, transmitters( tx_data%i_tx )%n_pol
             !
             call bSrc( i_pol )%v%mult( C_MinusOne )
             !
         enddo
         !
-        call Tx%forward_solver%setFrequency( sigma, Tx%period )
+        call transmitters( tx_data%i_tx )%forward_solver%setFrequency( sigma, transmitters( tx_data%i_tx )%period )
         !
-        source_adjoint = SourceAdjoint_t( model_operator, sigma, Tx%period, .TRUE. )
+        source_adjoint = SourceAdjoint_t( model_operator, sigma, transmitters( tx_data%i_tx )%period, .TRUE. )
         !
         !> Switch Transmitter's source to SourceAdjoint, with transpose = .TRUE.
-        call Tx%setSource( source_adjoint )
+        call transmitters( tx_data%i_tx )%setSource( source_adjoint )
         !
-        call Tx%source%setE( bSrc )
+        call transmitters( tx_data%i_tx )%source%setE( bSrc )
         !
         deallocate( bSrc )
         !
         !> Solve Transmitter's e_sens with the new SourceAdjoint
-        call Tx%solve
+        call transmitters( tx_data%i_tx )%solve
         !
-        call Tx%PMult_t( sigma, tx_dsigma )
+        call transmitters( tx_data%i_tx )%PMult_T( sigma, tx_dsigma )
         !
     end subroutine JMult_T_Tx
     !
@@ -423,7 +411,7 @@ contains
     subroutine allocateLRows( Tx, Rx )
         implicit none
         !
-        class( Transmitter_t ), intent( in ) :: Tx
+        type( TransmitterMT_t ), intent( in ) :: Tx
         class( Receiver_t ), intent( inout ) :: Rx
         !
         integer :: i_pol, i_comp

@@ -87,7 +87,7 @@ contains
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
+        type( TransmitterMT_t ), intent( in ) :: transmitter
         type( DataGroup_t ), intent( out ), optional :: data_group
         !
         integer :: i, j, ij
@@ -95,8 +95,8 @@ contains
         complex( kind=prec ), allocatable :: BB(:,:), EE(:,:)
         class( Vector_t ), allocatable :: tx_e_1, tx_e_2
         !
-        call transmitter%getSolutionVector( 1, tx_e_1 )
-        call transmitter%getSolutionVector( 2, tx_e_2 )
+        call transmitter%getSolution( 1, tx_e_1 )
+        call transmitter%getSolution( 2, tx_e_2 )
         !
         comega = cmplx( 0.0, 1. / ( 2.0 * PI / transmitter%period ), kind=prec )
         !
@@ -168,7 +168,7 @@ contains
         implicit none
         !
         class( ReceiverFullImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
+        type( TransmitterMT_t ), intent( in ) :: transmitter
         !
         class( Vector_t ), allocatable :: Le, full_lex, full_ley, full_lbx, full_lby
         integer :: Ei, row, pol, comp

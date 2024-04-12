@@ -88,7 +88,7 @@ contains
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
+        type( TransmitterMT_t ), intent( in ) :: transmitter
         type( DataGroup_t ), intent( out ), optional :: data_group
         !
         integer :: i, j, ij
@@ -100,8 +100,8 @@ contains
         !
         allocate( EE(2,2) )
         !
-        call transmitter%getSolutionVector( 1, tx_e_1 )
-        call transmitter%getSolutionVector( 2, tx_e_2 )
+        call transmitter%getSolution( 1, tx_e_1 )
+        call transmitter%getSolution( 2, tx_e_2 )
         !
         EE(1,1) = self%Lex%dotProd( tx_e_1 )
         EE(2,1) = self%Ley%dotProd( tx_e_1 )
@@ -156,7 +156,7 @@ contains
         implicit none
         !
         class( ReceiverOffDiagonalImpedance_t ), intent( inout ) :: self
-        class( Transmitter_t ), intent( in ) :: transmitter
+        type( TransmitterMT_t ), intent( in ) :: transmitter
         !
         call errStop( "setLRows_OffDiagonalImpedance to be implemented" )
         !

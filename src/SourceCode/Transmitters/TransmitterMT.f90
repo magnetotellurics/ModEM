@@ -3,21 +3,52 @@
 !
 module TransmitterMT
     !
-    use Transmitter
+    use Utilities
+    use ForwardSolver
+    use ModelParameter
+    use ModelOperator
+    use SourceAdjoint
+    use rVector3D_SG
     !
-    type, extends( Transmitter_t ), public :: TransmitterMT_t
+    type :: TransmitterMT_t
         !
-        !> No derived properties
+        integer :: i_tx, n_pol, i_sol, fwd_key(8)
+        !
+        real( kind=prec ) :: period
+        !
+        class( Source_t ), allocatable :: source
+        !
+        class( ForwardSolver_t ), pointer :: forward_solver
+        !
+        type( GenVector_t ), allocatable, dimension(:) :: e_sol_0, e_sol_1, e_sens
+        !
+        integer, allocatable, dimension(:) :: receiver_indexes
         !
         contains
             !
-            final :: TransmitterMT_dtor
+            procedure, public :: solve => solve_TransmitterMT
             !
-            procedure, public :: solve => solveTransmitterMT
+            procedure, public :: isEqual => isEqual_TransmitterMT
             !
-            procedure, public :: isEqual => isEqualTransmitterMT
+            procedure, public :: baseInit => baseInit_TransmitterMT
             !
-            procedure, public :: print => printTransmitterMT
+            procedure, public :: baseDealloc => baseDealloc_TransmitterMT
+            !
+            procedure, public :: updateFwdKey => updateFwdKey_TransmitterMT
+            !
+            procedure, public :: updateReceiverIndexesArray
+            !
+            procedure, public :: setSource => setSource_TransmitterMT
+            !
+            procedure, public :: getSolution => getSolution_TransmitterMT
+            !
+            procedure, public :: PMult => PMult_TransmitterMT
+            !
+            procedure, public :: PMult_T => PMult_T_TransmitterMT
+            !
+            procedure, public :: writeESolution => writeESolution_TransmitterMT
+            !
+            procedure, public :: print => print_TransmitterMT
             !
     end type TransmitterMT_t
     !
@@ -50,24 +81,10 @@ module TransmitterMT
         !
     end function TransmitterMT_ctor
     !
-    !> Deconstructor routine:
-    !>     Calls the base routine baseDealloc().
-    !
-    subroutine TransmitterMT_dtor( self )
-        implicit none
-        !
-        type( TransmitterMT_t ), intent( inout ) :: self
-        !
-        !write( *, * ) "Destructor TransmitterMT_t:", self%id
-        !
-        call self%baseDealloc
-        !
-    end subroutine TransmitterMT_dtor
-    !
     !> Calculate e_sol_0, e_sol_1 or e_sens from with ForwardSolver
     !> Depending of the Source%adjoint
     !
-    subroutine solveTransmitterMT( self )
+    subroutine solve_TransmitterMT( self )
         implicit none
         !
         class( TransmitterMT_t ), intent( inout ) :: self
@@ -75,7 +92,7 @@ module TransmitterMT
         integer :: i_pol
         !
         if( .NOT. allocated( self%source ) ) then
-            call errStop( "solveTransmitterMT > source not allocated!" )
+            call errStop( "solve_TransmitterMT > source not allocated!" )
         endif
         !
         !> First allocate e_sol_0 or e_sens, according to the Source case
@@ -131,46 +148,389 @@ module TransmitterMT
             endif
             !
         enddo
-        ! !
-        ! open(unit = 6666,file = 'Esol1.bin',form = 'unformatted')
-        ! call self%e_sol_0(1)%v%write( 6666)
-        ! close(6666)
-        ! open(unit = 6666,file = 'Esol2.bin',form = 'unformatted')
-        ! call self%e_sol_0(2)%v%write( 6666)
-        ! close(6666)
-        ! !
-    end subroutine solveTransmitterMT
+        !
+    end subroutine solve_TransmitterMT
     !
     !> No subroutine briefing
     !
-    function isEqualTransmitterMT( self, other ) result( equal )
+    function isEqual_TransmitterMT( self, other ) result( equal )
         implicit none
         !
-        class( TransmitterMT_t ), intent( in ) :: self
-        class( Transmitter_t ), intent( in ) :: other
+        class( TransmitterMT_t ), intent( in ) :: self, other
         !
         logical :: equal
         !
         equal = .FALSE.
         !
-        select type( other )
-            !
-            class is( TransmitterMT_t )
-                !
-                if( ABS( self%period - other%period ) < TOL6 ) then
-                    equal = .TRUE.
-                endif
-                !
-            class default
-                equal = .FALSE.
-            !
-        end select
+        if( ABS( self%period - other%period ) < TOL6 ) then
+            equal = .TRUE.
+        endif
         !
-    end function isEqualTransmitterMT
+    end function isEqual_TransmitterMT
+    !
+    !> Initialize transmitter base variables (Avoid initialization on declaration).
+    subroutine baseInit_TransmitterMT( self )
+        implicit none
+        !
+        class( TransmitterMT_t ), intent( inout ) :: self
+        !
+        self%period = R_ZERO
+        !
+        self%forward_solver => null()
+        !
+        self%i_tx = 0
+        self%n_pol = 0
+        self%i_sol = 0
+        !
+        call self%updateFwdKey()
+        !
+    end subroutine baseInit_TransmitterMT
+    !
+    !> Free the memory used by all allocatable variables belonging to this transmitter.
+    !> Called before anything in the destructor of derived classes.
+    !
+    subroutine baseDealloc_TransmitterMT( self )
+        implicit none
+        !
+        class( TransmitterMT_t ), intent( inout ) :: self
+        !
+        integer :: itx, ntx
+        !
+        if( allocated( self%source ) ) deallocate( self%source )
+        !
+        if( allocated( self%e_sol_0 ) ) then
+            !
+            ntx = size( self%e_sol_0 )
+            !
+            if( ntx == 1 ) then
+                if( allocated( self%e_sol_0(1)%v ) ) deallocate( self%e_sol_0(1)%v )
+            else
+                do itx = ntx, 1, -(1)
+                    !
+                    if( allocated( self%e_sol_0( itx )%v ) ) deallocate( self%e_sol_0( itx )%v )
+                    !
+                enddo
+            endif
+            !
+            deallocate( self%e_sol_0 )
+            !
+        endif
+        !
+        if( allocated( self%e_sol_1 ) ) then
+            !
+            ntx = size( self%e_sol_1 )
+            !
+            if( ntx == 1 ) then
+                if( allocated( self%e_sol_1(1)%v ) ) deallocate( self%e_sol_1(1)%v )
+            else
+                do itx = ntx, 1, -(1)
+                    !
+                    if( allocated( self%e_sol_1( itx )%v ) ) deallocate( self%e_sol_1( itx )%v )
+                    !
+                enddo
+            endif
+            !
+            deallocate( self%e_sol_1 )
+            !
+        endif
+        !
+        if( allocated( self%e_sens ) ) then
+            !
+            ntx = size( self%e_sens )
+            !
+            if( ntx == 1 ) then
+                if( allocated( self%e_sens(1)%v ) ) deallocate( self%e_sens(1)%v )
+            else
+                do itx = ntx, 1, -(1)
+                    !
+                    if( allocated( self%e_sens( itx )%v ) ) deallocate( self%e_sens( itx )%v )
+                    !
+                enddo
+            endif
+            !
+            deallocate( self%e_sens )
+            !
+        endif
+        !
+        if( allocated( self%receiver_indexes ) ) deallocate( self%receiver_indexes )
+        !
+    end subroutine baseDealloc_TransmitterMT
+    !
+    !> No procedure briefing
+    !
+    subroutine updateFwdKey_TransmitterMT( self )
+        implicit none
+        !
+        class( TransmitterMT_t ), intent( inout ) :: self
+        !
+        call date_and_time( values=self%fwd_key )
+        !
+    end subroutine updateFwdKey_TransmitterMT
+    !
+    !> Add a receiver index to the integer array (receiver_indexes).
+    !> Increasing the size of the array, if the index does not already exist.
+    !
+    subroutine updateReceiverIndexesArray( self, new_int )
+        implicit none
+        !
+        class( TransmitterMT_t ), intent( inout ) :: self
+        !
+        integer, intent( in ) :: new_int
+        !
+        integer :: idx, ni
+        integer, allocatable, dimension(:) :: temp_array
+        !
+        if( .NOT. allocated( self%receiver_indexes ) ) then
+            !
+            allocate( self%receiver_indexes(1) )
+            !
+            self%receiver_indexes(1) = new_int
+        else
+            !
+            ni = size( self%receiver_indexes )
+            !
+            do idx = 1, ni
+                if( new_int == self%receiver_indexes( idx ) ) then
+                    return
+                endif
+            enddo
+            !
+            allocate( temp_array( ni + 1 ) )
+            !
+            temp_array( 1 : ni ) = self%receiver_indexes
+            !
+            temp_array( ni + 1 ) = new_int
+            !
+            deallocate( self%receiver_indexes )
+            !
+            allocate( self%receiver_indexes, source = temp_array )
+            !
+            deallocate( temp_array )
+            !
+        endif
+        !
+    end subroutine updateReceiverIndexesArray
+    !
+    !> Set a new source for the transmitter
+    !> Allocating it, if required
+    !
+    subroutine setSource_TransmitterMT( self, source_in )
+        implicit none
+        !
+        class( TransmitterMT_t ), intent( inout ) :: self
+        class( Source_t ), intent( in ) :: source_in
+        ! !
+        ! if( .NOT. self%is_allocated ) then
+            ! call errStop( "setSource_TransmitterMT > self not allocated" )
+        ! endif
+        ! !
+        ! if( .NOT. source_in%is_allocated ) then
+            ! call errStop( "setSource_TransmitterMT > source_in not allocated" )
+        ! endif
+        ! !
+        if( allocated( self%source ) ) then
+            self%source = source_in
+        else
+            allocate( self%source, source = source_in )
+        endif
+        !
+    end subroutine setSource_TransmitterMT
+    !
+    !> Allocate the source of this transmitter if it is allocated.
+    !> And define a new source for this transmitter, sent as an argument.
+    !
+    subroutine getSolution_TransmitterMT( self, pol, solution )
+        implicit none
+        !
+        class( TransmitterMT_t ), intent( in ) :: self
+        integer, intent( in ) :: pol
+        class( Vector_t ), allocatable, intent( out ) :: solution
+        !
+        if( self%i_sol == 0 ) then
+            !
+            allocate( solution, source = self%e_sol_0( pol )%v )
+            !
+        else
+            !
+            allocate( solution, source = self%e_sol_1( pol )%v )
+            !
+        endif
+        !
+    end subroutine getSolution_TransmitterMT
+    !
+    !> Returns a SourceAdjoint from two distinct models, with the same ModelOperator.
+    !
+    function PMult_TransmitterMT( self, sigma, dsigma, model_operator ) result( source_int_force )
+        implicit none
+        !
+        class( TransmitterMT_t ), intent( inout ) :: self
+        class( ModelParameter_t ), intent( inout ) :: sigma
+        class( ModelParameter_t ), intent( in ) :: dsigma
+        class( ModelOperator_t ), intent( in ) :: model_operator
+        !
+        type( SourceAdjoint_t ) :: source_int_force
+        !
+        type( GenVector_t ), allocatable, dimension(:) :: bSrc
+        class( Vector_t ), allocatable :: solution, map_e_vector
+        complex( kind=prec ) :: minus_i_omega_mu
+        integer :: pol
+        !
+        ! Verbose
+        !write( *, * ) "               - Start PMult"
+        !
+        call model_operator%metric%createVector( real_t, EDGE, map_e_vector )
+        !
+        !> Get map_e_vector from dPDEmapping
+        call sigma%dPDEmapping( dsigma, map_e_vector )
+        !
+        minus_i_omega_mu = -isign * mu_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
+        !
+        !> Initialize and fill bSrc
+        allocate( bSrc( self%n_pol ) )
+        !
+        do pol = 1, self%n_pol
+            !
+            call self%getSolution( pol, solution )
+            !
+            allocate( bSrc( pol )%v, source = solution )
+            !
+            deallocate( solution )
+            !
+            call bSrc( pol )%v%mult( map_e_vector )
+            !
+            call bSrc( pol )%v%mult( minus_i_omega_mu )
+            !
+        enddo
+        !
+        !> Instantiates the source and sets its E, creating rhs from it.
+        source_int_force = SourceAdjoint_t( model_operator, sigma, self%period )
+        !
+        call source_int_force%setE( bSrc )
+        !
+        !> Free up local memory
+        deallocate( bSrc )
+        !
+        ! Verbose
+        !write( *, * ) "               - Finish PMult"
+        !
+    end function PMult_TransmitterMT
+    !
+    !> Defines a new model (dsigma) from a previous model and e_sens for this transmitter.
+    !
+    subroutine PMult_T_TransmitterMT( self, sigma, dsigma, dsigma_img )
+        implicit none
+        !
+        class( TransmitterMT_t ), intent( in ) :: self
+        class( ModelParameter_t ), intent( in ) :: sigma
+        class( ModelParameter_t ), allocatable, intent( inout ) :: dsigma
+        class( ModelParameter_t ), allocatable, intent( inout ), optional :: dsigma_img
+        !
+        class( GenVector_t ), allocatable, dimension(:) :: eSens
+        class( Vector_t ), allocatable :: solution, real_sens
+        complex( kind=prec ) :: minus_i_omega_mu
+        integer :: pol
+        !
+        ! Verbose
+        !write( *, * ) "               - Start PMult_T"
+        !
+        if( present( dsigma_img ) ) then
+            call errStop( "PMult_T_TransmitterMT > dsigma_img not implemented yet!" )
+        endif
+        !
+        if( .NOT. allocated( self%e_sens ) ) then
+            call errStop( "PMult_T_TransmitterMT > eSens not allocated on the Tx" )
+        endif
+        !
+        if( .NOT. sigma%is_allocated ) then
+            call errStop( "PMult_T_TransmitterMT > sigma not allocated" )
+        endif
+        !
+        !> Copy e_sens to a local variable to keep its original value.
+        allocate( eSens, source = self%e_sens )
+        !
+        call self%getSolution( 1, solution )
+        !
+        call eSens(1)%v%mult( solution )
+        !
+        deallocate( solution )
+        !
+        !> Loop over all other polarizations, adding them to the first position
+        do pol = 2, self%n_pol
+            !
+            call self%getSolution( pol, solution )
+            !
+            call eSens( pol )%v%mult( solution )
+            !
+            deallocate( solution )
+            !
+            call eSens(1)%v%add( eSens( pol )%v )
+            !
+        enddo
+        !
+        minus_i_omega_mu = -isign * mu_0 * cmplx( 0., ( 2.0 * PI / self%period ), kind=prec )
+        !
+        call eSens(1)%v%mult( minus_i_omega_mu )
+        !
+        call eSens(1)%v%getReal( real_sens )
+        !
+        !> Get dsigma from dPDEmapping_T, using first position of eSens
+        call sigma%dPDEmapping_T( real_sens, dsigma )
+        !
+        deallocate( real_sens )
+        !
+        !> NEEDS TO MULTIPLY eSens(1) FROM SOMETHING !!!!
+        !> NOT USED YET IN OO
+        !if( present( dsigma_img ) ) then
+            !
+            !call sigma%dPDEmapping_T( eSens(1), dsigma_img )
+            !
+        !endif
+        !
+    end subroutine PMult_T_TransmitterMT
     !
     !> No subroutine briefing
     !
-    subroutine printTransmitterMT( self )
+    subroutine writeESolution_TransmitterMT( self )
+        implicit none
+        !
+        class( TransmitterMT_t ), intent( inout ) :: self
+        !
+        integer :: i_pol, ios
+        !
+        character( len=20 ) :: ModeName
+        character :: char_i_pol
+        real( kind=prec ) :: omega
+        !
+        omega = 2.0 * PI / self%period
+        !
+        !> Loop over all polarizations (MT n_pol = 2)
+        do i_pol = 1, self%n_pol
+            !
+            write( char_i_pol, "(i1)") i_pol
+            ModeName = "E"//char_i_pol
+            !
+            open( ioESolution, action = "write", position = "append", form = "unformatted", iostat = ios )
+            !
+            if( ios /= 0 ) then
+                call errStop( "writeESolution_TransmitterMT > unable to open file" )
+            else
+                !
+                !> write the frequency header - 1 record
+                write( ioESolution ) omega, self%i_tx, i_pol, ModeName
+                !
+                call self%e_sol_0( i_pol )%v%write( ioESolution )
+                !
+                close( ioESolution )
+                !
+            endif
+            !
+        enddo
+        !
+    end subroutine writeESolution_TransmitterMT
+    !
+    !> No subroutine briefing
+    !
+    subroutine print_TransmitterMT( self )
         implicit none
         !
         class( TransmitterMT_t ), intent( in ) :: self
@@ -182,7 +542,7 @@ module TransmitterMT
         ", Period=",    self%period, &
         ", NRx=", size( self%receiver_indexes )
         !
-    end subroutine printTransmitterMT
+    end subroutine print_TransmitterMT
     !
 end module TransmitterMT
 !

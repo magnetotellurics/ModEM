@@ -7,7 +7,6 @@ module Inversion
     use DataGroupTxArray
     use Sensitivity
     use TransmitterMT
-    use TransmitterCSEM
     !
     type, abstract :: Inversion_t
         !
