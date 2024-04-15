@@ -576,11 +576,11 @@ contains
                 !
                 case( DCG )
                     !
-                    write( outdir_name, * ) "DCG_Output_"//run_tag
+                    write( outdir_name, "( A26 )" ) "DCG_Output_"//run_tag
                     !
                 case( NLCG )
                     !
-                    write( outdir_name, * ) "NLCG_Output_"//run_tag
+                    write( outdir_name, "( A27 )" ) "NLCG_Output_"//run_tag
                     !
                 case default
                     !
