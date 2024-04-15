@@ -8,46 +8,12 @@
 # -l -llapack -lblas -lfftw3l -lfftw3f -lfftw3 (linking options)
 # -o objs/MT3D_OO_MPI (output directory for object files)
 
-#  Uncomment these lines to make program for Solaris OS (legacy)
-# F90 = f90
-# FFLAGS = -dalign -g -C -w  -L/usr/local/lib
-# LIBS = -xlic_lib=sunperf
-#  Uncomment these lines to make program with g95
-# include Makefile.local
-# OBJDIR = ./objs/3D_MT/G95Debug
-# F90 = g95
-# FFLAGS = -O2
-# FFLAGS = -g -ftrace=frame -fbounds-check
-# MPIFLAGS = -cpp # for serial code
-# MODULE = -fmod=$(OBJDIR)
-# LIBS = -lblas -llapack
-#  Uncomment these lines to make program with Intel compiler
-# include Makefile.local
-# OBJDIR = ./objs/3D_MT/IFortDebug
-# F90 = ifort
-# FFLAGS = -O3 -parallel -openmp #-heap-arrays
-# FFLAGS = -debug all -check bounds -traceback -heap-arrays
-# MPIFLAGS = -cpp # for serial code
-# MODULE = -module $(OBJDIR)
-# LIBS = -lblas -llapack
-#  Uncomment these lines to make program with PGI compiler
-# include Makefile.local
-# OBJDIR = ./objs/3D_MT/PGIDebug
-# F90 = pgf95  # mpif90
-# FFLAGS = -O3
-# FFLAGS = -g -Mprof=lines -Mbounds
-# MPIFLAGS = -Mpreprocess # for serial code
-# MPIFLAGS = -Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI
-# MODULE = -module $(OBJDIR)
-# LIBS = -llapack -lblas
-# LIBS = -L/usr/lib64 -llapack -lblas -lpgftnrtl -Mprof=lines
-
 # ------------------Macro-Defs---------------------
 include Build/Makefile.local
 OBJDIR = ../../objs/MT3D_OO
-F90 = gfortran
-FFLAGS = -g -Wno-all -fbacktrace -ffree-line-length-none
-MPIFLAGS = -x f95-cpp-input -I/usr/local/include/
+F90 = mpifort
+FFLAGS = -O3 -Wno-all -fbacktrace -ffree-line-length-none
+MPIFLAGS = -x f95-cpp-input -DMPI -I/usr/local/include/
 MODULE = -J $(OBJDIR)
 LIBS_PATH = -L/usr/local/lib 
 LIBS = -llapack -lblas -lfftw3l -lfftw3f -lfftw3

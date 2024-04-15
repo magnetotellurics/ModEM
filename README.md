@@ -1,5 +1,5 @@
 
-ModEM_OO - User Guide | Package Instructions - 04/09/2024
+ModEM_OO - User Guide | Package Instructions - 04/15/2024
 
     ModEM (Modular Electromagnetic) is a software for inversion of 3D EM datasets,
     originally developed at Oregon State University using Fortran 90,
@@ -10,15 +10,12 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
     Result of a partnership project between Observatório Nacional and Shell-Brasil,
     this version (referred to as ModEM_OO) implements new capabilities including:
 
-        - Controlled Source Electromagnetic (CSEM) datasets.
         - Anisotropic models with Vertical Transverse Isotropy (VTI).
         - The Multi-Resolution (MR) Grids described in Cherevotova et al. (2018).
 
     The code is of course not nearly as throughly tested as the stable Mod3DMT code previously
     distributed to academic users. Additional work will be required to improved efficiency
-    and parallelization. Furthermore, due to copyright issues we do not provide the 1D solver
-    required for CSEM (primary field computations). Further details on making use of CSEM
-    capabilities are provided in a separate document.
+    and parallelization.
 
     Here we present a quick User Guide for the first release of ModEM_OO.
     Note that in the following, model and data files are in the standard ASCII formats,
@@ -84,7 +81,7 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
 
                         make -f Build/MakefileSerial_MAC
 
-                        make -f Build/MakefileMPI_MAC ????
+                        make -f Build/MakefileMPI_MAC
 
 
     2. Running ModEM.
@@ -149,18 +146,18 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
                 - This generates an output Folder, named by the INV type plus execution date and time.
                   Containing INV log files and the output files resultant from each iteration.
 
-                    - PredictedData_it#.dat:        ????
-                    - ResidualData_it#.res:         ????
-                    - SigmaModel_it#.rho:           ????
-                    - PerturbationModel_it#.prm:    ????
+                    - PredictedData_<INV_Iteration>.dat     : Data predicted by FWD.
+                    - ResidualData__<INV_Iteration>.res     : Residual related to Measured Data.
+                    - SigmaModel_<INV_Iteration>.rho        : Resulting model.
+                    - PerturbationModel_<INV_Iteration>.prm : Resulting perturbation model.
 
                 2.2.2.1. INV supported options.
 
                     - Other file paths can be specified, preceded by flags, for an INV command line:
 
-                        [-pm], [--pmodel]     Sets an input perturbation model file path ????
+                        [-pm], [--pmodel]     Sets an input perturbation model file path.
 
-                        [-c],  [--cov]        Sets the path to input a Covariance File, in ModEM format ????
+                        [-c],  [--cov]        Sets the path to input a Covariance File, in ModEM format.
 
                         [-o],  [--outdir]     Sets the path to the output Folder.
 
@@ -175,7 +172,7 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
                     ./ModEM -j -m <START_MODEL_PATH> -pm <PERT_MODEL_PATH> -d <DATA_PATH>
 
                 - This job results one Data File, named 'jmhat.dat',
-                  formatted as the inputed one, containing jMult calculations ????
+                  formatted as the inputed one, containing data resulting from jMult calculations.
 
                 2.2.3.1. jMult supported options.
 
@@ -193,14 +190,14 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
 
                     ./ModEM -jt -m <MODEL_PATH> -d <DATA_PATH>
 
-                - Outputting a single Model File, named 'dsigma.rho',
-                  in the same dimensions as the inputed one, containing ???? calculated by jMult_T.
+                - Outputting a single Model File, named 'dsigma.rho', containing residual information,
+                  calculated by jMult_T in model space, with the same dimensions as the inputed model.
 
                 2.2.4.1. jMult_T supported options.
 
                     - Other paths preceded by flags fit on a jMult_T execution line:
 
-                        [-dm], [--dmodel]     Sets the path to output dSigma ???? Model File.
+                        [-dm], [--dmodel]     Sets the path to output dSigma Model File.
 
                         [-cf], [--ctrl_fwd]   Sets the path to a input Control File with FWD parameters.
                                               (Shown in 2.2.5.1.)
@@ -208,7 +205,7 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
             2.2.5. Control File Templates.
 
                 - FWD and INV can have their control parameters modified through input text files.
-                    Each featuring specific variables, that can be created by running:
+                  Each featuring specific variables, that can be created by running:
 
                     ./ModEM --template
 
@@ -216,38 +213,72 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
 
                 2.2.5.1. Forward Modeling Control File - 'control.fwd'
 
-                    - Making it possible to edit core features that control FWD, such as:
+                    - Makes it possible to edit key features that control a FWD operation,
+                      as can be seen below, in a reproduction of the contents of this file:
 
-                        model_operator_type [MF|SP|SP2] : MF 
-                        grid_format : 0,a,1,b,2,c
-                        model_method [mirror|fixed height] : fixed height
-                        model_n_air_layer [10]             : 10
-                        model_max_height [200.]            : 200.
-                        source_type_mt [1D|2D]                                              : 1D
-                        source_type_csem [EM1D|Dipole1D]                                    : EM1D
-                        get_1d_from [Fixed_Value|Geometric_Mean|Mean_around_Tx|Tx_Position] : Geometric_Mean
-                        solver_type [QMR|BICG]         : BICG
-                        forward_solver_type [IT|IT_DC] : IT_DC
-                        max_solver_iters [80]          : 80
-                        max_solver_calls [20]          : 20
-                        max_divcor_iters [100]         : 100
-                        tolerance_solver [1E-7]        : 1E-7
-                        tolerance_divcor [1E-5]        : 1E-5
+########################################################
+# ModEM_1.0.0 - Forward Modeling Control File Template #
+#    All supported editable parameters are listed here #
+#    Remove or comment any, to use its default value   #
+#######################################################-id:<date_time>
+#
+### <Model/Grid Parameters>
+#
+## Matrix Free or Sparse Matrices methods for LSE solving.
+#
+model_operator_type [MF|SP|SP2] : MF
+#
+## For MR Grid => Uncomment grid_format line, give to it an array of 2*nGroups in size,
+##                containing integers pairs (Coarse Factor, Depth) separated by commas.
+##                    Ex.: 0,a,1,b,2,c - Define 3 groups, with a, b, c layers of Depth,
+##                                       and Coarse Factors of 0, 1 and 2 respectively.
+## For SG Grid => Remove or comment grid_format line.
+#
+#grid_format : 0,a,1,b,2,c
+#
+model_method [mirror|fixed height] : fixed height
+model_n_air_layer [10]             : 10
+model_max_height [200.]            : 200.
+#
+### <Solver Parameters>
+#
+## Quasi-Minimal Residual or Bi-Conjugate Gradient solvers.
+#
+solver_type [QMR|BICG]         : BICG
+#
+## Iterative FWD Solvers - with or without Divergence Correction
+#
+forward_solver_type [IT|IT_DC] : IT_DC
+#
+max_solver_iters [80]          : 80
+max_solver_calls [20]          : 20
+max_divcor_iters [100]         : 100
+tolerance_solver [1E-7]        : 1E-7
+tolerance_divcor [1E-5]        : 1E-5
+#
 
                 2.2.5.2. Inversion Control File - 'control.inv'
 
-                    - Allowing modification of values of the variables that govern INV iterations, such as:
+                    - Allowing modification of values of the variables that govern INV iterations, as shown below:
+                      
 
-                        inversion_type [DCG|NLCG]       : NLCG
-                        joint_type [Unweighted|TxBased] : Unweighted
-                        max_inv_iters [100]             : 100
-                        max_grad_iters [20]             : 20
-                        error_tol [1E-3]                : 1E-3
-                        rms_tol [1.05]                  : 1.05
-                        lambda [1.]                     : 1.
-                        lambda_tol [1.0e-4]             : 1.0e-4
-                        lambda_div [10.]                : 10.
-                        startdm [20.]                   : 20.
+########################################################
+#  ModEM_1.0.0 - Inversion Control File Template       #
+#    All supported editable parameters are listed here #
+#    Remove or comment any, to use its default value   #
+#######################################################-id:<date_time>
+#
+inversion_type [DCG|NLCG]       : NLCG
+joint_type [Unweighted|TxBased] : Unweighted
+max_inv_iters [100]             : 100
+max_grad_iters [20]             : 20
+error_tol [1E-3]                : 1E-3
+rms_tol [1.05]                  : 1.05
+lambda [1.]                     : 1.
+lambda_tol [1.0e-4]             : 1.0e-4
+lambda_div [10.]                : 10.
+startdm [20.]                   : 20.
+#
 
                 Notes:
                     - Templates are generated containing the exact same default values used by ModEM_OO.
@@ -320,7 +351,7 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
                 It is enabled in ModEM_OO by the following changes to its Model Files:
 
                     ---------------------------------------------
-                    1st header line:  nx    ny    nz   ? type
+                    1st header line:  nx    ny    nz   i type
                     ---------------------------------------------
                           Isotropic: <nx>  <ny>  <nz>  0 LOGE
                     Anisotropic VTI: <nx>  <ny>  <nz>  0 LOGE VTI
@@ -363,9 +394,6 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
                      which are always added to the first group of layers at the top of the model.
                    - Coarseness can only change by one level (factor of 2) between adjacent grids.
 
-    SOMEWHERE NEED TO SAY SOMETHING ABOUT 1D background model for CSEM -- I.e., how to get Dipole1D and install.
-    And how do we deal with makefile, etc. for a version w/o CSEM ????
-
 
     4. Package extra features.
 
@@ -374,24 +402,15 @@ ModEM_OO - User Guide | Package Instructions - 04/09/2024
 
         4.2. Published articles and additional information about ModEM can be checked at the docs/ folder.
 
-        4.3. ModEM add-on programs are provided in the tools/ folder, such as:
-
-            4.3.1. 3DGrid ????
-
-                - NEED TO ASK NASER.   From my perspective make  NO mention of 3DGrid.   It is not my program!
-
-            4.3.2. A JavaScript tool for electrical solution visualization ????
-                Certainly not now!   
-
-        4.4. Extensive Doxygen Source Code documentation can be found at:
+        4.3. Extensive Doxygen Source Code documentation can be found at:
 
             https://on.multiphysics.gitlab.io/modem-oo/
 
-        4.5. GitLab releases of packages at:
+        4.4. GitLab releases of packages at:
 
             https://gitlab.com/on.multiphysics/modem-oo/-/releases/
 
-        4.6. Contacts.
+        4.5. Contacts:
 
             sergio@on.br                   - Sergio Fontes    - Project's Coordinator.
             
