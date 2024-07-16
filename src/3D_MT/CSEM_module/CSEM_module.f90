@@ -11,9 +11,13 @@ use emsolve3d
 use transmitters
 !use ioascii
 !This module uses Kerry Key's 1D code required to construct the b0%s in the secondary field formulation
+#ifdef CSEM_Dipole1D
 use Dipole1D
 !This module uses Rita Streich's 1D code required to construct the b0%s in the secondary field formulation
+#endif
+#ifdef CSEM_EM1D
 use EM1D
+#endif
 
 
 implicit none
@@ -51,9 +55,14 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
 !if (.not. E_p%allocated) then
     write(*,*) trim(node_info), 'Start using ', trim(compute_1D_from),' to solve the 1D FWD problem'
     if (trim(compute_1D_from)=="Dipole1D") then
+#ifdef CSEM_Dipole1D
        call  get_source_for_csem_Dipole1D(sigma,grid,iTx,source)
+#endif
+
     elseif (trim(compute_1D_from)=="EM1D") then
+#ifdef CSEM_EM1D
        call get_source_for_csem_EM1D(sigma,grid,iTx,source)
+#endif
     end if
     write(*,*) trim(node_info), 'finish using ', trim(compute_1D_from),' to solve the 1D FWD problem'
 !end if    
@@ -63,7 +72,7 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
 			!
     
 end subroutine
-
+#ifdef CSEM_EM1D
 !#########################################################################
 subroutine get_source_for_csem_EM1D(sigma,grid,iTx,source)
 	 type(modelParam_t),intent(in)		:: sigma
@@ -370,10 +379,10 @@ subroutine create_background_data(grid,bgdat)
  
 
 end subroutine create_background_data
+#endif
 !#########################################################################
-
+#ifdef CSEM_Dipole1D
 subroutine get_source_for_csem_Dipole1D(sigma,grid,iTx,source)
- 
  type(modelParam_t),intent(in)		:: sigma
  type(grid_t), intent(in)        :: grid 
  integer, intent(in)                        :: iTx
@@ -428,13 +437,11 @@ subroutine get_source_for_csem_Dipole1D(sigma,grid,iTx,source)
 
 !clean
  call deall_rvector(CondAnomaly_h)
- 
 end subroutine get_source_for_csem_Dipole1D
 !#############################################
 
 
 subroutine create_Ep_from_Dipole1D(grid)
-
 type(grid_t), intent(in)        :: grid  
 !Local 
 integer ix,iy,iz,counter
@@ -538,7 +545,7 @@ integer counter,ix,iy,iz
 			  End Do
 		  End Do
 	  End Do
-end subroutine 	initilize_1d_vectors  
+end subroutine 	initilize_1d_vectors 
 !#############################################
 subroutine set1DModel(sigma,xTx1D,yTx1D,FromFile)
 
@@ -691,6 +698,7 @@ logical, intent(in), optional                        :: FromFile
    call deall_rscalar(model)
    call deall_rscalar(sigmaCell)
 end subroutine set1DModel
+#endif 
 !#########################################################################
 subroutine set1DModel_VTI(sigma,xTx1D,yTx1D,FromFile)
 
@@ -990,6 +998,7 @@ subroutine setAnomConductivity_VTI(sigma)
    
 end subroutine setAnomConductivity_VTI
 !#########################################################################
+#ifdef CSEM_EM1D
 subroutine get_source_for_csem_EM1D_test(sigma,grid,iTx,source)
 	 type(modelParam_t),intent(in)		:: sigma
 	 type(grid_t), intent(in)        :: grid 
@@ -1163,6 +1172,5 @@ write(*,*)' nrec',nrec, bgdat%Exypos(1,1), bgdat%Exypos(1,2) , bgdat%Exypos(1,3)
         WRITE(6, *) ' bgdat%Ex(1) ', bgdat%Ex(1)
   
 end subroutine get_source_for_csem_EM1D_test
-
-
+#endif 
 end module CSEM_module

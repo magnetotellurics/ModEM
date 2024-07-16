@@ -1,0 +1,43 @@
+##############################################
+# ModEM Forward Modeling Control File Template
+#     Here are all supported parameters       
+#     Comment or remove to use default values 
+##############################################
+#
+# <Field parameters>
+#
+model_operator_type [MF|SP|SP2] : SP2
+#
+# <Grid parameters>
+#
+#grid_header [ModEM|HDF5] : ModEM
+#
+#Coarsened Grid => Describe an array of 2*layers in size,
+#                containing comma separated integer pairs, like <Coarse Factor, Number of Layers>.
+#                Ex.: 0,a,1,b,2,c => For 3 Layers, each with sizes a, b and c and
+#                                    coarse factors of 0, 1 and 2 respectively.
+#Standard Grid  => Remove or leave the grid_format line commented.
+grid_format : 0,20,1,15,2,15
+#
+# <Model parameters>
+#
+model_method [mirror|fixed height] : fixed height
+model_n_air_layer [10]             : 10
+model_max_height [200.]            : 200.
+#
+# <Source parameters>
+#
+source_type_mt [1D|2D]                                              : 1D
+source_type_csem [EM1D|Dipole1D]                                    : EM1D
+get_1d_from [Fixed_Value|Geometric_Mean|Mean_around_Tx|Tx_Position] : Geometric_Mean
+#
+# <Solver parameters>
+#
+solver_type [QMR|BICG]         : QMR
+forward_solver_type [IT|IT_DC] : IT
+max_solver_iters [80]          : 80
+max_solver_calls [20]          : 20
+max_divcor_iters [100]         : 100
+tolerance_solver [1E-7]        : 1E-7
+tolerance_divcor [1E-5]        : 1E-5
+#
