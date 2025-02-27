@@ -1,10 +1,18 @@
 %% LyX 2.2.0 created this file.  For more info, see http://www.lyx.org/.
 %% Do not edit unless you really know what you are doing.
-\documentclass[12pt,english,ngerman]{article}
+\documentclass[12pt,english]{article}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{color}
 \usepackage{array}
+\usepackage{color}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linktoc=all,
+    linkcolor=blue,
+}
+
 
 \makeatletter
 
@@ -14,7 +22,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
 \usepackage{array}
-\usepackage[english,ngerman]{babel}
+\usepackage[english]{babel}
 \PassOptionsToPackage{english}{babel}
 
 
@@ -44,6 +52,10 @@
 
 \author{Gary Egbert, Anna Kelbert, Naser Meqbel (COAS/OSU)}
 \maketitle
+
+\newpage
+\tableofcontents
+\newpage
 
 \section{Overview}
 
@@ -77,7 +89,6 @@ from our Subversion repository:
 \begin{verbatim}
     http://ohm.coas.oregonstate.edu/svn/ModEM/branches/stable
 \end{verbatim}
-% \selectlanguage{ngerman}%
 It is advisable that you obtain the code through the Subversion repository,
 to keep your version up-to-date with bug fixes and updates. Refer
 to the README file for details on obtaining and updating the code.
@@ -124,14 +135,12 @@ archive, i.e.,
 \begin{verbatim}
 cd f90; cp Makefile3d Makefile
 \end{verbatim}
-%\selectlanguage{english}%
 Then open the copy of the Makefile in your favorite editor, and make
 sure that the (uncommented) compiler is set appropriately for your
 system). Some paths may also need to be modified. The \verb"make"
 command will compile the 3D MT (or 2D MT) code for you (\verb"Mod3DMT"
 and \verb"Mod2DMT", respectively).
 
-%\selectlanguage{ngerman}%
 ModEM can be compiled for a parallel or serial execution.
 Make sure that you use the appropriate compiler \verb"preprocessing"
 flag to compile the desired MPI (parallel) or serial version.
@@ -200,7 +209,6 @@ a brief summary of usage:
  indicates the desired level of output to screen and to files.
 
 \end{verbatim}
-%\selectlanguage{english}%
 The \verb"-F [FORWARD]" and \verb"-I [INVERSE]" options will suffice
 for simple applications. For some of the more advanced applications
 discussed below the \verb"-C [TEST_COV]" option is also needed. The
@@ -213,7 +221,6 @@ be primarily useful for developers. All of the other options (\verb"-J, -M,"
 etc.) are primarily useful for development, testing, and some specialized
 applications that are beyond the scope of this basic documentation.\\
 %
-\selectlanguage{ngerman}%
 Sub-directory \verb"examples/" contains some sample input files with
 instructions for simple cases. These should be sufficient to test
 your installation, and also will provide a template for your own initial
@@ -304,7 +311,6 @@ As an example, the start of a single data block is as follows:
 1.000000E+01 006-006    0.000    0.000    41000.000    39375.000        0.000 ZYY
 2.279075E+03   -1.333596E+03    1.981138E+02
 \end{verbatim}
-%\selectlanguage{english}%
 The actual data are written in a list following the 8-line header.
 Each data line (which are split over two lines in the example displayed
 here, but should be on a single line in the actual data file) in the
@@ -319,7 +325,6 @@ real and imaginary parts of an intrinsically complex data type (such
 as impedance components) are given together on a single line, with
 a common error bar.
 
-%\selectlanguage{ngerman}%
 Some (or all) components can be missing at any sites and/or for any
 periods, and any ordering of the list elements is allowed. This is
 an advantage of the format: it is easy to edit a file and delete or
@@ -449,13 +454,11 @@ fault will occur. If unsure, use the command
 \begin{verbatim}
     ./Mod3DMT -R model_input data_input model_output data_output
 \end{verbatim}
-%\selectlanguage{english}%
 to validate your model and data files. This will read your files,
 store them in the internal dictionary, data and model structure, write
 them out again, and exit. If this does not work, you need to increase
 the size of the parameters. (This should be fixed!)
 
-%\selectlanguage{ngerman}%
 In the example given above, each line in the actual data list contains
 period, site code (up to 12 chars), geographic latitude and longitude,
 X/Y/Z location in meters, component code (e.g., ZXY), real and imaginary
@@ -481,21 +484,17 @@ format is:
 \begin{verbatim}
 Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error
 \end{verbatim}
-%\selectlanguage{english}%
 For apparent resistivity and phase the data format looks like: 
 \begin{verbatim}
 Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error
 \end{verbatim}
-%\selectlanguage{english}%
 For inter-station transfer functions, information about the reference
 site is also required: 
 \begin{verbatim}
 Period(s) Code GG_LatLon XYZ(m) Ref_Code Ref_LatLon Ref_XYZ(m) Component Real Imag Error
 \end{verbatim}
-%\selectlanguage{english}%
 For 2D MT, the data format is identical, but the X coordinate is not
 used or stored in the program. 
-%\selectlanguage{ngerman}%
 
 \subsection{Model Files}
 
@@ -595,9 +594,7 @@ land elevation point in the domain. We discuss this further in Sec.~\ref{Topogra
 -1183956 -1088486 0	<-- (6) coordinate origin (last lines optional)
 0			<-- (7) coordinate rotation (not used)
 \end{verbatim}
-%\selectlanguage{english}%
 Explanation/Notes: 
-%\selectlanguage{ngerman}%
 \begin{itemize}
 \item[(1)] Header is not used by program; useful for user to describe model
 in some fashion. Here, the program that wrote the file is documented. 
@@ -633,7 +630,6 @@ DO iz = 1,Nz
    ENDDO
 ENDDO
 \end{verbatim}
-%\selectlanguage{ngerman}%
 \begin{itemize}
 \item[(6)] These three numbers provide the origin (x, y and
 z), in ``natural grid coordinates'' used for Cartesian data locations.
@@ -773,7 +769,6 @@ Following is a simple example of a covariance file for a small model:
 9 9 9 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
 
 \end{verbatim}
-%\selectlanguage{english}%
 The index array is specified through a series of blocks, which specify
 indices for a range of vertical layers. First the vertical layer limits
 are given (k1, k2) then an array temp(i,j). Then index(i,j,k1:k2)
@@ -786,12 +781,10 @@ DO i = 1,Nx
    ENDDO
 ENDDO
 \end{verbatim}
-%\selectlanguage{english}%
 Blocks are repeated as necessary — a single block is used in the simple
 example, indicating that the regions extend over all 11 layers (top-to-bottom)
 of this very small grid.\\
 
-%\selectlanguage{ngerman}%
 For 2D MT, Weerachai Siripuvaraporn's model covariance is used. No
 configuration file is currently allowed.\\
 
@@ -1013,9 +1006,7 @@ can help ensure consistency–if these are used correctly!
 \begin{verbatim}
 Usage: -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl]
 \end{verbatim}
-%\selectlanguage{english}%
 Required files are: 
-%\selectlanguage{ngerman}%
 \begin{itemize}
 \item \verb"rFile_Model" : input model grid/resistivity file 
 \item \verb"rFile_Data" : input data file (template: defines data types/locations
@@ -1041,6 +1032,7 @@ control file is as follows:
     Misfit tolerance for EM adjoint solver        : 1.0e-7
     Misfit tolerance for divergence correction    : 1.0e-5
     Optional EM solution file name for nested BC  : nested.esoln
+\end{verbatim}
 \noindent The first 6 parameters are numbers and are all required
 if you use this option. The last line gives the file for nesting and
 is optional. If it is present, electric fields in the file are used
@@ -1052,8 +1044,6 @@ of specifying a file name for forward model control, the user can
 specify a single real number. ModEM will interpret this as the value
 of eps = misfit tolerance for the forward solver (I.e., the 4th line
 in the file). 
-\end{verbatim}
-%\selectlanguage{ngerman}%
 
 \subsection{Inversion}
 
@@ -1068,11 +1058,9 @@ line is
 \begin{verbatim}
 Usage: -I NLCG rFile_Model rFile_Data [InvCtrl FwdCtrl CovCtrl StartModel ]
 \end{verbatim}
-%\selectlanguage{english}%
 As usual, arguments have to be in the specified order. Thus, to specify
 StartModel all other optional arguments must be given.
 
-%\selectlanguage{ngerman}%
 The required arguments are: 
 \begin{itemize}
 \item \verb"NLCG" Inversion search approach (other supported options DCG;
@@ -1097,15 +1085,15 @@ to return)
     Exit search when rms is less than  : 1.05
     Exit when lambda is less than      : 1.0e-4
     Maximum number of iterations       : 120
+\end{verbatim}
 The values given above are the default values. The first line is used
 to define the root for output files (model parameter and data) created
 by the inversion; these are discussed in more detail below, under
-``inversion outputs’’. As with the forward modeling control file,
-there is a simpler form for this optional argument, which modifies
-only a single (the most commonly modified) parameter, i.e., lambda
-= the initial damping parameter for inversion.
-\end{verbatim}
-%\selectlanguage{ngerman}%
+\hyperref[sec:inversionOutputs]{Inversion Outputs}. As with the
+forward modeling control file, there is a simpler form for this
+optional argument, which modifies only a single (the most commonly
+modified) parameter, i.e., lambda = the initial damping parameter for
+inversion.
 \begin{itemize}
 \item \verb"fwdCtrl" : forward solver control file, described above under
 the -F option. 
@@ -1118,6 +1106,7 @@ is discussed below, in Sec.~\ref{Restarting}.
 \end{itemize}
 
 \subsection{Inversion Outputs}
+\label{sec:inversionOutputs}
 
 \label{InversionOutputs}
 
@@ -1159,9 +1148,7 @@ The format for this option is:
 \begin{verbatim}
     -C INV rFile_Model wFile_Model [CovCtrl rFile_Prior]
 \end{verbatim}
-%\selectlanguage{english}%
 The required arguments are: 
-%\selectlanguage{ngerman}%
 \begin{itemize}
 \item \verb"INV": this is the inverse (roughening) operator, most often
 used. \verb"FWD" is the argument used to apply the covariance (smoothing)
@@ -1214,7 +1201,6 @@ this case, to restart the inversion from last iteration (e.g., iteration
 \begin{verbatim}
 ModEM -I NLCG rFilePrior rFile_Data InvCtrl FwdCtrl CovCtrl root_NLCG_060.prm 
 \end{verbatim}
-%\selectlanguage{ngerman}%
 One might also want to change some inversion control or covariance
 parameters. For example, it is possible that an inversion that has
 stalled in terms of decreasing the normalized RMS, might be moved
@@ -1253,17 +1239,14 @@ be transformed (roughened), using the -C inverse option:
 \begin{verbatim}
 ModEM -C INV HypoTest.rho HypTest.prm CovCtrl rFilePrior
 \end{verbatim}
-%\selectlanguage{english}%
 Then restart the inversion:
 \begin{verbatim}
 ModEM -I NLCG rFilePrior rFile_Data InvCtrl FwdCtrl CovCtrl HypoTest.prm 
 \end{verbatim}
-%\selectlanguage{english}%
 Here \verb"CovCtrl" is the covariance parameter file, and \verb"rFilePrior"
 is the prior model file, which in the application just described would
 be the same as used for the initial inversion.
 
-%\selectlanguage{ngerman}%
 Going one step further in the hypothesis test example, one might want
 to remove a structure (e.g., a conductive feature) and then freeze
 the region where conductivity has been set to background levels (thus
@@ -1316,7 +1299,6 @@ The simplest approach is to use the same data file (\verb"rFile_Data")
 for both large and nested runs, but only the periods (not the sites)
 have to be the same.
 
-%\selectlanguage{english}%
 Here is a simple example illustrating the use of
 nested modeling for both forward modeling (\verb"-F" option) and inversion
 (\verb"-I" option). Assume that you have constructed a large coarse
@@ -1328,7 +1310,6 @@ solution and save it in a file. Thus, in the first run we need the
 \begin{verbatim}
 ModEM -F  Large_Grid.mod Data_file.dat temp_Predicted_Large.dat EMsoln_large.soln 
 \end{verbatim}
-%\selectlanguage{english}%
 After running this command line, ModEM will produce
 2 files: 1) temp\_Predicted\_Large.dat, the predicted data for the
 large grid (not important), 2) EMsoln\_large.soln, the electric field
@@ -1345,26 +1326,22 @@ name of the electric field solution obtained from the first run:
     Misfit tolerance for divergence correction    : 1.0e-5
     Optional EM solution file name for nested BC  : EMsoln_large.soln
 \end{verbatim}
-%\selectlanguage{english}%
 For the second run (either forward (\verb"-F") or inverse
 (\verb"-I") ) construct a smaller and generally finer grid and call
 it e.g., ''Small\_grid.mod``. To run forward modeling use:
 \begin{verbatim}
 ModEM -F Small_grid.mod Data_file.dat Predicted_small.dat EMsoln_small.soln FwdCtrl
 \end{verbatim}
-%\selectlanguage{english}%
 and for the inversion:
 \begin{verbatim}
 ModEM -I NLCG Small_grid.mod Data_file.dat InvCtrl FwdCtrl CovCtrl
 \end{verbatim}
-%\selectlanguage{english}%
 IT IS VERY IMPORTANT TO NOTICE HERE THAT IN THE
 FIRST AND SECOND RUNS WE USED THE SAME DATA FILE ''DATA\_FILE.DAT``.
 THIS IS BECAUSE ModEM DOES NOT INTERPOLATE OVER PERIODS. THUS,
 TO MAKE SURE THAT THE SAME PERIOD LAYOUT SAVED IN ''EMSOLN\_LARGE.SOLN``
 IS USED IN THE SECOND RUN TO EXTRACT THE BOUNDARY VALUES AT
 THE EDGES OF THE NESTED GRID, USE THE SAME DATA FILE.
-%\selectlanguage{ngerman}%
 
 \section{Change Log for Release 1.2.0, April 12, 2019}
 
