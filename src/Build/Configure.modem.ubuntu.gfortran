@@ -1,0 +1,45 @@
+#!/bin/sh
+if [ $# -le 1 ]; then
+    echo 1>&2 Usage: $0 Makefile [SERIAL|MPI] 
+    exit 127
+fi
+if [ -e $1 ]; then
+    rm $1
+fi
+if [ $2 = "SERIAL" ]; then
+# Serial Version
+perl Build/fmkmf.pl -f90 "gfortran" \
+-opt '-O3 -Wno-all -fbacktrace -ffree-line-length-none' \
+-mpi '-x f95-cpp-input -I/usr/include/' \
+-o 'objs/MT3D_OO_MPI' \
+-l '-llapack -lblas -lfftw3l -lfftw3f -lfftw3' \
+-lp '-L/usr/lib64  -L/usr/lib/x86_64-linux-gnu' \
+-p SourceCode:SourceCode/1D:SourceCode/2D:SourceCode/DataIO:SourceCode/DataSpace:SourceCode/Inversion:SourceCode/SP_Topology:SourceCode/Fields:SourceCode/ForwardSolver:SourceCode/Grid:SourceCode/ModelOperator:SourceCode/PreConditioner:SourceCode/ModelParameter:SourceCode/Receivers:SourceCode/Solver:SourceCode/Source:SourceCode/Transmitters:SourceCode/Utils \
+SourceCode/$3 > $1
+elif [ $2 = "MPI" ]; then
+# Object Oriented version
+perl Build/fmkmf.pl -f90 "mpifort" \
+-opt '-O3 -Wno-all -fbacktrace -ffree-line-length-none' \
+-mpi '-x f95-cpp-input -DMPI -I/usr/include/' \
+-o 'objs/MT3D_OO_MPI' \
+-l '-llapack -lblas -lfftw3l -lfftw3f -lfftw3' \
+-lp '-L/usr/lib64  -L/usr/lib/x86_64-linux-gnu' \
+-p SourceCode:SourceCode/1D:SourceCode/2D:SourceCode/DataIO:SourceCode/DataSpace:SourceCode/Inversion:SourceCode/SP_Topology:SourceCode/Fields:SourceCode/ForwardSolver:SourceCode/Grid:SourceCode/ModelOperator:SourceCode/PreConditioner:SourceCode/ModelParameter:SourceCode/MPI:SourceCode/Receivers:SourceCode/Solver:SourceCode/Source:SourceCode/Transmitters:SourceCode/Utils \
+SourceCode/$3 > $1
+fi
+
+# Fix the MODULE directory for temporary object files - done in fmkmf.pl already
+# sed -i 's/-module/-fintrinsic-modules-path/' $1
+
+if [ $# -le 2 ]; then
+    echo 1>&2 Cartesian version of the makefile ready to use.
+    exit
+fi
+
+if [ $3 = "spherical" ]; then
+    sed -i 's/GridCalc\./GridCalcS\./g' $1
+    sed -i 's/boundary_ws\./boundary_wsS\./g' $1    
+    echo 1>&2 Spherical version of the makefile ready to use.
+else
+    echo 1>&2 Cartesian version of the makefile ready to use.
+fi
