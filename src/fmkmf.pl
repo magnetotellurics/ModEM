@@ -189,40 +189,6 @@ print "# -lp $libpath (linking options: path to libraries)\n";
 print "# -l $linkopts (linking options)\n";
 print "# -o $linkdir (output directory for object files)\n\n";
 
-print "#  Uncomment these lines to make program for Solaris OS (legacy)\n";
-print "# F90 = f90\n";
-print "# FFLAGS = -dalign -g -C -w  -L/usr/local/lib\n";
-print "# LIBS = -xlic_lib=sunperf\n";
-print "#  Uncomment these lines to make program with g95\n";
-print "# include Makefile.local\n";
-print "# OBJDIR = ./objs/3D_MT/G95Debug\n";
-print "# F90 = g95\n";
-print "# FFLAGS = -O2\n";
-print "# FFLAGS = -g -ftrace=frame -fbounds-check\n";
-print "# MPIFLAGS = -cpp # for serial code\n";
-print "# MODULE = -fmod=\$(OBJDIR)\n";
-print "# LIBS = -lblas -llapack\n";
-print "#  Uncomment these lines to make program with Intel compiler\n";
-print "# include Makefile.local\n";
-print "# OBJDIR = ./objs/3D_MT/IFortDebug\n";
-print "# F90 = ifort\n";
-print "# FFLAGS = -O3 -parallel -openmp #-heap-arrays\n";
-print "# FFLAGS = -debug all -check bounds -traceback -heap-arrays\n";
-print "# MPIFLAGS = -cpp # for serial code\n";
-print "# MODULE = -module \$(OBJDIR)\n";
-print "# LIBS = -lblas -llapack\n";
-print "#  Uncomment these lines to make program with PGI compiler\n";
-print "# include Makefile.local\n";
-print "# OBJDIR = ./objs/3D_MT/PGIDebug\n";
-print "# F90 = pgf95  # mpif90\n";
-print "# FFLAGS = -O3\n";
-print "# FFLAGS = -g -Mprof=lines -Mbounds\n";
-print "# MPIFLAGS = -Mpreprocess # for serial code\n";
-print "# MPIFLAGS = -Bstatic  -Mipa=fast  -Mextend  -Kieee -Mpreprocess -DMPI\n";
-print "# MODULE = -module \$(OBJDIR)\n";
-print "# LIBS = -llapack -lblas\n";
-print "# LIBS = -L/usr/lib64 -llapack -lblas -lpgftnrtl -Mprof=lines\n";
-
 if($optiond){
   print STDERR "# Main program is $mainprogfile \n" ;
 }
@@ -234,7 +200,7 @@ process_fsource($mainprogfile);
 print "\n# ------------------Macro-Defs---------------------\n";
 
 print "include Makefile.local\n";
-print "OBJDIR = ../../objs/3D_MT/GFortReleaseMPI\n";
+print "OBJDIR = $linkdir\n";
 print "F90 = $f90 \n";
 print "FFLAGS = $optim\n";
 print "MPIFLAGS = $mpiflags\n";
