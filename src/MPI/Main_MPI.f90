@@ -1,5 +1,5 @@
 module Main_MPI
-#ifdef MPI
+#ifdef MPI_OLD
 
   use math_constants
   use file_units
@@ -140,8 +140,8 @@ Subroutine Master_job_calcJ(d,sigma,sens,eAll)
 
    implicit none
    type(modelParam_t), intent(in)	:: sigma
-   type(dataVectorMTX_t), intent(in)		:: d
-   type(solnVectorMTX_t), intent(in), optional	:: eAll
+   type(dataVectorMTX_t), intent(inout)		:: d
+   type(solnVectorMTX_t), intent(inout), optional	:: eAll
    type(sensMatrix_t), pointer 		      :: sens(:)
 
    !Local

@@ -7,6 +7,7 @@ use dataio
 
 #ifdef MPI
   use Main_MPI
+  use Main_MPI_RAM
   use Sub_MPI
 #endif
 
