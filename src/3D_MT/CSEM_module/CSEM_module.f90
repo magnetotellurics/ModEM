@@ -321,7 +321,7 @@ subroutine create_background_data(grid,bgdat)
  ! if (ierr.ne.0) call alloc_error(pid,'In-backgroundfield','Hpos',ierr)
   
   
-  allocate(bgdat%Ex(bgdat%nEx*1.5),bgdat%Ey(bgdat%nEy*1.5),bgdat%Ez(bgdat%nEz*1.5), stat=ierr)
+  allocate(bgdat%Ex(int(bgdat%nEx*1.5)), bgdat%Ey(int(bgdat%nEy*1.5)), bgdat%Ez(int(bgdat%nEz*1.5)), stat=ierr)
   if (ierr.ne.0) call alloc_error(pid,'Out-backgroundfield','E fields',ierr)    
 
  ! allocate(bgdat%Hx(nxyz),bgdat%Hy(nxyz),bgdat%Hz(nxyz), stat=ierr)
