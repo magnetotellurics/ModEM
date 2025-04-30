@@ -1,0 +1,238 @@
+#!/bin/bash
+
+# Convert string to lowercase
+to_lower() {
+    echo $1 | tr '[:upper:]' '[:lower:]'
+}
+
+usage() {
+    printf  "${bold}Usage: $0 with the following options:\
+	\n${RED}Compiler: ${NC}Choose from supported compilers: ${RED}[ gfortran | ifort ]${NC} \
+	\n${Orange}Makefile: ${NC}Provide a name for your output Makefile name. \
+	\n${RED}[Debug or Release]:${NC} Choose whether you want to compile the Debug or Release version.\
+	\n${GREEN}[MPI or Serial]: ${NC} Choose whether you want to compile the parallel (MPI) or serial version. \
+	\n${BLUE}[MF or SP or SP2]: ${NC} Choose between the Matrix Free (MF), or the Modified System of Eqs 1 (SP), or the Modified System of Eqs 2 (SP2) of the code. \
+	\n${YELLOW}[MT or MT+CSEM]: ${NC} Compile MT or MT+CSEM. In Case of MT+CSEM, choose in the following option whether Dipole1D or EM1D or both will be used to get for the secondary field formulation.  \
+	\n${PURPLE}[Dipole1D or EM1D or Dipole1D+EM1D]: ${NC} (Optional) - Choose whether you have Dipole1D, or EM1D or both codes in the source files folder '/3D_MT/CSEM_module' \
+    \nOptional: Enviornment variables: 'FC' 'FFLAGS' 'CPPFLAGS' 'LDFLAGS' 'LDLIBS' are respected\n"
+    exit 127
+}
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[1;34m'
+YELLOW='\033[1;33m'
+PURPLE='\033[0;35m'  
+Orange='\033[0;36m' bold=$(tput bold)
+normal=$(tput sgr0)
+NC='\033[0m' # No Color
+
+# Argument check
+if [ $# -le 1 ] || [ $# -lt 6 ] ; then
+    usage 
+fi
+
+COMPILER=$(to_lower $1)
+makefile_name=$2
+debug_or_release=$(to_lower $3)
+mpi_or_serial=$(to_lower $4)
+forward_version=$(to_lower $5)
+em_method=$(to_lower $6)
+csem_type=$(to_lower $7)
+
+case $COMPILER in
+    gfortran | gnu | ifort | intel)
+        ;;
+    *)
+        printf "${YELLOW}WARNING: Did not recognize the compiler '${compiler}'... falling back onto GNU ${NC}\n"
+        ;;
+esac
+
+
+# Common Options
+DEFAULT_OPT="-O3"
+DEBUG_OPT="-O0"
+
+case $COMPILER in
+    ifort | intel)
+        CPPFLAGS="-fpp"
+        FFLAGS="-std03 -mavx -ffree-line-length-none"
+        FFLAGS_DEBUG="-w -g -fp-stack-check -traceback"
+        LDFLAGS="-L$(MKLROOT)/lib/intel64"
+        LDLIBS="-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -qopenmp -parallel"
+        ;;
+    gfortran | gnu | *)
+        CPPFLAGS="-cpp"
+        FFLAGS="-ffree-line-length-none -dI -fallow-argument-mismatch"
+        FFLAGS_DEBUG="-g -fbacktrace -fbounds-check"
+        LDFLAGS=""
+        LDLIBS="-lblas -llapack"
+        ;;
+esac
+
+case $debug_or_release in
+    "Debug" | "debug")
+        FFLAGS="$DEBUG_OPT $FFLAGS $FFLAGS_DEBUG"
+        ;;
+    "Release" | "release")
+        FFLAGS="$DEFAULT_OPT $FFLAGS"
+esac
+
+# Decide the name of the compiler, but take FC if it's present
+case $mpi_or_serial in
+    "MPI" | "mpi" )
+        FC=${FC:-mpifort}
+        CPPFLAGS="$CPPFLAGS -DMPI"
+        ;;
+    "Serial" | "serial")
+        CPPFLAGS="$CPPFLAGS"
+        case $COMPILER in
+            ifort | intel)
+                FC=${FC:-ifort}
+                ;;
+            gfortran | gnu)
+                FC=${FC:-gfortran}
+                ;;
+        esac
+        ;;
+    *)
+        printf "${RED}ERROR: Did not regocnize '$mpi_or_serial' for MPI or Serial selection. Choose from: [ MPI | Serial ]${NC}\n" >&2
+        exit 1
+esac
+
+# Download Dipole1D if needed
+source ./CONFIG/download_dependencies.sh
+if determine_if_dl_needed $csem_type; then
+    download_dipole1d
+fi
+
+if [ -e $makefile_name ]; then
+    rm $makefile_name
+fi
+
+
+DEFAULT_DIRS=(
+    "."
+    "MPI"
+    "INV"
+    "SENS"
+    "UTILS"
+    "FIELDS"
+    "FIELDS/FiniteDiff3D"
+    "3D_MT"
+    "3D_MT/DICT"
+    "3D_MT/ioMod"
+    "3D_MT/modelParam"
+    "3D_MT/modelParam/modelCov"
+    "3D_MT/modelParam/modelParamIO"
+    "3D_MT/CSEM_module"
+)
+
+MF_DIRS=(
+    "3D_MT/FWD"
+    "3D_MT/FWD/Mod2d"
+)
+
+SP_DIRS=(
+    "3D_MT/FWD_SP"
+    "3D_MT/SP_Topology"
+    "3D_MT/FWD"
+    "3D_MT/FWD/Mod2d"
+)
+
+SP2_DIRS=(
+    "3D_MT/FWD_SP2"
+    "3D_MT/SP_Topology"
+    "3D_MT/FWD"
+    "3D_MT/FWD/Mod2d"
+)
+
+DIPOLE1D_DIRS=(
+    "3D_MT/CSEM_module"
+    "3D_MT/CSEM_module/Dipole1D"
+)
+
+EM1D_DIRS=(
+    "3D_MT/CSEM_module"
+    "3D_MT/CSEM_module/EM1D"
+    "3D_MT/CSEM_module/EM1D/src"
+)
+
+
+source_dirs=${DEFAULT_DIRS[@]}
+
+case $forward_version in
+    MF | mf)
+        source_dirs=( ${source_dirs[@]} ${MF_DIRS[@]} )
+        ;;
+    SP | sp)
+        source_dirs=( ${source_dirs[@]} ${SP_DIRS[@]} )
+        ;;
+    SP2 | sp2)
+        source_dirs=( ${source_dirs[@]} ${SP2_DIRS[@]} )
+        ;;
+    *)
+        printf "${RED}ERROR: Do not recognize Forward Version ${forward_version}. Choose from: [ MF | SP | SP2 ] ${NC}\n"
+        exit 1
+        ;;
+esac
+
+
+# Library check - check for libraries
+case $csem_type in
+    EM1D |  em1d | Dipole1D+EM1D | dipole1d+em1d)
+        if [ -z $FFTW ]; then
+            printf "${RED}ERROR: EM1D ($csem_type) was requested, but the enviorment variable FFTW ${NC}\n"
+            printf "${RED}ERROR: was not set. Please set the enviorment variable FFTW to the location ${NC}\n"
+            printf "${RED}ERROR: of the FFTW library installation: 'export FFTW=/path/to/fftw'${NC}\n"
+            printf "${BLUE}Please see the readme for more information on the FFTW variable${NC}\n"
+            exit 1
+        fi
+    ;;
+esac
+
+case $em_method in
+    MT | mt)
+        ;;
+    MT+CSEM | mt+csem)
+        case $csem_type in
+            Dipole1D | dipole1d)
+                source_dirs=( ${source_dirs[@]} ${DIPOLE1D_DIRS[@]} )
+                CPPFLAGS="$CPPFLAGS -DCSEM_DIPOLE1D"
+                ;;
+            EM1D | em1d)
+                source_dirs=( ${source_dirs[@]} ${EM1D_DIRS[@]} )
+                CPPFLAGS="$CPPFLAGS -I$FFTW/include -DCSEM_EM1D"
+                LDFLAGS="$LDFLAGS $FFTW/lib"
+                LDLIBS="$LDLIBS -lfftw3f -lfftw3"
+                ;;
+            Dipole1D+EM1D | dipole1d+em1d)
+                source_dirs=( ${source_dirs[@]} ${DIPIOLE1D_DIRS[@]} ${EM1D_DIRS[@]} )
+                CPPFLAGS="$CPPFLAGS -I$FFTW/include -DCSEM_EM1D -DCSEM_DIPOLE1D"
+                CPPFLAGS="$CPPFLAGS -DCSEM_EM1D"
+                LDFLAGS="$LDFLAGS $FFTW/lib"
+                LDLIBS="$LDLIBS -lfftw3l -lfftw3f -lfftw3"
+                ;;
+            *)
+                printf "${RED}ERROR: Do not recognize CSEM Type '$csem_type'. Choose from: [ Dipole1D | EM1D | Dipole1d+EM1D ] ${NC}\n"
+                exit 1
+        esac
+        ;;
+    *)
+        printf "${RED}ERROR: Do not recognize EM Method ${forward_version}. Choose from: [ MT | MT+CSEM ] ${NC}\n"
+        exit 1
+        ;;
+esac
+
+
+# Combine the source_dirs into a colon sepeareted list: 'dir1:dir2:dir3'
+source_dirs=$(IFS=':' ; echo "${source_dirs[*]}")
+
+perl fmkmf.pl -f90 $FC \
+-opt "$CPPFLAGS $FFLAGS" \
+-mpi "$CPPFLAGS" \
+-o "./objs/3D_MT/csemBuild" \
+-l "$LDLIBS" \
+-lp "$LDFLAGS" \
+-p "$source_dirs" \
+Mod3DMT.f90 > $makefile_name
