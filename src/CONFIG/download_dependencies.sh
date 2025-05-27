@@ -1,7 +1,8 @@
 #!/bin/bash
 
 OCCAM1DCSEM_ZIP_URL="https://marineemlab.ucsd.edu/Projects/Occam/1DCSEM/Occam1DCSEM_v3.13.zip"
-export DIPOLE1D_CSEM_MODEM_DIR="./3D_MT/CSEM_module/Dipole1D/"
+export CSEM_MODEM_DIR="./3D_MT/CSEM_module"
+export DIPOLE1D_DIR="Dipole1D"
 ZIP_FNAME="occam1dcsem.zip"
 OCCAM_DIR="Occam1DCSEM"
 
@@ -30,7 +31,8 @@ get_dl_cmd() {
 }
 
 check_for_dipole1d() {
-    if [ -e $DIPOLE1D_CSEM_MODEM_DIR/Dipole1D.f90 ]; then
+
+    if [ -e $CSEM_MODEM_DIR/$DIPOLE1D_DIR/Dipole1D.f90 ]; then
         return 0
     fi
     return -1
@@ -40,21 +42,25 @@ check_for_dipole1d() {
 download_dipole1d() {
     force=${1:-0}
 
-    echo $DIPOLE1D_CSEM_MODEM_DIR
-    if [ ! -d $DIPOLE1D_CSEM_MODEM_DIR ]; then
-        echo "ERROR: We are not in the ./src directory of the CSEM branch could not find"
+    if [ $(check_for_dipole1d) -eq 0 ] && [ $force -eq 0 ]; then
+        echo "Dipole1D already appears to be downloaded... skipping downloading"
+        echo "To re-download it remove the files within: $CSEM_MODEM_DIR/$DIPOLE1D_DIR"
+        echo "Or pass 1 to this function: 'download_dipole1d 1'"
+        exit 0
+    fi
+
+    if [ ! -d $CSEM_MODEM_DIR ]; then
+        echo "ERROR: We are not in the ./src directory of the CSEM branch (could not find $CSEM_MODEM_DIR/$DIPOLE1D_DIR)"
         echo "ERROR: Please ensure we are in 'ModEM-Model/src' directory"
         exit 1
     fi
 
-    pushd $DIPOLE1D_CSEM_MODEM_DIR >/dev/null
-
-    if [ $(check_for_dipole1d) ] && [ $force -eq 0 ]; then
-        echo "Dipole1D already appears to be downloaded... skipping downloading"
-        echo "To re-download it remove the files within: $DIPOLE1D_CSEM_MODEM_DIR"
-        echo "Or pass 1 to this function: 'download_dipole1d 1'"
-        exit 0
+    if [ ! -d "$CSEM_MODEM_DIR/$DIPOLE1D_DIR" ]; then
+        echo "Making CSEM ModEM Directory: $CSEM_MODEM_DIR/$DIPOLE1D_DIR"
+        mkdir "$CSEM_MODEM_DIR/$DIPOLE1D_DIR"
     fi
+
+    pushd $CSEM_MODEM_DIR/$DIPOLE1D_DIR >/dev/null
 
     download_cmd=$(get_dl_cmd)
     if [ $? -ne 0 ]; then
@@ -83,30 +89,29 @@ download_dipole1d() {
 }
 
 determine_if_dl_needed() {
-    if [ "$csem_type" == "Dipole1D" ] || [ "$csem_type" == "Dipole1D+EM1D" ]; then
-        # Check to see if we should download Dipole1D
+    if [ "$csem_type" == "Dipole1D" ] || [ "$csem_type" == "dipole1d" ] \
+        || [ "$csem_type" == "Dipole1D+EM1D" ] || [ "$csem_type" == "dipole1d+em1d"]; then
 
+        # Check to see if we should download Dipole1D
         check_for_dipole1d
         dipole_present=$?
         if [ $dipole_present != 0 ]; then
-            echo "Dipole1D is not currently in $DIPOLE1D_CSEM_MODEM_DIR"
+            echo "Dipole1D is not currently in $CSEM_MODEM_DIR/$DIPOLE1D_DIR"
 
             while true; do
-                read -p "Would you like to have this script automatically download it now? [Yes/No]:" resp
-                resp_lower=$(to_lower resp)
+                read -p "Would you like to have this script automatically download it now? [Yes/No]: " resp
+                resp_lower=$(to_lower $resp)
 
                 if [ "$resp_lower" == "yes" ] || [ "$resp_lower" == "y" ]; then
-                    echo true
                     return 0
                 elif [ "$resp_lower" == "no" ] || [ "$resp_lower" == "n" ]; then
-                    echo "ERROR: Asked for Dipole1D CSEM but Dipole1D not in: $DIPOLE1D_CSEM_MODEM_DIR"
+                    echo "ERROR: Asked for Dipole1D CSEM but Dipole1D not in: $CSEM_MODEM_DIR/$DIPOLE1D_DIR"
                     echo "ERROR: Either place Dipole1D into the directory above manually, or use this tool to download it"
                     exit 1
                 fi
             done
         fi
     fi
-    echo false
     return 1
 }
 
