@@ -49,7 +49,7 @@ download_dipole1d() {
 
     pushd $DIPOLE1D_CSEM_MODEM_DIR >/dev/null
 
-    if [ $(check_for_dipole1d) ] && [ $force -eq 0 ]; then
+    if [ $(check_for_dipole1d) -eq 0 ] && [ $force -eq 0 ]; then
         echo "Dipole1D already appears to be downloaded... skipping downloading"
         echo "To re-download it remove the files within: $DIPOLE1D_CSEM_MODEM_DIR"
         echo "Or pass 1 to this function: 'download_dipole1d 1'"
@@ -83,9 +83,10 @@ download_dipole1d() {
 }
 
 determine_if_dl_needed() {
-    if [ "$csem_type" == "Dipole1D" ] || [ "$csem_type" == "Dipole1D+EM1D" ]; then
-        # Check to see if we should download Dipole1D
+    if [ "$csem_type" == "Dipole1D" ] || [ "$csem_type" == "dipole1d" ] \
+        || [ "$csem_type" == "Dipole1D+EM1D" ] || [ "$csem_type" == "dipole1d+em1d"]; then
 
+        # Check to see if we should download Dipole1D
         check_for_dipole1d
         dipole_present=$?
         if [ $dipole_present != 0 ]; then
