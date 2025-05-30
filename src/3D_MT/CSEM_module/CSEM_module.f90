@@ -9,6 +9,7 @@ use dataspace
 use solnspace
 use emsolve3d
 use transmitters
+use utilities
 !use ioascii
 !This module uses Kerry Key's 1D code required to construct the b0%s in the secondary field formulation
 #ifdef CSEM_Dipole1D
@@ -57,12 +58,21 @@ subroutine get_source_for_csem(sigma,grid,iTx,source)
     if (trim(compute_1D_from)=="Dipole1D") then
 #ifdef CSEM_Dipole1D
        call  get_source_for_csem_Dipole1D(sigma,grid,iTx,source)
+#else
+       write(0,*) "ERROR: Requested Dipole1D but Dipole1D CSEM Modular was not compiled"
+       call errStop("To use CSEM, compiling with either: -DCSEM_EM1D or -DCSEM_Dipole1D")
 #endif
 
     elseif (trim(compute_1D_from)=="EM1D") then
 #ifdef CSEM_EM1D
        call get_source_for_csem_EM1D(sigma,grid,iTx,source)
+#else
+       write(0,*) "ERROR: Requested EM1D but EM1D CSEM Modular was not compiled"
+       call errStop("To use CSEM, compiling with either: -DCSEM_EM1D or -DCSEM_Dipole1D")
 #endif
+    else
+       write(0,*) "ERROR: Unrecognized CSEM type", trim(compute_1D_from)
+       call errStop("Unrecognized CSEM type. Choose from either: Dipole1D | EM1D")
     end if
     write(*,*) trim(node_info), 'finish using ', trim(compute_1D_from),' to solve the 1D FWD problem'
 !end if    
