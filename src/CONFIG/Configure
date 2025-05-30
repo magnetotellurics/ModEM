@@ -198,7 +198,7 @@ case $em_method in
         case $csem_type in
             Dipole1D | dipole1d)
                 source_dirs=( ${source_dirs[@]} ${DIPOLE1D_DIRS[@]} )
-                CPPFLAGS="$CPPFLAGS -DCSEM_DIPOLE1D"
+                CPPFLAGS="$CPPFLAGS -DCSEM_Dipole1D"
                 ;;
             EM1D | em1d)
                 source_dirs=( ${source_dirs[@]} ${EM1D_DIRS[@]} )
@@ -208,7 +208,7 @@ case $em_method in
                 ;;
             Dipole1D+EM1D | dipole1d+em1d)
                 source_dirs=( ${source_dirs[@]} ${DIPIOLE1D_DIRS[@]} ${EM1D_DIRS[@]} )
-                CPPFLAGS="$CPPFLAGS -I$FFTW/include -DCSEM_EM1D -DCSEM_DIPOLE1D"
+                CPPFLAGS="$CPPFLAGS -I$FFTW/include -DCSEM_EM1D -DCSEM_Dipole1D"
                 CPPFLAGS="$CPPFLAGS -DCSEM_EM1D"
                 LDFLAGS="$LDFLAGS $FFTW/lib"
                 LDLIBS="$LDLIBS -lfftw3l -lfftw3f -lfftw3"
