@@ -13,7 +13,7 @@ usage() {
 	\n${GREEN}[MPI or Serial]: ${NC} Choose whether you want to compile the parallel (MPI) or serial version. \
 	\n${BLUE}[MF or SP or SP2]: ${NC} Choose between the Matrix Free (MF), or the Modified System of Eqs 1 (SP), or the Modified System of Eqs 2 (SP2) of the code. \
 	\n${YELLOW}[MT or MT+CSEM]: ${NC} Compile MT or MT+CSEM. In Case of MT+CSEM, choose in the following option whether Dipole1D or EM1D or both will be used to get for the secondary field formulation.  \
-	\n${PURPLE}[Dipole1D or EM1D or Dipole1D+EM1D]: ${NC} (Optional) - Choose whether you have Dipole1D, or EM1D or both codes in the source files folder '/3D_MT/CSEM_module' \
+	\n${PURPLE}[Dipole1D or EM1D]: ${NC} (Optional) - Choose whether you have Dipole1D, or EM1D in the source files folder '/3D_MT/CSEM_module' \
     \nOptional: Enviornment variables: 'FC' 'FFLAGS' 'CPPFLAGS' 'LDFLAGS' 'LDLIBS' are respected\n"
     exit 127
 }
@@ -180,7 +180,7 @@ esac
 
 # Library check - check for libraries
 case $csem_type in
-    EM1D |  em1d | Dipole1D+EM1D | dipole1d+em1d)
+    EM1D |  em1d )
         if [ -z $FFTW ]; then
             printf "${RED}ERROR: EM1D ($csem_type) was requested, but the enviorment variable FFTW ${NC}\n"
             printf "${RED}ERROR: was not set. Please set the enviorment variable FFTW to the location ${NC}\n"
@@ -206,15 +206,8 @@ case $em_method in
                 LDFLAGS="$LDFLAGS $FFTW/lib"
                 LDLIBS="$LDLIBS -lfftw3f -lfftw3"
                 ;;
-            Dipole1D+EM1D | dipole1d+em1d)
-                source_dirs=( ${source_dirs[@]} ${DIPIOLE1D_DIRS[@]} ${EM1D_DIRS[@]} )
-                CPPFLAGS="$CPPFLAGS -I$FFTW/include -DCSEM_EM1D -DCSEM_Dipole1D"
-                CPPFLAGS="$CPPFLAGS -DCSEM_EM1D"
-                LDFLAGS="$LDFLAGS $FFTW/lib"
-                LDLIBS="$LDLIBS -lfftw3l -lfftw3f -lfftw3"
-                ;;
             *)
-                printf "${RED}ERROR: Do not recognize CSEM Type '$csem_type'. Choose from: [ Dipole1D | EM1D | Dipole1d+EM1D ] ${NC}\n"
+                printf "${RED}ERROR: Do not recognize CSEM Type '$csem_type'. Choose from: [ Dipole1D | EM1D ] ${NC}\n"
                 exit 1
         esac
         ;;

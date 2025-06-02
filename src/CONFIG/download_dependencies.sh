@@ -89,8 +89,7 @@ download_dipole1d() {
 }
 
 determine_if_dl_needed() {
-    if [ "$csem_type" == "Dipole1D" ] || [ "$csem_type" == "dipole1d" ] \
-        || [ "$csem_type" == "Dipole1D+EM1D" ] || [ "$csem_type" == "dipole1d+em1d" ]; then
+    if [ "$csem_type" == "Dipole1D" ] || [ "$csem_type" == "dipole1d" ] ; then
 
         # Check to see if we should download Dipole1D
         check_for_dipole1d
