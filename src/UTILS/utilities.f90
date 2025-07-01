@@ -24,9 +24,30 @@ Contains
     character(*), intent(in)  :: msg
     write(0,'(a9)',advance='no') 'Error: '
     write(0,*) trim(msg)
-    stop
+
+    call ModEM_abort()
 
   end subroutine errStop
+
+  subroutine ModEM_abort()
+
+    use, intrinsic :: iso_fortran_env, only: stderr=>error_unit
+#ifdef MPI
+    use mpi
+#endif
+
+    implicit none
+
+#ifdef MPI
+    integer :: ierr, error_code
+#endif
+
+#ifdef MPI
+    call MPI_Abort(MPI_COMM_WORLD, error_code, ierr)
+#endif
+    stop 1
+
+  end subroutine
 
   ! **************************************************************************
   subroutine warning(msg)

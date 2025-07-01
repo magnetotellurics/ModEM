@@ -38,7 +38,13 @@ module EMsolve3D
     logical                   ::      AirLayersPresent=.false.
 	character (len=10)        ::      solver_name="BICG"		
 	character (len=50) , public      ::   get_1D_from="Geometric_mean"	
+#if defined(CSEM_EM1D) && !defined(CSEM_Dipole1D)
     character (len=50) , public      ::   compute_1D_from="EM1D"
+#elif defined(CSEM_Dipole1D) && !defined(CSEM_EM1D)
+    character (len=50) , public      ::   compute_1D_from="Dipole1D"
+#else
+    character (len=50) , public      ::   compute_1D_from="EM1D"
+#endif
   end type emsolve_control
 
   type :: emsolve_diag
@@ -69,7 +75,14 @@ module EMsolve3D
   !Solver name, by default we use BICG
   character (len=10)  		       ::   solver_name="BICG"
   character (len=50) , public      ::   get_1D_from="Geometric_mean"
+#if defined(CSEM_EM1D) && !defined(CSEM_Dipole1D)
   character (len=50) , public      ::   compute_1D_from="EM1D"
+#elif defined(CSEM_Dipole1D) && !defined(CSEM_EM1D)
+  character (len=50) , public      ::   compute_1D_from="Dipole1D"
+#else
+  character (len=50) , public      ::   compute_1D_from="EM1D"
+#endif
+
   save
 
   type(timer_t), private :: timer
@@ -531,8 +544,14 @@ end subroutine SdivCorr ! SdivCorr
         tolEMadj = tolEMDef
         tolDivCor = tolDivCorDef
         solver_name="BICG"
-		get_1D_from="Geometric_mean"
+        get_1D_from="Geometric_mean"
+#if defined(CSEM_EM1D) && !defined(CSEM_Dipole1D)
+        compute_1D_from="EM1D" 
+#elif defined(CSEM_Dipole1D) && !defined(CSEM_EM1D)
+        compute_1D_from="Dipole1D"
+#else
         compute_1D_from="EM1D"
+#endif
      else
         IterPerDivCor = solverControl%IterPerDivCor
         MaxDivCor = solverControl%MaxDivCor
@@ -630,7 +649,13 @@ solverControl%tolEMadj      = tolEMDef
 solverControl%tolDivCor     = tolDivCorDef
 solverControl%solver_name   = "BICG"
 solverControl%get_1D_from   = "Geometric_mean"
+#if defined(CSEM_EM1D) && !defined(CSEM_Dipole1D)
 solverControl%compute_1D_from= "EM1D"
+#elif defined(CSEM_Dipole1D) && !defined(CSEM_EM1D)
+solverControl%compute_1D_from= "Dipole1D"
+#else
+solverControl%compute_1D_from= "EM1D"
+#endif
 do
    read (ioFwdCtrl,"(a)",iostat=ierr) line_text ! Read line into character variable
    line_text=trim(line_text)
