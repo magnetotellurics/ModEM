@@ -21,7 +21,9 @@ An example of a Global run can be found in [ModEM-Examples][ModEM-Examples]
 
 [ModEM-Examples]: https://github.com/MiCurry/ModEM-Examples
 
-> **NOTE:** The Global Model might not run correctly at the moment.
+
+If you use this branch in new research or derivative work, please include the 
+following citation:
 
 M. Uyeshima, A. Schultz, Geoelectromagnetic induction in a heterogeneous
 sphere:a new three-dimensional forward solver using a conservative
