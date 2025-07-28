@@ -5,8 +5,8 @@ module DCG
     use senscomp
     use main
 #ifdef MPI
-	Use Main_MPI
-	use Sub_MPI
+	Use MPI_main
+	use MPI_sub
 #endif
 implicit none
   type  :: DCGiterControl_t

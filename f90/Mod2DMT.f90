@@ -13,7 +13,7 @@ program Mod2DMT
      !use mtinvsetup
 
 #ifdef MPI
-     Use Main_MPI
+     Use MPI_main
 #endif
 
      implicit none
@@ -31,7 +31,7 @@ program Mod2DMT
 
 
 #ifdef MPI
-              call  constructor_MPI
+              call  MPI_constructor
 			  if (taskid==0) then
 			      call parseArgs('Mod2DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
 			      write(6,*)'I am a PARALLEL version'
@@ -66,7 +66,7 @@ program Mod2DMT
 	            if (trim(worker_job_task%what_to_do) .eq. 'Job Completed')  then
 	               	 call deallGlobalData()
 		             call cleanUp_MPI()
-	                 call destructor_MPI
+	                 call MPI_destructor
 	              stop
 	            end if
     end if
@@ -350,7 +350,7 @@ program Mod2DMT
 
 #ifdef MPI
 	 write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
-	 call destructor_MPI
+	 call MPI_destructor
 #else
 	 write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
 #endif

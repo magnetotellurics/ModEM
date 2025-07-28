@@ -18,6 +18,7 @@ module Main
      integer (kind=4), save :: fidRead = 1
      integer (kind=4), save :: fidWrite = 2
      integer (kind=4), save :: fidError = 99
+     logical, public,  save :: Read_Efield_from_file
 
   ! ***************************************************************************
   ! * fwdCtrls: User-specified information about the forward solver relaxations
@@ -57,7 +58,7 @@ module Main
   type(solnVectorMTX_t), save            :: eAll
 
   !  storage for EM rhs (currently only used for symmetry tests)
-  !type(rhsVectorMTX_t), save            :: bAll
+  type(rhsVectorMTX_t), save            :: bAll
 
   logical                   :: write_model, write_data, write_EMsoln, write_EMrhs
 
@@ -65,30 +66,20 @@ module Main
 
 Contains
   ! ***************************************************************************
-  ! reads the "large grid" file for nested modeling; Naser Meqbel's variables
-  ! Larg_Grid, eAll_larg and nTx_nPol are stored in the ForwardSolver module.
-  ! This inherently assumes an equal number of polarizations for all transmitters
-   subroutine read_Efield_from_file(solverControl)
-    type(emsolve_control), intent(in)           :: solverControl
-    ! local
+   subroutine read_Efiled_from_file
     character (len=80)			                :: inFile
     character (len=20)                          :: fileVersion
-    logical                                     :: exists
-
-    nestedEM_initialized = .false.
+    Integer                                     :: iTx,iMod,filePer
+    integer			                            :: fileMode,ioNum
+    type(solnVector_t)                          :: e_temp
+    real (kind=prec)                        	:: Omega
+    integer										:: i,ios=0,istat=0
     
-    if (solverControl%read_E0_from_File) then
-      inquire(FILE=solverControl%E0fileName,EXIST=exists)
-      if (exists) then
-        write(6,*) 'The Master reads E field from: ',trim(solverControl%E0fileName)
-        inFile = trim(solverControl%E0fileName)
+        write(6,*) 'The Master reads E field from: ',trim(solverParams%E0fileName)
+        inFile = trim(solverParams%E0fileName)
         call read_solnVectorMTX(Larg_Grid,eAll_larg,inFile)
-        nTx_nPol=eAll_larg%nTx*eAll_larg%solns(1)%nPol
-        nestedEM_initialized = .true.
-      end if
-     end if
-
-    end subroutine read_Efield_from_file
+        nTx_nPol=eAll_larg%nTx*eAll_larg%solns(1)%nPol   
+    end subroutine read_Efiled_from_file    
 
   !**********************************************************************
   !   rewrite the defaults in the air layers structure
@@ -159,19 +150,6 @@ Contains
     !  If solverParams contains air layers information, rewrite the defaults here
     call initAirLayers(solverParams,airLayers)
 
-    !--------------------------------------------------------------------------
-    ! Determine whether or not there is an input BC file to read
-    inquire(FILE=cUserDef%rFile_EMrhs,EXIST=exists)
-    if (exists) then
-       BC_FROM_RHS_FILE = .true.
-    end if
-    if (solverParams%read_E0_from_File) then
-      inquire(FILE=solverParams%E0fileName,EXIST=exists)
-      if (exists) then
-        NESTED_BC = .true.
-      end if
-    end if
-
 	!--------------------------------------------------------------------------
 	! Check whether model parametrization file exists and read it, if exists
 	inquire(FILE=cUserDef%rFile_Model,EXIST=exists)
@@ -191,9 +169,6 @@ Contains
 
 	else
 	  call warning('No input model parametrization')
-
-	  ! set up an empty grid to avoid segmentation faults in sensitivity tests
-	  call create_grid(1,1,1,1,grid)
 	end if
 
 
@@ -207,6 +182,16 @@ Contains
     else
        call warning('No input data file - unable to set up dictionaries')
     end if
+
+
+    ! Check if a larg grid file with E field is defined:
+    ! NOTE: right now both grids share the same transmitters.
+    ! This why, reading and setting the large grid and its E solution comes after setting the trasnmitters Dictionary.
+
+     if (solverParams%read_E0_from_File) then
+         Read_Efield_from_file = .true.
+     end if    
+    
     
 	!--------------------------------------------------------------------------
 	!  Initialize additional data as necessary
@@ -217,8 +202,6 @@ Contains
 	   if (exists) then
 	      call deall_grid(grid)
 	   	  call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
-          call setup_airlayers(airLayers,grid)
-          call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
 	   else
 	      call warning('The input model perturbation file does not exist')
 	   end if
@@ -267,8 +250,6 @@ Contains
        if (exists) then
            call deall_grid(grid)
            call read_modelParam(grid,sigma0,cUserDef%rFile_Prior)
-           call setup_airlayers(airLayers,grid)
-           call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
        else
            call zero(sigma0)
        end if
@@ -280,8 +261,6 @@ Contains
          if (exists) then
              call deall_grid(grid)
              call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
-             call setup_airlayers(airLayers,grid)
-             call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
          else
              call warning('The input model perturbation file does not exist')
          end if
@@ -293,8 +272,6 @@ Contains
                if (exists) then
                   call deall_grid(grid)
                   call read_modelParam(grid,dsigma,cUserDef%rFile_dModel)
-                  call setup_airlayers(airLayers,grid)
-                  call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
                else
                   call warning('The input model perturbation file does not exist')
                end if
@@ -371,7 +348,6 @@ Contains
 	   write(0,*) 'Cleaning up data...'
 	endif
 	call deall_dataVectorMTX(allData)
-	call deall_dataFileInfo()
 
 	if (output_level > 3) then
 	   write(0,*) 'Cleaning up EM soln...'

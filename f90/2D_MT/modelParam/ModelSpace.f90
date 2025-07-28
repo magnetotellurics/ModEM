@@ -24,7 +24,7 @@ use math_constants
 use utilities
 use emfield
 #ifdef MPI
-  use Declaration_MPI
+  use MPI_declaration
 #endif
 
 implicit none

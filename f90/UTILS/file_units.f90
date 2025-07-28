@@ -18,9 +18,6 @@ module file_units
 
   ! Weighting Log file
    integer, parameter							:: ioWeighting=222  
-   
-  ! Weighting Log file
-   integer, parameter							:: ioConfig=666 
 
   ! MPI Log file
   integer, parameter                            :: ioMPI=2000
@@ -63,7 +60,5 @@ module file_units
   integer, parameter							:: ioResp=25
   integer, parameter                            :: ioC=23, ioD=24
   integer, parameter                            :: ioAvgC=33, ioAvgD=34
-  
-  integer, parameter                            :: ioSolverStat=50
 
 end module file_units

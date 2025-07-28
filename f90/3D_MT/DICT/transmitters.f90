@@ -11,7 +11,7 @@ module transmitters
   type :: MTtx
      ! defines the kind of transmitter: here, MT only. Needed for compatibility
      ! with more general versions of the code
-     character(10)		:: tx_type='MT'
+     character(10)		:: tx_type=''
      !  An MT source is defined by frequency and boundary conditions
      !   at present there does not seem to be much need for BC info ... add
      !    if needed.  Other sorts of EM data may have more
