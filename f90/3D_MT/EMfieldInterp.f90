@@ -7,7 +7,6 @@ module EMfieldInterp
   use utilities
   use sg_sparse_vector
   use ModelSpace, sigC => ModelParamToOneEdge
-  use gridcalc
 
   implicit none
 
@@ -218,7 +217,7 @@ Contains
        endif
     elseif(i0.le.0) then
        w(1,2) = 1
-       UseCond = .false.
+       UseCOnd = .false.
     else
        w(1,2) = 0
        UseCond = .false.
@@ -511,14 +510,6 @@ Contains
     Call BinterpSetUp(inGrid,x,xyz,LCH)
     Call create_sparsevecc(num,LC,gridType)
 
-    ! we won't need these grid elements for SP/SP2 so we create them on the fly
-    if (.not. l_E%allocated) then
-        call EdgeLength(inGrid,l_E)
-    end if
-    if (.not. S_F%allocated) then
-        call FaceArea(inGrid,S_F)
-    end if
-
     !   loop over coefficients for mag field interpolation
     do ii = 1,LCH%nCoeff
 
@@ -539,12 +530,10 @@ Contains
           K(2) = LCH%k(ii)+1
           K(3) = LCH%k(ii)
           K(4) = LCH%k(ii)
-          ! h = e*sum(l)/S
-          C(1) = 1*L_E%y(I(1),J(1),K(1))/S_F%x(I(1),J(1),K(1))
-          C(2) = -1*L_E%y(I(2),J(2),K(2))/S_F%x(I(1),J(1),K(1))
-          C(3) = -1*L_E%z(I(3),J(3),K(3))/S_F%x(I(1),J(1),K(1))
-          C(4) = 1*L_E%z(I(4),J(4),K(4))/S_F%x(I(1),J(1),K(1))
-
+          C(1) = 1./inGrid%dz(K(1))
+	  C(2) = -1./inGrid%dz(K(1))
+          C(3) = -1./inGrid%dy(J(1))
+          C(4) = 1./inGrid%dy(J(1))
 
        elseif(LCH%xyz(ii).eq.2) then
           AXES(1) = 3
@@ -563,11 +552,11 @@ Contains
           I(2) = LCH%i(ii)+1
           I(3) = LCH%i(ii)
           I(4) = LCH%i(ii)
-          C(1) = 1*L_E%z(I(1),J(1),K(1))/S_F%y(I(1),J(1),K(1))
-          C(2) = -1*L_E%z(I(2),J(2),K(2))/S_F%y(I(1),J(1),K(1))
-          C(3) = -1*L_E%x(I(3),J(3),K(3))/S_F%y(I(1),J(1),K(1))
-          C(4) = 1*L_E%x(I(4),J(4),K(4))/S_F%y(I(1),J(1),K(1))
-          
+          C(1) = 1./inGrid%dx(I(1))
+          C(2) = -1./inGrid%dx(I(1))
+          C(3) = -1./inGrid%dz(K(1))
+          C(4) = 1./inGrid%dz(K(1))
+
        else
           AXES(1) = 1
           AXES(2) = 1
@@ -585,11 +574,10 @@ Contains
           J(2) = LCH%j(ii)+1
           J(3) = LCH%j(ii)
           J(4) = LCH%j(ii)
-          C(1) = 1*L_E%x(I(1),J(1),K(1))/S_F%z(I(1),J(1),K(1))
-          C(2) = -1*L_E%x(I(2),J(2),K(2))/S_F%z(I(1),J(1),K(1))
-          C(3) = -1*L_E%y(I(3),J(3),K(3))/S_F%z(I(1),J(1),K(1))
-          C(4) = 1*L_E%y(I(4),J(4),K(4))/S_F%z(I(1),J(1),K(1))
-
+          C(1) = 1./inGrid%dy(J(1))
+          C(2) = -1./inGrid%dy(J(1))
+          C(3) = -1./inGrid%dx(I(1))
+          C(4) = 1./inGrid%dx(I(1))
        endif
 
        if(ii.eq.1) then

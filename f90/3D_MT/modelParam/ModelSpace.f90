@@ -27,7 +27,7 @@ module ModelSpace
   use sg_vector
   use sg_sparse_vector
 #ifdef MPI
-  use Declaration_MPI
+  use MPI_declaration
 #endif
 
   implicit none

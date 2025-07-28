@@ -13,7 +13,7 @@ program Mod3DMT
      !use mtinvsetup
 
 #ifdef MPI
-     Use Main_MPI
+     Use MPI_main
 #endif
 
      implicit none
@@ -31,32 +31,33 @@ program Mod3DMT
 
 
 #ifdef MPI
-      call  constructor_MPI
-      if (taskid==0) then
-          call parseArgs('Mod3DMT',cUserDef)  
-          ! OR readStartup(rFile_Startup,cUserDef)
-          write(6,*)'I am a PARALLEL version'
-          call Master_job_Distribute_userdef_control(cUserDef)
-          open(ioMPI,file=cUserDef%wFile_MPI)
-          write(ioMPI,*) 'Total Number of nodes= ', number_of_workers
-      else
-          call RECV_cUserDef(cUserDef)
-      end if
+              call  MPI_constructor
+			  if (taskid==0) then
+			      call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
+			      write(6,*)'I am a PARALLEL version'
+			      call Master_job_Distribute_userdef_control(cUserDef)
+	              open(ioMPI,file=cUserDef%wFile_MPI)
+	              write(ioMPI,*) 'Total Number of nodes= ', number_of_workers
+			  else
+			       call RECV_cUserDef(cUserDef)
+			 end if
+    
 #else
-      call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
-      write(6,*)'I am a SERIAL version'
+             call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
+			 write(6,*)'I am a SERIAL version'
 #endif
+
+
+
+
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations
 
 #ifdef MPI
-      call setGrid_MPI(grid)
-    ! Check if a large grid file with E field is defined:
-    ! NOTE: right now both grids share the same transmitters.
-    ! This why, reading and setting the large grid and its E solution comes after setting the trasnmitters Dictionary.
-    if (NESTED_BC) then
+    call setGrid_MPI(grid)
+    if (Read_Efield_from_file) then
       if (taskid==0) then
-            call read_Efield_from_file(solverParams)
+            call read_Efiled_from_file
             call Interpolate_BC(grid)
             call Master_job_Distribute_nTx_nPol(nTx_nPol)
       else
@@ -69,19 +70,6 @@ program Mod3DMT
       call setGrid(grid)
 #endif
 
-#ifdef MPI
-    if (BC_FROM_RHS_FILE) then
-        if (taskid==0) then
-            call read_rhsVectorMTX(grid,bAll,cUserDef%rFile_EMrhs)
-        else
-            ! need to logic to fetch the BCs from the master node
-        end if
-    end if
-#else
-    if (BC_FROM_RHS_FILE) then
-        call read_rhsVectorMTX(grid,bAll,cUserDef%rFile_EMrhs)
-    end if
-#endif
 
 #ifdef MPI
     if (taskid.gt.0) then
@@ -89,7 +77,7 @@ program Mod3DMT
 	            if (trim(worker_job_task%what_to_do) .eq. 'Job Completed')  then
 	               	 call deallGlobalData()
 		             !call cleanUp_MPI()
-	                 call destructor_MPI
+	                 call MPI_destructor
 	              stop
 	            end if
     end if
@@ -99,7 +87,6 @@ program Mod3DMT
 
 	 ! Start the (portable) clock
 	 call reset_time(timer)
-
      select case (cUserDef%job)
 
      case (READ_WRITE)
@@ -144,16 +131,16 @@ program Mod3DMT
         write(*,*) 'Multiplying by J...'
 
 #ifdef MPI
-        call Master_job_Jmult(dsigma,sigma0,allData)
+            call Master_job_Jmult(dsigma,sigma0,allData)
 #else
-        call Jmult(dsigma,sigma0,allData)
+            call Jmult(dsigma,sigma0,allData)
 #endif
 
 
         call write_dataVectorMTX(allData,cUserDef%wFile_Data)
 
      case (MULT_BY_J_T)
-         write(*,*) 'Multiplying by J^T...'
+        write(*,*) 'Multiplying by J^T...'
 #ifdef MPI
          !call Master_job_fwdPred(sigma0,allData,eAll)
          call Master_job_JmultT(sigma0,allData,dsigma)
@@ -164,7 +151,7 @@ program Mod3DMT
          call write_modelParam(dsigma,cUserDef%wFile_dModel)
          
      case (MULT_BY_J_T_multi_Tx)
-         write(*,*) 'Multiplying by J^T...output multi-Tx model vectors'
+        write(*,*) 'Multiplying by J^T...output multi-Tx model vectors'
 #ifdef MPI
          call Master_job_fwdPred(sigma0,allData,eAll)
          call Master_job_JmultT(sigma0,allData,dsigma,eAll,JT_multi_Tx_vec)
@@ -222,11 +209,6 @@ program Mod3DMT
         end select
         call write_modelParam(sigma1,cUserDef%wFile_Model)
 #endif
-
-     case (EXTRACT_BC)
-        ! no need to run the forward solution to extract the boundary
-        ! conditions from the initial electric field
-        call dryRun(sigma0,allData,bAll,eAll)
 
      case (TEST_GRAD)
         ! note that on input, dsigma is the non-smoothed model parameter
@@ -355,26 +337,29 @@ program Mod3DMT
 
      write(*,*) 'Exiting...'
 
+	 ! cleaning up
+	 !call deallGlobalData()
 
 #ifdef MPI
-      ! cleaning up already completed by worker jobs... no "cleanup" needed on master node
-      if (taskid==0) then
-         call deallGlobalData()
-      end if
-      call Master_job_STOP_MESSAGE
-      close(ioMPI)
+            call Master_job_STOP_MESSAGE
+            close(ioMPI)
+	     ! call cleanUp_MPI()
 #else
-      ! cleaning up
-      call deallGlobalData()
-      call cleanUp()
+            call cleanUp()
 #endif
 
 
+
+
+
 #ifdef MPI
-      write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
-      call destructor_MPI
+	 write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
+	 call MPI_destructor
 #else
-      write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
+	 write(0,*) ' elapsed time (mins) ',elapsed_time(timer)/60.0
 #endif
+
+
 
 end program
+
