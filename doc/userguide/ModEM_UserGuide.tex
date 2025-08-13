@@ -1042,7 +1042,7 @@ model covariance, are then used. Additional optional arguments allow
 more control over the inversion. The general form for the command
 line is 
 \begin{verbatim}
-Usage: -I NLCG rFile_Model rFile_Data [InvCtrl FwdCtrl CovCtrl StartModel ]
+Usage: -I NLCG rFile_Model rFile_Data [InvCtrl FwdCtrl CovCtrl StartModel -P [file_prefix]]
 \end{verbatim}
 As usual, arguments have to be in the specified order. Thus, to specify
 StartModel all other optional arguments must be given.
@@ -1089,6 +1089,9 @@ covariance(see section
 \item \verb"StartModel" : The starting model file. This must be specified
 to start from something other than the prior. Proper use of this option
 is discussed below, in Sec.~\ref{Restarting}. 
+\item \verb"-P [file_prefix]": Indicates that the partial solutions be stored
+as temporary files on disk, rather than in memory. Partial solution file 
+names will be prepended with \verb"[file_prefix]".
 \end{itemize}
 
 \subsection{Inversion Outputs}

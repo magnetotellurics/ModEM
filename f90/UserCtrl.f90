@@ -60,8 +60,8 @@ module UserCtrl
 	! Choose the sort of test / procedure variant you wish to perform
 	character(80)       :: option
 
-    	! Out-of-core file prefix for storing working E-field solutions (NCI)
-    	character(80)       :: prefix
+	! Out-of-core file prefix for storing working E-field solutions (NCI)
+	character(80)       :: prefix
 
 	! Specify damping parameter for the inversion
 	real(8)             :: lambda
@@ -72,14 +72,14 @@ module UserCtrl
 	! Specify the magnitude for random perturbations
 	real(8)             :: delta
 
-    	! Specify the Covariance Type used in 3D (reserved for future use)
-    	integer             :: CovType
+	! Specify the Covariance Type used in 3D (reserved for future use)
+	integer             :: CovType
 
 	! Indicate how much output you want
 	integer             :: output_level
 
-    	! Reduce master memory usage by storing E-fields in files (NCI)
-    	logical             :: storeSolnsInFile
+	! Reduce master memory usage by storing E-fields in files (NCI)
+	logical             :: storeSolnsInFile
 
   end type userdef_control
 
@@ -144,7 +144,8 @@ Contains
   subroutine parseArgs(program,ctrl)
 
      character(1)     :: job
-     integer (kind=4) :: iargc,narg,k
+     integer (kind=4) :: iargc, narg, k
+     integer (kind=4) :: nOptArgs, optArgSize
      integer          :: istat
      logical          :: exists
      character*80  gridType, header,arg, verbose, paramtype
@@ -169,20 +170,32 @@ Contains
      !   by the verbose level; ignore the others
      verbose = 'regular'
      if(narg .gt. 1) then
-       k=1
-       search_arg: &
-		   do
-		       k=k+1
-		       if (k .eq. narg) exit  search_arg
-               call getarg ( k, arg )
-                if(arg(1:1).eq.'-') then
-                  if (arg(2:2).eq.'v') then
-                    call getarg ( k+1, verbose )
-                  end if
-                  narg=k-1
-                  exit  search_arg
+        k=1
+        nOptArgs = 0
+        search_arg: &
+        do
+            k=k+1
+            if (k .eq. narg) exit  search_arg
+            call getarg(k, arg)
+
+            if(arg(1:1).eq.'-') then
+                ! Set `optArgSize` to the number of argument parts: e.g. `-P [file_prefix]`
+                ! has an optArgSize == 2, one part for the `-P` and one part for `[file_prefix]`.
+                if (arg(2:2).eq.'v') then
+                    call getarg(k+1, verbose)
+                    optArgSize = 2
                 end if
-          end do search_arg
+
+                if (arg(2:2) .eq. 'P') then
+                    call getarg(k+1, ctrl % prefix)
+                    ctrl % storeSolnsInFile = .true.
+                    optArgSize = 2
+                end if
+
+                nOptArgs = nOptArgs + optArgSize
+            end if
+        end do search_arg
+        narg = narg - nOptArgs
      end if
 
 	 !  set the level of output based on the user input
@@ -522,6 +535,15 @@ Contains
            write(0,*)
            write(0,*) '      rFile_Cov     = the model covariance configuration file'
            write(0,*) '      rFile_dModel  = the starting model parameter perturbation'
+           write(0,*)
+           write(0,*) 'Optional final arguments:'
+           write(0,*) ' -v [debug|full|regular|compact|result|none]'
+           write(0,*) '   indicates the desired level of output to screen and to files'
+           write(0,*)
+           write(0,*) ' -P [file_prefix]'
+           write(0,*) '   indicates that the partial solutions should be stored as '
+           write(0,*) '   temporary files on disk rather in memory with file prefix'
+           write(0,*) '   [file_prefix]'
            write(0,*)
            call ModEM_abort()
         else
