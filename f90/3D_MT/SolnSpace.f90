@@ -45,7 +45,6 @@ interface dotProd
    MODULE PROCEDURE dotProd_sparseVsolnV
 end interface
 
-
   type :: solnVector_t
     !!   Generic solution type, same name must be used to allow
     !!   use of higher level inversion modules on different problems.
@@ -344,16 +343,125 @@ contains
      end function dotProd_solnVector
 
      !**********************************************************************
-     function construct_esoln_fname(prefix, iTx, polarization) result(fname)
+     subroutine write_solnVector(e, prefix, ftype)
+
+         implicit none
+
+         type (solnVector_t), intent(in) :: e
+         character(len=*), intent(in) :: prefix
+         character(len=*), optional, intent(in) :: ftype
+
+         character(len=512) :: fname, ftype_lcl, form
+         integer :: fid
+
+         if (.not. e % allocated) then
+             write(0,*) "ERROR: solnVector_t (argument e) msut be allocated before calling write_solnVector"
+             write(0,*) "ERROR: Allocate it by calling `create_solnVector` first"
+             call ModEM_abort()
+         end if
+
+         if (present(ftype)) then
+            ftype_lcl = ftype
+         else
+            ftype_lcl = 'binary'
+         end if
+
+         if (ftype_lcl == 'binary') then
+            form = 'unformatted'
+         else if (ftype_lcl == 'ascii') then
+            form = 'formatted'
+         else
+             ftype_lcl = 'binary'
+             form = 'unformatted'
+         end if
+
+         fname = construct_esoln_fname(prefix, e % tx, trim(e % pol_name(e % pol_index(1))))
+         open(newunit=fid, file=trim(fname), action='write', form=form, status='replace')
+
+         call write_cvector(fid, e % pol(e % pol_index(1)), ftype_lcl)
+
+     end subroutine write_solnVector
+
+     !**********************************************************************
+     subroutine read_solnVector(e, prefix, ftype)
+
+         implicit none
+
+         type (solnVector_t), intent(inout) :: e
+         character(len=*), intent(in) :: prefix
+         character(len=*), optional, intent(in) :: ftype
+
+         character(len=512) :: fname, ftype_lcl, form
+         integer :: fid
+         logical :: file_exists
+
+         if (.not. e % allocated) then
+             write(0,*) "ERROR: solnVector_t (argument e) msut be allocated before calling read_solnVector"
+             write(0,*) "ERROR: Allocate it by calling `create_solnVector` first"
+             call ModEM_abort()
+         end if
+
+         if (present(ftype)) then
+            ftype_lcl = ftype
+         else
+            ftype_lcl = 'binary'
+         end if
+
+         if (ftype_lcl == 'binary') then
+            form = 'unformatted'
+         else if (ftype_lcl == 'ascii') then
+            form = 'formatted'
+         else
+             ftype_lcl = 'binary'
+             form = 'unformatted'
+         end if
+
+         fname = construct_esoln_fname(prefix, e % tx, trim(e % pol_name(e % pol_index(1))))
+
+         if (.not. does_esoln_file_exist(e, prefix)) then
+             write(0,*) "ERROR: The file for this solnVector_t (argument e) does not exist"
+             write(0,*) "ERROR: Could not find: ", trim(fname)
+             call ModEM_abort()
+         end if
+
+         open(newunit=fid, file=trim(fname), action='read', form=form, status='old')
+
+         call read_cvector(fid, e % pol(e % pol_index(1)), ftype_lcl)
+
+     end subroutine read_solnVector
+
+     !**********************************************************************
+     function does_esoln_file_exist(e, prefix) result(file_exists)
+
+         implicit none
+
+         type (solnVector_t), intent(in) :: e
+         character(len=*), intent(in) :: prefix
+         character(len=512) :: fname
+         logical :: file_exists
+
+         if (.not. e % allocated) then
+             write(0,*) "ERROR: solnVector_t (argument e) msut be allocated before calling does_esoln_file_eixst"
+             write(0,*) "ERROR: Allocate it by calling `create_solnVector` first"
+             call ModEM_abort()
+         end if
+
+         fname = construct_esoln_fname(prefix, e % tx, trim(e % pol_name(e % pol_index(1))))
+         inquire(file=trim(fname), exist=file_exists)
+
+     end function does_esoln_file_exist
+
+     !**********************************************************************
+     function construct_esoln_fname(prefix, iTx, pol_name) result(fname)
 
        implicit none
 
        character(len=*), intent(in) :: prefix
        integer, intent(in) :: iTx
-       integer, intent(in) :: polarization
+       character(len=*), intent(in) :: pol_name
        character(len=512)  :: fname
 
-       write(fname, '(A, A, I4.4, A, I2.2, A)') trim(prefix), '.iTx.', iTX, 'pol', polarization, '.cvec'
+       write(fname, '(A, A, I4.4, A, A, A)') trim(prefix), '.iTx.', iTx, '.', trim(pol_name), '.cvec'
 
      end function construct_esoln_fname
 
