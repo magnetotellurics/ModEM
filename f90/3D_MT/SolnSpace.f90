@@ -343,6 +343,20 @@ contains
 
      end function dotProd_solnVector
 
+     !**********************************************************************
+     function construct_esoln_fname(prefix, iTx, polarization) result(fname)
+
+       implicit none
+
+       character(len=*), intent(in) :: prefix
+       integer, intent(in) :: iTx
+       integer, intent(in) :: polarization
+       character(len=512)  :: fname
+
+       write(fname, '(A, A, I4.4, A, I2.2, A)') trim(prefix), '.iTx.', iTX, 'pol', polarization, '.cvec'
+
+     end function construct_esoln_fname
+
 !**********************************************************************
 !           Basic solnVectorMTX methods
 !**********************************************************************
