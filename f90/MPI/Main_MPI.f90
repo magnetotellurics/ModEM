@@ -9,6 +9,7 @@
 ! distribution of CPU power.
 module Main_MPI
 #ifdef MPI
+  use UserCtrl, only : UserCtrl_ctrl
   use file_units
   use utilities
   use datasens
@@ -1957,22 +1958,32 @@ Subroutine Worker_job(sigma,d)
                  endif
 #endif
              end if
+
              if ((rank_local.eq.0) .or. (para_method.eq.0)) then
+
+
                  ! leader reports back to master
                  call create_worker_job_task_place_holder 
                  worker_job_task%taskid=rank_current
                  call Pack_worker_job_task
                  call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,0,   &
     &                FROM_WORKER, comm_current, ierr)
+
                  ! Create e0_temp package (one Period and one Polarization) 
                  ! and send it to the master
-                 which_pol=1
-                 call create_e_param_place_holder(e0) 
-                 call Pack_e_para_vec(e0)
-                 call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,         &
-    &                FROM_WORKER, comm_current, ierr) 
-                 call reset_e_soln(e0)
+                 write(0,*) "User Ctrl: ", UserCtrl_ctrl % storeSolnsInFile, UserCtrl_ctrl % prefix
+                 if (UserCtrl_ctrl % storeSolnsInFile) then
+                     call write_solnVector(e0, UserCtrl_ctrl % prefix)
+                 else
+                     which_pol=1
+                     call create_e_param_place_holder(e0)
+                     call Pack_e_para_vec(e0)
+                     call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,         &
+        &                FROM_WORKER, comm_current, ierr)
+                     call reset_e_soln(e0)
+                 end if
              end if
+
              ! so long!
              now = MPI_Wtime()
              time_passed =  now - previous_time
@@ -2209,6 +2220,8 @@ Subroutine Worker_job(sigma,d)
              end if
              call reset_e_soln(e)
              if ((rank_local.eq.0) .or. (para_method.eq.0)) then !leader
+
+
                  ! leader reports back to master
                  call create_worker_job_task_place_holder
                  worker_job_task%taskid=rank_current
@@ -2216,10 +2229,15 @@ Subroutine Worker_job(sigma,d)
                  call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,0,   &
     &                FROM_WORKER, comm_current, ierr)
                  which_pol=1
-                 call create_e_param_place_holder(e)
-                 call Pack_e_para_vec(e)
-                 call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,         &
-    &                FROM_WORKER, comm_current, ierr)
+
+                 if (UserCtrl_ctrl % storeSolnsInFile) then
+                    call write_solnVector(e, trim(UserCtrl_ctrl % prefix)//".JmultT")
+                 else
+                     call create_e_param_place_holder(e)
+                     call Pack_e_para_vec(e)
+                     call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,         &
+        &                FROM_WORKER, comm_current, ierr)
+                 end if
                  !deallocate(e_para_vec,worker_job_package)
              end if
              ! hasta la vista!
@@ -2288,17 +2306,22 @@ Subroutine Worker_job(sigma,d)
              call reset_e_soln(e)
 
              if ((rank_local.eq.0) .or. (para_method.eq.0)) then !leader
+
                  ! leader reports back to master
                  call create_worker_job_task_place_holder
                  call Pack_worker_job_task
                  call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,0,   &
     &                FROM_WORKER, comm_current, ierr)
                  ! send the results back
-                 which_pol=1
-                 call create_e_param_place_holder(e)
-                 call Pack_e_para_vec(e)
-                 call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,         &
-    &                FROM_WORKER, comm_current, ierr)
+                 if (UserCtrl_ctrl % storeSolnsInFile) then
+                    call write_solnVector(e, trim(UserCtrl_ctrl % prefix)//".Jmult")
+                 else
+                     which_pol=1
+                     call create_e_param_place_holder(e)
+                     call Pack_e_para_vec(e)
+                     call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,         &
+        &                FROM_WORKER, comm_current, ierr)
+                end if
              end if
              ! Aba yo!
              now = MPI_Wtime()
