@@ -54,6 +54,7 @@ program Mod3DMT
           write(ioMPI,*) 'Total Number of nodes= ', number_of_workers
       else
           call RECV_cUserDef(cUserDef)
+          UserCtrl_ctrl = cUserDef
       end if
 #else
       call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)

@@ -83,6 +83,8 @@ module UserCtrl
 
   end type userdef_control
 
+  type (userdef_control) :: UserCtrl_ctrl
+
 Contains
 
   ! Initialize userCtrl. The defaults are not empty strings.
@@ -158,6 +160,7 @@ Contains
      write(*,*) 'AUTHORS  Gary Egbert, Anna Kelbert & Naser Meqbel'
      write(*,*) 'College of Earth, Ocean and Atmospheric Sciences'
      write(*,*)
+
 
      call initUserCtrl(ctrl)
 
@@ -870,5 +873,8 @@ Contains
      ! save this info for the main program
      ctrl%job = job
 
+     UserCtrl_ctrl = ctrl
+
   end subroutine parseArgs
+
 end module UserCtrl
