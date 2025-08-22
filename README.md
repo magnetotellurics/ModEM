@@ -33,6 +33,7 @@ Modular Electromagnetic Inversion Software (ModEM)
 * [Basic ModEM Usage](#basic-modem-usage)
     * [Forward Modeling](#forward-modeling)
     * [Inversion Modeling](#inversion-modeling)
+* [Building and Running in Docker](#building-and-running-in-docker)
 * [More Information And Tools](#more-information-and-tools)
     * [Related Repositories](#related-repositories)
     * [ModEM-ON and ModEM-OO](#modem-on-and-modem-oo)
@@ -250,6 +251,67 @@ compiled with `-DFG`):
 ``` bash
 $ mpiexec -n 9 ./Mod3DMT -I NLCG pr.ws de.dat block2.inv
 ```
+
+# Building and Running In Docker
+
+A [Dockerfile][Dockerfile] has been provided that will create an Ubuntu docker
+container where you can compile and run ModEM. To run the ModEM docker
+container, first ensure you have [docker installed][Docker-Getting-Started] and
+running (Either have the docker [deamon running][Damon-running], or Docker
+[Desktop running][Docker-desktop].
+
+## Building
+
+After you install Docker, you will need to build the docker container. Inside
+the `ModEM` directory (where the `Dockerfile` resides), run the following:
+
+```bash
+$ docker build . -t modem:latest --build-args ncpus=2
+```
+
+You can specify different numbers of arguments in the `ncpus` build argument if
+you wish. It will speed up the time when Docker compiles MPICH.
+
+After running the above command Docker will create an image named
+`modem:latest` that you can then use to run; it will have all necessary
+libraries and compilers to compile and run ModEM.
+
+## Running and building ModEM in Docker
+
+To run the container, we need to run `docker run`; however, we will also need
+to pass in a `--mount` option to mount our source code into our docker
+container:
+
+```bash
+$ docker run --mount=type=bind,source=/abosolute/path/to/ModEM,target=/root/ModEM -it modem
+```
+
+This will run the container and the `-it` argument will tell Docker to start an
+interactive tty session and will drop you inside the running container. You
+will find that the ModEM source code that you specified in the `source` mount
+argument will be present. Any changes you make in this folder, in either the
+container or the host machine will be present on the other machine.
+
+Once you're inside the container, `cd` into `ModEM/f90`. There, you can run the
+`./CONFIG/Configure.3D_MT.Docker.GFortran` and `make` as described in other
+sections above.
+
+## Specifying additional mounts
+
+It might be helpful to specify additional mount points, for instance it might
+be helpful to mount a work directory, such as the ModEM-Examples repository:
+
+`
+```bash
+$ docker run --mount=type=bind,source=/abosolute/path/to/ModEM,target=/root/ModEM \
+             --mount=type=bind,soucr=/home/users/uname/ModEM-Examples,target=/root/ModEM-Examples \
+             -it modem
+```
+
+[Docker-desktop]: https://www.docker.com/blog/getting-started-with-docker-desktop/
+[Damon-running]: https://docs.docker.com/engine/daemon/start/
+[Docker-Getting-Started]: https://www.docker.com/get-started/
+[Dockerfile]:./Dockerfile
 
 # More Information and Tools
 
