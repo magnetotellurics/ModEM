@@ -200,6 +200,8 @@ module sg_vector
      ! ISO/IEC 15581 - the "allocatable array extension")
      logical										:: temporary = .false.
 
+     logical :: place_holder = .false.
+
      ! pointer to parent grid
      type (grid_t), pointer                             :: grid
 
@@ -415,16 +417,24 @@ Contains
   ! using grid definition in structure "grid" ;
   ! allocates memory in x,y,z component arrays
   ! gridType is a character string to describe intended usage
-  subroutine create_cvector(igrid, E, gridType)
+  subroutine create_cvector(igrid, E, gridType, place_holder)
 
     implicit none
     type(grid_t), target, intent(in)     :: igrid
     ! the grid for which an edge/ face node field is being initialized
     type (cvector), intent(inout)       :: E
+    logical, intent(in), optional :: place_holder
 
     integer                             :: status,nx,ny,nz
 
     character (len=80), intent(in)      :: gridType
+    logical :: place_holder_lcl
+
+    if (present(place_holder)) then
+        place_holder_lcl = place_holder
+    else
+        place_holder_lcl = .false.
+    end if
 
 	! First deallocate anything, that's allocated
     call deall_cvector(E)
@@ -443,6 +453,12 @@ Contains
 
     ! gridType
     E%gridType = gridType
+
+    if (place_holder_lcl) then
+        ! Don't allocate anything for place holders
+        E % place_holder = .true.
+        return
+    end if
 
     ! allocate memory for x,y,z ;
     ! E%allocated will be true if all allocations succeed
@@ -1003,7 +1019,7 @@ Contains
     integer                               :: status
 
     ! check to see if RHS (E1) is active (allocated)
-    if(.not.E1%allocated) then
+    if(.not.E1%allocated .and. .not. E1 % place_holder) then
        write(0,*) 'RHS not allocated yet for copy_cvector'
     else
 
@@ -1012,11 +1028,15 @@ Contains
           if  (E1%gridType == E2%gridType) then
 
              ! just copy components
-             E2%x = E1%x
-             E2%y = E1%y
-             E2%z = E1%z
+             if (.not. E1 % place_holder) then
+                 E2%x = E1%x
+                 E2%y = E1%y
+                 E2%z = E1%z
+             end if
+
              E2%gridType = E1%gridType
              E2%grid => E1%grid
+             E2%place_holder = E1%place_holder
 
           else
              write (0, *) 'not compatible usage for copy_cvector'
@@ -1030,13 +1050,18 @@ Contains
           end if
 
           !  then allocate E2 as correct size ...
-          Call create_cvector(E1%grid, E2, E1%gridType)
+          Call create_cvector(E1%grid, E2, E1%gridType, place_holder=E1 % place_holder)
           !   .... and copy E1
-          E2%x = E1%x
-          E2%y = E1%y
-          E2%z = E1%z
+
+          if (.not. E1 % place_holder) then
+              E2%x = E1%x
+              E2%y = E1%y
+              E2%z = E1%z
+          end if
+
           E2%gridType = E1%gridType
           E2%grid => E1%grid
+          E2%place_holder = E1%place_holder
 
        end if
 

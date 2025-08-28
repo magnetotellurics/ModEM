@@ -80,6 +80,8 @@ end interface
     !! avoid memory leaks: set this to true for function outputs only
     logical			:: temporary = .false.
 
+    logical :: place_holder = .false.
+
   end type solnVector_t
 
   type :: solnVectorMTX_t
@@ -164,7 +166,7 @@ contains
 !           Basic solnVector methods
 !**********************************************************************
 
-     subroutine create_solnVector(grid,iTx,e)
+     subroutine create_solnVector(grid, iTx, e, place_holder)
 
      !  generic routine for creating the solnVector type for 3D problems:
      !  number of polarization obtained from the transmitter dictionary
@@ -173,9 +175,17 @@ contains
        type(grid_t), intent(in), target	    :: grid
        integer, intent(in)                  :: iTx
        type (solnVector_t), intent(inout)		:: e
+       logical, intent(in), optional :: place_holder
 
        ! local variables
        integer				:: k,istat,iPol
+       logical :: place_holder_lcl
+
+       if (present(place_holder)) then
+            place_holder_lcl = place_holder
+       else
+            place_holder_lcl = .false.
+       end if
 
        if (e%allocated) then
           if (associated(e%grid, target=grid) .and. (e%tx == iTx)) then
@@ -189,11 +199,11 @@ contains
        e%nPol = txDict(iTx)%nPol
 	   allocate(e%Pol_index(e%nPol), STAT=istat)
        allocate(e%Pol_name(e%nPol), STAT=istat)
-       
+
        do iPol=1,e%nPol
         e%Pol_index(iPol)=iPol
        end do
-       
+
        ! set up the mode names based on transmitter type;
        ! for now, only set up for MT. Used for I/O.
        if (trim(txDict(iTx)%tx_type) .eq. 'MT') then
@@ -206,9 +216,15 @@ contains
        end if
 
        allocate(e%pol(e%nPol), STAT=istat)
+
        do k = 1,e%nPol
-          call create_cvector(grid,e%pol(k),EDGE)
+          call create_cvector(grid,e%pol(k),EDGE, place_holder=place_holder_lcl)
        enddo
+
+       if (place_holder_lcl) then
+           e % place_holder = .true.
+       end if
+
        e%tx = iTx
        e%grid => grid
 
