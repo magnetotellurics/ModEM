@@ -2626,14 +2626,39 @@ End Subroutine Worker_job
 
 !******************************************************************************
 
-subroutine create_data_vec_place_holder(d)
+subroutine create_data_vec_place_holder(d, start_iTx, end_itx)
 
      implicit none
      integer Nbytes1,Nbytes2,ndata,iper,ndt,sum1,sum2
      type(dataVectorMTX_t), intent(in)           :: d
+     integer, optional, intent(in) :: start_iTx
+     integer, optional, intent(in) :: end_iTx
+     integer :: start_iTx_lcl
+     integer :: end_iTx_lcl
+
+     ! .neqv. here is the exclusive Or
+     if (present(start_iTx) .neqv. present(end_iTx)) then
+         write(0,*) "ERROR: In create_data_vec_place_holder - Either 'start_iTx' or 'end_iTx' was specified, but not the other"
+         write(0,*) "ERROR: Please either: Specify BOTH, or, specify NONE"
+         call ModEM_Abort()
+     end if
+
+     if (present(start_iTx)) then
+        start_iTx_lcl = start_iTx
+     else
+         start_iTx_lcl = 1
+     end if
+
+     if (present(end_iTx)) then
+         end_iTx_lcl = end_iTx
+     else
+         end_iTx_lcl = d % nTx
+     end if
+
      sum1=0
      sum2=0
-     do iper=1,d%nTx
+
+     do iper = start_iTx_lcl, end_iTX_lcl
          do ndt=1,d%d(iper)%ndt
              ndata=size(d%d(iper)%data(ndt)%value)
              CALL MPI_PACK_SIZE(ndata, MPI_DOUBLE_PRECISION,             &
@@ -2651,14 +2676,30 @@ subroutine create_data_vec_place_holder(d)
          
 end subroutine create_data_vec_place_holder
 !****************************************************************************** 
- subroutine Pack_data_para_vec(d)
+subroutine Pack_data_para_vec(d, start_iTx, end_iTx)
      implicit none
 
      type(dataVectorMTX_t), intent(in) :: d
+     integer, optional, intent(in) :: start_iTx
+     integer, optional, intent(in) :: end_iTx
+     integer :: start_iTx_lcl, end_iTx_lcl
      integer index
      integer ndata,iper,ndt
+
+     if (present(start_iTx)) then
+        start_iTx_lcl = start_iTx
+     else
+         start_iTx_lcl = 1
+     end if
+
+     if (present(end_iTx)) then
+         end_iTx_lcl = end_iTx
+     else
+         end_iTx_lcl = d % nTx
+     end if
+
      index=1
-     do iper=1,d%nTx
+     do iper=start_iTx_lcl, end_iTx_lcl
          do ndt=1,d%d(iper)%ndt
              ndata=size(d%d(iper)%data(ndt)%value)            
              call MPI_Pack(d%d(iper)%data(ndt)%value(1,1),ndata,          &
@@ -2676,15 +2717,37 @@ end subroutine create_data_vec_place_holder
 
 end subroutine Pack_data_para_vec
 !****************************************************************************** 
-subroutine UnPack_data_para_vec(d)
+subroutine UnPack_data_para_vec(d, start_iTx, end_iTx)
      implicit none
      type(dataVectorMTX_t), intent(inout)  :: d
+     integer, optional, intent(in) :: start_iTx
+     integer, optional, intent(in) :: end_iTx
      ! Local
-     integer index
-     integer ndata,iper,ndt
+     integer :: start_iTx_lcl, end_iTx_lcl
+     integer :: index
+     integer :: ndata,iper,ndt
+
+     ! .neqv. here is the exclusive Or
+     if (present(start_iTx) .neqv. present(end_iTx)) then
+         write(0,*) "ERROR: In UnPack_Data_para_vec - Either 'start_iTx' or 'end_iTx' was specified, but not the other"
+         write(0,*) "ERROR: Please either: Specify BOTH, or, specify NONE"
+         call ModEM_Abort()
+     end if
+
+     if (present(start_iTx)) then
+        start_iTx_lcl = start_iTx
+     else
+         start_iTx_lcl = 1
+     end if
+
+     if (present(end_iTx)) then
+         end_iTx_lcl = end_iTx
+     else
+         end_iTx_lcl = d % nTx
+     end if
 
      index=1
-     do iper=1,d%nTx
+     do iper=start_iTx_lcl, end_iTx_lcl
          do ndt=1,d%d(iper)%ndt
              ndata=size(d%d(iper)%data(ndt)%value)            
              call MPI_Unpack(data_para_vec, Nbytes, index,                &
