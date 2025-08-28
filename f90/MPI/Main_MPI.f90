@@ -1119,6 +1119,70 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
    
 end Subroutine Master_job_JmultT
 
+!######################## Master_job_PQMult ##############################
+
+subroutine Master_job_PQMult(nTx, sigma, dsigma)
+
+    implicit none
+
+    integer, intent(in) :: nTx
+    type (modelParam_t), intent(in) :: sigma
+    type (modelParam_t), intent(inout) :: dsigma
+
+    character(len=*), parameter :: job_name = "PQMULT"
+    type(modelParam_t) :: dsigma_recv
+
+    integer :: dest, nTasks, remainder, iTx
+    integer :: iTx_min, iTx_max, i, j, k
+
+    call create_worker_job_task_place_holder
+    dsigma_recv = sigma
+    nTasks = nTx / number_of_workers
+    remainder = modulo(nTx, number_of_workers)
+    iTx_max = 0
+
+    do dest = 1, number_of_workers
+        iTx_min = iTx_max + 1
+        iTx_max = iTx_min + nTasks - 1
+
+        if (remainder > 0) then
+            iTx_max = iTx_max + 1
+            remainder = remainder - 1
+        end if
+
+        if (iTx_max >= iTx_min) then
+            worker_job_task % what_to_do=trim(job_name)
+            worker_job_task % per_index = iTx_min
+            worker_job_task % pol_index = iTx_max
+
+            call Pack_worker_job_task
+
+            call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
+            write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,': Send Per from ',iTx_min ,' to', iTx_max ,' to ', dest
+        end if
+    end do
+
+    remainder = modulo(nTx, number_of_workers)
+    iTx_max = 0
+
+    do dest = 1, number_of_workers
+        iTx_min = iTx_max + 1
+        iTx_max = iTx_min + nTasks - 1
+
+        if (remainder > 0) then
+            iTx_max = iTx_max + 1
+            remainder = remainder - 1
+        end if
+
+        if (iTx_max >= iTx_min) then
+            call create_model_param_place_holder(dsigma_recv)
+            call MPI_Recv(sigma_para_vec, Nbytes, MPI_PACKED, dest, FROM_WORKER, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+            call Unpack_model_para_values(dsigma_recv)
+            call linComb_modelParam(ONE, dsigma, ONE, dsigma_recv, dsigma)
+        end if
+    end do
+
+end subroutine Master_job_PQMult
 
 !########################    Master_job_Jmult ##############################
 Subroutine Master_job_Jmult(mHat,m,d,eAll,comm)
@@ -1911,6 +1975,9 @@ Subroutine Worker_job(sigma,d)
      ! 2019.05.08, Liu Zhongyin, add isite for rx in dataBlock_t
      integer                       :: isite
 
+     ! PQMULT
+     type (modelParam_t) :: dsigma_temp, dsigma_send, Qcomb
+
       
      ! time
      DOUBLE PRECISION                       :: time_passed, now, just
@@ -2073,6 +2140,42 @@ Subroutine Worker_job(sigma,d)
              call Pack_data_para_vec(d)
              call MPI_Send(data_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
              call UnPack_data_para_vec(d)
+
+         elseif (trim(worker_job_task%what_to_do) .eq. 'PQMULT') then
+
+             start_iTx = worker_job_task % per_index
+             end_iTx = worker_job_task % pol_index
+             worker_job_task % taskid = taskid
+
+             call create_solnVector(grid, 1, e0)
+             call create_solnVector(grid, 1, e)
+
+             dsigma_temp = sigma
+             Qcomb = sigma
+             dsigma_send = sigma
+
+             call zero(dsigma_send)
+
+             do per_index=start_iTx, end_iTx
+                call zero(dsigma_temp)
+                call zero(Qcomb)
+
+                do pol_index = 1, get_nPol(per_index)
+                    call EsMgr_get(e, per_index, pol_index=pol_index, prefix='.JmultT')
+                end do
+
+                e0 % tx = per_index
+                e % tx = per_index
+
+                call PmultT(e0, sigma, e, dsigma_temp)
+                call QmultT(e0, sigma, d%d(per_index), Qcomb)
+                call scMultAdd(ONE, Qcomb, dsigma_temp)
+                call linComb_modelParam(ONE, dsigma_send, ONE, dsigma_temp, dsigma_send)
+             end do
+
+             call create_model_param_place_holder(dsigma_send)
+             call pack_model_para_values(dsigma_send)
+             call MPI_Send(sigma_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
 
          elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
              ! compute (explicit) J
