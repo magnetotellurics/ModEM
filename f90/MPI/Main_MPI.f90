@@ -9,6 +9,7 @@
 ! distribution of CPU power.
 module Main_MPI
 #ifdef MPI
+  use EsolnManager
   use file_units
   use utilities
   use datasens
@@ -684,6 +685,67 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
 
 end subroutine Master_job_fwdPred
 
+!#########################   Master_job_DataResp ##########################
+
+subroutine Master_job_DataResp(nTx, sigma, d)
+
+    implicit none
+
+    integer, intent(in) :: nTx
+    type (modelParam_t), intent(in) :: sigma
+    type (dataVectorMTX_t), intent(inout) :: d
+
+    character (len=*), parameter :: JOB_NAME = "DATARESP"
+
+    integer :: dest, nTasks, remainder, iTx
+    integer :: iTx_min, iTx_max, i, j, k
+
+    call create_worker_job_task_place_holder
+
+    nTasks = nTx / number_of_workers
+    remainder = modulo(nTx, number_of_Workers)
+    iTx_max = 0
+
+    do dest = 1, number_of_workers
+        iTx_min = iTx_max + 1
+        iTx_max = iTx_min + nTasks - 1
+
+        if (remainder > 0) then
+            iTx_max = iTx_max + 1
+            remainder = remainder - 1
+        end if
+
+        if ( iTx_max >= iTx_min ) then
+            worker_job_task % what_to_do = trim(job_name)
+            worker_job_task % per_index = iTx_min
+            worker_job_task % pol_index = iTx_max
+
+            call Pack_worker_job_task
+            call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
+            write(ioMPI, '(a10,a16,i5,a8,i5,a11,i5)') trim(job_name), ': Send Per from ', iTx_min, ' to', iTx_max, ' to ', dest
+        end if
+    end do
+
+    remainder = modulo(nTx, number_of_workers)
+    iTx_max = 0
+
+    do dest = 1, number_of_workers
+        iTx_min = iTx_max + 1
+        iTx_max = iTx_min + nTasks - 1
+
+        if (remainder > 0) then
+            iTx_max = iTx_max + 1
+            remainder = remainder - 1
+        end if
+
+        if (iTx_max >= iTx_min) then
+            call create_data_vec_place_holder(d, start_iTx=iTx_min, end_iTx=iTx_max)
+            call MPI_Recv(data_para_vec, Nbytes, MPI_PACKED, dest, FROM_WORKER, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+            call UnPack_data_para_vec(d, start_iTx=iTx_min, end_iTx=iTx_max)
+        end if
+    end do
+
+end subroutine Master_job_DataResp
 
 !#########################   Master_job_Compute_J ##########################
 
@@ -978,12 +1040,14 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      if(.not. eAll_temp%allocated) then
          call create_solnVectorMTX(d%nTx,eAll_temp)
      end if 
+
      if (.not. savedSolns )then
          d_temp=d
-         call Master_job_fwdPred(sigma,d_temp,eAll_temp)
+         call Master_job_fwdPred(sigma, d_temp, eAll_temp)
      else
          eAll_temp=eAll 
      end if
+
      if(.not. eAll_out%allocated) then
          call create_solnVectorMTX(d%nTx,eAll_out)
          do iTx=1,nTx
@@ -992,7 +1056,6 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
              call deall (e0)  
          end do 
      end if 
-
 
      if (returne_m_vectors) then
          if (.not. associated(s_hat)) then
@@ -1003,6 +1066,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
              call zero(s_hat(iper))
          end do
      end if
+
      starttime = MPI_Wtime()
      ! First ditribute both model parameters and data
      call Master_job_Distribute_Model(sigma)
@@ -1822,10 +1886,10 @@ Subroutine Worker_job(sigma,d)
      ! Local 
      type(modelParam_t)                     :: delSigma
      type(userdef_control)                  :: ctrl
-     Integer                                :: nTx,m_dimension,ndata
-     Integer                                :: itx, ndt, dt, dt_index
+     Integer                                :: nTx,m_dimension,ndata, start_iTx, end_iTx
+     Integer                                :: itx, ndt, dt, dt_index, iDt
    
-     Integer                                :: iper,ipol,i,des_index
+     Integer                                :: iper,ipol,i,j,des_index
      Integer                                :: per_index,per_index_pre 
      Integer                                :: pol_index, stn_index
      Integer                                :: eAll_vec_size
@@ -1977,6 +2041,38 @@ Subroutine Worker_job(sigma,d)
              now = MPI_Wtime()
              time_passed =  now - previous_time
              previous_time = now
+
+         elseif (trim(worker_job_task%what_to_do) .eq. 'DATARESP') then
+
+             start_iTx = worker_job_task % per_index
+             end_iTx = worker_job_task % pol_index
+
+             worker_job_task % taskid = taskid
+
+             call create_solnVector(grid, 1, e0)
+
+             do per_index = start_iTx, end_iTx
+                e0 % tx = per_index
+
+                do pol_index = 1, get_nPol(per_index)
+                    call EsMgr_get(e0, e0 % tx, pol_index=pol_index)
+                end do
+
+                do i = 1, d % d(per_index) % nDt
+                    d % d(per_index) % data(i) % errorBar = .false.
+
+                    iDt = d % d(per_index) % data(i) % dataType
+
+                    do j = 1, d % d(per_index) % data(i) % nSite
+                        call dataResp(e0, sigma, iDt, d % d(per_index) % data(i) % rx(j), d % d(per_index) % data(i) % value(:,j))
+                    end do
+                end do
+             end do
+
+             call create_data_vec_place_holder(d, start_iTx=start_iTx, end_iTx=end_iTx)
+             call Pack_data_para_vec(d)
+             call MPI_Send(data_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
+             call UnPack_data_para_vec(d)
 
          elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
              ! compute (explicit) J
@@ -2345,11 +2441,6 @@ Subroutine Worker_job(sigma,d)
     &                 comm_local,ierr)
              endif
              call UnPack_data_para_vec(d)
-             ! clear the packed data vector
-             if (associated(data_para_vec)) then
-                 deallocate(data_para_vec)
-             endif
-              
          elseif (trim(worker_job_task%what_to_do) .eq. 'Distribute eAll') &
     &            then
              ! note that a worker (non-leader in a group) should never get this
@@ -2766,7 +2857,8 @@ subroutine UnPack_data_para_vec(d, start_iTx, end_iTx)
      end do  
 
      if (associated(data_para_vec)) then
-         deallocate (data_para_vec)
+         deallocate(data_para_vec)
+         data_para_vec => null()
      end if
 
 end subroutine UnPack_data_para_vec
