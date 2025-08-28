@@ -143,6 +143,8 @@ type :: ModEM_mpi_context_t
     integer :: number_of_workers
 end type ModEM_mpi_context_t
 
+type (ModEM_mpi_context_t), target, save :: modem_ctx
+
 Contains
 
 !##########################################################################

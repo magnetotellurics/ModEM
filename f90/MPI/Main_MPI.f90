@@ -80,6 +80,14 @@ Subroutine Constructor_MPI
       size_gpu = 0 
       ! tic-toc
       previous_time = MPI_Wtime()
+
+      modem_ctx % comm_world = comm_world
+      modem_ctx % comm_local = comm_local
+      modem_ctx % rank_world = rank_world
+      modem_ctx % rank_local = rank_local
+      modem_ctx % size_local = size_local
+      modem_ctx % number_of_workers = number_of_workers
+
 End Subroutine Constructor_MPI
 !----------------------------------------------------------------------------
 
