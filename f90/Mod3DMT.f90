@@ -17,6 +17,7 @@ program Mod3DMT
 
 #ifdef MPI
      Use Main_MPI
+     use EsolnManager
 #endif
 
      implicit none
@@ -61,8 +62,14 @@ program Mod3DMT
 #endif
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations
+
 #ifdef MPI
-      call setGrid_MPI(grid)
+    call EsMgr_init(grid, context=modem_ctx, &
+                          save_in_file=cUserDef % storeSolnsInFile, &
+                          prefix=cUserDef % prefix, &
+                          ftype=FTYPE_ASCII)
+
+    call setGrid_MPI(grid)
     ! Check if a large grid file with E field is defined:
     ! NOTE: right now both grids share the same transmitters.
     ! This why, reading and setting the large grid and its E solution comes after setting the trasnmitters Dictionary.

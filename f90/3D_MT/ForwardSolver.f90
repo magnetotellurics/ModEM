@@ -11,6 +11,7 @@ module ForwardSolver
 !
 !  Main difference from 2D: no need to keep track of TE/TM modes
 
+use ESolnManager
 use math_constants
 use datafunc
 use dataspace
@@ -219,12 +220,12 @@ end subroutine unpack_BC_from_file
    initForSens = present(comb)
 
    !  allocate for background solution
-   call create_solnVector(grid,iTx,e0)
+   call EsMgr_create_e(e0, iTx)
 
    if(initForSens) then
       !  allocate for sensitivity solution, RHS - same for all TX types
       !  assuming here that we don't use sparse storage ... we could!
-      call create_solnVector(grid,iTx,e)
+      call EsMgr_create_e(e, iTx)
       comb%nonzero_source = .true.
       comb%sparse_source = .false.
       comb%nonzero_bc = .false.

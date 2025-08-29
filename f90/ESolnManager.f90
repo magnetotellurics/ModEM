@@ -13,8 +13,8 @@ module ESolnManager
     type (solnVectorMTX_t) :: EsMgr_eAll
     type (ModEM_mpi_context_t), pointer :: EsMgr_ctx
 
-    character(len=*), parameter :: FTYPE_ASCII = "ASCII"
-    character(len=*), parameter :: FTYPE_BINARY = "BINARY"
+    character(len=*), parameter :: FTYPE_ASCII = "ascii"
+    character(len=*), parameter :: FTYPE_BINARY = "binary"
     character(len=*), parameter :: FTYPE_NETCDF = "NETCDF"
     character(len=*), parameter :: FTYPE_HDF5 = "HDF5"
     
@@ -28,7 +28,7 @@ module ESolnManager
     public :: EsMgr_create_eAll, EsMgr_create_e 
     public :: EsMgr_get
     public :: EsMgr_save
-    public :: EsMgr_save_in_file
+    public :: EsMgr_save_in_file, EsMgr_write_to_file
 
 contains
 
@@ -56,16 +56,20 @@ contains
             save_in_file_lcl = .false.
         end if
 
-        if (.not. save_in_file_lcl .and. present(prefix)) then
-            write(0,*) "Warning: Argument 'prefix' was passed, but 'save_in_file' was not present"
-            write(0,*) "Warning: 'prefix' will not have an effect. Set 'save_in_file' to true to save"
-            write(0,*) "Warning: esolns in files"
+        if ( .not. (save_in_file_lcl .and. present(prefix)) ) then
+            if (EsMgr_ctx % rank_world == 0) then
+                write(0,*) "Warning: Argument 'prefix' was passed, but 'save_in_file' was not present"
+                write(0,*) "Warning: 'prefix' will not have an effect. Set 'save_in_file' to true to save"
+                write(0,*) "Warning: esolns in files"
+            end if
         end if
 
-        if (.not. save_in_file_lcl .and. present(ftype)) then
-            write(0,*) "Warning: Argument 'ftype' was passed, but 'save_in_file' was not present"
-            write(0,*) "Warning: 'ftype' will not have an effect. Set 'save_in_file' to true to save"
-            write(0,*) "Warning: esolns in files"
+        if ( .not. (save_in_file_lcl .and. present(ftype)) ) then
+            if (EsMgr_ctx % rank_world == 0) then
+                write(0,*) "Warning: Argument 'ftype' was passed, but 'save_in_file' was not present"
+                write(0,*) "Warning: 'ftype' will not have an effect. Set 'save_in_file' to true when calling"
+                write(0,*) "WARNING: EsMgr_init to save esolns in files"
+            end if
         end if
 
         if (present(prefix)) then
@@ -191,7 +195,7 @@ contains
 
 
         if (EsMgr_save_in_file .and. .not. EsMgr_ctx % rank_world == 0) then
-            call write_soln_to_file(e, prefix)
+            call EsMgr_write_to_file(e, prefix)
             return
         end if
 
@@ -199,7 +203,7 @@ contains
 
     end subroutine EsMgr_save
 
-    subroutine write_soln_to_file(e, prefix, iPol)
+    subroutine EsMgr_write_to_file(e, prefix, iPol)
 
         implicit none
 
@@ -224,7 +228,7 @@ contains
 
         call write_solnVector(e, trim(EsMgr_prefix)//trim(prefix_lcl), ftype=EsMgr_ftype, pol_index=iPol_lcl)
 
-    end subroutine write_soln_to_file
+    end subroutine EsMgr_write_to_file
 
     subroutine read_esoln_from_file(e, iTx, iPol, prefix)
 

@@ -19,7 +19,6 @@ module Main_MPI
 
   use Declaration_MPI
   use Sub_MPI
-  ! use ioascii
 
   implicit none
 
@@ -648,18 +647,15 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
          end if
      end if
 
+     modem_ctx % comm_current = comm_current
+
      ! First, distribute the current model to all workers
      call Master_job_Distribute_Model(sigma)
-     ! call Master_job_Distribute_Data(d1)
+
      if(.not. eAll%allocated) then
-     ! call deall(eAll)
-     ! end if
-         call create_solnVectorMTX(d1%nTx,eAll)
-            do iTx=1,nTx
-                call create_solnVector(grid,iTx,e0)
-                call copy_solnVector(eAll%solns(iTx),e0)
-            end do
+         call EsMgr_create_eAll(eAll, d1 % nTx)
      end if
+
      job_name= 'FORWARD'
      call Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll,comm_current)
 
@@ -672,16 +668,23 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
      Call FaceArea(grid, S_F)
 
      ! Compute the model Responces
-     do iTx=1,nTx
-         do i = 1,d1%d(iTx)%nDt
-             d1%d(iTx)%data(i)%errorBar = .false.
-             iDt = d1%d(iTx)%data(i)%dataType
-             do j = 1,d1%d(iTx)%data(i)%nSite
-                 call dataResp(eAll%solns(iTx),sigma,iDt,d1%d(iTx)%data(i)%rx(j),d1%d(iTx)%data(i)%value(:,j), &
-                           d1%d(iTx)%data(i)%orient(j))
+     if (EsMgr_save_in_file) then
+         call Master_job_DataResp(nTx, sigma, d1)
+     else
+         do iTx=1,nTx
+             do i = 1,d1%d(iTx)%nDt
+                 d1%d(iTx)%data(i)%errorBar = .false.
+                 iDt = d1%d(iTx)%data(i)%dataType
+                 do j = 1,d1%d(iTx)%data(i)%nSite
+                     call dataResp(eAll%solns(iTx), sigma, iDt, &
+                               d1%d(iTx)%data(i)%rx(j), &
+                               d1%d(iTx)%data(i)%value(:,j), &
+                               d1%d(iTx)%data(i)%orient(j))
+                 end do
              end do
          end do
-     end do
+     end if
+
      ! clean up the grid elements stored in GridCalc on the master node
      call deall_rvector(l_E)
      call deall_rvector(S_F)
@@ -1043,10 +1046,13 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
              comm_current = comm_leader
          endif
      end if
+
+     modem_ctx % comm_current = comm_current
+
      ! nTX is number of transmitters;
      nTx = d%nTx
      if(.not. eAll_temp%allocated) then
-         call create_solnVectorMTX(d%nTx,eAll_temp)
+         call EsMgr_create_eAll(eAll_temp, d % nTx)
      end if 
 
      if (.not. savedSolns )then
@@ -1057,12 +1063,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      end if
 
      if(.not. eAll_out%allocated) then
-         call create_solnVectorMTX(d%nTx,eAll_out)
-         do iTx=1,nTx
-             call create_solnVector(grid,iTx,e0)
-             call copy_solnVector(eAll_out%solns(iTx),e0) 
-             call deall (e0)  
-         end do 
+         call EsMgr_create_eAll(eAll_out, nTx)
      end if 
 
      if (returne_m_vectors) then
@@ -1095,18 +1096,20 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      file_name='e.soln'
      !call write_solnVectorMTX(20,file_name,eAll_out)
 
-     do iper=1,nTx
-         !e0=eAll%solns(iper)  
-         !e =eAll_out%solns(iper)
-         call PmultT(eAll_temp%solns(iper),sigma,eAll_out%solns(iper)    &
-    &         ,dsigma_temp)
-         call QmultT(eAll_temp%solns(iper),sigma,d%d(iper),Qcomb)
-         call scMultAdd(ONE,Qcomb,dsigma_temp)
-         if (returne_m_vectors) then
-             s_hat(iper)=dsigma_temp
-         end if
-         call linComb_modelParam(ONE,dsigma,ONE,dsigma_temp,dsigma)
-     end do
+     if (EsMgr_save_in_file) then
+        call Master_job_PQMult(nTx, sigma, dsigma)
+     else
+         do iper=1,nTx
+             call PmultT(eAll_temp%solns(iper),sigma,eAll_out%solns(iper)    &
+        &         ,dsigma_temp)
+             call QmultT(eAll_temp%solns(iper),sigma,d%d(iper),Qcomb)
+             call scMultAdd(ONE,Qcomb,dsigma_temp)
+             if (returne_m_vectors) then
+                 s_hat(iper)=dsigma_temp
+             end if
+             call linComb_modelParam(ONE,dsigma,ONE,dsigma_temp,dsigma)
+         end do
+     end if
 
      endtime=MPI_Wtime()
      time_used = endtime-starttime
@@ -1759,10 +1762,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
              which_per=per_index
              do ipol1=1,nPol_MPI
                  which_pol=ipol1
-                 call create_e_param_place_holder(eAll_in%solns(which_per))
-                 call Pack_e_para_vec(eAll_in%solns(which_per))
-                 call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, who,  &
-    &             FROM_MASTER, comm_current, ierr) 
+                 call EsMgr_save(eAll_in % solns(which_per), prefix=".JmultT", to=who)
              end do   
          end if  
          write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name),     &
@@ -1789,13 +1789,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          which_per=worker_job_task%per_index
          which_pol=worker_job_task%pol_index
                   
-         call create_e_param_place_holder(eAll_out%solns(which_per))
-         call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, who,FROM_WORKER,  &
-    &         comm_current, STATUS, ierr)
-         ! call get_nPol_MPI(eAll_out%solns(which_per)) 
-         ! if (nPol_MPI==1)  which_pol=1
-
-         call Unpack_e_para_vec(eAll_out%solns(which_per))
+         call EsMgr_get(eAll_out % solns(which_per), which_per, 1, from=who)
 
          write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,        &
     &   ': Receive Per # ',which_per ,' and Pol # ', which_pol ,' from ',&
@@ -1852,11 +1846,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
              call get_nPol_MPI(eAll_out%solns(per_index)) 
              do ipol1=1,nPol_MPI
                  which_pol=ipol1
-                 call create_e_param_place_holder(eAll_in%solns(      &
-    &                 which_per))
-                 call Pack_e_para_vec(eAll_in%solns(which_per))
-                 call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED,        &
-    &                 who, FROM_MASTER, comm_current, ierr) 
+                 call EsMgr_save(eAll_in % solns(which_per), who)
              end do  
          end if 
          write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name),      &
@@ -1990,7 +1980,7 @@ Subroutine Worker_job(sigma,d)
      ! time
      DOUBLE PRECISION                       :: time_passed, now, just
      DOUBLE PRECISION, pointer,dimension(:) :: time_buff
-       
+
      nTx=d%nTx
      recv_loop=0
      previous_message=''
@@ -2032,6 +2022,10 @@ Subroutine Worker_job(sigma,d)
     &        ' Waiting for a message from Someone'
              end if
          end if
+
+         modem_ctx % comm_current = comm_current
+         modem_ctx % rank_current = rank_current
+
          ! reset the timer
          previous_time = now
          now = MPI_Wtime()
@@ -2106,10 +2100,10 @@ Subroutine Worker_job(sigma,d)
                  ! Create e0_temp package (one Period and one Polarization) 
                  ! and send it to the master
                  which_pol=1
-                 call create_e_param_place_holder(e0) 
-                 call Pack_e_para_vec(e0)
-                 call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,         &
-    &                FROM_WORKER, comm_current, ierr) 
+
+                 call EsMgr_save(e0, to=0)
+                 call reset_e_soln(e0)
+
              end if
              ! so long!
              call reset_e_soln(e0)
@@ -2135,17 +2129,18 @@ Subroutine Worker_job(sigma,d)
 
                 do i = 1, d % d(per_index) % nDt
                     d % d(per_index) % data(i) % errorBar = .false.
-
                     iDt = d % d(per_index) % data(i) % dataType
 
                     do j = 1, d % d(per_index) % data(i) % nSite
-                        call dataResp(e0, sigma, iDt, d % d(per_index) % data(i) % rx(j), d % d(per_index) % data(i) % value(:,j))
+                        call dataResp(e0, sigma, iDt, d % d(per_index) % data(i) % rx(j), &
+                                                      d % d(per_index) % data(i) % value(:,j), &
+                                                      d % d(per_index) % data(i) % orient(j))
                     end do
                 end do
              end do
 
              call create_data_vec_place_holder(d, start_iTx=start_iTx, end_iTx=end_iTx)
-             call Pack_data_para_vec(d)
+             call Pack_data_para_vec(d, start_iTx=start_iTx, end_iTx=end_iTx)
              call MPI_Send(data_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
              call UnPack_data_para_vec(d)
 
@@ -2377,10 +2372,7 @@ Subroutine Worker_job(sigma,d)
     &                ' Start Receiving ' , orginal_nPol, ' from Master'
                  do ipol=1,nPol_MPI 
                      which_pol=ipol
-                     call create_e_param_place_holder(e0)
-                     call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, 0,     &
-    &                    FROM_MASTER,comm_current, STATUS, ierr)
-                     call Unpack_e_para_vec(e0)
+                     call EsMgr_get(e0, per_index, pol_index=ipol, from=0)
                  end do
                  call initSolverWithOutE0(per_index,sigma,grid,size_local,&
                      e,comb)
@@ -2424,10 +2416,7 @@ Subroutine Worker_job(sigma,d)
                  call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,0,   &
     &                FROM_WORKER, comm_current, ierr)
                  which_pol=1
-                 call create_e_param_place_holder(e)
-                 call Pack_e_para_vec(e)
-                 call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,         &
-    &                FROM_WORKER, comm_current, ierr)
+                 call EsMgr_save(e, to=0, prefix=".JmultT")
                  !deallocate(e_para_vec,worker_job_package)
              end if
              ! hasta la vista!
@@ -2828,7 +2817,7 @@ End Subroutine Worker_job
 
 !******************************************************************************
 
-subroutine create_data_vec_place_holder(d, start_iTx, end_itx)
+subroutine create_data_vec_place_holder(d, start_iTx, end_iTx)
 
      implicit none
      integer Nbytes1,Nbytes2,ndata,iper,ndt,sum1,sum2
@@ -2846,7 +2835,7 @@ subroutine create_data_vec_place_holder(d, start_iTx, end_itx)
      end if
 
      if (present(start_iTx)) then
-        start_iTx_lcl = start_iTx
+         start_iTx_lcl = start_iTx
      else
          start_iTx_lcl = 1
      end if
