@@ -117,6 +117,7 @@ Subroutine split_MPI_groups(nTx,nPol,group_sizes)
      integer ::  total_nTx_nPol, resultlen
      integer, allocatable, dimension(:) :: leaders
 
+
 ! comment from Naser
 ! Following the same prosedure as the parallelization over periods and 
 ! polarizations, 
@@ -559,7 +560,7 @@ Subroutine Master_job_Regroup(nTx, nPol, comm)
      DOUBLE PRECISION                   :: time_passed, now 
      DOUBLE PRECISION, pointer,dimension(:) :: time_buff ! nGroup by 1 array
      integer                            :: size_current, comm_current
-     
+
      ! over-ride the default communicator, if needed
      if (present(comm)) then ! given communicator
          if (comm .eq. MPI_COMM_NULL) then
@@ -1195,6 +1196,68 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma)
 
 end subroutine Master_job_PQMult
 
+subroutine Master_job_LQMult(nTx, m, mHat, d)
+
+    integer, intent(in) :: nTx
+    type (modelParam_t), intent(in) :: mHat, m
+    type (dataVectorMTX_t), intent(inout) :: d
+
+    character(len=*), parameter :: job_name = "LQMULT"
+    integer :: dest
+    integer :: nTasks
+    integer :: remainder
+    integer :: iTx, iTx_min, iTx_max
+    integer :: i, j, k
+
+
+    call create_worker_job_task_place_holder
+
+    nTasks = nTx / number_of_workers
+    remainder = modulo(nTx, number_of_workers)
+
+    iTx_max = 0
+
+    do dest = 1, number_of_workers
+        iTx_min = iTx_max + 1
+        iTx_max = iTx_min + nTasks - 1
+
+        if (remainder > 0) then
+            iTx_max = iTx_max + 1
+            remainder = remainder - 1
+        end if
+
+        if (iTx_max >= iTx_min) then
+            worker_job_task % what_to_do = trim(job_name)
+            worker_job_task % per_index = iTx_min
+            worker_job_task % pol_index = iTx_max
+
+            call Pack_worker_job_task
+            call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
+            write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,': Send Per from ',iTx_min ,' to', iTx_max ,' to ', dest
+        end if
+    end do
+
+    remainder = modulo(nTx, number_of_workers)
+    iTx_max = 0
+
+    do dest = 1, number_of_workers
+        iTx_min = iTx_max + 1
+        iTx_max = iTx_min + nTasks - 1
+
+        if (remainder > 0) then
+            iTx_max = iTx_max + 1
+            remainder = remainder - 1
+        end if
+
+        if (iTx_max >= iTx_min) then
+            call create_data_vec_place_holder(d, start_iTx=iTx_min, end_iTx=iTx_max)
+            call MPI_Recv(data_para_vec, Nbytes, MPI_PACKED, dest, FROM_WORKER, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+            call UnPack_data_para_vec(d, start_iTx=iTx_min, end_iTx=iTx_max)
+        end if
+    end do
+
+end subroutine Master_job_LQMult
+
 !########################    Master_job_Jmult ##############################
 Subroutine Master_job_Jmult(mHat,m,d,eAll,comm)
 
@@ -1213,8 +1276,7 @@ Subroutine Master_job_Jmult(mHat,m,d,eAll,comm)
      type(solnVectorMTX_t)                             :: eAll_out 
      type(solnVectorMTX_t)                             :: eAll_temp 
      character(80)                                     :: job_name
-  
-   
+
      savedSolns = present(eAll)
      ! over-ride the default communicator, if needed
      if (present(comm)) then ! given communicator
@@ -1237,24 +1299,22 @@ Subroutine Master_job_Jmult(mHat,m,d,eAll,comm)
      starttime = MPI_Wtime()
      !  initialize the temporary data vectors
      d1 = d%d(1)
-     d2 = d%d(1) 
+     d2 = d%d(1)
+
      if (.not. eAll_out%allocated) then
-         call create_solnVectorMTX(d%nTx,eAll_out)
-         do iTx=1,nTx
-             call create_solnVector(grid,iTx,e0)
-             call copy_solnVector(eAll_out%solns(iTx),e0) 
-             call deall (e0)  
-         end do 
-     end if     
+         call EsMgr_create_eAll(eAll_out, nTx)
+     end if
+
      if (.not. eAll_temp%allocated) then
-         call create_solnVectorMTX(d%nTx,eAll_temp)
+         call EsMgr_create_eAll(eAll_Temp, d % nTx)
      end if
      if (.not. savedSolns )then
          d_temp=d
          call Master_job_fwdPred(m,d_temp,eAll_temp,comm_current)
      else
-         eAll_temp=eAll 
+         eAll_temp=eAll
      end if
+
    ! First distribute m, mHat and d
      call Master_job_Distribute_Model(m,mHat,comm_current)
      call Master_job_Distribute_Data(d,comm_current)
@@ -1263,22 +1323,24 @@ Subroutine Master_job_Jmult(mHat,m,d,eAll,comm)
      call Master_job_Distribute_Taskes(job_name,nTx,m,eAll_out, &
     &    comm_current, eAll_temp)
 
-     do iper=1,nTx
-         !e0=eAll%solns(iper)  
-         !e =eAll_out%solns(iper)
-         d1 = d%d(iper)
-         d2 = d%d(iper)
-         call Lmult(eAll%solns(iper)  ,m,eAll_out%solns(iper),d1)
-         call Qmult(eAll%solns(iper)  ,m,mHat,d2)
-         call linComb_dataVector(ONE,d1,ONE,d2,d%d(iper))
-     end do
+     if (EsMgr_save_in_file) then
+         call Master_job_LQMult(nTx, m, mHat, d)
+     else
+         do iper=1,nTx
+             d1 = d%d(iper)
+             d2 = d%d(iper)
+             call Lmult(eAll_temp%solns(iper)  ,m,eAll_out%solns(iper),d1)
+             call Qmult(eAll_temp%solns(iper)  ,m,mHat,d2)
+             call linComb_dataVector(ONE,d1,ONE,d2,d%d(iper))
+         end do
+     end if
 
      call deall_dataVector(d1)
-     call deall_dataVector(d2)       
+     call deall_dataVector(d2)
      call deall_dataVectorMTX(d_temp)
      call deall (eAll_out)
      call deall (eAll_temp)
-     ! call deall (e0)  
+     ! call deall (e0)
      !DONE: Received soln for all transmitter from all nodes
      write(ioMPI,*)'Jmult: Finished calculating for (', d%nTx ,         &
     &         ') Transmitters '
@@ -1702,7 +1764,13 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
      else
          comm_current = comm_world
      end if
+
+     if(.not. present(eAll_out)) then
+         call EsMgr_create_eAll(eAll_out, nTx)
+     end if
+
      call get_nPol_MPI(eAll_out%solns(1)) 
+
      if (rank_local.eq.-1) then ! first run!
      ! run initial regroup -- note this requires the comm to be
      ! comm_world as it is the only comm that works in this stage
@@ -1762,7 +1830,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
              which_per=per_index
              do ipol1=1,nPol_MPI
                  which_pol=ipol1
-                 call EsMgr_save(eAll_in % solns(which_per), prefix=".JmultT", to=who)
+                 call EsMgr_save(eAll_in % solns(which_per), prefix="."//trim(job_name), to=who)
              end do   
          end if  
          write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name),     &
@@ -1969,6 +2037,7 @@ Subroutine Worker_job(sigma,d)
      type(modelParam_t), pointer            :: Qreal(:),Qimag(:)
      logical                                :: Qzero
      type(orient_t)               :: orient
+     type (dataVector_t) :: d1, d2
  
      ! 2019.05.08, Liu Zhongyin, add isite for rx in dataBlock_t
      integer                       :: isite
@@ -2447,11 +2516,7 @@ Subroutine Worker_job(sigma,d)
                  write(6,'(a12,a18,i5,a12)') node_info,                  &
     &                ' Start Receiving    ' , orginal_nPol, ' from Master'
                  do ipol=1,orginal_nPol 
-                     which_pol=ipol
-                     call create_e_param_place_holder(e0)
-                     call MPI_RECV(e_para_vec, Nbytes, MPI_PACKED, 0,         &
-    &                    FROM_MASTER,comm_current, STATUS, ierr)
-                     call Unpack_e_para_vec(e0)
+                     call EsMgr_get(e0, per_index, pol_index=ipol, from=0)
                  end do
                  write(6,'(a12,a18,i5,a12)') node_info,                  &
     &            ' Finished Receiving ' , orginal_nPol, ' from Master'
@@ -2492,10 +2557,7 @@ Subroutine Worker_job(sigma,d)
     &                FROM_WORKER, comm_current, ierr)
                  ! send the results back
                  which_pol=1
-                 call create_e_param_place_holder(e)
-                 call Pack_e_para_vec(e)
-                 call MPI_SEND(e_para_vec, Nbytes, MPI_PACKED, 0,         &
-    &                FROM_WORKER, comm_current, ierr)
+                 call EsMgr_save(e, to=0, prefix=".Jmult")
              end if
              ! Aba yo!
              now = MPI_Wtime()
@@ -2756,6 +2818,39 @@ Subroutine Worker_job(sigma,d)
              if (associated(group_sizes)) then 
                  deallocate(group_sizes) 
              endif
+         elseif (trim(worker_job_task % what_to_do) .eq. 'LQMULT') then
+
+             start_iTx = worker_job_task % per_index
+             end_iTx = worker_job_task % pol_index
+             worker_job_task % taskid = taskid
+
+             call create_solnVector(grid, 1, e0)
+             call create_solnVector(grid, 1, e)
+
+            do per_index = start_iTx, end_iTx
+                do pol_index = 1, get_nPol(per_index)
+                    call EsMgr_get(e, per_index, pol_index=pol_index)
+                    call EsMgr_get(e0, per_index, pol_index=pol_index, prefix='.Jmult')
+                end do
+                e0 % tx = per_index
+                e % tx = per_index
+
+                d1 = d % d(per_index)
+                d2 = d % d(per_index)
+
+                call Lmult(e0, sigma, e, d1)
+                call Qmult(e0, sigma, delSigma, d2)
+                call linComb_dataVector(ONE, d1, ONE, d2, d % d(per_index))
+            end do
+
+            call create_data_vec_place_holder(d, start_iTx, end_iTx)
+            call Pack_data_para_vec(d, start_iTx, end_iTx)
+            call MPI_Send(data_para_vec, Nbytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
+            call UnPack_data_para_vec(d)
+
+            call deall(e0)
+            call deall(e)
+
          elseif (trim(worker_job_task%what_to_do) .eq. 'STOP' ) then
              ! clear all the temp packages and stop
              if (associated(sigma_para_vec)) then
