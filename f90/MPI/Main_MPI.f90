@@ -2211,7 +2211,8 @@ Subroutine Worker_job(sigma,d)
              call create_data_vec_place_holder(d, start_iTx=start_iTx, end_iTx=end_iTx)
              call Pack_data_para_vec(d, start_iTx=start_iTx, end_iTx=end_iTx)
              call MPI_Send(data_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
-             call UnPack_data_para_vec(d)
+             deallocate(data_para_vec)
+             data_para_vec => null()
 
          elseif (trim(worker_job_task%what_to_do) .eq. 'PQMULT') then
 
