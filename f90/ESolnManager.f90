@@ -130,12 +130,13 @@ contains
 
     end subroutine EsMgr_create_e
 
-    subroutine EsMgr_create_eAll(eAll, nTx, place_holder)
+    subroutine EsMgr_create_eAll(eAll, nTx, grid, place_holder)
 
         implicit none
 
         type (solnVectorMTX_t), intent(inout) :: eAll
         integer, intent(in) :: nTx
+        type(grid_t), intent(in), target :: grid
         logical, intent(in), optional :: place_holder
 
         integer :: iTx
@@ -151,7 +152,7 @@ contains
         call create_solnVectorMTX(nTx, eAll)
 
         do iTx = 1, nTx
-            call create_solnVector(EsMgr_grid, iTx, e, place_holder=place_holder_lcl)
+            call create_solnVector(grid, iTx, e, place_holder=place_holder_lcl)
             call copy_solnVector(eAll % solns(iTx), e)
         end do
 
@@ -276,6 +277,7 @@ contains
         call int_create_e_param_place_holder(e, e_packed) 
         call int_Pack_packed_vec(e, e_packed)
         call MPI_Send(e_packed, Nbytes, MPI_PACKED, to, tag, EsMgr_ctx % comm_current, ierr) 
+        deallocate(e_packed)
 
     end subroutine EsMgr_send_e
 
@@ -297,6 +299,7 @@ contains
         call int_create_e_param_place_holder(e, e_packed)
         call MPI_Recv(e_packed, Nbytes, MPI_PACKED, from, tag, EsMgr_ctx % comm_current, STATUS, ierr)
         call int_Unpack_packed_vec(e, e_packed)
+        deallocate(e_packed)
 
     end subroutine EsMgr_recv_e
 

@@ -654,7 +654,7 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
      call Master_job_Distribute_Model(sigma)
 
      if(.not. eAll%allocated) then
-         call EsMgr_create_eAll(eAll, d1 % nTx)
+         call EsMgr_create_eAll(eAll, d1 % nTx, grid=grid)
      end if
 
      job_name= 'FORWARD'
@@ -674,13 +674,13 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
      else
          do iTx=1,nTx
              do i = 1,d1%d(iTx)%nDt
-                 d1%d(iTx)%data(i)%errorBar = .false.
-                 iDt = d1%d(iTx)%data(i)%dataType
-                 do j = 1,d1%d(iTx)%data(i)%nSite
+                 d1 % d(iTx) % data(i) % errorBar = .false.
+                 iDt = d1 % d(iTx) % data(i) % dataType
+                 do j = 1, d1 % d(iTx) % data(i) % nSite
                      call dataResp(eAll%solns(iTx), sigma, iDt, &
-                               d1%d(iTx)%data(i)%rx(j), &
-                               d1%d(iTx)%data(i)%value(:,j), &
-                               d1%d(iTx)%data(i)%orient(j))
+                               d1 % d(iTx) % data(i) % rx(j), &
+                               d1 % d(iTx) % data(i) % value(:,j), &
+                               d1 % d(iTx) % data(i) % orient(j))
                  end do
              end do
          end do
@@ -1053,7 +1053,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      ! nTX is number of transmitters;
      nTx = d%nTx
      if(.not. eAll_temp%allocated) then
-         call EsMgr_create_eAll(eAll_temp, d % nTx)
+         call EsMgr_create_eAll(eAll_temp, d % nTx, grid)
      end if 
 
      if (.not. savedSolns )then
@@ -1064,7 +1064,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      end if
 
      if(.not. eAll_out%allocated) then
-         call EsMgr_create_eAll(eAll_out, nTx)
+         call EsMgr_create_eAll(eAll_out, nTx, grid)
      end if 
 
      if (returne_m_vectors) then
@@ -1302,11 +1302,11 @@ Subroutine Master_job_Jmult(mHat,m,d,eAll,comm)
      d2 = d%d(1)
 
      if (.not. eAll_out%allocated) then
-         call EsMgr_create_eAll(eAll_out, nTx)
+         call EsMgr_create_eAll(eAll_out, nTx, grid)
      end if
 
      if (.not. eAll_temp%allocated) then
-         call EsMgr_create_eAll(eAll_Temp, d % nTx)
+         call EsMgr_create_eAll(eAll_Temp, d % nTx, grid)
      end if
      if (.not. savedSolns )then
          d_temp=d
@@ -1766,7 +1766,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
      end if
 
      if(.not. present(eAll_out)) then
-         call EsMgr_create_eAll(eAll_out, nTx)
+         call EsMgr_create_eAll(eAll_out, nTx, grid)
      end if
 
      call get_nPol_MPI(eAll_out%solns(1)) 
@@ -1856,8 +1856,8 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          who=worker_job_task%taskid
          which_per=worker_job_task%per_index
          which_pol=worker_job_task%pol_index
-                  
-         call EsMgr_get(eAll_out % solns(which_per), which_per, 1, from=who)
+
+         call EsMgr_get(eAll_out % solns(which_per), which_pol, 1, from=who)
 
          write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,        &
     &   ': Receive Per # ',which_per ,' and Pol # ', which_pol ,' from ',&
@@ -2195,6 +2195,7 @@ Subroutine Worker_job(sigma,d)
                 do pol_index = 1, get_nPol(per_index)
                     call EsMgr_get(e0, e0 % tx, pol_index=pol_index)
                 end do
+
 
                 do i = 1, d % d(per_index) % nDt
                     d % d(per_index) % data(i) % errorBar = .false.

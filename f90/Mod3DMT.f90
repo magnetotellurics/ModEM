@@ -67,7 +67,7 @@ program Mod3DMT
     call EsMgr_init(grid, context=modem_ctx, &
                           save_in_file=cUserDef % storeSolnsInFile, &
                           prefix=cUserDef % prefix, &
-                          ftype=FTYPE_ASCII)
+                          ftype=FTYPE_BINARY)
 
     call setGrid_MPI(grid)
     ! Check if a large grid file with E field is defined:
