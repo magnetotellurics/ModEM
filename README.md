@@ -137,6 +137,10 @@ A few examples using configure:
    Generates a serial Makefile with GFortran with the MF solver
 ```
 
+Of course, any generated makefile can be altered as you see fit. For instance,
+it is often helpful to add the `-g` to compile with debug symbols when working
+with an MPI makefile.
+
 ## Compiling
 
 Once you have generated your own makefile, or decided to use one of the
