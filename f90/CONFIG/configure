@@ -86,12 +86,12 @@ help() {
     echo "  -m <mpi* | serial> Specify MPI or serial"
     echo "     mpi - Default - Builds with MPI"
     echo "     serial - Builds Serially"
-    echo "  -l <MF | SP | SP2> Specify srlver"
+    echo "  -l <MF | SP | SP2> Specify solver"
     echo "     MF - Builds with MF"
     echo "     SP - Builds with SP"
     echo "     SP2 - Default - Builds with SP2"
     echo "  -f Build with Fined-Grained -DFG on SP2"
-    echo "     Only able to build with SP2"
+    echo "     Only avaliable with with SP2"
     echo "  -s Build spherical version of ModEM"
     echo ""
     echo ""
@@ -175,7 +175,8 @@ while getopts "hg:m:l:fs" opt; do
     esac
 done
 
-# Shift processed optionas and their arguments
+# Shift processed options and their arguments - So we can parse positional
+# arguments
 shift "$((OPTIND - 1))"
 
 nargs=0
@@ -244,7 +245,7 @@ case $release_or_debug in
     release)
         ;;
     *)
-        printf "Unrecognized value of debug or release - Please speicfy either: < debug | release >\n"
+        printf "Unrecognized value of debug or release - Please specify either: < debug | release >\n"
         exit 1
         ;;
 esac
@@ -267,7 +268,7 @@ case $mpi_or_serial in
         esac
         ;;
     *)
-        printf "${RED}ERROR: Unrecognize MPI/Serial option ${YELLOW}'${mpi_or_serial}'${NC}. Choose from: < mpi | serial > ${NC}\n"
+        printf "${RED}ERROR: Unrecognized MPI/Serial option ${YELLOW}'${mpi_or_serial}'${NC}. Choose from: < mpi | serial > ${NC}\n"
         exit 1
         ;;
 esac
@@ -276,7 +277,7 @@ case $solver in
     mf | sp | sp2 )
         ;;
     *)
-        printf "${RED}ERROR: Uncrecognized solver option ${YELLOW}'${solver}'${NC}. Choose from: < mf | sp | sp2 > \n"
+        printf "${RED}ERROR: Unrecognized solver option ${YELLOW}'${solver}'${NC}. Choose from: < mf | sp | sp2 > \n"
         exit 1
 esac
 
@@ -287,8 +288,8 @@ if $fg_flag ; then
             MPIFLAGS="$MPIFLAGS -DFG"
             ;;
         *)
-            printf "ERROR: -f is not compatiable with '$solver' only with the 'SP2' solver \n"
-            printf "ERROR: Please speicfy the 'SP2' solver to use the fined-grained model: \n"
+            printf "ERROR: -f is not compatible with '$solver' only with the 'SP2' solver \n"
+            printf "ERROR: Please specify the 'SP2' solver to use the fined-grained model: \n"
             printf "ERROR: ./CONFIG/configure -l SP2 -f Makefile gfortran"
             exit 1
             ;;
@@ -347,7 +348,7 @@ case $solver in
         ;;
 esac
 
-# Combine the source_dirs into a colon sepeareted list: 'dir1:dir2:dir3'
+# Combine the source_dirs into a colon separated list: 'dir1:dir2:dir3'
 source_dirs=$(IFS=':' ; echo "${source_dirs[*]}")
 
 echo ""
