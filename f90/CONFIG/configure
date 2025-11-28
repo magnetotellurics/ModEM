@@ -1,0 +1,379 @@
+#!/bin/bash
+
+# ModEM Configuration Tool - Generate ModEM Makefiles
+#
+# Use this utility to generate a new ModEM Makefile. Most users, will
+# not need to use this Configure script and can instead use the Makefiles
+# provided in the ./f90 directory.
+#
+# If you are a developer, and add a new module, or add a new `use` statement
+# then you will need to re-run this tool. This tool will read through
+# ModEM source code and build up the dependency tree.
+#
+# Note: This file cannot produce CUDA/HIP/GPU capable Makefiles. For
+# GPU Makefiles see Makefile.cuda" echo " or Makefile.hip.
+#
+# $ ./CONFIG/Configure Makefile gfortran
+#  Generates a Makefile with GFortran options using MPI
+#
+# $ ./CONFIG/Configure -d debug Makefile gfortran"
+#   Generates an MPI Makefile with GFortran debugging options
+#
+# $ ./CONFIG/Configure -m serial -l MF Makefile gfortran"
+#   Generates a serial Makefile with GFortran with the MF solver
+#
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[1;34m'
+YELLOW='\033[1;33m'
+PURPLE='\033[0;35m'  
+ORANGE='\033[0;36m'
+BOLD=$(tput bold)
+NORMAL=$(tput sgr0)
+NC='\033[0m' # No Color
+
+# Convert string to lowercase
+to_lower() {
+    echo $1 | tr '[:upper:]' '[:lower:]'
+}
+
+usage() {
+    echo "Usage: $0 [-h] [-u] [-g release|debug] [-m mpi|serial] [-l solver] [-f] [-s] makefile compiler"
+    echo "  -h Display full help message"
+    echo "  -u Display this usage message"
+}
+
+help() {
+    echo ""
+    echo "ModEM Configuration Tool - Generate ModEM Makefiles"
+    echo ""
+    echo "Use this utility to generate a new ModEM Makefile. Most users, will"
+    echo "not need to use this Configure script and can instead use the Makefiles"
+    echo "provided in the ./f90 directory."
+    echo ""
+    echo "If you are a developer, and add a new module, or add a new 'use' statement"
+    echo "then you will need to re-run this tool. This tool will read through"
+    echo "ModEM source code and build up the dependency tree."
+    echo ""
+    echo " Note: This file cannot produce CUDA/HIP/GPU capable Makefiles. For"
+    echo " GPU Makefiles see Makefile.cuda" echo " or Makefile.hip."
+    echo ""
+    echo "Examples:"
+    echo ""
+    echo " $ ./CONFIG/Configure Makefile gfortran"
+    echo "  Generates a Makefile with GFortran options using MPI"
+    echo ""
+    echo " $ ./CONFIG/Configure -d debug Makefile gfortran"
+    echo "   Generates an MPI Makefile with GFortran debugging options"
+    echo ""
+    echo " $ ./CONFIG/Configure -m serial -l MF Makefile gfortran"
+    echo "   Generates a serial Makefile with GFortran with the MF solver"
+    echo ""
+    echo ""
+    echo "Usage: $0 [-h] [-u] [-g release|debug] [-m mpi|serial] [-l solver] [-f] makefile-name compiler"
+    echo ""
+    echo " Required Arguments"
+    echo "   makefile-name - Name of the output makefile"
+    echo "   compiler - Compiler you wish to use <gfortran | ifort> are supported"
+    echo ""
+    echo " Optional Arguments"
+    echo "  -h Display full help message"
+    echo "  -u Display this usage message"
+    echo "  -g <release | debug> Specify whether to build with debug symbols or not"
+    echo "     release - Default - Create Makefile with full optimizations (i.e. -O3)"
+    echo "     debug   - Create Makefile with debug symbols (i.e. -g) and no optimizations"
+    echo "  -m <mpi* | serial> Specify MPI or serial"
+    echo "     mpi - Default - Builds with MPI"
+    echo "     serial - Builds Serially"
+    echo "  -l <MF | SP | SP2> Specify srlver"
+    echo "     MF - Builds with MF"
+    echo "     SP - Builds with SP"
+    echo "     SP2 - Default - Builds with SP2"
+    echo "  -f Build with Fined-Grained -DFG on SP2"
+    echo "     Only able to build with SP2"
+    echo "  -s Build spherical version of ModEM"
+    echo ""
+    echo ""
+}
+
+
+make_spherical_makefile() {
+    makefile=$1
+
+	sed -i.bak -e 's/GFort/GFortS/g' ${makefile}
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+
+	sed -i.bak -e 's/GridCalc\./GridCalcS\./g' $makefile
+    if [ $? -ne 0 ]; then
+        echo ""
+        return 1
+    fi 
+
+	sed -i.bak -e 's/boundary_ws\./boundary_wsS\./g' ${makefile}
+    if [ $? -ne 0 ]; then
+        return 1
+    fi 
+
+	sed -i.bak -e 's/3DMT /3DMT_sph /g' ${makefile}
+    if [ $? -ne 0 ]; then
+        return 1
+    fi 
+
+	sed -i.bak -e 's/3DMT:/3DMT_sph:/g' ${makefile}
+    if [ $? -ne 0 ]; then
+        return 1
+    fi 
+    return 0
+}
+
+compiler_choice=""
+release_or_debug="release"
+mpi_or_serial="MPI"
+solver="SP2"
+fg_flag=False
+makefile_name=""
+spherical=False
+
+while getopts "hg:m:l:fs" opt; do
+    case "$opt" in
+        g)
+            release_or_debug="$OPTARG"
+            ;;
+        m)
+            mpi_or_serial="$OPTARG"
+            ;;
+        l) 
+            solver="$OPTARG"
+            ;;
+        f) 
+            fg_flag=True
+            ;;
+        s)
+            spherical=True
+            ;;
+        h)
+            help
+            exit 1
+            ;;
+        u)
+            usage
+            exit 1
+            ;;
+        \?)
+            echo "Invalid option $OPTARG" >&2
+            usage
+            exit 1
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument." >&2
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+# Shift processed optionas and their arguments
+shift "$((OPTIND - 1))"
+
+nargs=0
+for arg in "$@"; do
+    if [ $nargs == 0 ] ; then
+        makefile_name=$arg
+    fi
+
+    if [ $nargs == 1 ] ; then
+        compiler_choice=$arg
+    fi
+
+    nargs=$(($nargs+1))
+done
+
+compiler=$(to_lower $compiler_choice)
+release_or_debug=$(to_lower $release_or_debug)
+mpi_or_serial=$(to_lower $mpi_or_serial)
+solver=$(to_lower $solver)
+fg_flag=$(to_lower $fg_flag)
+
+if [ -z "$makefile_name" ] ; then
+    printf "${RED}Makefile name was empty - Please Provide a Makefile name!${NC}\n"
+    usage
+    exit 1
+fi
+
+case $compiler in
+    ifort | intel)
+        CPPFLAGS="-fpp"
+        FFLAGS="-std03 -mavx -ffree-line-length-none"
+        MPIFLAGS=""
+        FFLAGS_DEBUG="-w -g -fp-stack-check -traceback"
+        LDFLAGS="-L$(MKLROOT)/lib/intel64"
+        LDLIBS="-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -qopenmp -parallel"
+        ;;
+    gfortran | gnu)
+        CPPFLAGS="-cpp"
+        FFLAGS="-ffree-line-length-none -dI -fallow-argument-mismatch"
+        MPIFLAGS=""
+        FFLAGS_DEBUG="-g -fbacktrace -fbounds-check"
+        LDFLAGS=""
+        LDLIBS="-lblas -llapack"
+        ;;
+    *)
+        if [ -z "$compiler" ] ; then
+            printf "${RED}Compiler name was not specified - Please specify a compiler < gfortran | ifort >${NC}\n"
+            usage
+            exit 1
+        else
+            printf "${RED}Unsupported compiler ${YELLOW}'$compiler'${NC}. Please choose from either: < gfortran | ifort > \n"
+            exit 1
+        fi 
+        printf "Unrecognized compiler"
+        exit 1
+        ;;
+esac
+
+
+echo "RELEASE OR DEBUG: ", $release_or_debug
+
+case $release_or_debug in
+    debug)
+        FFLAGS="$FFLAGS $FFLAGS_DEBUG"
+        ;;
+    release)
+        ;;
+    *)
+        printf "Unrecognized value of debug or release - Please speicfy either: < debug | release >\n"
+        exit 1
+        ;;
+esac
+
+case $mpi_or_serial in
+    mpi )
+        FC=${FC:-mpifort}
+        MPIFLAGS="$MPIFLAGS -DMPI"
+        ;;
+    serial )
+        CPPFLAGS="$CPPFLAGS"
+
+        case $compiler in
+            ifort | intel)
+                FC=${FC:-ifort}
+                ;;
+            gfortran | gnu)
+                FC=${FC:-gfortran}
+                ;;
+        esac
+        ;;
+    *)
+        printf "${RED}ERROR: Unrecognize MPI/Serial option ${YELLOW}'${mpi_or_serial}'${NC}. Choose from: < mpi | serial > ${NC}\n"
+        exit 1
+        ;;
+esac
+
+case $solver in
+    mf | sp | sp2 )
+        ;;
+    *)
+        printf "${RED}ERROR: Uncrecognized solver option ${YELLOW}'${solver}'${NC}. Choose from: < mf | sp | sp2 > \n"
+        exit 1
+esac
+
+if $fg_flag ; then
+
+    case $solver in
+        sp2)
+            MPIFLAGS="$MPIFLAGS -DFG"
+            ;;
+        *)
+            printf "ERROR: -f is not compatiable with '$solver' only with the 'SP2' solver \n"
+            printf "ERROR: Please speicfy the 'SP2' solver to use the fined-grained model: \n"
+            printf "ERROR: ./CONFIG/configure -l SP2 -f Makefile gfortran"
+            exit 1
+            ;;
+
+    esac
+
+    FFLAGS="$DEFAULT_OPT $FFLAGS"
+fi
+
+DEFAULT_DIRS=(
+    "."
+    "MPI"
+    "INV"
+    "SENS"
+    "UTILS"
+    "FIELDS"
+    "FIELDS/FiniteDiff3D"
+    "3D_MT"
+    "3D_MT/DICT"
+    "3D_MT/ioMod"
+    "3D_MT/modelParam"
+    "3D_MT/modelParam/modelCov"
+    "3D_MT/modelParam/modelParamIO"
+)
+
+MF_DIRS=(
+    "3D_MT/FWD"
+    "3D_MT/FWD/Mod2d"
+)
+
+SP_DIRS=(
+    "3D_MT/FWD_SP"
+    "3D_MT/SP_Topology"
+    "3D_MT/FWD"
+    "3D_MT/FWD/Mod2d"
+)
+
+SP2_DIRS=(
+    "3D_MT/FWD_SP2"
+    "3D_MT/SP_Topology"
+    "3D_MT/FWD"
+    "3D_MT/FWD/Mod2d"
+)
+
+source_dirs=${DEFAULT_DIRS[@]}
+
+case $solver in
+    MF | mf)
+        source_dirs=( ${source_dirs[@]} ${MF_DIRS[@]} )
+        ;;
+    SP | sp)
+        source_dirs=( ${source_dirs[@]} ${SP_DIRS[@]} )
+        ;;
+    SP2 | sp2)
+        source_dirs=( ${source_dirs[@]} ${SP2_DIRS[@]} )
+        ;;
+esac
+
+# Combine the source_dirs into a colon sepeareted list: 'dir1:dir2:dir3'
+source_dirs=$(IFS=':' ; echo "${source_dirs[*]}")
+
+echo ""
+echo "Generating Makefile..." 
+echo ""
+
+perl fmkmf.pl -f90 $FC \
+    -opt "$CPPFLAGS $FFLAGS" \
+    -mpi "$MPIFLAGS" \
+    -o "./objs/3D_MT/build" \
+    -l "$LDLIBS" \
+    -lp "$LDFLAGS" \
+    -p "$source_dirs" \
+    Mod3DMT.f90 > $makefile_name
+
+echo ""
+
+if $spherical ; then
+    if ! make_spherical_makefile $makefile_name; then
+        echo "${RED}ERROR${NC} - Error converting Makefile '($makefile_name)' to spherical using 'sed'"
+        exit 1 
+    fi
+
+    echo "Generated Spherical Makefile: '$makefile_name'"
+else
+    echo "Generated a Cartesian Makefile: '$makefile_name'"
+fi
+
+exit 0

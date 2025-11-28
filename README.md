@@ -87,31 +87,54 @@ The current build system for ModEM uses the `fmkmf.pl` pearl script and the
 configuration scripts that are in `f90/CONFIG`. Although ModEM uses Make and
 Makefiles, makefiles are meant to be created by these configuration scripts.
 
-To create Makefiles, run the configuration scripts that match your system,
-desired compiler and desired ModEM version. These configuration scripts
-call the `fmkmf.pl` script:
+The current build system for ModEM uses the `fmkmf.pl` pearl script and the
+configure script, `f90/CONFIG/Configure`. Although ModEM uses Make and
+Makefiles, makefiles are meant to be genereated by `f90/CONFIG/Configure` and
+not by hand.
+
+To create a new Makefile, run the configuration script and pass in your desired
+arguments This configuration scripts call the `fmkmf.pl` script:
 
 ``` bash
 $ cd f90/
-$ ./CONFIG/Configure.3D_MT.MAC.GFortran makefile.gnu.mpi MPI
+$ ./CONFIG/Configure Makefile gfortran
 ```
 
-All configuration scripts take the same arguments:
+The Configure scripts has the following usage:
 
 ```bash
-$ /CONFIG/Configfile <desired-makefile-name> <type>
+$ Usage: ./CONFIG/Configure [-h] [-u] [-g release|debug] [-m mpi|serial] [-l solver] [-f] makefile-name compiler
+  -h Display full help message
+  -u Display this usage message
+  -g <release | debug> Specify whether to build with debug symbols or not
+     release - Default - Create Makefile with full optimizations (i.e. -O3)
+     debug   - Create Makefile with debug symbols (i.e. -g) and no optimizations
+  -m <mpi* | serial> Specify MPI or serial
+     mpi - Default - Builds with MPI
+     serial - Builds Serially
+  -l <MF | SP | SP2> Specify srlver
+     MF - Builds with MF
+     SP - Builds with SP
+     SP2 - Default - Builds with SP2
+  -f Build with Fined-Grained -DFG on SP2
+     Only able to build with SP2
+  -s Build spherical version of ModEM
 ```
 
-Where `type` is either: `MPI, release, debug`:
+### Examples using Configure
 
-* `MPI` - Generates a makefile that will compile an MPI version of ModEM
-* `release` - Generates a makefile that will compile a serial version of ModEM
-* `debug` -  Generates a makefile that will compile a serial version of ModEM
- with `-O0` (no optimizations) and debug symbols (`-g`, bounds checking ,etc)
+A few examples using Configure:
 
-Of course, any generated makefile can be altered as you see fit. For instance,
-it is often helpful to add the `-g` to compile with debug symbols when working
-with an MPI makefile.
+```bash
+ $ ./CONFIG/Configure Makefile gfortran                                                      
+  Generates a Makefile with GFortran options using MPI                          
+                                              
+ $ ./CONFIG/Configure -d debug Makefile gfortran
+   Generates an MPI Makefile with GFortran debugging options
+                                              
+ $ ./CONFIG/Configure -m serial -l MF Makefile gfortran
+   Generates a serial Makefile with GFortran with the MF solver
+```
 
 ## Compiling
 
