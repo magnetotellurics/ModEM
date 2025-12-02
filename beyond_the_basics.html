@@ -1,0 +1,377 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Beyond the Basics &#8212; ModEM develop documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Change Log" href="release_log.html" />
+    <link rel="prev" title="Forward Modeling and Inversion Options" href="forward_and_inversion.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="release_log.html" title="Change Log"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="forward_and_inversion.html" title="Forward Modeling and Inversion Options"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Beyond the Basics</a><ul>
+<li><a class="reference internal" href="#restart-the-inversion">Restart the Inversion</a></li>
+<li><a class="reference internal" href="#nested-modeling">Nested Modeling</a></li>
+<li><a class="reference internal" href="#flexible-air-layers">Flexible Air Layers</a><ul>
+<li><a class="reference internal" href="#option-1-mirrros">Option 1 - Mirrros</a></li>
+<li><a class="reference internal" href="#option-2-fixed-height">Option 2 - fixed height</a></li>
+<li><a class="reference internal" href="#option-3-read-from-file">Option 3: read from file</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#log10-resistivity-model-file-option">LOG10 Resistivity Model File Option</a></li>
+<li><a class="reference internal" href="#new-unit-testing-features-for-code-developers">New Unit Testing Features for Code Developers</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="forward_and_inversion.html"
+                        title="previous chapter">Forward Modeling and Inversion Options</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="release_log.html"
+                        title="next chapter">Change Log</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/beyond_the_basics.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="beyond-the-basics">
+<h1>Beyond the Basics<a class="headerlink" href="#beyond-the-basics" title="Permalink to this headline">¶</a></h1>
+<p>Some things that most users will want to do with the inversion require use of
+the optional arguments, in multi-step procedures. These include restarting the
+inversion, and nesting a forward or inverse calculation within a larger, more
+coarsely discretized model domain.</p>
+<div class="section" id="restart-the-inversion">
+<span id="restarting"></span><h2>Restart the Inversion<a class="headerlink" href="#restart-the-inversion" title="Permalink to this headline">¶</a></h2>
+<p>The inversion can be started from any model parameter file, not just the prior
+model.  There are many reasons why a user might wish to do this. The simplest
+case would be if the inversion has stopped due to a time limit on a computer
+system, or some other reason, and the user wants to continue the run. In this
+case, to restart the inversion from last iteration (e.g., iteration # 60) use
+the following command line:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ModEM -I NLCG rFilePrior rFile_Data InvCtrl FwdCtrl CovCtrl root_NLCG_060.prm
+</pre></div>
+</div>
+<p>One might also want to change some inversion control or covariance parameters.
+For example, it is possible that an inversion that has stalled in terms of
+decreasing the normalized RMS, might be moved out of a local minimum by
+restarting the inversion with a larger value of the damping factor lambda.
+Restarting the inversion after removing structures (e.g., setting a conductive
+body to the prior resistivity), and possibly freezing the model to some value,
+will be useful for hypothesis testing.</p>
+<p>The key point that must be understood to start the inversion from something
+other than the prior is this: As already noted in the discussion of the <code class="docutils literal notranslate"><span class="pre">-C</span></code>
+option, the inversion search is conducted in the “transformed” model space,
+i.e., we directly minimize the L2 norm of <span class="math notranslate nohighlight">\($\tilde{{\bf {m}}}={\bf
+{C_{m}}^{-1/2}({\bf m}-{\bf m}_{prior})}$\)</span>, and then obtain the actual
+(physical) model parameter as <span class="math notranslate nohighlight">\(${\bf m}={\bf m}_{prior}+{\bf
+C_{m}}^{1/2}\tilde{{\bf m}}$\)</span>.  The starting model file has to be given in the
+transformed model space, i.e., what is output in the <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.prm</span></code> file. For
+a simple restart of the inversion (picking up where the search has gone so far)
+you would use the name of the appropriate file from the last iteration completed
+(for example <code class="docutils literal notranslate"><span class="pre">Example_NLCG_060.prm</span></code>) as the <code class="docutils literal notranslate"><span class="pre">StartModel</span></code> (last optional
+argument) when restarting the inversion with the <code class="docutils literal notranslate"><span class="pre">-I</span></code> option. The same procedure
+would be used when restarting with a larger value of the damping parameter
+lambda.</p>
+<p>Some other restarting cases, where either the model is edited, or the covariance
+parameters (including frozen sub-domains) involve an additional step. In these
+cases you have to first create the appropriate <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.prm</span></code> file. We give
+two slightly different examples here; the basic idea is the same in both (and
+other cases). Suppose you wish to modify the inversion result, removing some
+structure to see if it is required. Let’s call the modified model parameter file
+<code class="docutils literal notranslate"><span class="pre">HypTest.rho</span></code> (containing log resistivity, modified with some tool from the
+inversion result). As a first step you could obviously run the forward code,
+using <code class="docutils literal notranslate"><span class="pre">HypTest.rho</span></code> as the input model. To go further, you might want to
+restart the inversion from the modified model. This must first be transformed
+(roughened), using the <code class="docutils literal notranslate"><span class="pre">-C</span></code> inverse option:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ModEM -C INV HypoTest.rho HypTest.prm CovCtrl rFilePrior
+</pre></div>
+</div>
+<p>Then restart the inversion:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ModEM -I NLCG rFilePrior rFile_Data InvCtrl FwdCtrl CovCtrl HypoTest.prm
+</pre></div>
+</div>
+<p>Here <code class="docutils literal notranslate"><span class="pre">CovCtrl</span></code> is the covariance parameter file, and <code class="docutils literal notranslate"><span class="pre">rFilePrior</span></code> is the
+prior model file, which in the application just described would be the same as
+used for the initial inversion.</p>
+<p>Going one step further in the hypothesis test example, one might want to remove
+a structure (e.g., a conductive feature) and then freeze the region where
+conductivity has been set to background levels (thus verifying whether data can
+be fit without the tested structure). To do this the covariance file would have
+to be modified to now include the frozen region. This modified covariance file
+would then be used in both steps given above (<code class="docutils literal notranslate"><span class="pre">-C</span></code> and <code class="docutils literal notranslate"><span class="pre">-I</span></code>).</p>
+<p>As another example, one might want to change the covariance (e.g., changing
+smoothing length scales, etc.), and restart from results obtained with an
+earlier run to (hopefully) accelerate convergence.  This would be done in the
+same way, except the input model parameter file on the first (<code class="docutils literal notranslate"><span class="pre">-C</span></code>) step would
+be something like <code class="docutils literal notranslate"><span class="pre">Example_NLCG_060.rho</span></code> — i.e., convert the final model
+parameter file to the transformed (<code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.prm</span></code>) form appropriate to the
+new covariance, and then use this for the starting model.</p>
+</div>
+<div class="section" id="nested-modeling">
+<span id="id1"></span><h2>Nested Modeling<a class="headerlink" href="#nested-modeling" title="Permalink to this headline">¶</a></h2>
+<p>Boundary conditions for the ModEM forward model are specified tangential fields
+on domain boundaries (top, bottom, and sides). By default, boundary data are
+computed from the prior model conductivity (at present using solutions to a
+series of 1D MT problems). When this simple default is used it is advisable to
+keep boundaries distant from the interior model domain of interest. ModEM also
+supports a <em>nesting</em> option, where boundary data are taken from a 3D
+forward solution in a larger (and typically more coarsely discretized) domain.
+This approach requires computing a forward solution on this larger domain, and
+saving the electric field solution vector in file <code class="docutils literal notranslate"><span class="pre">wFile_EMsoln</span></code> (first
+optional argument in <code class="docutils literal notranslate"><span class="pre">-F</span></code> option). The model parameter file for this large
+domain could be obtained from running the inversion, or from a prior model (for
+example containing a realistic ocean over an area too large to use for the final
+high resolution inversion run).  Note that there is no option to output the
+electric field solution with the <code class="docutils literal notranslate"><span class="pre">-I</span></code> option, so if an inverse model from a
+large grid is used for nesting, the forward model must be rerun (on the large
+grid) using the final inversion result.</p>
+<p>Use of the nested option, for either forward (<code class="docutils literal notranslate"><span class="pre">-F</span></code>) or inverse (<code class="docutils literal notranslate"><span class="pre">-I</span></code>)
+calculations is triggered by presence of the final (optional seventh) line in
+the <code class="docutils literal notranslate"><span class="pre">fwdCtrl</span></code> file (see section <a class="reference internal" href="forward_and_inversion.html#forward-modeling"><span class="std std-ref">Forward Modeling</span></a>.  The name of the
+electric field solution file (i.e., <code class="docutils literal notranslate"><span class="pre">wFile_EMsoln</span></code> used when running
+<code class="docutils literal notranslate"><span class="pre">-F</span></code> on the large grid) should be specified on this line to turn on the
+nesting option.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The periods (including order) in the data file used for the large grid
+<code class="docutils literal notranslate"><span class="pre">-F</span></code> run must be identical to those used for the nested forward/inverse
+modeling.  The simplest approach is to use the same data file
+(<code class="docutils literal notranslate"><span class="pre">rFile_Data</span></code>) for both large and nested runs, but only the periods (not
+the sites) have to be the same.</p>
+</div>
+<p>Here is a simple example illustrating the use of nested modeling for both
+forward modeling (<code class="docutils literal notranslate"><span class="pre">-F</span></code> option) and inversion (<code class="docutils literal notranslate"><span class="pre">-I</span></code> option). Assume that you
+have constructed a large coarse grid which includes e.g., an ocean. Let us call
+the large coarse grid <code class="docutils literal notranslate"><span class="pre">Large_Grid.mod</span></code> and the data file <code class="docutils literal notranslate"><span class="pre">Data_file.dat</span></code>.
+In the first run we need to let ModEM compute the electric field solution and
+save it in a file. Thus, in the first run we need the <code class="docutils literal notranslate"><span class="pre">-F</span></code> option with the
+optional output <code class="docutils literal notranslate"><span class="pre">wFile_EMsoln</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ModEM -F  Large_Grid.mod Data_file.dat temp_Predicted_Large.dat EMsoln_large.soln
+</pre></div>
+</div>
+<p>After running this command line, ModEM will produce 2 files: 1) ,</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">temp_Predicted_Large.dat</span></code> - the predicted data for the large grid (not important),</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">EMsoln_large.soln</span></code>, the electric field solution. To run the nested</dt><dd><p>modeling using either forward (<code class="docutils literal notranslate"><span class="pre">-F</span></code>) or inverse (<code class="docutils literal notranslate"><span class="pre">-I</span></code>) options you
+need to first to modify the forward solver control file <code class="docutils literal notranslate"><span class="pre">rFile_fwdCtrl</span></code> to
+include the name of the electric field solution obtained from the first run:</p>
+</dd>
+</dl>
+</li>
+</ol>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Number of QMR iters per divergence correction : 40
+Maximum number of divergence correction calls : 20
+Maximum number of divergence correction iters : 100
+Misfit tolerance for EM forward solver        : 1.0e-7
+Misfit tolerance for EM adjoint solver        : 1.0e-7
+Misfit tolerance for divergence correction    : 1.0e-5
+Optional EM solution file name for nested BC  : EMsoln_large.soln
+</pre></div>
+</div>
+<p>For the second run (either forward (<code class="docutils literal notranslate"><span class="pre">-F</span></code>) or inverse (<code class="docutils literal notranslate"><span class="pre">-I</span></code>) ) construct a
+smaller and generally finer grid and call it e.g., <code class="docutils literal notranslate"><span class="pre">Small_grid.mod</span></code>. To run
+forward modeling use:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ModEM -F Small_grid.mod Data_file.dat Predicted_small.dat EMsoln_small.soln FwdCtrl
+</pre></div>
+</div>
+<p>and for the inversion:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ModEM -I NLCG Small_grid.mod Data_file.dat InvCtrl FwdCtrl CovCtrl
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>IT IS VERY IMPORTANT TO NOTICE HERE THAT IN THE FIRST AND SECOND RUNS WE
+USED THE SAME DATA FILE <code class="docutils literal notranslate"><span class="pre">DATA_FILE.DAT</span></code>.  THIS IS BECAUSE ModEM DOES NOT
+INTERPOLATE OVER PERIODS. THUS, TO MAKE SURE THAT THE SAME PERIOD LAYOUT
+SAVED IN <code class="docutils literal notranslate"><span class="pre">EMSOLN_LARGE.SOLN</span></code> IS USED IN THE SECOND RUN TO EXTRACT THE
+BOUNDARY VALUES AT THE EDGES OF THE NESTED GRID, USE THE SAME DATA FILE.</p>
+</div>
+</div>
+<div class="section" id="flexible-air-layers">
+<span id="id2"></span><h2>Flexible Air Layers<a class="headerlink" href="#flexible-air-layers" title="Permalink to this headline">¶</a></h2>
+<p>Air layers can now be set in the forward solver configuration file. Options can
+be printed to screen using verb|./Mod3DMT -F| command without the additional
+input arguments. The new capability can be executed by adding two more lines to
+the configuration file (lines 8 and 9), after the nested modeling file. If you
+are not using the nested modeling option but would like to change the air
+layers, you should still include line 7, but leave the name of the EM solution
+file in line 7 blank.  Flexible air layers are only implemented for 3D.</p>
+<p>Three options for the air layers are: <code class="docutils literal notranslate"><span class="pre">mirror</span></code>, <code class="docutils literal notranslate"><span class="pre">fixed</span> <span class="pre">height</span></code>, <code class="docutils literal notranslate"><span class="pre">read</span>
+<span class="pre">from</span> <span class="pre">file</span></code>. For backwards compatibility, the default is <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">10</span> <span class="pre">3.</span>
+<span class="pre">30.</span></code>, so that the code should still produce identically the same results to
+the previous version, unless the air layers are changed.</p>
+<div class="section" id="option-1-mirrros">
+<h3>Option 1 - Mirrros<a class="headerlink" href="#option-1-mirrros" title="Permalink to this headline">¶</a></h3>
+<p>The air layers based on the uppermost layers of the Earth resistivity model. In
+the code, air layers are counted from top to bottom (top is 1, bottom is N). The
+logic is as follows,</p>
+<div class="math notranslate nohighlight">
+\[airlayer((N+1)-j) = \alpha^{j-1} * earthlayer(j)\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\alpha\)</span> and the number of air layers <span class="math notranslate nohighlight">\(N\)</span> are supplied by
+the user, and <span class="math notranslate nohighlight">\(j\)</span> is an integer index from 1 to <span class="math notranslate nohighlight">\(N\)</span>. When
+<span class="math notranslate nohighlight">\(j=1\)</span>, the bottom air layer <span class="math notranslate nohighlight">\(N\)</span>, the top air layer 1 equals <span class="math notranslate nohighlight">\(\alpha^{N-1} * earth layer(N)\)</span>. Finally, the
+third user-supplied parameter <cite>MinTopDz</cite> specifies the minimum width of the
+top air layer, in km. If the top layer happens to be thinner than specified by
+this parameter, it is adjusted to this value. The parameters are specified in
+the following order: <span class="math notranslate nohighlight">\(N\)</span>, <span class="math notranslate nohighlight">\(\alpha\)</span>,  <cite>MinTopDz</cite>.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Air layers mirror|fixed height|read from file : mirror
+Number of air layers and min top dz in km     : 10 3. 30.
+</pre></div>
+</div>
+<p>This procedure is unnecessarily complex, and has created an unreasonably large
+air domain for most grid setups in the past. It is maintained now as the default
+for backwards compatibility. However, this option is not recommended.</p>
+</div>
+<div class="section" id="option-2-fixed-height">
+<h3>Option 2 - fixed height<a class="headerlink" href="#option-2-fixed-height" title="Permalink to this headline">¶</a></h3>
+<p>In this setup, the width of the air layers increases logarithmically until it
+reaches the user-defined height. Additionally, the user defines the total number
+of the air layers, and the logarithmic exponent is calculated automatically from
+these two parameters. This is the recommended option.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Air layers mirror|fixed height|read from file : fixed height
+Number of air layers and max height in km     : 12 1000.
+</pre></div>
+</div>
+</div>
+<div class="section" id="option-3-read-from-file">
+<h3>Option 3: read from file<a class="headerlink" href="#option-3-read-from-file" title="Permalink to this headline">¶</a></h3>
+<p>In this setup, the user specifies the total number of the air layers, and their
+width from top to bottom, in km, directly in the forward solver configuration
+file. This provides additional flexibility for advanced users, allowing in
+particular to compare modeling results more directly to those produced by
+alternative codes or analytical solutions.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Air layers mirror|fixed height|read from file : read from file
+Number of air layers and dz top to bottom km  : 10 500. 200. 100. ... 2. 1. 0.5
+</pre></div>
+</div>
+<p>Recommended air layers option is <code class="docutils literal notranslate"><span class="pre">fixed</span> <span class="pre">height</span> <span class="pre">12</span> <span class="pre">1000</span></code>. The users will
+likely find out that different air layer setups create substantial differences
+in the modeled impedances. We suggest that this issue is carefully explored by
+the users before they switch to a different setup.</p>
+</div>
+</div>
+<div class="section" id="log10-resistivity-model-file-option">
+<span id="log10-res-model"></span><h2>LOG10 Resistivity Model File Option<a class="headerlink" href="#log10-resistivity-model-file-option" title="Permalink to this headline">¶</a></h2>
+<p>To exercise this new option, create a WS or Mackie format model file with
+<code class="docutils literal notranslate"><span class="pre">LOG10</span></code> resistivity instead of <code class="docutils literal notranslate"><span class="pre">LOGE</span></code> or <code class="docutils literal notranslate"><span class="pre">LINEAR</span></code>. This is
+specified in the second line of the resistivity model input file (the first line
+is a comment). Internally in the code, we are keeping <code class="docutils literal notranslate"><span class="pre">LOGE</span></code> for all
+computations; but we convert <code class="docutils literal notranslate"><span class="pre">LOG10</span></code> or <code class="docutils literal notranslate"><span class="pre">LINEAR</span></code> to <code class="docutils literal notranslate"><span class="pre">LOGE</span></code>, make
+note of the user preference, then convert back for output. This feature is
+particularly useful for synthetic models, since it makes the input/output files
+more readable.</p>
+<p>Having said that, we should note that we appreciate the inadequacy of an ASCII
+input file format for modern high performance 3D modeling situations. An option
+utilizing modern binary input/output formats will be added in a future release.</p>
+</div>
+<div class="section" id="new-unit-testing-features-for-code-developers">
+<span id="unit-testing"></span><h2>New Unit Testing Features for Code Developers<a class="headerlink" href="#new-unit-testing-features-for-code-developers" title="Permalink to this headline">¶</a></h2>
+<p>This release includes a collection of fully developed and debugged symmetry
+tests, gradient test, and the full Jacobian test. The code now passes all tests;
+all symmetry tests (including S, i.e., the forward solver) are passed with
+arbitrary random perturbations as input. The symmetry test <code class="docutils literal notranslate"><span class="pre">[TEST_ADJ]</span></code> has
+many sub-options, which can be explored by typing <code class="docutils literal notranslate"><span class="pre">./Mod3DMT</span> <span class="pre">-A</span></code> command
+without the additional input arguments. Options to generate random perturbation
+files for model <code class="docutils literal notranslate"><span class="pre">[-A</span> <span class="pre">m]</span></code>, data <code class="docutils literal notranslate"><span class="pre">[-A</span> <span class="pre">d]</span></code>, RHS <code class="docutils literal notranslate"><span class="pre">[-A</span> <span class="pre">b]</span></code>, E-soln <code class="docutils literal notranslate"><span class="pre">[-A</span> <span class="pre">e]</span></code>
+are also included.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">TEST_GRAD</span><span class="p">]</span>
+<span class="o">-</span><span class="n">g</span>  <span class="n">rFile_Model</span> <span class="n">rFile_Data</span> <span class="n">rFile_dModel</span> <span class="p">[</span><span class="n">rFile_fwdCtrl</span> <span class="n">rFile_EMrhs</span><span class="p">]</span>
+<span class="n">Runs</span> <span class="n">the</span> <span class="n">ultimate</span> <span class="n">test</span> <span class="n">of</span> <span class="n">the</span> <span class="n">gradient</span> <span class="n">computation</span> <span class="n">based</span> <span class="n">on</span>
+<span class="n">Taylor</span> <span class="n">series</span> <span class="n">approximation</span><span class="o">.</span>
+<span class="p">[</span><span class="n">TEST_ADJ</span><span class="p">]</span>
+<span class="o">-</span><span class="n">A</span>  <span class="n">J</span> <span class="n">rFile_Model</span> <span class="n">rFile_dModel</span> <span class="n">rFile_Data</span> <span class="p">[</span><span class="n">wFile_Model</span> <span class="n">wFile_Data</span><span class="p">]</span>
+<span class="n">Tests</span> <span class="n">the</span> <span class="n">equality</span> <span class="n">d</span><span class="o">^</span><span class="n">T</span> <span class="n">J</span> <span class="n">m</span> <span class="o">=</span> <span class="n">m</span><span class="o">^</span><span class="n">T</span> <span class="n">J</span><span class="o">^</span><span class="n">T</span> <span class="n">d</span> <span class="k">for</span> <span class="nb">any</span> <span class="n">model</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span>
+<span class="n">Optionally</span><span class="p">,</span> <span class="n">outputs</span> <span class="n">J</span> <span class="n">m</span> <span class="ow">and</span> <span class="n">J</span><span class="o">^</span><span class="n">T</span> <span class="n">d</span><span class="o">.</span>
+<span class="p">[</span><span class="n">TEST_SENS</span><span class="p">]</span>
+<span class="o">-</span><span class="n">S</span>  <span class="n">rFile_Model</span> <span class="n">rFile_dModel</span> <span class="n">rFile_Data</span> <span class="n">wFile_Data</span> <span class="p">[</span><span class="n">rFile_fwdCtrl</span><span class="p">]</span>
+<span class="n">Multiplies</span> <span class="n">by</span> <span class="n">the</span> <span class="n">full</span> <span class="n">Jacobian</span><span class="p">,</span> <span class="n">row</span> <span class="n">by</span> <span class="n">row</span><span class="p">,</span> <span class="n">to</span> <span class="n">get</span> <span class="n">d</span> <span class="o">=</span> <span class="n">J</span> <span class="n">m</span><span class="o">.</span>
+<span class="n">Compare</span> <span class="n">to</span> <span class="n">the</span> <span class="n">output</span> <span class="n">of</span> <span class="p">[</span><span class="n">MULT_BY_J</span><span class="p">]</span> <span class="n">to</span> <span class="n">test</span> <span class="p">[</span><span class="n">COMPUTE_J</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="release_log.html" title="Change Log"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="forward_and_inversion.html" title="Forward Modeling and Inversion Options"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, Gary Egbert, Anna Kelber, Naser Meqbel, Hao Dong.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>

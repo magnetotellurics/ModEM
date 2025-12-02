@@ -1,0 +1,303 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Forward Modeling and Inversion Options &#8212; ModEM develop documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Beyond the Basics" href="beyond_the_basics.html" />
+    <link rel="prev" title="File Formats" href="file_formats.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="beyond_the_basics.html" title="Beyond the Basics"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="file_formats.html" title="File Formats"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Forward Modeling and Inversion Options</a><ul>
+<li><a class="reference internal" href="#forward-modeling">Forward Modeling</a></li>
+<li><a class="reference internal" href="#inversion">Inversion</a></li>
+<li><a class="reference internal" href="#inversion-ouptuts">Inversion Ouptuts</a></li>
+<li><a class="reference internal" href="#apply-model-covariance">Apply Model Covariance</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="file_formats.html"
+                        title="previous chapter">File Formats</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="beyond_the_basics.html"
+                        title="next chapter">Beyond the Basics</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/forward_and_inversion.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="forward-modeling-and-inversion-options">
+<h1>Forward Modeling and Inversion Options<a class="headerlink" href="#forward-modeling-and-inversion-options" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="forward-modeling">
+<span id="id1"></span><h2>Forward Modeling<a class="headerlink" href="#forward-modeling" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Usage: -F  rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl]
+</pre></div>
+</div>
+<p>Required files are:</p>
+<ul class="simple">
+<li><p><strong>rFile_Model</strong> :  input model grid/resistivity file</p></li>
+<li><p><strong>rFile_Data</strong> : input data file (template: defines data types/locations to return)</p></li>
+<li><p><strong>wFile_Data</strong> : output data file (as defined from input)</p></li>
+</ul>
+<p>The optional files are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>wFile_EMsoln</strong><span class="classifier">output file for electric field solution (all periods and</span></dt><dd><p>the 2 polarizations), defined on staggered grid edges</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>rFile_fwdCtrl</strong><span class="classifier">forward solver control file. This allows more control over how the</span></dt><dd><p>iterative solver works. This file is required for nested modeling, as this is
+where you specify the file name for the larger scale regional solution used for
+boundary data (last line below; see <a class="reference internal" href="beyond_the_basics.html#nested-modeling"><span class="std std-ref">Nested Modeling</span></a>). The format for the
+forward solver control file is as follows:</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Number</span> <span class="n">of</span> <span class="n">QMR</span> <span class="n">iters</span> <span class="n">per</span> <span class="n">divergence</span> <span class="n">correction</span> <span class="p">:</span> <span class="mi">40</span>
+<span class="n">Maximum</span> <span class="n">number</span> <span class="n">of</span> <span class="n">divergence</span> <span class="n">correction</span> <span class="n">calls</span> <span class="p">:</span> <span class="mi">20</span>
+<span class="n">Maximum</span> <span class="n">number</span> <span class="n">of</span> <span class="n">divergence</span> <span class="n">correction</span> <span class="n">iters</span> <span class="p">:</span> <span class="mi">100</span>
+<span class="n">Misfit</span> <span class="n">tolerance</span> <span class="k">for</span> <span class="n">EM</span> <span class="n">forward</span> <span class="n">solver</span> <span class="p">:</span> <span class="mf">1.0e-7</span>
+<span class="n">Misfit</span> <span class="n">tolerance</span> <span class="k">for</span> <span class="n">EM</span> <span class="n">adjoint</span> <span class="n">solver</span> <span class="p">:</span> <span class="mf">1.0e-7</span>
+<span class="n">Misfit</span> <span class="n">tolerance</span> <span class="k">for</span> <span class="n">divergence</span> <span class="n">correction</span> <span class="p">:</span> <span class="mf">1.0e-5</span>
+<span class="n">Optional</span> <span class="n">EM</span> <span class="n">solution</span> <span class="n">file</span> <span class="n">name</span> <span class="k">for</span> <span class="n">nested</span> <span class="n">BC</span> <span class="p">:</span> <span class="n">nested</span><span class="o">.</span><span class="n">esoln</span>
+</pre></div>
+</div>
+<p>The first 6 parameters are numbers and are all required if you use this option.
+The last line gives the file for nesting and is optional. If it is present,
+electric fields in the file are used to provide boundary data; if it is not
+present, default boundary values are used. A hash mark # can be inserted at the
+start of the line instead The order of lines is fixed, so to use nested modeling
+you have to specify values for the other 6. Default values are given above.
+Instead of specifying a file name for forward model control, the user can
+specify a single real number. ModEM will interpret this as the value of eps =
+misfit tolerance for the forward solver (I.e., the 4th line in the file).</p>
+</div>
+<div class="section" id="inversion">
+<h2>Inversion<a class="headerlink" href="#inversion" title="Permalink to this headline">¶</a></h2>
+<p>The simplest usage specifies only the search algorithm, the prior (and starting)
+model file, and the data file. Default values for forward modeling, inversion
+control parameters, as well as model covariance, are then used. Additional
+optional arguments allow more control over the inversion. The general form for
+the command line is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Usage: -I NLCG rFile_Model rFile_Data [InvCtrl FwdCtrl CovCtrl StartModel ]
+</pre></div>
+</div>
+<p>As usual, arguments have to be in the specified order. Thus, to specify
+StartModel all other optional arguments must be given.</p>
+<p>The required arguments are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>NLCG</strong> Inversion search approach (other supported options <strong>DCG</strong>; only</dt><dd><p><strong>NLCG</strong> has been extensively tested and used to date). This argument is
+required by the <code class="docutils literal notranslate"><span class="pre">-I</span></code> option, even though most users only use the NLCG option.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>rFile_Model</strong><span class="classifier">input model grid/resistivity file</span><span class="classifier">This is the prior model, which by</span></dt><dd><p>default is used also as the starting model.</p>
+</dd>
+</dl>
+</li>
+<li><p><strong>rFile_data</strong> :  input data file (template: defines data types/locations to return)</p></li>
+</ul>
+<p>Optional arguments are:</p>
+<ul class="simple">
+<li><p><strong>InvCtrl</strong> : inversion control file, which has the format</p></li>
+</ul>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Model and data output file name : Modular
+Initial damping factor lambda : 1.
+To update lambda divide by : 10.
+Initial search step in model units : 100.
+Restart when rms diff is less than : 2.0e-3
+Exit search when rms is less than : 1.05
+Exit when lambda is less than : 1.0e-4
+Maximum number of iterations : 120
+</pre></div>
+</div>
+<p>The values given above are the default values. The first line is used to define
+the root for output files (model parameter and data) created by the inversion;
+these are discussed in more detail below, under <a class="reference internal" href="#inversion-outputs"><span class="std std-ref">Inversion Ouptuts</span></a>. As
+with the forward modeling control file, there is a simpler form for this
+optional argument, which modifies only a single (the most commonly modified)
+parameter, i.e., lambda = the initial damping parameter for inversion.</p>
+<ul>
+<li><dl>
+<dt><strong>FwdCtrl</strong><span class="classifier">forward solver control file, described above under the <code class="docutils literal notranslate"><span class="pre">-F</span></code></span></dt><dd><p>option.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>CovCtrl</strong><span class="classifier">The covariance file. This is used to define the model</span></dt><dd><p>covariance(see section <a class="reference internal" href="file_formats.html#model-cov-files"><span class="std std-ref">Model Covariance Files</span></a>).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>StartModel</strong><span class="classifier">The starting model file. This must be specified to start from</span></dt><dd><p>sometthing other than the prior. Proper use of this option is discussed below,
+in <a class="reference internal" href="beyond_the_basics.html#restarting"><span class="std std-ref">Restart the Inversion</span></a>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="inversion-ouptuts">
+<span id="inversion-outputs"></span><h2>Inversion Ouptuts<a class="headerlink" href="#inversion-ouptuts" title="Permalink to this headline">¶</a></h2>
+<p>For the NLCG inversion 4 files are produced for each each step in
+the iterative search process. The files produced have the name <code class="docutils literal notranslate"><span class="pre">root_NLCG_###.rho</span></code>,
+<code class="docutils literal notranslate"><span class="pre">root_NLCG_###.prm</span></code>, <code class="docutils literal notranslate"><span class="pre">root_NLCG_###.dat</span></code>, and <code class="docutils literal notranslate"><span class="pre">root_NLCG_###.res</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">root</span></code> is the output file root specified in the inversion
+control file, and <code class="docutils literal notranslate"><span class="pre">###</span></code> is the NLCG iteration number. The output
+file root defaults to <code class="docutils literal notranslate"><span class="pre">Modular</span></code> if the inversion control file
+is not used. The <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.rho</span></code> file is the model parameter file, giving
+the resistivity estimate at the current iteration. The <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.prm</span></code>
+file is also in the model parameter file format, but represents the
+transformed model parameter <span class="math notranslate nohighlight">\(\tilde{{\bf m}}={\bf C_{m}}^{-1/2}({\bf {m}-{\bf {m}_{prior})}}\)</span>.</p>
+<p>as discussed below inn <a class="reference internal" href="#apply-cov"><span class="std std-ref">Apply Model Covariance</span></a>. The <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.dat</span></code> file contains
+predicted data, in the ModEM list format (identical to the input data file), and
+the <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.res</span></code> file contains residuals, again in the ModEM list format.
+(This file is not useful and will be eliminated in future ModEM releases). In
+addition to the suite of model parameter and data files produced, the inversion
+provides an ongoing report on results of the various modeling and search steps.
+These are displayed to standard output and should be monitored by users. Key
+diagnostics of the search process are recorded in the log file
+<code class="docutils literal notranslate"><span class="pre">root_NLCG.log</span></code>.</p>
+<p>Similar files are produced by the DCG inversion, with the obvious name change.
+Note in this case each iteration corresponds to a full Gauss-Newton step, so
+there will be many fewer of these output files.  Howwever, this option has seen
+little actual use so far.</p>
+</div>
+<div class="section" id="apply-model-covariance">
+<span id="apply-cov"></span><h2>Apply Model Covariance<a class="headerlink" href="#apply-model-covariance" title="Permalink to this headline">¶</a></h2>
+<p>This option is used to apply the model covariance (smoothing operator) to a
+model parameter, and to invert this operation (roughening). The forward
+covariance operator is primarily used for testing; the inverse is required for
+some specialized applications discussed below in <a class="reference internal" href="beyond_the_basics.html#restarting"><span class="std std-ref">Restart the Inversion</span></a>.  The format
+for this option is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>-C INV rFile_Model wFile_Model [CovCtrl rFile_Prior]
+</pre></div>
+</div>
+<p>The required arguments are:</p>
+<ul>
+<li><dl>
+<dt><strong>INV</strong><span class="classifier">this is the inverse (roughening) operator, most often used. <strong>FWD</strong></span></dt><dd><p>is the argument used to apply the covariance (smoothing) operator.</p>
+</dd>
+</dl>
+</li>
+<li><p><strong>rFile_Model</strong> and <strong>wFile_Model</strong> are the input and output model.</p></li>
+</ul>
+<p>Optional arguments are:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>CovCtrl</strong><span class="classifier">the covariance file; if this is not specified default covariance parameters</span></dt><dd><p>are used.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>rFile_Prior</strong><span class="classifier">the prior model file; in general this is required for the most common</span></dt><dd><p>use of the <code class="docutils literal notranslate"><span class="pre">-C</span></code> option.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Explanation: In the case of the INV option the output file contains the
+transformed model parameter <span class="math notranslate nohighlight">\(\tilde{{\bf m}}={\bf C_{m}}^{-1/2}({\bf{m}-{\bf {m}_{prior})}}\)</span>,
+where <span class="math notranslate nohighlight">\({\bf {m}}$, and ${\bf m}_{prior}\)</span> are the input and prior model
+parameters, provided in files <code class="docutils literal notranslate"><span class="pre">rFile_Model</span></code> and <code class="docutils literal notranslate"><span class="pre">rFile_prior</span></code>, respectively.
+If the optional prior model file name is not provided <span class="math notranslate nohighlight">\({\bf {m}_{prior}}\)</span>
+defaults to 0. The FWD option reverses the transformation, computing
+<span class="math notranslate nohighlight">\({\bf{m}={\bf C_{m}}^{1/2}\tilde{{\bf {m}}}+{\bf {m}_{prior}}}\)</span>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The inverse computation may be poorly conditioned if the smoothing
+is too strong, so it is a good idea to proceed with caution, and check your
+model after applying the inverse covariance.  The need for caution is one reason
+why we ask the user to do several steps themselves, instead of packaging this as
+a simpler to use black box.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="beyond_the_basics.html" title="Beyond the Basics"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="file_formats.html" title="File Formats"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, Gary Egbert, Anna Kelber, Naser Meqbel, Hao Dong.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>

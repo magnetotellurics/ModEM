@@ -1,0 +1,164 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>ModEM Documentation &#8212; ModEM develop documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Obtaining ModEM" href="obtaining_modem.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="obtaining_modem.html" title="Obtaining ModEM"
+             accesskey="N">next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">ModEM Documentation</a><ul>
+<li><a class="reference internal" href="#user-s-guide">User’s Guide</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="obtaining_modem.html"
+                        title="next chapter">Obtaining ModEM</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="modem-documentation">
+<h1>ModEM Documentation<a class="headerlink" href="#modem-documentation" title="Permalink to this headline">¶</a></h1>
+<p>Welcome to the ModEM’s documentation! ModEM is a modular system for inversion of
+electromagnetic geophysical data.</p>
+<p>ModEM was designed as a flexible electromagnetic modeling and inversion system,
+written in Fortran 95. Although the code can be (and has been) extended for
+inversion of more general types of EM data (e.g., controlled source, DC; see
+Meqbel and Ritter, 2015), here we describe the stable, core system developed for
+2D and 3D magnetotelluric (MT) problems.</p>
+<p>While a primary design goal of the system was to allow simplified extension with
+regard to data types, modeling codes, parameterization and regularization, and
+inversion search algorithms (see Egbert and Kelbert, 2012; Kelbert et al.
+2014). The stable MT program has a command-line interface, which controls
+available program options, and specifies required and optional input and output
+files.</p>
+<div class="section" id="user-s-guide">
+<h2>User’s Guide<a class="headerlink" href="#user-s-guide" title="Permalink to this headline">¶</a></h2>
+<p>This documentation contains information about compiling, running and using
+ModEM, including information about the file formats, options for forward modeling,
+options for inversion, etc.</p>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="obtaining_modem.html">Obtaining ModEM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#directory-structure">Directory Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#compiling-modem">Compiling ModEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#creating-makefiles-from-configuration-files">Creating Makefiles from Configuration Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#compiling">Compiling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#running-modem-the-basics">Running ModEM: The basics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#using-docker-to-compile-and-run-modem">Using Docker to Compile and Run ModEM</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="file_formats.html">File Formats</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="file_formats.html#data-files">Data Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="file_formats.html#model-files">Model Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="file_formats.html#model-covariance-files">Model Covariance Files</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="forward_and_inversion.html">Forward Modeling and Inversion Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="forward_and_inversion.html#forward-modeling">Forward Modeling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forward_and_inversion.html#inversion">Inversion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forward_and_inversion.html#inversion-ouptuts">Inversion Ouptuts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="forward_and_inversion.html#apply-model-covariance">Apply Model Covariance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="beyond_the_basics.html">Beyond the Basics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="beyond_the_basics.html#restart-the-inversion">Restart the Inversion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="beyond_the_basics.html#nested-modeling">Nested Modeling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="beyond_the_basics.html#flexible-air-layers">Flexible Air Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="beyond_the_basics.html#log10-resistivity-model-file-option">LOG10 Resistivity Model File Option</a></li>
+<li class="toctree-l2"><a class="reference internal" href="beyond_the_basics.html#new-unit-testing-features-for-code-developers">New Unit Testing Features for Code Developers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="release_log.html">Change Log</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="release_log.html#release-1-2-0-april-12-2019">Release 1.2.0 - April 12, 2019</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="citations.html">Citations</a></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="obtaining_modem.html" title="Obtaining ModEM"
+             >next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, Gary Egbert, Anna Kelber, Naser Meqbel, Hao Dong.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>

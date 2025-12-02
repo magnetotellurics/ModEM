@@ -1,0 +1,162 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Change Log &#8212; ModEM develop documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Citations" href="citations.html" />
+    <link rel="prev" title="Beyond the Basics" href="beyond_the_basics.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="citations.html" title="Citations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="beyond_the_basics.html" title="Beyond the Basics"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Change Log</a><ul>
+<li><a class="reference internal" href="#release-1-2-0-april-12-2019">Release 1.2.0 - April 12, 2019</a><ul>
+<li><a class="reference internal" href="#flexible-air-layers">Flexible Air Layers</a></li>
+<li><a class="reference internal" href="#log10-resistivity-model">Log10 Resistivity Model</a></li>
+<li><a class="reference internal" href="#unit-testing-for-developers">Unit Testing For Developers</a></li>
+<li><a class="reference internal" href="#other-comments">Other comments</a></li>
+<li><a class="reference internal" href="#known-issues">Known Issues</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="beyond_the_basics.html"
+                        title="previous chapter">Beyond the Basics</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="citations.html"
+                        title="next chapter">Citations</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/release_log.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="change-log">
+<h1>Change Log<a class="headerlink" href="#change-log" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="release-1-2-0-april-12-2019">
+<h2>Release 1.2.0 - April 12, 2019<a class="headerlink" href="#release-1-2-0-april-12-2019" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="flexible-air-layers">
+<h3>Flexible Air Layers<a class="headerlink" href="#flexible-air-layers" title="Permalink to this headline">¶</a></h3>
+<p>See: <a class="reference internal" href="beyond_the_basics.html#flexible-air-layers"><span class="std std-ref">Flexible Air Layers</span></a>.</p>
+</div>
+<div class="section" id="log10-resistivity-model">
+<h3>Log10 Resistivity Model<a class="headerlink" href="#log10-resistivity-model" title="Permalink to this headline">¶</a></h3>
+<p>See: <a class="reference internal" href="beyond_the_basics.html#log10-res-model"><span class="std std-ref">LOG10 Resistivity Model File Option</span></a>.</p>
+</div>
+<div class="section" id="unit-testing-for-developers">
+<h3>Unit Testing For Developers<a class="headerlink" href="#unit-testing-for-developers" title="Permalink to this headline">¶</a></h3>
+<p>See: <a class="reference internal" href="beyond_the_basics.html#unit-testing"><span class="std std-ref">New Unit Testing Features for Code Developers</span></a>.</p>
+</div>
+<div class="section" id="other-comments">
+<h3>Other comments<a class="headerlink" href="#other-comments" title="Permalink to this headline">¶</a></h3>
+<p>Relative to the previous stable release, the value of verb|LARGE_REAL| that
+defines the error bars for modeled data has changed from 2.0e15 to 1.0e13. This
+does not affect any computations but it may be confusing to the user as these
+values are output in place of the error bars for modeled MT data. Otherwise,
+impedances are exactly the same unless the air layers are changed. With modified
+air layers values are noticeably different and probably more accurate… because
+now the diagonals are exactly zero over a 1D area. Tippers are less noticeably
+affected by the air layers modifications.</p>
+<p>In addition to these user facing changes, this code has undergone substantial
+development, specifically to allow for flexibly boundary conditions in the
+future. We have also cleaned up the handling of non-zero sources in
+EMsolve3D.f90, specifically checked the physics and the maths, and added
+comments to clarify things.</p>
+</div>
+<div class="section" id="known-issues">
+<h3>Known Issues<a class="headerlink" href="#known-issues" title="Permalink to this headline">¶</a></h3>
+<p><strong>[POSSIBLY NOT AN ISSUE]</strong> As of revision 485 on July 24, 2014 , apparent
+resistivities in 3D MT are specified in the file as actual resistivity, but are
+converted to the log domain before inversion in the program. There is no way
+presently to invert apparent resistivity itself, only logs. Probably OK, but
+obtuse.</p>
+<p><strong>[POSSIBLY OBSOLETE]</strong> Also, in the stable version that most users have there is a
+bug in error propagation for the apparent resistivities.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="citations.html" title="Citations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="beyond_the_basics.html" title="Beyond the Basics"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, Gary Egbert, Anna Kelber, Naser Meqbel, Hao Dong.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>

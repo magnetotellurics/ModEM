@@ -1,0 +1,444 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Getting Started &#8212; ModEM develop documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="File Formats" href="file_formats.html" />
+    <link rel="prev" title="Obtaining ModEM" href="obtaining_modem.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="file_formats.html" title="File Formats"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="obtaining_modem.html" title="Obtaining ModEM"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Getting Started</a><ul>
+<li><a class="reference internal" href="#directory-structure">Directory Structure</a></li>
+<li><a class="reference internal" href="#compiling-modem">Compiling ModEM</a></li>
+<li><a class="reference internal" href="#creating-makefiles-from-configuration-files">Creating Makefiles from Configuration Files</a><ul>
+<li><a class="reference internal" href="#examples-using-configure">Examples using Configure</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#compiling">Compiling</a><ul>
+<li><a class="reference internal" href="#compiling-with-mpi">Compiling with MPI</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-modem-the-basics">Running ModEM: The basics</a></li>
+<li><a class="reference internal" href="#using-docker-to-compile-and-run-modem">Using Docker to Compile and Run ModEM</a><ul>
+<li><a class="reference internal" href="#building">Building</a></li>
+<li><a class="reference internal" href="#running-and-building-modem-in-docker">Running and building ModEM in Docker</a></li>
+<li><a class="reference internal" href="#specifying-mounts-points">Specifying mounts points</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="obtaining_modem.html"
+                        title="previous chapter">Obtaining ModEM</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="file_formats.html"
+                        title="next chapter">File Formats</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/getting_started.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="directory-structure">
+<h2>Directory Structure<a class="headerlink" href="#directory-structure" title="Permalink to this headline">¶</a></h2>
+<p>The following files and sub-directories will be found:</p>
+<ul class="simple">
+<li><p><strong>COPYRIGHT</strong> - Please get familiar with the Copyright before using this code!</p></li>
+<li><p><strong>README</strong> - Explains how to obtain, install and update the code.</p></li>
+<li><p><strong>doc/</strong> - Provides additional documentation, including this user guide.</p></li>
+<li><p><strong>examples/</strong> - Provides a careful set of examples that are known to work.</p></li>
+<li><p><strong>f90/</strong> - The code base, makefiles and configuration scripts.</p></li>
+<li><p><strong>matlab/</strong> - Auxiliary Matlab scripts for file conversion, and others.</p></li>
+</ul>
+</div>
+<div class="section" id="compiling-modem">
+<h2>Compiling ModEM<a class="headerlink" href="#compiling-modem" title="Permalink to this headline">¶</a></h2>
+<p>The f90 directory contains several prototype makefiles, as well as some configuration
+scripts (<code class="docutils literal notranslate"><span class="pre">****.config</span></code>) that can be used for creating makefiles. These configuration scripts
+are primarily useful after substantial code modifications, and most users will not have
+cause (or for that matter, any desire) to use these scripts. For almost all purposes you
+can use the provided makefiles, perhaps with some minor editing. There are several
+makefile variants for both 2D and 3D MT. For example, Makefile3d for compiling a serial
+version of the code, and <code class="docutils literal notranslate"><span class="pre">Makefile3d.MPI</span></code> for a parallel version. Follow these instructions
+carefully when modifying Makefiles! Copy the makefile before editing, to avoid conflict
+with standard versions in the svn archive, i.e.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">f90</span><span class="p">;</span> <span class="n">cp</span> <span class="n">Makefile</span><span class="o">.</span><span class="n">gnu</span> <span class="n">Makefile</span>
+</pre></div>
+</div>
+<p>Then open the copy of the Makefile in your favorite editor, and make sure that the
+(uncommented) compiler is set appropriately for your system). Some paths may also
+need to be modified. The make command will compile the 3D MT (or 2D MT) code for
+you (Mod3DMT and Mod2DMT, respectively).</p>
+<p>ModEM can be compiled for a parallel or serial execution. Make sure that you use the
+appropriate compiler preprocessing flag to compile the desired MPI (parallel) or serial
+version. Also make sure that the MPICH library is already installed on your machine, if
+you want to compile for MPI version. Here are examples of the compiler preprocessing
+flag and directive used to compile the MPI version:</p>
+<ul class="simple">
+<li><p>PGI compiler: -Mpreprocess —&gt; Serial; -Mpreprocess -DMPI —&gt; Parallel</p></li>
+<li><p>Intel compiler: -fpp —&gt; Serial; -fpp -DMPI —&gt; Parallel</p></li>
+<li><p>GFortran: -cpp-input —&gt; Serial; -cpp-input -DMPI —&gt; Parallel</p></li>
+</ul>
+</div>
+<div class="section" id="creating-makefiles-from-configuration-files">
+<h2>Creating Makefiles from Configuration Files<a class="headerlink" href="#creating-makefiles-from-configuration-files" title="Permalink to this headline">¶</a></h2>
+<p>The current build system for ModEM uses the <cite>fmkmf.pl</cite> pearl script and the
+configuration scripts that are in <cite>f90/CONFIG</cite>. Although ModEM uses Make and
+Makefiles, makefiles are meant to be created by these configuration scripts.</p>
+<p>To create Makefiles, run the configuration scripts that match your system,
+desired compiler and desired ModEM version. These configuration scripts
+call the <cite>fmkmf.pl</cite> script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd f90/
+$ ./CONFIG/Configure Makefile gfortran
+</pre></div>
+</div>
+<p>The Configure scripts has the following usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ Usage: ./CONFIG/Configure [-h] [-u] [-g release|debug] [-m mpi|serial] [-l solver] [-f] makefile-name compiler
+    -h Display full help message
+    -u Display this usage message
+    -g &lt;release | debug&gt; Specify whether to build with debug symbols or not
+        release - Default - Create Makefile with full optimizations (i.e. -O3)
+        debug   - Create Makefile with debug symbols (i.e. -g) and no optimizations
+    -m &lt;mpi* | serial&gt; Specify MPI or serial
+        mpi - Default - Builds with MPI
+        serial - Builds Serially
+    -l &lt;MF | SP | SP2&gt; Specify solver
+        MF - Builds with MF
+        SP - Builds with SP
+        SP2 - Default - Builds with SP2
+    -f Build with Fined-Grained -DFG on SP2
+        Only able to build with SP2
+    -s Build spherical version of ModEM
+</pre></div>
+</div>
+<div class="section" id="examples-using-configure">
+<h3>Examples using Configure<a class="headerlink" href="#examples-using-configure" title="Permalink to this headline">¶</a></h3>
+<p>A few examples using Configure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./CONFIG/Configure Makefile gfortran
+Generates a Makefile with GFortran options using MPI
+
+$ ./CONFIG/Configure -d debug Makefile gfortran
+Generates an MPI Makefile with GFortran debugging options
+
+$ ./CONFIG/Configure -m serial -l MF Makefile gfortran
+Generates a serial Makefile with GFortran with the MF solver
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="compiling">
+<h2>Compiling<a class="headerlink" href="#compiling" title="Permalink to this headline">¶</a></h2>
+<p>Once you have generated your own makefile, or decided to use one of the
+defaults, you can compile ModEM by renaming that makefile to Makefile and then
+run make</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cp Makefile.3D.MF.gnu Makefile
+$ make clean <span class="c1"># Not necessary from a fresh clone</span>
+$ make
+</pre></div>
+</div>
+<div class="section" id="compiling-with-mpi">
+<h3>Compiling with MPI<a class="headerlink" href="#compiling-with-mpi" title="Permalink to this headline">¶</a></h3>
+<p>If you have MPI installed, and already have a serial makefile generated you can
+easily compile the MPI version of ModEM by altering the makefile. This is
+sometimes easier then creating a new makefile from the configuration scripts.</p>
+<p>To compile an MPI version, edit the compiler in your makefile to be an MPI
+compiler (e.g. mpifort) and add -DMPI to the MPIFLAGGS variable</p>
+<div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">F90</span> <span class="o">=</span> mpifort
+<span class="nv">MPIFLAGS</span> <span class="o">=</span> -DMPI ... omitting other flags
+</pre></div>
+</div>
+<p>However, you can also generate an MPI makefile by running the configuration
+scripts and passing it MPI as the type.</p>
+<p>..important:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">When</span> <span class="n">running</span> <span class="n">ModEM</span> <span class="k">with</span> <span class="n">MPI</span> <span class="n">you</span> <span class="n">must</span> <span class="n">use</span> <span class="n">at</span> <span class="n">least</span> <span class="mi">2</span> <span class="n">tasks</span> <span class="ow">and</span>
+<span class="n">a</span> <span class="nb">max</span> <span class="n">of</span> <span class="p">(</span><span class="mi">2</span> <span class="n">x</span> <span class="n">nTransmitters</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="n">tasks</span> <span class="p">(</span><span class="k">except</span> <span class="k">for</span> <span class="n">the</span> <span class="n">SP2</span> <span class="n">version</span> <span class="n">compiled</span>
+<span class="k">with</span> <span class="o">-</span><span class="n">DFG</span><span class="p">)</span><span class="o">.</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="running-modem-the-basics">
+<h2>Running ModEM: The basics<a class="headerlink" href="#running-modem-the-basics" title="Permalink to this headline">¶</a></h2>
+<p>Running the compiled program with no command line arguments will print a brief
+summary of usage</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Output information to files, and progress report to screen (default).
+Usage: Mod3DMT -[job] [args]
+
+[READ_WRITE]
+    -R rFile_Model rFile_Data [wFile_Model wFile_Data]
+    Reads your input files and checks them for validity;
+    optionally also writes them out
+[FORWARD]
+    -F rFile_Model rFile_Data wFile_Data [wFile_EMsoln rFile_fwdCtrl]
+    Calculates the predicted data and saves the EM solution
+[COMPUTE_J]
+    -J rFile_Model rFile_Data wFile_Sens [rFile_fwdCtrl]
+    Calculates and saves the full J(acobian)
+[MULT_BY_J]
+    -M rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl]
+    Multiplies a model by J to create a data vector
+[MULT_BY_J_T]
+    -T rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]
+    Multiplies a data vector by J^T to create a model
+[INVERSE]
+    -I NLCG rFile_Model rFile_Data [lambda eps]
+    Here, lambda = the initial damping parameter for inversion
+        eps = misfit tolerance for the forward solver
+    OR
+    -I NLCG rFile_Model rFile_Data [rFile_invCtrl rFile_fwdCtrl]
+    Optionally, may also supply
+        the model covariance configuration file [rFile_Cov]
+        the starting model parameter perturbation [rFile_dModel]
+    Runs an inverse search to yield an inverse model at every iteration
+[TEST_COV]
+    -C rFile_Model wFile_Model [rFile_Cov]
+    Applies the model covariance to produce a smooth model output
+[TEST_ADJ]
+    -A J rFile_Model rFile_dModel rFile_Data [wFile_Model wFile_Data]
+    Tests the equality d^T J m = m^T J^T d for any model and data.
+    Optionally, outputs J m and J^T d.
+[TEST_SENS]
+    -S rFile_Model rFile_dModel rFile_Data wFile_Data [wFile_Sens]
+    Multiplies by the full Jacobian, row by row, to get d = J m.
+    Compare to the output of [MULT_BY_J] to test [COMPUTE_J]
+
+Optional final argument -v [debug|full|regular|compact|result|none]
+indicates the desired level of output to screen and to files.
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">-F</span> <span class="pre">[FORWARD]</span></code> and <code class="docutils literal notranslate"><span class="pre">-I</span> <span class="pre">[INVERSE]</span></code> options will suffice for simple applications. For
+some of the more advanced applications discussed below the <code class="docutils literal notranslate"><span class="pre">-C</span> <span class="pre">[TEST_COV]</span></code> option is
+also needed. The <code class="docutils literal notranslate"><span class="pre">-R</span> <span class="pre">[READ_WRITE]</span></code> option can be useful for testing whether your input
+files are in the correct format. The <code class="docutils literal notranslate"><span class="pre">-v</span></code> option controls the level of program output; the
+default is “regular”; if you want to reduce outputs (“none” is <em>not recommended!</em>) you can
+experiment with other output levels; “full ” and “debug” would be primarily useful for
+developers. All of the other options (<code class="docutils literal notranslate"><span class="pre">-J</span></code>, <code class="docutils literal notranslate"><span class="pre">-M</span></code>, etc.) are primarily useful for development,
+testing, and some specialized applications that are beyond the scope of this
+basic documentation.</p>
+<p>Sub-directory <code class="docutils literal notranslate"><span class="pre">examples/</span></code> contains some sample input files with instructions for simple
+cases. These should be sufficient to test your installation, and also will provide a tem-
+plate for your own initial use. The <code class="docutils literal notranslate"><span class="pre">doc/</span></code> sub-directory contains some further information
+on the ModEM system, beyond the summary of usage provided here.</p>
+<p>All of the various options have a required set of arguments, which define input and
+output file names (<code class="docutils literal notranslate"><span class="pre">rFile</span></code>, and <code class="docutils literal notranslate"><span class="pre">wFile</span></code> in the usage summary, respectively). There are
+also optional arguments, mostly also specifying additional input or output file names.
+In all cases the order of arguments must be exactly as indicated in the “Usage” block,
+so to give an optional argument at the end of the list, all previous optional arguments
+must also be provided. Thus, for example, with the <code class="docutils literal notranslate"><span class="pre">-F</span></code> option, if you want to specify the
+input <code class="docutils literal notranslate"><span class="pre">rFile_fwdCtrl</span></code> file, you must also specify the output <code class="docutils literal notranslate"><span class="pre">wFile_EMsoln</span></code> file, even if
+you do not specifically want the full set of output EM fields, which this option will result
+in. Before providing a more detailed discussion of the various options, we consider file
+formats.</p>
+</div>
+<div class="section" id="using-docker-to-compile-and-run-modem">
+<h2>Using Docker to Compile and Run ModEM<a class="headerlink" href="#using-docker-to-compile-and-run-modem" title="Permalink to this headline">¶</a></h2>
+<p>A <a class="reference external" href="https://github.com/magnetotellurics/ModEM/blob/main/Dockerfile">Dockerfile</a> has been provided that will create an Ubuntu docker
+container where you can compile and run ModEM. To run the ModEM docker
+container, first ensure you have <a class="reference external" href="https://www.docker.com/get-started/">docker installed</a> and
+running (Either have the docker daemon <a class="reference external" href="https://docs.docker.com/engine/daemon/start/">docker running</a>, or Docker
+<a class="reference external" href="https://www.docker.com/blog/getting-started-with-docker-desktop/">Desktop Running</a>.</p>
+<p>The Dockerfile builds an Ubuntu instance with GFortran, MPI, and all the other
+tools needed to compile and run ModEM.</p>
+<div class="section" id="building">
+<h3>Building<a class="headerlink" href="#building" title="Permalink to this headline">¶</a></h3>
+<p>After you install Docker, you will need to build the docker container. Inside
+the <code class="docutils literal notranslate"><span class="pre">ModEM</span></code> directory (where the <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> resides), run the following:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker build . -t modem:latest --build-arg <span class="nv">ncpus</span><span class="o">=</span><span class="m">2</span>
+</pre></div>
+</div>
+<p>You can specify different numbers of arguments in the <code class="docutils literal notranslate"><span class="pre">ncpus</span></code> build argument if
+you wish. It will speed up the time when Docker compiles MPICH.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>For personal machines, it’s best to set <code class="docutils literal notranslate"><span class="pre">ncpus</span></code> no greater than the max number of
+cores on your machines.</p>
+<p>For shared login nodes you may want to use no more than 2-4 CPUs in order to
+not detrement other users.</p>
+</div>
+<p>After running the above command Docker will create an image named
+<code class="docutils literal notranslate"><span class="pre">modem:latest</span></code> that you can then use to run; it will have all necessary
+libraries and compilers to compile and run ModEM.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It can take anywhere from 3-15 minutes to build the ModEM docker image,
+depending on how fast your CPU is and how many CPUs you specify in
+<code class="docutils literal notranslate"><span class="pre">ncpus</span></code>.</p>
+</div>
+</div>
+<div class="section" id="running-and-building-modem-in-docker">
+<h3>Running and building ModEM in Docker<a class="headerlink" href="#running-and-building-modem-in-docker" title="Permalink to this headline">¶</a></h3>
+<p>By default, the dockerfile automatically checks out the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch of ModEM
+and places it in the root user’s home directory: <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>. This copy
+of ModEM has been provided for the convience of new users.</p>
+<p>First, let us start a container using the image that we built above:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker volume create modem
+$ docker run -it -v modem:/root/ModEM-main modem:latest
+</pre></div>
+</div>
+<p>Normally, when running a docker container, the data created inside the container
+will be deleted when the container terminates. To prevent this, we can use a
+volume.</p>
+<p>First, we need to create a named volume using <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">volume</span> <span class="pre">create</span> <span class="pre">modem</span></code>, then
+in our run command we attach that volume to <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>. This will save any
+data that we created inside <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>, but nowhere else.</p>
+<p>After you terminate that container, and wish to start it again, you will need to
+specify your run command with the same arguments as above to reuse the data
+inside the volume, see important note below.</p>
+<p>The docker run command will run the image <code class="docutils literal notranslate"><span class="pre">modem:latest</span></code> and create a
+container for us to use The <code class="docutils literal notranslate"><span class="pre">-it</span></code> argument will tell Docker to start an
+interactive tty session and will drop you inside the running container.</p>
+<p>Now, we can move into <code class="docutils literal notranslate"><span class="pre">~/ModEM-main</span></code> to configure, build and run ModEM:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ~/ModEM-main
+$ <span class="nb">cd</span> f90/
+$ <span class="c1"># Compile with MPI, SP2 solver:</span>
+$ ./CONFIG/configure Makefile gfortran
+$ <span class="c1"># or compile serial, SP2 solver</span>
+$ ./CONFIG/configure -m serial Makefile gfortran
+$ make
+$ <span class="c1"># Run ModEM serially or with MPI:</span>
+$ mpiexec -n <span class="m">2</span> ./Mod3DMT ...
+$ <span class="c1"># Or if you compiled serial:</span>
+$ ./Mod3DMT ...
+</pre></div>
+</div>
+<p>You can terminate this docker session by logging out by typing <code class="docutils literal notranslate"><span class="pre">exit</span></code> or you can
+use <code class="docutils literal notranslate"><span class="pre">Ctrl-D</span></code>.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Again, if you want to re-run docker and reuse the files/folders/data you
+created before you will need to specify the volume that you used before</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run -it -v modem:/root/ModEM-main modem:latest
+</pre></div>
+</div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Any data you create outside of the <code class="docutils literal notranslate"><span class="pre">ModEM-main</span></code> directory will not be
+saved. If you want to save data you will need to specify additional volumes
+or mounts. See <a class="reference internal" href="#docker-mounts"><span class="std std-ref">Specifying mounts points</span></a>.</p>
+<p>For more information on persistant data see:</p>
+<p><a class="reference external" href="https://docs.docker.com/get-started/docker-concepts/running-containers/persisting-container-data/">https://docs.docker.com/get-started/docker-concepts/running-containers/persisting-container-data/</a></p>
+</div>
+</div>
+<div class="section" id="specifying-mounts-points">
+<span id="docker-mounts"></span><h3>Specifying mounts points<a class="headerlink" href="#specifying-mounts-points" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more information on Docker mounts see:
+<a class="reference external" href="https://docs.docker.com/engine/storage/bind-mounts/">https://docs.docker.com/engine/storage/bind-mounts/</a>.</p>
+</div>
+<p>While it is helpful to have the <code class="docutils literal notranslate"><span class="pre">ModEM-Main/</span></code> provided, it is also helpful to
+work with local version of <code class="docutils literal notranslate"><span class="pre">ModEM</span></code> you have on your host system. To do that we
+can use mounts, which will allow us to mirror a directory on our host system
+into the container.</p>
+<p>We can add a mount by passing in a <code class="docutils literal notranslate"><span class="pre">--mount</span></code> option during our run command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/abosolute/path/to/ModEM,target<span class="o">=</span>/root/ModEM -it modem:latest
+</pre></div>
+</div>
+<p>The above command will run the container in the same way as above, but it will
+mount <code class="docutils literal notranslate"><span class="pre">/abosolute/path/to/ModEM/</span></code> from your host system to <code class="docutils literal notranslate"><span class="pre">/root/ModEM</span></code> to
+the container. Any changes you make in this folder, in either the container or
+the host machine will be present on the other machine.</p>
+<p>It might be helpful to specify additional mount points, for instance it might
+be helpful to mount a work directory, such as the ModEM-Examples repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/abosolute/path/to/ModEM,target<span class="o">=</span>/root/ModEM <span class="se">\</span>
+             --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/home/users/uname/ModEM-Examples,target<span class="o">=</span>/root/ModEM-Examples <span class="se">\</span>
+             -it modem
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Again, each time you run your modem container, you will need to specify
+volume and mount points.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="file_formats.html" title="File Formats"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="obtaining_modem.html" title="Obtaining ModEM"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, Gary Egbert, Anna Kelber, Naser Meqbel, Hao Dong.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>
