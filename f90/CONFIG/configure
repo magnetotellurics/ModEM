@@ -236,8 +236,6 @@ case $compiler in
 esac
 
 
-echo "RELEASE OR DEBUG: ", $release_or_debug
-
 case $release_or_debug in
     debug)
         FFLAGS="$FFLAGS $FFLAGS_DEBUG"
