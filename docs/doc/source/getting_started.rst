@@ -181,43 +181,43 @@ summary of usage
     indicates the desired level of output to screen and to files.
 
 
-The ``-F [FORWARD]`` and ``-I [INVERSE]`` options will suffice for simple applications. For
-some of the more advanced applications discussed below the ``-C [TEST_COV]`` option is
+The ``-F [FORWARD]`` and ``-I [INVERSE]`` options will suffice for simple applications.
+For some of the more advanced applications discussed below the ``-C [TEST_COV]`` option is
 also needed. The ``-R [READ_WRITE]`` option can be useful for testing whether your input
-files are in the correct format. The ``-v`` option controls the level of program output; the
-default is “regular”; if you want to reduce outputs (“none” is *not recommended!*) you can
-experiment with other output levels; “full ” and “debug” would be primarily useful for
-developers. All of the other options (``-J``, ``-M``, etc.) are primarily useful for development,
-testing, and some specialized applications that are beyond the scope of this
+files are in the correct format. The ``-v`` option controls the level of program output;
+the default is “regular”; if you want to reduce outputs (“none” is *not recommended!*) you
+can experiment with other output levels; “full ” and “debug” would be primarily useful for
+developers. All of the other options (``-J``, ``-M``, etc.) are primarily useful for
+development, testing, and some specialized applications that are beyond the scope of this
 basic documentation.
 
 Sub-directory ``examples/`` contains some sample input files with instructions for simple
-cases. These should be sufficient to test your installation, and also will provide a tem-
-plate for your own initial use. The ``doc/`` sub-directory contains some further information
-on the ModEM system, beyond the summary of usage provided here.
+cases. These should be sufficient to test your installation, and also will provide a
+template for your own initial use. The ``doc/`` sub-directory contains some further
+information on the ModEM system, beyond the summary of usage provided here.
 
-All of the various options have a required set of arguments, which define input and
-output file names (``rFile``, and ``wFile`` in the usage summary, respectively). There are
-also optional arguments, mostly also specifying additional input or output file names.
-In all cases the order of arguments must be exactly as indicated in the “Usage” block,
-so to give an optional argument at the end of the list, all previous optional arguments
-must also be provided. Thus, for example, with the ``-F`` option, if you want to specify the
-input ``rFile_fwdCtrl`` file, you must also specify the output ``wFile_EMsoln`` file, even if
-you do not specifically want the full set of output EM fields, which this option will result
-in. Before providing a more detailed discussion of the various options, we consider file
-formats.
+All of the various options have a required set of arguments, which define input and output
+file names (``rFile``, and ``wFile`` in the usage summary, respectively). There are also
+optional arguments, mostly also specifying additional input or output file names. In all
+cases the order of arguments must be exactly as indicated in the “Usage” block, so to give
+an optional argument at the end of the list, all previous optional arguments must also be
+provided. Thus, for example, with the ``-F`` option, if you want to specify the input
+``rFile_fwdCtrl`` file, you must also specify the output ``wFile_EMsoln`` file, even if
+you do not specifically want the full set of output EM fields, which this option will
+result in. Before providing a more detailed discussion of the various options, we consider
+file formats.
 
 Using Docker to Compile and Run ModEM
 -------------------------------------
 
 A `Dockerfile <Dockerfile_>`_ has been provided that will create an Ubuntu docker
-container where you can compile and run ModEM. To run the ModEM docker
-container, first ensure you have `docker installed <Docker-Getting-Started_>`_ and
-running (Either have the docker daemon `docker running <daemon-running_>`_, or Docker
-`Desktop Running <Docker-desktop_>`_.
+container where you can compile and run ModEM. To run the ModEM docker container, first
+ensure you have `docker installed <Docker-Getting-Started_>`_ and running (Either have the
+docker daemon `docker running <daemon-running_>`_, or Docker `Desktop Running
+<Docker-desktop_>`_.
 
-The Dockerfile builds an Ubuntu instance with GFortran, MPI, and all the other
-tools needed to compile and run ModEM.
+The Dockerfile builds an Ubuntu instance with GFortran, MPI, and all the other tools
+needed to compile and run ModEM.
 
 Building
 ^^^^^^^^
@@ -315,7 +315,7 @@ use ``Ctrl-D``.
     saved. If you want to save data you will need to specify additional volumes
     or mounts. See :ref:`docker-mounts`.
 
-    For more information on persistant data see:
+    For more information on persistent data inside a container see:
 
     https://docs.docker.com/get-started/docker-concepts/running-containers/persisting-container-data/
 
@@ -338,10 +338,10 @@ We can add a mount by passing in a ``--mount`` option during our run command:
 
 .. code-block:: bash
 
-    $ docker run --mount=type=bind,source=/abosolute/path/to/ModEM,target=/root/ModEM -it modem:latest
+    $ docker run --mount=type=bind,source=/absolute/path/to/ModEM,target=/root/ModEM -it modem:latest
 
 The above command will run the container in the same way as above, but it will
-mount ``/abosolute/path/to/ModEM/`` from your host system to ``/root/ModEM`` to
+mount ``/absolute/path/to/ModEM/`` from your host system to ``/root/ModEM`` to
 the container. Any changes you make in this folder, in either the container or
 the host machine will be present on the other machine.
 

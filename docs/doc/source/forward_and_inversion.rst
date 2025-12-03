@@ -26,7 +26,6 @@ The optional files are:
     boundary data (last line below; see :ref:`nested-modeling`). The format for the
     forward solver control file is as follows:
 
-
 .. code-block::
 
     Number of QMR iters per divergence correction : 40
@@ -58,10 +57,10 @@ the command line is:
 
 .. code-block:: text
 
-    Usage: -I NLCG rFile_Model rFile_Data [InvCtrl FwdCtrl CovCtrl StartModel ]
+    Usage: -I NLCG rFile_Model rFile_Data [ InvCtrl FwdCtrl CovCtrl StartModel ]
 
 As usual, arguments have to be in the specified order. Thus, to specify
-StartModel all other optional arguments must be given.
+``StartModel`` all other optional arguments must be given.
 
 The required arguments are:
 
@@ -107,19 +106,19 @@ parameter, i.e., lambda = the initial damping parameter for inversion.
 Inversion Ouptuts
 ------------------
 
-For the NLCG inversion 4 files are produced for each each step in
-the iterative search process. The files produced have the name ``root_NLCG_###.rho``,
-``root_NLCG_###.prm``, ``root_NLCG_###.dat``, and ``root_NLCG_###.res``,
-where ``root`` is the output file root specified in the inversion
-control file, and ``###`` is the NLCG iteration number. The output
-file root defaults to ``Modular`` if the inversion control file
-is not used. The ``{*}{*}{*}.rho`` file is the model parameter file, giving
-the resistivity estimate at the current iteration. The ``{*}{*}{*}.prm``
-file is also in the model parameter file format, but represents the
-transformed model parameter :math:`\tilde{{\bf m}}={\bf C_{m}}^{-1/2}({\bf {m}-{\bf {m}_{prior})}}`.
+For the NLCG inversion 4 files are produced for each each step in the iterative
+search process. The files produced have the name ``root_NLCG_###.rho``,
+``root_NLCG_###.prm``, ``root_NLCG_###.dat``, and ``root_NLCG_###.res``, where
+``root`` is the output file root specified in the inversion control file, and
+``###`` is the NLCG iteration number. The output file root defaults to
+``Modular`` if the inversion control file is not used. The ``{*}{*}{*}.rho``
+file is the model parameter file, giving the resistivity estimate at the current
+iteration. The ``{*}{*}{*}.prm`` file is also in the model parameter file
+format, but represents the transformed model parameter :math:`\tilde{{\bf
+m}}={\bf C_{m}}^{-1/2}({\bf {m}-{\bf {m}_{prior})}}`.
 
 
-as discussed below inn :ref:`apply-cov`. The ``{*}{*}{*}.dat`` file contains
+As discussed below inn :ref:`apply-cov`. The ``{*}{*}{*}.dat`` file contains
 predicted data, in the ModEM list format (identical to the input data file), and
 the ``{*}{*}{*}.res`` file contains residuals, again in the ModEM list format.
 (This file is not useful and will be eliminated in future ModEM releases). In

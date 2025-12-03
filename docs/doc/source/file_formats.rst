@@ -108,7 +108,7 @@ Line 3:  data_type
 
 Keyword for the data type stored in this data block. Only specific keywords are
 supported. For each data type there are a set of additional keywords denoting
-specific components for the type. these may be real or complex.
+specific components for the type. These may be real or complex.
 
 For the 3D MT program these are:
 
@@ -172,15 +172,17 @@ resistivity is given in ohm-m; there is no user option on units for
 Line 6: > orientation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-of coordinate axis. **THIS IS NOT PRESENTLY IMPLEMENTED IN THE CODE!!**  At
-present all impedances are assumed to be rotated into the same Cartesian
-coordinate system used by the model grid. This header information may be useful
-for other programs that plot data, so it would be good practice to set the
-orientation to a meaningful value, even though the inversion code does not
+Orientation of coordinate axis. **THIS IS NOT PRESENTLY IMPLEMENTED IN THE
+CODE!!**  At present all impedances are assumed to be rotated into the same
+Cartesian coordinate system used by the model grid. This header information may
+be useful for other programs that plot data, so it would be good practice to set
+the orientation to a meaningful value, even though the inversion code does not
 reference this number.
 
 .. warning::
-    Coordinate orientation is currently not implemeneted in the code! This line will be ignored.
+
+   Coordinate orientation is currently not implemented in the code! This line
+   will be ignored.
 
 Line 7: > geographic_origin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -215,7 +217,7 @@ site code (up to 12 chars), geographic latitude and longitude, ``X/Y/Z``
 location in meters, component code (e.g., `ZXY``), real and imaginary parts, and
 the error bar.  Geographic latitude and longitude are not used by the program,
 which requires the user to make sure that the correct locations (i.e., ``X/Y/Z``
-in meters are provided, registerd to the grid; see further discussion in
+in meters are provided, registered to the grid; see further discussion in
 :ref:`model-files`.
 
 Of course each specific data type requires a specific format, and consistent
@@ -250,7 +252,7 @@ Model Files
 ------------
 
 ModEM support two model file formats, based on previously used formats for 3D
-resis- tivity (not conductivity!) models: The first (and the current default) is
+resistivity (not conductivity!) models: The first (and the current default) is
 based on that used in Weerachai Siripunvaraporn’s WSINV3DMT program. There are a
 few differences in the ModEM implementation: (1) ModEM does not support the
 option to use a set of resistivity codes (i.e., integers 1-9, used to specify a
@@ -382,7 +384,7 @@ option.
 Now the list of cell resistivities (or integer codes, if this option is being
 used) are given. This is free format, and the full list of cell resistivities
 will typically span many lines. To fill the array ``rho(Nx:-1:1,1:Ny,1:Nz)`` use
-these read statementsi (note the reversal of order of the index ``ix``)
+these read statements (note the reversal of order of the index ``ix``):
 
 .. code-block:: text
 
@@ -394,16 +396,21 @@ these read statementsi (note the reversal of order of the index ``ix``)
     ENDDO
     ENDDO
 
+.. note::
+
+   Note the reversal of order of the index ``ix`` in the above pseudocode.
 
 (6) Coordinate Origin (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These three numbers provide the origin (x, y and z), in 'natural grid
 coordinates' used for Cartesian data locations.  This line is an addition to the
 WSINV3DMT file format, and is optional; default is 0.  In any event, one has to
-make sure that the XYZ corrdiantes of the sites are refernced to the same origin
+make sure that the XYZ coordinates of the sites are referred to the same origin
 (see :ref:`data-files`).
 
 (7) Coordinate Orientation (Not used/Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The last (also optional) line in the file is for orientation of the model grid.
 This can be useful for plotting programs, but is not used by ModEM. It is
@@ -640,12 +647,12 @@ Here is an example of the covariance mask blocks used to specify an ocean:
     1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
     1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 
-In this example there are just 2 ocean layers, and the remainder of
-the model is indexed by the default mask 1. Assuming a 100 ohm-m prior
-(for example) the same pattern would be given in the prior model,
-with cells that are marked as 9 set to 0.3 (or ln(0.3)) and those
-marked with 1 set to 100 (or ln(100)). (But note that the order of
-elements in the arrays differs between covariance and model files!)
+In this example there are just 2 ocean layers, and the remainder of the model is
+indexed by the default mask 1. Assuming a 100 ohm-m prior (for example) the same
+pattern would be given in the prior model, with cells that are marked as 9 set
+to 0.3 (or ln(0.3)) and those marked with 1 set to 100 (or ln(100)). (But note
+that the order of elements in the arrays differs between covariance and model
+files!)
 
 
 .. _include-topo:
