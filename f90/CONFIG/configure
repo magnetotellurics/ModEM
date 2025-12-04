@@ -98,6 +98,26 @@ help() {
 }
 
 
+show_spherical_warning() {
+    printf "${RED} WARNING - You are making a Makefile for the spherical version of ModEM ('-s')!${NC}\n"
+    printf "${RED} WARNING - The spherical version of ModEM is NOT YET fully tested/validated${NC}\n"
+    printf "${RED} WARNING - and we cannot gaurentee correct results.${NC}\n"
+    # TODO: When we add the documentation section link it here
+    # printf "${RED} WARNING - Please see the section on the documentation here\n"
+    read -p "Type (Yes/yes/Y/y) that you agree with this warning to continue: " warning_resp
+    
+    case $warning_resp in
+        YES | Yes | yes | Y | y)
+            return 0
+            ;;
+        *)
+            printf "${RED} ABORTING - NOT BUILDING A SPHERICAL Makefile${NC}\n"
+            exit 1
+            ;;
+
+    esac
+}
+
 make_spherical_makefile() {
     makefile=$1
 
@@ -152,7 +172,8 @@ while getopts "hg:m:l:fs" opt; do
             fg_flag=True
             ;;
         s)
-            spherical=True
+            show_spherical_warning
+            spherical=true
             ;;
         h)
             help
@@ -364,7 +385,7 @@ perl fmkmf.pl -f90 $FC \
 
 echo ""
 
-if $spherical ; then
+if [ "$spherical" = "true" ] ; then
     if ! make_spherical_makefile $makefile_name; then
         echo "${RED}ERROR${NC} - Error converting Makefile '($makefile_name)' to spherical using 'sed'"
         exit 1 
