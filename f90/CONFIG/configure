@@ -225,6 +225,8 @@ if [ -z "$makefile_name" ] ; then
     exit 1
 fi
 
+MODULE_DIR_BASE="./objs/3D_MT/"
+
 case $compiler in
     ifort | intel)
         CPPFLAGS="-fpp"
@@ -233,6 +235,8 @@ case $compiler in
         FFLAGS_DEBUG="-w -g -fp-stack-check -traceback"
         LDFLAGS="-L$(MKLROOT)/lib/intel64"
         LDLIBS="-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -qopenmp -parallel"
+        MODULECMD="-module"
+        MODULEDIR="$MODULE_DIR_BASE/intel/"
         ;;
     gfortran | gnu)
         CPPFLAGS="-cpp"
@@ -241,6 +245,8 @@ case $compiler in
         FFLAGS_DEBUG="-g -fbacktrace -fbounds-check"
         LDFLAGS=""
         LDLIBS="-lblas -llapack"
+        MODULECMD="-J"
+        MODULEDIR="$MODULE_DIR_BASE/gnu/"
         ;;
     *)
         if [ -z "$compiler" ] ; then
@@ -377,7 +383,8 @@ echo ""
 perl fmkmf.pl -f90 $FC \
     -opt "$CPPFLAGS $FFLAGS" \
     -mpi "$MPIFLAGS" \
-    -o "./objs/3D_MT/build" \
+    -o $MODULEDIR \
+    -mod "$MODULECMD" \
     -l "$LDLIBS" \
     -lp "$LDFLAGS" \
     -p "$source_dirs" \

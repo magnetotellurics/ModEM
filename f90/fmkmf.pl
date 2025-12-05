@@ -99,7 +99,7 @@ else {
 }
 
 # By default, use the current directory for object files
-$linkdir=".";
+$modDir=".";
 # fill a default petsc dir here
 $petscdir="/your-path-to-petsc";
 
@@ -157,13 +157,17 @@ while (@ARGV){
     $linkopts=shift;
     print STDERR "# Using Link options $linkopts from cmd line\n";
   }
+  if ($arg =~ /^-mod$/) {
+    $moduleCmd=shift;
+    print STDERR "# Using argument $moduleCmd to specify .mod directory"
+  }
   if ($arg =~ /^-d$/){
     $optiond=1;
     print STDERR "# Using debug option (full output on) from cmd line\n";
   }
   if ($arg =~ /^-o$/){
-  	$linkdir=shift;
-  	print STDERR "# Using $linkdir for object file output directory\n";
+    $modDir=shift;
+    print STDERR "# Using $modDir for object file output directory\n";
   }
 
 }
@@ -199,7 +203,12 @@ print "# -f90 $f90 (compiler)\n";
 print "# -opt $optim (compiler optimisation)\n";
 print "# -lp $libpath (linking options: path to libraries)\n";
 print "# -l $linkopts (linking options)\n";
-print "# -o $linkdir (output directory for object files)\n\n";
+print "# -o $modDir (output directory for object files)\n\n";
+
+if (defined($moduleCmd)) {
+  print "# -mod $moduleCmd (argument to specify output directory) \n\n";
+}
+
 
 if($optiond){
   print STDERR "# Main program is $mainprogfile \n" ;
@@ -217,21 +226,29 @@ print "include \$(PETSC_DIR)/lib/petsc/conf/variables\n";
 print "include \$(PETSC_DIR)/lib/petsc/conf/rules\n";
 }
 print "include Makefile.local\n";
-print "OBJDIR = $linkdir\n";
+print "OBJDIR = $modDir\n";
 print "F90 = $f90 \n";
 print "FFLAGS = $optim\n";
 print "MPIFLAGS = $mpiflags\n";
-if ($WIN) {
-	print "MODULE = \n";
-} elsif ($f90 =~ /^g95$/){
-	print "MODULE = -fmod=\$(OBJDIR)\n";
-} elsif (($f90 =~ /^gfortran$/) or ($f90 =~ /^mpifort$/)){
-	print "MODULE = -J \$(OBJDIR)\n";
-} elsif ($f90 =~ /^mpif90$/){
-	print "MODULE = -J \$(OBJDIR)\n";
+
+# Specify location to put .mod files (and where compilers look for Modules when
+# the use command is used) 
+if (not defined($moduleCmd)) {
+  if ($WIN) {
+    print "MODULE = \n";
+  } elsif ($f90 =~ /^g95$/){
+    print "MODULE = -fmod=\$(OBJDIR)\n";
+  } elsif (($f90 =~ /^gfortran$/) or ($f90 =~ /^mpifort$/)){
+    print "MODULE = -J \$(OBJDIR)\n";
+  } elsif ($f90 =~ /^mpif90$/){
+    print "MODULE = -J \$(OBJDIR)\n";
+  } else {
+    print "MODULE = -module \$(OBJDIR)\n";
+  }
 } else {
-	print "MODULE = -module \$(OBJDIR)\n";
+  print "MODULE = $moduleCmd \$(OBJDIR)\n";
 }
+
 if ($libpath !~ /^(\s*)$/){
 	print "LIBS_PATH = -L$libpath\n";
 } else {
