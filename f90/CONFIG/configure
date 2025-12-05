@@ -229,21 +229,21 @@ MODULE_DIR_BASE="./objs/3D_MT/"
 
 case $compiler in
     ifort | intel)
-        CPPFLAGS="-fpp"
+        CPPFLAGS="$CPPFLAGS -fpp"
         FFLAGS="-std03 -mavx -ffree-line-length-none"
         MPIFLAGS=""
         FFLAGS_DEBUG="-w -g -fp-stack-check -traceback"
-        LDFLAGS="-L$(MKLROOT)/lib/intel64"
+        LDFLAGS="$LDFLAGS -L$(MKLROOT)/lib/intel64"
         LDLIBS="-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -qopenmp -parallel"
         MODULECMD="-module"
         MODULEDIR="$MODULE_DIR_BASE/intel/"
         ;;
     gfortran | gnu)
-        CPPFLAGS="-cpp"
+        CPPFLAGS="$CPPFLAGS -cpp"
         FFLAGS="-ffree-line-length-none -dI -fallow-argument-mismatch"
         MPIFLAGS=""
         FFLAGS_DEBUG="-g -fbacktrace -fbounds-check"
-        LDFLAGS=""
+        LDFLAGS="$LDFLAGS"
         LDLIBS="-lblas -llapack"
         MODULECMD="-J"
         MODULEDIR="$MODULE_DIR_BASE/gnu/"
