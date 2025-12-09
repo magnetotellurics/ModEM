@@ -10,18 +10,32 @@
 # then you will need to re-run this tool. This tool will read through
 # ModEM source code and build up the dependency tree.
 #
+# This script has some support for commonly used configure/complier
+# enviornment variables, such as:
+#   * FC - Name to use inplace of compiler name
+#   * FFLAGS - Additional flags to pass in to the compiler
+#   * LDFLAGS - Flags to pass to the linker (e.g. -L/path/to/library)
+#
+# In some cases you may need to use the above flags, which you can
+# specify on the command line before the call to configure (see Examples
+#  below)
+#
 # Note: This file cannot produce CUDA/HIP/GPU capable Makefiles. For
 # GPU Makefiles see Makefile.cuda" echo " or Makefile.hip.
 #
 # $ ./CONFIG/Configure Makefile gfortran
 #  Generates a Makefile with GFortran options using MPI
 #
-# $ ./CONFIG/Configure -d debug Makefile gfortran"
+# $ ./CONFIG/Configure -d debug Makefile gfortran
 #   Generates an MPI Makefile with GFortran debugging options
 #
-# $ ./CONFIG/Configure -m serial -l MF Makefile gfortran"
+# $ ./CONFIG/Configure -m serial -l MF Makefile gfortran
 #   Generates a serial Makefile with GFortran with the MF solver
 #
+# $ FC=ftn FFLAGS="-mSSE2" LDFLAGS="-L/path/to/lib" ./CONFIG/Configure Makefile ifort
+#   Generates an MPI, SP2 Makefile with ifort/intel flags, but uses the
+#   'ftn' as the compiler name. Adds the '-mSSE2' to the compiler in FFLAGS and
+#   includes -L/path/to/lib in the link stage.
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -56,6 +70,16 @@ help() {
     echo "then you will need to re-run this tool. This tool will read through"
     echo "ModEM source code and build up the dependency tree."
     echo ""
+    echo "This script has some support for commonly used configure/complier "
+    echo "enviornment variables, such as:"
+    echo "  * FC - Name to use inplace of compiler name"
+    echo "  * FFLAGS - Additional flags to pass in to the compiler"
+    echo "  * LDFLAGS - Flags to pass to the linker (e.g. -L/path/to/library)"
+    echo ""
+    echo "In some cases you may need to use the above flags, which you can"
+    echo "specify on the command line before the call to configure (see Examples"
+    echo " below)"
+    echo ""
     echo " Note: This file cannot produce CUDA/HIP/GPU capable Makefiles. For"
     echo " GPU Makefiles see Makefile.cuda" echo " or Makefile.hip."
     echo ""
@@ -69,6 +93,11 @@ help() {
     echo ""
     echo " $ ./CONFIG/Configure -m serial -l MF Makefile gfortran"
     echo "   Generates a serial Makefile with GFortran with the MF solver"
+    echo ""
+    echo " $ FC=ftn FFLAGS="-mSSE2" LDFLAGS="-L/path/to/lib" ./CONFIG/Configure Makefile ifort"
+    echo "   Generates an MPI, SP2 Makefile with ifort/intel flags, but uses the "
+    echo "   'ftn' as the compiler name. Adds the '-mSSE2' to the compiler in FFLAGS and "
+    echo "    includes -L/path/to/lib in the link stage. "
     echo ""
     echo ""
     echo "Usage: $0 [-h] [-u] [-g release|debug] [-m mpi|serial] [-l solver] [-f] makefile-name compiler"
