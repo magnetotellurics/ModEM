@@ -230,20 +230,22 @@ MODULE_DIR_BASE="./objs/3D_MT/"
 case $compiler in
     ifort | intel)
         CPPFLAGS="$CPPFLAGS -fpp"
-        FFLAGS="-std03 -mavx -ffree-line-length-none"
-        MPIFLAGS=""
-        FFLAGS_DEBUG="-w -g -fp-stack-check -traceback"
-        LDFLAGS="$LDFLAGS -L$(MKLROOT)/lib/intel64"
+        FFLAGS="$FFLAGS -std03"
+        FFLAGS_DEBUG="-O0 -fp-stack-check -g -traceback -debug extend -check bounds -heap-array"
+        FFLAGS_RELEASE="-O3 -w"
+        MPIFLAGS="$MPIFLAGS"
+        LDFLAGS="$LDFLAGS -L${MKLROOT}/lib/intel64"
         LDLIBS="-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -qopenmp -parallel"
         MODULECMD="-module"
         MODULEDIR="$MODULE_DIR_BASE/intel/"
         ;;
     gfortran | gnu)
         CPPFLAGS="$CPPFLAGS -cpp"
-        FFLAGS="-ffree-line-length-none -dI -fallow-argument-mismatch"
-        MPIFLAGS=""
-        FFLAGS_DEBUG="-g -fbacktrace -fbounds-check"
-        LDFLAGS="$LDFLAGS"
+        FFLAGS="$FFLAGS -ffree-line-length-none -fallow-argument-mismatch"
+        FFLAGS_DEBUG="-O0 -g -fbacktrace -fbounds-check"
+        FFLAGS_RELEASE="-O3"
+        MPIFLAGS="$MPIFLAGS"
+        LDFLAGS=" $LDFLAGS "
         LDLIBS="-lblas -llapack"
         MODULECMD="-J"
         MODULEDIR="$MODULE_DIR_BASE/gnu/"
@@ -268,6 +270,7 @@ case $release_or_debug in
         FFLAGS="$FFLAGS $FFLAGS_DEBUG"
         ;;
     release)
+        FFLAGS="$FFLAGS $FFLAGS_RELEASE"
         ;;
     *)
         printf "Unrecognized value of debug or release - Please specify either: < debug | release >\n"
