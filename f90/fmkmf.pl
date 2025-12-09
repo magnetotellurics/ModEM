@@ -250,7 +250,14 @@ if (not defined($moduleCmd)) {
 }
 
 if ($libpath !~ /^(\s*)$/){
-	print "LIBS_PATH = -L$libpath\n";
+    # If the libspath contains a -L, it may have multiple 
+    # libraies, so don't prepend an -L to it.
+    if (index($libpath, "-L") != -1) {
+        print "LIBS_PATH = $libpath\n";
+    } else {
+        # Backwards compatiabile with old configure files
+        print "LIBS_PATH = -L$libpath\n";
+    }
 } else {
 	print "LIBS_PATH = \n";
 }
