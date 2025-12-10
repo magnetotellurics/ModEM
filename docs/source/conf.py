@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'ModEM'
-copyright = '2025, Gary Egbert, Anna Kelber, Naser Meqbel, Hao Dong'
-author = 'Gary Egbert, Anna Kelber, Naser Meqbel, & Hao Dong'
+copyright = '2025, Gary Egbert, Anna Kelbert, Miles Curry, Naser Meqbel, Hao Dong & Kush Tandon'
+author = 'Gary Egbert, Anna Kelbert, Miles Curry, Naser Meqbel, Hao Dong & Kush Tandon'
 release = 'develop'
 
 # -- General configuration ---------------------------------------------------
