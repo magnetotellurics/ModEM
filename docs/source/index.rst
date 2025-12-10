@@ -40,5 +40,6 @@ options for inversion, etc.
    file_formats
    forward_and_inversion
    beyond_the_basics
+   installing_deps
    release_log
    citations

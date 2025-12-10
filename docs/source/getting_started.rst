@@ -16,46 +16,70 @@ The following files and sub-directories will be found:
 Compiling ModEM
 ---------------
 
-The f90 directory contains several prototype makefiles, as well as some configuration
-scripts (``****.config``) that can be used for creating makefiles. These configuration scripts
-are primarily useful after substantial code modifications, and most users will not have
-cause (or for that matter, any desire) to use these scripts. For almost all purposes you
-can use the provided makefiles, perhaps with some minor editing. There are several
-makefile variants for both 2D and 3D MT. For example, Makefile3d for compiling a serial
-version of the code, and ``Makefile3d.MPI`` for a parallel version. Follow these instructions
-carefully when modifying Makefiles! Copy the makefile before editing, to avoid conflict
-with standard versions in the svn archive, i.e.::
-    
-    cd f90; cp Makefile.gnu Makefile
+The build system for ModEM utizes a ModEM configure script and the ``fmkmf.pl``
+Perl script.
 
-Then open the copy of the Makefile in your favorite editor, and make sure that the
-(uncommented) compiler is set appropriately for your system). Some paths may also
-need to be modified. The make command will compile the 3D MT (or 2D MT) code for
-you (Mod3DMT and Mod2DMT, respectively).
+* configure script (``./f90/config/configure``) - Calls `fmkmf.pl` with various
+  arguments
+* ``fmkmf.pl`` - Automatically a ModEM makefile 
 
-ModEM can be compiled for a parallel or serial execution. Make sure that you use the
-appropriate compiler preprocessing flag to compile the desired MPI (parallel) or serial
-version. Also make sure that the MPICH library is already installed on your machine, if
-you want to compile for MPI version. Here are examples of the compiler preprocessing
-flag and directive used to compile the MPI version:
+The ModEM build process is a two step process. The first step requires calling a
+configure file in the ``./f90/CONFIG`` directory, which creates a Makefile, and
+the second requires calling `make` on the Makefile created by the configure
+script.
 
-* PGI compiler: -Mpreprocess —> Serial; -Mpreprocess -DMPI —> Parallel
-* Intel compiler: -fpp —> Serial; -fpp -DMPI —> Parallel
-* GFortran: -cpp-input —> Serial; -cpp-input -DMPI —> Parallel
+In the ``f90`` directory there are some prototype Makefiles which can be used to
+compile ModEM without having to run the configure script; however, these Makefiles
+only create the Matrix-Free version of ModEM and you may want to compile the other
+two version SP/SP2. To do this you will need to run the configure script, which
+is explained below.
 
-Creating Makefiles from Configuration Files
--------------------------------------------
+ModEM Dependencies
+------------------
 
-The current build system for ModEM uses the `fmkmf.pl` pearl script and the
-configuration scripts that are in `f90/CONFIG`. Although ModEM uses Make and
-Makefiles, makefiles are meant to be created by these configuration scripts.
+ModEM requires two libraries, the BLAS Library and the LAPACK library and
+optionally (but you probabbly will want to use), the MPI library.
 
-To create Makefiles, run the configuration scripts that match your system,
-desired compiler and desired ModEM version. These configuration scripts
-call the `fmkmf.pl` script::
+Often BLAS and LAPACK are already aviable on your system and are easily linked
+automatically, but occasionally you might need to install them yourself. To do
+so please see :ref:`installing-deps`
+
+Configure Scripts 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are a number of configure scripts inside ``./f90/CONFIG`` in the form of
+``Configure.***``, ``Configure.SP.***``, ``Configure.3D_MT.**``, etc. These
+configure files are considered decprecated, and the ``configure`` script inside
+``f90`` should be used instead; however, the deprecated configure scripts are
+left for backwards compatability.
+
+The ``configure`` script inside ``f90`` can be used to generate ModEM makefiles
+for various configurations and compilers. This ``configure`` should be used
+to generate makefiles for ModEM.
+
+Creating Makefiles from configure 
+----------------------------------
+
+.. note::
+
+    By default, ``configure`` will generate an MPI Makefile with SP2.
+
+To create a Makefile, run the ``configure`` script found in the ``f90`` with
+arguments that match your system and the version of ModEM you want to use.
+
+Currently, ModEM has three different forwards 'flavors':
+
+* MF - Matrix Free - Orginal/classic ModEM
+* SP - Hao's Sparse Matrix
+* SP2 -  (DEFAULT) - Hao's Second Sparse Matrix - Fastest and has Hao's
+    fine-grained capability
+
+
+.. code-block:: bash
 
     $ cd f90/
-    $ ./CONFIG/Configure Makefile gfortran
+    $ # By default ./configure creates a SP2 Makefile with MPI
+    $ ./configure Makefile gfortran
 
 The Configure scripts has the following usage::
 
@@ -76,19 +100,50 @@ The Configure scripts has the following usage::
             Only able to build with SP2
         -s Build spherical version of ModEM
 
+Running configure will create a Makefile that you specify in the first argument.
+In the above case the Makefile will be named ``Makefile``. We can then call ``make``
+on that ``Makefile``
+
+.. code-block:: bash
+
+    $ make
+
 Examples using Configure
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A few examples using Configure::
+A few examples using Configure
 
-    $ ./CONFIG/Configure Makefile gfortran                                                      
-    Generates a Makefile with GFortran options using MPI                          
+.. code-block:: bash
+
+    $ ./CONFIG/configure Makefile gfortran                                                      
+    $ # Generates a Makefile with GFortran options using MPI                          
                                               
-    $ ./CONFIG/Configure -d debug Makefile gfortran
-    Generates an MPI Makefile with GFortran debugging options
+    $ ./CONFIG/configure -d debug Makefile ifort
+    $ # Generates an MPI Makefile with Ifort debugging options
                                               
-    $ ./CONFIG/Configure -m serial -l MF Makefile gfortran
-    Generates a serial Makefile with GFortran with the MF solver
+    $ ./CONFIG/configure -m serial -l MF Makefile gfortran
+    $ # Generates a serial Makefile with GFortran with the MF solver
+
+    $ FC=ftn LDFLAGS=-L/home/username/install/lib ./CONFIG/configure Makefile gfortran
+    $ # Generates an SP2, MPI capabile makefile, adding LDFLAGS to the link step and
+    $ # specifies the compiler to be `ftn`.
+
+    $ FFLAGS='-mSSE2' ./CONFIG/configure Makefile ifort
+    $ # Create a SP2, MPI capabile makefile, with ifort/intel compiler options and add
+    $ # the '-mSSE2' to all compiling steps.
+
+Configuring on Cray Systems
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you are running on a Cray system, you will need to use Cray's fortran
+compiler wrapper: ``ftn``. You can easily specify the name of the compiler
+by setting the ``FC`` enviornment variable:
+
+.. code-block:: bash
+
+    $ FC=ftn ./CONFIG/configure Makefile gfortran
+    $ # Or for intel:
+    $ FC=ftn ./CONFIG/configure Makefile ifort
 
 Compiling
 ----------
@@ -102,7 +157,6 @@ run make
     $ cp Makefile.3D.MF.gnu Makefile
     $ make clean # Not necessary from a fresh clone
     $ make
-
 
 Compiling with MPI
 ^^^^^^^^^^^^^^^^^^
@@ -127,6 +181,8 @@ scripts and passing it MPI as the type.
     When running ModEM with MPI you must use at least 2 tasks and
     a max of (2 x nTransmitters) + 1 tasks (except for the SP2 version compiled
     with -DFG).
+
+
 
 Running ModEM: The basics
 -------------------------
