@@ -1,18 +1,15 @@
 ### 3D_MT CMakeLists.txt
 
 
-if(BUILD_MF)
+if (FORWARD_FLAVOR STREQUAL MF)
     message(STATUS "Building BUILD_MF")
     add_subdirectory(FWD)
-endif()
-
-if(BUILD_SP)
+elseif(FORWARD_FLAVOR STREQUAL SP)
     message(STATUS "Building BUILD_SP")
+    add_subdirectory(FWD)
     add_subdirectory(FWD_SP)
     add_subdirectory(SP_Topology)
-endif()
-
-if(BUILD_SP2)
+elseif(FORWARD_FLAVOR STREQUAL SP2)
     message(STATUS "Building BUILD_SP2")
     add_subdirectory(FWD)
     add_subdirectory(FWD_SP2)
@@ -22,8 +19,6 @@ endif()
 add_subdirectory(DICT)
 add_subdirectory(ioMod)
 add_subdirectory(modelParam)
-
-message(STATUS "Adding sources too ${MODEM_EXE}")
 
 target_sources(${MODEM_EXE} 
     PRIVATE DataFunc.f90
@@ -46,4 +41,3 @@ if(BUILD_MPI)
         PRIVATE Sub_MPI.f90
     )
 endif()
-

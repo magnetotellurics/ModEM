@@ -4,29 +4,26 @@ set (MY_MODS Mod3DMT.f90
             ModEM_Tester.f90
             UserCtrl.f90)
 
-if (BUILD_2D)
-    set(MODEM_EXE Mod2DMT)
-    add_executable(${MODEM_EXE} Mod2DMT.f90)
-    add_subdirectory(2D_MT)
+if (MODEM_BUILD_DIMS STREQUAL 2D)
+    set(MODEM_EXE Mod2DMT_${FORWARD_FLAVOR})
+    set(MODEM_MAIN_FILE Mod2DMT.f90)
+    set(DIM_DIR 2D_MT)
+elseif (MODEM_BUILD_DIMS STREQUAL 3D)
+    set(MODEM_EXE Mod3DMT_${FORWARD_FLAVOR})
+    set(MODEM_MAIN_FILE Mod3DMT.f90)
+    set(DIM_DIR 3D_MT)
 endif()
 
-if (BUILD_3D)
-    set(MODEM_EXE Mod3DMT)
-    add_executable(${MODEM_EXE} Mod3DMT.f90)
-    add_subdirectory(3D_MT)
-endif()
+add_executable(${MODEM_EXE} ${MODEM_MAIN_FILE})
+set_target_properties(${MODEM_EXE} PROPERTIES
+    Fortran_PREPROCESS ON
+)
 
 if (BUILD_MPI)
     add_subdirectory("MPI")
 endif()
 
-
-set_target_properties(${MODEM_EXE} PROPERTIES
-    Fortran_PREPROCESS ON
-)
-
-message(STATUS "Building ModEM ExE: ${MODEM_EXE}")
-
+add_subdirectory(${DIM_DIR})
 add_subdirectory("FIELDS/FiniteDiff3D")
 add_subdirectory("INV")
 add_subdirectory("SENS")

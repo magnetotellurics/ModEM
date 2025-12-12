@@ -152,6 +152,18 @@ written to: /Users/mcurry/Projects/ModEM-Model/build`` you will be ready to call
 The ``Mod3DMT`` will then be placed in the f90 file inside your build directory,
 which you will be able to run as normal.
 
+Showing CMake Options
+----------------------
+
+You can show the options aviable in the CMake build by running:
+
+.. code-block:: bash
+
+    $ cmake -LH
+
+That will show you the list of options that you can build with ModEM, as well as
+their help message. It will also show you some additional help options as well.
+
 Options - Different configurations
 ----------------------------------
 
@@ -163,14 +175,13 @@ You can build different ModEM configurations by specifying different options whe
     These flags currently do not do anything!
 
 * 2D/3D Builds:
-    * ``-DBUILD_2D=on/off``
-    * ``-DBUILD_3D=on/off``
+    * ``-DMODEM_BUILD_DIMS=<2D | 3D>``
 * Forward Flavor:
-    * ``-DBUILD_MF=on/off``
-    * ``-DBUILD_SP=on/off``
-    * ``-DBUILD_SP2=on/off``
+    * ``-DFORWARD_FLAVOR=<MF | SP | SP2>``
 * MPI Flags:
     * ``-DBUILD_MPI=on/off``
+* FG Flags
+    * ``-DFG=on/off``
 * Flags Currently not added: 
     * ``-DFG=on/off``
     * ``-DHIP=on/off``
@@ -180,5 +191,5 @@ You can specify them on the command line by doing the following during the ``cma
 
 .. code-block:: bash
 
-    $ cmake .. -DBUILD_MF=on -BUILD_3D=on
+    $ cmake .. -DFORWARD_FLAVOR=SP
     $ make
