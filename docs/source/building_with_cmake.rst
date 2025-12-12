@@ -177,6 +177,8 @@ You can build different ModEM configurations by specifying different options whe
     * ``-DMODEM_BUILD_DIMS=<2D | 3D>``
 * Forward Flavor:
     * ``-DFORWARD_FLAVOR=<MF | SP | SP2>``
+* GPU Version:
+    * ``-DBUILD_GPU=<CUDA | HIP>``
 * MPI Flags:
     * ``-DBUILD_MPI=on/off``
 * FG Flags
@@ -192,7 +194,6 @@ You can specify them on the command line by doing the following during the ``cma
 
     $ cmake .. -DFORWARD_FLAVOR=SP
     $ make
-
 
 Can't Find LAPACK or BLAS?
 ---------------------------

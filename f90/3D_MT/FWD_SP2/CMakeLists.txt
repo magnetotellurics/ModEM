@@ -8,11 +8,11 @@ target_sources(${MODEM_EXE}
 
 if (BUILD_GPU STREQUAL CUDA)
     target_sources(${MODEM_EXE}
-        PRIVATE kernal_c.cu
+        PRIVATE kernel_c.cu
         PRIVATE cudaFortMap.f90
     )
 elseif (BUILD_GPU STREQUAL HIP)
     target_sources(${MODEM_EXE}
-        PRIVATE kernal_c.hip
+        PRIVATE kernel_c.hip
     )
 endif()
