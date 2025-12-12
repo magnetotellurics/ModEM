@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.1.0)
+cmake_minimum_required(VERSION 3.17.0)
 
 project(ModEM VERSION 0
         DESCRIPTION "ModEM"
