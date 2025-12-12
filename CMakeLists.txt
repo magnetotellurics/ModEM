@@ -18,7 +18,6 @@ set(SUPPORTED_FORWARD_FLAVORS "MF;SP;SP2")
 set(SUPPORTED_MODEM_DIMS "2D;3D")
 set(SUPPORTED_GPU_OPTS "off;OFF;CUDA;HIP")
 
-
 if (USE_C_TIMERS)
         enable_language(C)
 endif()
@@ -43,6 +42,23 @@ endif()
 
 if (FG AND NOT FORWARD_FLAVOR STREQUAL SP2)
         message(FATAL_ERROR "You cannot build 'FG' with '${FORWARD_FLAVOR}' - Only SP2: -DFG=on -DFORWARD_FLAVOR=SP2")
+endif()
+
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(
+        $<$<COMPILE_LANGUAGE:Fortran>:-cpp>
+        $<$<COMPILE_LANGUAGE:Fortran>:-O3>
+        $<$<COMPILE_LANGUAGE:Fortran>:-ffree-line-length-none>
+        $<$<COMPILE_LANGUAGE:Fortran>:-fallow-argument-mismatch>
+    )
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    add_compile_options(
+        $<$<COMPILE_LANGUAGE:Fortran>:-O3>
+        $<$<COMPILE_LANGUAGE:Fortran>:-fpp>
+        $<$<COMPILE_LANGUAGE:Fortran>:-w>
+    )
+else()
+    messaing(FATAL_ERROR "Unknown/Unsupported Fortran Compiler: '${CMake_Fortran_COMPILER_ID}' - Supported compilers are < GNU | Ifort")
 endif()
 
 
