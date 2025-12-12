@@ -32,13 +32,13 @@ add_subdirectory("UTILS")
 target_sources(${MODEM_EXE} PRIVATE UserCtrl.f90)
 
 include(FindBLAS)
-if (BLAS_FOUND)
-    message(STATUS " WE FOUND BLAS")
+if (NOT BLAS_FOUND)
+    message(FATAL_ERROR "We could not find the BLAS Library")
 endif()
 
 include(FindLAPACK)
-if (LAPACK_FOUND)
-    message(STATUS " WE FOUND LAPACK")
+if (NOT LAPACK_FOUND)
+    message(FATAL_ERROR "We could not find the LAPACK library")
 endif()
 
 target_link_options(${MODEM_EXE} PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})

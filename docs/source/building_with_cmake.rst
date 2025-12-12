@@ -3,7 +3,6 @@ Building ModEM With CMake
 
 ModEM now has the ability to be compiled with CMake.
 
-
 Install CMake
 --------------
 
@@ -193,3 +192,15 @@ You can specify them on the command line by doing the following during the ``cma
 
     $ cmake .. -DFORWARD_FLAVOR=SP
     $ make
+
+
+Can't Find LAPACK or BLAS?
+---------------------------
+
+Sometimes CMake may not be able to find LAPACK or BLAS, in that case you can use
+the following:
+
+.. code-block:: bash
+
+    $ # Set DCMAKE_PREFIX_PATH equal to where the library is installed
+    $ cmake . DCMAKE_PREFIX_PATH="/path/to/install/lib"
