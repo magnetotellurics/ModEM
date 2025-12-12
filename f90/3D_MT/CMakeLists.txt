@@ -1,6 +1,5 @@
 ### 3D_MT CMakeLists.txt
 
-
 if (FORWARD_FLAVOR STREQUAL MF)
     message(STATUS "Building BUILD_MF")
     add_subdirectory(FWD)

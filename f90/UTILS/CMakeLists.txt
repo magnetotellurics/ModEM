@@ -11,3 +11,11 @@ target_sources(${MODEM_EXE}
     PRIVATE polpak.f90
     PRIVATE utilities.f90
 )
+
+if (USE_C_TIMERS)
+    target_sources(${MODEM_EXE}
+        PRIVATE ModEM_machine_timers.c
+    )
+
+    target_compile_definitions(${MODEM_EXE} PRIVATE USE_C_TIMERS)
+endif()
