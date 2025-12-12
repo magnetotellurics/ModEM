@@ -57,6 +57,15 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
         $<$<COMPILE_LANGUAGE:Fortran>:-fpp>
         $<$<COMPILE_LANGUAGE:Fortran>:-w>
     )
+    add_link_options(
+        "-L${MKLROOT}/lib/intel64"
+        "-lmkl_intel_lp64"
+        "-lmkl_intel_thread"
+        "-lmkl_core"
+        "-lpthread"
+        "-qopenmp"
+        "-parallel"
+    )
 else()
     messaing(FATAL_ERROR "Unknown/Unsupported Fortran Compiler: '${CMake_Fortran_COMPILER_ID}' - Supported compilers are < GNU | Ifort")
 endif()
