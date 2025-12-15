@@ -181,7 +181,7 @@ Flexible Air Layers
 --------------------
 	
 Air layers can now be set in the forward solver configuration file. Options can
-be printed to screen using \verb|./Mod3DMT -F| command without the additional
+be printed to screen using ``./Mod3DMT -F`` command without the additional
 input arguments. The new capability can be executed by adding two more lines to
 the configuration file (lines 8 and 9), after the nested modeling file. If you
 are not using the nested modeling option but would like to change the air
@@ -193,7 +193,7 @@ from file``. For backwards compatibility, the default is ``mirror 10 3.
 30.``, so that the code should still produce identically the same results to
 the previous version, unless the air layers are changed.
 
-Option 1 - Mirrros
+Option 1 - Mirrors
 ^^^^^^^^^^^^^^^^^^^
 
 The air layers based on the uppermost layers of the Earth resistivity model. In
@@ -204,14 +204,14 @@ logic is as follows,
 
 	airlayer((N+1)-j) = \alpha^{j-1} * earthlayer(j)
 
-Where :math:`\alpha`` and the number of air layers :math:`N`` are supplied by
-the user, and :math:`j`` is an integer index from 1 to :math:`N`. When
-:math:`j=1`, the bottom air layer :math:`N`equals the top earth layer 1. When
-:math:`j=N`, the top air layer 1 equals :math:`\alpha^{N-1} * earth layer(N)`. Finally, the
-third user-supplied parameter `MinTopDz` specifies the minimum width of the
-top air layer, in km. If the top layer happens to be thinner than specified by
-this parameter, it is adjusted to this value. The parameters are specified in
-the following order: :math:`N`, :math:`\alpha`,  `MinTopDz`.
+Where :math:`\alpha` and the number of air layers :math:`N` are supplied by the
+user, and :math:`j` is an integer index from 1 to :math:`N`. When :math:`j=1`,
+the bottom air layer :math:`N` equals the top earth layer 1. When :math:`j=N`,
+the top air layer 1 equals :math:`\alpha^{N-1} * earth layer(N)`. Finally, the
+third user-supplied parameter `MinTopDz` specifies the minimum width of the top
+air layer, in km. If the top layer happens to be thinner than specified by this
+parameter, it is adjusted to this value. The parameters are specified in the
+following order: :math:`N`, :math:`\alpha`,  `MinTopDz`.
 
 .. code-block:: text
 

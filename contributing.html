@@ -1,0 +1,156 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Contributing &#8212; ModEM develop documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Change Log" href="release_log.html" />
+    <link rel="prev" title="Installing ModEM Dependencies" href="installing_deps.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="release_log.html" title="Change Log"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installing_deps.html" title="Installing ModEM Dependencies"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Contributing</a><ul>
+<li><a class="reference internal" href="#steps-to-open-a-pull-request-pr">Steps To Open a Pull Request (PR)</a></li>
+<li><a class="reference internal" href="#tips-testing">Tips &amp; Testing</a></li>
+<li><a class="reference internal" href="#building-this-documentation">Building this Documentation</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installing_deps.html"
+                        title="previous chapter">Installing ModEM Dependencies</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="release_log.html"
+                        title="next chapter">Change Log</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/contributing.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="contributing">
+<h1>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h1>
+<p>Users are welcome to contribute to ModEM and we welcome contributions!</p>
+<p>We highly recommend opening a GitHub Issue first so that new contributions can be
+discussed with ModEM authors, especially for large pull requests.</p>
+<p>Contributions can be made via a <a class="reference external" href="_github_pr">GitHub pull request</a> at the ModEM
+repository: <a class="reference external" href="https://github.com/magnetotellurics/ModEM/compare">https://github.com/magnetotellurics/ModEM/compare</a>.</p>
+<div class="section" id="steps-to-open-a-pull-request-pr">
+<h2>Steps To Open a Pull Request (PR)<a class="headerlink" href="#steps-to-open-a-pull-request-pr" title="Permalink to this headline">¶</a></h2>
+<p>See: <a class="reference external" href="https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project">Contributing to a project</a>.</p>
+</div>
+<div class="section" id="tips-testing">
+<h2>Tips &amp; Testing<a class="headerlink" href="#tips-testing" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Please keep pull requests to reasonable sizes (consider breaking up large PR’s
+into small ones)</p></li>
+<li><p>If you are able, please test your changes using both the GNU gfortran
+compiler and Intel ifort repository (but Gfortran at the minimum if you don’t
+have access to the Intel compiler).</p></li>
+<li><p>Contribute any relevant documentation to this Documentation (See
+<a class="reference internal" href="#building-the-docs"><span class="std std-ref">Building this Documentation</span></a>)</p></li>
+<li><p>Run the unit tests in the <code class="docutils literal notranslate"><span class="pre">unit_testing</span></code> directory (Currently not added)</p></li>
+</ul>
+</div>
+<div class="section" id="building-this-documentation">
+<span id="building-the-docs"></span><h2>Building this Documentation<a class="headerlink" href="#building-this-documentation" title="Permalink to this headline">¶</a></h2>
+<p>This <a class="reference external" href="_sphinx_page">Sphinx</a> documentation can easily be built if you have Sphinx installed. If you
+have Python and Pip installed, you can install Sphinx by:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install -U sphinx
+</pre></div>
+</div>
+<p>For more information on installing Sphinx see: <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/installation.html">https://www.sphinx-doc.org/en/master/usage/installation.html</a>.</p>
+<p>After making changes to the documentation, you can build locally for testing by doing the following:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ModEM/docs
+$ make html
+</pre></div>
+</div>
+<p>The HTML files will be built in <code class="docutils literal notranslate"><span class="pre">ModEM/docs/build</span></code>. You can open these locally
+and view them and ensure they look correct. You do not need to (and will not be
+able to) commit the built HTML files.</p>
+<p>If you change the documentation, please ensure that it builds without errors.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="release_log.html" title="Change Log"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installing_deps.html" title="Installing ModEM Dependencies"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, Gary Egbert, Anna Kelbert, Miles Curry, Naser Meqbel, Hao Dong &amp; Kush Tandon.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>

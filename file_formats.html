@@ -62,8 +62,10 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#grid-dimensions-x-y-z">(3) Grid Dimensions: x, y, z</a></li>
-<li><a class="reference internal" href="#resistivy-codes-not-used-by-modem">(4) Resistivy Codes - (Not used by ModEM)</a></li>
-<li><a class="reference internal" href="#cell-resistivites">(5) Cell Resistivites</a></li>
+<li><a class="reference internal" href="#resistivity-codes-not-used-by-modem">(4) Resistivity Codes - (Not used by ModEM)</a></li>
+<li><a class="reference internal" href="#cell-resistivities">(5) Cell Resistivities</a></li>
+<li><a class="reference internal" href="#coordinate-origin-optional">(6) Coordinate Origin (Optional)</a></li>
+<li><a class="reference internal" href="#coordinate-orientation-not-used-optional">(7) Coordinate Orientation (Not used/Optional)</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#model-covariance-files">Model Covariance Files</a><ul>
@@ -201,7 +203,7 @@ ignored by the code.</p>
 <h3>Line 3:  data_type<a class="headerlink" href="#line-3-data-type" title="Permalink to this headline">¶</a></h3>
 <p>Keyword for the data type stored in this data block. Only specific keywords are
 supported. For each data type there are a set of additional keywords denoting
-specific components for the type. these may be real or complex.</p>
+specific components for the type. These may be real or complex.</p>
 <p>For the 3D MT program these are:</p>
 <table class="docutils align-default">
 <colgroup>
@@ -298,15 +300,16 @@ resistivity is given in ohm-m; there is no user option on units for</p>
 </div>
 <div class="section" id="line-6-orientation">
 <h3>Line 6: &gt; orientation<a class="headerlink" href="#line-6-orientation" title="Permalink to this headline">¶</a></h3>
-<p>of coordinate axis. <strong>THIS IS NOT PRESENTLY IMPLEMENTED IN THE CODE!!</strong>  At
-present all impedances are assumed to be rotated into the same Cartesian
-coordinate system used by the model grid. This header information may be useful
-for other programs that plot data, so it would be good practice to set the
-orientation to a meaningful value, even though the inversion code does not
+<p>Orientation of coordinate axis. <strong>THIS IS NOT PRESENTLY IMPLEMENTED IN THE
+CODE!!</strong>  At present all impedances are assumed to be rotated into the same
+Cartesian coordinate system used by the model grid. This header information may
+be useful for other programs that plot data, so it would be good practice to set
+the orientation to a meaningful value, even though the inversion code does not
 reference this number.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Coordinate orientation is currently not implemeneted in the code! This line will be ignored.</p>
+<p>Coordinate orientation is currently not implemented in the code! This line
+will be ignored.</p>
 </div>
 </div>
 <div class="section" id="line-7-geographic-origin">
@@ -334,15 +337,15 @@ exit. If this does not work, you need to increase the size of the parameters.
 (This should be fixed!)</p>
 <p>In the example given above, each line in the actual data list contains period,
 site code (up to 12 chars), geographic latitude and longitude, <code class="docutils literal notranslate"><span class="pre">X/Y/Z</span></code>
-location in meters, component code (e.g., <cite>ZXY`</cite>), real and imaginary parts, and
-the error bar.  Geographic latitude and longitude are not used by the program,
-which requires the user to make sure that the correct locations (i.e., <code class="docutils literal notranslate"><span class="pre">X/Y/Z</span></code>
-in meters are provided, registerd to the grid; see further discussion in
-<a class="reference internal" href="#model-files"><span class="std std-ref">Model Files</span></a>.</p>
+location in meters, component code (e.g., <code class="docutils literal notranslate"><span class="pre">ZXY</span></code>), real and imaginary parts,
+and the error bar.  Geographic latitude and longitude are not used by the
+program, which requires the user to make sure that the correct locations (i.e.,
+<code class="docutils literal notranslate"><span class="pre">X/Y/Z</span></code> in meters are provided, registered to the grid; see further
+discussion in <a class="reference internal" href="#model-files"><span class="std std-ref">Model Files</span></a>.</p>
 <p>Of course each specific data type requires a specific format, and consistent
 header entries, such as units (described above). List element formats for
 currently supported data types are summarized here.Some data file examples are
-provided in the <cite>examples/</cite> directory. The <cite>matlab/ioAscii/`</cite> directory contains
+provided in the <cite>examples/</cite> directory. The <code class="docutils literal notranslate"><span class="pre">matlab/ioAscii/</span></code> directory contains
 read and write routines in Matlab (at present these reading/writing routines are
 restricted to the most common data types:</p>
 <ul class="simple">
@@ -369,7 +372,7 @@ stored in the program.</p>
 <div class="section" id="model-files">
 <span id="id2"></span><h2>Model Files<a class="headerlink" href="#model-files" title="Permalink to this headline">¶</a></h2>
 <p>ModEM support two model file formats, based on previously used formats for 3D
-resis- tivity (not conductivity!) models: The first (and the current default) is
+resistivity (not conductivity!) models: The first (and the current default) is
 based on that used in Weerachai Siripunvaraporn’s WSINV3DMT program. There are a
 few differences in the ModEM implementation: (1) ModEM does not support the
 option to use a set of resistivity codes (i.e., integers 1-9, used to specify a
@@ -401,7 +404,7 @@ supported formats differ primarily in the ordering of the list of resistivity
 values.</p>
 <p>A critical issue which is independent of file format, is how coordinates
 implicit in the model grid are related to coordinates specified in the separate
-data file. The arrays ∆x,∆y,∆z define a natural Cartesian coordinate system for
+data file. The arrays ∆x, ∆y, ∆z define a natural Cartesian coordinate system for
 the grid, with origin at the outer corner (of model parameter cell (1,1,1)). We
 refer to this here as the “natural grid coordinate system”. The origin of the
 coordinate system used in the data file (the “data coordinate system” does not
@@ -473,8 +476,8 @@ output files will match the convention used in the input file.</p>
 <p>The next lines give the grid spacing, in meters. Format is free, and the list for any
 of the three arrays can span multiple lines. Use a new line for each of x, y, and z.</p>
 </div>
-<div class="section" id="resistivy-codes-not-used-by-modem">
-<h3>(4) Resistivy Codes - (Not used by ModEM)<a class="headerlink" href="#resistivy-codes-not-used-by-modem" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="resistivity-codes-not-used-by-modem">
+<h3>(4) Resistivity Codes - (Not used by ModEM)<a class="headerlink" href="#resistivity-codes-not-used-by-modem" title="Permalink to this headline">¶</a></h3>
 <p>The next line is where resistivity codes were to be specified in the WSINV3DMT
 files. This line is left blank here, as ModEM does not support the resistivity code
 option.</p>
@@ -483,12 +486,12 @@ option.</p>
 <p>Resistivity codes are not used in ModEM.</p>
 </div>
 </div>
-<div class="section" id="cell-resistivites">
-<h3>(5) Cell Resistivites<a class="headerlink" href="#cell-resistivites" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="cell-resistivities">
+<h3>(5) Cell Resistivities<a class="headerlink" href="#cell-resistivities" title="Permalink to this headline">¶</a></h3>
 <p>Now the list of cell resistivities (or integer codes, if this option is being
 used) are given. This is free format, and the full list of cell resistivities
 will typically span many lines. To fill the array <code class="docutils literal notranslate"><span class="pre">rho(Nx:-1:1,1:Ny,1:Nz)</span></code> use
-these read statementsi (note the reversal of order of the index <code class="docutils literal notranslate"><span class="pre">ix</span></code>)</p>
+these read statements (note the reversal of order of the index <code class="docutils literal notranslate"><span class="pre">ix</span></code>):</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>DO iz = 1,Nz
 DO iy = 1,Ny
     DO ix = Nx,1,-1
@@ -498,17 +501,21 @@ ENDDO
 ENDDO
 </pre></div>
 </div>
-<ol class="arabic simple" start="6">
-<li><p>Coordinate Origin (Optional)</p></li>
-</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note the reversal of order of the index <code class="docutils literal notranslate"><span class="pre">ix</span></code> in the above pseudocode.</p>
+</div>
+</div>
+<div class="section" id="coordinate-origin-optional">
+<h3>(6) Coordinate Origin (Optional)<a class="headerlink" href="#coordinate-origin-optional" title="Permalink to this headline">¶</a></h3>
 <p>These three numbers provide the origin (x, y and z), in ‘natural grid
 coordinates’ used for Cartesian data locations.  This line is an addition to the
 WSINV3DMT file format, and is optional; default is 0.  In any event, one has to
-make sure that the XYZ corrdiantes of the sites are refernced to the same origin
+make sure that the XYZ coordinates of the sites are referred to the same origin
 (see <a class="reference internal" href="#data-files"><span class="std std-ref">Data Files</span></a>).</p>
-<ol class="arabic simple" start="7">
-<li><p>Coordinate Orientation (Not used/Optional)</p></li>
-</ol>
+</div>
+<div class="section" id="coordinate-orientation-not-used-optional">
+<h3>(7) Coordinate Orientation (Not used/Optional)<a class="headerlink" href="#coordinate-orientation-not-used-optional" title="Permalink to this headline">¶</a></h3>
 <p>The last (also optional) line in the file is for orientation of the model grid.
 This can be useful for plotting programs, but is not used by ModEM. It is
 important to note that while it is possible to rotate the grid to any
@@ -546,19 +553,19 @@ define the auto-regressive smoothing scheme. These ⍺ between 0 and 1; 0 implie
 no smoothing, larger values correspond to longer smoothing (correlation) length
 scales. Typical values that we use are 0.1 - 0.3.  The smoothing can be
 specified independently for each vertical level, and for x and y directions. A
-single parameter defines the vertical smoothing. Note that
-the smoothing is applied without reference to the actual variable grid spacing.
-In addition to the parameters ⍺, one can specify how many times the
-smoothing is repeated (nSmooth). Typically this number is 1-3. Repeating the
-smoothing implies longer decoration length scales—these increase length scales
-by a factor of sqrt(nSmooth).  Using a smaller ⍺ and more smoothing
-repetitions will result in a more “circular” effective smoothing kernel. With
-nSmooth = 1 the covariance will be somewhat anisotropic, with longer length
-scales associated with grid coordinate axes (i.e., features may tend to be
-elongated in x and y directions, relative to a 45 degree angle). Default values
-for the smoothing parameters (used if no model covariance file is provided) are
-::math`⍺=0.3` and :<span class="math notranslate nohighlight">\(nSmooth = 1\)</span>. More circular smoothing, with similar length
-scales would be achieved with :<span class="math notranslate nohighlight">\(⍺=0.2\)</span> and :<span class="math notranslate nohighlight">\(nSmooth = 2\)</span>.</p>
+single parameter defines the vertical smoothing. Note that the smoothing is
+applied without reference to the actual variable grid spacing. In addition to
+the parameters ⍺, one can specify how many times the smoothing is repeated
+(nSmooth). Typically this number is 1-3. Repeating the smoothing implies longer
+decoration length scales—these increase length scales by a factor of
+sqrt(nSmooth).  Using a smaller ⍺ and more smoothing repetitions will result in
+a more “circular” effective smoothing kernel. With nSmooth = 1 the covariance
+will be somewhat anisotropic, with longer length scales associated with grid
+coordinate axes (i.e., features may tend to be elongated in x and y directions,
+relative to a 45 degree angle). Default values for the smoothing parameters
+(used if no model covariance file is provided) are <span class="math notranslate nohighlight">\(⍺=0.3\)</span> and
+<span class="math notranslate nohighlight">\(nSmooth = 1\)</span>. More circular smoothing, with similar length scales would
+be achieved with <span class="math notranslate nohighlight">\(⍺=0.2\)</span> and <span class="math notranslate nohighlight">\(nSmooth = 2\)</span>.</p>
 <p>The covariance file also is used to subdivide the model domain, by defining an
 integer index for each cell in the grid. The index can be used to enable
 freezing of some regions (so that cells in the region are not changed during the
@@ -728,12 +735,12 @@ denote frozen structure, but at present you have to use index 9.</p>
 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 </pre></div>
 </div>
-<p>In this example there are just 2 ocean layers, and the remainder of
-the model is indexed by the default mask 1. Assuming a 100 ohm-m prior
-(for example) the same pattern would be given in the prior model,
-with cells that are marked as 9 set to 0.3 (or ln(0.3)) and those
-marked with 1 set to 100 (or ln(100)). (But note that the order of
-elements in the arrays differs between covariance and model files!)</p>
+<p>In this example there are just 2 ocean layers, and the remainder of the model is
+indexed by the default mask 1. Assuming a 100 ohm-m prior (for example) the same
+pattern would be given in the prior model, with cells that are marked as 9 set
+to 0.3 (or ln(0.3)) and those marked with 1 set to 100 (or ln(100)). (But note
+that the order of elements in the arrays differs between covariance and model
+files!)</p>
 </div>
 <div class="section" id="including-topography">
 <span id="include-topo"></span><h3>Including Topography<a class="headerlink" href="#including-topography" title="Permalink to this headline">¶</a></h3>
@@ -743,10 +750,10 @@ the air cells need to be indicated in both the prior model (set to air
 resistivity–a large positive number and in the covariance file, marked with
 index 0. Here is a simple example of the covariance file for a simple circular
 hill (just showing the mask blocks).</p>
-<dl class="simple">
-<dt>..note:</dt><dd><p>Note: We use resistivity in the model file</p>
-</dd>
-</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note: We use resistivity in the model file</p>
+</div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>1 1   &lt;-- top layer -- mostly air +_  top of hill
 
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
@@ -867,7 +874,7 @@ used correctly!</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2025, Gary Egbert, Anna Kelber, Naser Meqbel, Hao Dong.
+        &#169; Copyright 2025, Gary Egbert, Anna Kelbert, Miles Curry, Naser Meqbel, Hao Dong &amp; Kush Tandon.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
     </div>
   </body>

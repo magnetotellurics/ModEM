@@ -47,8 +47,14 @@
 <li><a class="reference internal" href="#">Getting Started</a><ul>
 <li><a class="reference internal" href="#directory-structure">Directory Structure</a></li>
 <li><a class="reference internal" href="#compiling-modem">Compiling ModEM</a></li>
-<li><a class="reference internal" href="#creating-makefiles-from-configuration-files">Creating Makefiles from Configuration Files</a><ul>
-<li><a class="reference internal" href="#examples-using-configure">Examples using Configure</a></li>
+<li><a class="reference internal" href="#modem-dependencies">ModEM Dependencies</a><ul>
+<li><a class="reference internal" href="#configure-scripts">Configure Scripts</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#creating-makefiles-from-configure">Creating Makefiles from configure</a><ul>
+<li><a class="reference internal" href="#examples-using-configure">Examples Using Configure</a></li>
+<li><a class="reference internal" href="#configuring-on-cray-systems">Configuring on Cray Systems</a></li>
+<li><a class="reference internal" href="#ensure-blas-and-lapack-are-linked">Ensure BLAS and LAPACK are linked</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#compiling">Compiling</a><ul>
@@ -113,43 +119,64 @@
 </div>
 <div class="section" id="compiling-modem">
 <h2>Compiling ModEM<a class="headerlink" href="#compiling-modem" title="Permalink to this headline">¶</a></h2>
-<p>The f90 directory contains several prototype makefiles, as well as some configuration
-scripts (<code class="docutils literal notranslate"><span class="pre">****.config</span></code>) that can be used for creating makefiles. These configuration scripts
-are primarily useful after substantial code modifications, and most users will not have
-cause (or for that matter, any desire) to use these scripts. For almost all purposes you
-can use the provided makefiles, perhaps with some minor editing. There are several
-makefile variants for both 2D and 3D MT. For example, Makefile3d for compiling a serial
-version of the code, and <code class="docutils literal notranslate"><span class="pre">Makefile3d.MPI</span></code> for a parallel version. Follow these instructions
-carefully when modifying Makefiles! Copy the makefile before editing, to avoid conflict
-with standard versions in the svn archive, i.e.:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">f90</span><span class="p">;</span> <span class="n">cp</span> <span class="n">Makefile</span><span class="o">.</span><span class="n">gnu</span> <span class="n">Makefile</span>
-</pre></div>
-</div>
-<p>Then open the copy of the Makefile in your favorite editor, and make sure that the
-(uncommented) compiler is set appropriately for your system). Some paths may also
-need to be modified. The make command will compile the 3D MT (or 2D MT) code for
-you (Mod3DMT and Mod2DMT, respectively).</p>
-<p>ModEM can be compiled for a parallel or serial execution. Make sure that you use the
-appropriate compiler preprocessing flag to compile the desired MPI (parallel) or serial
-version. Also make sure that the MPICH library is already installed on your machine, if
-you want to compile for MPI version. Here are examples of the compiler preprocessing
-flag and directive used to compile the MPI version:</p>
+<p>The build system for ModEM uses a ModEM configure script and the <code class="docutils literal notranslate"><span class="pre">fmkmf.pl</span></code>
+Perl script:</p>
 <ul class="simple">
-<li><p>PGI compiler: -Mpreprocess —&gt; Serial; -Mpreprocess -DMPI —&gt; Parallel</p></li>
-<li><p>Intel compiler: -fpp —&gt; Serial; -fpp -DMPI —&gt; Parallel</p></li>
-<li><p>GFortran: -cpp-input —&gt; Serial; -cpp-input -DMPI —&gt; Parallel</p></li>
+<li><p>configure script (<code class="docutils literal notranslate"><span class="pre">./f90/config/configure</span></code>) - Calls <code class="docutils literal notranslate"><span class="pre">fmkmf.pl</span></code> with
+various arguments</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fmkmf.pl</span></code> - Called by Configure scripts and automatically generates a
+ModEM makefile.</p></li>
 </ul>
+<p>Once you have run configure, you’ll be able to run <code class="docutils literal notranslate"><span class="pre">make</span></code> on the generated
+Makefile.</p>
+<p>In the <code class="docutils literal notranslate"><span class="pre">f90</span></code> directory there are some prototype Makefiles which can be used
+to compile ModEM without having to run the configure script; however, these
+Makefiles only create the Matrix-Free version of ModEM and you may want to
+compile the other two version SP/SP2. To do this you will need to run the
+configure script, which is explained below.</p>
 </div>
-<div class="section" id="creating-makefiles-from-configuration-files">
-<h2>Creating Makefiles from Configuration Files<a class="headerlink" href="#creating-makefiles-from-configuration-files" title="Permalink to this headline">¶</a></h2>
-<p>The current build system for ModEM uses the <cite>fmkmf.pl</cite> pearl script and the
-configuration scripts that are in <cite>f90/CONFIG</cite>. Although ModEM uses Make and
-Makefiles, makefiles are meant to be created by these configuration scripts.</p>
-<p>To create Makefiles, run the configuration scripts that match your system,
-desired compiler and desired ModEM version. These configuration scripts
-call the <cite>fmkmf.pl</cite> script:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd f90/
-$ ./CONFIG/Configure Makefile gfortran
+<div class="section" id="modem-dependencies">
+<h2>ModEM Dependencies<a class="headerlink" href="#modem-dependencies" title="Permalink to this headline">¶</a></h2>
+<p>ModEM requires two libraries, the BLAS Library and the LAPACK library and
+optionally the MPI library.</p>
+<p>Often BLAS and LAPACK are already available on your system and are linked
+automatically, but occasionally you might need to install or link them
+yourself. For instructions on building ModEM dependencies see
+<a class="reference internal" href="installing_deps.html#installing-deps"><span class="std std-ref">Installing ModEM Dependencies</span></a>.</p>
+<div class="section" id="configure-scripts">
+<h3>Configure Scripts<a class="headerlink" href="#configure-scripts" title="Permalink to this headline">¶</a></h3>
+<p>There are a number of configure scripts inside <code class="docutils literal notranslate"><span class="pre">./f90/CONFIG</span></code> in the form of
+<code class="docutils literal notranslate"><span class="pre">Configure.***</span></code>, <code class="docutils literal notranslate"><span class="pre">Configure.SP.***</span></code>, <code class="docutils literal notranslate"><span class="pre">Configure.3D_MT.**</span></code>, etc. These
+configure files are considered deprecated, and the <code class="docutils literal notranslate"><span class="pre">configure</span></code> script inside
+<code class="docutils literal notranslate"><span class="pre">f90</span></code> should be used instead; however, the deprecated configure scripts are
+left for backwards compatibility.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">configure</span></code> script inside <code class="docutils literal notranslate"><span class="pre">f90</span></code> can be used to generate ModEM makefiles
+for various configurations and compilers. This <code class="docutils literal notranslate"><span class="pre">configure</span></code> should be used
+to generate makefiles for ModEM.</p>
+</div>
+</div>
+<div class="section" id="creating-makefiles-from-configure">
+<h2>Creating Makefiles from configure<a class="headerlink" href="#creating-makefiles-from-configure" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">configure</span></code>, with no optional arguments will generate an MPI
+Makefile with the SP2 forward solver.</p>
+</div>
+<p>To create a Makefile, run the <code class="docutils literal notranslate"><span class="pre">configure</span></code> script found in the <code class="docutils literal notranslate"><span class="pre">f90</span></code> with
+arguments that match your system and the version of ModEM you want to use.</p>
+<p>Currently, ModEM has three different forwards ‘flavors’:</p>
+<ul class="simple">
+<li><p>MF - Matrix Free - Original/classic ModEM</p></li>
+<li><p>SP - Hao’s Sparse Matrix</p></li>
+<li><dl class="simple">
+<dt>SP2 -  (DEFAULT) - Hao’s Second Sparse Matrix - Fastest and has Hao’s</dt><dd><p>fine-grained capability</p>
+</dd>
+</dl>
+</li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> f90/
+$ <span class="c1"># By default ./configure creates a SP2 Makefile with MPI</span>
+$ ./configure Makefile gfortran
 </pre></div>
 </div>
 <p>The Configure scripts has the following usage:</p>
@@ -171,17 +198,68 @@ $ ./CONFIG/Configure Makefile gfortran
     -s Build spherical version of ModEM
 </pre></div>
 </div>
+<p>Running configure will create a Makefile that you specify in the first
+argument. In the above case the Makefile will be named <code class="docutils literal notranslate"><span class="pre">Makefile</span></code>. We can
+then call <code class="docutils literal notranslate"><span class="pre">make</span></code> on that <code class="docutils literal notranslate"><span class="pre">Makefile</span></code></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ make
+</pre></div>
+</div>
 <div class="section" id="examples-using-configure">
-<h3>Examples using Configure<a class="headerlink" href="#examples-using-configure" title="Permalink to this headline">¶</a></h3>
-<p>A few examples using Configure:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./CONFIG/Configure Makefile gfortran
-Generates a Makefile with GFortran options using MPI
+<h3>Examples Using Configure<a class="headerlink" href="#examples-using-configure" title="Permalink to this headline">¶</a></h3>
+<p>A few examples using Configure</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ ./configure Makefile gfortran
+$ <span class="c1"># Generates a Makefile with GFortran options using MPI</span>
 
-$ ./CONFIG/Configure -d debug Makefile gfortran
-Generates an MPI Makefile with GFortran debugging options
+$ ./configure -d debug Makefile ifort
+$ <span class="c1"># Generates an MPI Makefile with ifort debugging options</span>
 
-$ ./CONFIG/Configure -m serial -l MF Makefile gfortran
-Generates a serial Makefile with GFortran with the MF solver
+$ ./configure -m serial -l MF Makefile gfortran
+$ <span class="c1"># Generates a serial Makefile with GFortran with the MF solver</span>
+
+$ <span class="nv">FC</span><span class="o">=</span>ftn <span class="nv">LDFLAGS</span><span class="o">=</span>-L/home/username/install/lib ./configure Makefile gfortran
+$ <span class="c1"># Generates an SP2, MPI capabile makefile, adding LDFLAGS to the link step and</span>
+$ <span class="c1"># specifies the compiler to be `ftn`.</span>
+
+$ <span class="nv">FFLAGS</span><span class="o">=</span><span class="s1">&#39;-mSSE2&#39;</span> ./configure Makefile ifort
+$ <span class="c1"># Create a SP2, MPI capabile makefile, with ifort/intel compiler options and add</span>
+$ <span class="c1"># the &#39;-mSSE2&#39; to all compiling steps.</span>
+
+$ <span class="nv">LDFLAGS</span><span class="o">=</span><span class="s2">&quot;-L/path/to/install/lib/&quot;</span> ./configure Makefile gfortran
+$ <span class="c1"># Generates a Makefile with GFortran options using MPI and passes</span>
+$ <span class="c1"># the location of /path/to/install/lib to the linker step</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="configuring-on-cray-systems">
+<h3>Configuring on Cray Systems<a class="headerlink" href="#configuring-on-cray-systems" title="Permalink to this headline">¶</a></h3>
+<p>If you are running on a Cray system, you will need to use Cray’s Fortran
+compiler wrapper: <code class="docutils literal notranslate"><span class="pre">ftn</span></code>. You can easily specify the name of the compiler
+by setting the <code class="docutils literal notranslate"><span class="pre">FC</span></code> environment variable:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">FC</span><span class="o">=</span>ftn ./configure Makefile gfortran
+$ <span class="c1"># Or for intel:</span>
+$ <span class="nv">FC</span><span class="o">=</span>ftn ./configure Makefile ifort
+</pre></div>
+</div>
+</div>
+<div class="section" id="ensure-blas-and-lapack-are-linked">
+<h3>Ensure BLAS and LAPACK are linked<a class="headerlink" href="#ensure-blas-and-lapack-are-linked" title="Permalink to this headline">¶</a></h3>
+<p>If you get errors that you are not able to find <code class="docutils literal notranslate"><span class="pre">-lblas</span></code> or <code class="docutils literal notranslate"><span class="pre">-llapack</span></code>, but
+have them installed, you can use the <code class="docutils literal notranslate"><span class="pre">LDFLAGS</span></code> environment variable to tell
+the linker where to find them. You can specify this when you run configure:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">LDFLAGS</span><span class="o">=</span><span class="s2">&quot;-L/path/to/install/lib/&quot;</span> ./configure Makefile gfortran
+</pre></div>
+</div>
+<p>If you have already created your makefile, you can also add the <code class="docutils literal notranslate"><span class="pre">-L</span></code>
+specification to the <code class="docutils literal notranslate"><span class="pre">LIBS_PATH</span></code> of the Macro-Def section of your Makefile:</p>
+<div class="highlight-Make notranslate"><div class="highlight"><pre><span></span><span class="c"># ------------------Macro-Defs---------------------</span>
+<span class="cp">include Makefile.local</span>
+<span class="nv">OBJDIR</span> <span class="o">=</span> ./objs/3D_MT/csemBuild
+<span class="nv">F90</span> <span class="o">=</span> mpifort
+<span class="nv">FFLAGS</span> <span class="o">=</span> -cpp -DMPI -DCSEM_Dipole1D -O3 -ffree-line-length-none -dI -fallow-argument-mismatch
+<span class="nv">MPIFLAGS</span> <span class="o">=</span> -cpp -DMPI -DCSEM_Dipole1D
+<span class="nv">MODULE</span> <span class="o">=</span> -J <span class="k">$(</span>OBJDIR<span class="k">)</span>
+<span class="nv">LIBS_PATH</span> <span class="o">=</span> -L/path/to/install/lib
+<span class="nv">LIBS</span> <span class="o">=</span> -lblas -llapack
 </pre></div>
 </div>
 </div>
@@ -201,19 +279,20 @@ $ make
 <p>If you have MPI installed, and already have a serial makefile generated you can
 easily compile the MPI version of ModEM by altering the makefile. This is
 sometimes easier then creating a new makefile from the configuration scripts.</p>
-<p>To compile an MPI version, edit the compiler in your makefile to be an MPI
-compiler (e.g. mpifort) and add -DMPI to the MPIFLAGGS variable</p>
+<p>To compile an MPI version, change the <code class="docutils literal notranslate"><span class="pre">F90</span></code> variable in your makefile to be
+an MPI compiler (e.g. <code class="docutils literal notranslate"><span class="pre">mpifort</span></code>) and add <code class="docutils literal notranslate"><span class="pre">-DMPI</span></code> to the <code class="docutils literal notranslate"><span class="pre">MPIFLAGGS</span></code>
+variable:</p>
 <div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">F90</span> <span class="o">=</span> mpifort
 <span class="nv">MPIFLAGS</span> <span class="o">=</span> -DMPI ... omitting other flags
 </pre></div>
 </div>
 <p>However, you can also generate an MPI makefile by running the configuration
 scripts and passing it MPI as the type.</p>
-<p>..important:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">When</span> <span class="n">running</span> <span class="n">ModEM</span> <span class="k">with</span> <span class="n">MPI</span> <span class="n">you</span> <span class="n">must</span> <span class="n">use</span> <span class="n">at</span> <span class="n">least</span> <span class="mi">2</span> <span class="n">tasks</span> <span class="ow">and</span>
-<span class="n">a</span> <span class="nb">max</span> <span class="n">of</span> <span class="p">(</span><span class="mi">2</span> <span class="n">x</span> <span class="n">nTransmitters</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="n">tasks</span> <span class="p">(</span><span class="k">except</span> <span class="k">for</span> <span class="n">the</span> <span class="n">SP2</span> <span class="n">version</span> <span class="n">compiled</span>
-<span class="k">with</span> <span class="o">-</span><span class="n">DFG</span><span class="p">)</span><span class="o">.</span>
-</pre></div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>When running ModEM with MPI you must use at least 2 tasks and
+a max of (2 x nTransmitters) + 1 tasks (except for the SP2 version compiled
+with -DFG).</p>
 </div>
 </div>
 </div>
@@ -266,37 +345,36 @@ Optional final argument -v [debug|full|regular|compact|result|none]
 indicates the desired level of output to screen and to files.
 </pre></div>
 </div>
-<p>The <code class="docutils literal notranslate"><span class="pre">-F</span> <span class="pre">[FORWARD]</span></code> and <code class="docutils literal notranslate"><span class="pre">-I</span> <span class="pre">[INVERSE]</span></code> options will suffice for simple applications. For
-some of the more advanced applications discussed below the <code class="docutils literal notranslate"><span class="pre">-C</span> <span class="pre">[TEST_COV]</span></code> option is
+<p>The <code class="docutils literal notranslate"><span class="pre">-F</span> <span class="pre">[FORWARD]</span></code> and <code class="docutils literal notranslate"><span class="pre">-I</span> <span class="pre">[INVERSE]</span></code> options will suffice for simple applications.
+For some of the more advanced applications discussed below the <code class="docutils literal notranslate"><span class="pre">-C</span> <span class="pre">[TEST_COV]</span></code> option is
 also needed. The <code class="docutils literal notranslate"><span class="pre">-R</span> <span class="pre">[READ_WRITE]</span></code> option can be useful for testing whether your input
-files are in the correct format. The <code class="docutils literal notranslate"><span class="pre">-v</span></code> option controls the level of program output; the
-default is “regular”; if you want to reduce outputs (“none” is <em>not recommended!</em>) you can
-experiment with other output levels; “full ” and “debug” would be primarily useful for
-developers. All of the other options (<code class="docutils literal notranslate"><span class="pre">-J</span></code>, <code class="docutils literal notranslate"><span class="pre">-M</span></code>, etc.) are primarily useful for development,
-testing, and some specialized applications that are beyond the scope of this
+files are in the correct format. The <code class="docutils literal notranslate"><span class="pre">-v</span></code> option controls the level of program output;
+the default is “regular”; if you want to reduce outputs (“none” is <em>not recommended!</em>) you
+can experiment with other output levels; “full ” and “debug” would be primarily useful for
+developers. All of the other options (<code class="docutils literal notranslate"><span class="pre">-J</span></code>, <code class="docutils literal notranslate"><span class="pre">-M</span></code>, etc.) are primarily useful for
+development, testing, and some specialized applications that are beyond the scope of this
 basic documentation.</p>
 <p>Sub-directory <code class="docutils literal notranslate"><span class="pre">examples/</span></code> contains some sample input files with instructions for simple
-cases. These should be sufficient to test your installation, and also will provide a tem-
-plate for your own initial use. The <code class="docutils literal notranslate"><span class="pre">doc/</span></code> sub-directory contains some further information
-on the ModEM system, beyond the summary of usage provided here.</p>
-<p>All of the various options have a required set of arguments, which define input and
-output file names (<code class="docutils literal notranslate"><span class="pre">rFile</span></code>, and <code class="docutils literal notranslate"><span class="pre">wFile</span></code> in the usage summary, respectively). There are
-also optional arguments, mostly also specifying additional input or output file names.
-In all cases the order of arguments must be exactly as indicated in the “Usage” block,
-so to give an optional argument at the end of the list, all previous optional arguments
-must also be provided. Thus, for example, with the <code class="docutils literal notranslate"><span class="pre">-F</span></code> option, if you want to specify the
-input <code class="docutils literal notranslate"><span class="pre">rFile_fwdCtrl</span></code> file, you must also specify the output <code class="docutils literal notranslate"><span class="pre">wFile_EMsoln</span></code> file, even if
-you do not specifically want the full set of output EM fields, which this option will result
-in. Before providing a more detailed discussion of the various options, we consider file
-formats.</p>
+cases. These should be sufficient to test your installation, and also will provide a
+template for your own initial use. The <code class="docutils literal notranslate"><span class="pre">doc/</span></code> sub-directory contains some further
+information on the ModEM system, beyond the summary of usage provided here.</p>
+<p>All of the various options have a required set of arguments, which define input and output
+file names (<code class="docutils literal notranslate"><span class="pre">rFile</span></code>, and <code class="docutils literal notranslate"><span class="pre">wFile</span></code> in the usage summary, respectively). There are also
+optional arguments, mostly also specifying additional input or output file names. In all
+cases the order of arguments must be exactly as indicated in the “Usage” block, so to give
+an optional argument at the end of the list, all previous optional arguments must also be
+provided. Thus, for example, with the <code class="docutils literal notranslate"><span class="pre">-F</span></code> option, if you want to specify the input
+<code class="docutils literal notranslate"><span class="pre">rFile_fwdCtrl</span></code> file, you must also specify the output <code class="docutils literal notranslate"><span class="pre">wFile_EMsoln</span></code> file, even if
+you do not specifically want the full set of output EM fields, which this option will
+result in. Before providing a more detailed discussion of the various options, we consider
+file formats.</p>
 </div>
 <div class="section" id="using-docker-to-compile-and-run-modem">
 <h2>Using Docker to Compile and Run ModEM<a class="headerlink" href="#using-docker-to-compile-and-run-modem" title="Permalink to this headline">¶</a></h2>
-<p>A <a class="reference external" href="https://github.com/magnetotellurics/ModEM/blob/main/Dockerfile">Dockerfile</a> has been provided that will create an Ubuntu docker
-container where you can compile and run ModEM. To run the ModEM docker
-container, first ensure you have <a class="reference external" href="https://www.docker.com/get-started/">docker installed</a> and
-running (Either have the docker daemon <a class="reference external" href="https://docs.docker.com/engine/daemon/start/">docker running</a>, or Docker
-<a class="reference external" href="https://www.docker.com/blog/getting-started-with-docker-desktop/">Desktop Running</a>.</p>
+<p>For convenience, a Dockerfile has been provided where you can compile and run
+ModEM inside. To run the ModEM docker container, first ensure you have <a class="reference external" href="https://www.docker.com/get-started/">docker
+installed</a> and running (Either have the docker
+daemon <a class="reference external" href="https://docs.docker.com/engine/daemon/start/">docker running</a>, or Docker <a class="reference external" href="https://www.docker.com/blog/getting-started-with-docker-desktop/">Desktop Running</a>.</p>
 <p>The Dockerfile builds an Ubuntu instance with GFortran, MPI, and all the other
 tools needed to compile and run ModEM.</p>
 <div class="section" id="building">
@@ -306,14 +384,14 @@ the <code class="docutils literal notranslate"><span class="pre">ModEM</span></c
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker build . -t modem:latest --build-arg <span class="nv">ncpus</span><span class="o">=</span><span class="m">2</span>
 </pre></div>
 </div>
-<p>You can specify different numbers of arguments in the <code class="docutils literal notranslate"><span class="pre">ncpus</span></code> build argument if
-you wish. It will speed up the time when Docker compiles MPICH.</p>
+<p>You can specify the number of CPUs to use in the <code class="docutils literal notranslate"><span class="pre">ncpus</span></code> variable. This will
+set the number of CPUs to use when building MPICH.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
-<p>For personal machines, it’s best to set <code class="docutils literal notranslate"><span class="pre">ncpus</span></code> no greater than the max number of
-cores on your machines.</p>
-<p>For shared login nodes you may want to use no more than 2-4 CPUs in order to
-not detrement other users.</p>
+<p>For personal machines, it’s best to set <code class="docutils literal notranslate"><span class="pre">ncpus</span></code> no greater than the max
+number of cores on your machines.</p>
+<p>For shared login nodes you may want to use no more than 2-4 CPUs in order
+to not be detrimental to other users.</p>
 </div>
 <p>After running the above command Docker will create an image named
 <code class="docutils literal notranslate"><span class="pre">modem:latest</span></code> that you can then use to run; it will have all necessary
@@ -327,9 +405,9 @@ depending on how fast your CPU is and how many CPUs you specify in
 </div>
 <div class="section" id="running-and-building-modem-in-docker">
 <h3>Running and building ModEM in Docker<a class="headerlink" href="#running-and-building-modem-in-docker" title="Permalink to this headline">¶</a></h3>
-<p>By default, the dockerfile automatically checks out the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch of ModEM
-and places it in the root user’s home directory: <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>. This copy
-of ModEM has been provided for the convience of new users.</p>
+<p>By default, the dockerfile automatically checks out the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch of
+ModEM and places it in the root user’s home directory: <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>.
+This copy of ModEM has been provided for the convenience of new users.</p>
 <p>First, let us start a container using the image that we built above:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker volume create modem
 $ docker run -it -v modem:/root/ModEM-main modem:latest
@@ -338,22 +416,24 @@ $ docker run -it -v modem:/root/ModEM-main modem:latest
 <p>Normally, when running a docker container, the data created inside the container
 will be deleted when the container terminates. To prevent this, we can use a
 volume.</p>
-<p>First, we need to create a named volume using <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">volume</span> <span class="pre">create</span> <span class="pre">modem</span></code>, then
-in our run command we attach that volume to <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>. This will save any
-data that we created inside <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>, but nowhere else.</p>
-<p>After you terminate that container, and wish to start it again, you will need to
-specify your run command with the same arguments as above to reuse the data
-inside the volume, see important note below.</p>
+<p>First, we need to create a named volume using <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">volume</span> <span class="pre">create</span> <span class="pre">modem</span></code>,
+then in our run command we attach that volume to <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>. This
+will save any data that we created inside <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>, but nowhere
+else.</p>
+<p>After you terminate that container, and wish to start it again, you will need
+to specify your run command with the same arguments as above to reuse the data
+inside the volume, see the important note below.</p>
 <p>The docker run command will run the image <code class="docutils literal notranslate"><span class="pre">modem:latest</span></code> and create a
 container for us to use The <code class="docutils literal notranslate"><span class="pre">-it</span></code> argument will tell Docker to start an
-interactive tty session and will drop you inside the running container.</p>
+interactive tty session and will drop you inside a bash shell inside the
+running container.</p>
 <p>Now, we can move into <code class="docutils literal notranslate"><span class="pre">~/ModEM-main</span></code> to configure, build and run ModEM:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ~/ModEM-main
 $ <span class="nb">cd</span> f90/
 $ <span class="c1"># Compile with MPI, SP2 solver:</span>
-$ ./CONFIG/configure Makefile gfortran
+$ ./configure Makefile gfortran
 $ <span class="c1"># or compile serial, SP2 solver</span>
-$ ./CONFIG/configure -m serial Makefile gfortran
+$ ./configure -m serial Makefile gfortran
 $ make
 $ <span class="c1"># Run ModEM serially or with MPI:</span>
 $ mpiexec -n <span class="m">2</span> ./Mod3DMT ...
@@ -361,8 +441,8 @@ $ <span class="c1"># Or if you compiled serial:</span>
 $ ./Mod3DMT ...
 </pre></div>
 </div>
-<p>You can terminate this docker session by logging out by typing <code class="docutils literal notranslate"><span class="pre">exit</span></code> or you can
-use <code class="docutils literal notranslate"><span class="pre">Ctrl-D</span></code>.</p>
+<p>You can terminate this docker session by logging out by typing <code class="docutils literal notranslate"><span class="pre">exit</span></code> or you
+can use <code class="docutils literal notranslate"><span class="pre">Ctrl-D</span></code>.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
 <p>Again, if you want to re-run docker and reuse the files/folders/data you
@@ -376,7 +456,7 @@ created before you will need to specify the volume that you used before</p>
 <p>Any data you create outside of the <code class="docutils literal notranslate"><span class="pre">ModEM-main</span></code> directory will not be
 saved. If you want to save data you will need to specify additional volumes
 or mounts. See <a class="reference internal" href="#docker-mounts"><span class="std std-ref">Specifying mounts points</span></a>.</p>
-<p>For more information on persistant data see:</p>
+<p>For more information on persistent data inside a container see:</p>
 <p><a class="reference external" href="https://docs.docker.com/get-started/docker-concepts/running-containers/persisting-container-data/">https://docs.docker.com/get-started/docker-concepts/running-containers/persisting-container-data/</a></p>
 </div>
 </div>
@@ -388,15 +468,15 @@ or mounts. See <a class="reference internal" href="#docker-mounts"><span class="
 <a class="reference external" href="https://docs.docker.com/engine/storage/bind-mounts/">https://docs.docker.com/engine/storage/bind-mounts/</a>.</p>
 </div>
 <p>While it is helpful to have the <code class="docutils literal notranslate"><span class="pre">ModEM-Main/</span></code> provided, it is also helpful to
-work with local version of <code class="docutils literal notranslate"><span class="pre">ModEM</span></code> you have on your host system. To do that we
-can use mounts, which will allow us to mirror a directory on our host system
+work with local version of <code class="docutils literal notranslate"><span class="pre">ModEM</span></code> you have on your host system. To do that
+we can use mounts, which will allow us to mirror a directory on our host system
 into the container.</p>
 <p>We can add a mount by passing in a <code class="docutils literal notranslate"><span class="pre">--mount</span></code> option during our run command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/abosolute/path/to/ModEM,target<span class="o">=</span>/root/ModEM -it modem:latest
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/absolute/path/to/ModEM,target<span class="o">=</span>/root/ModEM -it modem:latest
 </pre></div>
 </div>
 <p>The above command will run the container in the same way as above, but it will
-mount <code class="docutils literal notranslate"><span class="pre">/abosolute/path/to/ModEM/</span></code> from your host system to <code class="docutils literal notranslate"><span class="pre">/root/ModEM</span></code> to
+mount <code class="docutils literal notranslate"><span class="pre">/absolute/path/to/ModEM/</span></code> from your host system to <code class="docutils literal notranslate"><span class="pre">/root/ModEM</span></code> to
 the container. Any changes you make in this folder, in either the container or
 the host machine will be present on the other machine.</p>
 <p>It might be helpful to specify additional mount points, for instance it might
@@ -437,7 +517,7 @@ volume and mount points.</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2025, Gary Egbert, Anna Kelber, Naser Meqbel, Hao Dong.
+        &#169; Copyright 2025, Gary Egbert, Anna Kelbert, Miles Curry, Naser Meqbel, Hao Dong &amp; Kush Tandon.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
     </div>
   </body>

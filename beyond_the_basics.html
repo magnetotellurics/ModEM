@@ -18,7 +18,7 @@
     <script src="_static/bizstyle.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Change Log" href="release_log.html" />
+    <link rel="next" title="Installing ModEM Dependencies" href="installing_deps.html" />
     <link rel="prev" title="Forward Modeling and Inversion Options" href="forward_and_inversion.html" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <!--[if lt IE 9]>
@@ -32,7 +32,7 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="release_log.html" title="Change Log"
+          <a href="installing_deps.html" title="Installing ModEM Dependencies"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="forward_and_inversion.html" title="Forward Modeling and Inversion Options"
@@ -48,7 +48,7 @@
 <li><a class="reference internal" href="#restart-the-inversion">Restart the Inversion</a></li>
 <li><a class="reference internal" href="#nested-modeling">Nested Modeling</a></li>
 <li><a class="reference internal" href="#flexible-air-layers">Flexible Air Layers</a><ul>
-<li><a class="reference internal" href="#option-1-mirrros">Option 1 - Mirrros</a></li>
+<li><a class="reference internal" href="#option-1-mirrors">Option 1 - Mirrors</a></li>
 <li><a class="reference internal" href="#option-2-fixed-height">Option 2 - fixed height</a></li>
 <li><a class="reference internal" href="#option-3-read-from-file">Option 3: read from file</a></li>
 </ul>
@@ -63,8 +63,8 @@
   <p class="topless"><a href="forward_and_inversion.html"
                         title="previous chapter">Forward Modeling and Inversion Options</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="release_log.html"
-                        title="next chapter">Change Log</a></p>
+  <p class="topless"><a href="installing_deps.html"
+                        title="next chapter">Installing ModEM Dependencies</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -247,7 +247,7 @@ BOUNDARY VALUES AT THE EDGES OF THE NESTED GRID, USE THE SAME DATA FILE.</p>
 <div class="section" id="flexible-air-layers">
 <span id="id2"></span><h2>Flexible Air Layers<a class="headerlink" href="#flexible-air-layers" title="Permalink to this headline">¶</a></h2>
 <p>Air layers can now be set in the forward solver configuration file. Options can
-be printed to screen using verb|./Mod3DMT -F| command without the additional
+be printed to screen using <code class="docutils literal notranslate"><span class="pre">./Mod3DMT</span> <span class="pre">-F</span></code> command without the additional
 input arguments. The new capability can be executed by adding two more lines to
 the configuration file (lines 8 and 9), after the nested modeling file. If you
 are not using the nested modeling option but would like to change the air
@@ -257,20 +257,21 @@ file in line 7 blank.  Flexible air layers are only implemented for 3D.</p>
 <span class="pre">from</span> <span class="pre">file</span></code>. For backwards compatibility, the default is <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">10</span> <span class="pre">3.</span>
 <span class="pre">30.</span></code>, so that the code should still produce identically the same results to
 the previous version, unless the air layers are changed.</p>
-<div class="section" id="option-1-mirrros">
-<h3>Option 1 - Mirrros<a class="headerlink" href="#option-1-mirrros" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="option-1-mirrors">
+<h3>Option 1 - Mirrors<a class="headerlink" href="#option-1-mirrors" title="Permalink to this headline">¶</a></h3>
 <p>The air layers based on the uppermost layers of the Earth resistivity model. In
 the code, air layers are counted from top to bottom (top is 1, bottom is N). The
 logic is as follows,</p>
 <div class="math notranslate nohighlight">
 \[airlayer((N+1)-j) = \alpha^{j-1} * earthlayer(j)\]</div>
-<p>Where <span class="math notranslate nohighlight">\(\alpha\)</span> and the number of air layers <span class="math notranslate nohighlight">\(N\)</span> are supplied by
-the user, and <span class="math notranslate nohighlight">\(j\)</span> is an integer index from 1 to <span class="math notranslate nohighlight">\(N\)</span>. When
-<span class="math notranslate nohighlight">\(j=1\)</span>, the bottom air layer <span class="math notranslate nohighlight">\(N\)</span>, the top air layer 1 equals <span class="math notranslate nohighlight">\(\alpha^{N-1} * earth layer(N)\)</span>. Finally, the
-third user-supplied parameter <cite>MinTopDz</cite> specifies the minimum width of the
-top air layer, in km. If the top layer happens to be thinner than specified by
-this parameter, it is adjusted to this value. The parameters are specified in
-the following order: <span class="math notranslate nohighlight">\(N\)</span>, <span class="math notranslate nohighlight">\(\alpha\)</span>,  <cite>MinTopDz</cite>.</p>
+<p>Where <span class="math notranslate nohighlight">\(\alpha\)</span> and the number of air layers <span class="math notranslate nohighlight">\(N\)</span> are supplied by the
+user, and <span class="math notranslate nohighlight">\(j\)</span> is an integer index from 1 to <span class="math notranslate nohighlight">\(N\)</span>. When <span class="math notranslate nohighlight">\(j=1\)</span>,
+the bottom air layer <span class="math notranslate nohighlight">\(N\)</span> equals the top earth layer 1. When <span class="math notranslate nohighlight">\(j=N\)</span>,
+the top air layer 1 equals <span class="math notranslate nohighlight">\(\alpha^{N-1} * earth layer(N)\)</span>. Finally, the
+third user-supplied parameter <cite>MinTopDz</cite> specifies the minimum width of the top
+air layer, in km. If the top layer happens to be thinner than specified by this
+parameter, it is adjusted to this value. The parameters are specified in the
+following order: <span class="math notranslate nohighlight">\(N\)</span>, <span class="math notranslate nohighlight">\(\alpha\)</span>,  <cite>MinTopDz</cite>.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Air layers mirror|fixed height|read from file : mirror
 Number of air layers and min top dz in km     : 10 3. 30.
 </pre></div>
@@ -361,7 +362,7 @@ are also included.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="release_log.html" title="Change Log"
+          <a href="installing_deps.html" title="Installing ModEM Dependencies"
              >next</a> |</li>
         <li class="right" >
           <a href="forward_and_inversion.html" title="Forward Modeling and Inversion Options"
@@ -370,7 +371,7 @@ are also included.</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2025, Gary Egbert, Anna Kelber, Naser Meqbel, Hao Dong.
+        &#169; Copyright 2025, Gary Egbert, Anna Kelbert, Miles Curry, Naser Meqbel, Hao Dong &amp; Kush Tandon.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
     </div>
   </body>

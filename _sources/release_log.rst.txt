@@ -22,7 +22,7 @@ See: :ref:`unit-testing`.
 Other comments
 ^^^^^^^^^^^^^^
 
-Relative to the previous stable release, the value of \verb|LARGE_REAL| that
+Relative to the previous stable release, the value of ``LARGE_REAL`` that
 defines the error bars for modeled data has changed from 2.0e15 to 1.0e13. This
 does not affect any computations but it may be confusing to the user as these
 values are output in place of the error bars for modeled MT data. Otherwise,

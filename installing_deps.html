@@ -1,0 +1,299 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Installing ModEM Dependencies &#8212; ModEM develop documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Contributing" href="contributing.html" />
+    <link rel="prev" title="Beyond the Basics" href="beyond_the_basics.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contributing.html" title="Contributing"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="beyond_the_basics.html" title="Beyond the Basics"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installing ModEM Dependencies</a><ul>
+<li><a class="reference internal" href="#installing-mpi">Installing MPI</a><ul>
+<li><a class="reference internal" href="#linux">Linux</a></li>
+<li><a class="reference internal" href="#macos">MacOS</a></li>
+<li><a class="reference internal" href="#compiling-mpich-from-source">Compiling MPICH from source</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#installing-lapack-and-blas">Installing LAPACK and BLAS</a><ul>
+<li><a class="reference internal" href="#installing-blas">Installing BLAS</a></li>
+<li><a class="reference internal" href="#installing-lapack">Installing LAPACK</a></li>
+<li><a class="reference internal" href="#compiling-modem-with-lapack-lablas">Compiling ModEM with LAPACK/LABLAS</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="beyond_the_basics.html"
+                        title="previous chapter">Beyond the Basics</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contributing.html"
+                        title="next chapter">Contributing</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/installing_deps.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installing-modem-dependencies">
+<span id="installing-deps"></span><h1>Installing ModEM Dependencies<a class="headerlink" href="#installing-modem-dependencies" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installing-mpi">
+<h2>Installing MPI<a class="headerlink" href="#installing-mpi" title="Permalink to this headline">¶</a></h2>
+<p>There are two widely used versions of MPI which we recommend using with ModEM:</p>
+<ul class="simple">
+<li><p>MPICH - <a class="reference external" href="https://www.mpich.org/">https://www.mpich.org/</a></p></li>
+<li><p>OpenMPI - <a class="reference external" href="https://www.open-mpi.org/">https://www.open-mpi.org/</a></p></li>
+</ul>
+<p>Both have been tested thoroughly with ModEM. Both offer benefits over the
+other, but such discussion is beyond the scope of this document. Installing
+both is relatively similar, but for brevity we will only give instructions on
+installing MPICH.</p>
+<div class="section" id="linux">
+<h3>Linux<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h3>
+<p>If you are on a Linux system, and have sudo powers, it is probably easiest to
+install MPICH using your package manager:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Debian/Ubuntu</span>
+$ apt install openmpi-bin libopenmpi-dev
+
+<span class="c1"># Fedora/RHEL/Centos</span>
+$ yum install mpich
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Installing with a Linux package manager requires root (<code class="docutils literal notranslate"><span class="pre">sudo</span></code>) powers,
+thus the above commands will not work on a shared system where you do not
+have powers to use <code class="docutils literal notranslate"><span class="pre">sudo</span></code>.</p>
+</div>
+<p>If you are on a shared system, or you do not have sudo powers, you can follow
+the instructions to compile MPICH by hand in <a class="reference internal" href="#mpich-by-hand"><span class="std std-ref">Compiling MPICH from source</span></a>.</p>
+</div>
+<div class="section" id="macos">
+<h3>MacOS<a class="headerlink" href="#macos" title="Permalink to this headline">¶</a></h3>
+<p>For MacOSX, you can easily install MPICH using Homebrew:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brew install mpich
+</pre></div>
+</div>
+<p>See: <a class="reference external" href="https://formulae.brew.sh/formula/mpich">https://formulae.brew.sh/formula/mpich</a>
+Or for OpenMPI: <a class="reference external" href="https://formulae.brew.sh/formula/open-mpi">https://formulae.brew.sh/formula/open-mpi</a></p>
+</div>
+<div class="section" id="compiling-mpich-from-source">
+<span id="mpich-by-hand"></span><h3>Compiling MPICH from source<a class="headerlink" href="#compiling-mpich-from-source" title="Permalink to this headline">¶</a></h3>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>More information on installing MPICH (or OpenMPI) can be found in
+the README or INSTALL files of their source code.</p>
+</div>
+<p>It is relatively easy to install MPICH (and OpenMPI) by hand if you need to do
+so. To do so, you will only need to a C, C++, and Fortran compiler available on
+your system.</p>
+<p>First, download the tar file from the MPICH website and then untar it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ wget https://www.mpich.org/static/downloads/5.0.0b1/mpich-5.0.0b1.tar.gz
+$ tar -xzvf mpich-5.0.0b1.tar.gz
+</pre></div>
+</div>
+<p>Then, create a new, empty, directory inside your home directory, this is where
+we will install our files to:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ~/
+$ mkdir installs
+</pre></div>
+</div>
+<p>We will use the <code class="docutils literal notranslate"><span class="pre">installs</span></code> directory to install MPI, and the LAPACK and
+BLAS (as described below).</p>
+<p>Change directory into the MPICH directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> mpich-5.0.0b1
+</pre></div>
+</div>
+<p>Then, we can run the <code class="docutils literal notranslate"><span class="pre">configure</span></code> inside the mpich directory. Here, we will
+specify our C compiler and Fortran compiler (although they are often detected
+by default):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">CC</span><span class="o">=</span>gcc <span class="nv">FC</span><span class="o">=</span>gfortran ./configure --prefix<span class="o">=</span>/home/&lt;USERNAME&gt;/installs
+</pre></div>
+</div>
+<p>In the line above, <code class="docutils literal notranslate"><span class="pre">CC</span></code> specifies the C compiler we want to use (to gcc) and
+<code class="docutils literal notranslate"><span class="pre">FC</span></code> sets the Fortran compiler we want to use (gfortran). You can adjust
+these to meet your needs.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--prefix</span></code> argument specifies where the include files, library files,
+documentation and executables should be placed when we type <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code>.</p>
+<p>Configure will take some time to determine how to build your system, and at the
+end, you’ll get a message saying that ‘MPICH is configured..’. Once it’s
+configured, we can call <code class="docutils literal notranslate"><span class="pre">make</span></code> to compiler it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="c1"># -j4 will Make with 4 threads</span>
+$ make -j4
+</pre></div>
+</div>
+<p>Here we’ve used <code class="docutils literal notranslate"><span class="pre">-j</span></code> to specify the number of threads to use when compiling,
+you can use more, but if you are on a shared system you should respect other
+users and use an appropriate amount of threads (4 is generally good).</p>
+<p>Once it’s compiled, you can run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code>, which will install MPICH into
+the <code class="docutils literal notranslate"><span class="pre">/home/&lt;USERNAME&gt;/installs</span></code></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ make -j4 install
+</pre></div>
+</div>
+<p>Inside <code class="docutils literal notranslate"><span class="pre">/home/&lt;USERNAME&gt;/installs</span></code> there will be four new directories:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bin</span></code> - Contains executables such as <code class="docutils literal notranslate"><span class="pre">mpifort</span></code>, <code class="docutils literal notranslate"><span class="pre">mpicc</span></code>, <code class="docutils literal notranslate"><span class="pre">mpiexec</span></code>, <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> etc.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">etc</span></code> - Contains MPI configuration files</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">include</span></code> - Contains MPI .h and .mod include files</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lib</span></code> - MPI library files</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">share</span></code> - MPI Documents and manuals <code class="docutils literal notranslate"><span class="pre">man</span> <span class="pre">mpifort</span></code>.</p></li>
+</ul>
+<p>To use our install, we will need to run the executables that are in the
+<code class="docutils literal notranslate"><span class="pre">/home/&lt;USERNAME&gt;/installs/bin</span></code> directory. To do so we can add them to our
+PATH variable:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span>/home/&lt;USERNAME&gt;/install/bin:<span class="nv">$PATH</span>
+</pre></div>
+</div>
+<p>Now we can run <code class="docutils literal notranslate"><span class="pre">mpifort</span></code> to compile and <code class="docutils literal notranslate"><span class="pre">mpiexec</span></code> to launch MPI
+applications.</p>
+</div>
+</div>
+<div class="section" id="installing-lapack-and-blas">
+<h2>Installing LAPACK and BLAS<a class="headerlink" href="#installing-lapack-and-blas" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="installing-blas">
+<h3>Installing BLAS<a class="headerlink" href="#installing-blas" title="Permalink to this headline">¶</a></h3>
+<p>While you can install BLAS manually, LAPACK <em>is</em> packaged with a copy of BLAS,
+so you can skip straight to installing LAPACK: See <a class="reference internal" href="#installing-lapack"><span class="std std-ref">Installing LAPACK</span></a>.</p>
+</div>
+<div class="section" id="installing-lapack">
+<span id="id1"></span><h3>Installing LAPACK<a class="headerlink" href="#installing-lapack" title="Permalink to this headline">¶</a></h3>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>More information for installing LAPACK can be found in its README.md file.</p>
+</div>
+<p>Installing LAPACK is very easy. First, download LAPACK from:
+<a class="reference external" href="https://www.netlib.org/lapack/">https://www.netlib.org/lapack/</a> and extract it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="c1"># Optionally create an installation folder if you did not do it above:</span>
+$ mkdir installs
+$
+$ <span class="c1"># Download and extract LAPACK:</span>
+$ wget https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.12.1.tar.gz
+$ tar -xzvf v3.12.1.tar.gz
+$ <span class="nb">cd</span> lapack-3.12.1
+</pre></div>
+</div>
+<p>For LAPACK, we just need to create a <code class="docutils literal notranslate"><span class="pre">make.inc</span></code> file. We simply can use the
+provided example <code class="docutils literal notranslate"><span class="pre">make.inc.example</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cp make.inc.example make.inc
+</pre></div>
+</div>
+<p>Open <code class="docutils literal notranslate"><span class="pre">make.inc</span></code> and ensure it has correct settings (it should be set for
+gcc/gfortran), then call make:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ make -j4
+</pre></div>
+</div>
+<p>This will produce three <code class="docutils literal notranslate"><span class="pre">*.a</span></code> files:</p>
+<ul class="simple">
+<li><p>liblapack.a</p></li>
+<li><p>librefblas.a</p></li>
+<li><p>libtmglib.a</p></li>
+</ul>
+<p>LAPACK does not have an install like MPI, but we can just copy, link or move
+them into the installation we made in <a class="reference internal" href="#mpich-by-hand"><span class="std std-ref">Compiling MPICH from source</span></a>
+(<code class="docutils literal notranslate"><span class="pre">/home/&lt;USERNAME&gt;/installs/lib</span></code>). Specifically, we will need to move/link
+them into the <code class="docutils literal notranslate"><span class="pre">lib</span></code> folder of that directory.</p>
+<p>We will also need to change the name of <code class="docutils literal notranslate"><span class="pre">librefblas.a</span></code> to <code class="docutils literal notranslate"><span class="pre">libblas.a</span></code>, as
+ModEM tries to link to <code class="docutils literal notranslate"><span class="pre">libblas.a</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ ln -s liblapack.a /home/&lt;USERNAME&gt;/install/lib/liblapack.a
+$ ln -s librefblas.a /home/&lt;USERNAME&gt;/install/lib/libblas.a
+</pre></div>
+</div>
+</div>
+<div class="section" id="compiling-modem-with-lapack-lablas">
+<h3>Compiling ModEM with LAPACK/LABLAS<a class="headerlink" href="#compiling-modem-with-lapack-lablas" title="Permalink to this headline">¶</a></h3>
+<p>Now, when we compile ModEM, we can link to these libraries. To do so, we will
+need to specify the directory <code class="docutils literal notranslate"><span class="pre">lib</span></code> directory above, we can do this in the
+<code class="docutils literal notranslate"><span class="pre">LDFLAGS</span></code> when we run configure:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ModEM/f90
+$ <span class="nv">LDFLAGS</span><span class="o">=</span><span class="s2">&quot;-L/home/&lt;USERNAME&gt;/installs/lib&quot;</span> ./CONFIG/configure Makefile gfortran
+</pre></div>
+</div>
+<p>This will cause your installed LAPACK and BLAS to be linked to ModEM!</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contributing.html" title="Contributing"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="beyond_the_basics.html" title="Beyond the Basics"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, Gary Egbert, Anna Kelbert, Miles Curry, Naser Meqbel, Hao Dong &amp; Kush Tandon.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>

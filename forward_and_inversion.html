@@ -139,11 +139,11 @@ model file, and the data file. Default values for forward modeling, inversion
 control parameters, as well as model covariance, are then used. Additional
 optional arguments allow more control over the inversion. The general form for
 the command line is:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Usage: -I NLCG rFile_Model rFile_Data [InvCtrl FwdCtrl CovCtrl StartModel ]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Usage: -I NLCG rFile_Model rFile_Data [ InvCtrl FwdCtrl CovCtrl StartModel ]
 </pre></div>
 </div>
 <p>As usual, arguments have to be in the specified order. Thus, to specify
-StartModel all other optional arguments must be given.</p>
+<code class="docutils literal notranslate"><span class="pre">StartModel</span></code> all other optional arguments must be given.</p>
 <p>The required arguments are:</p>
 <ul class="simple">
 <li><dl class="simple">
@@ -191,7 +191,7 @@ parameter, i.e., lambda = the initial damping parameter for inversion.</p>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>StartModel</strong><span class="classifier">The starting model file. This must be specified to start from</span></dt><dd><p>sometthing other than the prior. Proper use of this option is discussed below,
+<dt><strong>StartModel</strong><span class="classifier">The starting model file. This must be specified to start from</span></dt><dd><p>something other than the prior. Proper use of this option is discussed below,
 in <a class="reference internal" href="beyond_the_basics.html#restarting"><span class="std std-ref">Restart the Inversion</span></a>.</p>
 </dd>
 </dl>
@@ -200,17 +200,17 @@ in <a class="reference internal" href="beyond_the_basics.html#restarting"><span 
 </div>
 <div class="section" id="inversion-ouptuts">
 <span id="inversion-outputs"></span><h2>Inversion Ouptuts<a class="headerlink" href="#inversion-ouptuts" title="Permalink to this headline">¶</a></h2>
-<p>For the NLCG inversion 4 files are produced for each each step in
-the iterative search process. The files produced have the name <code class="docutils literal notranslate"><span class="pre">root_NLCG_###.rho</span></code>,
-<code class="docutils literal notranslate"><span class="pre">root_NLCG_###.prm</span></code>, <code class="docutils literal notranslate"><span class="pre">root_NLCG_###.dat</span></code>, and <code class="docutils literal notranslate"><span class="pre">root_NLCG_###.res</span></code>,
-where <code class="docutils literal notranslate"><span class="pre">root</span></code> is the output file root specified in the inversion
-control file, and <code class="docutils literal notranslate"><span class="pre">###</span></code> is the NLCG iteration number. The output
-file root defaults to <code class="docutils literal notranslate"><span class="pre">Modular</span></code> if the inversion control file
-is not used. The <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.rho</span></code> file is the model parameter file, giving
-the resistivity estimate at the current iteration. The <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.prm</span></code>
-file is also in the model parameter file format, but represents the
-transformed model parameter <span class="math notranslate nohighlight">\(\tilde{{\bf m}}={\bf C_{m}}^{-1/2}({\bf {m}-{\bf {m}_{prior})}}\)</span>.</p>
-<p>as discussed below inn <a class="reference internal" href="#apply-cov"><span class="std std-ref">Apply Model Covariance</span></a>. The <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.dat</span></code> file contains
+<p>For the NLCG inversion 4 files are produced for each each step in the iterative
+search process. The files produced have the name <code class="docutils literal notranslate"><span class="pre">root_NLCG_###.rho</span></code>,
+<code class="docutils literal notranslate"><span class="pre">root_NLCG_###.prm</span></code>, <code class="docutils literal notranslate"><span class="pre">root_NLCG_###.dat</span></code>, and <code class="docutils literal notranslate"><span class="pre">root_NLCG_###.res</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">root</span></code> is the output file root specified in the inversion control file, and
+<code class="docutils literal notranslate"><span class="pre">###</span></code> is the NLCG iteration number. The output file root defaults to
+<code class="docutils literal notranslate"><span class="pre">Modular</span></code> if the inversion control file is not used. The <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.rho</span></code>
+file is the model parameter file, giving the resistivity estimate at the current
+iteration. The <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.prm</span></code> file is also in the model parameter file
+format, but represents the transformed model parameter <span class="math notranslate nohighlight">\(\tilde{{\bf
+m}}={\bf C_{m}}^{-1/2}({\bf {m}-{\bf {m}_{prior})}}\)</span>.</p>
+<p>As discussed below in <a class="reference internal" href="#apply-cov"><span class="std std-ref">Apply Model Covariance</span></a>. The <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.dat</span></code> file contains
 predicted data, in the ModEM list format (identical to the input data file), and
 the <code class="docutils literal notranslate"><span class="pre">{*}{*}{*}.res</span></code> file contains residuals, again in the ModEM list format.
 (This file is not useful and will be eliminated in future ModEM releases). In
@@ -221,7 +221,7 @@ diagnostics of the search process are recorded in the log file
 <code class="docutils literal notranslate"><span class="pre">root_NLCG.log</span></code>.</p>
 <p>Similar files are produced by the DCG inversion, with the obvious name change.
 Note in this case each iteration corresponds to a full Gauss-Newton step, so
-there will be many fewer of these output files.  Howwever, this option has seen
+there will be many fewer of these output files.  However, this option has seen
 little actual use so far.</p>
 </div>
 <div class="section" id="apply-model-covariance">
@@ -296,7 +296,7 @@ a simpler to use black box.</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2025, Gary Egbert, Anna Kelber, Naser Meqbel, Hao Dong.
+        &#169; Copyright 2025, Gary Egbert, Anna Kelbert, Miles Curry, Naser Meqbel, Hao Dong &amp; Kush Tandon.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
     </div>
   </body>
