@@ -16,42 +16,42 @@ The following files and sub-directories will be found:
 Compiling ModEM
 ---------------
 
-The build system for ModEM utizes a ModEM configure script and the ``fmkmf.pl``
-Perl script.
+The build system for ModEM uses a ModEM configure script and the ``fmkmf.pl``
+Perl script:
 
 * configure script (``./f90/config/configure``) - Calls `fmkmf.pl` with various
   arguments
-* ``fmkmf.pl`` - Automatically a ModEM makefile 
+* ``fmkmf.pl`` - Called by Configure scripts and automatically generates a
+  ModEM makefile.
 
-The ModEM build process is a two step process. The first step requires calling a
-configure file in the ``./f90/CONFIG`` directory, which creates a Makefile, and
-the second requires calling `make` on the Makefile created by the configure
-script.
+Once you have run configure, you'll be able to run `make` on the generated
+Makefile.
 
-In the ``f90`` directory there are some prototype Makefiles which can be used to
-compile ModEM without having to run the configure script; however, these Makefiles
-only create the Matrix-Free version of ModEM and you may want to compile the other
-two version SP/SP2. To do this you will need to run the configure script, which
-is explained below.
+In the ``f90`` directory there are some prototype Makefiles which can be used
+to compile ModEM without having to run the configure script; however, these
+Makefiles only create the Matrix-Free version of ModEM and you may want to
+compile the other two version SP/SP2. To do this you will need to run the
+configure script, which is explained below.
 
 ModEM Dependencies
 ------------------
 
 ModEM requires two libraries, the BLAS Library and the LAPACK library and
-optionally (but you probabbly will want to use), the MPI library.
+optionally the MPI library.
 
-Often BLAS and LAPACK are already aviable on your system and are easily linked
-automatically, but occasionally you might need to install them yourself. To do
-so please see :ref:`installing-deps`
+Often BLAS and LAPACK are already available on your system and are linked
+automatically, but occasionally you might need to install or link them
+yourself. For instructions on building ModEM dependencies see
+:ref:`installing-deps`.
 
-Configure Scripts 
+Configure Scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There are a number of configure scripts inside ``./f90/CONFIG`` in the form of
 ``Configure.***``, ``Configure.SP.***``, ``Configure.3D_MT.**``, etc. These
-configure files are considered decprecated, and the ``configure`` script inside
+configure files are considered deprecated, and the ``configure`` script inside
 ``f90`` should be used instead; however, the deprecated configure scripts are
-left for backwards compatability.
+left for backwards compatibility.
 
 The ``configure`` script inside ``f90`` can be used to generate ModEM makefiles
 for various configurations and compilers. This ``configure`` should be used
@@ -62,7 +62,8 @@ Creating Makefiles from configure
 
 .. note::
 
-    By default, ``configure`` will generate an MPI Makefile with SP2.
+    By default, ``configure``, with no optional arguments will generate an MPI
+    Makefile with the SP2 forward solver.
 
 To create a Makefile, run the ``configure`` script found in the ``f90`` with
 arguments that match your system and the version of ModEM you want to use.
@@ -73,7 +74,6 @@ Currently, ModEM has three different forwards 'flavors':
 * SP - Hao's Sparse Matrix
 * SP2 -  (DEFAULT) - Hao's Second Sparse Matrix - Fastest and has Hao's
     fine-grained capability
-
 
 .. code-block:: bash
 
@@ -100,9 +100,9 @@ The Configure scripts has the following usage::
             Only able to build with SP2
         -s Build spherical version of ModEM
 
-Running configure will create a Makefile that you specify in the first argument.
-In the above case the Makefile will be named ``Makefile``. We can then call ``make``
-on that ``Makefile``
+Running configure will create a Makefile that you specify in the first
+argument. In the above case the Makefile will be named ``Makefile``. We can
+then call ``make`` on that ``Makefile``
 
 .. code-block:: bash
 
@@ -115,35 +115,67 @@ A few examples using Configure
 
 .. code-block:: bash
 
-    $ ./CONFIG/configure Makefile gfortran                                                      
-    $ # Generates a Makefile with GFortran options using MPI                          
-                                              
-    $ ./CONFIG/configure -d debug Makefile ifort
+    $ ./configure Makefile gfortran
+    $ # Generates a Makefile with GFortran options using MPI
+
+    $ ./configure -d debug Makefile ifort
     $ # Generates an MPI Makefile with Ifort debugging options
-                                              
-    $ ./CONFIG/configure -m serial -l MF Makefile gfortran
+
+    $ ./configure -m serial -l MF Makefile gfortran
     $ # Generates a serial Makefile with GFortran with the MF solver
 
-    $ FC=ftn LDFLAGS=-L/home/username/install/lib ./CONFIG/configure Makefile gfortran
+    $ FC=ftn LDFLAGS=-L/home/username/install/lib ./configure Makefile gfortran
     $ # Generates an SP2, MPI capabile makefile, adding LDFLAGS to the link step and
     $ # specifies the compiler to be `ftn`.
 
-    $ FFLAGS='-mSSE2' ./CONFIG/configure Makefile ifort
+    $ FFLAGS='-mSSE2' ./configure Makefile ifort
     $ # Create a SP2, MPI capabile makefile, with ifort/intel compiler options and add
     $ # the '-mSSE2' to all compiling steps.
+
+    $ LDFLAGS="-L/path/to/install/lib/" ./configure Makefile gfortran
+    $ # Generates a Makefile with GFortran options using MPI and passes
+    $ # the location of /path/to/install/lib to the linker step
 
 Configuring on Cray Systems
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you are running on a Cray system, you will need to use Cray's fortran
+If you are running on a Cray system, you will need to use Cray's Fortran
 compiler wrapper: ``ftn``. You can easily specify the name of the compiler
-by setting the ``FC`` enviornment variable:
+by setting the ``FC`` environment variable:
 
 .. code-block:: bash
 
-    $ FC=ftn ./CONFIG/configure Makefile gfortran
+    $ FC=ftn ./configure Makefile gfortran
     $ # Or for intel:
-    $ FC=ftn ./CONFIG/configure Makefile ifort
+    $ FC=ftn ./configure Makefile ifort
+
+
+Ensure BLAS and LAPACK are linked
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you get errors that you are not able to find ``-lblas`` or ``-llapack``, but
+have them installed, you can use the ``LDFLAGS`` environment variable to tell
+the linker where to find them. You can specify this when you run configure:
+
+.. code-block:: bash
+
+   $ LDFLAGS="-L/path/to/install/lib/" ./configure Makefile gfortran
+
+If you have already created your makefile, you can also add the ``-L``
+specification to the ``LIBS_PATH`` of the Macro-Def section of your Makefile:
+
+.. code-block:: Make
+
+    # ------------------Macro-Defs---------------------
+    include Makefile.local
+    OBJDIR = ./objs/3D_MT/csemBuild
+    F90 = mpifort
+    FFLAGS = -cpp -DMPI -DCSEM_Dipole1D -O3 -ffree-line-length-none -dI -fallow-argument-mismatch
+    MPIFLAGS = -cpp -DMPI -DCSEM_Dipole1D
+    MODULE = -J $(OBJDIR)
+    LIBS_PATH = -L/path/to/install/lib
+    LIBS = -lblas -llapack
+
 
 Compiling
 ----------
@@ -165,8 +197,9 @@ If you have MPI installed, and already have a serial makefile generated you can
 easily compile the MPI version of ModEM by altering the makefile. This is
 sometimes easier then creating a new makefile from the configuration scripts.
 
-To compile an MPI version, edit the compiler in your makefile to be an MPI
-compiler (e.g. mpifort) and add -DMPI to the MPIFLAGGS variable
+To compile an MPI version, change the ``F90`` variable in your makefile to be
+an MPI compiler (e.g. ``mpifort``) and add ``-DMPI`` to the ``MPIFLAGGS``
+variable:
 
 .. code-block:: Makefile
 
@@ -181,7 +214,6 @@ scripts and passing it MPI as the type.
     When running ModEM with MPI you must use at least 2 tasks and
     a max of (2 x nTransmitters) + 1 tasks (except for the SP2 version compiled
     with -DFG).
-
 
 
 Running ModEM: The basics
@@ -266,14 +298,14 @@ file formats.
 Using Docker to Compile and Run ModEM
 -------------------------------------
 
-A `Dockerfile <Dockerfile_>`_ has been provided that will create an Ubuntu docker
-container where you can compile and run ModEM. To run the ModEM docker container, first
-ensure you have `docker installed <Docker-Getting-Started_>`_ and running (Either have the
-docker daemon `docker running <daemon-running_>`_, or Docker `Desktop Running
+For convenience, a Dockerfile has been provided where you can compile and run
+ModEM inside. To run the ModEM docker container, first ensure you have `docker
+installed <Docker-Getting-Started_>`_ and running (Either have the docker
+daemon `docker running <daemon-running_>`_, or Docker `Desktop Running
 <Docker-desktop_>`_.
 
-The Dockerfile builds an Ubuntu instance with GFortran, MPI, and all the other tools
-needed to compile and run ModEM.
+The Dockerfile builds an Ubuntu instance with GFortran, MPI, and all the other
+tools needed to compile and run ModEM.
 
 Building
 ^^^^^^^^
@@ -285,16 +317,16 @@ the ``ModEM`` directory (where the ``Dockerfile`` resides), run the following:
 
     $ docker build . -t modem:latest --build-arg ncpus=2
 
-You can specify different numbers of arguments in the ``ncpus`` build argument if
-you wish. It will speed up the time when Docker compiles MPICH.
+You can specify the number of CPUs to use in the ``ncpus`` variable. This will
+set the number of CPUs to use when building MPICH.
 
 .. important::
 
-    For personal machines, it's best to set ``ncpus`` no greater than the max number of
-    cores on your machines.
+    For personal machines, it's best to set ``ncpus`` no greater than the max
+    number of cores on your machines.
 
-    For shared login nodes you may want to use no more than 2-4 CPUs in order to
-    not detrement other users.
+    For shared login nodes you may want to use no more than 2-4 CPUs in order
+    to not be detrimental to other users.
 
 After running the above command Docker will create an image named
 ``modem:latest`` that you can then use to run; it will have all necessary
@@ -309,9 +341,9 @@ libraries and compilers to compile and run ModEM.
 Running and building ModEM in Docker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-By default, the dockerfile automatically checks out the ``main`` branch of ModEM
-and places it in the root user's home directory: ``/root/ModEM-main``. This copy
-of ModEM has been provided for the convience of new users.
+By default, the dockerfile automatically checks out the ``main`` branch of
+ModEM and places it in the root user's home directory: ``/root/ModEM-main``.
+This copy of ModEM has been provided for the convenience of new users.
 
 First, let us start a container using the image that we built above:
 
@@ -322,19 +354,21 @@ First, let us start a container using the image that we built above:
 
 Normally, when running a docker container, the data created inside the container
 will be deleted when the container terminates. To prevent this, we can use a
-volume. 
+volume.
 
-First, we need to create a named volume using ``docker volume create modem``, then
-in our run command we attach that volume to ``/root/ModEM-main``. This will save any
-data that we created inside ``/root/ModEM-main``, but nowhere else.
+First, we need to create a named volume using ``docker volume create modem``,
+then in our run command we attach that volume to ``/root/ModEM-main``. This
+will save any data that we created inside ``/root/ModEM-main``, but nowhere
+else.
 
-After you terminate that container, and wish to start it again, you will need to
-specify your run command with the same arguments as above to reuse the data
-inside the volume, see important note below.
+After you terminate that container, and wish to start it again, you will need
+to specify your run command with the same arguments as above to reuse the data
+inside the volume, see the important note below.
 
 The docker run command will run the image ``modem:latest`` and create a
 container for us to use The ``-it`` argument will tell Docker to start an
-interactive tty session and will drop you inside the running container.
+interactive tty session and will drop you inside a bash shell inside the
+running container.
 
 Now, we can move into ``~/ModEM-main`` to configure, build and run ModEM:
 
@@ -343,9 +377,9 @@ Now, we can move into ``~/ModEM-main`` to configure, build and run ModEM:
     $ cd ~/ModEM-main
     $ cd f90/
     $ # Compile with MPI, SP2 solver:
-    $ ./CONFIG/configure Makefile gfortran
+    $ ./configure Makefile gfortran
     $ # or compile serial, SP2 solver
-    $ ./CONFIG/configure -m serial Makefile gfortran
+    $ ./configure -m serial Makefile gfortran
     $ make
     $ # Run ModEM serially or with MPI:
     $ mpiexec -n 2 ./Mod3DMT ...
@@ -353,8 +387,8 @@ Now, we can move into ``~/ModEM-main`` to configure, build and run ModEM:
     $ ./Mod3DMT ...
 
 
-You can terminate this docker session by logging out by typing ``exit`` or you can
-use ``Ctrl-D``.
+You can terminate this docker session by logging out by typing ``exit`` or you
+can use ``Ctrl-D``.
 
 .. important::
 
@@ -386,8 +420,8 @@ Specifying mounts points
     https://docs.docker.com/engine/storage/bind-mounts/.
 
 While it is helpful to have the ``ModEM-Main/`` provided, it is also helpful to
-work with local version of ``ModEM`` you have on your host system. To do that we
-can use mounts, which will allow us to mirror a directory on our host system
+work with local version of ``ModEM`` you have on your host system. To do that
+we can use mounts, which will allow us to mirror a directory on our host system
 into the container.
 
 We can add a mount by passing in a ``--mount`` option during our run command:
