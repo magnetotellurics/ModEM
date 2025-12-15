@@ -67,7 +67,7 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
         "-parallel"
     )
 else()
-    messaing(FATAL_ERROR "Unknown/Unsupported Fortran Compiler: '${CMake_Fortran_COMPILER_ID}' - Supported compilers are < GNU | Ifort")
+    message(FATAL_ERROR "Unknown/Unsupported Fortran Compiler: '${CMake_Fortran_COMPILER_ID}' - Supported compilers are < GNU | Ifort")
 endif()
 
 
