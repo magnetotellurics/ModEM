@@ -52,7 +52,7 @@ CSEM Version of ModEM
 .. warning::
 
    The CSEM version of ModEM is not fully validated and has only been used in
-   some instances. We cannot guarantee correct or accurately results with it.
+   some instances. We cannot guarantee correct or accurate results with it.
 
 For more information see :ref:`csem_modem`.
 
@@ -62,7 +62,7 @@ Spherical Version of ModEM
 .. warning::
 
    The Spherical Version of ModEM is not yet fully developed and we cannot
-   guarantee correct or accurately results!
+   guarantee correct or accurate results!
 
 Support
 -------

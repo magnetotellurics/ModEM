@@ -23,10 +23,10 @@ Tips & Testing
 
 * Please keep pull requests to reasonable sizes (consider breaking up large PR's
   into small ones)
-* If you able, please test your changes using both the GNU gfortran compiler and
-  Intel ifort repository (but Gfortran at the minimum if you don't have access
-  to Intel).
-* Contribute any relative documentation to this Documentation (See
+* If you are able, please test your changes using both the GNU gfortran
+  compiler and Intel ifort repository (but Gfortran at the minimum if you don't
+  have access to the Intel compiler).
+* Contribute any relevant documentation to this Documentation (See
   :ref:`building-the-docs`)
 * Run the unit tests in the ``unit_testing`` directory (Currently not added)
 

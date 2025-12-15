@@ -214,22 +214,22 @@ exit. If this does not work, you need to increase the size of the parameters.
 
 In the example given above, each line in the actual data list contains period,
 site code (up to 12 chars), geographic latitude and longitude, ``X/Y/Z``
-location in meters, component code (e.g., `ZXY``), real and imaginary parts, and
-the error bar.  Geographic latitude and longitude are not used by the program,
-which requires the user to make sure that the correct locations (i.e., ``X/Y/Z``
-in meters are provided, registered to the grid; see further discussion in
-:ref:`model-files`.
+location in meters, component code (e.g., ``ZXY``), real and imaginary parts,
+and the error bar.  Geographic latitude and longitude are not used by the
+program, which requires the user to make sure that the correct locations (i.e.,
+``X/Y/Z`` in meters are provided, registered to the grid; see further
+discussion in :ref:`model-files`.
 
 Of course each specific data type requires a specific format, and consistent
 header entries, such as units (described above). List element formats for
 currently supported data types are summarized here.Some data file examples are
-provided in the `examples/` directory. The `matlab/ioAscii/`` directory contains
+provided in the `examples/` directory. The ``matlab/ioAscii/`` directory contains
 read and write routines in Matlab (at present these reading/writing routines are
 restricted to the most common data types:
 
-• Off_Diagonal_Impedance
-• Full_Impedance
-• Full_Impedance_plus_Full_Vertical_Components
+* Off_Diagonal_Impedance
+* Full_Impedance
+* Full_Impedance_plus_Full_Vertical_Components
 
 For complex impedances and vertical components the data format is::
 
@@ -287,7 +287,7 @@ values.
 
 A critical issue which is independent of file format, is how coordinates
 implicit in the model grid are related to coordinates specified in the separate
-data file. The arrays ∆x,∆y,∆z define a natural Cartesian coordinate system for
+data file. The arrays ∆x, ∆y, ∆z define a natural Cartesian coordinate system for
 the grid, with origin at the outer corner (of model parameter cell (1,1,1)). We
 refer to this here as the “natural grid coordinate system”. The origin of the
 coordinate system used in the data file (the “data coordinate system” does not
@@ -366,7 +366,7 @@ output files will match the convention used in the input file.
 The next lines give the grid spacing, in meters. Format is free, and the list for any
 of the three arrays can span multiple lines. Use a new line for each of x, y, and z.
 
-(4) Resistivy Codes - (Not used by ModEM)
+(4) Resistivity Codes - (Not used by ModEM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The next line is where resistivity codes were to be specified in the WSINV3DMT
@@ -378,7 +378,7 @@ option.
     Resistivity codes are not used in ModEM.
 
 
-(5) Cell Resistivites
+(5) Cell Resistivities
 ^^^^^^^^^^^^^^^^^^^^^^
 
 Now the list of cell resistivities (or integer codes, if this option is being
@@ -453,19 +453,19 @@ define the auto-regressive smoothing scheme. These ⍺ between 0 and 1; 0 implie
 no smoothing, larger values correspond to longer smoothing (correlation) length
 scales. Typical values that we use are 0.1 - 0.3.  The smoothing can be
 specified independently for each vertical level, and for x and y directions. A
-single parameter defines the vertical smoothing. Note that
-the smoothing is applied without reference to the actual variable grid spacing.
-In addition to the parameters ⍺, one can specify how many times the
-smoothing is repeated (nSmooth). Typically this number is 1-3. Repeating the
-smoothing implies longer decoration length scales—these increase length scales
-by a factor of sqrt(nSmooth).  Using a smaller ⍺ and more smoothing
-repetitions will result in a more "circular" effective smoothing kernel. With
-nSmooth = 1 the covariance will be somewhat anisotropic, with longer length
-scales associated with grid coordinate axes (i.e., features may tend to be
-elongated in x and y directions, relative to a 45 degree angle). Default values
-for the smoothing parameters (used if no model covariance file is provided) are
-::math`⍺=0.3` and ::math:`nSmooth = 1`. More circular smoothing, with similar length
-scales would be achieved with ::math:`⍺=0.2` and ::math:`nSmooth = 2`.
+single parameter defines the vertical smoothing. Note that the smoothing is
+applied without reference to the actual variable grid spacing. In addition to
+the parameters ⍺, one can specify how many times the smoothing is repeated
+(nSmooth). Typically this number is 1-3. Repeating the smoothing implies longer
+decoration length scales—these increase length scales by a factor of
+sqrt(nSmooth).  Using a smaller ⍺ and more smoothing repetitions will result in
+a more "circular" effective smoothing kernel. With nSmooth = 1 the covariance
+will be somewhat anisotropic, with longer length scales associated with grid
+coordinate axes (i.e., features may tend to be elongated in x and y directions,
+relative to a 45 degree angle). Default values for the smoothing parameters
+(used if no model covariance file is provided) are :math:`⍺=0.3` and
+:math:`nSmooth = 1`. More circular smoothing, with similar length scales would
+be achieved with :math:`⍺=0.2` and :math:`nSmooth = 2`.
 
 The covariance file also is used to subdivide the model domain, by defining an
 integer index for each cell in the grid. The index can be used to enable
@@ -667,7 +667,8 @@ resistivity–a large positive number and in the covariance file, marked with
 index 0. Here is a simple example of the covariance file for a simple circular
 hill (just showing the mask blocks). 
 
-..note: 
+.. note::
+
     Note: We use resistivity in the model file 
 
 .. code-block:: text

@@ -4,7 +4,7 @@ CSEM Version of ModEM
 .. warning::
 
    The CSEM version of ModEM is not fully validated and has only been used in
-   some instances. We cannot guarantee correct or accurately results with it.
+   some instances. We cannot guarantee correct or accurate results with it.
 
 Please see the warning above. The CSEM version is really not yet ready for
 production, but we are providing it here for future development and testing.
@@ -15,10 +15,10 @@ The CSEM version of ModEM is available on the ``CSEM`` branch of ModEM:
 
    $ git checkout CSEM
 
-The CSEM version requires one of two submodules that are not apart of ModEM:
+The CSEM version requires one of two submodules that are not a part of ModEM:
 
-* Dipole1D - Apart of OCCAM1DCSEM - `provided by SCRIPPS <_dipole1d>`_.
-* EM1D - Provided by Rita Streich's - But not yet avaliable for public release.
+* Dipole1D - A part of OCCAM1DCSEM - `provided by SCRIPPS <_dipole1d>`_.
+* EM1D - Provided by Rita Streich's - But not yet available for public release.
 
 For more information on the CSEM version of ModEM see the README on the CSEM
 branch: https://github.com/magnetotellurics/ModEM/blob/CSEM/README.md

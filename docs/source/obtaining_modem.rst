@@ -2,8 +2,8 @@ Obtaining ModEM
 ===============
 
 ModEM 2D and 3D MT modeling and inversion codes are currently available for
-under the LICENSE agreement under (see COPYRIGHT). The latest stable version of
-ModEM can always be obtained from our GitHub repository:
+under the LICENSE agreement (see LICENSE). The latest stable version of ModEM
+can always be obtained from the GitHub repository:
 
 https://github.com/magnetotellurics/ModEM
 

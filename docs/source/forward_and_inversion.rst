@@ -98,7 +98,7 @@ parameter, i.e., lambda = the initial damping parameter for inversion.
 * **CovCtrl** :  The covariance file. This is used to define the model
     covariance(see section :ref:`model-cov-files`).
 * **StartModel** : The starting model file. This must be specified to start from
-    sometthing other than the prior. Proper use of this option is discussed below,
+    something other than the prior. Proper use of this option is discussed below,
     in :ref:`restarting`.
 
 .. _inversion-outputs:
@@ -118,7 +118,7 @@ format, but represents the transformed model parameter :math:`\tilde{{\bf
 m}}={\bf C_{m}}^{-1/2}({\bf {m}-{\bf {m}_{prior})}}`.
 
 
-As discussed below inn :ref:`apply-cov`. The ``{*}{*}{*}.dat`` file contains
+As discussed below in :ref:`apply-cov`. The ``{*}{*}{*}.dat`` file contains
 predicted data, in the ModEM list format (identical to the input data file), and
 the ``{*}{*}{*}.res`` file contains residuals, again in the ModEM list format.
 (This file is not useful and will be eliminated in future ModEM releases). In
@@ -130,7 +130,7 @@ diagnostics of the search process are recorded in the log file
 
 Similar files are produced by the DCG inversion, with the obvious name change.
 Note in this case each iteration corresponds to a full Gauss-Newton step, so
-there will be many fewer of these output files.  Howwever, this option has seen
+there will be many fewer of these output files.  However, this option has seen
 little actual use so far.
 
 .. _apply-cov:

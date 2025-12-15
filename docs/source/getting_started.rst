@@ -19,12 +19,12 @@ Compiling ModEM
 The build system for ModEM uses a ModEM configure script and the ``fmkmf.pl``
 Perl script:
 
-* configure script (``./f90/config/configure``) - Calls `fmkmf.pl` with various
-  arguments
+* configure script (``./f90/config/configure``) - Calls ``fmkmf.pl`` with
+  various arguments
 * ``fmkmf.pl`` - Called by Configure scripts and automatically generates a
   ModEM makefile.
 
-Once you have run configure, you'll be able to run `make` on the generated
+Once you have run configure, you'll be able to run ``make`` on the generated
 Makefile.
 
 In the ``f90`` directory there are some prototype Makefiles which can be used
@@ -70,7 +70,7 @@ arguments that match your system and the version of ModEM you want to use.
 
 Currently, ModEM has three different forwards 'flavors':
 
-* MF - Matrix Free - Orginal/classic ModEM
+* MF - Matrix Free - Original/classic ModEM
 * SP - Hao's Sparse Matrix
 * SP2 -  (DEFAULT) - Hao's Second Sparse Matrix - Fastest and has Hao's
     fine-grained capability
@@ -108,7 +108,7 @@ then call ``make`` on that ``Makefile``
 
     $ make
 
-Examples using Configure
+Examples Using Configure
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A few examples using Configure
@@ -119,7 +119,7 @@ A few examples using Configure
     $ # Generates a Makefile with GFortran options using MPI
 
     $ ./configure -d debug Makefile ifort
-    $ # Generates an MPI Makefile with Ifort debugging options
+    $ # Generates an MPI Makefile with ifort debugging options
 
     $ ./configure -m serial -l MF Makefile gfortran
     $ # Generates a serial Makefile with GFortran with the MF solver
@@ -209,7 +209,7 @@ variable:
 However, you can also generate an MPI makefile by running the configuration
 scripts and passing it MPI as the type.
 
-..important::
+.. important::
 
     When running ModEM with MPI you must use at least 2 tasks and
     a max of (2 x nTransmitters) + 1 tasks (except for the SP2 version compiled

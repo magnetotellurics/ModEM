@@ -54,12 +54,12 @@ Or for OpenMPI: https://formulae.brew.sh/formula/open-mpi
 
 .. _mpich-by-hand: 
 
-Compiling mpich from source 
+Compiling MPICH from source 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. tip::
 
-    More information on install MPICH (or OpenMPI) can be found in
+    More information on installing MPICH (or OpenMPI) can be found in
     the README or INSTALL files of their source code.
 
 It is relatively easy to install MPICH (and OpenMPI) by hand if you need to do
@@ -84,11 +84,11 @@ we will install our files to:
 We will use the ``installs`` directory to install MPI, and the LAPACK and
 BLAS (as described below).
 
-Change directory into the MPICH direcotry:
+Change directory into the MPICH directory:
 
 .. code-block:: bash
 
-    $ cd mpich-5.0.0.b1
+    $ cd mpich-5.0.0b1
 
 Then, we can run the ``configure`` inside the mpich directory. Here, we will
 specify our C compiler and Fortran compiler (although they are often detected
@@ -98,14 +98,14 @@ by default):
 
     $ CC=gcc FC=gfortran ./configure --prefix=/home/<USERNAME>/installs
 
-In the line above, ``CC`` specifies the C compile we want to use (to gcc) and
+In the line above, ``CC`` specifies the C compiler we want to use (to gcc) and
 ``FC`` sets the Fortran compiler we want to use (gfortran). You can adjust
 these to meet your needs.
 
 The ``--prefix`` argument specifies where the include files, library files,
 documentation and executables should be placed when we type ``make install``.
 
-Configure will take sometime to determine how to build your system, and at the
+Configure will take some time to determine how to build your system, and at the
 end, you'll get a message saying that 'MPICH is configured..'. Once it's
 configured, we can call ``make`` to compiler it:
 
@@ -145,7 +145,7 @@ PATH variable:
 Now we can run ``mpifort`` to compile and ``mpiexec`` to launch MPI
 applications.
 
-Installing LAPACK and LBLAS
+Installing LAPACK and BLAS
 ----------------------------
 
 Installing BLAS
@@ -169,7 +169,7 @@ https://www.netlib.org/lapack/ and extract it:
 
 .. code-block:: bash
 
-    $ # Optionally create an installation folder if you did do it above:
+    $ # Optionally create an installation folder if you did not do it above:
     $ mkdir installs
     $
     $ # Download and extract LAPACK:
@@ -184,7 +184,7 @@ provided example ``make.inc.example``:
 
     $ cp make.inc.example make.inc
 
-Open ``make.inc`` and insure it has correct settings (it should be set for
+Open ``make.inc`` and ensure it has correct settings (it should be set for
 gcc/gfortran), then call make:
 
 .. code-block:: bash
