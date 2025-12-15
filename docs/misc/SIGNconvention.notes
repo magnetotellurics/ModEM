@@ -1,5 +1,0 @@
-SIGNconvention:  integer variable "sign" in model_data module
-is the sign convention, in the sense that a time dependence
-of exp(sign*omega*t) is assumed.  WS assumed sign = -1;
-This is the opposite of my standard data processing assumption,
-which is consistent with the convention usually assumed in the FFT.
