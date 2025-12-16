@@ -1,6 +1,9 @@
 # ModEM Executables and files
 Mod2DMT
 Mod3DMT
+Mod3DMT_MF
+Mod3DMT_SP
+Mod3DMT_SP2
 Modular_NLCG*
 BLOCK2_NLCG*
 Nodes_Status_*
@@ -84,6 +87,8 @@ octave-workspace
 
 # Sphinx/HMTL Doc Ignore Build output
 docs/build/
+# Explicitly **include** the Sphinx Makefile
+! docs/Makefile
 
 # CMake Build
 CMakeLists.txt.user
@@ -92,6 +97,7 @@ CMakeFiles
 CMakeScripts
 Testing
 Makefile
+src/**Makefile
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json
