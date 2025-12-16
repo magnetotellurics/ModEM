@@ -148,11 +148,8 @@ yourself. For instructions on building ModEM dependencies see
 <p>There are a number of configure scripts inside <code class="docutils literal notranslate"><span class="pre">./f90/CONFIG</span></code> in the form of
 <code class="docutils literal notranslate"><span class="pre">Configure.***</span></code>, <code class="docutils literal notranslate"><span class="pre">Configure.SP.***</span></code>, <code class="docutils literal notranslate"><span class="pre">Configure.3D_MT.**</span></code>, etc. These
 configure files are considered deprecated, and the <code class="docutils literal notranslate"><span class="pre">configure</span></code> script inside
-<code class="docutils literal notranslate"><span class="pre">f90</span></code> should be used instead; however, the deprecated configure scripts are
-left for backwards compatibility.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">configure</span></code> script inside <code class="docutils literal notranslate"><span class="pre">f90</span></code> can be used to generate ModEM makefiles
-for various configurations and compilers. This <code class="docutils literal notranslate"><span class="pre">configure</span></code> should be used
-to generate makefiles for ModEM.</p>
+<code class="docutils literal notranslate"><span class="pre">f90/CONFIG</span></code> should be used instead; however, the deprecated configure
+scripts are left for backwards compatibility.</p>
 </div>
 </div>
 <div class="section" id="creating-makefiles-from-configure">
@@ -175,8 +172,8 @@ arguments that match your system and the version of ModEM you want to use.</p>
 </li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> f90/
-$ <span class="c1"># By default ./configure creates a SP2 Makefile with MPI</span>
-$ ./configure Makefile gfortran
+$ <span class="c1"># By default ./CONFIG/configure creates a SP2 Makefile with MPI</span>
+$ ./CONFIG/configure Makefile gfortran
 </pre></div>
 </div>
 <p>The Configure scripts has the following usage:</p>
@@ -207,24 +204,24 @@ then call <code class="docutils literal notranslate"><span class="pre">make</spa
 <div class="section" id="examples-using-configure">
 <h3>Examples Using Configure<a class="headerlink" href="#examples-using-configure" title="Permalink to this headline">¶</a></h3>
 <p>A few examples using Configure</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ ./configure Makefile gfortran
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ ./CONFIG/configure Makefile gfortran
 $ <span class="c1"># Generates a Makefile with GFortran options using MPI</span>
 
-$ ./configure -d debug Makefile ifort
+$ ./CONFIG/configure -d debug Makefile ifort
 $ <span class="c1"># Generates an MPI Makefile with ifort debugging options</span>
 
-$ ./configure -m serial -l MF Makefile gfortran
+$ ./CONFIG/configure -m serial -l MF Makefile gfortran
 $ <span class="c1"># Generates a serial Makefile with GFortran with the MF solver</span>
 
-$ <span class="nv">FC</span><span class="o">=</span>ftn <span class="nv">LDFLAGS</span><span class="o">=</span>-L/home/username/install/lib ./configure Makefile gfortran
+$ <span class="nv">FC</span><span class="o">=</span>ftn <span class="nv">LDFLAGS</span><span class="o">=</span>-L/home/username/install/lib ./CONFIG/configure Makefile gfortran
 $ <span class="c1"># Generates an SP2, MPI capabile makefile, adding LDFLAGS to the link step and</span>
 $ <span class="c1"># specifies the compiler to be `ftn`.</span>
 
-$ <span class="nv">FFLAGS</span><span class="o">=</span><span class="s1">&#39;-mSSE2&#39;</span> ./configure Makefile ifort
+$ <span class="nv">FFLAGS</span><span class="o">=</span><span class="s1">&#39;-mSSE2&#39;</span> ./CONFIG/configure Makefile ifort
 $ <span class="c1"># Create a SP2, MPI capabile makefile, with ifort/intel compiler options and add</span>
 $ <span class="c1"># the &#39;-mSSE2&#39; to all compiling steps.</span>
 
-$ <span class="nv">LDFLAGS</span><span class="o">=</span><span class="s2">&quot;-L/path/to/install/lib/&quot;</span> ./configure Makefile gfortran
+$ <span class="nv">LDFLAGS</span><span class="o">=</span><span class="s2">&quot;-L/path/to/install/lib/&quot;</span> ./CONFIG/configure Makefile gfortran
 $ <span class="c1"># Generates a Makefile with GFortran options using MPI and passes</span>
 $ <span class="c1"># the location of /path/to/install/lib to the linker step</span>
 </pre></div>
@@ -235,9 +232,9 @@ $ <span class="c1"># the location of /path/to/install/lib to the linker step</sp
 <p>If you are running on a Cray system, you will need to use Cray’s Fortran
 compiler wrapper: <code class="docutils literal notranslate"><span class="pre">ftn</span></code>. You can easily specify the name of the compiler
 by setting the <code class="docutils literal notranslate"><span class="pre">FC</span></code> environment variable:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">FC</span><span class="o">=</span>ftn ./configure Makefile gfortran
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">FC</span><span class="o">=</span>ftn ./CONFIG/configure Makefile gfortran
 $ <span class="c1"># Or for intel:</span>
-$ <span class="nv">FC</span><span class="o">=</span>ftn ./configure Makefile ifort
+$ <span class="nv">FC</span><span class="o">=</span>ftn ./CONFIG/configure Makefile ifort
 </pre></div>
 </div>
 </div>
@@ -246,7 +243,7 @@ $ <span class="nv">FC</span><span class="o">=</span>ftn ./configure Makefile ifo
 <p>If you get errors that you are not able to find <code class="docutils literal notranslate"><span class="pre">-lblas</span></code> or <code class="docutils literal notranslate"><span class="pre">-llapack</span></code>, but
 have them installed, you can use the <code class="docutils literal notranslate"><span class="pre">LDFLAGS</span></code> environment variable to tell
 the linker where to find them. You can specify this when you run configure:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">LDFLAGS</span><span class="o">=</span><span class="s2">&quot;-L/path/to/install/lib/&quot;</span> ./configure Makefile gfortran
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">LDFLAGS</span><span class="o">=</span><span class="s2">&quot;-L/path/to/install/lib/&quot;</span> ./CONFIG/configure Makefile gfortran
 </pre></div>
 </div>
 <p>If you have already created your makefile, you can also add the <code class="docutils literal notranslate"><span class="pre">-L</span></code>
@@ -431,9 +428,9 @@ running container.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ~/ModEM-main
 $ <span class="nb">cd</span> f90/
 $ <span class="c1"># Compile with MPI, SP2 solver:</span>
-$ ./configure Makefile gfortran
+$ ./CONFIG/configure Makefile gfortran
 $ <span class="c1"># or compile serial, SP2 solver</span>
-$ ./configure -m serial Makefile gfortran
+$ ./CONFIG/configure -m serial Makefile gfortran
 $ make
 $ <span class="c1"># Run ModEM serially or with MPI:</span>
 $ mpiexec -n <span class="m">2</span> ./Mod3DMT ...
