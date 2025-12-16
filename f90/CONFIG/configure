@@ -2,17 +2,16 @@
 
 # ModEM Configuration Tool - Generate ModEM Makefiles
 #
-# Use this utility to generate a new ModEM Makefile. Most users, will
-# not need to use this Configure script and can instead use the Makefiles
-# provided in the ./f90 directory.
+# Use this utility to generate a new ModEM Makefile. Use this tool to
+# generate makefiles for different configurations of ModEM.
 #
-# If you are a developer, and add a new module, or add a new `use` statement
-# then you will need to re-run this tool. This tool will read through
-# ModEM source code and build up the dependency tree.
+# If you are a developer, and add a new module then you will need to re-run
+# this tool. This tool will read through ModEM source code and build up the
+# dependency tree.
 #
 # This script has some support for commonly used configure/complier
 # environment variables, such as:
-#   * FC - Name to use inplace of compiler name
+#   * FC - Specify the compile program to use
 #   * FFLAGS - Additional flags to pass in to the compiler
 #   * LDFLAGS - Flags to pass to the linker (e.g. -L/path/to/library)
 #
@@ -62,13 +61,12 @@ help() {
     echo ""
     echo "ModEM Configuration Tool - Generate ModEM Makefiles"
     echo ""
-    echo "Use this utility to generate a new ModEM Makefile. Most users, will"
-    echo "not need to use this Configure script and can instead use the Makefiles"
-    echo "provided in the ./f90 directory."
+    echo "Use this utility to generate a new ModEM Makefile. Use this tool to"
+    echo "generate makefiles for different configurations of ModEM."
     echo ""
-    echo "If you are a developer, and add a new module, or add a new 'use' statement"
-    echo "then you will need to re-run this tool. This tool will read through"
-    echo "ModEM source code and build up the dependency tree."
+    echo "If you are a developer, and add a new module then you will need to re-run"
+    echo "this tool. This tool will read through ModEM source code and build up the"
+    echo "dependency tree."
     echo ""
     echo "This script has some support for commonly used configure/complier "
     echo "environment variables, such as:"
@@ -104,7 +102,7 @@ help() {
     echo ""
     echo " Required Arguments"
     echo "   makefile-name - Name of the output makefile"
-    echo "   compiler - Compiler you wish to use <gfortran | ifort> are supported"
+    echo "   compiler - Compiler flags you wish to use <gfortran | ifort> are supported"
     echo ""
     echo " Optional Arguments"
     echo "  -h Display full help message"

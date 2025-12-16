@@ -50,12 +50,8 @@ Configure Scripts
 There are a number of configure scripts inside ``./f90/CONFIG`` in the form of
 ``Configure.***``, ``Configure.SP.***``, ``Configure.3D_MT.**``, etc. These
 configure files are considered deprecated, and the ``configure`` script inside
-``f90`` should be used instead; however, the deprecated configure scripts are
-left for backwards compatibility.
-
-The ``configure`` script inside ``f90`` can be used to generate ModEM makefiles
-for various configurations and compilers. This ``configure`` should be used
-to generate makefiles for ModEM.
+``f90/CONFIG`` should be used instead; however, the deprecated configure
+scripts are left for backwards compatibility.
 
 Creating Makefiles from configure 
 ----------------------------------
@@ -78,8 +74,8 @@ Currently, ModEM has three different forwards 'flavors':
 .. code-block:: bash
 
     $ cd f90/
-    $ # By default ./configure creates a SP2 Makefile with MPI
-    $ ./configure Makefile gfortran
+    $ # By default ./CONFIG/configure creates a SP2 Makefile with MPI
+    $ ./CONFIG/configure Makefile gfortran
 
 The Configure scripts has the following usage::
 
@@ -115,24 +111,24 @@ A few examples using Configure
 
 .. code-block:: bash
 
-    $ ./configure Makefile gfortran
+    $ ./CONFIG/configure Makefile gfortran
     $ # Generates a Makefile with GFortran options using MPI
 
-    $ ./configure -d debug Makefile ifort
+    $ ./CONFIG/configure -d debug Makefile ifort
     $ # Generates an MPI Makefile with ifort debugging options
 
-    $ ./configure -m serial -l MF Makefile gfortran
+    $ ./CONFIG/configure -m serial -l MF Makefile gfortran
     $ # Generates a serial Makefile with GFortran with the MF solver
 
-    $ FC=ftn LDFLAGS=-L/home/username/install/lib ./configure Makefile gfortran
+    $ FC=ftn LDFLAGS=-L/home/username/install/lib ./CONFIG/configure Makefile gfortran
     $ # Generates an SP2, MPI capabile makefile, adding LDFLAGS to the link step and
     $ # specifies the compiler to be `ftn`.
 
-    $ FFLAGS='-mSSE2' ./configure Makefile ifort
+    $ FFLAGS='-mSSE2' ./CONFIG/configure Makefile ifort
     $ # Create a SP2, MPI capabile makefile, with ifort/intel compiler options and add
     $ # the '-mSSE2' to all compiling steps.
 
-    $ LDFLAGS="-L/path/to/install/lib/" ./configure Makefile gfortran
+    $ LDFLAGS="-L/path/to/install/lib/" ./CONFIG/configure Makefile gfortran
     $ # Generates a Makefile with GFortran options using MPI and passes
     $ # the location of /path/to/install/lib to the linker step
 
@@ -145,9 +141,9 @@ by setting the ``FC`` environment variable:
 
 .. code-block:: bash
 
-    $ FC=ftn ./configure Makefile gfortran
+    $ FC=ftn ./CONFIG/configure Makefile gfortran
     $ # Or for intel:
-    $ FC=ftn ./configure Makefile ifort
+    $ FC=ftn ./CONFIG/configure Makefile ifort
 
 
 Ensure BLAS and LAPACK are linked
@@ -159,7 +155,7 @@ the linker where to find them. You can specify this when you run configure:
 
 .. code-block:: bash
 
-   $ LDFLAGS="-L/path/to/install/lib/" ./configure Makefile gfortran
+   $ LDFLAGS="-L/path/to/install/lib/" ./CONFIG/configure Makefile gfortran
 
 If you have already created your makefile, you can also add the ``-L``
 specification to the ``LIBS_PATH`` of the Macro-Def section of your Makefile:
@@ -377,9 +373,9 @@ Now, we can move into ``~/ModEM-main`` to configure, build and run ModEM:
     $ cd ~/ModEM-main
     $ cd f90/
     $ # Compile with MPI, SP2 solver:
-    $ ./configure Makefile gfortran
+    $ ./CONFIG/configure Makefile gfortran
     $ # or compile serial, SP2 solver
-    $ ./configure -m serial Makefile gfortran
+    $ ./CONFIG/configure -m serial Makefile gfortran
     $ make
     $ # Run ModEM serially or with MPI:
     $ mpiexec -n 2 ./Mod3DMT ...
