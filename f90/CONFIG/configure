@@ -11,7 +11,7 @@
 # ModEM source code and build up the dependency tree.
 #
 # This script has some support for commonly used configure/complier
-# enviornment variables, such as:
+# environment variables, such as:
 #   * FC - Name to use inplace of compiler name
 #   * FFLAGS - Additional flags to pass in to the compiler
 #   * LDFLAGS - Flags to pass to the linker (e.g. -L/path/to/library)
@@ -26,7 +26,7 @@
 # $ ./CONFIG/Configure Makefile gfortran
 #  Generates a Makefile with GFortran options using MPI
 #
-# $ ./CONFIG/Configure -d debug Makefile gfortran
+# $ ./CONFIG/Configure -g debug Makefile gfortran
 #   Generates an MPI Makefile with GFortran debugging options
 #
 # $ ./CONFIG/Configure -m serial -l MF Makefile gfortran
@@ -71,7 +71,7 @@ help() {
     echo "ModEM source code and build up the dependency tree."
     echo ""
     echo "This script has some support for commonly used configure/complier "
-    echo "enviornment variables, such as:"
+    echo "environment variables, such as:"
     echo "  * FC - Name to use inplace of compiler name"
     echo "  * FFLAGS - Additional flags to pass in to the compiler"
     echo "  * LDFLAGS - Flags to pass to the linker (e.g. -L/path/to/library)"
@@ -81,7 +81,7 @@ help() {
     echo " below)"
     echo ""
     echo " Note: This file cannot produce CUDA/HIP/GPU capable Makefiles. For"
-    echo " GPU Makefiles see Makefile.cuda" echo " or Makefile.hip."
+    echo " GPU Makefiles see Makefile.cuda or Makefile.hip" 
     echo ""
     echo "Examples:"
     echo ""
@@ -119,8 +119,8 @@ help() {
     echo "     MF - Builds with MF"
     echo "     SP - Builds with SP"
     echo "     SP2 - Default - Builds with SP2"
-    echo "  -f Build with Fined-Grained -DFG on SP2"
-    echo "     Only avaliable with with SP2"
+    echo "  -f Build with the Fine-Grained Parallel Version (-DFG on SP2)"
+    echo "     Only available with with SP2"
     echo "  -s Build spherical version of ModEM"
     echo ""
     echo ""
@@ -130,7 +130,7 @@ help() {
 show_spherical_warning() {
     printf "${RED} WARNING - You are making a Makefile for the spherical version of ModEM ('-s')!${NC}\n"
     printf "${RED} WARNING - The spherical version of ModEM is NOT YET fully tested/validated${NC}\n"
-    printf "${RED} WARNING - and we cannot gaurentee correct results.${NC}\n"
+    printf "${RED} WARNING - and we cannot guarentee correct results.${NC}\n"
     # TODO: When we add the documentation section link it here
     # printf "${RED} WARNING - Please see the section on the documentation here\n"
     read -p "Type (Yes/yes/Y/y) that you agree with this warning to continue: " warning_resp
@@ -198,7 +198,7 @@ while getopts "hg:m:l:fs" opt; do
             solver="$OPTARG"
             ;;
         f) 
-            fg_flag=True
+            fg_flag=true
             ;;
         s)
             show_spherical_warning
@@ -231,11 +231,11 @@ shift "$((OPTIND - 1))"
 
 nargs=0
 for arg in "$@"; do
-    if [ $nargs == 0 ] ; then
+    if [ $nargs -eq 0 ] ; then
         makefile_name=$arg
     fi
 
-    if [ $nargs == 1 ] ; then
+    if [ $nargs -eq 1 ] ; then
         compiler_choice=$arg
     fi
 
@@ -338,7 +338,7 @@ case $solver in
         exit 1
 esac
 
-if $fg_flag ; then
+if [ "$fg_flag" = "true" ] ; then
 
     case $solver in
         sp2)
@@ -346,7 +346,7 @@ if $fg_flag ; then
             ;;
         *)
             printf "ERROR: -f is not compatible with '$solver' only with the 'SP2' solver \n"
-            printf "ERROR: Please specify the 'SP2' solver to use the fined-grained model: \n"
+            printf "ERROR: Please specify the 'SP2' solver to use the fine-grained parallel version: \n"
             printf "ERROR: ./CONFIG/configure -l SP2 -f Makefile gfortran"
             exit 1
             ;;

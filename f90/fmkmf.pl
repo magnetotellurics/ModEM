@@ -159,7 +159,7 @@ while (@ARGV){
   }
   if ($arg =~ /^-mod$/) {
     $moduleCmd=shift;
-    print STDERR "# Using argument $moduleCmd to specify .mod directory"
+    print STDERR "# Using argument $moduleCmd to specify .mod directory\n";
   }
   if ($arg =~ /^-d$/){
     $optiond=1;
@@ -251,11 +251,11 @@ if (not defined($moduleCmd)) {
 
 if ($libpath !~ /^(\s*)$/){
     # If the libspath contains a -L, it may have multiple 
-    # libraies, so don't prepend an -L to it.
+    # libraries, so don't prepend an -L to it.
     if (index($libpath, "-L") != -1) {
         print "LIBS_PATH = $libpath\n";
     } else {
-        # Backwards compatiabile with old configure files
+        # Backwards compatible with old configure files
         print "LIBS_PATH = -L$libpath\n";
     }
 } else {
