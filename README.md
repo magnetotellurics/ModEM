@@ -160,7 +160,7 @@ easily compile the MPI version of ModEM by altering the makefile. This is
 sometimes easier then creating a new makefile from the configuration scripts.
 
 To compile an MPI version, edit the compiler in your makefile to be an MPI
-compiler (e.g.  `mpifort`) and add `-DMPI` to the `MPIFLAGGS` variable:
+compiler (e.g.  `mpifort`) and add `-DMPI` to the `MPIFLAGS` variable:
 
 ``` Makefile
 F90 = mpifort

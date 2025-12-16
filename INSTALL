@@ -1,14 +1,14 @@
+## Dependencies
 
-# Dependencies
-
-ModEM depends on the LAPACK (https://www.netlib.org/lapack/) and BLAS
-(https://www.netlib.org/lapack/) libraries.  Often, these are already included
-on most systems, but if not you will need to install them yourself and ensure
-they are properly linked in the LIBS and LIBS_PATH variables of the Makefile.
+ModEM depends on the [LAPACK][https://www.netlib.org/lapack/] and
+[BLAS](https://www.netlib.org/blas/) libraries. Often, these are already
+included on most systems, but if not you will need to install them yourself and
+ensure they are properly linked in the `LIBS` and `LIBS_PATH` variables of the
+Makefile.
 
 ## Creating Makefiles from Configuration files
 
-The current build system for ModEM uses the `fmkmf.pl` pearl script and the
+The current build system for ModEM uses the `fmkmf.pl` Perl script and the
 configuration scripts that are in `f90/CONFIG`. Although ModEM uses Make and
 Makefiles, makefiles are meant to be created by these configuration scripts.
 
@@ -57,16 +57,16 @@ easily compile the MPI version of ModEM by altering the makefile. This is
 sometimes easier then creating a new makefile from the configuration scripts.
 
 To compile an MPI version, edit the compiler in your makefile to be an MPI
-compiler (e.g.  `mpifort`) and add `-DMPI` to the `MPIFLAGGS` variable:
+compiler (e.g.  `mpifort`) and add `-DMPI` to the `MPIFLAGS` variable:
 
 ``` Makefile
 F90 = mpifort
 MPIFLAGS = -DMPI ... omitting other flags
 ```
 
-However, you can also generate an MPI makefile by running the configuration scripts
-and passing it `MPI` as the type.
+However, you can also generate an MPI makefile by running the configuration
+scripts and passing it `MPI` as the type.
 
-> **IMPORTANT NOTE:** When running ModEM with MPI you must use at least 2 tasks and
-> a max of `(2 x nTransmitters) + 1` tasks (except for the SP2 version
+> **IMPORTANT NOTE:** When running ModEM with MPI you must use at least 2 tasks
+> and a max of `(2 x nTransmitters) + 1` tasks (except for the SP2 version
 > compiled with `-DFG`).
