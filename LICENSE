@@ -1,6 +1,29 @@
-MIT License
+==================================================
+Modular Electromagnetic Inversion Software (ModEM)
+==================================================
 
-Copyright (c) 2011 Oregon State University
+AUTHORS
+
+  Gary Egbert, Anna Kelbert, Naser Meqbel, Hao Dong, & Kush Tandon
+  College of Earth, Ocean, and Atmospheric Sciences
+  104 CEOAS Admin. Bldg.
+  Oregon State University
+  Corvallis, OR 97331-5503
+  http://www.ceoas.oregonstate.edu
+
+==================================================
+
+COPYRIGHT
+
+Both binary and source codes for the Modular Electromagnetic Inversion Software
+(hereafter ModEM) are copyrighted by The State of Oregon acting by and through
+the State Board of Higher Education on behalf of Oregon State University, an
+educational institution having offices at 312 Kerr Administration Building,
+Corvallis, Oregon 97331-2140 (hereafter, OSU) and ownership of all right, title
+and interest in and to the Software remains with OSU. By using or copying the
+ModEM, User agrees to abide by the terms of this Agreement.
+
+MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
