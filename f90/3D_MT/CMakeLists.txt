@@ -1,4 +1,4 @@
-### 3D_MT CMakeLists.txt
+# 3D_MT CMakeLists.txt
 
 if (FORWARD_FLAVOR STREQUAL MF)
     message(STATUS "Building BUILD_MF")

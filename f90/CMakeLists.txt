@@ -1,8 +1,4 @@
-### f90 CMakeLists.txt
-
-set (MY_MODS Mod3DMT.f90
-            ModEM_Tester.f90
-            UserCtrl.f90)
+# f90 CMakeLists.txt
 
 if (MODEM_BUILD_DIMS STREQUAL 2D)
     set(MODEM_EXE Mod2DMT_${FORWARD_FLAVOR})
@@ -17,6 +13,7 @@ endif()
 add_executable(${MODEM_EXE} ${MODEM_MAIN_FILE})
 set_target_properties(${MODEM_EXE} PROPERTIES
     Fortran_PREPROCESS ON
+    Fortran_MODULE_DIRECTORY obj
 )
 
 if (BUILD_MPI)
@@ -42,5 +39,5 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
         message(FATAL_ERROR "We could not find the LAPACK library")
     endif()
 
-    target_link_options(${MODEM_EXE} PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+    target_link_libraries(${MODEM_EXE} PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 endif()

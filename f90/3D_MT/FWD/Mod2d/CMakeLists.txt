@@ -1,4 +1,4 @@
-### 3D_MT/FWD/Mod2D CMakeLists.txt
+# 3D_MT/FWD/Mod2D CMakeLists.txt
 
 target_sources(${MODEM_EXE}
     PRIVATE FwdTEmod.f90

@@ -1,4 +1,4 @@
-### f90/FIELDS/FiniteDiff3D
+# f90/FIELDS/FiniteDiff3D
 
 target_sources(${MODEM_EXE}
     PRIVATE sg_boundary.f90

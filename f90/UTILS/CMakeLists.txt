@@ -1,4 +1,4 @@
-### f90/UTILS
+# f90/UTILS
 
 target_sources(${MODEM_EXE}
     PRIVATE elements.f90
@@ -17,5 +17,5 @@ if (USE_C_TIMERS)
         PRIVATE ModEM_machine_timers.c
     )
 
-    target_compile_definitions(${MODEM_EXE} PRIVATE USE_C_TIMERS)
+    add_compile_definitions(USE_C_TIMERS)
 endif()
