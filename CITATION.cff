@@ -21,6 +21,10 @@ authors:
     family-names: Dong
     orcid: 'https://orcid.org/0000-0002-5457-0557'
     affiliation: China University of Geosciences Beijing
+  - given-names: Kush
+    family-names: Tandon
+    affiliation: Blueware/Shell
+    orcid: 'https://orcid.org/0000-0003-2158-7384'
 repository-code: 'https://github.com/magnetotellurics/ModEM'
 abstract: >-
   A modular system for inversion of electromagnetic
@@ -68,14 +72,14 @@ references:
   - type: article
     title: Computational recipes for electromagnetic inverse problems
     authors:
-      - given-names: Anna
-        family-names: Kelbert
-        orcid: 'https://orcid.org/0000-0003-4395-398X'
-        affiliation: Harvard & Smithsonian
       - given-names: Gary
         family-names: Egbert
         affiliation: Oregon State University
         orcid: 'https://orcid.org/0000-0003-1276-8538'
+      - given-names: Anna
+        family-names: Kelbert
+        orcid: 'https://orcid.org/0000-0003-4395-398X'
+        affiliation: Harvard & Smithsonian
     journal: Geophysical Journal International
     year: 2012
     month: 4

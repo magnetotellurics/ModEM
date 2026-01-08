@@ -44,6 +44,16 @@
             },
             "familyName": "Dong",
             "givenName": "Hao"
+        },
+        {
+            "@id": "https://orcid.org/0000-0003-2158-7384",
+            "@type": "Person",
+            "familyName": "Tandon",
+            "givenName": "Kush",
+            "affiliation":{
+                "type":"Organization",
+                "name":"Blueware/Shell"
+            }
         }
     ],
     "codeRepository": "https://github.com/magnetotellurics/ModEM",
@@ -53,51 +63,51 @@
             "@type": "Person",
             "affiliation": {
                 "type": "Organization",
-                "name": "Inalab Consulting Inc."
-            },
-            "email": "mcurry@inalabgroup.com",
-            "familyName": "Curry",
-            "givenName": "Miles"
-        },
-        {
-            "@id": "_:contributor_2",
-            "@type": "Person",
-            "affiliation": {
-                "type": "Organization",
                 "name": "USGS"
             },
             "familyName": "Wilbur",
             "givenName": "Spencer"
         },
         {
-            "@id": "_:contributor_3",
+            "@id": "_:contributor_2",
             "@type": "Person",
             "familyName": "Smirnova",
             "givenName": "Maria"
         },
         {
-            "@id": "_:contributor_4",
+            "@id": "_:contributor_3",
             "@type": "Person",
             "familyName": "Smirnova",
             "givenName": "Maxim"
         },
         {
-            "@id": "_:contributor_5",
+            "@id": "_:contributor_4",
             "@type": "Person",
             "familyName": "Yang",
             "givenName": "Bo"
         },
         {
-            "@id": "_:contributor_6",
+            "@id": "_:contributor_5",
             "@type": "Person",
             "familyName": "Liu",
             "givenName": "Zhongyin"
         },
         {
-            "@id": "_:contributor_7",
+            "@id": "_:contributor_6",
             "@type": "Person",
             "familyName": "Banik",
             "givenName": "Marcos"
+        },
+        {
+            "@id": "_:contributor_7",
+            "@type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "Inalab Consulting Inc."
+            },
+            "email": "mcurry@inalabgroup.com",
+            "familyName": "Curry",
+            "givenName": "Miles"
         }
     ],
     "dateCreated": "2014-05-01",
@@ -124,7 +134,7 @@
     },
     "softwareHelp" : [
         "https://github.com/magnetotellurics/ModEM/blob/main/README.md",
-        "https://github.com/magnetotellurics/ModEM/blob/main/doc/userguide/ModEM_UserGuide.pdf"
+        "https://magnetotellurics.github.io/ModEM/"
     ],
     "softwareRequirements": [
         "https://www.netlib.org/lapack/",
@@ -149,16 +159,7 @@
                 "https://orcid.org/0000-0003-4395-398X",
                 "https://orcid.org/0000-0003-1276-8538",
                 "https://orcid.org/0000-0003-2459-4838",
-                {
-                    "@id": "https://orcid.org/0000-0003-2158-7384",
-                    "@type": "person",
-                    "familyName": "Tandon",
-                    "givenName": "Kush",
-                    "affiliation":{
-                        "type":"Organization",
-                        "name":"Blueware/Shell"
-                    }
-                }
+                "https://orcid.org/0000-0003-2158-7384"
             ],
             "isPartOf" : {
                 "@type": "PublicationIssue",
@@ -184,8 +185,8 @@
             "datePublished" : "2012-04",
             "sameAs" : "https://doi.org/10.1111/j.1365-246X.2011.05347.x",
             "author" : [
-                "https://orcid.org/0000-0003-4395-398X",
-                "https://orcid.org/0000-0003-1276-8538"
+                "https://orcid.org/0000-0003-1276-8538",
+                "https://orcid.org/0000-0003-4395-398X"
             ],
             "isPartOf" : {
                 "@type": "PublicationIssue",
@@ -209,7 +210,7 @@
             "@type" : "ScholarylyArticle",
             "Name": "Hybrid CPU-GPU solution to regularized divergence-free curl-curl equations for electromagnetic inversion problems",
             "datePublished" : "2012-04",
-            "sameAs" : "https://doi.org/10.1111/j.1365-246X.2011.05347.x",
+            "sameAs" : "https://doi.org/10.1016/j.cageo.2024.105518",
             "author" : [
                 "https://orcid.org/0000-0002-5457-0557",
                 { 
