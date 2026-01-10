@@ -49,6 +49,11 @@ if (BUILD_MPI)
         add_compile_definitions(MPI)
 endif()
 
+if (BUILD_GPU STREQUAL "CUDA")
+        add_compile_definitions(CUDA)
+elseif (BUILD_GPU STREQUAL "HIP")
+        add_compile_definitions(HIP)
+endif()
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     add_compile_options(

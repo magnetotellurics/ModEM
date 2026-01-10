@@ -39,5 +39,12 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
         message(FATAL_ERROR "We could not find the LAPACK library")
     endif()
 
-    target_link_libraries(${MODEM_EXE} PRIVATE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+    target_link_libraries(${MODEM_EXE} PRIVATE ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+endif()
+
+if (BUILD_GPU STREQUAL "CUDA")
+    find_package(CUDAToolkit REQUIRED COMPONENTS cublas cudart cusparse nvml)
+    target_link_libraries(${MODEM_EXE} PRIVATE CUDA::cublas CUDA::cudart CUDA::cusparse CUDA::nvml)
+elseif (BUILD_GPU STREQUAL "HIP")
+    target_link_libraries(${MODEM_EXE} PRIVATE "-lamdhip64 -lhipblas -lhipsparse -lstdc++")
 endif()
