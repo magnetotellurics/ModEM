@@ -29,6 +29,23 @@ endif()
 
 if (BUILD_GPU STREQUAL CUDA)
         enable_language(CUDA)
+
+        # Turning CMAKE_CUDA_ARCHITECTURES to OFF will make
+        # nvcc target the lowest possible CUDA Compute Capability.
+        # But this will allow users to pass in their own desired Compute
+        # Capability via: -DCMAKE_CUDA_ARCHITECTURES=<option>.
+        # Options here can be: all, all-major, native, or a specific version(s): "35;50;72"
+        # Note: The removal of decimal places.
+        #
+        # One option here would be to use 'native', but on HPC systems, there might not be a 
+        # GPU avaliable where one compiles the code as they are only avaliable on compute nodes,
+        # thus, we shouldn't use it here, but users can pass it in themselves.
+        if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+            set(CMAKE_CUDA_ARCHITECTURES OFF)
+        else()
+            set(CUDA_ARCHITECTURES $CMAKE_CUDA_ARCHITECTURES)
+        endif()
+
 elseif (BUILD_GPU STREQUAL HIP)
         enable_language(HIP)
 endif()
@@ -53,6 +70,10 @@ if (BUILD_GPU STREQUAL "CUDA")
         add_compile_definitions(CUDA)
 elseif (BUILD_GPU STREQUAL "HIP")
         add_compile_definitions(HIP)
+endif()
+
+if (FG)
+        add_compile_definitions(FG)
 endif()
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
