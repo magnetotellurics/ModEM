@@ -16,6 +16,58 @@ set_target_properties(${MODEM_EXE} PROPERTIES
     Fortran_MODULE_DIRECTORY obj
 )
 
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(
+        ${MODEM_EXE}
+        PRIVATE
+        -cpp -ffree-line-length-none -fallow-argument-mismatch
+        $<$<CONFIG:RELEASE>:-O3>
+
+        $<$<CONFIG:DEBUG>:-O0>
+        $<$<CONFIG:DEBUG>:-g>
+        $<$<CONFIG:DEBUG>:-fbacktrace>
+        $<$<CONFIG:DEBUG>:-fbounds-check>
+    )
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    enable_language(C)
+    find_library(MKL_INTEL_LP64 mkl_intel_lp64 HINTS $ENV{MKLROOT}/lib/intel64 ...)
+    find_library(MKL_INTEL_THREAD mkl_intel_thread HINTS $ENV{MKLROOT}/lib/intel64 ...)
+    find_library(MKL_CORE_LIB mkl_core HINTS $ENV{MKLROOT}/lib/intel64 ...)
+    find_package(Threads REQUIRED)
+
+    target_compile_options(
+        ${MODEM_EXE}
+        PRIVATE
+        -fpp
+        $<$<CONFIG:RELEASE>:-O3>
+        $<$<CONFIG:RELEASE>:-w>
+        $<$<CONFIG:DEBUG>:-O0>
+        $<$<COMPILE_LANGUAGE:Fortran>:-fp-stack-check>
+        $<$<COMPILE_LANGUAGE:Fortran>:-g>
+        $<$<COMPILE_LANGUAGE:Fortran>:-traceback>
+        $<$<COMPILE_LANGUAGE:Fortran>:-debug extend>
+        $<$<COMPILE_LANGUAGE:Fortran>:-check bounds>
+        $<$<COMPILE_LANGUAGE:Fortran>:-heap-array>
+    )
+    target_link_libraries(
+        ${MODEM_EXE}
+        PRIVATE
+        ${MKL_INTEL_LP64}
+        ${MKL_INTEL_THREAD}
+        ${MKL_CORE_LIB}
+        Threads::Threads
+    )
+    target_link_options(
+        ${MODEM_EXE}
+        PRIVATE
+        -qopenmp
+        -parallel
+    )
+else()
+    message(FATAL_ERROR "Unknown/Unsupported Fortran Compiler: '${CMake_Fortran_COMPILER_ID}' - Supported compilers are < GNU | Ifort")
+endif()
+
+
 if (BUILD_MPI)
     add_subdirectory("MPI")
 endif()

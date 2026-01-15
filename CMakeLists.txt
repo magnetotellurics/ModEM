@@ -15,6 +15,13 @@ set(FORWARD_FLAVOR "SP2" CACHE STRING "Set the forward flavor: < MF | SP | SP2 >
 set(MODEM_BUILD_DIMS "3D" CACHE STRING "Specify whether to build either the 2D or 3D versino of ModEM < 2D | 3D >")
 set(BUILD_GPU "OFF" CACHE STRING "Specify whether to build GPU options: < OFF | CUDA | HIP >")
 
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'Release' as none was specified.")
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
 set(SUPPORTED_FORWARD_FLAVORS "MF;SP;SP2")
 set(SUPPORTED_MODEM_DIMS "2D;3D")
 set(SUPPORTED_GPU_OPTS "off;OFF;CUDA;HIP")
@@ -75,33 +82,6 @@ endif()
 if (FG)
         add_compile_definitions(FG)
 endif()
-
-if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(
-        $<$<COMPILE_LANGUAGE:Fortran>:-cpp>
-        $<$<COMPILE_LANGUAGE:Fortran>:-O3>
-        $<$<COMPILE_LANGUAGE:Fortran>:-ffree-line-length-none>
-        $<$<COMPILE_LANGUAGE:Fortran>:-fallow-argument-mismatch>
-    )
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
-    add_compile_options(
-        $<$<COMPILE_LANGUAGE:Fortran>:-O3>
-        $<$<COMPILE_LANGUAGE:Fortran>:-fpp>
-        $<$<COMPILE_LANGUAGE:Fortran>:-w>
-    )
-    add_link_options(
-        "-L${MKLROOT}/lib/intel64"
-        "-lmkl_intel_lp64"
-        "-lmkl_intel_thread"
-        "-lmkl_core"
-        "-lpthread"
-        "-qopenmp"
-        "-parallel"
-    )
-else()
-    message(FATAL_ERROR "Unknown/Unsupported Fortran Compiler: '${CMake_Fortran_COMPILER_ID}' - Supported compilers are < GNU | Ifort")
-endif()
-
 
 # Source Code
 add_subdirectory(f90)
