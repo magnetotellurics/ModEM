@@ -10,7 +10,7 @@ target_sources(${MODEM_EXE}
 
 if (FORWARD_FORMULATION STREQUAL MF)
     target_sources(${MODEM_EXE}
-        PRIVATE EMsolve3d.f90
+        PRIVATE EMsolve3D.f90
         PRIVATE modelOperator3D.f90
         PRIVATE solver.f90
     )
