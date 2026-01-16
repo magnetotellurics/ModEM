@@ -8,7 +8,7 @@ target_sources(${MODEM_EXE}
     PRIVATE nestedEM.f90
 )
 
-if (FORWARD_FLAVOR STREQUAL MF)
+if (FORWARD_FORMULATION STREQUAL MF)
     target_sources(${MODEM_EXE}
         PRIVATE EMsolve3d.f90
         PRIVATE modelOperator3D.f90

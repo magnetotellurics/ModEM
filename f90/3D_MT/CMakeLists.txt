@@ -1,14 +1,14 @@
 # 3D_MT CMakeLists.txt
 
-if (FORWARD_FLAVOR STREQUAL MF)
+if (FORWARD_FORMULATION STREQUAL MF)
     message(STATUS "Building BUILD_MF")
     add_subdirectory(FWD)
-elseif(FORWARD_FLAVOR STREQUAL SP)
+elseif(FORWARD_FORMULATION STREQUAL SP)
     message(STATUS "Building BUILD_SP")
     add_subdirectory(FWD)
     add_subdirectory(FWD_SP)
     add_subdirectory(SP_Topology)
-elseif(FORWARD_FLAVOR STREQUAL SP2)
+elseif(FORWARD_FORMULATION STREQUAL SP2)
     message(STATUS "Building BUILD_SP2")
     add_subdirectory(FWD)
     add_subdirectory(FWD_SP2)

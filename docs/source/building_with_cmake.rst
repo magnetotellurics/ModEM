@@ -104,7 +104,7 @@ difficulties finding them, you can specify them by using the
 
 
 After running CMake command above, and you see that the build files have been
-written succesfully, you'll be able to call ``make`` and build ModEM:
+written successfully, you'll be able to call ``make`` and build ModEM:
 
 .. code-block:: bash
 
@@ -174,7 +174,7 @@ Options - Different configurations
 You can build different ModEM configurations by specifying different options when calling
 ``cmake``:
 
-Again, once can use the following to display all the avaliable options:
+Again, once can use the following to display all the available options:
 
 .. code-block:: bash
 
@@ -186,7 +186,7 @@ Again, once can use the following to display all the avaliable options:
     * ``-DMODEM_BUILD_DIMS=<2D | 3D>``
     * Only 3D is supported.
 * Forward Flavor:
-    * ``-DFORWARD_FLAVOR=<MF | SP | SP2>``
+    * ``-DFORWARD_FORMULATION=<MF | SP | SP2>``
 * GPU Version:
     * ``-DBUILD_GPU=<CUDA | HIP>``
 * MPI Flags:
@@ -200,7 +200,7 @@ You can specify them on the command line by doing the following during the ``cma
 
 .. code-block:: bash
 
-    $ cmake .. -DFORWARD_FLAVOR=SP -DDBUILD_GPU=CUDA etc.
+    $ cmake .. -DFORWARD_FORMULATION=SP -DDBUILD_GPU=CUDA etc.
     $ make
 
 .. warning::
@@ -218,7 +218,26 @@ difficulties finding them, you can specify them by using the
 
 .. code-block:: bash
 
-    $ cmake -S .. -B -DLAPACK_LIBRARIES=/path/to/lapacklib/liblapack.a -DBLAS_LIBRARIES=/path/to/lablaslib/libblas.a
+    $ cmake .. -DLAPACK_LIBRARIES=/path/to/lapacklib/liblapack.a -DBLAS_LIBRARIES=/path/to/lablaslib/libblas.a
+
+
+Specifying Intel Instruction Set
+---------------------------------
+
+If you are building with the Intel compiler, you may want to specify the feature
+set, to do this, you can specify additional compler flags using ``-DCMAKE_Fortran_FLAGS```:
+
+.. code-block:: bash
+
+    $ cmake .. -DCMAKE_Fortran_FLAGS="-xHost"
+
+For the Ifort compiler, ``-xHost`` will tell the compiler to generate the
+highest instruction set available for your host process. As well, you can
+also explicitly specify your feature set:
+
+.. code-block:: bash
+
+    $ cmake .. -DCMAKE_Fortran_FLAGS="-msse4.2"
 
 
 Building GPU capable ModEM with CMake
@@ -241,7 +260,7 @@ a Nvidia capable GPU installed as well.
 The toolkit will provide a number of CUDA libraries that ModEM requires: cublas,
 cudart, cusparse and NVML (Nvidida Management Library). Thankfully, CMake will
 help us with linking this, you just need to make sure that ``CUDA_PATH``
-enviornment is set to the toolkit installation location and/or ``nvcc`` is
+environment is set to the toolkit installation location and/or ``nvcc`` is
 available on the command line.
 
 To build ModEM with GPU CUDA we can run the following command:
@@ -270,7 +289,7 @@ CUDA compiler (``nvcc``) has been found and that the CUDAToolkit was found:
     -- Generating done
     -- Build files have been written to: /home/mcurry/Projects/ModEM/build
 
-If CMake returned success, you will be able to call ``make`` and build the CUDA compatiable ModEM build:
+If CMake returned success, you will be able to call ``make`` and build the CUDA compatible ModEM build:
 
 .. code-block:: bash
 
@@ -316,7 +335,7 @@ CMake to use whatever capability your GPU can handle with the ``native`` keyword
     $ cmake -S .. -B . -DCMAKE_Fortran_COMPILER=mpifort -DBUILD_GPU=CUDA -DCMAKE_CUDA_ARCHITECTURES="native"
 
 You can also specify ``all`` or ``all-major``, which will generate code for all
-or all major version. For more information on avaliable options see:
+or all major version. For more information on available options see:
 https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html#prop_tgt:CUDA_ARCHITECTURES.
 
 

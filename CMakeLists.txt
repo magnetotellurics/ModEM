@@ -9,9 +9,8 @@ enable_language(Fortran)
 option(BUILD_MPI "Build MPI version of MPI" ON)
 option(FG "Build the Fine-Grained ModEM Version - (Only compatiable with SP2)" OFF)
 option(USE_C_TIMERS "Use the C timers in ModEM_timers" OFF)
-# option(DEBUG "Use debugging flags and turn off optimizations" OFF)
 
-set(FORWARD_FLAVOR "SP2" CACHE STRING "Set the forward flavor: < MF | SP | SP2 >")
+set(FORWARD_FORMULATION "SP2" CACHE STRING "Set the forward formulation: < MF | SP | SP2 >")
 set(MODEM_BUILD_DIMS "3D" CACHE STRING "Specify whether to build either the 2D or 3D versino of ModEM < 2D | 3D >")
 set(BUILD_GPU "OFF" CACHE STRING "Specify whether to build GPU options: < OFF | CUDA | HIP >")
 
@@ -22,7 +21,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-set(SUPPORTED_FORWARD_FLAVORS "MF;SP;SP2")
+set(SUPPORTED_FORWARD_FORMULATIONS "MF;SP;SP2")
 set(SUPPORTED_MODEM_DIMS "2D;3D")
 set(SUPPORTED_GPU_OPTS "off;OFF;CUDA;HIP")
 
@@ -57,16 +56,16 @@ elseif (BUILD_GPU STREQUAL HIP)
         enable_language(HIP)
 endif()
 
-if (NOT FORWARD_FLAVOR IN_LIST SUPPORTED_FORWARD_FLAVORS )
-        message(FATAL_ERROR "-DFORWARD_FLAVOR option ('${FORWARD_FLAVOR}') was not valid choose from: ${SUPPORTED_FORWARD_FLAVORS}")
+if (NOT FORWARD_FORMULATION IN_LIST SUPPORTED_FORWARD_FORMULATIONS )
+        message(FATAL_ERROR "-DFORWARD_FORMULATION option ('${FORWARD_FORMULATION}') was not valid choose from: ${SUPPORTED_FORWARD_FORMULATIONS}")
 endif()
 
 if (NOT MODEM_BUILD_DIMS IN_LIST SUPPORTED_MODEM_DIMS)
         message(FATAL_ERROR "-DMODEM_BUILD_DIMS option ('${MODEM_BUILD_DIMS}') was not valid choose from ${SUPPORTED_MODEM_DIMS}")
 endif()
 
-if (FG AND NOT FORWARD_FLAVOR STREQUAL SP2)
-        message(FATAL_ERROR "You cannot build 'FG' with '${FORWARD_FLAVOR}' - Only SP2: -DFG=on -DFORWARD_FLAVOR=SP2")
+if (FG AND NOT FORWARD_FORMULATION STREQUAL SP2)
+        message(FATAL_ERROR "You cannot build 'FG' with '${FORWARD_FORMULATION}' - Only SP2: -DFG=on -DFORWARD_FORMULATION=SP2")
 endif()
 
 if (BUILD_MPI)

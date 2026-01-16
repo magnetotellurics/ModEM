@@ -1,11 +1,11 @@
 # f90 CMakeLists.txt
 
 if (MODEM_BUILD_DIMS STREQUAL 2D)
-    set(MODEM_EXE Mod2DMT_${FORWARD_FLAVOR})
+    set(MODEM_EXE Mod2DMT_${FORWARD_FORMULATION})
     set(MODEM_MAIN_FILE Mod2DMT.f90)
     set(DIM_DIR 2D_MT)
 elseif (MODEM_BUILD_DIMS STREQUAL 3D)
-    set(MODEM_EXE Mod3DMT_${FORWARD_FLAVOR})
+    set(MODEM_EXE Mod3DMT_${FORWARD_FORMULATION})
     set(MODEM_MAIN_FILE Mod3DMT.f90)
     set(DIM_DIR 3D_MT)
 endif()
@@ -39,6 +39,7 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
         ${MODEM_EXE}
         PRIVATE
         -fpp
+        -parallel
         $<$<CONFIG:RELEASE>:-O3>
         $<$<CONFIG:RELEASE>:-w>
         $<$<CONFIG:DEBUG>:-O0>
@@ -61,7 +62,6 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
         ${MODEM_EXE}
         PRIVATE
         -qopenmp
-        -parallel
     )
 else()
     message(FATAL_ERROR "Unknown/Unsupported Fortran Compiler: '${CMake_Fortran_COMPILER_ID}' - Supported compilers are < GNU | Ifort")
