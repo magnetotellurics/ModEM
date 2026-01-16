@@ -294,94 +294,107 @@ file formats.
 Using Docker to Compile and Run ModEM
 -------------------------------------
 
-For convenience, a Dockerfile has been provided where you can compile and run
-ModEM inside. To run the ModEM docker container, first ensure you have `docker
-installed <Docker-Getting-Started_>`_ and running (Either have the docker
-daemon `docker running <daemon-running_>`_, or Docker `Desktop Running
+.. note::
+
+    For more information on Docker, please see: https://www.docker.com/resources/what-container/.
+
+For convenience, a Dockerfile has been provided which will automatically build
+ModEM once it is built. Once built, you can use the docker container to run
+ModEM.  To run the ModEM docker container, first ensure you have `docker
+installed <Docker-Getting-Started_>`_ and running (Either have the docker daemon
+`docker running <daemon-running_>`_, or Docker `Desktop Running
 <Docker-desktop_>`_.
 
 The Dockerfile builds an Ubuntu instance with GFortran, MPI, and all the other
-tools needed to compile and run ModEM.
+tools needed to compile and run ModEM and it will compile MF, SP, and SP2
+versions of ModEM automatically.
 
 Building
 ^^^^^^^^
 
-After you install Docker, you will need to build the docker container. Inside
-the ``ModEM`` directory (where the ``Dockerfile`` resides), run the following:
+.. warning::
+
+    Before running ``docker build`` or ``docker run`` `the docker daemon <daemon-running_>`_
+    or `Docker Desktop <Docker-desktop_>`_ must be running!
+
+After you install Docker, and have either the docker deamon running (linux) or
+docker desktop running (Mac/Windows) you can build the docker container using
+the Dockerfile. Inside the ``ModEM`` directory (where the ``Dockerfile``
+resides), run the following:
 
 .. code-block:: bash
 
-    $ docker build . -t modem:latest --build-arg ncpus=2
+    $ cd ModEM
+    $ docker build . -t modem:latest
 
-You can specify the number of CPUs to use in the ``ncpus`` variable. This will
-set the number of CPUs to use when building MPICH.
+After running the above command Docker will create an image that is taged with:
+``modem:latest`` which can you run; it will have all necessary libraries and
+compilers to compile and run ModEM.
 
-.. important::
-
-    For personal machines, it's best to set ``ncpus`` no greater than the max
-    number of cores on your machines.
-
-    For shared login nodes you may want to use no more than 2-4 CPUs in order
-    to not be detrimental to other users.
-
-After running the above command Docker will create an image named
-``modem:latest`` that you can then use to run; it will have all necessary
-libraries and compilers to compile and run ModEM.
+As well, the Dockerfile will copy the ModEM code that it is in and place it into
+`/home/modem/ModEM` in the Docker container and will build MF, SP and SP2
+executables.
 
 .. note::
 
-    It can take anywhere from 3-15 minutes to build the ModEM docker image,
-    depending on how fast your CPU is and how many CPUs you specify in
-    ``ncpus``.
+    Building the ModEM Dockerfile the first time takes 2-4 minutes. After
+    building once, Docker will cache the installed programs and later builds
+    will take substantially less time.
 
-Running and building ModEM in Docker
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Running ModEM in Docker
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-By default, the dockerfile automatically checks out the ``main`` branch of
-ModEM and places it in the root user's home directory: ``/root/ModEM-main``.
-This copy of ModEM has been provided for the convenience of new users.
-
-First, let us start a container using the image that we built above:
+Now that we have built the docker container above, we can use ``docker run`` to
+run the container and mount our local code:
 
 .. code-block:: bash
 
-    $ docker volume create modem
-    $ docker run -it -v modem:/root/ModEM-main modem:latest
+    $ docker run --mount=type=bind,source=/absolute/path/to/ModEM,target=/home/modem/ModEM -it modem:latest
 
 Normally, when running a docker container, the data created inside the container
 will be deleted when the container terminates. To prevent this, we can use a
-volume.
+mount.
 
-First, we need to create a named volume using ``docker volume create modem``,
-then in our run command we attach that volume to ``/root/ModEM-main``. This
-will save any data that we created inside ``/root/ModEM-main``, but nowhere
-else.
+Mounting will allow your local ModEM code direcotry to be mounted into the
+docker container. That way any change you make in one will be reflected on the
+other.
 
-After you terminate that container, and wish to start it again, you will need
-to specify your run command with the same arguments as above to reuse the data
-inside the volume, see the important note below.
+After you terminate that container, and wish to start it again, you will need to
+specify your run command with the same arguments as above to set the same mount.
 
 The docker run command will run the image ``modem:latest`` and create a
 container for us to use The ``-it`` argument will tell Docker to start an
 interactive tty session and will drop you inside a bash shell inside the
 running container.
 
-Now, we can move into ``~/ModEM-main`` to configure, build and run ModEM:
+Now, inside the docker container, we can move into ``~/ModEM/f90`` where we will
+see three compiled ModEM executables:
+
+* ``Mod3DMT_MF`` - matrix free version
+* ``Mod3DMT_SP`` - SP version
+* ``Mod3DMT_SP2`` - SP2 version
+
+You can use these executables to run a ModEM example (which you will need to
+mount into the Dockerfile yourself, see :ref:`docker-mounts`). Or, if you wish,
+you an compile your own executable:
 
 .. code-block:: bash
 
-    $ cd ~/ModEM-main
-    $ cd f90/
+    $ cd ~/ModEM/f90
+    $
     $ # Compile with MPI, SP2 solver:
     $ ./CONFIG/configure Makefile gfortran
+    $ make
+    $
     $ # or compile serial, SP2 solver
     $ ./CONFIG/configure -m serial Makefile gfortran
+    $ make clean
     $ make
+    $
     $ # Run ModEM serially or with MPI:
     $ mpiexec -n 2 ./Mod3DMT ...
     $ # Or if you compiled serial:
     $ ./Mod3DMT ...
-
 
 You can terminate this docker session by logging out by typing ``exit`` or you
 can use ``Ctrl-D``.
@@ -393,13 +406,12 @@ can use ``Ctrl-D``.
 
     .. code-block:: bash
 
-        $ docker run -it -v modem:/root/ModEM-main modem:latest
+        $ docker run --mount=type=bind,source=/absolute/path/to/ModEM,target=/home/modem/ModEM -it modem:latest
 
 .. warning::
 
-    Any data you create outside of the ``ModEM-main`` directory will not be
-    saved. If you want to save data you will need to specify additional volumes
-    or mounts. See :ref:`docker-mounts`.
+    f you want to save data you will need to specify additional volumes or
+    mounts. See :ref:`docker-mounts`.
 
     For more information on persistent data inside a container see:
 
@@ -415,29 +427,13 @@ Specifying mounts points
     For more information on Docker mounts see:
     https://docs.docker.com/engine/storage/bind-mounts/.
 
-While it is helpful to have the ``ModEM-Main/`` provided, it is also helpful to
-work with local version of ``ModEM`` you have on your host system. To do that
-we can use mounts, which will allow us to mirror a directory on our host system
-into the container.
-
-We can add a mount by passing in a ``--mount`` option during our run command:
+You may want to add additional mounts in your docker container. For example, you
+might want to include the ModEM-Examples direcotry:
 
 .. code-block:: bash
 
-    $ docker run --mount=type=bind,source=/absolute/path/to/ModEM,target=/root/ModEM -it modem:latest
-
-The above command will run the container in the same way as above, but it will
-mount ``/absolute/path/to/ModEM/`` from your host system to ``/root/ModEM`` to
-the container. Any changes you make in this folder, in either the container or
-the host machine will be present on the other machine.
-
-It might be helpful to specify additional mount points, for instance it might
-be helpful to mount a work directory, such as the ModEM-Examples repository:
-
-.. code-block:: bash
-
-    $ docker run --mount=type=bind,source=/abosolute/path/to/ModEM,target=/root/ModEM \
-                 --mount=type=bind,source=/home/users/uname/ModEM-Examples,target=/root/ModEM-Examples \
+    $ docker run --mount=type=bind,source=/absolute/path/to/ModEM,target=/home/modem/ModEM \
+                 --mount=type=bind,source=/absolute/path/to/ModEM-Examples,target=/home/modem/ModEM-Examples \
                  -it modem
 
 .. _Docker-desktop: https://www.docker.com/blog/getting-started-with-docker-desktop/

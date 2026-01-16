@@ -367,7 +367,7 @@ The next lines give the grid spacing, in meters. Format is free, and the list fo
 of the three arrays can span multiple lines. Use a new line for each of x, y, and z.
 
 (4) Resistivity Codes - (Not used by ModEM)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+%^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The next line is where resistivity codes were to be specified in the WSINV3DMT
 files. This line is left blank here, as ModEM does not support the resistivity code

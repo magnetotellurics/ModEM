@@ -64,7 +64,7 @@
 <li><a class="reference internal" href="#running-modem-the-basics">Running ModEM: The basics</a></li>
 <li><a class="reference internal" href="#using-docker-to-compile-and-run-modem">Using Docker to Compile and Run ModEM</a><ul>
 <li><a class="reference internal" href="#building">Building</a></li>
-<li><a class="reference internal" href="#running-and-building-modem-in-docker">Running and building ModEM in Docker</a></li>
+<li><a class="reference internal" href="#running-modem-in-docker">Running ModEM in Docker</a></li>
 <li><a class="reference internal" href="#specifying-mounts-points">Specifying mounts points</a></li>
 </ul>
 </li>
@@ -368,70 +368,86 @@ file formats.</p>
 </div>
 <div class="section" id="using-docker-to-compile-and-run-modem">
 <h2>Using Docker to Compile and Run ModEM<a class="headerlink" href="#using-docker-to-compile-and-run-modem" title="Permalink to this headline">¶</a></h2>
-<p>For convenience, a Dockerfile has been provided where you can compile and run
-ModEM inside. To run the ModEM docker container, first ensure you have <a class="reference external" href="https://www.docker.com/get-started/">docker
-installed</a> and running (Either have the docker
-daemon <a class="reference external" href="https://docs.docker.com/engine/daemon/start/">docker running</a>, or Docker <a class="reference external" href="https://www.docker.com/blog/getting-started-with-docker-desktop/">Desktop Running</a>.</p>
-<p>The Dockerfile builds an Ubuntu instance with GFortran, MPI, and all the other
-tools needed to compile and run ModEM.</p>
-<div class="section" id="building">
-<h3>Building<a class="headerlink" href="#building" title="Permalink to this headline">¶</a></h3>
-<p>After you install Docker, you will need to build the docker container. Inside
-the <code class="docutils literal notranslate"><span class="pre">ModEM</span></code> directory (where the <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> resides), run the following:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker build . -t modem:latest --build-arg <span class="nv">ncpus</span><span class="o">=</span><span class="m">2</span>
-</pre></div>
-</div>
-<p>You can specify the number of CPUs to use in the <code class="docutils literal notranslate"><span class="pre">ncpus</span></code> variable. This will
-set the number of CPUs to use when building MPICH.</p>
-<div class="admonition important">
-<p class="admonition-title">Important</p>
-<p>For personal machines, it’s best to set <code class="docutils literal notranslate"><span class="pre">ncpus</span></code> no greater than the max
-number of cores on your machines.</p>
-<p>For shared login nodes you may want to use no more than 2-4 CPUs in order
-to not be detrimental to other users.</p>
-</div>
-<p>After running the above command Docker will create an image named
-<code class="docutils literal notranslate"><span class="pre">modem:latest</span></code> that you can then use to run; it will have all necessary
-libraries and compilers to compile and run ModEM.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>It can take anywhere from 3-15 minutes to build the ModEM docker image,
-depending on how fast your CPU is and how many CPUs you specify in
-<code class="docutils literal notranslate"><span class="pre">ncpus</span></code>.</p>
+<p>For more information on Docker, please see: <a class="reference external" href="https://www.docker.com/resources/what-container/">https://www.docker.com/resources/what-container/</a>.</p>
+</div>
+<p>For convenience, a Dockerfile has been provided which will automatically build
+ModEM once it is built. Once built, you can use the docker container to run
+ModEM.  To run the ModEM docker container, first ensure you have <a class="reference external" href="https://www.docker.com/get-started/">docker
+installed</a> and running (Either have the docker daemon
+<a class="reference external" href="https://docs.docker.com/engine/daemon/start/">docker running</a>, or Docker <a class="reference external" href="https://www.docker.com/blog/getting-started-with-docker-desktop/">Desktop Running</a>.</p>
+<p>The Dockerfile builds an Ubuntu instance with GFortran, MPI, and all the other
+tools needed to compile and run ModEM and it will compile MF, SP, and SP2
+versions of ModEM automatically.</p>
+<div class="section" id="building">
+<h3>Building<a class="headerlink" href="#building" title="Permalink to this headline">¶</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Before running <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code> or <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span></code> <a class="reference external" href="https://docs.docker.com/engine/daemon/start/">the docker daemon</a>
+or <a class="reference external" href="https://www.docker.com/blog/getting-started-with-docker-desktop/">Docker Desktop</a> must be running!</p>
+</div>
+<p>After you install Docker, and have either the docker deamon running (linux) or
+docker desktop running (Mac/Windows) you can build the docker container using
+the Dockerfile. Inside the <code class="docutils literal notranslate"><span class="pre">ModEM</span></code> directory (where the <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code>
+resides), run the following:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ModEM
+$ docker build . -t modem:latest
+</pre></div>
+</div>
+<p>After running the above command Docker will create an image that is taged with:
+<code class="docutils literal notranslate"><span class="pre">modem:latest</span></code> which can you run; it will have all necessary libraries and
+compilers to compile and run ModEM.</p>
+<p>As well, the Dockerfile will copy the ModEM code that it is in and place it into
+<cite>/home/modem/ModEM</cite> in the Docker container and will build MF, SP and SP2
+executables.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Building the ModEM Dockerfile the first time takes 2-4 minutes. After
+building once, Docker will cache the installed programs and later builds
+will take substantially less time.</p>
 </div>
 </div>
-<div class="section" id="running-and-building-modem-in-docker">
-<h3>Running and building ModEM in Docker<a class="headerlink" href="#running-and-building-modem-in-docker" title="Permalink to this headline">¶</a></h3>
-<p>By default, the dockerfile automatically checks out the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch of
-ModEM and places it in the root user’s home directory: <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>.
-This copy of ModEM has been provided for the convenience of new users.</p>
-<p>First, let us start a container using the image that we built above:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker volume create modem
-$ docker run -it -v modem:/root/ModEM-main modem:latest
+<div class="section" id="running-modem-in-docker">
+<h3>Running ModEM in Docker<a class="headerlink" href="#running-modem-in-docker" title="Permalink to this headline">¶</a></h3>
+<p>Now that we have built the docker container above, we can use <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span></code> to
+run the container and mount our local code:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/absolute/path/to/ModEM,target<span class="o">=</span>/home/modem/ModEM -it modem:latest
 </pre></div>
 </div>
 <p>Normally, when running a docker container, the data created inside the container
 will be deleted when the container terminates. To prevent this, we can use a
-volume.</p>
-<p>First, we need to create a named volume using <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">volume</span> <span class="pre">create</span> <span class="pre">modem</span></code>,
-then in our run command we attach that volume to <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>. This
-will save any data that we created inside <code class="docutils literal notranslate"><span class="pre">/root/ModEM-main</span></code>, but nowhere
-else.</p>
-<p>After you terminate that container, and wish to start it again, you will need
-to specify your run command with the same arguments as above to reuse the data
-inside the volume, see the important note below.</p>
+mount.</p>
+<p>Mounting will allow your local ModEM code direcotry to be mounted into the
+docker container. That way any change you make in one will be reflected on the
+other.</p>
+<p>After you terminate that container, and wish to start it again, you will need to
+specify your run command with the same arguments as above to set the same mount.</p>
 <p>The docker run command will run the image <code class="docutils literal notranslate"><span class="pre">modem:latest</span></code> and create a
 container for us to use The <code class="docutils literal notranslate"><span class="pre">-it</span></code> argument will tell Docker to start an
 interactive tty session and will drop you inside a bash shell inside the
 running container.</p>
-<p>Now, we can move into <code class="docutils literal notranslate"><span class="pre">~/ModEM-main</span></code> to configure, build and run ModEM:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ~/ModEM-main
-$ <span class="nb">cd</span> f90/
+<p>Now, inside the docker container, we can move into <code class="docutils literal notranslate"><span class="pre">~/ModEM/f90</span></code> where we will
+see three compiled ModEM executables:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Mod3DMT_MF</span></code> - matrix free version</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Mod3DMT_SP</span></code> - SP version</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Mod3DMT_SP2</span></code> - SP2 version</p></li>
+</ul>
+<p>You can use these executables to run a ModEM example (which you will need to
+mount into the Dockerfile yourself, see <a class="reference internal" href="#docker-mounts"><span class="std std-ref">Specifying mounts points</span></a>). Or, if you wish,
+you an compile your own executable:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ~/ModEM/f90
+$
 $ <span class="c1"># Compile with MPI, SP2 solver:</span>
 $ ./CONFIG/configure Makefile gfortran
+$ make
+$
 $ <span class="c1"># or compile serial, SP2 solver</span>
 $ ./CONFIG/configure -m serial Makefile gfortran
+$ make clean
 $ make
+$
 $ <span class="c1"># Run ModEM serially or with MPI:</span>
 $ mpiexec -n <span class="m">2</span> ./Mod3DMT ...
 $ <span class="c1"># Or if you compiled serial:</span>
@@ -444,15 +460,14 @@ can use <code class="docutils literal notranslate"><span class="pre">Ctrl-D</spa
 <p class="admonition-title">Important</p>
 <p>Again, if you want to re-run docker and reuse the files/folders/data you
 created before you will need to specify the volume that you used before</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run -it -v modem:/root/ModEM-main modem:latest
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/absolute/path/to/ModEM,target<span class="o">=</span>/home/modem/ModEM -it modem:latest
 </pre></div>
 </div>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Any data you create outside of the <code class="docutils literal notranslate"><span class="pre">ModEM-main</span></code> directory will not be
-saved. If you want to save data you will need to specify additional volumes
-or mounts. See <a class="reference internal" href="#docker-mounts"><span class="std std-ref">Specifying mounts points</span></a>.</p>
+<p>f you want to save data you will need to specify additional volumes or
+mounts. See <a class="reference internal" href="#docker-mounts"><span class="std std-ref">Specifying mounts points</span></a>.</p>
 <p>For more information on persistent data inside a container see:</p>
 <p><a class="reference external" href="https://docs.docker.com/get-started/docker-concepts/running-containers/persisting-container-data/">https://docs.docker.com/get-started/docker-concepts/running-containers/persisting-container-data/</a></p>
 </div>
@@ -464,22 +479,10 @@ or mounts. See <a class="reference internal" href="#docker-mounts"><span class="
 <p>For more information on Docker mounts see:
 <a class="reference external" href="https://docs.docker.com/engine/storage/bind-mounts/">https://docs.docker.com/engine/storage/bind-mounts/</a>.</p>
 </div>
-<p>While it is helpful to have the <code class="docutils literal notranslate"><span class="pre">ModEM-Main/</span></code> provided, it is also helpful to
-work with local version of <code class="docutils literal notranslate"><span class="pre">ModEM</span></code> you have on your host system. To do that
-we can use mounts, which will allow us to mirror a directory on our host system
-into the container.</p>
-<p>We can add a mount by passing in a <code class="docutils literal notranslate"><span class="pre">--mount</span></code> option during our run command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/absolute/path/to/ModEM,target<span class="o">=</span>/root/ModEM -it modem:latest
-</pre></div>
-</div>
-<p>The above command will run the container in the same way as above, but it will
-mount <code class="docutils literal notranslate"><span class="pre">/absolute/path/to/ModEM/</span></code> from your host system to <code class="docutils literal notranslate"><span class="pre">/root/ModEM</span></code> to
-the container. Any changes you make in this folder, in either the container or
-the host machine will be present on the other machine.</p>
-<p>It might be helpful to specify additional mount points, for instance it might
-be helpful to mount a work directory, such as the ModEM-Examples repository:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/abosolute/path/to/ModEM,target<span class="o">=</span>/root/ModEM <span class="se">\</span>
-             --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/home/users/uname/ModEM-Examples,target<span class="o">=</span>/root/ModEM-Examples <span class="se">\</span>
+<p>You may want to add additional mounts in your docker container. For example, you
+might want to include the ModEM-Examples direcotry:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/absolute/path/to/ModEM,target<span class="o">=</span>/home/modem/ModEM <span class="se">\</span>
+             --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/absolute/path/to/ModEM-Examples,target<span class="o">=</span>/home/modem/ModEM-Examples <span class="se">\</span>
              -it modem
 </pre></div>
 </div>
