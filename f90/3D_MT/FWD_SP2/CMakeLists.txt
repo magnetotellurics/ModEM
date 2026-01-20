@@ -14,5 +14,6 @@ if (BUILD_GPU STREQUAL CUDA)
 elseif (BUILD_GPU STREQUAL HIP)
     target_sources(${MODEM_EXE}
         PRIVATE kernel_c.hip
+        PRIVATE hipFortMap.f90
     )
 endif()

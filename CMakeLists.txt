@@ -44,7 +44,7 @@ if (BUILD_GPU STREQUAL CUDA)
         # Note: The removal of decimal places.
         #
         # One option here would be to use 'native', but on HPC systems, there might not be a 
-        # GPU avaliable where one compiles the code as they are only avaliable on compute nodes,
+        # GPU available where one compiles the code as they are only available on compute nodes,
         # thus, we shouldn't use it here, but users can pass it in themselves.
         if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
             set(CMAKE_CUDA_ARCHITECTURES OFF)
