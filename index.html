@@ -42,9 +42,6 @@
   <ul>
 <li><a class="reference internal" href="#">ModEM Documentation</a><ul>
 <li><a class="reference internal" href="#user-s-guide">User’s Guide</a></li>
-<li><a class="reference internal" href="#csem-version-of-modem">CSEM Version of ModEM</a></li>
-<li><a class="reference internal" href="#spherical-version-of-modem">Spherical Version of ModEM</a></li>
-<li><a class="reference internal" href="#support">Support</a></li>
 </ul>
 </li>
 </ul>
@@ -84,8 +81,8 @@ electromagnetic geophysical data.</p>
 <p>ModEM was designed as a flexible electromagnetic modeling and inversion system,
 written in Fortran 95. Although the code can be (and has been) extended for
 inversion of more general types of EM data (e.g., controlled source, DC; see
-Meqbel and Ritter, 2015), the User’s Guide below explains the core system
-developed for 2D and 3D magnetotelluric (MT) problems.</p>
+Meqbel and Ritter, 2015), here we describe the stable, core system developed for
+2D and 3D magnetotelluric (MT) problems.</p>
 <p>While a primary design goal of the system was to allow simplified extension with
 regard to data types, modeling codes, parameterization and regularization, and
 inversion search algorithms (see Egbert and Kelbert, 2012; Kelbert et al.
@@ -95,8 +92,8 @@ files.</p>
 <div class="section" id="user-s-guide">
 <h2>User’s Guide<a class="headerlink" href="#user-s-guide" title="Permalink to this headline">¶</a></h2>
 <p>This documentation contains information about compiling, running and using
-ModEM, including information about the file formats, options for forward
-modeling, options for inversion, etc.</p>
+ModEM, including information about the file formats, options for forward modeling,
+options for inversion, etc.</p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
@@ -109,6 +106,20 @@ modeling, options for inversion, etc.</p>
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#compiling">Compiling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#running-modem-the-basics">Running ModEM: The basics</a></li>
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#using-docker-to-compile-and-run-modem">Using Docker to Compile and Run ModEM</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="building_with_cmake.html">Building ModEM With CMake</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="building_with_cmake.html#install-cmake">Install CMake</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_with_cmake.html#note-about-cmake-caching">Note About CMake Caching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_with_cmake.html#id1">Building ModEM with CMake</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_with_cmake.html#options-different-configurations">Options - Different configurations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_with_cmake.html#can-t-find-lapack-or-blas">Can’t Find LAPACK or BLAS?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_with_cmake.html#specifying-intel-instruction-set">Specifying Intel Instruction Set</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="building_with_cmake.html#building-gpu-capable-modem-with-cmake">Building GPU capable ModEM with CMake</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="building_with_cmake.html#compiling-modem-gpu-code-with-cuda">Compiling ModEM GPU Code with CUDA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building_with_cmake.html#compiling-modem-gpu-code-with-hip">Compiling ModEM GPU Code with HIP</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="file_formats.html">File Formats</a><ul>
@@ -137,12 +148,6 @@ modeling, options for inversion, etc.</p>
 <li class="toctree-l2"><a class="reference internal" href="installing_deps.html#installing-lapack-and-blas">Installing LAPACK and BLAS</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#steps-to-open-a-pull-request-pr">Steps To Open a Pull Request (PR)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#tips-testing">Tips &amp; Testing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#building-this-documentation">Building this Documentation</a></li>
-</ul>
-</li>
 <li class="toctree-l1"><a class="reference internal" href="release_log.html">Change Log</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="release_log.html#release-1-2-0-april-12-2019">Release 1.2.0 - April 12, 2019</a></li>
 </ul>
@@ -150,29 +155,6 @@ modeling, options for inversion, etc.</p>
 <li class="toctree-l1"><a class="reference internal" href="citations.html">Citations</a></li>
 </ul>
 </div>
-</div>
-<div class="section" id="csem-version-of-modem">
-<h2>CSEM Version of ModEM<a class="headerlink" href="#csem-version-of-modem" title="Permalink to this headline">¶</a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The CSEM version of ModEM is not fully validated and has only been used in
-some instances. We cannot guarantee correct or accurate results with it.</p>
-</div>
-<p>For more information see <span class="xref std std-ref">csem_modem</span>.</p>
-</div>
-<div class="section" id="spherical-version-of-modem">
-<h2>Spherical Version of ModEM<a class="headerlink" href="#spherical-version-of-modem" title="Permalink to this headline">¶</a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The Spherical Version of ModEM is not yet fully developed and we cannot
-guarantee correct or accurate results!</p>
-</div>
-</div>
-<div class="section" id="support">
-<h2>Support<a class="headerlink" href="#support" title="Permalink to this headline">¶</a></h2>
-<p>Support for ModEM may be limited at times due to resources or developer
-availability. If you have issues, questions or encounter a bug, please open
-a <a class="reference external" href="_GitHub-Issue">GitHub Issue</a>  at: <a class="reference external" href="https://github.com/magnetotellurics/ModEM/issues/new">https://github.com/magnetotellurics/ModEM/issues/new</a>.</p>
 </div>
 </div>
 
