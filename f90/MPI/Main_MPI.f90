@@ -712,8 +712,6 @@ subroutine Master_job_DataResp(nTx, sigma, d)
     integer :: dest, nTasks, remainder, iTx
     integer :: iTx_min, iTx_max, i, j, k
 
-    call Master_job_Sync()
-
     call create_worker_job_task_place_holder
 
     nTasks = nTx / number_of_workers
@@ -1032,8 +1030,6 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      Integer        :: per_index,pol_index,stn_index
      character(80)  :: job_name,file_name
      Integer        :: comm_current
-
-     call Master_job_Sync(comm)
 
      savedSolns = present(eAll)
      returne_m_vectors= present(s_hat)
@@ -1697,45 +1693,6 @@ Subroutine Master_job_Clean_Memory(comm)
      end do
 
 end Subroutine Master_job_Clean_Memory
-
-!#######################  Master_job_Sync #########################
-subroutine Master_job_Sync(comm)
-    ! Tell all tasks (and the master tasks) to call MPI_Barrier and wait
-    ! for other tasks.
-
-    implicit none
-
-    integer, intent(in), optional :: comm
-    integer :: task, size_current, comm_current
-
-    if (present(comm)) then
-         if (comm .eq. MPI_COMM_NULL) then
-             comm_current = comm_world
-         else
-             comm_current = comm
-         endif
-     else
-         comm_current = comm_world
-     end if
-     call MPI_COMM_SIZE( comm_current, size_current, ierr )
-
-     modem_ctx % comm_current = comm_current
-
-     worker_job_task % what_to_do = 'SYNC'
-     worker_job_task % per_index = -1
-     worker_job_task % pol_index = -1
-     call create_worker_job_task_place_holder
-     call Pack_worker_job_task
-
-     do task = 0, size_current - 1
-        write(0,*) "Sent 'Sync' job to: ", task
-        call MPI_SEND(worker_job_package, Nbytes, MPI_PACKED, task, FROM_MASTER, comm_current, ierr)
-     end do
-
-     call MPI_BARRIER(comm_current, ierr)
-
-end subroutine Master_job_Sync
-
 
 !#######################    Master_job_Stop_MESSAGE #########################
 Subroutine Master_job_Stop_MESSAGE(comm)
@@ -2897,9 +2854,6 @@ Subroutine Worker_job(sigma,d)
 
             call deall(e0)
             call deall(e)
-        elseif (trim(worker_job_task % what_to_do) .eq. 'SYNC') then
-
-            call MPI_BARRIER(comm_current, ierr)
 
          elseif (trim(worker_job_task%what_to_do) .eq. 'STOP' ) then
              ! clear all the temp packages and stop

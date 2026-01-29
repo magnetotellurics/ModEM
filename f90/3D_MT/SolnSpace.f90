@@ -407,6 +407,7 @@ contains
              trim(e % pol_name(pol_index_lcl)), "' to file: ", trim(fname)
 
          call write_cvector(fid, e % pol(pol_index_lcl), ftype_lcl)
+         close(fid)
 
      end subroutine write_solnVector
 
@@ -463,6 +464,7 @@ contains
 
          open(newunit=fid, file=trim(fname), action='read', form=form, status='old')
          call read_cvector(fid, e % pol(pol_index_lcl), ftype_lcl)
+         close(fid)
 
      end subroutine read_solnVector
 

@@ -606,6 +606,7 @@ Contains
          write(fid) E%x
          write(fid) E%y
          write(fid) E%z
+         call flush(fid)
          return
       end if
 
@@ -699,6 +700,7 @@ Contains
          write(fid) E%x
          write(fid) E%y
          write(fid) E%z
+         call flush(fid)
          return
       end if
 
