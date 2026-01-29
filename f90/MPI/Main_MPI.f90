@@ -712,6 +712,8 @@ subroutine Master_job_DataResp(nTx, sigma, d)
     integer :: dest, nTasks, remainder, iTx
     integer :: iTx_min, iTx_max, i, j, k
 
+    call Master_job_Sync()
+
     call create_worker_job_task_place_holder
 
     nTasks = nTx / number_of_workers
@@ -1030,6 +1032,8 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      Integer        :: per_index,pol_index,stn_index
      character(80)  :: job_name,file_name
      Integer        :: comm_current
+
+     call Master_job_Sync(comm)
 
      savedSolns = present(eAll)
      returne_m_vectors= present(s_hat)
@@ -1694,6 +1698,45 @@ Subroutine Master_job_Clean_Memory(comm)
 
 end Subroutine Master_job_Clean_Memory
 
+!#######################  Master_job_Sync #########################
+subroutine Master_job_Sync(comm)
+    ! Tell all tasks (and the master tasks) to call MPI_Barrier and wait
+    ! for other tasks.
+
+    implicit none
+
+    integer, intent(in), optional :: comm
+    integer :: task, size_current, comm_current
+
+    if (present(comm)) then
+         if (comm .eq. MPI_COMM_NULL) then
+             comm_current = comm_world
+         else
+             comm_current = comm
+         endif
+     else
+         comm_current = comm_world
+     end if
+     call MPI_COMM_SIZE( comm_current, size_current, ierr )
+
+     modem_ctx % comm_current = comm_current
+
+     worker_job_task % what_to_do = 'SYNC'
+     worker_job_task % per_index = -1
+     worker_job_task % pol_index = -1
+     call create_worker_job_task_place_holder
+     call Pack_worker_job_task
+
+     do task = 0, size_current - 1
+        write(0,*) "Sent 'Sync' job to: ", task
+        call MPI_SEND(worker_job_package, Nbytes, MPI_PACKED, task, FROM_MASTER, comm_current, ierr)
+     end do
+
+     call MPI_BARRIER(comm_current, ierr)
+
+end subroutine Master_job_Sync
+
+
 !#######################    Master_job_Stop_MESSAGE #########################
 Subroutine Master_job_Stop_MESSAGE(comm)
 
@@ -2169,7 +2212,6 @@ Subroutine Worker_job(sigma,d)
                  ! Create e0_temp package (one Period and one Polarization) 
                  ! and send it to the master
                  which_pol=1
-
                  call EsMgr_save(e0, to=0)
                  call reset_e_soln(e0)
 
@@ -2187,7 +2229,7 @@ Subroutine Worker_job(sigma,d)
 
              worker_job_task % taskid = taskid
 
-             call create_solnVector(grid, 1, e0)
+             call EsMgr_create_e(e, per_index)
 
              do per_index = start_iTx, end_iTx
                 e0 % tx = per_index
@@ -2195,7 +2237,6 @@ Subroutine Worker_job(sigma,d)
                 do pol_index = 1, get_nPol(per_index)
                     call EsMgr_get(e0, e0 % tx, pol_index=pol_index)
                 end do
-
 
                 do i = 1, d % d(per_index) % nDt
                     d % d(per_index) % data(i) % errorBar = .false.
@@ -2234,12 +2275,13 @@ Subroutine Worker_job(sigma,d)
                 call zero(dsigma_temp)
                 call zero(Qcomb)
 
-                do pol_index = 1, get_nPol(per_index)
-                    call EsMgr_get(e, per_index, pol_index=pol_index, prefix='.JmultT')
-                end do
-
                 e0 % tx = per_index
                 e % tx = per_index
+
+                do pol_index = 1, get_nPol(per_index)
+                    call EsMgr_get(e0, e0 % tx, pol_index=pol_index)
+                    call EsMgr_get(e, e % tx, pol_index=pol_index, prefix='.JmultT')
+                end do
 
                 call PmultT(e0, sigma, e, dsigma_temp)
                 call QmultT(e0, sigma, d%d(per_index), Qcomb)
@@ -2418,12 +2460,13 @@ Subroutine Worker_job(sigma,d)
              now = MPI_Wtime()
              time_passed = now - previous_time
              previous_time = now
-             
+
          elseif (trim(worker_job_task%what_to_do) .eq. 'JmultT') then
 
              ! calculate JmultT (a.k.a. adjoint)
              per_index=worker_job_task%per_index
              pol_index=worker_job_task%pol_index
+
              if ((size_local.gt.1).and.(para_method.gt.0).and.          &
     &            (rank_local.eq.0)) then 
                  ! group leader passing the command to workers
@@ -2432,11 +2475,13 @@ Subroutine Worker_job(sigma,d)
     &                    MPI_PACKED, des_index,  FROM_MASTER, comm_local, &
     &                    ierr)
                  end do
+
              end if
+
              if ((rank_local.eq.0) .or. (para_method.eq.0)) then
                  ! leader prepares the basic data structure
                  ! firstly fill some dummy values
-                 iTx = 1
+                 iTx = pol_index
                  call create_solnVector(grid,iTx,e0)
                  call get_nPol_MPI(e0)
                  write(6,'(a12,a18,i5,a12)') node_info,                   &
@@ -2852,6 +2897,9 @@ Subroutine Worker_job(sigma,d)
 
             call deall(e0)
             call deall(e)
+        elseif (trim(worker_job_task % what_to_do) .eq. 'SYNC') then
+
+            call MPI_BARRIER(comm_current, ierr)
 
          elseif (trim(worker_job_task%what_to_do) .eq. 'STOP' ) then
              ! clear all the temp packages and stop

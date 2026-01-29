@@ -12,6 +12,7 @@ use sg_vector
 use sg_boundary
 use sg_sparse_vector
 use transmitters
+use Declaration_MPI
 
 implicit none
 
@@ -408,6 +409,7 @@ contains
          call write_cvector(fid, e % pol(pol_index_lcl), ftype_lcl)
 
      end subroutine write_solnVector
+
 
      !**********************************************************************
      subroutine read_solnVector(e, prefix, pol_index, ftype)

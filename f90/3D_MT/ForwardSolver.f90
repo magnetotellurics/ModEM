@@ -445,7 +445,7 @@ end subroutine unpack_BC_from_file
    if(initForSens) then
       !  allocate for sensitivity solution, RHS - same for all TX types
       !  assuming here that we don't use sparse storage ... we could!
-      call create_solnVector(grid,iTx,e)
+      call EsMgr_create_e(e, iTx)
       comb%nonzero_source = .true.
       comb%sparse_source = .false.
       comb%nonzero_bc = .false.

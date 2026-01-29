@@ -123,10 +123,15 @@ contains
         if (present(place_holder)) then
             place_holder_lcl = place_holder
         else
-            place_holder_lcl = EsMgr_save_in_file
+            if (EsMgr_ctx % rank_current /= 0) then
+                place_holder_lcl = .false.
+            else
+                place_holder_lcl = EsMgr_save_in_file
+            end if
+
         end if
 
-        call create_solnVector(EsMgr_grid, iTx, e, place_holder=EsMgr_save_in_file)
+        call create_solnVector(EsMgr_grid, iTx, e, place_holder=place_holder_lcl)
 
     end subroutine EsMgr_create_e
 
@@ -204,16 +209,18 @@ contains
 
     end subroutine EsMgr_save
 
-    subroutine EsMgr_write_to_file(e, prefix, iPol)
+    subroutine EsMgr_write_to_file(e, prefix, iPol, ftype)
 
         implicit none
 
         type (solnVector_t), intent(in) :: e
         character(len=*), intent(in), optional :: prefix
         integer, intent(in), optional :: iPol
+        character(len=*), optional, intent(in) :: ftype
 
         integer :: iPol_lcl
         character(len=256) :: prefix_lcl
+        character(len=256) :: ftype_lcl
 
         if (present(iPol)) then
             iPol_lcl = iPol
@@ -227,7 +234,13 @@ contains
             prefix_lcl = ""
         end if
 
-        call write_solnVector(e, trim(EsMgr_prefix)//trim(prefix_lcl), ftype=EsMgr_ftype, pol_index=iPol_lcl)
+        if (present(ftype)) then
+            ftype_lcl = ftype
+        else
+            ftype_lcl = EsMgr_ftype
+        endif
+
+        call write_solnVector(e, trim(EsMgr_prefix)//trim(prefix_lcl), ftype=ftype_lcl, pol_index=iPol_lcl)
 
     end subroutine EsMgr_write_to_file
 
@@ -255,6 +268,7 @@ contains
             prefix_lcl = ""
         end if
 
+        e % tx = iTx
         call read_solnVector(e, trim(EsMgr_prefix)//trim(prefix_lcl), ftype=EsMgr_ftype, pol_index=iPol_lcl)
 
     end subroutine read_esoln_from_file
