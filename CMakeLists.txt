@@ -9,6 +9,7 @@ enable_language(Fortran)
 option(BUILD_MPI "Build MPI version of MPI" ON)
 option(FG "Build the Fine-Grained ModEM Version - (Only compatiable with SP2)" OFF)
 option(USE_C_TIMERS "Use the C timers in ModEM_timers" OFF)
+option(BUILD_SPHERICAL "Specify whether to build Spherical Coordinate version of ModEM" OFF)
 
 set(FORWARD_FORMULATION "SP2" CACHE STRING "Set the forward formulation: < MF | SP | SP2 >")
 set(MODEM_BUILD_DIMS "3D" CACHE STRING "Specify whether to build either the 2D or 3D versino of ModEM < 2D | 3D >")
@@ -68,6 +69,14 @@ if (FG AND NOT FORWARD_FORMULATION STREQUAL SP2)
         message(FATAL_ERROR "You cannot build 'FG' with '${FORWARD_FORMULATION}' - Only SP2: -DFG=on -DFORWARD_FORMULATION=SP2")
 endif()
 
+if (BUILD_SPHERICAL AND NOT FORCE_SPHERICAL)
+        message(SEND_ERROR
+           "The Spherical Version is experimental and will not work with traditional MT source setup."
+           "For more information please see 'Spherical Coordinates' section in the README.md.\n"
+           "To bypass this error run cmake with: '-DBUILD_SPHERICAL -DFORCE_SPHERICAL' flags"
+        )
+endif()
+
 if (BUILD_MPI)
         add_compile_definitions(MPI)
 endif()
@@ -81,6 +90,7 @@ endif()
 if (FG)
         add_compile_definitions(FG)
 endif()
+
 
 # Source Code
 add_subdirectory(f90)
