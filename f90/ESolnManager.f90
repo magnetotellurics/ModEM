@@ -175,6 +175,7 @@ contains
 
         ! If we are reading and writing files, do nothing
         if (EsMgr_save_in_file .and. EsMgr_ctx % rank_world == 0) then
+            call wait_on_task(from)
             return
         end if
 
@@ -199,15 +200,50 @@ contains
             return
         end if
 
-
         if (EsMgr_save_in_file .and. .not. EsMgr_ctx % rank_world == 0) then
             call EsMgr_write_to_file(e, prefix)
+            call communicate_file_done_writing()
             return
         end if
 
         call EsMgr_send_e(e, to)
 
     end subroutine EsMgr_save
+
+    subroutine communicate_file_done_writing()
+
+        implicit none
+
+        integer :: dummy_buffer
+        integer :: tag
+        integer :: count
+        integer :: to
+
+        count = 0
+        tag = 0
+        to = 0
+
+        call MPI_Send(dummy_buffer, count, MPI_INTEGER, to, tag, EsMgr_ctx % comm_current, ierr)
+
+    end subroutine communicate_file_done_writing
+
+    subroutine wait_on_task(task)
+
+        implicit none
+
+        integer, intent(in) :: task
+
+        integer :: dummy_buff
+        integer :: count
+        integer :: tag
+
+        count = 0
+        tag = 0
+
+        call MPI_Recv(dummy_buff, count, MPI_INTEGER, task, tag, EsMgr_ctx % comm_current, MPI_STATUS_IGNORE, ierr)
+
+    end subroutine wait_on_task
+
 
     subroutine EsMgr_write_to_file(e, prefix, iPol, ftype)
 
