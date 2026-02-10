@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.17.0)
 
 project(ModEM VERSION 0
         DESCRIPTION "ModEM"
-        LANGUAGES Fortran)
+        LANGUAGES Fortran C)
 
-enable_language(Fortran)
+enable_language(Fortran C)
 
 option(BUILD_MPI "Build MPI version of MPI" ON)
 option(FG "Build the Fine-Grained ModEM Version - (Only compatiable with SP2)" OFF)
