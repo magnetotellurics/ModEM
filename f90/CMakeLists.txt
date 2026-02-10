@@ -20,13 +20,14 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     target_compile_options(
         ${MODEM_EXE}
         PRIVATE
-        -cpp -ffree-line-length-none -fallow-argument-mismatch
         $<$<CONFIG:RELEASE>:-O3>
-
         $<$<CONFIG:DEBUG>:-O0>
         $<$<CONFIG:DEBUG>:-g>
-        $<$<CONFIG:DEBUG>:-fbacktrace>
-        $<$<CONFIG:DEBUG>:-fbounds-check>
+        $<$<COMPILE_LANGUAGE:Fortran>:-cpp>
+        $<$<COMPILE_LANGUAGE:Fortran>:-ffree-line-length-none>
+        $<$<COMPILE_LANGUAGE:Fortran>:-fallow-argument-mismatch>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-fbacktrace>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-fbounds-check>
     )
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     enable_language(C)
@@ -38,17 +39,17 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     target_compile_options(
         ${MODEM_EXE}
         PRIVATE
-        -fpp
-        -parallel
         $<$<CONFIG:RELEASE>:-O3>
         $<$<CONFIG:RELEASE>:-w>
         $<$<CONFIG:DEBUG>:-O0>
-        $<$<COMPILE_LANGUAGE:Fortran>:-fp-stack-check>
-        $<$<COMPILE_LANGUAGE:Fortran>:-g>
-        $<$<COMPILE_LANGUAGE:Fortran>:-traceback>
-        $<$<COMPILE_LANGUAGE:Fortran>:-debug extend>
-        $<$<COMPILE_LANGUAGE:Fortran>:-check bounds>
+        $<$<CONFIG:DEBUG>:-g>
+        $<$<COMPILE_LANGUAGE:Fortran>:-fpp>
+        $<$<COMPILE_LANGUAGE:Fortran>:-parallel>
         $<$<COMPILE_LANGUAGE:Fortran>:-heap-array>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-fp-stack-check>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-traceback>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-debug extend>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-check bounds>
     )
     target_link_libraries(
         ${MODEM_EXE}
@@ -64,7 +65,7 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
         -qopenmp
     )
 else()
-    message(FATAL_ERROR "Unknown/Unsupported Fortran Compiler: '${CMake_Fortran_COMPILER_ID}' - Supported compilers are < GNU | Ifort")
+    message(FATAL_ERROR "Unknown/Unsupported Fortran Compiler: '${CMAKE_Fortran_COMPILER_ID}' - Supported compilers are < GNU | Ifort")
 endif()
 
 
