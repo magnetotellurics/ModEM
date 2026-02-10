@@ -20,9 +20,10 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     target_compile_options(
         ${MODEM_EXE}
         PRIVATE
-        -cpp -ffree-line-length-none -fallow-argument-mismatch
+        $<$<COMPILE_LANGUAGE:Fortran>:-cpp>
+        $<$<COMPILE_LANGUAGE:Fortran>:-ffree-line-length-none>
+        $<$<COMPILE_LANGUAGE:Fortran>:-fallow-argument-mismatch>
         $<$<CONFIG:RELEASE>:-O3>
-
         $<$<CONFIG:DEBUG>:-O0>
         $<$<CONFIG:DEBUG>:-g>
         $<$<CONFIG:DEBUG>:-fbacktrace>
@@ -38,8 +39,8 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     target_compile_options(
         ${MODEM_EXE}
         PRIVATE
-        -fpp
-        -parallel
+        $<$<COMPILE_LANGUAGE:Fortran>-fpp>
+        $<$<COMPILE_LANGUAGE:Fortran>-parallel>
         $<$<CONFIG:RELEASE>:-O3>
         $<$<CONFIG:RELEASE>:-w>
         $<$<CONFIG:DEBUG>:-O0>
@@ -78,7 +79,10 @@ add_subdirectory("INV")
 add_subdirectory("SENS")
 add_subdirectory("UTILS")
 
-target_sources(${MODEM_EXE} PRIVATE UserCtrl.f90)
+target_sources(${MODEM_EXE} PRIVATE 
+    UserCtrl.f90
+    ESolnManager.f90
+)
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     include(FindBLAS)
