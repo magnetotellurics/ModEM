@@ -314,7 +314,7 @@ Contains
 
    ! compute gradient of the full penalty functional
    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
-   if (output_level > 3) then
+   if (output_level > 0) then
      gradFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.grt'
      call write_modelParam(grad,trim(gradFile))
    end if
@@ -346,6 +346,7 @@ Contains
       end if
 
       iter = iter + 1
+      call Master_job_send_inv_iteration(iter)
 
 	  ! save the values of the functional and the directional derivative
 	  rmsPrev = rms
@@ -413,6 +414,11 @@ Contains
           call linComb(ONE,d,MinusONE,dHat,res)
           resFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.res'
           call write_dataVectorMTX(res,trim(resFile))
+        end if
+
+        if (output_level > 0) then
+            gradFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.grt'
+            call write_modelParam(grad,trim(gradFile))
         end if
       end if
 

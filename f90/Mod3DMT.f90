@@ -13,6 +13,7 @@ program Mod3DMT
      use DCG
      use LBFGS
      use utilities
+     use ModEM_utils
      !use mtinvsetup
 
 #ifdef MPI
@@ -39,6 +40,7 @@ program Mod3DMT
 #ifdef MPI
      if (taskid == 0) then
          call ModEM_timers_create("Total Time", .true.)
+         call ModEM_utils_init()
      endif
 #else
      call ModEM_timers_create("Total Time", .true.)

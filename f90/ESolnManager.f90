@@ -28,7 +28,8 @@ module ESolnManager
     public :: EsMgr_create_eAll, EsMgr_create_e 
     public :: EsMgr_get
     public :: EsMgr_save
-    public :: EsMgr_save_in_file, EsMgr_write_to_file
+    public :: EsMgr_save_in_file, EsMgr_write_to_file, read_esoln_from_file
+    public :: EsMgr_grid, EsMgr_ftype, EsMgr_prefix
 
 contains
 
@@ -352,8 +353,6 @@ contains
         deallocate(e_packed)
 
     end subroutine EsMgr_recv_e
-
-
 
     subroutine int_create_e_param_place_holder(e, holder)
 

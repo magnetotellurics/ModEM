@@ -701,6 +701,7 @@ Contains
          write(fid) E%y
          write(fid) E%z
          call flush(fid)
+         !call ModEM_flush(fid)
          return
       end if
 
@@ -867,6 +868,9 @@ Contains
       logical                           :: ok, hasname, binary
       character(80)                     :: fname, isbinary
 
+      integer :: read_stat
+      character(len=256) :: read_err_msg
+
       if (.not. present(ftype)) then
          binary = .false.
       elseif (index(ftype,'b')>0) then
@@ -886,7 +890,17 @@ Contains
 
       if (binary) then
          ! read binary from unformatted files
-         read(fid) Nx,Ny,Nz,gridType
+         read(fid, iostat=read_stat, iomsg=read_err_msg) Nx,Ny,Nz,gridType
+         if (read_stat < 0) then
+            write(0, '(A, A, A)') "ERROR: EOF reached when reading dimensions in: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', read_stat, ' Message: ', trim(read_err_msg)
+            call ModEM_abort()
+         else if (read_stat > 0) then
+            write(0, '(A, A, A)') "ERROR: Erorr when reading dimensions in: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', read_stat, ' Message: ', trim(read_err_msg)
+            write(0,*) 'ERROR: Error read iostat code:', read_stat
+            call ModEM_abort()
+         end if
       else
          ! otherwise, read ascii
          read(fid,*,iostat=istat) Nx,Ny,Nz,gridType
@@ -905,9 +919,38 @@ Contains
 
       if (binary) then
          ! read binary from unformatted files
-         read(fid) E%x
-         read(fid) E%y
-         read(fid) E%z
+         read(fid, iostat=read_stat, iomsg=read_err_msg) E%x
+         if (read_stat < 0) then
+            write(1, '(A, A, A)') "ERROR: EOF reached when reading E % x in file: ", trim(fname), ' aborting!'
+            write(0,*) 'ERROR: Error read iostat code:', read_stat
+            call ModEM_abort()
+         else if (read_stat > 0) then
+            write(0, '(A, A, A)') "ERROR: Erorr when reading E % x: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', read_stat, ' Message: ', trim(read_err_msg)
+            call ModEM_abort()
+         end if
+
+         read(fid, iostat=read_stat, iomsg=read_err_msg) E%y
+         if (read_stat < 0) then
+            write(0, '(A, A, A)') "ERROR: EOF reached when reading E % y in file: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', read_stat, ' Message: ', trim(read_err_msg)
+            call ModEM_abort()
+         else if (read_stat > 0) then
+            write(0, '(A, A, A)') "ERROR: Erorr when reading E % y: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', read_stat, ' Message: ', trim(read_err_msg)
+            call ModEM_abort()
+         end if
+        
+         read(fid, iostat=read_stat, iomsg=read_err_msg) E%z
+         if (read_stat < 0) then
+            write(0, '(A, A, A)') "ERROR: EOF reached when reading E % z in file: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', read_stat, ' Message: ', trim(read_err_msg)
+            call ModEM_abort()
+         else if (read_stat > 0) then
+            write(0, '(A, A, A)') "ERROR: Erorr when reading E % z: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', read_stat, ' Message: ', trim(read_err_msg)
+            call ModEM_abort()
+         end if
          return
       end if
 

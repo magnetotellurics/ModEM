@@ -8,7 +8,7 @@ target_sources(${MODEM_EXE}
     PRIVATE ModEM_timers.f90
     PRIVATE polpak.f90
     PRIVATE utilities.f90
-    PRIVATE ModEM_logger.f90
+    PRIVATE ModEM_getrusage.c
 )
 
 if (USE_C_TIMERS)

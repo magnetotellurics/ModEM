@@ -403,10 +403,11 @@ contains
          fname = construct_esoln_fname(prefix, e % tx, trim(e % pol_name(e % pol_index(pol_index_lcl))))
          open(newunit=fid, file=trim(fname), action='write', form=form, status='replace')
 
-         write(6, '(A, i4.4, A, A, A, A)') "Saving electric solution for Tx: ", e % tx, " pol: '", &
-             trim(e % pol_name(pol_index_lcl)), "' to file: ", trim(fname)
+         write(6, '(A, i4.4, A, A, A, A, I2.2)') "Saving electric solution for Tx: ", e % tx, " pol: '", &
+             trim(e % pol_name(pol_index_lcl)), "' to file: ", trim(fname), taskid
 
          call write_cvector(fid, e % pol(pol_index_lcl), ftype_lcl)
+         !call ModEM_flush(fid)
          close(fid)
 
      end subroutine write_solnVector
@@ -462,6 +463,7 @@ contains
              call ModEM_abort()
          end if
 
+         write(0,*) taskid, 'is reading ', trim(fname)
          open(newunit=fid, file=trim(fname), action='read', form=form, status='old')
          call read_cvector(fid, e % pol(pol_index_lcl), ftype_lcl)
          close(fid)

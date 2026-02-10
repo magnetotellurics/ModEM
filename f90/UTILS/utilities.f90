@@ -44,6 +44,9 @@ Contains
     flush(0)
     flush(6)
 
+    call ModEM_flush(0)
+    call ModEM_flush(6)
+
 #ifdef MPI
     call MPI_Abort(MPI_COMM_WORLD, error_code, ierr)
 #endif
@@ -789,20 +792,35 @@ subroutine ModEM_flush(funit)
   integer, intent(in) :: funit
   integer :: fd ! Linux/Unix File Descriptor
   integer :: ret
+  integer(c_int), parameter :: F_BARRIERFSYNC = 85
+  integer(c_int), parameter :: F_FULLFSYNC = 51
+
 
   interface
-    function fsync (fd) bind(c, name='fsync')
+    function fsync(fd) bind(c, name='fsync')
       use iso_c_binding, only : c_int
       integer (c_int), value :: fd
       integer (c_int) :: fsync
     end function fsync
   end interface
 
+  interface
+    function fcntl(fildes, cmd, arg) bind(c, name='fcntl')
+      use iso_c_binding, only : c_int
+      integer (c_int), value :: fildes
+      integer (c_int), value :: cmd
+      integer (c_int), value :: arg
+      integer(c_int) :: fcntl
+    end function fcntl
+  end interface
+
   fd = fnum(funit)
   flush(funit)
   call flush(funit)
+
   ret = fsync(fd)
-  
+  ret = fcntl(fd, F_BARRIERFSYNC, 0_c_int)
+
 end subroutine ModEM_flush
 
 !**********************************************************************

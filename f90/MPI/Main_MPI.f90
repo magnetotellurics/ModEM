@@ -19,6 +19,7 @@ module Main_MPI
 
   use Declaration_MPI
   use Sub_MPI
+  use ModEM_utils
 
   implicit none
 
@@ -733,6 +734,7 @@ subroutine Master_job_DataResp(nTx, sigma, d)
             worker_job_task % pol_index = iTx_max
 
             call Pack_worker_job_task
+            call ModEM_log("DataResp! - task: $i itxMin: $i itxMax: $i", intArgs=(/dest, iTx_min, iTx_max/))
             call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
             write(ioMPI, '(a10,a16,i5,a8,i5,a11,i5)') trim(job_name), ': Send Per from ', iTx_min, ' to', iTx_max, ' to ', dest
         end if
@@ -1733,6 +1735,47 @@ Subroutine Master_job_Stop_MESSAGE(comm)
      ! all leaders reported 
 end Subroutine Master_job_Stop_MESSAGE
 
+subroutine Master_job_send_inv_iteration(iteration_num, comm)
+
+    implicit none
+
+    integer, intent(in) :: iteration_num
+    integer, intent(in), optional :: comm
+    integer :: task, size_current, comm_current
+
+
+    call ModEM_log("")
+    call ModEM_log("New Iteration - $i!", intArgs=(/iteration_num/))
+    call ModEM_log("")
+
+    if (present(comm)) then
+         if (comm .eq. MPI_COMM_NULL) then
+             comm_current = comm_world
+         else
+             comm_current = comm
+         endif
+     else
+         comm_current = comm_world
+     end if
+     call MPI_COMM_SIZE( comm_current, size_current, ierr )
+
+    write(0,*) "We are sending the iteration!"
+
+    worker_job_task % what_to_do = 'ITER_NUM'
+    worker_job_task % per_index = -1
+    worker_job_task % pol_index = -1
+    call create_worker_job_task_place_holder
+    call Pack_worker_job_task
+
+    do task = 1, size_current - 1
+        call MPI_SEND(worker_job_package, Nbytes, MPI_PACKED, task, FROM_MASTER, comm_current, ierr)
+    end do
+
+    call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+
+end subroutine Master_job_send_inv_iteration
+
 !********************** Master Distribute Tasks *****************************
 
 subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
@@ -1856,6 +1899,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          who=worker_job_task%taskid
          which_per=worker_job_task%per_index
          which_pol=worker_job_task%pol_index
+         call ModEM_log("Recved from who: $i per: $i pol: $i - "//trim(job_name), intArgs=(/who, which_per, which_pol/))
 
          call EsMgr_get(eAll_out % solns(which_per), which_pol, 1, from=who)
 
@@ -2025,6 +2069,7 @@ Subroutine Worker_job(sigma,d)
      Integer                                :: eAll_vec_size
      Integer                                :: comm_current, rank_current
      Integer                                :: cpu_only_ranks
+     integer :: iteration_number
      Integer,pointer,dimension(:)           :: group_sizes
      character(20)                          :: which_proc
      character(80)                          :: paramType,previous_message
@@ -2049,6 +2094,11 @@ Subroutine Worker_job(sigma,d)
      ! time
      DOUBLE PRECISION                       :: time_passed, now, just
      DOUBLE PRECISION, pointer,dimension(:) :: time_buff
+     character (len=256) :: prefix_name
+
+     iteration_number = 0
+
+     call ModEM_utils_init()
 
      nTx=d%nTx
      recv_loop=0
@@ -2119,6 +2169,9 @@ Subroutine Worker_job(sigma,d)
              ! forward modelling
              per_index=worker_job_task%per_index
              pol_index=worker_job_task%pol_index
+
+            call ModEM_log("Worker_Job - Started "//trim(worker_job_task%what_to_do)//" per: $i pol: $i", intArgs=(/per_index, pol_index/))
+
              if ((size_local.gt.1).and.(para_method.gt.0).and.          &
     &            (rank_local.eq.0)) then 
                  ! group leader passing the command to workers
@@ -2164,13 +2217,19 @@ Subroutine Worker_job(sigma,d)
                  call create_worker_job_task_place_holder 
                  worker_job_task%taskid=rank_current
                  call Pack_worker_job_task
+                 call ModEM_log("Calling MPI_SEND in worker_job_forward - per: $i  pol: $i", intArgs=(/per_index, pol_index/))
                  call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,0,   &
     &                FROM_WORKER, comm_current, ierr)
+                 call ModEM_log("Calling MPI_SEND in worker_job_forward - per: $i  pol: $i - RECEIVED By Master!", intArgs=(/per_index, pol_index/))
                  ! Create e0_temp package (one Period and one Polarization) 
                  ! and send it to the master
                  which_pol=1
                  call EsMgr_save(e0, to=0)
                  call reset_e_soln(e0)
+                 call ModEM_log("Calling MPI_SEND in worker_job_forward - per: $i  pol: $i - Esoln Saved!", intArgs=(/per_index, pol_index/))
+
+                write(prefix_name, '(A, i2.2, A)') 'fwd_at', iteration_number, '_'
+                call EsMgr_write_to_file(e0, prefix=prefix_name, ipol=which_pol, ftype='ascii')
 
              end if
              ! so long!
@@ -2183,6 +2242,8 @@ Subroutine Worker_job(sigma,d)
 
              start_iTx = worker_job_task % per_index
              end_iTx = worker_job_task % pol_index
+
+            call ModEM_log("Worker_Job - Started "//trim(worker_job_task%what_to_do)//" start: $i end: $i", intArgs=(/per_index, pol_index/))
 
              worker_job_task % taskid = taskid
 
@@ -2207,6 +2268,7 @@ Subroutine Worker_job(sigma,d)
                 end do
              end do
 
+             call ModEM_log("DataResp - I am sending start_iTx: $i and end_iTx: $i to master", intArgs=(/start_iTx, end_iTx/))
              call create_data_vec_place_holder(d, start_iTx=start_iTx, end_iTx=end_iTx)
              call Pack_data_para_vec(d, start_iTx=start_iTx, end_iTx=end_iTx)
              call MPI_Send(data_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
@@ -2218,6 +2280,8 @@ Subroutine Worker_job(sigma,d)
              start_iTx = worker_job_task % per_index
              end_iTx = worker_job_task % pol_index
              worker_job_task % taskid = taskid
+
+            call ModEM_log("Worker_Job - Started "//trim(worker_job_task%what_to_do)//" start: $i end: $i", intArgs=(/per_index, pol_index/))
 
              call create_solnVector(grid, 1, e0)
              call create_solnVector(grid, 1, e)
@@ -2246,6 +2310,7 @@ Subroutine Worker_job(sigma,d)
                 call linComb_modelParam(ONE, dsigma_send, ONE, dsigma_temp, dsigma_send)
              end do
 
+             call ModEM_log("PQMult - I am sending start_iTx: $i and end_iTx: $i to master", intArgs=(/start_iTx, end_iTx/))
              call create_model_param_place_holder(dsigma_send)
              call pack_model_para_values(dsigma_send)
              call MPI_Send(sigma_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
@@ -2424,6 +2489,8 @@ Subroutine Worker_job(sigma,d)
              per_index=worker_job_task%per_index
              pol_index=worker_job_task%pol_index
 
+             call ModEM_log("Worker_Job - Started "//trim(worker_job_task%what_to_do)//" per: $i pol: $i", intArgs=(/per_index, pol_index/))
+
              if ((size_local.gt.1).and.(para_method.gt.0).and.          &
     &            (rank_local.eq.0)) then 
                  ! group leader passing the command to workers
@@ -2446,12 +2513,28 @@ Subroutine Worker_job(sigma,d)
                  do ipol=1,nPol_MPI 
                      which_pol=ipol
                      call EsMgr_get(e0, per_index, pol_index=ipol, from=0)
+                    write(prefix_name, '(A, i2.2, A)') 'be_sens_e_', iteration_number, '_'
+                    call EsMgr_write_to_file(e0, prefix=prefix_name, ipol=which_pol, ftype='ascii')
                  end do
                  call initSolverWithOutE0(per_index,sigma,grid,size_local,&
                      e,comb)
+
+                 do ipol=1,nPol_MPI 
+                    which_pol=ipol
+                    write(prefix_name, '(A, i2.2, A)') 'after_init_e', iteration_number, '_'
+                    call EsMgr_write_to_file(e, prefix=prefix_name, ipol=which_pol, ftype='ascii')
+                 end do
+                call EsMgr_write_to_file(e, prefix=prefix_name, ipol=which_pol, ftype='ascii')
+
                  write(6,'(a12,a18,i5,a12)') node_info,                   &
     &                ' Finished Receiving ', orginal_nPol, ' from Master'
                  call LmultT(e0,sigma,d%d(per_index),comb)
+                 do ipol=1,nPol_MPI 
+                    which_pol=ipol
+                    write(prefix_name, '(A, i2.2, A)') 'e0_after_lmultT_', iteration_number, '_'
+                    call EsMgr_write_to_file(e0, prefix=prefix_name, ipol=which_pol, ftype='ascii')
+                 end do
+
                  call set_e_soln(pol_index,e)
              else
                  ! worker just fills in some dummy parameters
@@ -2463,7 +2546,7 @@ Subroutine Worker_job(sigma,d)
 
              if ((para_method.eq.0).or.(size_local.eq.1)) then
                  ! you are on your own, amigo!
-                 call sensSolve(per_index,TRN,e,comb,device_id)
+                  call sensSolve(per_index,TRN,e,comb,device_id)
              else
 #ifdef PETSC
                  call sensSolve(per_index,TRN,e,comb,device_id,comm_local) 
@@ -2485,12 +2568,16 @@ Subroutine Worker_job(sigma,d)
                  ! leader reports back to master
                  call create_worker_job_task_place_holder
                  worker_job_task%taskid=rank_current
+                call ModEM_log("JmultT - I am sending per_index: $i pol_index: $i to master", intArgs=(/pol_index, per_index/))
                  call Pack_worker_job_task
                  call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,0,   &
     &                FROM_WORKER, comm_current, ierr)
                  which_pol=1
                  call EsMgr_save(e, to=0, prefix=".JmultT")
                  !deallocate(e_para_vec,worker_job_package)
+
+                 write(prefix_name, '(A, i2.2, A)') 'my_save_', iteration_number, '_'
+                 call EsMgr_write_to_file(e, prefix=prefix_name, ipol=which_pol, ftype='ascii')
              end if
              ! hasta la vista!
              now = MPI_Wtime()
@@ -2855,6 +2942,14 @@ Subroutine Worker_job(sigma,d)
             call deall(e0)
             call deall(e)
 
+         elseif (trim(worker_job_task%what_to_do) .eq. 'ITER_NUM' ) then
+
+            iteration_number = iteration_number + 1
+            write(0,*) 'Iteration number:', iteration_number
+            call ModEM_log("ITeration Number: $i", intArgs=(/iteration_number/))
+
+            call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
          elseif (trim(worker_job_task%what_to_do) .eq. 'STOP' ) then
              ! clear all the temp packages and stop
              if (associated(sigma_para_vec)) then
@@ -3120,8 +3215,24 @@ end subroutine cleanUp_MPI
   
 subroutine destructor_MPI
 
+    integer :: length
+    character(len=512) :: name
+
      ! call MPI_FINALIZE (or the mpiexec might complain)
      call MPI_BARRIER(comm_world, ierr)
+
+     write(0,*) 'Comm world: ', MPI_COMM_WORLD
+     write(0,*) 'comm_current: ', modem_ctx % comm_current
+     write(0,*) 'comm_current: ', modem_ctx % comm_local
+     write(0,*) 'comm_current: ', modem_ctx % comm_world
+
+     call MPI_Comm_get_name(modem_ctx % comm_current, name, length, ierr)
+     write(0,*) taskid, 'comm_current: ', trim(name)
+     call MPI_Comm_get_name(modem_ctx % comm_local, name, length, ierr)
+     write(0,*) taskid, 'comm_local: ', trim(name)
+     call MPI_Comm_get_name(modem_ctx % comm_world, name, length, ierr)
+     write(0,*) taskid, 'comm_world: ', trim(name)
+
      call MPI_FINALIZE(ierr)
 
 end subroutine destructor_MPI
