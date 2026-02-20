@@ -284,7 +284,6 @@ Contains
    write(ioLog,'(a41,es8.1)') 'The initial damping parameter lambda is ',lambda
    write(ioLog,'(a55,f12.6)') 'The initial line search step size (in model units) is ',startdm
 
-
    ! starting from the prior hardcoded by setting mHat = 0 and m = m0
    ! m = m0
    ! mHat = m0
@@ -800,7 +799,7 @@ Contains
    ! compute the trial mHat, f, dHat, eAll, rms
    mHat_1 = mHat_0
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
-   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
+   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1, trial=.true.)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1,logFile)
    niter = niter + 1

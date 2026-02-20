@@ -62,7 +62,7 @@ Contains
 
 
 !**********************************************************************
-   subroutine func(lambda,d,m0,mHat,F,mNorm,dHat,eAll,RMS)
+   subroutine func(lambda,d,m0,mHat,F,mNorm,dHat,eAll,RMS, trial)
 
    ! Compute the full penalty functional F
    ! Also output the predicted data and the EM solution
@@ -76,12 +76,20 @@ Contains
    type(dataVectorMTX_t), optional, intent(inout)   :: dHat
    type(solnVectorMTX_t), optional, intent(inout) :: eAll
    real(kind=prec), optional, intent(out) :: RMS
+   logical, optional, intent(in) :: trial
 
    !  local variables
    type(dataVectorMTX_t)    :: res,Nres
    type(modelParam_t) :: m,JTd
    real(kind=prec) :: SS
    integer :: Ndata, Nmodel
+   logical :: trial_lcl
+
+   if (present(trial)) then
+     trial_lcl = trial
+   else
+     trial_lcl = .false.
+   end if
 
    ! compute the smoothed model parameter vector
    call CmSqrtMult(mHat,m)
@@ -96,7 +104,7 @@ Contains
    !   also sets up forward solutions for all transmitters in eAll
    !   (which is created on the fly if it doesn't exist)
 #ifdef MPI
-      call Master_Job_fwdPred(m,dHat,eAll)
+      call Master_Job_fwdPred(m,dHat,eAll,trial=trial_lcl)
 #else
       call fwdPred(m,dHat,eAll)
 #endif
@@ -117,6 +125,7 @@ Contains
 
    ! compute the model norm
    mNorm = dotProd(mHat,mHat)
+
    Nmodel = countModelParam(mHat)
 
    ! penalty functional = sum of squares + scaled model norm
