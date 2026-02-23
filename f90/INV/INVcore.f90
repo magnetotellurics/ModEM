@@ -147,7 +147,7 @@ Contains
    end subroutine func
 
 !**********************************************************************
-   subroutine gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+   subroutine gradient(lambda,d,m0,mHat,grad,dHat,eAll,use_starting_guess)
 
    !  Computes the gradient of the penalty functional,
    !  using EM solution (eAll) and the predicted data (dHat)
@@ -166,6 +166,7 @@ Contains
    type(modelParam_t), intent(inout)          :: grad
    type(dataVectorMTX_t), intent(inout)              :: dHat
    type(solnVectorMTX_t), intent(inout)            :: eAll
+   logical, intent(in), optional            :: use_starting_guess
 
    !  local variables
    real(kind=prec)       :: Ndata,Nmodel
@@ -173,6 +174,13 @@ Contains
    type(modelParam_t) :: m,JTd,CmJTd
 
    ! integer :: j, Ny, NzEarth
+   logical :: use_starting_guess_lcl
+
+   if (present(use_starting_guess)) then
+      use_starting_guess_lcl = use_starting_guess
+   else
+      use_starting_guess_lcl = .false.
+   end if
 
    ! compute the smoothed model parameter vector
    call CmSqrtMult(mHat,m)
@@ -189,7 +197,7 @@ Contains
    ! multiply by J^T
    call CdInvMult(res)
 #ifdef MPI
-        call Master_job_JmultT(m,res,JTd,eAll)
+        call Master_job_JmultT(m,res,JTd,eAll, use_starting_guess=use_starting_guess_lcl)
 #else
         call JmultT(m,res,JTd,eAll)
 #endif

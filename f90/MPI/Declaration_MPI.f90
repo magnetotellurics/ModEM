@@ -126,7 +126,7 @@ type :: define_worker_job
      logical       :: keep_E_soln=.false.
      logical       :: several_Tx=.false.
      logical       :: create_your_own_e0=.false.
-     logical       :: trial_fwd=.false.
+     logical       :: trial=.false.
      ! 2022.10.06, Liu Zhongyin, add iSite storing the site index in rx of dataBlock_t
      Integer       :: iSite
  end type define_worker_job
@@ -184,7 +184,7 @@ index=1
         call MPI_Pack(worker_job_task%keep_E_soln,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%several_Tx,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%create_your_own_e0,1, MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(worker_job_task%trial_fwd,1,          MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(worker_job_task%trial,1,          MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
         ! 2019.05.08, Liu Zhongyin, add iSite for rx in dataBlock_t
         call MPI_Pack(worker_job_task%iSite, 1,             MPI_INTEGER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
@@ -207,7 +207,7 @@ index=1
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%keep_E_soln,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%several_Tx,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%create_your_own_e0,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%trial_fwd,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
+        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%trial,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
 
         ! 2019.05.08, Liu Zhongyin, add iSite for rx in dataBlock_t
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%iSite, 1, MPI_INTEGER,MPI_COMM_WORLD, ierr)

@@ -51,7 +51,7 @@ subroutine log_worker_job(worker_job_t)
     call ModEM_log('- keep_E_soln: $l', logicArgs=(/worker_job_t % keep_E_soln/))
     call ModEM_log('- several_Tx: $l', logicArgs=(/worker_job_t % several_Tx/))
     call ModEM_log('- create_your_own_e0: $l', logicArgs=(/worker_job_t % create_your_own_e0/))
-    call ModEM_log('- trial_fwd: $l', logicArgs=(/worker_job_t % trial_fwd/))
+    call ModEM_log('- trial: $l', logicArgs=(/worker_job_t % trial/))
     call ModEM_log('- iSite: $i', intArgs=(/worker_job_t % iSite/))
     call ModEM_log('')
 
@@ -782,7 +782,7 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
             worker_job_task % what_to_do = trim(job_name)
             worker_job_task % per_index = iTx_min
             worker_job_task % pol_index = iTx_max
-            worker_job_task % trial_fwd = trial_lcl
+            worker_job_task % trial = trial_lcl
 
             call ModEM_log(' DR - Dest: $i Sending Package', intArgs=(/dest/))  
 
@@ -1064,7 +1064,7 @@ end subroutine Master_job_calcJ
 
 
 !#########################    Master_job_JmultT ############################
-Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
+Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm, use_starting_guess)
 
      implicit none
      type(modelParam_t), intent(in)       :: sigma
@@ -1073,6 +1073,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      type(solnVectorMTX_t), intent(in), optional                     :: eAll
      type(modelParam_t),intent(inout),pointer,dimension(:), optional :: s_hat
      integer, intent(in),optional         :: comm
+     logical, intent(in), optional        :: use_starting_guess
   
      ! Local
      type(modelParam_t)           :: dsigma_temp
@@ -1087,7 +1088,13 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      character(80)  :: job_name,file_name
      Integer        :: comm_current
 
-     call ModEM_log("Master_job_JmultT - Start")
+     logical :: use_starting_guess_lcl
+
+     if (present(use_starting_guess)) then
+         use_starting_guess_lcl = use_starting_guess
+     else
+         use_starting_guess_lcl = .false.
+     end if
 
      savedSolns = present(eAll)
      returne_m_vectors= present(s_hat)
@@ -1148,7 +1155,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      call zero(Qcomb)
      job_name= 'JmultT'
      call Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,      &
-    &     comm_current, eAll_temp)
+    &     comm_current, eAll_temp, trial=use_starting_guess_lcl)
        
      file_name='e0.soln'
      !call write_solnVectorMTX(10,file_name,eAll_temp)
@@ -1156,13 +1163,14 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      !call write_solnVectorMTX(20,file_name,eAll_out)
 
      if (EsMgr_save_in_file) then
-        call Master_job_PQMult(nTx, sigma, dsigma)
+        call Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess=use_starting_guess_lcl)
      else
          do iper=1,nTx
              call PmultT(eAll_temp%solns(iper),sigma,eAll_out%solns(iper)    &
         &         ,dsigma_temp)
              call QmultT(eAll_temp%solns(iper),sigma,d%d(iper),Qcomb)
              call scMultAdd(ONE,Qcomb,dsigma_temp)
+
              if (returne_m_vectors) then
                  s_hat(iper)=dsigma_temp
              end if
@@ -1190,13 +1198,14 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
 end Subroutine Master_job_JmultT
 
 !######################## Master_job_PQMult ##############################
-subroutine Master_job_PQMult(nTx, sigma, dsigma)
+subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
 
     implicit none
 
     integer, intent(in) :: nTx
     type (modelParam_t), intent(in) :: sigma
     type (modelParam_t), intent(inout) :: dsigma
+    logical, intent(in), optional :: use_starting_guess
 
     character(len=*), parameter :: job_name = "PQMULT"
     type(modelParam_t), dimension(nTx) :: dsigma_recv
@@ -1208,6 +1217,13 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma)
     logical, dimension(number_of_workers) :: task_is_working
     logical, dimension(nTx) :: transmitters_processing, transmitters_done
     logical :: sending
+    logical :: use_starting_guess_lcl
+
+    if (present(use_starting_guess)) then
+        use_starting_guess_lcl = use_starting_guess
+    else
+        use_starting_guess_lcl = .false.
+    end if
 
     sending = .true.
 
@@ -1236,7 +1252,7 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma)
                 worker_job_task % what_to_do=trim(job_name)
                 worker_job_task % per_index = iTx 
                 worker_job_task % pol_index = -1
-                call log_worker_job(worker_job_task)
+                worker_job_task % trial = use_starting_guess_lcl
 
                 call create_worker_job_task_place_holder
                 call Pack_worker_job_task
@@ -1283,11 +1299,9 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma)
     end do
 
     do iTx = 1, nTx
-        call ModEM_log("PQMULT - Combinging $i ", intArgs=(/iTx/))
         call linComb_modelParam(ONE, dsigma, ONE, dsigma_recv(iTx), dsigma)
         call deall_modelParam(dsigma_recv(iTx))
     end do
-
 
 end subroutine Master_job_PQMult
 
@@ -1993,11 +2007,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          trial_lcl = .false.
      end if
 
-     call ModEM_log('Master_job_Distribute_Taskes - $l', logicArgs=(/trial_lcl/))
-
      call get_nPol_MPI(eAll_out%solns(1)) 
-
-     call ModEM_log("Distribute task - trial: $l", logicArgs=(/trial_lcl/))
 
      if (rank_local.eq.-1) then ! first run!
      ! run initial regroup -- note this requires the comm to be
@@ -2012,9 +2022,9 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
      call MPI_COMM_SIZE( comm_current, size_current, ierr )
      who = 0
      worker_job_task%what_to_do=trim(job_name) 
-     worker_job_task%trial_fwd = trial_lcl
+     worker_job_task%trial = trial_lcl
 
-     call ModEM_log("Distribute task - worker_job_trial: $l", logicArgs=(/worker_job_task%trial_fwd/))
+     call ModEM_log("Distribute task - worker_job_trial: $l", logicArgs=(/worker_job_task%trial/))
      call count_number_of_messages_to_RECV(eAll_out)
      total_jobs = answers_to_receive
      ! counter to locate the task 
@@ -2047,10 +2057,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          end if
          worker_job_task%per_index = per_index
          worker_job_task%pol_index = pol_index
-         worker_job_task%trial_fwd = trial_lcl
-
-         call ModEM_log('Sending worker_job - 1 - Per: $i ($i)', intArgs=(/per_index, pol_index/))
-         !call log_worker_job(worker_job_task)
+         worker_job_task%trial = trial_lcl
 
          call create_worker_job_task_place_holder
          call Pack_worker_job_task
@@ -2139,10 +2146,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          worker_job_task%per_index= per_index
          worker_job_task%pol_index= pol_index
          worker_job_task%what_to_do= trim(job_name) 
-         worker_job_task%trial_fwd = trial_lcl
-
-         call ModEM_log('Sending worker_job - 2 - Per: $i ($i)', intArgs=(/per_index, pol_index/))
-         !call log_worker_job(worker_job_task)
+         worker_job_task%trial = trial_lcl
 
          call create_worker_job_task_place_holder
          call Pack_worker_job_task
@@ -2297,7 +2301,7 @@ Subroutine Worker_job(sigma,d)
      DOUBLE PRECISION, pointer,dimension(:) :: time_buff
      character (len=256) :: prefix_name
 
-     logical :: trial_fwd
+     logical :: trial
 
      iteration_number = 0
 
@@ -2345,7 +2349,8 @@ Subroutine Worker_job(sigma,d)
 
          modem_ctx % comm_current = comm_current
          modem_ctx % rank_current = rank_current
-         worker_job_task % trial_fwd = .false.
+         worker_job_task % trial = .false.
+         trial = .false.
 
          ! reset the timer
          previous_time = now
@@ -2387,9 +2392,9 @@ Subroutine Worker_job(sigma,d)
              ! forward modelling
              per_index=worker_job_task%per_index
              pol_index=worker_job_task%pol_index
-             trial_fwd=worker_job_task%trial_fwd
+             trial=worker_job_task%trial
 
-             call ModEM_log("Forward: $i $i $l", intArgs=(/per_index, pol_index/), logicArgs=(/trial_fwd/))
+             call ModEM_log("Forward: $i $i $l", intArgs=(/per_index, pol_index/), logicArgs=(/trial/))
 
              if ((size_local.gt.1).and.(para_method.gt.0).and.          &
     &            (rank_local.eq.0)) then 
@@ -2444,7 +2449,7 @@ Subroutine Worker_job(sigma,d)
 
                  which_pol=1
 
-                 if (trial_fwd) then
+                 if (trial) then
                      call EsMgr_save(e0, to=0, prefix='.trial')
                  else
                      call EsMgr_save(e0, to=0)
@@ -2483,7 +2488,7 @@ Subroutine Worker_job(sigma,d)
 
                 do pol_index = 1, get_nPol(per_index)
 
-                    if (worker_job_task % trial_fwd) then
+                    if (worker_job_task % trial) then
                         call EsMgr_get(e0, e0 % tx, pol_index=pol_index, prefix='.trial')
                     else
                         call EsMgr_get(e0, e0 % tx, pol_index=pol_index)
@@ -2524,6 +2529,7 @@ Subroutine Worker_job(sigma,d)
 
              per_index = worker_job_task % per_index
              worker_job_task % taskid = taskid
+             trial=worker_job_task%trial
 
              call ModEM_log("PQMULT - start_iTx: $i end_iTx: $i taskId: $taskid ", intArgs=(/start_iTx, end_iTx, taskid/))
 
@@ -2537,18 +2543,21 @@ Subroutine Worker_job(sigma,d)
              Qcomb = sigma
              dsigma_send = sigma
 
-             call zero(dsigma_send)
-
-             call ModEM_log("PQMULT - per : $i", intArgs=(/per_index/))
              call zero(dsigma_temp)
-             call zero(Qcomb)
+             call zero(dsigma_send)
+             call zero(QComb)
 
              e0 % tx = per_index
              e % tx = per_index
 
              do pol_index = 1, get_nPol(per_index)
-                 call EsMgr_get(e0, e0 % tx, pol_index=pol_index)
-                 call EsMgr_get(e, e % tx, pol_index=pol_index, prefix='.JmultT')
+                 if (trial) then
+                     call EsMgr_get(e0, e0 % tx, pol_index=pol_index, prefix='.trial')
+                     call EsMgr_get(e, e % tx, pol_index=pol_index, prefix='.JmultT')
+                 else
+                     call EsMgr_get(e0, e0 % tx, pol_index=pol_index)
+                     call EsMgr_get(e, e % tx, pol_index=pol_index, prefix='.JmultT')
+                 end if
              end do
 
              call PmultT(e0, sigma, e, dsigma_temp)
@@ -2561,16 +2570,12 @@ Subroutine Worker_job(sigma,d)
              worker_job_task % taskid = rank_current
              worker_job_task % per_index = per_index
              call Pack_worker_job_task
-             call ModEM_log("Calling MPI_Send to alert the main task we are done")
              call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, 0, &
                  FROM_WORKER, comm_current, ierr)
-             call ModEM_log("After send 1")
 
              call create_model_param_place_holder(dsigma_temp)
              call pack_model_para_values(dsigma_temp)
-             call ModEM_log("Calling MPI Send again to send out data to the main task")
              call MPI_Send(sigma_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
-             call ModEM_log("After send 2")
 
          elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
              ! compute (explicit) J
@@ -2770,27 +2775,26 @@ Subroutine Worker_job(sigma,d)
     &                ' Start Receiving ' , orginal_nPol, ' from Master'
                  do ipol=1,nPol_MPI 
                      which_pol=ipol
-                     call EsMgr_get(e0, per_index, pol_index=ipol, from=0)
-                     !write(prefix_name, '(A, i2.2, A)') 'be_sens_e_', iteration_number, '_'
-                     !call EsMgr_write_to_file(e0, prefix=prefix_name, ipol=which_pol, ftype='ascii')
+
+                     if (worker_job_task % trial) then
+                        call EsMgr_get(e0, per_index, pol_index=ipol, from=0, prefix='.trial')
+                     else
+                        call EsMgr_get(e0, per_index, pol_index=ipol, from=0)
+                     end if
+
                  end do
                  call initSolverWithOutE0(per_index,sigma,grid,size_local,&
                      e,comb)
 
                  do ipol=1,nPol_MPI 
                     which_pol=ipol
-                    !write(prefix_name, '(A, i2.2, A)') 'after_init_e', iteration_number, '_'
-                    !call EsMgr_write_to_file(e, prefix=prefix_name, ipol=which_pol, ftype='ascii')
                  end do
-                 !call EsMgr_write_to_file(e, prefix=prefix_name, ipol=which_pol, ftype='ascii')
 
                  write(6,'(a12,a18,i5,a12)') node_info,                   &
     &                ' Finished Receiving ', orginal_nPol, ' from Master'
                  call LmultT(e0,sigma,d%d(per_index),comb)
                  do ipol=1,nPol_MPI 
                     which_pol=ipol
-                    !write(prefix_name, '(A, i2.2, A)') 'e0_after_lmultT_', iteration_number, '_'
-                    !call EsMgr_write_to_file(e0, prefix=prefix_name, ipol=which_pol, ftype='ascii')
                  end do
 
                  call set_e_soln(pol_index,e)
@@ -3207,7 +3211,9 @@ Subroutine Worker_job(sigma,d)
          elseif (trim(worker_job_task%what_to_do) .eq. 'ITER_NUM' ) then
 
             iteration_number = iteration_number + 1
+            call ModEM_log("")
             call ModEM_log("Iteration Number: $i", intArgs=(/iteration_number/))
+            call ModEM_log("")
             call ModEM_memory_log_report('newIteration')
 
             call MPI_BARRIER(MPI_COMM_WORLD, ierr)

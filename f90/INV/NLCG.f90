@@ -822,19 +822,19 @@ Contains
    	f = f_1
     ! compute the gradient and exit
     if (relaxation) then
-   	call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
-    	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
-   	call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
-   	call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
-   	end if
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
-    write(*,'(a45)') 'Quadratic has no minimum, exiting line search'
-    write(ioLog,'(a45)') 'Quadratic has no minimum, exiting line search'
-	call deall_dataVectorMTX(dHat_1)
-	call deall_modelParam(mHat_0)
-	call deall_modelParam(mHat_1)
-	call deall_solnVectorMTX(eAll_1)
-   	return
+        call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
+        call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+        call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
+        call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
+        end if
+        call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+        write(*,'(a45)') 'Quadratic has no minimum, exiting line search'
+        write(ioLog,'(a45)') 'Quadratic has no minimum, exiting line search'
+        call deall_dataVectorMTX(dHat_1)
+        call deall_modelParam(mHat_0)
+        call deall_modelParam(mHat_1)
+        call deall_solnVectorMTX(eAll_1)
+        return
    end if
 
    ! otherwise compute the functional at the minimizer of the quadratic
@@ -864,7 +864,8 @@ Contains
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
 
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+    call gradient(lambda,d,m0,mHat,grad,dHat,eAll, use_starting_guess=starting_guess)
+
     write(*,'(a60)') 'Sufficient decrease condition satisfied, exiting line search'
     write(ioLog,'(a60)') 'Sufficient decrease condition satisfied, exiting line search'
 	call deall_dataVectorMTX(dHat_1)
