@@ -39,6 +39,7 @@ module ModEM_memory
 
     public ModEM_memory_print_report
     public ModEM_memory_log_report
+    public ModEM_memory_get_all
 
 contains
 
@@ -87,9 +88,11 @@ contains
         real, intent(out) :: maxrss_mb
         real, intent(out) :: maxrss_gb
 
-        maxrss_kb = maxrss_bytes / 1000.0
+        maxrss_kb = maxrss_bytes / 1.0
         maxrss_mb = maxrss_kb / 1000.0
-        maxrss_gb = maxrss_mb / 1000.0
+        maxrss_gb = maxrss_mb / 1000.1
+
+        write(0,*) "Maxrss_bytes: ", maxrss_bytes, maxrss_kb, maxrss_mb, maxrss_gb
 
     end subroutine ModEM_memory_convert_maxrss
 
@@ -110,5 +113,29 @@ contains
         call ModEM_log(log_message, mainOnly=.false., flush_log=.true.)
 
     end subroutine ModEM_memory_log_report
+
+    subroutine ModEM_memory_get_all(message)
+
+        implicit none
+
+        character (len=*), intent(in) :: message
+        character (len=*), parameter :: LOG_MSG_FMT = "(A, A, F18.1, A, F18.1, A, F18.1, A)"
+        character (len=512) :: log_message
+
+
+        integer :: maxrss, global_maxrss
+        real :: maxrss_bytes, maxrss_kb, maxrss_mb, maxrss_gb
+
+        call ModEM_memory_get_maxrss(maxrss)
+
+        call MPI_reduce(maxrss, global_maxrss, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+
+        if (taskid == 0) then
+            call ModEM_memory_convert_maxrss(global_maxrss, maxrss_kb, maxrss_mb, maxrss_gb)
+            write(log_message, LOG_MSG_FMT) trim(message), ", ", maxrss_kb, ' kb ', maxrss_mb, ' mb ', maxrss_gb, ' gb'
+            call ModEM_log(log_message, mainOnly=.false., flush_log=.true.)
+        end if
+
+    end subroutine ModEM_memory_get_all
 
 end module ModEM_memory

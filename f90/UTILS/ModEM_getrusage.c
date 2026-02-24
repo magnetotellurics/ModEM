@@ -16,14 +16,19 @@ void get_maxrss(long *maxrss_bytes) {
     int conversion;
     struct rusage usage;
 
+    printf("Inside getrusage!\n");
+
 #if  defined(__APPLE_) || defined(__MACH__)
     conversion = 1.0;
 #elif __linux__
-    conversion = 1000.0;
+    conversion = 1.0;
 #else  
-    conversion = 1000.0;
+    conversion = 1.0;
 #endif
 
     getrusage(RUSAGE_SELF, &usage);
+    printf("getrusage before conversion: %ld\n", usage.ru_maxrss);
     *maxrss_bytes = usage.ru_maxrss / conversion;    
+
+    printf("Inside getrusage - Maxrss_bytes: %ld - conversion: %d\n", *maxrss_bytes, conversion);
 }

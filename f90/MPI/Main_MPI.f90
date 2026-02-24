@@ -776,15 +776,11 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
             remainder = remainder - 1
         end if
 
-        call ModEM_log(' DR - Dest: $i min: $i max: $i rem: $i', intArgs=(/dest, iTx_min, iTx_max, remainder/))  
-
         if ( iTx_max >= iTx_min ) then
             worker_job_task % what_to_do = trim(job_name)
             worker_job_task % per_index = iTx_min
             worker_job_task % pol_index = iTx_max
             worker_job_task % trial = trial_lcl
-
-            call ModEM_log(' DR - Dest: $i Sending Package', intArgs=(/dest/))  
 
             call Pack_worker_job_task
             call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
@@ -1241,8 +1237,6 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
                 cycle 
             end if
 
-            call ModEM_log("Seeing if we can send an transmitters: $i", intArgs=(/iTx/))
-
             do dest = 1, number_of_workers
                 if (task_is_working(dest)) then
                     cycle 
@@ -1257,7 +1251,6 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
                 call create_worker_job_task_place_holder
                 call Pack_worker_job_task
                 call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
-                call ModEM_log("I sent period: $i to $i - PQMULT", intArgs=(/iTx, dest/))
                 transmitters_processing(iTx) = .true.
                 task_is_working(dest) = .true.
                 exit
@@ -1276,23 +1269,18 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
             dest = worker_job_task % taskid
             iTx = worker_job_task % per_index
 
-            call ModEM_log("We recived a message from: $i for iTx: $i", intArgs=(/dest, iTx/))
-
             dsigma_recv(iTx) = sigma
             call zero(dsigma_recv(iTx))
 
             call create_model_param_place_holder(dsigma_recv(iTx))
             call MPI_Recv(sigma_para_vec, Nbytes, MPI_PACKED, dest, FROM_WORKER, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
             call Unpack_model_para_values(dsigma_recv(iTx))
-            call ModEM_log("Data Recived from: $i for $i!", intArgs=(/dest, iTx/))
-            call ModEM_log("")
 
             transmitters_done(iTx) = .true.
             task_is_working(dest) = .false.
         end if
 
         if (all(transmitters_done(:))) then
-            call ModEM_log("We are done!")
             sending = .false.
             exit
         end if
@@ -1959,6 +1947,8 @@ subroutine Master_job_send_inv_iteration(iteration_num, comm)
 
     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
+    call ModEM_memory_get_all("New Iteration Memory: ")
+
 
 end subroutine Master_job_send_inv_iteration
 
@@ -2347,6 +2337,7 @@ Subroutine Worker_job(sigma,d)
              end if
          end if
 
+
          modem_ctx % comm_current = comm_current
          modem_ctx % rank_current = rank_current
          worker_job_task % trial = .false.
@@ -2356,7 +2347,6 @@ Subroutine Worker_job(sigma,d)
          previous_time = now
          now = MPI_Wtime()
          ! receive the job info from someone
-         call ModEM_log("I am waitng for a new job from main $i - ", intArgs=(/NBytes/))
          write(0,*) "worker_job_package: ", ierr, comm_current, Nbytes
 
          write(0,*) "My Status?: ", STATUS
@@ -2370,9 +2360,10 @@ Subroutine Worker_job(sigma,d)
     &        trim(worker_job_task%what_to_do),'] received from ',        &
     &        STATUS(MPI_SOURCE)
 
-
-        call ModEM_log("We received a new Worker_job_task:")
-        call log_worker_job(worker_job_task)
+        call ModEM_log(" ", flush_log=.true.)
+        call ModEM_log("Starting: "//trim(worker_job_task % what_to_do))
+        call ModEM_memory_log_report(trim(worker_job_task % what_to_do))
+        call ModEM_log(" ", flush_log=.true.)
 
          ! for debug
          ! write(6,*) 'source = ', MPI_SOURCE
@@ -2381,8 +2372,6 @@ Subroutine Worker_job(sigma,d)
          ! write(6,*) node_info,' MPI INFO [keep soln = ',               &
          !            (worker_job_task%keep_E_soln), &
          !            '; several TX = ',worker_job_task%several_Tx,']'
-
-         call ModEM_log("Starting worker job - "//trim(worker_job_task % what_to_do))
 
          if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
 
@@ -2393,8 +2382,6 @@ Subroutine Worker_job(sigma,d)
              per_index=worker_job_task%per_index
              pol_index=worker_job_task%pol_index
              trial=worker_job_task%trial
-
-             call ModEM_log("Forward: $i $i $l", intArgs=(/per_index, pol_index/), logicArgs=(/trial/))
 
              if ((size_local.gt.1).and.(para_method.gt.0).and.          &
     &            (rank_local.eq.0)) then 
@@ -2478,8 +2465,6 @@ Subroutine Worker_job(sigma,d)
 
              call EsMgr_create_e(e, per_index)
 
-             call ModEM_log('DATARESP: start_iTx: $i end_iTx: $i', intArgs=(/start_iTx, end_iTx/))
-
 
              do per_index = start_iTx, end_iTx
                 call zero_solnvector(e0)
@@ -2497,7 +2482,6 @@ Subroutine Worker_job(sigma,d)
                     norm_p1 = sqrt(real(dotProd(e0% pol(1), e0 % pol(1))))
                     norm_p2 = sqrt(real(dotProd(e0 % pol(2), e0% pol(2))))
 
-                    call ModEM_log("Read DataResp - Norm: p1: $r  p2: $r", realArgs=(/norm_p1, norm_p2/), mainOnly=.false.)
                 end do
 
                 do i = 1, d % d(per_index) % nDt
@@ -2512,11 +2496,9 @@ Subroutine Worker_job(sigma,d)
                     end do
 
                     datanorm = sqrt(dotProd(d % d(per_index) % data(i), d % d(per_index) % data(i)))
-                    call ModEM_log("Data Norm of $i $i: $r ", intArgs=(/per_index, i/), realArgs=(/datanorm/))
                 end do
 
                 datanorm = sqrt(dotProd(d % d(per_index), d % d(per_index)))
-                call ModEM_log("Data Norm of $i: $r ", intArgs=(/per_index/), realArgs=(/datanorm/))
             end do
 
              call create_data_vec_place_holder(d, start_iTx=start_iTx, end_iTx=end_iTx)
@@ -2531,7 +2513,6 @@ Subroutine Worker_job(sigma,d)
              worker_job_task % taskid = taskid
              trial=worker_job_task%trial
 
-             call ModEM_log("PQMULT - start_iTx: $i end_iTx: $i taskId: $taskid ", intArgs=(/start_iTx, end_iTx, taskid/))
 
              call create_solnVector(grid, 1, e0)
              call create_solnVector(grid, 1, e)
@@ -2995,8 +2976,6 @@ Subroutine Worker_job(sigma,d)
              call unpack_model_para_values(sigma)
 
              sigmaNorm = sqrt(dotprod(sigma, sigma))
-             call ModEM_log('Norm of Sigma: $r', realArgs=(/sigmaNorm/))
-
              if (associated(sigma_para_vec)) then
                  deallocate(sigma_para_vec)
              endif
@@ -3214,9 +3193,11 @@ Subroutine Worker_job(sigma,d)
             call ModEM_log("")
             call ModEM_log("Iteration Number: $i", intArgs=(/iteration_number/))
             call ModEM_log("")
-            call ModEM_memory_log_report('newIteration')
+            call ModEM_memory_log_report('Memory - New Iteration')
 
             call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+            call ModEM_memory_get_all("New Iteration Memory: ")
 
          elseif (trim(worker_job_task%what_to_do) .eq. 'STOP' ) then
              ! clear all the temp packages and stop
