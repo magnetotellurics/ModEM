@@ -5,7 +5,7 @@ Modular Electromagnetic Inversion Software (ModEM)
 **ModEM: A modular system for inversion of electromagnetic geophysical data.**  
 **Authors**: Gary Egbert, Anna Kelbert, Naser Megbel & Hao Dong.
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17229575.svg)](https://doi.org/10.5281/zenodo.17229575)
+[![DOI](https://zenodo.org/badge/1025134680.svg)](https://doi.org/10.5281/zenodo.17229555)
 
 [ModEM Documentation](https://magnetotellurics.github.io/ModEM/)
 
