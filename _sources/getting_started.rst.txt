@@ -7,11 +7,9 @@ Directory Structure
 The following files and sub-directories will be found:
 
 * **COPYRIGHT** - Please get familiar with the Copyright before using this code!
-* **README** - Explains how to obtain, install and update the code.
+* **README.md** - Explains how to obtain, install and update the code.
 * **doc/** - Provides additional documentation, including this user guide.
-* **examples/** - Provides a careful set of examples that are known to work.
 * **f90/** - The code base, makefiles and configuration scripts.
-* **matlab/** - Auxiliary Matlab scripts for file conversion, and others.
 
 Compiling ModEM
 ---------------
