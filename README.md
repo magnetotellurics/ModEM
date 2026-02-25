@@ -388,7 +388,7 @@ system for inversion of electromagnetic geophysical data. Computers and
 Geosciences, 66, 40–53, Elsevier. https://doi.org/10.1016/j.cageo.2014.01.010_
 \[[PDF][Kelbert-2014-PDF]\]
 
-[Kelbert-2014-PDF]: https://github.com/magnetotellurics/ModEM/blob/main/doc/Kelbert_et_al_2014_ModEM.pdf
+[Kelbert-2014-PDF]: https://github.com/magnetotellurics/ModEM/blob/main/docs/Kelbert_et_al_2014_ModEM.pdf
 
 _Egbert, G. D., & Kelbert, A. (2012). Computational recipes for electromagnetic
 inverse problems. Geophysical Journal International, 189(1), 251–267, OUP.
