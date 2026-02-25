@@ -649,7 +649,6 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm, trial)
      logical, intent(in), optional :: trial
      integer nTx
 
-
      ! local variables
      Integer        :: iper, comm_current
      Integer        :: per_index,pol_index,stn_index,iTx,i,iDt,j
@@ -657,7 +656,6 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm, trial)
      logical :: trial_lcl
 
      real :: data_norm
-
 
      ! nTX is number of transmitters;
      nTx = d1%nTx
@@ -684,7 +682,6 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm, trial)
      end if
 
      call ModEM_log("Master_job_fwdPred - Start - Trial: $l", logicArgs=(/trial_lcl/))
-
 
      modem_ctx % comm_current = comm_current
 
@@ -1186,8 +1183,8 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm, use_starting_guess)
      ! clean up
      call deall_modelParam(dsigma_temp)
      call deall_modelParam(Qcomb)
-     call deall (eAll_out)
-     call deall (eAll_temp) 
+     call deall(eAll_out)
+     call deall(eAll_temp) 
      ! call deall (e0)   
      call deall_dataVectorMTX(d_temp)
    
@@ -2557,6 +2554,9 @@ Subroutine Worker_job(sigma,d)
              call create_model_param_place_holder(dsigma_temp)
              call pack_model_para_values(dsigma_temp)
              call MPI_Send(sigma_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
+             call deall(QComb)
+             call deall(dsigma_temp)
+             call deall(dsigma_send)
 
          elseif (trim(worker_job_task%what_to_do) .eq. 'COMPUTE_J') then
              ! compute (explicit) J
@@ -3470,17 +3470,9 @@ subroutine destructor_MPI
      ! call MPI_FINALIZE (or the mpiexec might complain)
      call MPI_BARRIER(comm_world, ierr)
 
-     write(0,*) 'Comm world: ', MPI_COMM_WORLD
-     write(0,*) 'comm_current: ', modem_ctx % comm_current
-     write(0,*) 'comm_current: ', modem_ctx % comm_local
-     write(0,*) 'comm_current: ', modem_ctx % comm_world
-
      call MPI_Comm_get_name(modem_ctx % comm_current, name, length, ierr)
-     write(0,*) taskid, 'comm_current: ', trim(name)
      call MPI_Comm_get_name(modem_ctx % comm_local, name, length, ierr)
-     write(0,*) taskid, 'comm_local: ', trim(name)
      call MPI_Comm_get_name(modem_ctx % comm_world, name, length, ierr)
-     write(0,*) taskid, 'comm_world: ', trim(name)
 
      call MPI_FINALIZE(ierr)
 

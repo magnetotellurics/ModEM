@@ -437,7 +437,9 @@ Contains
     end if
 
 	! First deallocate anything, that's allocated
-    call deall_cvector(E)
+    if (.not. place_holder_lcl) then
+        call deall_cvector(E)
+    end if
 
     ! Set pointer
     E%grid => igrid
@@ -456,6 +458,7 @@ Contains
 
     if (place_holder_lcl) then
         ! Don't allocate anything for place holders
+        E % allocated = .true.
         E % place_holder = .true.
         return
     end if
@@ -539,7 +542,7 @@ Contains
     integer	    :: status
 
     ! deallocate memory for x,y,z
-    if (E%allocated) then 
+    if (E%allocated .and. .not. E%place_holder) then 
     deallocate(E%x, STAT=status)
     deallocate(E%y, STAT=status)
     deallocate(E%z, STAT=status)

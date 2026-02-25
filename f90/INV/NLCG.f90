@@ -834,6 +834,7 @@ Contains
         call deall_modelParam(mHat_0)
         call deall_modelParam(mHat_1)
         call deall_solnVectorMTX(eAll_1)
+        call deall_solnVectorMTX(eAll)
         return
    end if
 
@@ -871,7 +872,6 @@ Contains
 	call deall_dataVectorMTX(dHat_1)
 	call deall_modelParam(mHat_0)
 	call deall_modelParam(mHat_1)
-	call deall_solnVectorMTX(eAll_1)
    	return
    end if
 

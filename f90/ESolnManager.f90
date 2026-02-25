@@ -158,8 +158,7 @@ contains
         call create_solnVectorMTX(nTx, eAll)
 
         do iTx = 1, nTx
-            call create_solnVector(grid, iTx, e, place_holder=place_holder_lcl)
-            call copy_solnVector(eAll % solns(iTx), e)
+            call create_solnVector(grid, iTx, eall % solns(iTx), place_holder=place_holder_lcl)
         end do
 
     end subroutine EsMgr_create_eAll
