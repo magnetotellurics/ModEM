@@ -24,6 +24,7 @@ target_sources(${MODEM_EXE}
     #PRIVATE DataIO_HDF5.f90 
     PRIVATE DataIO.f90
     PRIVATE EMfieldInterp.f90
+    PRIVATE ESolnManager.f90
     PRIVATE ForwardSolver.f90
     PRIVATE GridCalc.f90
     #PRIVATE GridCalcS.f90
