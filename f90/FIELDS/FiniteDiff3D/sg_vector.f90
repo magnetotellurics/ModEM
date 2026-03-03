@@ -675,6 +675,7 @@ Contains
       complex (kind(E%x)), allocatable, dimension(:,:,:)  :: x, y, z
       logical                           :: ok, hasname, binary
       character(80)                     :: fname, isbinary
+      character(512)    :: iomsg
 
       if(.not. E%allocated) then
          write(0, *) 'cvector must be allocated before call to write_cvector'
@@ -700,10 +701,30 @@ Contains
 
       ! write binary to unformatted files
       if (binary) then
-         write(fid) E%nx,E%ny,E%nz,E%gridType
-         write(fid) E%x
-         write(fid) E%y
-         write(fid) E%z
+         write(fid, iostat=istat, iomsg=iomsg) E%nx,E%ny,E%nz,E%gridType
+         if (istat /= 0) then
+             write(0,*) "ERROR: There was an writing file '", trim(fname), "' header"
+             write(0,*) "ERROR: Reason: ", trim(iomsg)
+             call ModEM_abort()
+         end if
+         write(fid, iostat=istat, iomsg=iomsg) E%x
+         if (istat /= 0) then
+             write(0,*) "ERROR: There was an writing file '", trim(fname), "' E % x"
+             write(0,*) "ERROR: Reason: ", trim(iomsg)
+             call ModEM_abort()
+         end if
+         write(fid, iostat=istat, iomsg=iomsg) E%y
+         if (istat /= 0) then
+             write(0,*) "ERROR: There was an writing file '", trim(fname), "' E % y"
+             write(0,*) "ERROR: Reason: ", trim(iomsg)
+             call ModEM_abort()
+         end if
+         write(fid, iostat=istat, iomsg=iomsg) E%z
+         if (istat /= 0) then
+             write(0,*) "ERROR: There was an writing file '", trim(fname), "' E % z"
+             write(0,*) "ERROR: Reason: ", trim(iomsg)
+             call ModEM_abort()
+         end if
          return
       end if
 
@@ -869,6 +890,7 @@ Contains
       complex (kind(E%x)), allocatable, dimension(:,:,:)  :: x, y, z
       logical                           :: ok, hasname, binary
       character(80)                     :: fname, isbinary
+      character(512) :: iomsg
 
       if (.not. present(ftype)) then
          binary = .false.
@@ -908,9 +930,38 @@ Contains
 
       if (binary) then
          ! read binary from unformatted files
-         read(fid) E%x
-         read(fid) E%y
-         read(fid) E%z
+         read(fid, iostat=istat, iomsg=iomsg) E%x
+         if (istat < 0) then
+            write(1, '(A, A, A)') "ERROR: EOF reached when reading E % x in file: ", trim(fname), ' aborting!'
+            write(0,*) 'ERROR: Error read iostat code:', istat
+            call ModEM_abort()
+         else if (istat > 0) then
+            write(0, '(A, A, A)') "ERROR: Erorr when reading E % x: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', istat, ' Message: ', trim(iomsg)
+            call ModEM_abort()
+         end if
+
+         read(fid, iostat=istat, iomsg=iomsg) E%y
+         if (istat < 0) then
+            write(0, '(A, A, A)') "ERROR: EOF reached when reading E % y in file: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', istat, ' Message: ', trim(iomsg)
+            call ModEM_abort()
+         else if (istat > 0) then
+            write(0, '(A, A, A)') "ERROR: Erorr when reading E % y: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', istat, ' Message: ', trim(iomsg)
+            call ModEM_abort()
+         end if
+
+         read(fid, iostat=istat, iomsg=iomsg) E%z
+         if (istat < 0) then
+            write(0, '(A, A, A)') "ERROR: EOF reached when reading E % z in file: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', istat, ' Message: ', trim(iomsg)
+            call ModEM_abort()
+         else if (istat > 0) then
+            write(0, '(A, A, A)') "ERROR: Erorr when reading E % z: ", trim(fname), ' aborting!'
+            write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', istat, ' Message: ', trim(iomsg)
+            call ModEM_abort()
+         end if
          return
       end if
 
