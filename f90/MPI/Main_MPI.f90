@@ -616,13 +616,14 @@ end subroutine Master_job_Regroup
 !----------------------------------------------------------------------------
 !##########################  Master_job_fwdPred ############################
 
-Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
+Subroutine Master_job_fwdPred(sigma,d1,eAll,comm,trial)
 
      implicit none
      type(modelParam_t), intent(in)       :: sigma
      type(dataVectorMTX_t), intent(inout) :: d1
      type(solnVectorMTX_t), intent(inout) :: eAll
-     integer, intent(inout),optional      :: comm
+     integer, intent(inout), optional     :: comm
+     logical, intent(in), optional        :: trial
      integer nTx
 
 
@@ -630,6 +631,7 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
      Integer        :: iper, comm_current
      Integer        :: per_index,pol_index,stn_index,iTx,i,iDt,j
      character(80)  :: job_name
+     logical        :: trial_lcl
 
      ! nTX is number of transmitters;
      nTx = d1%nTx
@@ -649,6 +651,12 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
          end if
      end if
 
+     if (present(trial)) then
+         trial_lcl = trial
+     else
+         trial_lcl = .false.
+     end if
+
      ! First, distribute the current model to all workers
      call Master_job_Distribute_Model(sigma)
      ! call Master_job_Distribute_Data(d1)
@@ -662,7 +670,7 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
             end do
      end if
      job_name= 'FORWARD'
-     call Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll,comm_current)
+     call Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll,comm_current, trial=trial_lcl)
 
      ! Initialize only those grid elements on the master that are used in
      ! EMfieldInterp
@@ -1017,7 +1025,7 @@ end subroutine Master_job_calcJ
 
 
 !#########################    Master_job_JmultT ############################
-Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
+Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm,use_starting_guess)
 
      implicit none
      type(modelParam_t), intent(in)       :: sigma
@@ -1025,7 +1033,8 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      type(modelParam_t), intent(Out)      :: dsigma
      type(solnVectorMTX_t), intent(in), optional                     :: eAll
      type(modelParam_t),intent(inout),pointer,dimension(:), optional :: s_hat
-     integer, intent(in),optional         :: comm
+     integer, intent(in), optional        :: comm
+     logical, intent(in), optional        :: use_starting_guess
   
      ! Local
      type(modelParam_t)           :: dsigma_temp
@@ -1039,6 +1048,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      Integer        :: per_index,pol_index,stn_index
      character(80)  :: job_name,file_name
      Integer        :: comm_current
+     logical        :: use_starting_guess_lcl
 
      savedSolns = present(eAll)
      returne_m_vectors= present(s_hat)
@@ -1056,6 +1066,13 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
              comm_current = comm_leader
          endif
      end if
+
+     if (present(use_starting_guess)) then
+         use_starting_guess_lcl = use_starting_guess
+     else
+         use_starting_guess_lcl = .false.
+     end if
+
      ! nTX is number of transmitters;
      nTx = d%nTx
      if(.not. eAll_temp%allocated) then
@@ -1099,7 +1116,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      call zero(Qcomb)
      job_name= 'JmultT'
      call Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out,      &
-    &     comm_current, eAll_temp)
+    &     comm_current, eAll_temp, trial=use_starting_guess_lcl)
        
      file_name='e0.soln'
      !call write_solnVectorMTX(10,file_name,eAll_temp)
@@ -1717,7 +1734,7 @@ end Subroutine Master_job_Stop_MESSAGE
 !********************** Master Distribute Tasks *****************************
 
 subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
-    &   comm, eAll_in)
+    &   comm, eAll_in, trial)
 
      implicit none
      character(80) , intent(in)                          :: job_name
@@ -1726,11 +1743,12 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
      type(solnVectorMTX_t), intent(in), optional         :: eAll_in
      integer, intent(in), optional                       :: comm
      type(solnVectorMTX_t), intent(inout), optional      :: eAll_out     
+     logical, intent(in), optional                       :: trial
      !Local
      Integer        :: iper,ipol,ipol1,ijob,total_jobs
      Integer        :: bcounter, tcounter, robin
      Integer        :: per_index,pol_index,des_index
-     logical        :: keep_soln,savedSolns,ascend
+     logical        :: keep_soln,savedSolns,ascend,trial_lcl
      integer        :: comm_current, size_current
      double precision :: now, just, time_passed
 
@@ -1745,6 +1763,13 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
      else
          comm_current = comm_world
      end if
+
+     if (present(trial)) then
+         trial_lcl = trial
+     else
+         trial_lcl = .false.
+     end if
+
      call get_nPol_MPI(eAll_out%solns(1)) 
      if (rank_local.eq.-1) then ! first run!
      ! run initial regroup -- note this requires the comm to be
@@ -1759,6 +1784,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
      call MPI_COMM_SIZE( comm_current, size_current, ierr )
      who = 0
      worker_job_task%what_to_do=trim(job_name) 
+     worker_job_task%trial=trial_lcl
      call count_number_of_messages_to_RECV(eAll_out)
      total_jobs = answers_to_receive
      ! counter to locate the task 
@@ -1791,6 +1817,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          end if
          worker_job_task%per_index = per_index
          worker_job_task%pol_index = pol_index
+         worker_job_task%trial = trial_lcl
          call create_worker_job_task_place_holder
          call Pack_worker_job_task
          call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED, who, &
@@ -1886,6 +1913,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          worker_job_task%per_index= per_index
          worker_job_task%pol_index= pol_index
          worker_job_task%what_to_do= trim(job_name) 
+         worker_job_task%trial=trial_lcl
 
          call create_worker_job_task_place_holder
          call Pack_worker_job_task

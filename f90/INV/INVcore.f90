@@ -62,7 +62,7 @@ Contains
 
 
 !**********************************************************************
-   subroutine func(lambda,d,m0,mHat,F,mNorm,dHat,eAll,RMS)
+   subroutine func(lambda,d,m0,mHat,F,mNorm,dHat,eAll,RMS,trial)
 
    ! Compute the full penalty functional F
    ! Also output the predicted data and the EM solution
@@ -76,12 +76,20 @@ Contains
    type(dataVectorMTX_t), optional, intent(inout)   :: dHat
    type(solnVectorMTX_t), optional, intent(inout) :: eAll
    real(kind=prec), optional, intent(out) :: RMS
+   logical, optional, intent(in) :: trial
 
    !  local variables
    type(dataVectorMTX_t)    :: res,Nres
    type(modelParam_t) :: m,JTd
    real(kind=prec) :: SS
    integer :: Ndata, Nmodel
+   logical :: trial_lcl
+
+   if (present(trial)) then
+       trial_lcl = trial
+    else
+        trial_lcl = .false.
+    end if
 
    ! compute the smoothed model parameter vector
    call CmSqrtMult(mHat,m)
@@ -96,7 +104,7 @@ Contains
    !   also sets up forward solutions for all transmitters in eAll
    !   (which is created on the fly if it doesn't exist)
 #ifdef MPI
-      call Master_Job_fwdPred(m,dHat,eAll)
+      call Master_Job_fwdPred(m,dHat,eAll,trial=trial_lcl)
 #else
       call fwdPred(m,dHat,eAll)
 #endif
@@ -138,7 +146,7 @@ Contains
    end subroutine func
 
 !**********************************************************************
-   subroutine gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+   subroutine gradient(lambda,d,m0,mHat,grad,dHat,eAll,use_starting_guess)
 
    !  Computes the gradient of the penalty functional,
    !  using EM solution (eAll) and the predicted data (dHat)
@@ -157,13 +165,19 @@ Contains
    type(modelParam_t), intent(inout)          :: grad
    type(dataVectorMTX_t), intent(inout)              :: dHat
    type(solnVectorMTX_t), intent(inout)            :: eAll
+   logical, intent(in), optional :: use_starting_guess
 
    !  local variables
    real(kind=prec)       :: Ndata,Nmodel
    type(dataVectorMTX_t)    :: res
    type(modelParam_t) :: m,JTd,CmJTd
+   logical :: use_starting_guess_lcl
 
-   ! integer :: j, Ny, NzEarth
+   if (present(use_starting_guess)) then
+       use_starting_guess_lcl = use_starting_guess
+    else
+       use_starting_guess_lcl = .false.
+    end if
 
    ! compute the smoothed model parameter vector
    call CmSqrtMult(mHat,m)
@@ -180,7 +194,7 @@ Contains
    ! multiply by J^T
    call CdInvMult(res)
 #ifdef MPI
-        call Master_job_JmultT(m,res,JTd,eAll)
+        call Master_job_JmultT(m,res,JTd,eAll,use_starting_guess=use_starting_guess_lcl)
 #else
         call JmultT(m,res,JTd,eAll)
 #endif

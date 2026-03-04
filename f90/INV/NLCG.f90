@@ -794,7 +794,7 @@ Contains
    ! compute the trial mHat, f, dHat, eAll, rms
    mHat_1 = mHat_0
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
-   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
+   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1, trial=.true.)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1,logFile)
    niter = niter + 1
@@ -859,7 +859,7 @@ Contains
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
 
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+    call gradient(lambda,d,m0,mHat,grad,dHat,eAll,use_starting_guess=starting_guess)
     write(*,'(a60)') 'Sufficient decrease condition satisfied, exiting line search'
     write(ioLog,'(a60)') 'Sufficient decrease condition satisfied, exiting line search'
 	call deall_dataVectorMTX(dHat_1)
