@@ -416,7 +416,7 @@ run the container and mount our local code:</p>
 <p>Normally, when running a docker container, the data created inside the container
 will be deleted when the container terminates. To prevent this, we can use a
 mount.</p>
-<p>Mounting will allow your local ModEM code direcotry to be mounted into the
+<p>Mounting will allow your local ModEM code directory to be mounted into the
 docker container. That way any change you make in one will be reflected on the
 other.</p>
 <p>After you terminate that container, and wish to start it again, you will need to
@@ -478,7 +478,7 @@ mounts. See <a class="reference internal" href="#docker-mounts"><span class="std
 <a class="reference external" href="https://docs.docker.com/engine/storage/bind-mounts/">https://docs.docker.com/engine/storage/bind-mounts/</a>.</p>
 </div>
 <p>You may want to add additional mounts in your docker container. For example, you
-might want to include the ModEM-Examples direcotry:</p>
+might want to include the ModEM-Examples directory:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker run --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/absolute/path/to/ModEM,target<span class="o">=</span>/home/modem/ModEM <span class="se">\</span>
              --mount<span class="o">=</span><span class="nv">type</span><span class="o">=</span>bind,source<span class="o">=</span>/absolute/path/to/ModEM-Examples,target<span class="o">=</span>/home/modem/ModEM-Examples <span class="se">\</span>
              -it modem

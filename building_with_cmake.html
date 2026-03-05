@@ -236,13 +236,15 @@ written successfully, you’ll be able to call <code class="docutils literal not
 <span class="o">[</span><span class="m">100</span>%<span class="o">]</span> Built target Mod3DMT
 </pre></div>
 </div>
-<p>The <code class="docutils literal notranslate"><span class="pre">Mod3DMT</span></code> will then be placed in the f90 file inside your build directory,
-which you will be able to run as normal.</p>
+<p>The ModEM executables will be placed in the root of your build directory. They
+are appended with the name of the forward formulation use: <code class="docutils literal notranslate"><span class="pre">Mod3DMT_MF,</span>
+<span class="pre">Mod3DMT_SP,</span> <span class="pre">Mod3DMT_SP2</span></code>. By default, the CMake build will build
+<code class="docutils literal notranslate"><span class="pre">Mod3DMT_SP2</span></code>.</p>
 </div>
 <div class="section" id="options-different-configurations">
 <h2>Options - Different configurations<a class="headerlink" href="#options-different-configurations" title="Permalink to this headline">¶</a></h2>
-<p>You can build different ModEM configurations by specifying different options when calling
-<code class="docutils literal notranslate"><span class="pre">cmake</span></code>:</p>
+<p>You can build different ModEM configurations by specifying different options
+when calling <code class="docutils literal notranslate"><span class="pre">cmake</span></code>:</p>
 <p>Again, once can use the following to display all the available options:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ mkdir build
 $ <span class="nb">cd</span> build
@@ -301,7 +303,8 @@ $ make
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The ModEM CMake build can only build the 3D version of ModEM and cannot build the 2D version.</p>
+<p>The ModEM CMake build can only build the 3D version of ModEM and cannot
+build the 2D version at this time.</p>
 </div>
 </div>
 <div class="section" id="can-t-find-lapack-or-blas">

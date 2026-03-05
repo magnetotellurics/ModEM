@@ -353,7 +353,7 @@ Normally, when running a docker container, the data created inside the container
 will be deleted when the container terminates. To prevent this, we can use a
 mount.
 
-Mounting will allow your local ModEM code direcotry to be mounted into the
+Mounting will allow your local ModEM code directory to be mounted into the
 docker container. That way any change you make in one will be reflected on the
 other.
 
@@ -426,7 +426,7 @@ Specifying mounts points
     https://docs.docker.com/engine/storage/bind-mounts/.
 
 You may want to add additional mounts in your docker container. For example, you
-might want to include the ModEM-Examples direcotry:
+might want to include the ModEM-Examples directory:
 
 .. code-block:: bash
 
