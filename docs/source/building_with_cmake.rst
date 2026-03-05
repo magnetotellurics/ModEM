@@ -164,15 +164,17 @@ written successfully, you'll be able to call ``make`` and build ModEM:
     [100%] Linking Fortran executable Mod3DMT
     [100%] Built target Mod3DMT
 
-The ``Mod3DMT`` will then be placed in the f90 file inside your build directory,
-which you will be able to run as normal.
+The ModEM executables will be placed in the root of your build directory. They
+are appended with the name of the forward formulation use: ``Mod3DMT_MF,
+Mod3DMT_SP, Mod3DMT_SP2``. By default, the CMake build will build
+``Mod3DMT_SP2``.
 
 
 Options - Different configurations
 ----------------------------------
 
-You can build different ModEM configurations by specifying different options when calling
-``cmake``:
+You can build different ModEM configurations by specifying different options
+when calling ``cmake``:
 
 Again, once can use the following to display all the available options:
 
@@ -205,7 +207,8 @@ You can specify them on the command line by doing the following during the ``cma
 
 .. warning::
 
-    The ModEM CMake build can only build the 3D version of ModEM and cannot build the 2D version.
+    The ModEM CMake build can only build the 3D version of ModEM and cannot
+    build the 2D version at this time.
 
 .. _findlapack_n_blas:
 
