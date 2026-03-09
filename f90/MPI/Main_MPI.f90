@@ -680,7 +680,7 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm,trial)
 
      ! Compute the model Responces
      if (EsMgr_save_in_file) then
-         call Master_job_DataResp(nTx, sigma, d1, trial_lcl)
+         call Master_job_DataResp(nTx, sigma, d1, trial_lcl, comm_leader)
      else
          do iTx=1,nTx
              do i = 1,d1%d(iTx)%nDt
@@ -706,7 +706,7 @@ end subroutine Master_job_fwdPred
 
 !----------------------------------------------------------------------------
 !##########################  Master_job_DataResp ############################
-subroutine Master_job_DataResp(nTx, sigma, d, trial)
+subroutine Master_job_DataResp(nTx, sigma, d, trial, comm)
 
     implicit none
 
@@ -714,12 +714,14 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
     type (modelParam_t), intent(in) :: sigma
     type (dataVectorMTX_t), intent(inout) :: d
     logical, intent(in), optional :: trial
+    integer, intent(in), optional :: comm
 
     character (len=*), parameter :: JOB_NAME = "DATARESP"
 
     integer :: dest, nTasks, remainder, iTx
     integer :: iTx_min, iTx_max, i, j, k
     logical :: trial_lcl
+    integer :: comm_current
 
     if (present(trial)) then
         trial_lcl = trial
@@ -727,13 +729,21 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
         trial_lcl = .false.
     endif
 
+    if (para_method.eq.0) then
+        comm_current = comm_world
+    else
+        comm_current = comm_leader
+    end if
+
+    modem_ctx % comm_current = comm
+
     call create_worker_job_task_place_holder
 
-    nTasks = nTx / number_of_workers
-    remainder = modulo(nTx, number_of_Workers)
+    nTasks = nTx / size_leader
+    remainder = modulo(nTx, size_leader)
     iTx_max = 0
 
-    do dest = 1, number_of_workers
+    do dest = 1, size_leader
         iTx_min = iTx_max + 1
         iTx_max = iTx_min + nTasks - 1
 
@@ -749,15 +759,15 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
             worker_job_task % trial = trial_lcl
 
             call Pack_worker_job_task
-            call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
+            call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, dest, FROM_MASTER, comm_current, ierr)
             write(ioMPI, '(a10,a16,i5,a8,i5,a11,i5)') trim(job_name), ': Send Per from ', iTx_min, ' to', iTx_max, ' to ', dest
         end if
     end do
 
-    remainder = modulo(nTx, number_of_workers)
+    remainder = modulo(nTx, size_leader)
     iTx_max = 0
 
-    do dest = 1, number_of_workers
+    do dest = 1, size_leader
         iTx_min = iTx_max + 1
         iTx_max = iTx_min + nTasks - 1
 
@@ -768,11 +778,9 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
 
         if (iTx_max >= iTx_min) then
             call create_data_vec_place_holder(d, start_iTx=iTx_min, end_iTx=iTx_max)
-            call MPI_Recv(data_para_vec, Nbytes, MPI_PACKED, dest, FROM_WORKER, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+            call MPI_Recv(data_para_vec, Nbytes, MPI_PACKED, dest, FROM_WORKER, comm_current, MPI_STATUS_IGNORE, ierr)
             call UnPack_data_para_vec(d, start_iTx=iTx_min, end_iTx=iTx_max)
         end if
-
-
     end do
 
 end subroutine Master_job_DataResp
@@ -1176,6 +1184,7 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
     integer :: dest, nTasks, remainder, iTx
     integer :: iTx_min, iTx_max, i, j, k
     logical :: flag
+    integer :: comm_current
 
     logical, dimension(number_of_workers) :: task_is_working
     logical, dimension(nTx) :: transmitters_processing, transmitters_done
@@ -1187,6 +1196,14 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
     else
         use_starting_guess_lcl = .false.
     end if
+
+    if (para_method.eq.0) then
+        comm_current = comm_world
+    else
+        comm_current = comm_leader
+    end if
+
+    modem_ctx % comm_current = comm_current
 
     sending = .true.
 
@@ -1204,7 +1221,7 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
                 cycle
             end if
 
-            do dest = 1, number_of_workers
+            do dest = 1, size_leader
                 if (task_is_working(dest)) then
                     cycle
                 end if
@@ -1217,7 +1234,7 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
 
                 call create_worker_job_task_place_holder
                 call Pack_worker_job_task
-                call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, dest, FROM_MASTER, MPI_COMM_WORLD, ierr)
+                call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, dest, FROM_MASTER, comm_current, ierr)
                 transmitters_processing(iTx) = .true.
                 task_is_working(dest) = .true.
                 exit
@@ -1226,11 +1243,11 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
 
         ! Recv any jobs
         ! See if anyone is sending us a message...
-        call MPI_Iprobe(MPI_ANY_SOURCE, FROM_WORKER, MPI_COMM_WORLD, flag, MPI_STATUS_IGNORE, ierr)
+        call MPI_Iprobe(MPI_ANY_SOURCE, FROM_WORKER, comm_current, flag, MPI_STATUS_IGNORE, ierr)
 
         if (flag) then ! Someone is sending us a message
             call create_worker_job_task_place_holder
-            call MPI_Recv(worker_job_package, Nbytes, MPI_PACKED, MPI_ANY_SOURCE, FROM_WORKER, MPI_COMM_WORLD, STATUS, ierr)
+            call MPI_Recv(worker_job_package, Nbytes, MPI_PACKED, MPI_ANY_SOURCE, FROM_WORKER, comm_current, STATUS, ierr)
             call Unpack_worker_job_task
 
             dest = worker_job_task % taskid
@@ -1240,7 +1257,7 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
             call zero(dsigma_recv(iTx))
 
             call create_model_param_place_holder(dsigma_recv(iTx))
-            call MPI_Recv(sigma_para_vec, Nbytes, MPI_PACKED, dest, FROM_WORKER, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+            call MPI_Recv(sigma_para_vec, Nbytes, MPI_PACKED, dest, FROM_WORKER, comm_current, MPI_STATUS_IGNORE, ierr)
             call Unpack_model_para_values(dsigma_recv(iTx))
 
             transmitters_done(iTx) = .true.
@@ -1775,6 +1792,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          trial_lcl = .false.
      end if
 
+
      call get_nPol_MPI(eAll_out%solns(1)) 
      if (rank_local.eq.-1) then ! first run!
      ! run initial regroup -- note this requires the comm to be
@@ -1788,6 +1806,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
      endif
      call MPI_COMM_SIZE( comm_current, size_current, ierr )
      who = 0
+
      worker_job_task%what_to_do=trim(job_name) 
      worker_job_task%trial=trial_lcl
      call count_number_of_messages_to_RECV(eAll_out)
@@ -1864,6 +1883,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          which_per=worker_job_task%per_index
          which_pol=worker_job_task%pol_index
 
+         modem_ctx % comm_current = comm_current
          call EsMgr_get(eAll_out % solns(which_per), which_pol, 1, from=who)
 
          write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,        &
@@ -1949,6 +1969,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
      !call deall(e0)
 
 end subroutine Master_job_Distribute_Taskes
+
 
 !##################   find next job -- from back or front   ##################
     Subroutine find_next_job(nTx,total_jobs,counter,fromhead, eAll_out, &
@@ -2054,8 +2075,6 @@ Subroutine Worker_job(sigma,d)
      type (modelParam_t) :: dsigma_temp, dsigma_send, Qcomb
      logical :: trial
 
-
-      
      ! time
      DOUBLE PRECISION                       :: time_passed, now, just
      DOUBLE PRECISION, pointer,dimension(:) :: time_buff
@@ -2127,9 +2146,14 @@ Subroutine Worker_job(sigma,d)
          !            '; several TX = ',worker_job_task%several_Tx,']'
 
          if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
+
              ! forward modelling
              per_index=worker_job_task%per_index
              pol_index=worker_job_task%pol_index
+
+             modem_ctx % comm_current = comm_current
+             modem_ctx % rank_current = rank_current
+
              if ((size_local.gt.1).and.(para_method.gt.0).and.          &
     &            (rank_local.eq.0)) then 
                  ! group leader passing the command to workers
@@ -2195,7 +2219,6 @@ Subroutine Worker_job(sigma,d)
 
              start_iTx = worker_job_task % per_index
              end_iTx = worker_job_task % pol_index
-
              worker_job_task % taskid = taskid
 
              call zero_solnvector(e0)
@@ -2234,7 +2257,7 @@ Subroutine Worker_job(sigma,d)
 
              call create_data_vec_place_holder(d, start_iTx=start_iTx, end_iTx=end_iTx)
              call Pack_data_para_vec(d, start_iTx=start_iTx, end_iTx=end_iTx)
-             call MPI_Send(data_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
+             call MPI_Send(data_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, comm_current, ierr)
              deallocate(data_para_vec)
              data_para_vec => null()
 
@@ -2286,7 +2309,7 @@ Subroutine Worker_job(sigma,d)
 
              call create_model_param_place_holder(dsigma_temp)
              call pack_model_para_values(dsigma_temp)
-             call MPI_Send(sigma_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, MPI_COMM_WORLD, ierr)
+             call MPI_Send(sigma_para_vec, NBytes, MPI_PACKED, 0, FROM_WORKER, comm_current, ierr)
              call deall(QComb)
              call deall(dsigma_temp)
              call deall(dsigma_send)
@@ -2764,6 +2787,7 @@ Subroutine Worker_job(sigma,d)
              call Pack_worker_job_task
              call MPI_SEND(worker_job_package,Nbytes, MPI_PACKED,0,   &
     &             FROM_WORKER, comm_current, ierr)
+
          elseif (trim(worker_job_task%what_to_do) .eq. 'REGROUP') then
              ! calculate the time between two regroup events
              if ((size_local.gt.1).and.(para_method.gt.0).and.          &
