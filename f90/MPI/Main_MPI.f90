@@ -739,11 +739,11 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial, comm)
 
     call create_worker_job_task_place_holder
 
-    nTasks = nTx / size_leader
-    remainder = modulo(nTx, size_leader)
+    nTasks = nTx / (size_leader - 1)
+    remainder = modulo(nTx, size_leader - 1)
     iTx_max = 0
 
-    do dest = 1, size_leader
+    do dest = 1, size_leader - 1
         iTx_min = iTx_max + 1
         iTx_max = iTx_min + nTasks - 1
 
@@ -764,7 +764,7 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial, comm)
         end if
     end do
 
-    remainder = modulo(nTx, size_leader)
+    remainder = modulo(nTx, size_leader - 1)
     iTx_max = 0
 
     do dest = 1, size_leader
