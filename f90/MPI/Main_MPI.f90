@@ -680,7 +680,7 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm,trial)
 
      ! Compute the model Responces
      if (EsMgr_save_in_file) then
-         call Master_job_DataResp(nTx, sigma, d1, trial_lcl, comm_leader)
+         call Master_job_DataResp(nTx, sigma, d1, trial_lcl)
      else
          do iTx=1,nTx
              do i = 1,d1%d(iTx)%nDt
@@ -706,7 +706,7 @@ end subroutine Master_job_fwdPred
 
 !----------------------------------------------------------------------------
 !##########################  Master_job_DataResp ############################
-subroutine Master_job_DataResp(nTx, sigma, d, trial, comm)
+subroutine Master_job_DataResp(nTx, sigma, d, trial)
 
     implicit none
 
@@ -714,7 +714,6 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial, comm)
     type (modelParam_t), intent(in) :: sigma
     type (dataVectorMTX_t), intent(inout) :: d
     logical, intent(in), optional :: trial
-    integer, intent(in), optional :: comm
 
     character (len=*), parameter :: JOB_NAME = "DATARESP"
 
@@ -735,7 +734,7 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial, comm)
         comm_current = comm_leader
     end if
 
-    modem_ctx % comm_current = comm
+    modem_ctx % comm_current = comm_current
 
     call create_worker_job_task_place_holder
 
