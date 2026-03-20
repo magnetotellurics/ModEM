@@ -721,6 +721,7 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
     integer :: iTx_min, iTx_max, i, j, k
     logical :: trial_lcl
     integer :: comm_current
+    integer :: size_current
 
     if (present(trial)) then
         trial_lcl = trial
@@ -735,6 +736,7 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
     end if
 
     modem_ctx % comm_current = comm_current
+    call MPI_COMM_SIZE( comm_current, size_current, ierr )
 
     call create_worker_job_task_place_holder
 
@@ -742,7 +744,7 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
     remainder = modulo(nTx, size_leader - 1)
     iTx_max = 0
 
-    do dest = 1, size_leader - 1
+    do dest = 1, size_current - 1
         iTx_min = iTx_max + 1
         iTx_max = iTx_min + nTasks - 1
 
@@ -763,10 +765,10 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
         end if
     end do
 
-    remainder = modulo(nTx, size_leader - 1)
+    remainder = modulo(nTx, size_current - 1)
     iTx_max = 0
 
-    do dest = 1, size_leader - 1
+    do dest = 1, size_current - 1
         iTx_min = iTx_max + 1
         iTx_max = iTx_min + nTasks - 1
 
@@ -1183,7 +1185,7 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
     integer :: dest, nTasks, remainder, iTx
     integer :: iTx_min, iTx_max, i, j, k
     logical :: flag
-    integer :: comm_current
+    integer :: comm_current, size_current
 
     logical, dimension(number_of_workers) :: task_is_working
     logical, dimension(nTx) :: transmitters_processing, transmitters_done
@@ -1203,6 +1205,7 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
     end if
 
     modem_ctx % comm_current = comm_current
+    call MPI_COMM_SIZE( comm_current, size_current, ierr )
 
     sending = .true.
 
@@ -1220,7 +1223,7 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
                 cycle
             end if
 
-            do dest = 1, size_leader - 1
+            do dest = 1, size_current - 1
                 if (task_is_working(dest)) then
                     cycle
                 end if
@@ -1243,7 +1246,6 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
         ! Recv any jobs
         ! See if anyone is sending us a message...
         call MPI_Iprobe(MPI_ANY_SOURCE, FROM_WORKER, comm_current, flag, MPI_STATUS_IGNORE, ierr)
-
         if (flag) then ! Someone is sending us a message
             call create_worker_job_task_place_holder
             call MPI_Recv(worker_job_package, Nbytes, MPI_PACKED, MPI_ANY_SOURCE, FROM_WORKER, comm_current, STATUS, ierr)
@@ -2249,7 +2251,6 @@ Subroutine Worker_job(sigma,d)
                         call dataResp(e0, sigma, iDt, d % d(per_index) % data(i) % rx(j), &
                                                       d % d(per_index) % data(i) % value(:,j), &
                                                       d % d(per_index) % data(i) % orient(j))
-
                     end do
                 end do
             end do
