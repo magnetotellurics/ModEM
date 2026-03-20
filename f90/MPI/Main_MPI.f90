@@ -766,7 +766,7 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
     remainder = modulo(nTx, size_leader - 1)
     iTx_max = 0
 
-    do dest = 1, size_leader
+    do dest = 1, size_leader - 1
         iTx_min = iTx_max + 1
         iTx_max = iTx_min + nTasks - 1
 
@@ -1220,7 +1220,7 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
                 cycle
             end if
 
-            do dest = 1, size_leader
+            do dest = 1, size_leader - 1
                 if (task_is_working(dest)) then
                     cycle
                 end if
