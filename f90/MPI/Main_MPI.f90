@@ -30,6 +30,9 @@ module Main_MPI
   type(rhsVector_t) , save, private    :: b0,comb
   type(grid_t), target, save, private  :: grid
 
+  private Master_job_DataResp_main_only
+  private Master_job_DataResp_IO
+
 
 Contains
 
@@ -670,32 +673,9 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm,trial)
      job_name= 'FORWARD'
      call Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll,comm_current, trial=trial_lcl)
 
-     ! Initialize only those grid elements on the master that are used in
-     ! EMfieldInterp
-     ! (obviously a quick patch, needs to be fixed in a major way)
-     ! A.Kelbert 2018-01-28
+     ! Calculate Data Response
+     call Master_job_DataResp(nTx, sigma, eAll, d1, trial=trial_lcl)
 
-     Call EdgeLength(grid, l_E)
-     Call FaceArea(grid, S_F)
-
-     ! Compute the model Responces
-     if (EsMgr_save_in_file) then
-         call Master_job_DataResp(nTx, sigma, d1, trial_lcl)
-     else
-         do iTx=1,nTx
-             do i = 1,d1%d(iTx)%nDt
-                 d1%d(iTx)%data(i)%errorBar = .false.
-                 iDt = d1%d(iTx)%data(i)%dataType
-                 do j = 1,d1%d(iTx)%data(i)%nSite
-                     call dataResp(eAll%solns(iTx),sigma,iDt,d1%d(iTx)%data(i)%rx(j),d1%d(iTx)%data(i)%value(:,j), &
-                               d1%d(iTx)%data(i)%orient(j))
-                 end do
-             end do
-         end do
-     end if
-     ! clean up the grid elements stored in GridCalc on the master node
-     call deall_rvector(l_E)
-     call deall_rvector(S_F)
      write(ioMPI,*)'FWD: Finished calculating for (', nTx , ') Transmitters '
      endtime=MPI_Wtime()
      time_used = endtime-starttime
@@ -706,7 +686,93 @@ end subroutine Master_job_fwdPred
 
 !----------------------------------------------------------------------------
 !##########################  Master_job_DataResp ############################
-subroutine Master_job_DataResp(nTx, sigma, d, trial)
+! Compute the data response by either using Master_job_DataResp_main_only
+! or Master_job_DataResp_IO:
+!
+! * Master_job_DataResp_main_only - Runs if EsMgr_save_in_file == .false.
+! * Master_job_DataResp_IO        - Runs if EsMgr_save_in_file == .true.
+!
+subroutine Master_job_DataResp(nTx, sigma, eAll, d1, trial)
+
+    implicit none
+
+    integer, intent(in)                  :: nTx
+    type(modelParam_t), intent(in)       :: sigma
+    type(solnVectorMTX_t), intent(in) :: eAll
+    type(dataVectorMTX_t), intent(inout) :: d1
+    logical, optional, intent(in) :: trial
+
+    integer :: iTx, i, j
+    integer :: iDt
+    logical :: trial_lcl
+
+    if (present(trial)) then
+        trial_lcl = trial
+    else
+        trial_lcl = .false.
+    end if
+
+    if (EsMgr_save_in_file) then
+        ! Use the worker jobs to calculate the data resposne by reading
+        ! the electric field files
+        call Master_job_DataResp_IO(nTx, sigma, d1, trial_lcl)
+    else
+        ! The main task only computes the data response
+        call Master_job_DataResp_main_only(nTx, sigma, d1, eAll)
+    end if
+
+end subroutine Master_job_DataResp
+
+! Master_job_DataResp_main_only - Calculate the data response on
+! the main task only. The main task will need to have eAll completly
+! present.
+!
+! Run this function is EsMgr_save_in_file == .false.
+subroutine Master_job_DataResp_main_only(nTx, sigma, d1, eAll)
+
+    implicit none
+
+    integer, intent(in) :: nTx
+    type (modelParam_t), intent(in) :: sigma
+    type (dataVectorMTX_t), intent(inout) :: d1
+    type(solnVectorMTX_t), intent(in) :: eAll
+
+    integer :: iTx, i, j
+    integer :: iDt
+    logical :: trial_lcl
+
+    ! Initialize only those grid elements on the master that are used in
+    ! EMfieldInterp
+    ! (obviously a quick patch, needs to be fixed in a major way)
+    ! A.Kelbert 2018-01-28
+    call EdgeLength(grid, l_E)
+    call FaceArea(grid, S_F)
+
+    do iTx=1,nTx
+        do i = 1,d1%d(iTx)%nDt
+            d1%d(iTx)%data(i)%errorBar = .false.
+            iDt = d1%d(iTx)%data(i)%dataType
+            do j = 1,d1%d(iTx)%data(i)%nSite
+                call dataResp(eAll%solns(iTx),sigma,iDt,d1%d(iTx)%data(i)%rx(j),d1%d(iTx)%data(i)%value(:,j), &
+                          d1%d(iTx)%data(i)%orient(j))
+            end do
+        end do
+    end do
+
+    ! clean up the grid elements stored in GridCalc on the master node
+    call deall_rvector(l_E)
+    call deall_rvector(S_F)
+
+end subroutine Master_job_DataResp_main_only
+
+! Master_job_DataResp_IO
+!
+! Use the worker jobs to calculate the data response by 
+! reading in the electric fields from files created by the ESolnManager.
+!
+! This function should only be used if EsMgr_init was initalized with
+! `save_in_file = .true.`/EsMgr_save_in_file = .true..
+subroutine Master_job_DataResp_IO(nTx, sigma, d, trial)
 
     implicit none
 
@@ -784,7 +850,7 @@ subroutine Master_job_DataResp(nTx, sigma, d, trial)
         end if
     end do
 
-end subroutine Master_job_DataResp
+end subroutine Master_job_DataResp_IO
 
 
 !#########################   Master_job_Compute_J ##########################
