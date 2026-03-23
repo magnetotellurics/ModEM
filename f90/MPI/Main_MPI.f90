@@ -20,6 +20,7 @@ module Main_MPI
   use Sub_MPI
 
   use EsolnManager
+  use ModEM_timers
   ! use ioascii
 
   implicit none
@@ -706,6 +707,9 @@ subroutine Master_job_DataResp(nTx, sigma, eAll, d1, trial)
     integer :: iDt
     logical :: trial_lcl
 
+    call ModEM_timers_create('DataResp')
+    call ModEM_timers_start('DataResp')
+
     if (present(trial)) then
         trial_lcl = trial
     else
@@ -720,6 +724,8 @@ subroutine Master_job_DataResp(nTx, sigma, eAll, d1, trial)
         ! The main task only computes the data response
         call Master_job_DataResp_main_only(nTx, sigma, d1, eAll)
     end if
+
+    call ModEM_timers_stop('DataResp')
 
 end subroutine Master_job_DataResp
 
@@ -1245,6 +1251,9 @@ subroutine Master_job_PQMult(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, 
 
     logical :: use_starting_guess_lcl
 
+    call ModEM_timers_create('PQMult')
+    call ModEM_timers_start('PQMult')
+
     if (present(use_starting_guess)) then
         use_starting_guess_lcl = use_starting_guess
     else
@@ -1256,6 +1265,8 @@ subroutine Master_job_PQMult(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, 
     else
         call Master_job_PQMult_main_only(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat)
     end if
+
+    call ModEM_timers_stop('PQMult')
 
 end subroutine Master_job_PQMult
 
