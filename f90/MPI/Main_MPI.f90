@@ -727,7 +727,7 @@ end subroutine Master_job_DataResp
 ! the main task only. The main task will need to have eAll completly
 ! present.
 !
-! Run this function is EsMgr_save_in_file == .false.
+! Run this function if EsMgr_save_in_file == .false.
 subroutine Master_job_DataResp_main_only(nTx, sigma, d1, eAll)
 
     implicit none
@@ -1201,20 +1201,8 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm,use_starting_guess)
      file_name='e.soln'
      !call write_solnVectorMTX(20,file_name,eAll_out)
 
-     if (EsMgr_save_in_file) then
-         call Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess=use_starting_guess_lcl)
-     else
-         do iper=1,nTx
-             call PmultT(eAll_temp%solns(iper),sigma,eAll_out%solns(iper)    &
-        &         ,dsigma_temp)
-             call QmultT(eAll_temp%solns(iper),sigma,d%d(iper),Qcomb)
-             call scMultAdd(ONE,Qcomb,dsigma_temp)
-             if (returne_m_vectors) then
-                 s_hat(iper)=dsigma_temp
-             end if
-             call linComb_modelParam(ONE,dsigma,ONE,dsigma_temp,dsigma)
-         end do
-     end if
+     ! Calculate PQMult
+     call Master_job_PQMult(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, use_starting_guess=use_starting_guess_lcl)
 
      endtime=MPI_Wtime()
      time_used = endtime-starttime
@@ -1235,12 +1223,104 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm,use_starting_guess)
    
 end Subroutine Master_job_JmultT
 
-!######################## Master_job_PQMult ##############################
-subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
+!##########################  Master_job_PQMult ############################
+! Compute the model response by either using Master_job_PQMult_main_only
+! or Master_job_PQMult_IO:
+!
+! * Master_job_PQMult_main_only - Runs if EsMgr_save_in_file == .false.
+! * Master_job_PQMult_IO        - Runs if EsMgr_save_in_file == .true.
+!
+subroutine Master_job_PQMult(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, use_starting_guess)
 
     implicit none
 
-;   integer, intent(in) :: nTx
+    integer, intent(in) :: nTx
+    type(dataVectorMTX_t), intent(in)    :: d
+    type(solnVectorMTX_t), intent(in)  :: eAll_out
+    type(solnVectorMTX_t), intent(in)  :: eAll_temp
+    type (modelParam_t), intent(in)    :: sigma
+    type (modelParam_t), intent(inout) :: dsigma
+    type(modelParam_t),intent(inout),pointer,dimension(:), optional :: s_hat
+    logical, optional, intent(in)      :: use_starting_guess
+
+    logical :: use_starting_guess_lcl
+
+    if (present(use_starting_guess)) then
+        use_starting_guess_lcl = use_starting_guess
+    else
+        use_starting_guess_lcl = .false.
+    end if
+
+    if (EsMgr_save_in_file) then
+        call Master_job_PQMult_IO(nTx, sigma, dsigma, use_starting_guess=use_starting_guess_lcl)
+    else
+        call Master_job_PQMult_main_only(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat)
+    end if
+
+end subroutine Master_job_PQMult
+
+
+! Master_job_PQMult_main_only - Calculate the model response on
+! the main task only. The main task will need to have eAll_temp set to eAll.
+!
+! Run this function if ESmgr_save_in_file == f.alse.
+subroutine Master_job_PQMult_main_only(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat)
+
+    implicit none
+
+    integer, intent(in) :: nTx
+    type(dataVectorMTX_t), intent(in)    :: d
+    type(solnVectorMTX_t), intent(in)  :: eAll_out
+    type(solnVectorMTX_t), intent(in)  :: eAll_temp
+    type (modelParam_t), intent(in)    :: sigma
+    type (modelParam_t), intent(inout) :: dsigma
+    type(modelParam_t),intent(inout),pointer,dimension(:), optional :: s_hat
+
+    type(modelParam_t)           :: dsigma_temp
+    type(modelParam_t)           :: Qcomb
+    type(dataVectorMTX_t)        :: d_temp
+    logical        :: returne_m_vectors
+    integer :: iper
+
+    returne_m_vectors = present(s_hat)
+
+    dsigma_temp = sigma
+    dsigma      = sigma
+    Qcomb = sigma
+
+    call zero(dsigma_temp)
+    call zero(dsigma)
+    call zero(Qcomb)
+
+    do iper=1,nTx
+        call PmultT(eAll_temp%solns(iper),sigma,eAll_out%solns(iper), dsigma_temp)
+        call QmultT(eAll_temp%solns(iper),sigma,d%d(iper),Qcomb)
+        call scMultAdd(ONE,Qcomb,dsigma_temp)
+        if (returne_m_vectors) then
+            s_hat(iper)=dsigma_temp
+        end if
+        call linComb_modelParam(ONE,dsigma,ONE,dsigma_temp,dsigma)
+    end do
+
+    call deall_modelParam(dsigma_temp)
+    call deall_modelParam(Qcomb)
+    call deall_dataVectorMTX(d_temp)
+
+end subroutine Master_job_PQMult_main_only
+
+! Master_job_PQMult_IO
+!
+! Use the worker jobs to calculate the model response by
+! reading in the electric fields from files created by the ESolnManager and
+! the adjoint files.
+!
+! This function should only be used if EsMgr_init was initalized with
+! `save_in_file = .true.`/EsMgr_save_in_file = .true..
+subroutine Master_job_PQMult_IO(nTx, sigma, dsigma, use_starting_guess)
+
+    implicit none
+
+    integer, intent(in) :: nTx
     type (modelParam_t), intent(in) :: sigma
     type (modelParam_t), intent(inout) :: dsigma
     logical, intent(in), optional :: use_starting_guess
@@ -1342,7 +1422,8 @@ subroutine Master_job_PQMult(nTx, sigma, dsigma, use_starting_guess)
         call deall_modelParam(dsigma_recv(iTx))
     end do
 
-end subroutine Master_job_PQMult
+end subroutine Master_job_PQMult_IO
+
 
 !########################    Master_job_Jmult ##############################
 Subroutine Master_job_Jmult(mHat,m,d,eAll,comm)
