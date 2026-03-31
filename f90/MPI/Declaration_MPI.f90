@@ -121,12 +121,12 @@ DOUBLE PRECISION    :: starttime_total,endtime_total
 type :: define_worker_job
      SEQUENCE
      character*80  :: what_to_do='NOTHING'
+     character*80  :: label='NOTHING'
      Integer       :: per_index,Stn_index,pol_index,data_type_index,data_type
      Integer       :: taskid
      logical       :: keep_E_soln=.false.
      logical       :: several_Tx=.false.
      logical       :: create_your_own_e0=.false.
-     logical       :: trial=.false.
      ! 2022.10.06, Liu Zhongyin, add iSite storing the site index in rx of dataBlock_t
      Integer       :: iSite
  end type define_worker_job
@@ -152,13 +152,14 @@ Contains
 subroutine create_worker_job_task_place_holder
 
     implicit none
-    integer index,Nbytes1,Nbytes2,Nbytes3
+    integer index,Nbytes1,Nbytes2,Nbytes3,NBytes4
 
     CALL MPI_PACK_SIZE(80, MPI_CHARACTER, MPI_COMM_WORLD, Nbytes1,  ierr)
-    CALL MPI_PACK_SIZE(7, MPI_INTEGER, MPI_COMM_WORLD, Nbytes2,  ierr)
-    CALL MPI_PACK_SIZE(4, MPI_LOGICAL, MPI_COMM_WORLD, Nbytes3,  ierr)
+    CALL MPI_PACK_SIZE(80, MPI_CHARACTER, MPI_COMM_WORLD, Nbytes2,  ierr)
+    CALL MPI_PACK_SIZE(7, MPI_INTEGER, MPI_COMM_WORLD, Nbytes3,  ierr)
+    CALL MPI_PACK_SIZE(3, MPI_LOGICAL, MPI_COMM_WORLD, Nbytes4,  ierr)
 
-    Nbytes=(Nbytes1+Nbytes2+Nbytes3)+1
+    Nbytes=(Nbytes1+Nbytes2+Nbytes3+NBytes4)+1
 
     if(.not. associated(worker_job_package)) then
         allocate(worker_job_package(Nbytes))
@@ -174,6 +175,7 @@ integer index
 index=1
 
         call MPI_Pack(worker_job_task%what_to_do,80, MPI_CHARACTER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(worker_job_task%label,80, MPI_CHARACTER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%per_index ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%Stn_index ,1 ,	 	MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%pol_index ,1 , 		MPI_INTEGER  , worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
@@ -184,7 +186,6 @@ index=1
         call MPI_Pack(worker_job_task%keep_E_soln,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%several_Tx,1, 		MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(worker_job_task%create_your_own_e0,1, MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(worker_job_task%trial,1,              MPI_LOGICAL, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
         ! 2019.05.08, Liu Zhongyin, add iSite for rx in dataBlock_t
         call MPI_Pack(worker_job_task%iSite, 1,             MPI_INTEGER, worker_job_package, Nbytes, index, MPI_COMM_WORLD, ierr)
@@ -196,6 +197,7 @@ implicit none
 integer index
 index=1
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%what_to_do,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%label,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%per_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%Stn_index ,1 , MPI_INTEGER,MPI_COMM_WORLD, ierr)
@@ -207,7 +209,6 @@ index=1
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%keep_E_soln,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%several_Tx,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%create_your_own_e0,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
-        call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%trial,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
 
         ! 2019.05.08, Liu Zhongyin, add iSite for rx in dataBlock_t
         call MPI_Unpack(worker_job_package, Nbytes, index, worker_job_task%iSite, 1, MPI_INTEGER,MPI_COMM_WORLD, ierr)

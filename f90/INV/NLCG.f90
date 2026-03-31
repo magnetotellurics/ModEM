@@ -53,6 +53,10 @@ public  :: NLCGsolver
 
   type(NLCGiterControl_t), private, save :: iterControl
 
+  character(len=*), parameter :: STARTUP_LABEL = 'STARTUP'
+  character(len=*), parameter :: TRIAL_FWD_F_1_LABEL = 'F_1'
+  character(len=*), parameter :: FWD_F_LABEL = 'F'
+
 Contains
 
 !**********************************************************************
@@ -283,7 +287,6 @@ Contains
 
    write(ioLog,'(a41,es8.1)') 'The initial damping parameter lambda is ',lambda
    write(ioLog,'(a55,f12.6)') 'The initial line search step size (in model units) is ',startdm
-
 
    ! starting from the prior hardcoded by setting mHat = 0 and m = m0
    ! m = m0
@@ -559,14 +562,15 @@ Contains
 
    ! local variables
    real(kind=prec)                 :: alpha_1,alpha_i,mNorm
-   logical                                 :: starting_guess
-   logical                                 :: relaxation
+   logical                         :: starting_guess
+   logical                         :: relaxation
    real(kind=prec)                 :: eps,k,c,a,b
    real(kind=prec)                 :: g_0,f_0,f_1,f_i,rms_1,mNorm_1
-   type(modelParam_t)                        :: mHat_0,mHat_1
-   type(dataVectorMTX_t)                           :: dHat_1
-   type(solnVectorMTX_t)                         :: eAll_1
-   character(100)							:: logFile
+   type(modelParam_t)              :: mHat_0,mHat_1
+   type(dataVectorMTX_t)           :: dHat_1
+   type(solnVectorMTX_t)           :: eAll_1
+   character(100)                  :: logFile
+   character(len=80)               :: label
 
    ! parameters
    c = iterControl%c
@@ -601,11 +605,11 @@ Contains
 
    ! initialize
    mHat_1 = mHat_0
-   !  compute the trial parameter mHat_1
+   !  compute the  parameter mHat_1
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
 
    !  compute the penalty functional and predicted data at mHat_1
-   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
+   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1,label=TRIAL_FWD_F_1_LABEL)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1,logFile)
    niter = niter + 1
@@ -634,7 +638,7 @@ Contains
     !     alpha = alpha_i/TWO ! reset alpha to ensure progress
     ! end if
     call linComb(ONE,mHat_0,alpha,h,mHat)
-    call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+    call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
     call printf('QUADLS',lambda,alpha,f,mNorm,rms)
     call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
     niter = niter + 1
@@ -664,12 +668,15 @@ Contains
    end if
 
    if (starting_guess) then
-   	alpha = alpha_1
-   	dHat = dHat_1
-   	eAll = eAll_1
-   	mHat = mHat_1
-   	rms = rms_1
-   	f = f_1
+    alpha = alpha_1
+    dHat = dHat_1
+    eAll = eAll_1
+    mHat = mHat_1
+    label = TRIAL_FWD_F_1_LABEL
+    rms = rms_1
+    f = f_1
+   else
+       label=FWD_F_LABEL
    end if
 
    ! compute gradient of the full penalty functional and exit
@@ -679,7 +686,7 @@ Contains
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+    call gradient(lambda,d,m0,mHat,grad,dHat,eAll, label=label)
     write(*,'(a39)') 'Gradient computed, line search finished'
     write(ioLog,'(a39)') 'Gradient computed, line search finished'
 
@@ -752,14 +759,15 @@ Contains
 
     ! local variables
    real(kind=prec)                 :: alpha_1,alpha_i,alpha_j,mNorm
-   logical                                 :: starting_guess
-   logical                                 :: relaxation
+   logical                         :: starting_guess
+   logical                         :: relaxation
    real(kind=prec)                 :: eps,k,c,a,b,q1,q2,q3
    real(kind=prec)                 :: g_0,f_0,f_1,f_i,f_j,rms_1,mNorm_1
-   type(modelParam_t)                        :: mHat_0,mHat_1
-   type(dataVectorMTX_t)                           :: dHat_1
-   type(solnVectorMTX_t)                         :: eAll_1
-   character(100)							:: logFile
+   type(modelParam_t)              :: mHat_0,mHat_1
+   type(dataVectorMTX_t)           :: dHat_1
+   type(solnVectorMTX_t)           :: eAll_1
+   character(100)                  :: logFile
+   character(len=80)               :: label
 
    ! parameters
    c = iterControl%c
@@ -791,10 +799,10 @@ Contains
       relaxation = .false.
    end if
 
-   ! compute the trial mHat, f, dHat, eAll, rms
+   ! compute the  mHat, f, dHat, eAll, rms
    mHat_1 = mHat_0
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
-   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1, trial=.true.)
+   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1, label=TRIAL_FWD_F_1_LABEL)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1,logFile)
    niter = niter + 1
@@ -807,22 +815,26 @@ Contains
    a = (f_1 - f_0 - g_0*alpha_1)/(alpha_1**2)
    b = g_0
    ! if the curvature is -ve, there is no minimum; take the initial guess
+   label = FWD_F_LABEL
    if (a < 0) then
-	starting_guess = .true.
-  	alpha = alpha_1
-   	dHat = dHat_1
+    write(0,*) " USE STARTING UGESS"
+    stop
+    starting_guess = .true.
+    label = TRIAL_FWD_F_1_LABEL
+    alpha = alpha_1
+    dHat = dHat_1
     eAll = eAll_1
-   	mHat = mHat_1
-   	rms = rms_1
-   	f = f_1
+    mHat = mHat_1
+    rms = rms_1
+    f = f_1
     ! compute the gradient and exit
     if (relaxation) then
    	call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
-    	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+    call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
    	call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    	call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+    call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=label)
     write(*,'(a45)') 'Quadratic has no minimum, exiting line search'
     write(ioLog,'(a45)') 'Quadratic has no minimum, exiting line search'
 	call deall_dataVectorMTX(dHat_1)
@@ -835,22 +847,26 @@ Contains
    ! otherwise compute the functional at the minimizer of the quadratic
    alpha = - b/(TWO*a)
    call linComb(ONE,mHat_0,alpha,h,mHat)
-   call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+   call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
    niter = niter + 1
    ! check whether the solution satisfies the sufficient decrease condition
    if (f < f_0 + c * alpha * g_0) then
     ! if the initial guess was better than what we found, take it
-   	if (f_1 < f) then
-   		starting_guess = .true.
-   		alpha = alpha_1
-   		dHat = dHat_1
-     	eAll = eAll_1
-   		mHat = mHat_1
-   		rms = rms_1
-   		f = f_1
+    if (f_1 < f) then
+        starting_guess = .true.
+        label = TRIAL_FWD_F_1_LABEL
+        alpha = alpha_1
+        dHat = dHat_1
+        eAll = eAll_1
+        mHat = mHat_1
+        rms = rms_1
+        f = f_1
+    else
+        label=FWD_F_LABEL
     end if
+
     ! compute the gradient and exit
     if (relaxation) then
    		call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
@@ -859,7 +875,7 @@ Contains
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
 
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll,use_starting_guess=starting_guess)
+    call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=label)
     write(*,'(a60)') 'Sufficient decrease condition satisfied, exiting line search'
     write(ioLog,'(a60)') 'Sufficient decrease condition satisfied, exiting line search'
 	call deall_dataVectorMTX(dHat_1)
@@ -901,7 +917,7 @@ Contains
         !  end if
         ! compute the penalty functional
         call linComb(ONE,mHat_0,alpha,h,mHat)
-        call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+        call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
         call printf('CUBICLS',lambda,alpha,f,mNorm,rms)
         call printf('CUBICLS',lambda,alpha,f,mNorm,rms,logFile)
         niter = niter + 1
@@ -929,12 +945,15 @@ Contains
 
    ! if the initial guess was better than what we found, take it
    if (starting_guess) then
-   	alpha = alpha_1
-   	dHat = dHat_1
-   	eAll = eAll_1
-   	mHat = mHat_1
-   	rms = rms_1
-   	f = f_1
+    alpha = alpha_1
+    dHat = dHat_1
+    eAll = eAll_1
+    mHat = mHat_1
+    rms = rms_1
+    f = f_1
+    label=TRIAL_FWD_F_1_LABEL
+   else
+    label=FWD_F_LABEL
    end if
 
    ! compute gradient of the full penalty functional and exit
@@ -944,7 +963,7 @@ Contains
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+    call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=label)
 	write(*,'(a39)') 'Gradient computed, line search finished'
     write(ioLog,'(a39)') 'Gradient computed, line search finished'
 
@@ -1088,11 +1107,11 @@ Contains
 
    ! alpha_1 is the initial step size, which is set in NLCGsolver
    alpha_1 = alpha
-   ! compute the trial mHat, f, dHat, eAll, rms
+   ! compute the  mHat, f, dHat, eAll, rms
    mHat_1 = mHat_0
    ! mHat_1 = mHat_0 + dir*step
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
-   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
+   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1,label=TRIAL_FWD_F_1_LABEL)
    call printf('STARTLS',lambda,alpha_1,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha_1,f_1,mNorm_1,rms_1,logFile)
    niter = niter + 1
@@ -1132,7 +1151,7 @@ Contains
    end if
    ! otherwise compute the functional at the minimizer of the quadratic
    call linComb(ONE,mHat_0,alpha,h,mHat)
-   call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+   call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
    niter = niter + 1
@@ -1143,7 +1162,7 @@ Contains
    ! Strong Wolfe's condition needs the gradient 
    ! well, we are going to calculate it anyway - so why don't we do it now?
    if (f <= f_1) then 
-       call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+       call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=FWD_F_LABEL)
        g_1 = dotProd(grad, h)
        write(*,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
        write(*,'(a4,es12.5)') ' g1=',g_1
@@ -1180,6 +1199,12 @@ Contains
        write(ioLog,'(a4,es12.5)') ' g1=',g_1
        if (f_1 < f_0) then! is the initial making any progress?
            ! Test if the initial guess is good for Strong Wolfe condition 
+           call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1,label=TRIAL_FWD_F_1_LABEL)
+           g_1 = dotProd(grad, h) 
+           write(*,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
+           write(*,'(a4,es12.5)') ' g1=',g_1
+           write(ioLog,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
+           write(ioLog,'(a4,es12.5)') ' g1=',g_1
            if ((f_1 <= f_0 + c * alpha_1 * g_0).and.(abs(g_1) <= c2*abs(g_0))) then 
                write(*,'(a53)') 'Strong Wolfe Condition satisfied, exiting line search'
                write(ioLog,'(a53)') 'Strong Wolfe Condition satisfied, exiting line search'
@@ -1265,12 +1290,12 @@ Contains
            endif
            ! compute the penalty functional
            call linComb(ONE,mHat_0,alpha,h,mHat)
-           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
            call printf('CUBICLS',lambda,alpha,f,mNorm,rms)
            call printf('CUBICLS',lambda,alpha,f,mNorm,rms,logFile)
            niter = niter + 1
            ibracket = ibracket + 1
-           call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+           call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=FWD_F_LABEL)
            g_1 = dotProd(grad, h) 
            write(*,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
            write(*,'(a4,es12.5)') ' g1=',g_1
@@ -1309,7 +1334,7 @@ Contains
                    starting_guess = .false.
                else 
                    starting_guess = .true.
-                   call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1)
+                   call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1,label=TRIAL_FWD_F_1_LABEL)
                endif
                exit
            endif
@@ -1321,7 +1346,7 @@ Contains
                    starting_guess = .false.
                else 
                    starting_guess = .true.
-                   call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1)
+                   call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1,label=TRIAL_FWD_F_1_LABEL)
                endif
                exit
            endif
