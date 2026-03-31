@@ -672,11 +672,9 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm,label)
      end if
 
      job_name= 'FORWARD'
-     write(0,*) "FORWARD LABEL: ", trim(label_lcl)
      call Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll,comm_current, label=label_lcl)
 
      ! Calculate Data Response
-     write(0,*) "DATARESP LABEL: ", trim(label_lcl)
      call Master_job_DataResp(nTx, sigma, eAll, d1, label=label_lcl)
 
      write(ioMPI,*)'FWD: Finished calculating for (', nTx , ') Transmitters '
@@ -2365,8 +2363,6 @@ Subroutine Worker_job(sigma,d)
                  ! Use EsMgr_save to send e0 back to main task or save it to disk
                  which_pol=1
 
-                 write(0,*) "Worker label: ", trim(worker_job_task % label)
-
                  call EsMgr_save(e0, to=0, E_field_type='fwd', label=worker_job_task % label)
              end if
              ! so long!
@@ -2636,7 +2632,6 @@ Subroutine Worker_job(sigma,d)
              per_index=worker_job_task%per_index
              pol_index=worker_job_task%pol_index
 
-             write(0,*) "LABEL FOR JMULTT", trim(Worker_job_task % label)
              if ((size_local.gt.1).and.(para_method.gt.0).and.          &
     &            (rank_local.eq.0)) then 
                  ! group leader passing the command to workers
