@@ -62,7 +62,7 @@ Contains
 
 
 !**********************************************************************
-   subroutine func(lambda,d,m0,mHat,F,mNorm,dHat,eAll,RMS,trial)
+   subroutine func(lambda,d,m0,mHat,F,mNorm,dHat,eAll,RMS,label)
 
    ! Compute the full penalty functional F
    ! Also output the predicted data and the EM solution
@@ -76,20 +76,20 @@ Contains
    type(dataVectorMTX_t), optional, intent(inout)   :: dHat
    type(solnVectorMTX_t), optional, intent(inout) :: eAll
    real(kind=prec), optional, intent(out) :: RMS
-   logical, optional, intent(in) :: trial
+   character(len=*), optional, intent(in) :: label
 
    !  local variables
    type(dataVectorMTX_t)    :: res,Nres
    type(modelParam_t) :: m,JTd
    real(kind=prec) :: SS
    integer :: Ndata, Nmodel
-   logical :: trial_lcl
+   character(len=80) :: label_lcl
 
-   if (present(trial)) then
-       trial_lcl = trial
-    else
-        trial_lcl = .false.
-    end if
+   if (present(label)) then
+    label_lcl = label
+   else
+    label_lcl = "NULL"
+   end if
 
    ! compute the smoothed model parameter vector
    call CmSqrtMult(mHat,m)
@@ -104,7 +104,7 @@ Contains
    !   also sets up forward solutions for all transmitters in eAll
    !   (which is created on the fly if it doesn't exist)
 #ifdef MPI
-      call Master_Job_fwdPred(m,dHat,eAll,trial=trial_lcl)
+      call Master_Job_fwdPred(m,dHat,eAll,label=label_lcl)
 #else
       call fwdPred(m,dHat,eAll)
 #endif
@@ -146,7 +146,7 @@ Contains
    end subroutine func
 
 !**********************************************************************
-   subroutine gradient(lambda,d,m0,mHat,grad,dHat,eAll,use_starting_guess)
+   subroutine gradient(lambda,d,m0,mHat,grad,dHat,eAll,label)
 
    !  Computes the gradient of the penalty functional,
    !  using EM solution (eAll) and the predicted data (dHat)
@@ -165,18 +165,18 @@ Contains
    type(modelParam_t), intent(inout)          :: grad
    type(dataVectorMTX_t), intent(inout)              :: dHat
    type(solnVectorMTX_t), intent(inout)            :: eAll
-   logical, intent(in), optional :: use_starting_guess
+   character(len=*), intent(in), optional :: label
 
    !  local variables
    real(kind=prec)       :: Ndata,Nmodel
    type(dataVectorMTX_t)    :: res
    type(modelParam_t) :: m,JTd,CmJTd
-   logical :: use_starting_guess_lcl
+   character(len=80) :: label_lcl
 
-   if (present(use_starting_guess)) then
-       use_starting_guess_lcl = use_starting_guess
+   if (present(label)) then
+       label_lcl = label
     else
-       use_starting_guess_lcl = .false.
+        label_lcl = "NULL"
     end if
 
    ! compute the smoothed model parameter vector
@@ -194,7 +194,7 @@ Contains
    ! multiply by J^T
    call CdInvMult(res)
 #ifdef MPI
-        call Master_job_JmultT(m,res,JTd,eAll,use_starting_guess=use_starting_guess_lcl)
+        call Master_job_JmultT(m,res,JTd,eAll,label=label)
 #else
         call JmultT(m,res,JTd,eAll)
 #endif

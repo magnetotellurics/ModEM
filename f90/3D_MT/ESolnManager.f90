@@ -53,7 +53,10 @@ module ESolnManager
 
     character(len=*), parameter :: FTYPE_ASCII = "ascii"
     character(len=*), parameter :: FTYPE_BINARY = "binary"
-    
+
+    character(len=*), parameter :: E_FIELD_TYPE_FWD = "FWD"
+    character(len=*), parameter :: E_FIELD_TYPE_JMULTT = "JmultT"
+
     type (grid_t), pointer :: EsMgr_grid => null()
     character(len=25) :: EsMgr_ftype
     character(len=256) :: EsMgr_prefix
@@ -64,8 +67,9 @@ module ESolnManager
     logical :: esmgr_holder_allocated
 
     public :: FTYPE_ASCII, FTYPE_BINARY
+    public :: E_FIELD_TYPE_FWD, E_FIELD_TYPE_JMULTT
     public :: EsMgr_init
-    public :: EsMgr_create_solnVectorMTX, EsMgr_create_e 
+    public :: EsMgr_create_solnVectorMTX, EsMgr_create_e
     public :: EsMgr_get
     public :: EsMgr_save
     public :: EsMgr_save_in_file
@@ -268,35 +272,86 @@ contains
 
     end subroutine EsMgr_create_e
 
+    ! create_prefix - Generate a prefix for a solnVector file name
+    !
+    ! This routine will create a prefix that can be used to name the
+    ! solnVector file.
+    !
+    ! The prefix will always start with EsMgr_prefix, which was
+    ! passed in during the init call, the rest will be in one of
+    ! depending on which optional arguments are present or not:
+    !
+    ! - $EsMgr_prefix.$E_field_type.$label
+    ! - $EsMgr_prefix.$E_field_type
+    ! - $EsMgr_prefix.$label
+    ! - $EsMgr_prefix
+    !
+    subroutine create_prefix(prefix, E_field_type, label)
+
+        implicit none
+
+        character(len=*), intent(out) :: prefix
+        character(len=*), intent(in), optional :: E_field_type
+        character(len=*), intent(in), optional :: label
+
+        character(len=512) :: PREFIX_FNAME_FORMAT
+        logical :: use_label
+
+        use_label = .false.
+
+        if (present(label)) then
+            use_label = trim(label) /= "NULL" .and. len_trim(label) /= 0
+        end if
+
+        write(0,*) 'LABEL: ', use_label, trim(label)
+
+        if (present(E_field_type) .and. use_label) then
+            PREFIX_FNAME_FORMAT = '(A, A, A, A, A)'
+            write(prefix, PREFIX_FNAME_FORMAT) trim(EsMgr_prefix), ".", trim(E_field_type), ".", trim(label)
+        else if (present(E_field_type) .and. .not. use_label) then
+            PREFIX_FNAME_FORMAT = '(A, A, A)'
+            write(prefix, PREFIX_FNAME_FORMAT) trim(EsMgr_prefix), ".", trim(E_field_type)
+        else if (.not. present(E_field_type) .and. use_label) then
+            PREFIX_FNAME_FORMAT = '(A, A, A)'
+            write(prefix, PREFIX_FNAME_FORMAT) trim(EsMgr_prefix), ".", trim(label)
+        else
+            PREFIX_FNAME_FORMAT = '(A, A)'
+            write(prefix, PREFIX_FNAME_FORMAT) trim(EsMgr_prefix)
+        end if
+
+    end subroutine create_prefix
+
     ! EsMgr_get
     !
     !  Populate e with the transmitter iTx and polarization pol_index
-    !  by either via MPI or by reading a file.
+    !  via MPI or by reading a file.
     !
     !  EsMgr_save_in_file == .false.
     !  ======================
-    !  
-    !  If EsMgr_save_in_file is .false., then worker_tasks that call this
-    !  routine will receive e from the main task (That has called EsMgr_save).
-    !  
-    !  When a Main task calls this routine with EsMgr_save_in_file == .false., 
-    !  then the main task will receive e from the worker task specified in 
-    !  the from argument.
+    !
+    !  If `EsMgr_save_in_file == .false.`, then a task will receive the
+    !  solnVector via MPI from the MPI tasks specified in the `from`,
+    !  argument.
+    !
+    !  Note: The task in the `from` argument must call EsMgr_save
+    !  with a corosponding task number in the `to` argument.
     !
     !  EsMgr_save_in_file == .true.
     !  ======================
     !
-    !  If the EsolnManager was initialized with save_in_file=.true., then
-    !  worker_tasks that call this function will read the corresponding 
-    !  file that contains the data for the pol_index for iTx. After reading 
-    !  the file, the worker task will send a message to the main task
-    !  indicating that it has successfully read the file.
+    !  If the EsolnManager was initialized with `EsMgr_save_in_file == .true.`,
+    !  then worker_tasks that call this function will read the corresponding
+    !  file that matches the requested arguments.
+    !
+    !  After reading, the worker task will communicate with the main task
+    !  to indicate that it is done reading.
     !
     !  Main Tasks:
     !
-    !  If EsMgr_save_in_file is .true., then the main task will wait for 
-    !  the from task to finish writing it's solnVector_t in EsMgr_save.
-    ! 
+    !  If EsMgr_save_in_file is .true., then the main task will wait for
+    !  the task speciried in from to finish writing it's solnVector_t
+    !  that it made in ESoln_save.
+    !
     ! Note: EsMgr_init should be called before calling this function.
     !
     ! Arguments:
@@ -306,12 +361,16 @@ contains
     !    The transmitter number to read
     !  pol_index - integer - optional
     !    The polarization to read
-    !  from - integer - optional 
+    !  from - integer - optional
     !    The MPI task to receive the solnVector_t from if EsMgr_save_in_file is .false.
-    !  prefix - character - optional
-    !    The additional prefix that was used to write the file (e.g. 'JmultT', 'Trial')
-    !
-    subroutine EsMgr_get(e, iTx, pol_index, from, prefix)
+    !  E_field_type - character - optional
+    !    The type of the electric field that the SolnVector was saved with,
+    !    normally this is either E_FIELD_TYPE_FWD or E_FIELD_TYPE_JMULTT.
+    !  label - character - optional
+    !    The additonal label that was used to save this SolnVector. Normally
+    !    this is used to label the specific line search calulation (e.g.
+    !    trial, fwd01, fwd02 etc.).
+    subroutine EsMgr_get(e, iTx, pol_index, from, E_field_type, label)
 
         implicit none
 
@@ -319,7 +378,9 @@ contains
         integer, intent(in) :: iTx
         integer, intent(in), optional :: pol_index
         integer, intent(in), optional :: from
-        character(len=*), intent(in), optional :: prefix
+        character(len=*), intent(in), optional :: E_field_type
+        character(len=*), intent(in), optional :: label
+        character(len=512) :: prefix
 
         e % tx = iTx
 
@@ -330,6 +391,7 @@ contains
         end if
 
         if (EsMgr_save_in_file .and. EsMgr_ctx % rank_world /= 0) then
+            call create_prefix(prefix, E_field_type, label)
             call read_esoln_from_file(e, iTx, pol_index, prefix=prefix)
             return
         end if
@@ -340,15 +402,15 @@ contains
 
     ! EsMgr_save
     !
-    ! Save e by either writing it to disk or sending it to the main task.
+    ! Save `e` by either writing it to disk or sending it to the main task via MPI.
     !
     ! EsMgr_save_in_file = .false.
     ! =============================
     !
-    ! If EsMgr_save_in_file is .false., then a calling task will send e to the task
-    ! specified in the to argument.
+    ! If `EsMgr_save_in_file == .false.`, then a calling task will send `e` to the task
+    ! specified in the `to` argument.
     !
-    ! To receive this e, a task will need to call EsMgr_get with the correspond from.
+    ! To receive this `e`, a task will need to call EsMgr_get with the correspond from.
     !
     ! EsMgr_save_in_file = .true.
     ! =============================
@@ -360,29 +422,38 @@ contains
     ! If the main task calls this routine with EsMgr_save_in_file == .true., then
     ! it will return immediately as no work is needed.
     !
-    !
     ! Arguments
     !  e - solnVector_t
     !    The solnVector_t to save
     !  to - integer - optional 
     !    The task to send e to
-    !  prefix  - character - optional
-    !    If present, append prefix to the electric field solutions. Useful when
-    !    needing to label JmultT or trail electric fields.
+    !  E_field_type - character - optional
+    !    The type of the electric field, normally this is either E_FIELD_TYPE_FWD
+    !    or E_FIELD_TYPE_JMULTT, but could be anything. However, the same E_field_type
+    !    will need to be used in EsMgr_get to read the same solnVector.
+    !  label - character - optional
+    !    An additional label to use to label the solnVector file (if
+    !    EsMgr_save_in_file == .true.). Normally, this is used to label the specific
+    !    line search calculations (e.g. trial, fwd01, fwd02, etc.). Again, the same
+    !    label will need to be specified when calling the coorosponding EsMgr_get.
     !
-    subroutine EsMgr_save(e, to, prefix)
+    subroutine EsMgr_save(e, to, E_field_type, label)
 
         implicit none
 
         type (solnVector_t), intent(inout) :: e
         integer, intent(in), optional :: to
-        character(len=*), intent(in), optional :: prefix
+        character(len=*), intent(in), optional :: E_field_type
+        character(len=*), intent(in), optional :: label
+
+        character(len=512) :: prefix
 
         if (EsMgr_save_in_file .and. EsMgr_ctx % rank_world == 0) then
             return
         end if
 
         if (EsMgr_save_in_file .and. .not. EsMgr_ctx % rank_world == 0) then
+            call create_prefix(prefix, E_field_type, label)
             call EsMgr_write_to_file(e, prefix)
             call communicate_file_done_writing()
             return
@@ -448,7 +519,7 @@ contains
         if (present(prefix)) then
             prefix_lcl = prefix 
         else
-            prefix_lcl = ""
+            prefix_lcl = "esoln"
         end if
 
         if (present(ftype)) then
@@ -457,7 +528,7 @@ contains
             ftype_lcl = EsMgr_ftype
         endif
 
-        call write_solnVector(e, trim(EsMgr_prefix)//trim(prefix_lcl), ftype=ftype_lcl, pol_index=iPol_lcl)
+        call write_solnVector(e, trim(prefix_lcl), ftype=ftype_lcl, pol_index=iPol_lcl)
 
     end subroutine EsMgr_write_to_file
 
@@ -482,11 +553,11 @@ contains
         if (present(prefix)) then
             prefix_lcl = prefix 
         else
-            prefix_lcl = ""
+            prefix_lcl = "esoln"
         end if
 
         e % tx = iTx
-        call read_solnVector(e, trim(EsMgr_prefix)//trim(prefix_lcl), ftype=EsMgr_ftype, pol_index=iPol_lcl)
+        call read_solnVector(e, trim(prefix_lcl), ftype=EsMgr_ftype, pol_index=iPol_lcl)
 
     end subroutine read_esoln_from_file
 
