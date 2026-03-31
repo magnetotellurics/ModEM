@@ -303,8 +303,6 @@ contains
             use_label = trim(label) /= "NULL" .and. len_trim(label) /= 0
         end if
 
-        write(0,*) 'LABEL: ', use_label, trim(label)
-
         if (present(E_field_type) .and. use_label) then
             PREFIX_FNAME_FORMAT = '(A, A, A, A, A)'
             write(prefix, PREFIX_FNAME_FORMAT) trim(EsMgr_prefix), ".", trim(E_field_type), ".", trim(label)
