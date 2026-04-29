@@ -71,6 +71,10 @@ that these downloads do not contain any git repository history or information.
 
 ## Dependencies
 
+ModEM can be compiled with any standard Fortran compiler, but has most often been
+compiled and tested with GFortran and Intel compilers. Likewise, ModEM is most often
+used with MPI and has been thoroughly tested with MPICH and OpenMPI.
+
 ModEM depends on the [LAPACK][lapack] and [BLAS][blas] libraries. Often, these
 are already included on most systems, but if not you will need to install them
 yourself and ensure they are properly linked in the `LIBS` and `LIBS_PATH`
@@ -79,9 +83,25 @@ variables of the Makefile.
 [lapack]:https://www.netlib.org/lapack/
 [blas]:https://www.netlib.org/blas/
 
-## Creating Makefiles from Configuration files
+## Building ModEM with CMake - Recommended
 
-The current build system for ModEM uses the `fmkmf.pl` Perl Script and the
+ModEM can now be built with CMake! Building with CMake is very easy,
+below is a quick-start to building with CMake:
+
+```bash
+$ cd ModEM
+$ mkdir build
+$ cd build
+$ cmake .. -DCMAKE_Fortran_COMPILER=mpifort
+$ make
+```
+
+For more information on building ModEM with CMake, and troubleshooting, please
+see the ModEM Documentation on [building with cmake](https://magnetotellurics.github.io/ModEM/building_with_cmake.html).
+
+## Building ModEM with the legacy build system
+
+The older build system for ModEM uses the `fmkmf.pl` Perl Script and the
 configuration scripts that are in `f90/CONFIG`: `f90/CONFIG/Configure`.
 Although ModEM uses Make and Makefiles, makefiles are meant to be created by
 these configuration scripts.
