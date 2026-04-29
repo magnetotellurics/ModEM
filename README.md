@@ -1,9 +1,7 @@
 Modular Electromagnetic Inversion Software (ModEM)
 ==================================================
-
-
 **ModEM: A modular system for inversion of electromagnetic geophysical data.**  
-**Authors**: Gary Egbert, Anna Kelbert, Naser Megbel & Hao Dong.
+**Authors**: Gary Egbert, Anna Kelbert, Naser Megbel, Hao Dong & Kush Tandon.
 
 [![DOI](https://zenodo.org/badge/1025134680.svg)](https://doi.org/10.5281/zenodo.17229555)
 
@@ -176,10 +174,10 @@ and passing it `MPI` as the type.
 
 # Basic ModEM Usage
 
-> **NOTE:** For a more detailed information on ModEM usage please see the [ModEM
-> User's Guide][Users-Guide].
+> **NOTE:** For a more detailed information on ModEM usage please see the
+> [ModEM Documentation](https://magnetotellurics.github.io/ModEM/).
 
-While the [User's Guide][Users-Guide] is the best resource for information on
+While the documentation above is the best resource for information on
 running ModEM, information can also be found by running the `Mod2DMT` or
 `Mod3DMT` executables with no arguments. Furthermore, specifying the job flag
 with no other arguments will produce a detailed usage description for that job
@@ -192,7 +190,7 @@ The examples below will use data and model files from the
 repository to obtain the data files and examples.
 
 [BLOCK2-Example]: https://github.com/magnetotellurics/ModEM-Examples/tree/main/Magnetotelluric/3D_MT/BLOCK2
-[Users-Guide]: https://github.com/magnetotellurics/ModEM/blob/main/doc/userguide/ModEM_UserGuide.pdf
+
 
 ## Forward Modeling
 
@@ -238,8 +236,8 @@ Of course, this will work only if you have 9 cores available on your system.
 > a max of `(2 x nTransmitters) + 1` tasks (except for the SP2 version
 > compiled with `-DFG`).
 
-> **NOTE:** Please see the [User's Guide][Users-Guide] for additional, optional arguments for
-> forward modeling.
+> **NOTE:** Please see the [ModEM Documentation](https://magnetotellurics.github.io/ModEM/)
+> for additional, optional arguments for forward modeling.
 
 ## Inversion Modeling
 
@@ -274,7 +272,8 @@ I NLCG rFile_Model rFile_Data [InvCtrl FwdCtrl CovCtrl StartModel]
 | StartModel | Starting model file |
 
 For more information on these arguments, and formats of the control files, and
-covariance files please see the [ModEM User's Guide][Users-Guide].
+covariance files please see the 
+[ModEM Documentation](https://magnetotellurics.github.io/ModEM/file_formats.html#model-covariance-files).
 
 Similar to the forward modeling, you can run the inverse modeling with MPI. The
 same rules as apply as to the number of transmitters and tasks: Must use at least two
@@ -291,7 +290,7 @@ A [Dockerfile][Dockerfile] has been provided that will create an Ubuntu docker
 container where you can compile and run ModEM. To run the ModEM docker
 container, first ensure you have [docker installed][Docker-Getting-Started] and
 running (Either have the docker [deamon running][Damon-running], or Docker
-[Desktop running][Docker-desktop].
+[Desktop running][Docker-desktop]).
 
 ## Building
 
@@ -347,10 +346,6 @@ $ docker run --mount=type=bind,source=/abosolute/path/to/ModEM,target=/root/ModE
 [Dockerfile]:./Dockerfile
 
 # More Information and Tools
-
-## Users Guide
-
-ModEM Users Guide is now online: https://magnetotellurics.github.io/ModEM/ .
 
 ## Related Repositories
 
