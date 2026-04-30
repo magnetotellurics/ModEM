@@ -5,6 +5,10 @@
 
 :tocdepth: 4
 
+.. image:: ./imgs/ModEM_logo_wide_on_white_simple.png
+   :alt: ModEM Logo
+   :align: center
+
 ModEM Documentation
 ===================
 
