@@ -4,6 +4,10 @@
 #include <complex.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <atomic>
 #if defined(FG) 
 #include <nccl.h>
 #endif
@@ -163,11 +167,11 @@ __global__ void reduce_real(double *a, double s, const int N)
     }
 }
 
-// function to wait for sometime
-void sleep(int seconds)
+// function to wait for sometime (accepts fractional seconds)
+void isleep(float seconds)
 {
     // Converting time into milli_seconds
-    int milli_seconds = 1000 * seconds;
+    int milli_seconds = int(1000.0 * seconds);
     // Storing start time
     clock_t start_time = clock();
     // looping till required time is not achieved
@@ -526,7 +530,7 @@ extern "C" int cf_resetFlag(int dev_idx)
     }
     else
     {
-        sleep(0.1);
+        isleep(0.05);
         err = cudaSetDeviceFlags(cudaDeviceScheduleYield);
         if (err != cudaSuccess)
         {
@@ -538,6 +542,53 @@ extern "C" int cf_resetFlag(int dev_idx)
     return 0;
 }
 
+// ============================================================================
+// Shared-memory GPU lock: cross-process atomic occupation flags.
+// Multiple MPI ranks can target the same GPU. This uses a POSIX shared-memory
+// region containing std::atomic<int> flags, one per device index.
+// cf_hookDev() acquires (CAS 0->1), cf_releaseDev() releases (store 0).
+// ============================================================================
+
+static constexpr int LOCK_MAX_DEVICES = 64;
+
+struct alignas(64) GpuLock {
+    std::atomic<int> occupied[LOCK_MAX_DEVICES];
+};
+
+static GpuLock* g_lock       = nullptr;
+static bool     g_lock_inited = false;
+
+static int init_gpu_lock()
+{
+    const char* name = "/ModEM_gpu_lock";
+
+    // Try to open existing shared memory segment first
+    int fd = shm_open(name, O_RDWR, 0666);
+    if (fd < 0) {
+        // Doesn't exist -- create it
+        fd = shm_open(name, O_CREAT | O_RDWR, 0666);
+        if (fd < 0) return 1;
+        if (ftruncate(fd, sizeof(GpuLock)) < 0) { close(fd); return 1; }
+    }
+
+    g_lock = static_cast<GpuLock*>(mmap(nullptr, sizeof(GpuLock),
+                                         PROT_READ | PROT_WRITE,
+                                         MAP_SHARED, fd, 0));
+    close(fd);
+    if (g_lock == MAP_FAILED) { g_lock = nullptr; return 1; }
+
+    // Ensure all flags are zero on first creation. Only one process does this.
+    static std::atomic<int> init_guard(0);
+    int expected = 0;
+    if (init_guard.compare_exchange_strong(expected, 1)) {
+        for (int i = 0; i < LOCK_MAX_DEVICES; i++)
+            g_lock->occupied[i].store(0, std::memory_order_relaxed);
+    }
+
+    g_lock_inited = true;
+    return 0;
+}
+
 // function called from main fortran program 
 extern "C" int cf_hookDev(int dev_idx)
 {
@@ -545,9 +596,9 @@ extern "C" int cf_hookDev(int dev_idx)
     cudaError_t err;
     size_t freeBytes, totalBytes, usedBytes;
     int nDevices;
-    unsigned int flag = 0;
     double memusage;
      
+    // unsigned int flag = 0;
     // unsigned int i;
     err = cudaGetDeviceCount(&nDevices);
     if (err != cudaSuccess) 
@@ -580,180 +631,77 @@ extern "C" int cf_hookDev(int dev_idx)
 	printf(" WARNING: integrated device found for device: %i ! \n", dev_idx);
 	printf(" this may lead to unsupported computation error...\n");
     }
+    // Init shared-memory lock (note that any rank can trigger)
+    if (!g_lock_inited && init_gpu_lock() != 0)
+    {
+        printf("Error: failed to init GPU lock shared memory\n");
+        goto Error;
+    }
     //now try to hook on to that device
-    err = cudaSetDevice(dev_idx);
-    if (err != cudaSuccess)
-    {
-        printf("Failed to set device %i: %u \n", dev_idx, err);
-        goto Error;
-    }
-    while(true)
-    {
-        // see if this device is available
-        err =  cudaMemGetInfo(&freeBytes, &totalBytes);
-        if (err != cudaSuccess)
-        {
-            printf("Failed to get usage for device %i: %s\n", dev_idx, 
-                cudaGetErrorString(err));
-            goto Error;
-        }
-        usedBytes = totalBytes - freeBytes;
-        memusage = 100.0*usedBytes/totalBytes;
-        // now get some device flags
-        err = cudaGetDeviceFlags(&flag);
-        if (err != cudaSuccess)
-        {
-            printf("Failed to get the device flags %i: %s\n", dev_idx, 
-               cudaGetErrorString(err));
-        }
-        // printf("Dev = %i, flag = %i \n", dev_idx, flag);
-        if (flag != cudaDeviceScheduleYield && memusage < 50)
-        // if (memusage < 50)
-        // if (flag != cudaDeviceScheduleYield)
-        {
-            // If the number of CUDA contexts is greater than the number of 
-            // logical processors in the system, use Spin scheduling. 
-            // Else use Yield scheduling.
-            err = cudaSetDeviceFlags(cudaDeviceScheduleYield);
-            if (err != cudaSuccess)
-            {
-                printf("Failed to set the device flag %i: %s\n", dev_idx, 
-                  cudaGetErrorString(err));
-	    }
-            printf(" # Dev Status  : GPU-mem = %f %%, PCI %i: %i\n", 
-                   memusage, dev_prop.pciBusID, dev_prop.pciDeviceID );
-            break;
-        }
-        // else let it spin
-        sleep(0.02);
-    }
-    printf(" # Dev Selected: %i. %s \n", dev_idx, dev_prop.name);
-    return 0;
-Error:
-    printf("Error: Failed to attach to device: %i \n", dev_idx);
-    return 1;
-}
-/*
-// function called from main fortran program 
-extern "C" int cf_hookCtx(int dev_idx)
-{
-    nvmlReturn_t result;
-    cudaError_t err;
-    CUcontext thisCtx;
-    nvmlDevice_t device;
-    nvmlPciInfo_t pci_bus;
-    nvmlUtilization_t usage;
-    unsigned int Ndevice;
-    // unsigned int i;
-    // unsigned int nProc = 32;
-    // nvmlProcessInfo_t pInfo[nProc];
-    char device_name[NVML_DEVICE_NAME_BUFFER_SIZE];
-
-    // First initialize NVML library
-    result = nvmlInit();
-    if (NVML_SUCCESS != result)
-    { 
-        printf("Failed to initialize NVML: %s\n", nvmlErrorString(result));
-        return 1;
-    }
-    result = nvmlDeviceGetCount(&Ndevice);
-    if (NVML_SUCCESS != result)
-    { 
-        printf("Failed to initialize NVML: %s\n", nvmlErrorString(result));
-        return 1;
-    }
-    if (dev_idx + 1 > Ndevice) 
-    { 
-        printf("Error: not enough devices detected \n");
-        printf("required device idx = %i, Ndevice = %u \n", dev_idx, Ndevice);
-        goto Error;
-    }
     err = cudaSetDevice(dev_idx);
 	if( err != cudaSuccess )
     {
         printf("Failed to set device %i: %u \n", dev_idx, err);
         goto Error;
     }
-    while(true)
+
+    // Atomic lock loop: CAS 0->1 to claim the GPU
+    while (true)
     {
-        // Query for device handle to perform operations on a device
-        // You can also query device handle by other features like:
-        // nvmlDeviceGetHandleBySerial
-        // nvmlDeviceGetHandleByPciBusId
-        result = nvmlDeviceGetHandleByIndex(dev_idx, &device);
-        if (NVML_SUCCESS != result)
-        { 
-            printf("Failed to get handle for device %i: %s\n", dev_idx, nvmlErrorString(result));
-            goto Error;
-        }
-        // now get the current context (if any)
-        cuCtxGetCurrent(&thisCtx);
-        if(thisCtx == NULL) // first call to this device
-        {
-            cuCtxCreate(&thisCtx, 0, dev_idx);
-            result = nvmlDeviceGetName(device, device_name, NVML_DEVICE_NAME_BUFFER_SIZE);
-            if (NVML_SUCCESS != result)
-            { 
-                printf("Failed to get name of device %i: %s\n", dev_idx, nvmlErrorString(result));
-                goto Error;
-            }
-            // pci.busId is very useful to know which device physically 
-            // you're talking to
-            // Using PCI identifier you can also match nvmlDevice 
-            // handle to CUDA device.
-            result = nvmlDeviceGetPciInfo(device, &pci_bus);
-            if (NVML_SUCCESS != result)
-            { 
-                printf("Failed to get pci info for device %i: %s\n", dev_idx, nvmlErrorString(result));
-                goto Error;
-            }
-            break;// just go ahead to initialize the case
-        }
-        else// see if this device is available
-        {
-            cuCtxSetCurrent(thisCtx);
-            result = nvmlDeviceGetUtilizationRates( device, &usage );
-            if (NVML_SUCCESS != result)
+        int expected = 0;
+        if (g_lock->occupied[dev_idx].compare_exchange_strong(
+                expected, 1, std::memory_order_acq_rel))
+	{
+            // CLAIMED -- we are the sole occupant
+            // Safety: verify memory is actually available after acquiring lock
+            err = cudaMemGetInfo(&freeBytes, &totalBytes);
+            if (err != cudaSuccess)
             {
-                printf("Failed to get usage for device %i: %s\n", dev_idx, nvmlErrorString(result));
+                g_lock->occupied[dev_idx].store(0, std::memory_order_release);
+                printf("Failed to get usage for device %i: %s\n", dev_idx,
+                       cudaGetErrorString(err));
                 goto Error;
             }
-            if (usage.memory+usage.gpu < 15)
-            {
-                printf(" # Dev Status  : GPU-util=%u GPU-mem=%u \n", usage.gpu, usage.memory );
-                result = nvmlDeviceGetName(device, device_name, NVML_DEVICE_NAME_BUFFER_SIZE);
-                if (NVML_SUCCESS != result)
-                { 
-                    printf("Failed to get name of device %i: %s\n", dev_idx, nvmlErrorString(result));
-                    goto Error;
-                }
-                // pci.busId is very useful to know which device physically 
-                // you're talking to
-                // Using PCI identifier you can also match nvmlDevice 
-                // handle to CUDA device.
-                result = nvmlDeviceGetPciInfo(device, &pci_bus);
-                if (NVML_SUCCESS != result)
-                { 
-                    printf("Failed to get pci info for device %i: %s\n", dev_idx, nvmlErrorString(result));
-                    goto Error;
-                }
-                break;
-            }
+            err = cudaSetDeviceFlags(cudaDeviceScheduleYield);
+	    if (err != cudaSuccess)
+	    {
+		g_lock->occupied[dev_idx].store(0, std::memory_order_release);
+		printf("Failed to set the device flag %i: %s\n", dev_idx, 
+		       cudaGetErrorString(err));
+		goto Error;
+	    }
+            printf(" # Dev Selected: %i. %s \n", dev_idx, dev_prop.name);
+	    // just calculate the memory usage and report it 
+            usedBytes = totalBytes - freeBytes;
+            memusage = 100.0*usedBytes/totalBytes;
+            printf(" # Dev Status  : GPU-mem = %f %%, PCI %i: %i\n", 
+                   memusage, dev_prop.pciBusID, dev_prop.pciDeviceID );
+	    return 0;
         }
+        // else let it spin
         sleep(0.05);
     }
-    printf(" # Dev Selected:  %i. %s [%s]\n", dev_idx, device_name, pci_bus.busId);
-    result = nvmlShutdown();
-    if (NVML_SUCCESS != result)
-        printf("Failed to shutdown NVML: %s\n", nvmlErrorString(result));
-
-    return 0;
 Error:
-    result = nvmlShutdown();
-    if (NVML_SUCCESS != result)
-        printf("Failed to shutdown NVML: %s\n", nvmlErrorString(result));
-
+    printf("Error: Failed to attach to device: %i \n", dev_idx);
     return 1;
 }
-*/
 
+// Release the GPU lock so other processes can hook on
+extern "C" void cf_releaseDev(int dev_idx)
+{
+    if (g_lock_inited && g_lock != nullptr &&
+        dev_idx >= 0 && dev_idx < LOCK_MAX_DEVICES)
+    {
+        g_lock->occupied[dev_idx].store(0, std::memory_order_release);
+    }
+}
+
+// Cleanup shared memory on program exit
+extern "C" void cf_cleanupLock()
+{
+    if (g_lock != nullptr && g_lock != MAP_FAILED)
+        munmap(g_lock, sizeof(GpuLock));
+    shm_unlink("/ModEM_gpu_lock");
+    g_lock = nullptr;
+    g_lock_inited = false;
+}

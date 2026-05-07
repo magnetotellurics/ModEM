@@ -4,6 +4,10 @@
 #include <string.h>
 #include <complex.h>
 #include "hip/hip_runtime.h"
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <atomic>
 #if defined(FG)
 #include "hip/rccl.h"
 #endif
@@ -164,17 +168,17 @@ __global__ void reduce_real(double *a, double s, const int N)
     }
 }
 
-// function to wait for sometime
-void sleep(float seconds)
-{
+// function to wait for sometime (accepts fractional seconds)
+void isleep(float seconds)
+{   
     // Converting time into milli_seconds
-    int milli_seconds = 1000 * seconds;
-    // Storing start time
+    int milli_seconds = int(1000.0 * seconds);
+    // Storing start time 
     clock_t start_time = clock();
     // looping till required time is not achieved
     while (clock() < start_time + milli_seconds)
         ;
-}
+} 
 
 // function called from main fortran program
 // single to double conversion
@@ -538,7 +542,7 @@ extern "C" int cf_resetFlag(int dev_idx)
     }
     else
     {
-        sleep(0.1);
+        isleep(0.05);
         err = hipSetDeviceFlags(hipDeviceScheduleYield);
         if (err != hipSuccess)
         {
@@ -550,16 +554,60 @@ extern "C" int cf_resetFlag(int dev_idx)
     return 0;
 }
 
-// function called from main fortran program 
+// ============================================================================
+// Shared-memory GPU lock: cross-process atomic occupation flags.
+// Identical logic to CUDA version
+// cf_hookDev() acquires (CAS 0->1), cf_releaseDev() releases (set to 0).
+// ============================================================================
+
+static constexpr int LOCK_MAX_DEVICES = 64;
+
+struct alignas(64) GpuLock {
+    std::atomic<int> occupied[LOCK_MAX_DEVICES];
+};
+
+static GpuLock* g_lock       = nullptr;
+static bool     g_lock_inited = false;
+
+static int init_gpu_lock()
+{
+    const char* name = "/ModEM_gpu_lock";
+
+    int fd = shm_open(name, O_RDWR, 0666);
+    if (fd < 0) {
+        fd = shm_open(name, O_CREAT | O_RDWR, 0666);
+        if (fd < 0) return 1;
+        if (ftruncate(fd, sizeof(GpuLock)) < 0) { close(fd); return 1; }
+    }
+
+    g_lock = static_cast<GpuLock*>(mmap(nullptr, sizeof(GpuLock),
+                                         PROT_READ | PROT_WRITE,
+                                         MAP_SHARED, fd, 0));
+    close(fd);
+    if (g_lock == MAP_FAILED) { g_lock = nullptr; return 1; }
+
+    static std::atomic<int> init_guard(0);
+    int expected = 0;
+    if (init_guard.compare_exchange_strong(expected, 1)) {
+        for (int i = 0; i < LOCK_MAX_DEVICES; i++)
+            g_lock->occupied[i].store(0, std::memory_order_relaxed);
+    }
+
+    g_lock_inited = true;
+    return 0;
+}
+
+// function called from main fortran program, this is different from the original cuda version
+// as we do not have nvml in hip, we will just use the hip api to check the free memory after claiming the lock
 extern "C" int cf_hookDev(int dev_idx)
 {
     hipDeviceProp_t dev_prop;
     hipError_t err;
     size_t freeBytes, totalBytes, usedBytes;
     int nDevices;
-    unsigned int flag = 0;
     double memusage;
      
+    // unsigned int flag = 0;
     // unsigned int i;
     err = hipGetDeviceCount(&nDevices);
     if (err != hipSuccess) 
@@ -597,58 +645,80 @@ extern "C" int cf_hookDev(int dev_idx)
 	printf(" WARNING: integrated device found for device: %i ! \n", dev_idx);
 	printf(" this may lead to unsupported computation error...\n");
     }
-    //now try to hook on to that device
+    // Init shared-memory lock (note that any rank can trigger)
+    if (!g_lock_inited && init_gpu_lock() != 0)
+    {
+        printf("Error: failed to init GPU lock shared memory\n");
+        goto Error;
+    }
+    // set the device context before claiming the lock.
     err = hipSetDevice(dev_idx);
     if (err != hipSuccess)
     {
         printf("Failed to set device %i: %u \n", dev_idx, err);
-        goto Error;
+        return 1;
     }
+
     // now try to get affiliated device
-    while(true)
+    // Atomic lock loop: CAS 0->1 to claim the GPU
+    while (true)
     {
-        // try to get some info for the device
-        err =  hipMemGetInfo(&freeBytes, &totalBytes);
-        if (err != hipSuccess)
+        int expected = 0;
+        if (g_lock->occupied[dev_idx].compare_exchange_strong(
+                expected, 1, std::memory_order_acq_rel))
         {
-            printf("Failed to get usage for device %i: %s\n", dev_idx, 
-                hipGetErrorString(err));
-            goto Error;
-        }
-        usedBytes = totalBytes - freeBytes;
-        memusage = 100.0*usedBytes/totalBytes;
-        // now get some device flags
-        err = hipGetDeviceFlags(&flag);
-        if (err != hipSuccess)
-        {
-            printf("Failed to get the device flags %i: %s\n", dev_idx, 
-               hipGetErrorString(err));
-        }
-        // printf("Dev = %i, flag = %i \n", dev_idx, flag);
-        if (flag != hipDeviceScheduleYield && memusage < 50)
-        // if (memusage < 50)
-        // if (flag != hipDeviceScheduleYield)
-        {
-            // If the number of HIP contexts is greater than the number of 
-            // logical processors in the system, use Spin scheduling. 
-            // Else use Yield scheduling.
-            err = hipSetDeviceFlags(hipDeviceScheduleYield);
+            // CLAIMED -- we are the sole occupant
+            // Safety: verify memory is actually available after acquiring lock
+            err = hipMemGetInfo(&freeBytes, &totalBytes);
             if (err != hipSuccess)
             {
-                printf("Failed to set the device flag %i: %s\n", dev_idx, 
-                  hipGetErrorString(err));
+                g_lock->occupied[dev_idx].store(0, std::memory_order_release);
+                printf("Failed to get usage for device %i: %s\n", dev_idx,
+                       hipGetErrorString(err));
+                goto Error;
+            }
+            err = hipSetDeviceFlags(hipDeviceScheduleYield);
+	    if (err != hipSuccess)
+	    {
+		g_lock->occupied[dev_idx].store(0, std::memory_order_release);
+		printf("Failed to set the device flag %i: %s\n", dev_idx, 
+		       hipGetErrorString(err));
+		goto Error;
 	    }
-            printf(" # Dev Status  : GPU-mem = %f %%, PCI %i: %i\n", 
+            printf(" # Dev Selected: %i. %s \n", dev_idx, dev_prop.name);
+	    // unlike the cuda version, we do not have the nvml to report the GPU memory usage
+	    // just calculate the used memory percentage and report that
+            usedBytes = totalBytes - freeBytes;
+            memusage = 100.0*usedBytes/totalBytes;
+            printf(" # Dev Status  : GPU-mem = %5.2f %%, PCI %i: %i\n", 
                    memusage, dev_prop.pciBusID, dev_prop.pciDeviceID );
-            break;
+            return 0;
         }
         // else let it spin
-        sleep(0.05);
+        isleep(0.05);
     }
-    printf(" # Dev Selected: %i. %s \n", dev_idx, dev_prop.name);
-    return 0;
 Error:
     printf("Error: Failed to attach to device: %i \n", dev_idx);
     return 1;
+}
+
+// Release the GPU lock so other processes can hook on
+extern "C" void cf_releaseDev(int dev_idx)
+{
+    if (g_lock_inited && g_lock != nullptr &&
+        dev_idx >= 0 && dev_idx < LOCK_MAX_DEVICES)
+    {
+        g_lock->occupied[dev_idx].store(0, std::memory_order_release);
+    }
+}
+
+// Cleanup shared memory on program exit
+extern "C" void cf_cleanupLock()
+{
+    if (g_lock != nullptr && g_lock != MAP_FAILED)
+        munmap(g_lock, sizeof(GpuLock));
+    shm_unlink("/ModEM_gpu_lock");
+    g_lock = nullptr;
+    g_lock_inited = false;
 }
 

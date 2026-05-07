@@ -542,6 +542,13 @@ Contains
     Call deall(tvec)
     deallocate(KSSiter%rerr)
 
+    ! Release GPU lock so other processes can hook on
+#if defined(CUDA) || defined(HIP)
+    if (device_id >= 0) then
+        call cf_releaseDev(device_id)
+    endif
+#endif
+
   end subroutine FWDsolve3D
 
 #if defined(MPI) && defined(FG)
@@ -1194,6 +1201,14 @@ Contains
    &             rank_local
          end if
      end if
+
+    ! Release GPU lock so other processes can hook on
+#if defined(CUDA) || defined(HIP)
+    if (device_id >= 0 .and. size_local > 1) then
+        call cf_releaseDev(device_id)
+    endif
+#endif
+
      call MPI_BARRIER(comm_local,ierr)
      if (rank_local .eq. 0) then ! Leader 
          ! deallocate local temporary arrays
