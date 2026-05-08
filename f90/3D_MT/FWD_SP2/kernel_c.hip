@@ -1,3 +1,4 @@
+#include <new>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -562,7 +563,11 @@ extern "C" int cf_resetFlag(int dev_idx)
 
 static constexpr int LOCK_MAX_DEVICES = 64;
 
+// Raw byte flag at offset 0 — no C++ object lifetime requirements.
+// Used *only* to coordinate who runs placement-new on the atomics.
 struct alignas(64) GpuLock {
+    unsigned char constructed;            // 0 = raw storage, !=0 = atomics live
+    std::atomic<int> initialized;         // cross-process init guard (0->1 CAS)
     std::atomic<int> occupied[LOCK_MAX_DEVICES];
 };
 
@@ -575,6 +580,7 @@ static int init_gpu_lock()
 
     int fd = shm_open(name, O_RDWR, 0666);
     if (fd < 0) {
+        // Doesn't exist -- create it
         fd = shm_open(name, O_CREAT | O_RDWR, 0666);
         if (fd < 0) return 1;
         if (ftruncate(fd, sizeof(GpuLock)) < 0) { close(fd); return 1; }
@@ -586,11 +592,15 @@ static int init_gpu_lock()
     close(fd);
     if (g_lock == MAP_FAILED) { g_lock = nullptr; return 1; }
 
-    static std::atomic<int> init_guard(0);
-    int expected = 0;
-    if (init_guard.compare_exchange_strong(expected, 1)) {
+    // Begin object lifetimes once across all processes...
+    if (__atomic_test_and_set(&g_lock->constructed, __ATOMIC_ACQ_REL)) {
+        // we are not the first - just wait...
+    } else {
+        // we are the first - need to construct the atomics in shared memory
+        // begin lifetimes of all std::atomic<int> via placement-new.
+        new (&g_lock->initialized) std::atomic<int>(0);
         for (int i = 0; i < LOCK_MAX_DEVICES; i++)
-            g_lock->occupied[i].store(0, std::memory_order_relaxed);
+            new (&g_lock->occupied[i]) std::atomic<int>(0);
     }
 
     g_lock_inited = true;
@@ -615,10 +625,11 @@ extern "C" int cf_hookDev(int dev_idx)
         printf("Error: Failed to inquire the number of devices %s\n", hipGetErrorString(err));
         return 1;
     }
-    // see if we have enough number of device
-    if (dev_idx + 1 > nDevices) 
-    { 
-        printf(" inquired device idx = %i, nDevices = %i \n", dev_idx, nDevices);
+    // Validate dev_idx before any lock or HIP access:
+    if (dev_idx < 0 || dev_idx >= nDevices || dev_idx >= LOCK_MAX_DEVICES)
+    {
+        printf(" inquired device idx = %i, nDevices = %d, LOCK_MAX_DEVICES = %d \n",
+               dev_idx, nDevices, LOCK_MAX_DEVICES);
         printf(" Error: device idx out of range! \n");
         goto Error;
     }

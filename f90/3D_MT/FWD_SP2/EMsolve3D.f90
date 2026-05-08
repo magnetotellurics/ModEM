@@ -542,11 +542,12 @@ Contains
     Call deall(tvec)
     deallocate(KSSiter%rerr)
 
-    ! Release GPU lock so other processes can hook on
+    ! Release GPU lock and cleanup shared memory on exit
 #if defined(CUDA) || defined(HIP)
     if (device_id >= 0) then
         call cf_releaseDev(device_id)
-    endif
+    end if
+    call cf_cleanupLock()
 #endif
 
   end subroutine FWDsolve3D
@@ -1206,10 +1207,16 @@ Contains
 #if defined(CUDA) || defined(HIP)
     if (device_id >= 0 .and. size_local > 1) then
         call cf_releaseDev(device_id)
-    endif
+    end if
 #endif
 
      call MPI_BARRIER(comm_local,ierr)
+    ! Cleanup shared-memory lock name (only rank 0)
+#if defined(CUDA) || defined(HIP)
+    if (rank_local .eq. 0) then
+        call cf_cleanupLock()
+    end if
+#endif
      if (rank_local .eq. 0) then ! Leader 
          ! deallocate local temporary arrays
          deallocate(b)
