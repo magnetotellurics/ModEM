@@ -1,11 +1,6 @@
-/*
- * gpu_lock.h — Platform-independent, cross-process GPU locking via POSIX shared memory.
- *
- * Multiple MPI ranks can safely target the same GPU:
- *   cf_hookDev()    — acquires GPU via CAS 0->1 on an atomic flag array (platform-specific)
- *   cf_releaseDev() — releases the lock so other processes can attach
- *   cf_cleanupLock()— unmaps and unlinks shared memory on exit
- */
+// gpu_lock.h — Platform-independent, cross-process GPU locking via POSIX 
+// shared memory.
+// Multiple MPI ranks (should...) safely target the same GPU:
 
 #ifndef MODEM_GPU_LOCK_H
 #define MODEM_GPU_LOCK_H
@@ -16,44 +11,35 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-/* ------------------------------------------------------------------ */
-/* Device state flags                                                  */
-/* ------------------------------------------------------------------ */
+// Define device state flags                                                 
 
 #define DEVICE_FREE  0
 #define DEVICE_IN_USE 1
 
-/* ------------------------------------------------------------------ */
-/* Lock structure & global state                                       */
-/* ------------------------------------------------------------------ */
-
+// Lock structure & global state 
+// we probably don't have more than 64 devices on a single node
 static constexpr int LOCK_MAX_DEVICES = 64;
 
-/*
- * Raw byte flag at offset 0 — no C++ object lifetime requirements.
- * Used *only* to coordinate who runs placement-new on the atomics.
- */
+// cnstr: compiler-built-in atomic on raw int — safe before object lifetime begins.
+// All other members are std::atomic<int>, constructed by placement-new once,
+// then used via normal C++ atomic operations.
 struct alignas(64) GpuLock {
-    unsigned char constructed;             /* 0 = raw storage, !=0 = atomics live */
-    std::atomic<int> initialized;          /* cross-process init guard (0->1 CAS) */
+    int cnstr;      // 0 = not constructed, 1 = atomics live
     std::atomic<int> occupied[LOCK_MAX_DEVICES];
 };
 
 static GpuLock* g_lock       = nullptr;
 static bool     g_lock_inited = false;
 
-/* ------------------------------------------------------------------ */
-/* Internal: create / map shared-memory segment and construct atomics  */
-/* ------------------------------------------------------------------ */
-
+// Internal: create / map shared-memory segment and construct atomics 
 static inline int init_gpu_lock()
 {
     const char* name = "/ModEM_gpu_lock";
 
-    /* Try to open existing shared memory segment first */
+    // Try to open existing shared memory segment first 
     int fd = shm_open(name, O_RDWR, 0600);
     if (fd < 0) {
-        /* Doesn't exist -- create it */
+        // Doesn't exist -- create it 
         fd = shm_open(name, O_CREAT | O_RDWR, 0600);
         if (fd < 0) return 1;
         if (ftruncate(fd, sizeof(GpuLock)) < 0) { close(fd); return 1; }
@@ -65,23 +51,30 @@ static inline int init_gpu_lock()
     close(fd);
     if (g_lock == MAP_FAILED) { g_lock = nullptr; return 1; }
 
-    /* Begin object lifetimes once across all processes */
-    if (__atomic_test_and_set(&g_lock->constructed, __ATOMIC_ACQ_REL)) {
-        /* we are not the first -- just wait */
+    // Coordinate exactly-once construction of std::atomic members.   
+    // cnstr uses __atomic_* built-ins: safe on raw storage       
+    // the winner does placement-new on every std::atomic<int>     
+    // the other (losers) spin-wait with ACQUIRE on "cnstr" until it's 1, 
+    // then proceed to use the atomics.
+
+    if (__atomic_exchange_n(&g_lock->cnstr, 1, __ATOMIC_ACQ_REL) != 0) {
+        // Another process won the race — spin-wait until construction finishes.
+        while (!__atomic_load_n(&g_lock->cnstr, __ATOMIC_ACQUIRE))
+            ;
     } else {
-        /* we are the first -- construct the atomics in shared memory */
-        new (&g_lock->initialized) std::atomic<int>(0);
+        // We are the winner — construct all std::atomic members.
         for (int i = 0; i < LOCK_MAX_DEVICES; i++)
             new (&g_lock->occupied[i]) std::atomic<int>(DEVICE_FREE);
+
+        // cnstr is already 1 from the exchange above (ACQ_REL ensures
+        // the constructed atomics are visible to other processes).
     }
 
     g_lock_inited = true;
     return 0;
 }
 
-/* ------------------------------------------------------------------ */
-/* Public C-bindings (called from Fortran)                              */
-/* ------------------------------------------------------------------ */
+// Public C-bindings (called from Fortran)                            
 
 extern "C" void cf_releaseDev(int dev_idx)
 {
@@ -101,4 +94,4 @@ extern "C" void cf_cleanupLock()
     g_lock_inited = false;
 }
 
-#endif /* MODEM_GPU_LOCK_H */
+#endif // MODEM_GPU_LOCK_H
