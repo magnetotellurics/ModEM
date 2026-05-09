@@ -1,14 +1,9 @@
-#include <new>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <complex.h>
 #include "hip/hip_runtime.h"
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <unistd.h>
-#include <atomic>
 #if defined(FG)
 #include "hip/rccl.h"
 #endif
@@ -555,57 +550,7 @@ extern "C" int cf_resetFlag(int dev_idx)
     return 0;
 }
 
-// ============================================================================
-// Shared-memory GPU lock: cross-process atomic occupation flags.
-// Identical logic to CUDA version
-// cf_hookDev() acquires (CAS 0->1), cf_releaseDev() releases (set to 0).
-// ============================================================================
-
-static constexpr int LOCK_MAX_DEVICES = 64;
-
-// Raw byte flag at offset 0 — no C++ object lifetime requirements.
-// Used *only* to coordinate who runs placement-new on the atomics.
-struct alignas(64) GpuLock {
-    unsigned char constructed;            // 0 = raw storage, !=0 = atomics live
-    std::atomic<int> initialized;         // cross-process init guard (0->1 CAS)
-    std::atomic<int> occupied[LOCK_MAX_DEVICES];
-};
-
-static GpuLock* g_lock       = nullptr;
-static bool     g_lock_inited = false;
-
-static int init_gpu_lock()
-{
-    const char* name = "/ModEM_gpu_lock";
-
-    int fd = shm_open(name, O_RDWR, 0666);
-    if (fd < 0) {
-        // Doesn't exist -- create it
-        fd = shm_open(name, O_CREAT | O_RDWR, 0666);
-        if (fd < 0) return 1;
-        if (ftruncate(fd, sizeof(GpuLock)) < 0) { close(fd); return 1; }
-    }
-
-    g_lock = static_cast<GpuLock*>(mmap(nullptr, sizeof(GpuLock),
-                                         PROT_READ | PROT_WRITE,
-                                         MAP_SHARED, fd, 0));
-    close(fd);
-    if (g_lock == MAP_FAILED) { g_lock = nullptr; return 1; }
-
-    // Begin object lifetimes once across all processes...
-    if (__atomic_test_and_set(&g_lock->constructed, __ATOMIC_ACQ_REL)) {
-        // we are not the first - just wait...
-    } else {
-        // we are the first - need to construct the atomics in shared memory
-        // begin lifetimes of all std::atomic<int> via placement-new.
-        new (&g_lock->initialized) std::atomic<int>(0);
-        for (int i = 0; i < LOCK_MAX_DEVICES; i++)
-            new (&g_lock->occupied[i]) std::atomic<int>(0);
-    }
-
-    g_lock_inited = true;
-    return 0;
-}
+#include "gpu_lock.h"
 
 // function called from main fortran program, this is different from the original cuda version
 // as we do not have nvml in hip, we will just use the hip api to check the free memory after claiming the lock
@@ -674,16 +619,16 @@ extern "C" int cf_hookDev(int dev_idx)
     // Atomic lock loop: CAS 0->1 to claim the GPU
     while (true)
     {
-        int expected = 0;
+        int expected = DEVICE_FREE;
         if (g_lock->occupied[dev_idx].compare_exchange_strong(
-                expected, 1, std::memory_order_acq_rel))
+                expected, DEVICE_IN_USE, std::memory_order_acq_rel))
         {
             // CLAIMED -- we are the sole occupant
             // Safety: verify memory is actually available after acquiring lock
             err = hipMemGetInfo(&freeBytes, &totalBytes);
             if (err != hipSuccess)
             {
-                g_lock->occupied[dev_idx].store(0, std::memory_order_release);
+                g_lock->occupied[dev_idx].store(DEVICE_FREE, std::memory_order_release);
                 printf("Failed to get usage for device %i: %s\n", dev_idx,
                        hipGetErrorString(err));
                 goto Error;
@@ -691,7 +636,7 @@ extern "C" int cf_hookDev(int dev_idx)
             err = hipSetDeviceFlags(hipDeviceScheduleYield);
 	    if (err != hipSuccess)
 	    {
-		g_lock->occupied[dev_idx].store(0, std::memory_order_release);
+		g_lock->occupied[dev_idx].store(DEVICE_FREE, std::memory_order_release);
 		printf("Failed to set the device flag %i: %s\n", dev_idx, 
 		       hipGetErrorString(err));
 		goto Error;
@@ -712,24 +657,3 @@ Error:
     printf("Error: Failed to attach to device: %i \n", dev_idx);
     return 1;
 }
-
-// Release the GPU lock so other processes can hook on
-extern "C" void cf_releaseDev(int dev_idx)
-{
-    if (g_lock_inited && g_lock != nullptr &&
-        dev_idx >= 0 && dev_idx < LOCK_MAX_DEVICES)
-    {
-        g_lock->occupied[dev_idx].store(0, std::memory_order_release);
-    }
-}
-
-// Cleanup shared memory on program exit
-extern "C" void cf_cleanupLock()
-{
-    if (g_lock != nullptr && g_lock != MAP_FAILED)
-        munmap(g_lock, sizeof(GpuLock));
-    shm_unlink("/ModEM_gpu_lock");
-    g_lock = nullptr;
-    g_lock_inited = false;
-}
-
