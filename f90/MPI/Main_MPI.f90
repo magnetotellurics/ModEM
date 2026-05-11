@@ -1244,13 +1244,14 @@ subroutine Master_job_PQMult(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, 
 
     integer, intent(in) :: nTx
     type(dataVectorMTX_t), intent(in)    :: d
-    type(solnVectorMTX_t), intent(in)  :: eAll_out
+    type(solnVectorMTX_t), intent(inout)  :: eAll_out
     type(solnVectorMTX_t), intent(in)  :: eAll_temp
     type (modelParam_t), intent(in)    :: sigma
     type (modelParam_t), intent(inout) :: dsigma
     type(modelParam_t),intent(inout),pointer,dimension(:), optional :: s_hat
     character(len=*), intent(in), optional :: label
     character(len=80) :: label_lcl
+    character(len=80), parameter :: job_name = 'PQMULT'
 
     if (present(label)) then
         label_lcl = label
@@ -1262,7 +1263,8 @@ subroutine Master_job_PQMult(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, 
     call ModEM_timers_start('PQMult')
 
     if (EsMgr_save_in_file) then
-        call Master_job_PQMult_IO(nTx, sigma, dsigma, label=label_lcl)
+        write(0,*) "Calling master_job_distribute_taskes"
+        call Master_job_Distribute_Taskes(job_name, nTx, sigma, eAll_out=eAll_out, dsigma=dsigma, label=label_lcl)
     else
         call Master_job_PQMult_main_only(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat)
     end if
@@ -1916,7 +1918,7 @@ end Subroutine Master_job_Stop_MESSAGE
 !********************** Master Distribute Tasks *****************************
 
 subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
-    &   comm, eAll_in, label)
+    &   comm, eAll_in, dsigma, label)
 
      implicit none
      character(80) , intent(in)                          :: job_name
@@ -1925,15 +1927,17 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
      type(solnVectorMTX_t), intent(in), optional         :: eAll_in
      integer, intent(in), optional                       :: comm
      type(solnVectorMTX_t), intent(inout), optional      :: eAll_out     
+     type(modelParam_t),intent(inout), optional            :: dsigma
      character(len=*), intent(in), optional             :: label
      !Local
-     Integer        :: iper,ipol,ipol1,ijob,total_jobs
+     Integer        :: iper,ipol,ipol1,ijob,total_jobs,iTx
      Integer        :: bcounter, tcounter, robin
      Integer        :: per_index,pol_index,des_index
      logical        :: keep_soln,savedSolns,ascend,trial_lcl
      integer        :: comm_current, size_current
      double precision :: now, just, time_passed
      character(len=80) :: label_lcl
+     type (modelParam_t), dimension(:), allocatable :: dsigma_recv
 
      savedSolns = present(eAll_in)
      ! over-ride the default communicator, if needed
@@ -1952,6 +1956,10 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
      else
          label_lcl = 'NULL'
      end if
+
+     if (job_name == 'PQMULT') then
+         allocate(dsigma_recv(nTx))
+     end if 
 
 
      call get_nPol_MPI(eAll_out%solns(1)) 
@@ -1983,11 +1991,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
      if (robin.lt.1) then
          robin = 1
      end if
-     ! for debug
-     ! if (trim(job_name).eq. 'JmultT') then
-     !     write(6,*)'robin = ', robin
-     !    write(6,*)'total jobs = ', total_jobs
-     ! endif
+
      do ijob=1,total_jobs !loop through all jobs
          ! loop through all jobs, until we run out of workers
          who=who+1
@@ -2020,6 +2024,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
                  call EsMgr_save(eAll_in % solns(which_per), to=who)
              end do   
          end if  
+
          write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name),     &
     &         ': Send Per. # ',per_index , ' : Pol #', pol_index,    &
     &         ' to node # ', who
@@ -2045,7 +2050,24 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          which_pol=worker_job_task%pol_index
 
          modem_ctx % comm_current = comm_current
-         call EsMgr_get(eAll_out % solns(which_per), which_pol, 1, from=who)
+
+         if (trim(job_name) == 'FORWARD' .or. trim(job_name) == 'JmultT'  & 
+                .or. trim(job_name) == 'Jmult') then
+             call EsMgr_get(eAll_out % solns(which_per), which_pol, 1, from=who)
+        end if
+
+        if (trim(job_name) == 'PQMULT') then
+            iTx = worker_job_task % per_index
+            dest = worker_job_task % taskid
+
+            dsigma_recv(iTx) = sigma
+            call zero(dsigma_recv(iTx))
+
+            call create_model_param_place_holder(dsigma_recv(iTx))
+            call MPI_Recv(sigma_para_vec, Nbytes, MPI_PACKED, dest, &
+                FROM_WORKER, comm_current, MPI_STATUS_IGNORE, ierr)
+            call Unpack_model_para_values(dsigma_recv(iTx))
+        end if
 
          write(ioMPI,'(a10,a16,i5,a8,i5,a11,i5)')trim(job_name) ,        &
     &   ': Receive Per # ',which_per ,' and Pol # ', which_pol ,' from ',&
@@ -2120,6 +2142,15 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          ! avoid the extra overheads
          call Master_job_Regroup(nTx,nPol_MPI,comm)
      endif
+
+     if (trim(job_name) .eq. 'PQMULT') then
+        ! Combine the dsigma_recv into dsigma...
+        do iTx = 1, nTx
+            call linComb_modelParam(ONE, dsigma, ONE, dsigma_recv(iTx), dsigma)
+            call deall_modelParam(dsigma_recv(iTx))
+        end do
+     end if
+
      if (associated(eAll_para_vec)) then
          deallocate(eAll_para_vec)
      end if
