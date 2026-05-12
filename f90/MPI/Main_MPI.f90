@@ -1210,7 +1210,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm,label)
      !call write_solnVectorMTX(20,file_name,eAll_out)
 
      ! Calculate PQMult
-     call Master_job_PQMult(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, label=label_lcl)
+     call Master_job_PQMultT(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, label=label_lcl)
 
      endtime=MPI_Wtime()
      time_used = endtime-starttime
@@ -1235,10 +1235,10 @@ end Subroutine Master_job_JmultT
 ! Compute the model response by either using Master_job_PQMult_main_only
 ! or Master_job_PQMult_IO:
 !
-! * Master_job_PQMult_main_only - Runs if EsMgr_save_in_file == .false.
+! * Master_job_Distribute_Taskes - Runs if EsMgr_save_in_file == .false.
 ! * Master_job_PQMult_IO        - Runs if EsMgr_save_in_file == .true.
 !
-subroutine Master_job_PQMult(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, label)
+subroutine Master_job_PQMultT(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, label)
 
     implicit none
 
@@ -1251,7 +1251,7 @@ subroutine Master_job_PQMult(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, 
     type(modelParam_t),intent(inout),pointer,dimension(:), optional :: s_hat
     character(len=*), intent(in), optional :: label
     character(len=80) :: label_lcl
-    character(len=80), parameter :: job_name = 'PQMULT'
+    character(len=80), parameter :: job_name = 'PQMULTT'
 
     if (present(label)) then
         label_lcl = label
@@ -1259,26 +1259,26 @@ subroutine Master_job_PQMult(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat, 
         label_lcl = 'NULL'
     end if
 
-    call ModEM_timers_create('PQMult')
-    call ModEM_timers_start('PQMult')
+    call ModEM_timers_create('PQMultT')
+    call ModEM_timers_start('PQMultT')
 
     if (EsMgr_save_in_file) then
         write(0,*) "Calling master_job_distribute_taskes"
         call Master_job_Distribute_Taskes(job_name, nTx, sigma, eAll_out=eAll_out, dsigma=dsigma, label=label_lcl)
     else
-        call Master_job_PQMult_main_only(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat)
+        call Master_job_PQMultT_main_only(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat)
     end if
 
-    call ModEM_timers_stop('PQMult')
+    call ModEM_timers_stop('PQMultT')
 
-end subroutine Master_job_PQMult
+end subroutine Master_job_PQMultT
 
 
 ! Master_job_PQMult_main_only - Calculate the model response on
 ! the main task only. The main task will need to have eAll_temp set to eAll.
 !
 ! Run this function if ESmgr_save_in_file == f.alse.
-subroutine Master_job_PQMult_main_only(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat)
+subroutine Master_job_PQMultT_main_only(nTx, d, eAll_temp, eAll_out, sigma, dsigma, s_hat)
 
     implicit none
 
@@ -1320,124 +1320,7 @@ subroutine Master_job_PQMult_main_only(nTx, d, eAll_temp, eAll_out, sigma, dsigm
     call deall_modelParam(Qcomb)
     call deall_dataVectorMTX(d_temp)
 
-end subroutine Master_job_PQMult_main_only
-
-! Master_job_PQMult_IO
-!
-! Use the worker jobs to calculate the model response by
-! reading in the electric fields from files created by the ESolnManager and
-! the adjoint files.
-!
-! This function should only be used if EsMgr_init was initalized with
-! `save_in_file = .true.`/EsMgr_save_in_file = .true..
-subroutine Master_job_PQMult_IO(nTx, sigma, dsigma, label)
-
-    implicit none
-
-    integer, intent(in) :: nTx
-    type (modelParam_t), intent(in) :: sigma
-    type (modelParam_t), intent(inout) :: dsigma
-    character(len=*), intent(in), optional :: label
-
-    character(len=*), parameter :: job_name = "PQMULT"
-    type(modelParam_t), dimension(nTx) :: dsigma_recv
-    character(len=80) :: label_lcl
-
-    integer :: dest, nTasks, remainder, iTx
-    integer :: iTx_min, iTx_max, i, j, k
-    logical :: flag
-    integer :: comm_current, size_current
-
-    logical, dimension(number_of_workers) :: task_is_working
-    logical, dimension(nTx) :: transmitters_processing, transmitters_done
-    logical :: sending
-
-    if (present(label)) then
-        label_lcl = label
-    else
-        label_lcl = 'NULL'
-    end if
-
-    if (para_method.eq.0) then
-        comm_current = comm_world
-    else
-        comm_current = comm_leader
-    end if
-
-    modem_ctx % comm_current = comm_current
-    call MPI_COMM_SIZE( comm_current, size_current, ierr )
-
-    sending = .true.
-
-    task_is_working(:) = .false.
-    transmitters_processing(:) = .false.
-    transmitters_done(:) = .false.
-
-    call zero(dsigma)
-
-    do while(sending)
-        ! Send out jobs
-        do iTx = 1, nTx
-
-            if (transmitters_processing(iTx) .or. transmitters_done(iTx)) then
-                cycle
-            end if
-
-            do dest = 1, size_current - 1
-                if (task_is_working(dest)) then
-                    cycle
-                end if
-
-                ! Send the task the job
-                worker_job_task % what_to_do=trim(job_name)
-                worker_job_task % per_index = iTx
-                worker_job_task % pol_index = -1
-                worker_job_task % label = trim(label_lcl)
-
-                call create_worker_job_task_place_holder
-                call Pack_worker_job_task
-                call MPI_Send(worker_job_package, Nbytes, MPI_PACKED, dest, FROM_MASTER, comm_current, ierr)
-                transmitters_processing(iTx) = .true.
-                task_is_working(dest) = .true.
-                exit
-            end do
-        end do
-
-        ! Recv any jobs
-        ! See if anyone is sending us a message...
-        call MPI_Iprobe(MPI_ANY_SOURCE, FROM_WORKER, comm_current, flag, MPI_STATUS_IGNORE, ierr)
-        if (flag) then ! Someone is sending us a message
-            call create_worker_job_task_place_holder
-            call MPI_Recv(worker_job_package, Nbytes, MPI_PACKED, MPI_ANY_SOURCE, FROM_WORKER, comm_current, STATUS, ierr)
-            call Unpack_worker_job_task
-
-            dest = worker_job_task % taskid
-            iTx = worker_job_task % per_index
-
-            dsigma_recv(iTx) = sigma
-            call zero(dsigma_recv(iTx))
-
-            call create_model_param_place_holder(dsigma_recv(iTx))
-            call MPI_Recv(sigma_para_vec, Nbytes, MPI_PACKED, dest, FROM_WORKER, comm_current, MPI_STATUS_IGNORE, ierr)
-            call Unpack_model_para_values(dsigma_recv(iTx))
-
-            transmitters_done(iTx) = .true.
-            task_is_working(dest) = .false.
-        end if
-
-        if (all(transmitters_done(:))) then
-            sending = .false.
-            exit
-        end if
-    end do
-
-    do iTx = 1, nTx
-        call linComb_modelParam(ONE, dsigma, ONE, dsigma_recv(iTx), dsigma)
-        call deall_modelParam(dsigma_recv(iTx))
-    end do
-
-end subroutine Master_job_PQMult_IO
-
+end subroutine Master_job_PQMultT_main_only
 
 !########################    Master_job_Jmult ##############################
 Subroutine Master_job_Jmult(mHat,m,d,eAll,comm)
@@ -1957,7 +1840,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          label_lcl = 'NULL'
      end if
 
-     if (job_name == 'PQMULT') then
+     if (job_name == 'PQMULTT') then
          allocate(dsigma_recv(nTx))
      end if 
 
@@ -2056,7 +1939,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
              call EsMgr_get(eAll_out % solns(which_per), which_pol, 1, from=who)
         end if
 
-        if (trim(job_name) == 'PQMULT') then
+        if (trim(job_name) == 'PQMULTT') then
             iTx = worker_job_task % per_index
             dest = worker_job_task % taskid
 
@@ -2143,7 +2026,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
          call Master_job_Regroup(nTx,nPol_MPI,comm)
      endif
 
-     if (trim(job_name) .eq. 'PQMULT') then
+     if (trim(job_name) .eq. 'PQMULTT') then
         ! Combine the dsigma_recv into dsigma...
         do iTx = 1, nTx
             call linComb_modelParam(ONE, dsigma, ONE, dsigma_recv(iTx), dsigma)
@@ -2440,7 +2323,7 @@ Subroutine Worker_job(sigma,d)
              deallocate(data_para_vec)
              data_para_vec => null()
 
-         elseif (trim(worker_job_task%what_to_do) .eq. 'PQMULT') then
+         elseif (trim(worker_job_task%what_to_do) .eq. 'PQMULTT') then
 
              per_index = worker_job_task % per_index
              worker_job_task % taskid = taskid
@@ -2474,7 +2357,7 @@ Subroutine Worker_job(sigma,d)
 
              ! Send to Main that we are done
              call create_worker_job_task_place_holder
-             worker_job_task % what_to_do = 'PQMULT-RESP'
+             worker_job_task % what_to_do = 'PQMULTT-RESP'
              worker_job_task % taskid = rank_current
              worker_job_task % per_index = per_index
              call Pack_worker_job_task
