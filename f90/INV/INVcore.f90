@@ -194,7 +194,7 @@ Contains
    ! multiply by J^T
    call CdInvMult(res)
 #ifdef MPI
-        call Master_job_JmultT(m,res,JTd,eAll,label=label)
+        call Master_job_JmultT(m,res,JTd,eAll,label=label_lcl)
 #else
         call JmultT(m,res,JTd,eAll)
 #endif

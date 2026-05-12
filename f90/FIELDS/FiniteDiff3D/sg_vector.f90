@@ -936,7 +936,7 @@ Contains
             write(0,*) 'ERROR: Error read iostat code:', istat
             call ModEM_abort()
          else if (istat > 0) then
-            write(0, '(A, A, A)') "ERROR: Erorr when reading E % x: ", trim(fname), ' aborting!'
+            write(0, '(A, A, A)') "ERROR: Error when reading E % x: ", trim(fname), ' aborting!'
             write(0, '(A, i4.4, A, A)') 'ERROR: Error read iostat code:', istat, ' Message: ', trim(iomsg)
             call ModEM_abort()
          end if

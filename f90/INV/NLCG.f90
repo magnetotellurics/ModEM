@@ -817,8 +817,6 @@ Contains
    ! if the curvature is -ve, there is no minimum; take the initial guess
    label = FWD_F_LABEL
    if (a < 0) then
-    write(0,*) " USE STARTING UGESS"
-    stop
     starting_guess = .true.
     label = TRIAL_FWD_F_1_LABEL
     alpha = alpha_1

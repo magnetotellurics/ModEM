@@ -372,7 +372,7 @@ contains
          integer :: pol_index_lcl
 
          if (.not. e % allocated) then
-             write(0,*) "ERROR: solnVector_t (argument e) msut be allocated before calling write_solnVector"
+             write(0,*) "ERROR: solnVector_t (argument e) must be allocated before calling write_solnVector"
              write(0,*) "ERROR: Allocate it by calling `create_solnVector` first"
              call ModEM_abort()
          end if

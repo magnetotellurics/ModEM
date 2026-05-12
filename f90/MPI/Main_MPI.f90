@@ -1936,7 +1936,7 @@ subroutine Master_job_Distribute_Taskes(job_name,nTx,sigma,eAll_out, &
 
          if (trim(job_name) == 'FORWARD' .or. trim(job_name) == 'JmultT'  & 
                 .or. trim(job_name) == 'Jmult') then
-             call EsMgr_get(eAll_out % solns(which_per), which_pol, 1, from=who)
+             call EsMgr_get(eAll_out % solns(which_per), which_per, pol_index=which_pol, from=who)
         end if
 
         if (trim(job_name) == 'PQMULTT') then
@@ -2294,7 +2294,7 @@ Subroutine Worker_job(sigma,d)
              call zero_solnvector(e0)
              call zero_solnvector(e)
 
-             call EsMgr_create_e(e, per_index)
+             call EsMgr_create_e(e, worker_job_task % per_index)
 
              do per_index = start_iTx, end_iTx
                 call zero_solnvector(e0)
@@ -2328,9 +2328,8 @@ Subroutine Worker_job(sigma,d)
              per_index = worker_job_task % per_index
              worker_job_task % taskid = taskid
 
-
-             call create_solnVector(grid, 1, e0)
-             call create_solnVector(grid, 1, e)
+             call create_solnVector(grid, per_index, e0)
+             call create_solnVector(grid, per_index, e)
 
              call zero_solnvector(e0)
              call zero_solnvector(e)

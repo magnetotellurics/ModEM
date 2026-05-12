@@ -63,8 +63,8 @@ module ESolnManager
     logical :: EsMgr_save_in_file
 
     character, pointer, dimension(:) :: esmgr_holder => null()
-    integer :: esmgr_holder_bytes
-    logical :: esmgr_holder_allocated
+    integer :: esmgr_holder_bytes = 0 
+    logical :: esmgr_holder_allocated = .false.
 
     public :: FTYPE_ASCII, FTYPE_BINARY
     public :: E_FIELD_TYPE_FWD, E_FIELD_TYPE_JMULTT
@@ -127,7 +127,7 @@ contains
             save_in_file_lcl = .false.
         end if
 
-        if ( .not. (save_in_file_lcl .and. present(prefix)) ) then
+        if ( save_in_file_lcl .and. .not. present(prefix)) then
             if (EsMgr_ctx % rank_world == 0) then
                 write(0,*) "Warning: Argument 'prefix' was passed, but 'save_in_file' was not present"
                 write(0,*) "Warning: 'prefix' will not have an effect. Set 'save_in_file' to true to save"
@@ -135,7 +135,7 @@ contains
             end if
         end if
 
-        if ( .not. (save_in_file_lcl .and. present(ftype)) ) then
+        if (.not. save_in_file_lcl .and. present(ftype)) then
             if (EsMgr_ctx % rank_world == 0) then
                 write(0,*) "Warning: Argument 'ftype' was passed, but 'save_in_file' was not present"
                 write(0,*) "Warning: 'ftype' will not have an effect. Set 'save_in_file' to true when calling"
@@ -156,7 +156,7 @@ contains
         end if
 
         select case (ftype_lcl)
-            case (FTYPE_ASCII : FTYPE_BINARY)
+            case (FTYPE_ASCII, FTYPE_BINARY)
             case DEFAULT
                 write(0,*) "ERROR: ", trim(ftype_lcl), " is not a valid file type for Esoln"
                 write(0,*) "ERROR: Valid options are: [", trim(FTYPE_ASCII), " | ", trim(FTYPE_BINARY), "]"
@@ -310,7 +310,7 @@ contains
             PREFIX_FNAME_FORMAT = '(A, A, A)'
             write(prefix, PREFIX_FNAME_FORMAT) trim(EsMgr_prefix), ".", trim(E_field_type)
         else if (.not. present(E_field_type) .and. use_label) then
-            PREFIX_FNAME_FORMAT = '(A, A, A)'
+            PREFIX_FNAME_FORMAT = '(A, A)'
             write(prefix, PREFIX_FNAME_FORMAT) trim(EsMgr_prefix), ".", trim(label)
         else
             PREFIX_FNAME_FORMAT = '(A, A)'
