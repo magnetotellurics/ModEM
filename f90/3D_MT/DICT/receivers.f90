@@ -38,6 +38,7 @@ module receivers
      character(50)                      ::  id_ref=''
      ! for efficiency, we may initialize with padding, then trim to only leave what's been read
      logical                            ::  defined = .false.
+     integer :: iRx = 0
   end type MTrx
 
   ! receiver dictionary for 3D MT data will be an array of
@@ -46,11 +47,19 @@ module receivers
   !  data functional module, and can thus be private
   type (MTrx), pointer, save, public, dimension(:) :: rxDict
 
+  type :: MTrx_hash_map_t
+      type (MTrx), pointer :: ptr => null()
+  end type MTrx_hash_map_t
+
+  type (MTrx_hash_map_t), dimension(:), pointer :: rx_map => null()
+
   ! for efficiency, we now initialize with MAX_NRX and trim after reading the file
   integer, parameter                    :: MAX_NRX = 200000
+  integer, public :: current_rx_count = 0
 
 
 Contains
+
 
   ! **************************************************************************
   ! Initializes and sets up receiver dictionary
@@ -62,14 +71,18 @@ Contains
     real(kind=prec), intent(in), optional       :: siteLocations(nSites,3)
     character(*), intent(in), optional          :: siteIDs(nSites)
 
-
     !  local variables
     integer      :: i,istat
     character(3) :: id
 
     if (.not. associated(rxDict)) then
       allocate(rxDict(nSites),STAT=istat)
+      allocate(rx_map(nSites),stat=istat)
     end if
+
+    do i = 1, nSites
+        rx_map(i) % ptr => null()
+    end do
 
     if (present(siteLocations)) then
       do i = 1,nSites
@@ -83,7 +96,45 @@ Contains
       end do
     end if
 
+    current_rx_count = 0
+
   end subroutine setup_rxDict
+
+  function hash_fnv_1a(key) result(hash)
+      
+      use iso_fortran_env, only: int32, int64
+
+      implicit none
+
+      character(len=*), intent(in) :: key
+      integer(int64), parameter :: FNV_OFFSET = 1469598103934665603_int64
+      integer(int64), parameter :: FNV_PRIME  = 1099511628211_int64
+      integer(int64) :: hash
+      integer :: i, n
+
+      hash = FNV_OFFSET
+      n = len_trim(key)
+      do i = 1, n
+         hash = ieor(hash, int(iachar(key(i:i)), int64))
+         hash = hash * FNV_PRIME
+      end do
+
+  end function hash_fnv_1a
+
+
+  subroutine calculate_rx_index(code, total_rxs, idx)
+
+      implicit none
+
+      character(len=*), intent(in) :: code
+      integer, intent(in) :: total_rxs
+      integer, intent(out) :: idx
+      integer :: hash_key
+
+      hash_key = hash_fnv_1a(trim(code))
+      idx = modulo(hash_key, total_rxs) + 1
+
+  end subroutine calculate_rx_index
 
 !**********************************************************************
 ! Updates the receiver dictionary with a new location and site ID.
@@ -92,23 +143,28 @@ Contains
 ! a small number of values, so convenience is much more of an issue here!
 ! NM: modified to include referance site info.
 
-function update_rxDict(loc,id,Rx_azi,loc_ref,id_ref) result (iRx)
+function update_rxDict(loc,id,Rx_azi,loc_ref,id_ref,code, total_rxs) result (iRx)
 
      character(*), intent(in)            :: id
      real(kind=prec), intent(in)         :: loc(3)
      real(kind=prec),intent(in),optional :: Rx_azi
      real(kind=prec),intent(in),optional :: loc_ref(3)
      character(*), intent(in),optional   :: id_ref
+     character(*), intent(in),optional   :: code
+     integer, intent(in), optional       :: total_rxs
      integer                             :: iRx
      ! local
-     type(MTrx)                          :: new
+     type(MTrx), target                  :: new
      type(MTrx), pointer, dimension(:)   :: temp
      integer                             :: nRx, istat,i
      logical							 :: new_Rx
+     integer :: hash_idx
 
      ! Create a receiver for this location
      new%id = id
      new%x  = loc
+
+     call calculate_rx_index(code, total_rxs, hash_idx)
 
      if (present(loc_ref)) then
      	new%r  = loc_ref
@@ -118,10 +174,10 @@ function update_rxDict(loc,id,Rx_azi,loc_ref,id_ref) result (iRx)
      if (present(Rx_azi)) then
      	new%Rx_azi  = Rx_azi
      end if	 
-	 
 
      ! If rxDict doesn't yet exist, create it
      if(.not. associated(rxDict)) then
+        write(0,*) " we are allocating rxDict"
      	allocate(rxDict(1),STAT=istat)
      	rxDict(1) = new
      	iRx = 1
@@ -129,48 +185,50 @@ function update_rxDict(loc,id,Rx_azi,loc_ref,id_ref) result (iRx)
      	return
      end if
 
-     nRx = count_rx()
+     !nRx = count_rx()
 
-     ! If this site isn't new, do nothing, unless a new ref. site is found in case of Inter-Stations TF.
-     do i = 1,nRx
-     	if (new%id .eq. rxDict(i)%id) then
-           if (present(loc_ref)) then
-           !Check if the this site is associated with the same Ref. site. If not, then continue and append another site to the Rx dictionary. 
-              if (new%id_ref .eq. rxDict(i)%id_ref) then 
-                 rxDict(i)%r=loc_ref
-                 rxDict(i)%id_ref=id_ref
-                 iRx=i
-                 new_Rx = .false.
-                 return
-              end if   
-           elseif (present(Rx_azi)) then
-              ! Check if the this site has same azimuth as what we have already in the Dic -
-              ! this is only well-defined for CSEM; for MT, Rx_azi is not used since we're supporting
-              ! the possibility that each field component has its own orientation (stored in DataSpace).
-              if (new%Rx_azi .eq. rxDict(i)%Rx_azi) then 
-                 iRx=i
-                 new_Rx = .false.
-                 return
-              end if              		   
-           else    
-            iRx=i
-            new_Rx = .false.
-            return
-           end if 
-     	end if
-     end do
+     if (associated(rx_map(hash_idx) % ptr)) then
+        if (present(loc_ref)) then
+           if (new%id_ref .eq. rx_map(hash_idx) % ptr % id_ref) then 
+              rx_map(hash_idx) % ptr %r=loc_ref
+              rx_map(hash_idx) % ptr %id_ref=id_ref
+              iRx= rx_map(hash_idx) % ptr % iRx
+              new_Rx = .false.
+              return
+           end if   
+        elseif (present(Rx_azi)) then
+           ! Check if the this site has same azimuth as what we have already in the Dic -
+           ! this is only well-defined for CSEM; for MT, Rx_azi is not used since we're supporting
+           ! the possibility that each field component has its own orientation (stored in DataSpace).
+           if (new%Rx_azi .eq. rx_map(hash_idx) % ptr %Rx_azi) then 
+              iRx= rx_map(hash_idx) % ptr % iRx
+              new_Rx = .false.
+              return
+           end if              		   
+        else    
+         iRx= rx_map(hash_idx) % ptr % iRx
+         new_Rx = .false.
+         return
+        end if 
+     end if
 
      ! If the site really is new, append to the end of the dictionary
      new_Rx = .true.
      new%defined = .true.
-     if (nRx < size(rxDict)) then
-         iRx = nRx+1
+     new % iRx = current_rx_count
+     iRx = current_rx_count
+     if (current_rx_count < size(rxDict)) then
+         current_rx_count = current_rx_count + 1
+         iRx = current_rx_count
          rxDict(iRx) = new
      else
          write(0,*) 'ERROR: The number of receivers (sites) in file has exceeded the hard-coded maximum', MAX_NRX
          write(0,*) 'ERROR: Please edit MAX_NRX in receivers.f90 and recompile'
          call ModEM_abort()
      end if
+
+     !write(0,*) iRx, trim(code), hash_idx
+     rx_map(hash_idx) % ptr => rxDict(iRx)
 
   end function update_rxDict
 
@@ -207,7 +265,7 @@ function update_rxDict(loc,id,Rx_azi,loc_ref,id_ref) result (iRx)
         return
      end if
 
-     nRx = count_rx()
+     !nRx = count_rx()
      write(iounit,*) nRx, '   Receivers'
      do iRx = 1, nRx
         write(iounit,'(i6,2x,a20,4f12.3,a20)') iRx,trim(rxDict(iRx)%id),rxDict(iRx)%x,&
@@ -274,12 +332,13 @@ function update_rxDict(loc,id,Rx_azi,loc_ref,id_ref) result (iRx)
 
   ! **************************************************************************
   ! Trims the tail end of the pre-allocated rxDict
-  subroutine trim_rxDict()
+  subroutine trim_rxDict(nRx)
 
+     integer, intent(in) :: nRx
      type(MTrx), pointer, dimension(:)   :: temp
-     integer                             :: nRx, istat
+     integer                             :: istat
 
-    nRx = count_rx()
+    !nRx = count_rx()
 
     if (associated(rxDict)) then
        allocate(temp(nRx),STAT=istat)
@@ -289,6 +348,8 @@ function update_rxDict(loc,id,Rx_azi,loc_ref,id_ref) result (iRx)
        rxDict = temp
        deallocate(temp,STAT=istat)
     end if
+
+    write(0,*) 'rxDict: ', size(rxDict)
 
   end subroutine trim_rxDict
 

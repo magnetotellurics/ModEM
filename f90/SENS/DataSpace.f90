@@ -1739,7 +1739,8 @@ Contains
             if ((d%d(j)%data(i)%txType == iTxt) .and. (d%d(j)%data(i)%dataType == iDt)) then
                 tx_index(d%d(j)%tx) = j
                 dt_index(d%d(j)%tx) = i
-                do k = 1,d%d(j)%data(i)%nSite
+                write(0,*) d % d(j) % data(i) % nSite - 1
+                do k = 1,d%d(j)%data(i)%nSite - 1
                     rx_index(d%d(j)%data(i)%tx,d%d(j)%data(i)%rx(k)) = k
                 enddo
             endif

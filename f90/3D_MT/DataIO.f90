@@ -825,11 +825,12 @@ Contains
                 end if
 
                 ! Liu Zhongyin, 2019.08.27, add new codes for reading data
-                backspace(ioDat)
+                !backspace(ioDat)
                 call strcount(tmpline, ' ', ncount)
                 select case (ncount)
                 case(11)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
+                    !read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
+                    read(tmpline,*) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
                     Hxangle = fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
@@ -837,7 +838,7 @@ Contains
                     Eyangle = Exangle + 90.0
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(12)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle
+                    read(tmpline,*) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Hxangle
                     Hxangle_ref = 0.0
@@ -845,7 +846,7 @@ Contains
                     Eyangle = Exangle + 90.0
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(13)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle
+                    read(tmpline,*) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Hxangle
                     Hxangle_ref = 0.0
@@ -853,7 +854,7 @@ Contains
                     Eyangle = Exangle + 90.0
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(14)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Exangle
+                    read(tmpline,*) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Exangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
@@ -861,7 +862,7 @@ Contains
                     Eyangle = Exangle + 90.0
                     Hyangle_ref = Hxangle_ref + 90.0
                 case(15)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Exangle,Eyangle
+                    read(tmpline,*) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Exangle,Eyangle
                     Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
                     Hxangle_ref = 0.0
@@ -895,7 +896,7 @@ Contains
                     x(1) = lat
                     x(2) = lon
                 end if
-                iRx = update_rxDict(x,siteid)
+                iRx = update_rxDict(x, siteid, code=code, total_rxs=nRx)
 
             case(Full_Interstation_TF)
                 read(ioDat,'(a)',iostat=ios) tmpline
@@ -1199,19 +1200,24 @@ Contains
     write(0,*)
 
     ! Now reallocate rxDict to only include sites that have benn found in file
-    call trim_rxDict()
 
     ! Finally, set up the index vectors in the data type dictionary - used for output
     nTxt = 5
     nTx = size(txDict)
-    nRx = size(rxDict)
+    !nTx = 
+    !nRx = size(rxDict)
+    nRx = current_rx_count
+
+    call trim_rxDict(nRx)
+
+    write(0,*) 'nTx: ', nTx, ' nRx:', nRx
     do iTxt = 1,nTxt
     	do iDt = 1,nDt
 		allocate(fileInfo(iTxt,iDt)%tx_index(nTx),STAT=istat)
 	        allocate(fileInfo(iTxt,iDt)%dt_index(nTx),STAT=istat)
 	        allocate(fileInfo(iTxt,iDt)%rx_index(nTx,nRx),STAT=istat)
 	        call index_dataVectorMTX(allData,iTxt,iDt,fileInfo(iTxt,iDt)%tx_index,fileInfo(iTxt,iDt)%dt_index,fileInfo(iTxt,iDt)%rx_index)
-	end do
+        end do
     end do
 
    end subroutine read_Z_list
