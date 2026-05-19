@@ -164,17 +164,17 @@ __global__ void reduce_real(double *a, double s, const int N)
     }
 }
 
-// function to wait for sometime
-void sleep(float seconds)
-{
+// function to wait for sometime (accepts fractional seconds)
+void isleep(float seconds)
+{   
     // Converting time into milli_seconds
-    int milli_seconds = 1000 * seconds;
-    // Storing start time
+    int milli_seconds = int(1000.0 * seconds);
+    // Storing start time 
     clock_t start_time = clock();
     // looping till required time is not achieved
     while (clock() < start_time + milli_seconds)
         ;
-}
+} 
 
 // function called from main fortran program
 // single to double conversion
@@ -538,7 +538,7 @@ extern "C" int cf_resetFlag(int dev_idx)
     }
     else
     {
-        sleep(0.1);
+        isleep(0.05);
         err = hipSetDeviceFlags(hipDeviceScheduleYield);
         if (err != hipSuccess)
         {
@@ -550,16 +550,19 @@ extern "C" int cf_resetFlag(int dev_idx)
     return 0;
 }
 
-// function called from main fortran program 
+#include "gpu_lock.h"
+
+// function called from main fortran program, this is different from the original cuda version
+// as we do not have nvml in hip, we will just use the hip api to check the free memory after claiming the lock
 extern "C" int cf_hookDev(int dev_idx)
 {
     hipDeviceProp_t dev_prop;
     hipError_t err;
     size_t freeBytes, totalBytes, usedBytes;
     int nDevices;
-    unsigned int flag = 0;
     double memusage;
      
+    // unsigned int flag = 0;
     // unsigned int i;
     err = hipGetDeviceCount(&nDevices);
     if (err != hipSuccess) 
@@ -567,10 +570,11 @@ extern "C" int cf_hookDev(int dev_idx)
         printf("Error: Failed to inquire the number of devices %s\n", hipGetErrorString(err));
         return 1;
     }
-    // see if we have enough number of device
-    if (dev_idx + 1 > nDevices) 
-    { 
-        printf(" inquired device idx = %i, nDevices = %i \n", dev_idx, nDevices);
+    // Validate dev_idx before any lock or HIP access:
+    if (dev_idx < 0 || dev_idx >= nDevices || dev_idx >= LOCK_MAX_DEVICES)
+    {
+        printf(" inquired device idx = %i, nDevices = %d, LOCK_MAX_DEVICES = %d \n",
+               dev_idx, nDevices, LOCK_MAX_DEVICES);
         printf(" Error: device idx out of range! \n");
         goto Error;
     }
@@ -597,58 +601,59 @@ extern "C" int cf_hookDev(int dev_idx)
 	printf(" WARNING: integrated device found for device: %i ! \n", dev_idx);
 	printf(" this may lead to unsupported computation error...\n");
     }
-    //now try to hook on to that device
+    // Init shared-memory lock (note that any rank can trigger)
+    if (!g_lock_inited && init_gpu_lock() != 0)
+    {
+        printf("Error: failed to init GPU lock shared memory\n");
+        goto Error;
+    }
+    // set the device context before claiming the lock.
     err = hipSetDevice(dev_idx);
     if (err != hipSuccess)
     {
         printf("Failed to set device %i: %u \n", dev_idx, err);
-        goto Error;
+        return 1;
     }
+
     // now try to get affiliated device
-    while(true)
+    // Atomic lock loop: CAS 0->1 to claim the GPU
+    while (true)
     {
-        // try to get some info for the device
-        err =  hipMemGetInfo(&freeBytes, &totalBytes);
-        if (err != hipSuccess)
+        int expected = DEVICE_FREE;
+        if (g_lock->occupied[dev_idx].compare_exchange_strong(
+                expected, DEVICE_IN_USE, std::memory_order_acq_rel))
         {
-            printf("Failed to get usage for device %i: %s\n", dev_idx, 
-                hipGetErrorString(err));
-            goto Error;
-        }
-        usedBytes = totalBytes - freeBytes;
-        memusage = 100.0*usedBytes/totalBytes;
-        // now get some device flags
-        err = hipGetDeviceFlags(&flag);
-        if (err != hipSuccess)
-        {
-            printf("Failed to get the device flags %i: %s\n", dev_idx, 
-               hipGetErrorString(err));
-        }
-        // printf("Dev = %i, flag = %i \n", dev_idx, flag);
-        if (flag != hipDeviceScheduleYield && memusage < 50)
-        // if (memusage < 50)
-        // if (flag != hipDeviceScheduleYield)
-        {
-            // If the number of HIP contexts is greater than the number of 
-            // logical processors in the system, use Spin scheduling. 
-            // Else use Yield scheduling.
-            err = hipSetDeviceFlags(hipDeviceScheduleYield);
+            // CLAIMED -- we are the sole occupant
+            // Safety: verify memory is actually available after acquiring lock
+            err = hipMemGetInfo(&freeBytes, &totalBytes);
             if (err != hipSuccess)
             {
-                printf("Failed to set the device flag %i: %s\n", dev_idx, 
-                  hipGetErrorString(err));
+                g_lock->occupied[dev_idx].store(DEVICE_FREE, std::memory_order_release);
+                printf("Failed to get usage for device %i: %s\n", dev_idx,
+                       hipGetErrorString(err));
+                goto Error;
+            }
+            err = hipSetDeviceFlags(hipDeviceScheduleYield);
+	    if (err != hipSuccess)
+	    {
+		g_lock->occupied[dev_idx].store(DEVICE_FREE, std::memory_order_release);
+		printf("Failed to set the device flag %i: %s\n", dev_idx, 
+		       hipGetErrorString(err));
+		goto Error;
 	    }
-            printf(" # Dev Status  : GPU-mem = %f %%, PCI %i: %i\n", 
+            printf(" # Dev Selected: %i. %s \n", dev_idx, dev_prop.name);
+	    // unlike the cuda version, we do not have the nvml to report the GPU memory usage
+	    // just calculate the used memory percentage and report that
+            usedBytes = totalBytes - freeBytes;
+            memusage = 100.0*usedBytes/totalBytes;
+            printf(" # Dev Status  : GPU-mem = %5.2f %%, PCI %i: %i\n", 
                    memusage, dev_prop.pciBusID, dev_prop.pciDeviceID );
-            break;
+            return 0;
         }
         // else let it spin
-        sleep(0.05);
+        isleep(0.05);
     }
-    printf(" # Dev Selected: %i. %s \n", dev_idx, dev_prop.name);
-    return 0;
 Error:
     printf("Error: Failed to attach to device: %i \n", dev_idx);
     return 1;
 }
-

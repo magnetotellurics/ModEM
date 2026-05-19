@@ -1698,6 +1698,21 @@ module cudaFortMap
    !   ! get the number of GPU devices  
    ! end function kernelc_getDevNum
 
+   ! cf_releaseDev - release the GPU gate so other processes can hook on
+   subroutine cf_releaseDev(device_idx) &
+    &              bind(C, name="cf_releaseDev")
+     use iso_c_binding
+     implicit none
+     integer(c_int), value :: device_idx
+   end subroutine cf_releaseDev
+
+   ! cf_cleanupLock - cleanup shared memory lock on program exit
+   subroutine cf_cleanupLock() &
+    &              bind(C, name="cf_cleanupLock")
+     use iso_c_binding
+     implicit none
+   end subroutine cf_cleanupLock
+
    end interface  
 
 end module
