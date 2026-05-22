@@ -1,7 +1,11 @@
 # f90/3D_MT/ioMod CMakeLists.txt
 
-target_sources(${MODEM_EXE}
-    PRIVATE ioAscii.f90
-    #PRIVATE ioBinary.f90
-    #PRIVATE ioHDF5.f90
-)
+if (BUILD_HDF5)
+    target_sources(${MODEM_EXE}
+        PRIVATE ioHDF5.f90
+    )
+else()
+    target_sources(${MODEM_EXE}
+        PRIVATE ioAscii.f90
+    )
+endif()
