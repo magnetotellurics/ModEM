@@ -104,3 +104,8 @@ if (BUILD_GPU STREQUAL "CUDA")
 elseif (BUILD_GPU STREQUAL "HIP")
     target_link_libraries(${MODEM_EXE} PRIVATE "-lamdhip64 -lhipblas -lhipsparse -lstdc++")
 endif()
+
+if (BUILD_HDF5)
+    find_package(HDF5 REQUIRED COMPONENTS Fortran)
+    target_link_libraries(${MODEM_EXE} PRIVATE hdf5::hdf5_fortran)
+endif()

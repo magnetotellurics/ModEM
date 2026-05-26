@@ -7,6 +7,7 @@ project(ModEM VERSION 0
 enable_language(Fortran)
 
 option(BUILD_MPI "Build MPI version of MPI" ON)
+option(BUILD_HDF5 "Build with HDF5" OFF)
 option(FG "Build the Fine-Grained ModEM Version - (Only compatiable with SP2)" OFF)
 option(USE_C_TIMERS "Use the C timers in ModEM_timers" OFF)
 
@@ -21,13 +22,14 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+
 set(SUPPORTED_FORWARD_FORMULATIONS "MF;SP;SP2")
 set(SUPPORTED_MODEM_DIMS "2D;3D")
 set(SUPPORTED_GPU_OPTS "off;OFF;CUDA;HIP")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
-if (USE_C_TIMERS)
+if (USE_C_TIMERS OR BUILD_HDF5)
         enable_language(C)
 endif()
 
@@ -74,6 +76,10 @@ if (BUILD_MPI)
         add_compile_definitions(MPI)
 endif()
 
+if (BUILD_HDF5)
+        add_compile_definitions(HDF5)
+endif()
+
 if (BUILD_GPU STREQUAL "CUDA")
         add_compile_definitions(CUDA)
 elseif (BUILD_GPU STREQUAL "HIP")
@@ -83,6 +89,7 @@ endif()
 if (FG)
         add_compile_definitions(FG)
 endif()
+
 
 # Source Code
 add_subdirectory(f90)

@@ -21,8 +21,6 @@ add_subdirectory(modelParam)
 
 target_sources(${MODEM_EXE} 
     PRIVATE DataFunc.f90
-    #PRIVATE DataIO_HDF5.f90 
-    PRIVATE DataIO.f90
     PRIVATE EMfieldInterp.f90
     PRIVATE ForwardSolver.f90
     PRIVATE GridCalc.f90
@@ -38,5 +36,15 @@ target_sources(${MODEM_EXE}
 if(BUILD_MPI)
     target_sources(${MODEM_EXE}
         PRIVATE Sub_MPI.f90
+    )
+endif()
+
+if(BUILD_HDF5)
+    target_sources(${MODEM_EXE}
+        PRIVATE DataIO_HDF5.f90
+    )
+else()
+    target_sources(${MODEM_EXE}
+        PRIVATE DataIO.f90
     )
 endif()
