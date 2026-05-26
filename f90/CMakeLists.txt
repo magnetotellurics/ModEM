@@ -65,7 +65,10 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel" OR CMAKE_Fortran_COMPILER_ID 
         -qopenmp
     )
 else()
-    message(FATAL_ERROR "Unknown/Unsupported Fortran Compiler: '${CMAKE_Fortran_COMPILER_ID}' - Supported compilers are < GNU | Ifort")
+    message(FATAL_ERROR
+        "Unknown/Unsupported Fortran Compiler: '${CMAKE_Fortran_COMPILER_ID}'\n"
+        "- Supported compilers are < GNU | ifort (Legacy Intel compiler) | ifx (Intel OneAPI compiler)>\n"
+        "- Of course you will need to specify the MPI wrapper: `-DCMAKE_Fortran_COMPILER=mpifort`")
 endif()
 
 
