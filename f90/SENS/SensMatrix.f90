@@ -5,6 +5,7 @@ module sensMatrix
   use utilities
   use DataSpace
   use ModelSpace
+  use ModelSpaceIO
   !    need to use dictionaries, so that the dictionary can  be written out with the sensitiviy matrix;
   !    without this metadata, sensitivity matrix is USELESS!
   use transmitters

@@ -43,6 +43,8 @@ program Mod3DMT
      call ModEM_timers_create("Total Time", .true.)
 #endif
 
+      call setup_IO()
+
 
 #ifdef MPI
       if (taskid==0) then
@@ -238,7 +240,7 @@ program Mod3DMT
          write(0,*) 'Output JT_multi_Tx_vec...'
          write(header,*) 'JT multi_Tx vectors'
          write(ioSens) header
-         call writeVec_modelParam_binary(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
+         call writeVec_modelParam(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
          close(ioSens)
 
      case (INVERSE)
@@ -295,6 +297,8 @@ program Mod3DMT
         end select
         call write_modelParam(sigma1,cUserDef%wFile_Model)
 #endif
+     case (CONVERT)
+        call write_modelParam(sigma0,cUserDef%wFile_Model)
 
      case (DATA_FROM_E)
         ! no need to run the forward solution to compute the data functionals
@@ -419,6 +423,9 @@ program Mod3DMT
        end if
 #endif
 
+     case (VERSION)
+         write(0,*) "-V passed!"
+         call ModEM_print_version()
      case default
 
         write(0,*) 'No job ',trim(cUserDef%job),' defined.'

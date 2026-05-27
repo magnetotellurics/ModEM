@@ -3,6 +3,7 @@ module Main
 	! These subroutines are called from the main program only
 
   use ModelSpace
+  use ModelSpaceIO
   use dataspace ! dataVectorMTX_t
   use datafunc ! to deallocate rxDict
   use ForwardSolver ! txDict, solnVectorMTX
@@ -355,6 +356,15 @@ Contains
   end subroutine initGlobalData	! initGlobalData
 
 
+  subroutine setup_IO()
+
+    implicit none
+
+    call setup_modelParamIO(WS_FILE_TYPE, HDF5_FILE_TYPE)
+
+  end subroutine setup_IO
+
+
   ! ***************************************************************************
   ! * DeallGlobalData deallocates all allocatable data defined globally.
 
@@ -408,6 +418,50 @@ Contains
     endif
 
   end subroutine deallGlobalData	! deallGlobalData
+
+  subroutine ModEM_print_version()
+
+      implicit none
+
+      write(0,*) 'ModEM - Version - x.x - Built With'
+
+#ifdef FG
+      write(0,*) ' - FG   : BUILT'
+#else
+      write(0,*) ' - FG   : NOT BUILT'
+#endif
+
+#ifdef MPI
+      write(0,*) ' - MPI  : ON '
+#else
+      write(0,*) ' - MPI  : OFF'
+#endif
+
+#ifdef CUDA
+      write(0,*) ' - CUDA : ON '
+#else
+      write(0,*) ' - CUDA : OFF '
+#endif
+
+#ifdef HIP
+      write(0,*) ' - HIP  : ON'
+#else
+      write(0,*) ' - HIP  : OFF'
+#endif
+
+#ifdef HDF5
+      write(0,*) ' - HDF5 : ON'
+#else
+      write(0,*) ' - HDF5 : OFF'
+#endif
+
+#ifdef PETSC
+      write(0,*) ' - PETSC: ON'
+#else
+      write(0,*) ' - PETSC: OFF'
+#endif 
+
+  end subroutine ModEM_print_version
 
 
 end module Main

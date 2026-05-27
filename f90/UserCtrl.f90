@@ -14,11 +14,13 @@ module UserCtrl
   character*1, parameter	:: MULT_BY_J_T_multi_Tx = 'x'
   character*1, parameter	:: INVERSE = 'I'
   character*1, parameter	:: APPLY_COV = 'C'
+  character*1, parameter	:: CONVERT = 'K'
   character*1, parameter    :: EXTRACT_BC = 'b'
   character*1, parameter    :: DATA_FROM_E = 'd'
   character*1, parameter  :: TEST_GRAD = 'g'
   character*1, parameter  :: TEST_ADJ = 'A'
   character*1, parameter  :: TEST_SENS = 'S'
+  character*1, parameter  :: VERSION = 'V'
 
   ! ***************************************************************************
   ! * userdef_control contains the list of all essential input information currently
@@ -260,6 +262,9 @@ Contains
         write(*,*) '  Applies the model covariance to produce a smooth model output'
         write(*,*) '  Optionally, also specify the prior model to compute resistivities'
         write(*,*) '  from model perturbation: m = C_m^{1/2} \\tilde{m} + m_0'
+        write(*,*) '[Convert]'
+        write(*,*) ' -K rFile_Model wFile_Model'
+        write(*,*) ' '
         write(*,*) '[DATA_FROM_E]'
         write(*,*) ' -d  rFile_Model rFile_Data rFile_EMsoln wFile_Data [wFile_EMrhs]'
         write(*,*) '  Reads your input files to set up the grid and data functionals;'
@@ -280,6 +285,9 @@ Contains
         write(*,*) ' -S  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl]'
         write(*,*) '  Multiplies by the full Jacobian, row by row, to get d = J m.'
         write(*,*) '  Compare to the output of [MULT_BY_J] to test [COMPUTE_J]'
+        write(*,*) '[VERSION]'
+        write(*,*) ' -V '
+        write(*,*) '  Print information about this ModEM executable'
         write(*,*)
         write(*,*) 'Optional final argument -v [debug|full|regular|compact|result|none]'
         write(*,*) 'indicates the desired level of output to screen and to files.'
@@ -603,6 +611,10 @@ Contains
             ctrl%rFile_Prior = temp(5)
         end if
 
+      case (CONVERT)
+          write(0,*) 'Converting model: ', trim(temp(1)), trim(temp(2))
+          ctrl % rFile_model = temp(1)
+          ctrl % wFile_model = temp(2)
       case (DATA_FROM_E) ! d
         if (narg < 4) then
            write(0,*) 'Usage: -d  rFile_Model rFile_Data rFile_EMsoln wFile_Data [wFile_EMrhs wFile_EMsoln]'
@@ -837,6 +849,8 @@ Contains
         if (narg > 5) then
            ctrl%wFile_Sens = temp(6)
         end if
+      case (VERSION)
+
 
       case default
          call errStop('Unknown job. Please check your command line options')

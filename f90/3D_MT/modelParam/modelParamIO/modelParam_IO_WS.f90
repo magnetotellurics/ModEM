@@ -1,3 +1,12 @@
+module modelParam_IO_WS
+
+    use ModelSpace
+    use Griddef
+
+    implicit none
+
+contains
+
 ! I/O routines for 3D_MT modelParam - extended Weerachai Siripunvaraporn's format
 
 	!******************************************************************
@@ -206,3 +215,6 @@
 	  call deall_grid(grid)
 
     end subroutine write_modelParam_ws
+
+
+end module modelParam_IO_WS

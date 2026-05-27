@@ -24,13 +24,13 @@ target_sources(${MODEM_EXE}
     PRIVATE EMfieldInterp.f90
     PRIVATE ForwardSolver.f90
     PRIVATE GridCalc.f90
-    #PRIVATE GridCalcS.f90
     PRIVATE GridDef.f90
     PRIVATE Main.f90
-    #PRIVATE mtInvSetup.f90
     PRIVATE SolnSpace.f90
     PRIVATE SolverSens.f90
     PRIVATE Sub_MPI.f90
+    PRIVATE DataIO.f90
+    PRIVATE DataIO_ASCII.f90
 )
 
 if(BUILD_MPI)

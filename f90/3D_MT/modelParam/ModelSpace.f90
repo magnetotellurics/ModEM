@@ -35,9 +35,6 @@ module ModelSpace
 
   implicit none
 
-#ifdef HDF5
-  integer(HID_T), private, save   :: file_id, group_id, attr_id, dset_id, dspace_id, atype_id, aspace_id ! file, data set, and dataspace handles
-#endif
 
   ! supported model parameter types (conductivity only)
    character(len=80), parameter		:: LOGE = 'LOGE'
@@ -57,7 +54,6 @@ module ModelSpace
      !   public, but all attributes will be private.  Only routines in this
      !   module can use the actual attributes that define the specific realization
      !   of the model parameterization
-     private
      integer			:: Nx,Ny,NzEarth
      type(rscalar)		:: cellCond
      type(grid_t),pointer    :: grid
@@ -122,36 +118,58 @@ interface countModelParam
    MODULE PROCEDURE count_modelParam
 end interface
 
+
+abstract interface
+    subroutine write_modelparam_interface(m, cfile, comment)
+        import modelParam_t
+        type(modelParam_t), intent(in)         :: m
+        character(len=*), intent(in)           :: cfile
+        character(len=*), intent(in), optional :: comment
+    end subroutine write_modelparam_interface
+end interface
+
+
+abstract interface
+    subroutine read_modelparam_interface(grid, airLayers, m, cfile)
+        use GridDef, only : grid_t, airLayers_t
+        import modelParam_t
+        type(grid_t), target, intent(inout)  :: grid
+        type(airLayers_t), intent(inout)	   :: airLayers
+        type(modelParam_t), intent(out)	   :: m
+        character(*), intent(in)             :: cfile
+    end subroutine read_modelparam_interface
+end interface
+
 !  I/O interfaces
-#ifdef HDF5
+!#ifdef HDF5
 
-interface write_modelParam
-   MODULE PROCEDURE write_modelParam_hdf5
-end interface
+!interface write_modelParam
+!   MODULE PROCEDURE write_modelParam_hdf5
+!end interface
+!
+!interface read_modelParam
+!   MODULE PROCEDURE read_modelParam_hdf5
+!end interface
+!
+!#else
+!
+!interface write_modelParam
+!   MODULE PROCEDURE write_modelParam_WS
+!end interface
+!
+!interface read_modelParam
+!   MODULE PROCEDURE read_modelParam_WS
+!end interface
+!
+!#endif
 
-interface read_modelParam
-   MODULE PROCEDURE read_modelParam_hdf5
-end interface
-
-#else
-
-interface write_modelParam
-   MODULE PROCEDURE write_modelParam_WS
-end interface
-
-interface read_modelParam
-   MODULE PROCEDURE read_modelParam_WS
-end interface
-
-#endif
-
-interface writeVec_modelParam
-   MODULE PROCEDURE writeVec_modelParam_binary
-end interface
-
-interface readVec_modelParam
-   MODULE PROCEDURE readVec_modelParam_binary
-end interface
+!interface writeVec_modelParam
+!   MODULE PROCEDURE writeVec_modelParam_binary
+!end interface
+!
+!interface readVec_modelParam
+!   MODULE PROCEDURE readVec_modelParam_binary
+!end interface
 
 ! definitions for CmSqrt: must be consistent with the include file below
 
@@ -168,18 +186,12 @@ Contains
 !  The included file must contain subroutines create_CmSqrt, deall_CmSqrt, multBy...
 #include "modelCov/RecursiveAR.inc"
 !#include "modelCov/Diffusion.inc"
-!  I/O choices
-#include "modelParamIO/Binary.inc"
-#include "modelParamIO/Mackie.inc"
-#include "modelParamIO/WS.inc"
-#ifdef HDF5
-#include "modelParamIO/HDF5.inc"
-#endif
 
 !  MPI model parameter, if needed
 #ifdef MPI
 #include "ModelParam_MPI.inc"
 #endif
+
 !**********************************************************************
 !
    !  create_modelParam allocates and initializes arrays for
@@ -243,7 +255,7 @@ Contains
      endif
 
    end subroutine deall_modelParam
-      
+
 	!**********************************************************************
   subroutine getType_modelParam(m,paramType)
       type(modelParam_t), intent(in)    :: m

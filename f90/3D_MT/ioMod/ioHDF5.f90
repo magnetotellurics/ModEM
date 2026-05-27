@@ -49,6 +49,7 @@ module ioAscii
   use transmitters
   use receivers
   use datatypes
+  use modelParam_IO_HDF5
 
   implicit none
 

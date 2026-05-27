@@ -1,4 +1,18 @@
+module modelParam_IO_HDF5
+
+use hdf5
+
+use modelSpace
+use griddef
+
+implicit none
+
+integer(HID_T), private, save   :: file_id, group_id, attr_id, dset_id, dspace_id, atype_id, aspace_id ! file, data set, and dataspace handles
+
+contains
+
 ! I/O routines for 3D_MT modelParam - HDF5/NetCDF4 format
+
 
 !*******************************************************************
    !This subroutine will either create a new hdf5 file based on the name
@@ -8,15 +22,11 @@ subroutine open_hdf5(cfile)
     integer                                 :: hdferr
     logical                                 :: lexist
 
-    inquire(file = cfile, exist = lexist)
-    if (lexist) then
-        CALL h5open_f(hdferr)
-        CALL h5fopen_f(cfile, H5F_ACC_RDWR_F, file_id, hdferr)
-        else
-            CALL h5open_f(hdferr) ! throws error if cannot open
-            CALL h5fcreate_f(cfile, H5F_ACC_TRUNC_F, file_id, hdferr)!create the file using the variable cfile given to the terminal when running the script
+    write(0,*) 'OPENING HDF5 for writing:', trim(cfile)
 
-    end if
+    inquire(file = cfile, exist = lexist)
+    CALL h5open_f(hdferr) ! throws error if cannot open
+    CALL h5fcreate_f(cfile, H5F_ACC_TRUNC_F, file_id, hdferr)!create the file using the variable cfile given to the terminal when running the script
 
 end subroutine open_hdf5
 
@@ -28,6 +38,7 @@ subroutine open_read_hdf5(cfile)
     integer                                 :: hdferr
     logical                                 :: lexist
 
+    write(0,*) 'OPENING HDF5 for reading:', trim(cfile)
 
     inquire(file = cfile, exist = lexist)
     if (lexist) then
@@ -561,3 +572,4 @@ end subroutine read_geometry_hdf5
 
 	end subroutine read_modelParam_hdf5
 
+end module ModelParam_IO_HDF5 
