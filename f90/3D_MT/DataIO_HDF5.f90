@@ -57,7 +57,7 @@ module DataIO_HDF5
   ! an additional line in the head that indicates transmitter type.
   ! on output, use the same format as on input. AK 25 May 2018
   logical, save, private  :: old_data_file_format = .true.
-  integer(HID_T), private, save   :: file_id, group_id, attr_id, dset_id, dspace_id, atype_id, aspace_id, dtype_id ! file, data set, and dataspace handles
+  integer(HID_T), private, save   :: group_id, attr_id, dset_id, dspace_id, atype_id, aspace_id, dtype_id ! file, data set, and dataspace handles
 
 
   public :: read_hdf5_data
@@ -70,26 +70,24 @@ Contains
  
 !********************************************************************** 
    !Subroutine to open the hdf5 for reading 
-subroutine open_read_hdf5(cfile)
+subroutine open_read_hdf5(cfile, file_id)
     character(*), intent(in)                :: cfile
+    integer (kind=HID_T), intent(out)       :: file_id
     integer                                 :: hdferr
     logical                                 :: lexist
 
-    inquire(file = cfile, exist = lexist)
-    if (lexist) then
-        CALL h5open_f(hdferr)
-        CALL h5fopen_f(cfile, H5F_ACC_RDONLY_F, file_id, hdferr)
-    else 
-        write(0,*) 'No HDF5 file to read'
-    end if 
+    CALL h5open_f(hdferr)
+    CALL h5fopen_f(cfile, H5F_ACC_RDONLY_F, file_id, hdferr)
 
 end subroutine open_read_hdf5
 
 !********************************************************************** 
    !This subroutine will either create a new hdf5 file based on the name 
    !given in the input or open an already exisiting file to be appended to 
-subroutine open_hdf5(cfile)
+subroutine open_hdf5(cfile, file_id)
     character(*), intent(in)                :: cfile
+    integer (kind=HID_T), intent(out) :: file_id
+
     integer                                 :: hdferr
     CHARACTER(LEN=4), PARAMETER  :: data_group = "Data"
     CHARACTER(LEN=7), PARAMETER  :: data_mt_group = "Data/MT"
@@ -107,8 +105,8 @@ subroutine open_hdf5(cfile)
     
 end subroutine open_hdf5
 !********************************************************************** 
-subroutine close_hdf5(cfile)
-    character(*), intent(in)                :: cfile
+subroutine close_hdf5(file_id)
+    integer (kind=HID_T), intent(in)                :: file_id
     integer                                 :: hdferr
 
     ! CALL h5gclose_f(group_id, hdferr)
@@ -213,9 +211,9 @@ end function read_hdf5_attr
 
 
 !********************************************************************** 
-subroutine write_hdf5_txdict(cfile,order)
+subroutine write_hdf5_txdict(file_id, order)
 
-    character(*), intent(in)                  :: cfile
+    integer (kind=HID_T), intent(in)                  :: file_id 
     character(*), intent(in), optional        :: order
 
     ! local
@@ -246,10 +244,8 @@ subroutine write_hdf5_txdict(cfile,order)
     end if
 
     ! open cfile and create the txdict group
-    CALL open_hdf5(cfile)
     !   !Create the groups for the dataset
     CALL h5gcreate_f(file_id, data_mt_txdict_group, group_id, hdferr)
-
 
     ! create attributes
     CALL write_hdf5_attr('order', order_attr)
@@ -259,22 +255,18 @@ subroutine write_hdf5_txdict(cfile,order)
     CALL h5dcreate_f(group_id, 'periods', H5T_NATIVE_DOUBLE, dspace_id, dset_id, hdferr)
     CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, period, dim1d, hdferr)
 
-
     ! ! close the data set and data space
     CALL h5dclose_f(dset_id, hdferr)
     CALL h5sclose_f(dspace_id, hdferr)
-
-    ! ! close the HDF5 file
-    CALL close_hdf5(cfile) 
 
     ! ! deallocate temporary linear arrays
     deallocate(period, stat=istat)
 
 end subroutine write_hdf5_txdict
 !********************************************************************** 
-subroutine write_hdf5_rxdict(cfile,primary_coords)
+subroutine write_hdf5_rxdict(file_id,primary_coords)
 
-    character(*), intent(in)                  :: cfile
+    integer (kind=HID_T), intent(in)                  :: file_id
     character(*), intent(in), optional        :: primary_coords
 
     ! local
@@ -305,17 +297,13 @@ subroutine write_hdf5_rxdict(cfile,primary_coords)
     allocate(rxdict_x(rz), rxdict_y(rz), rxdict_z(rz), STAT = istat)
     allocate(rxdict_xyz(3,rz), STAT = istat)
 
-    !open the file and create the rxdict group
-    CALL open_hdf5(cfile)
     CALL h5gcreate_f(file_id, data_mt_rxdict_group, group_id, hdferr)
-    
-   
+
     !Assign dimensions for the xyz dataset beacuse it is 2D and everything else in rxdict is 1D
     dim2d(1) = 3
     dim2d(2) = rz
 
     do ii= 1,rz
-
         rxdict_elv = rxDict(ii)%x(3)
         rxdict_codes(ii) = rxDict(ii)%id 
         rxdict_lat(ii) = rxDict(ii)%x(1)
@@ -379,10 +367,6 @@ subroutine write_hdf5_rxdict(cfile,primary_coords)
     CALL write_hdf5_attr('scalefactor', 'null', dset_id)
     CALL write_hdf5_attr('userinfo', 'null', dset_id)
     CALL write_hdf5_attr('zone', 'null', dset_id)
-    ! close the HDF5 file
-    CALL close_hdf5(cfile) 
-  
-
 
     ! deallocate temporary linear arrays
     deallocate(rxdict_codes,rxdict_lat,rxdict_lon,rxdict_elv, stat=istat)
@@ -390,8 +374,8 @@ subroutine write_hdf5_rxdict(cfile,primary_coords)
 
 end subroutine write_hdf5_rxdict
 !********************************************************************** 
-subroutine write_hdf5_typelist(allData, cfile)
-    character(*), intent(in)                :: cfile
+subroutine write_hdf5_typelist(file_id, allData)
+    integer (kind=HID_T), intent(in)  :: file_id
     type(dataVectorMTX_t), intent(in) :: allData
 
     ! local
@@ -411,7 +395,6 @@ subroutine write_hdf5_typelist(allData, cfile)
     CHARACTER(LEN=19), parameter :: data_typelist_Z = "Data/MT/typelist/Z"
   
 
-    CALL open_hdf5(cfile)
     CALL h5gcreate_f(file_id, data_typelist, group_id, hdferr)
    
         WRITE_DATA_TYPE: do k = 1, alldata%d(1)%ndt !all data, d= one datablock to look foir datatypes, ndt =datatypes 
@@ -481,12 +464,12 @@ subroutine write_hdf5_typelist(allData, cfile)
                         deallocate(id_z,STAT=istat)
             end select 
         end do WRITE_DATA_TYPE
-        CALL close_hdf5(cfile)
+
 end subroutine write_hdf5_typelist
 
 !********************************************************************** 
-subroutine write_hdf5_datablocks(allData, cfile)
-    character(*), intent(in)          :: cfile
+subroutine write_hdf5_datablocks(file_id, allData)
+    integer (kind=HID_T), intent(in)  :: file_id
     type(dataVectorMTX_t), intent(in) :: allData
       ! local
     INTEGER(HSIZE_T)               :: ndat     ! Number of data points in an array
@@ -503,10 +486,6 @@ subroutine write_hdf5_datablocks(allData, cfile)
     character(LEN=3), parameter      :: T = "/T"
     character(len=3), PARAMETER      :: Z = "/Z"
 
-
-
-    CALL open_hdf5(cfile)
-   
     do iTx= 1, size(alldata%d) !this provides number of data blocks !
         myint = iTx
         write(dblk_num, '(a, a1, I0.2)') data_block_group, '.', myint
@@ -597,13 +576,11 @@ subroutine write_hdf5_datablocks(allData, cfile)
             end do WRITE_DATA_TYPE
     end do
 
-    CALL close_hdf5(cfile)
-
 end subroutine write_hdf5_datablocks
 
 !**********************************************************************
-subroutine read_hdf5_txdict(cfile)
-    character(*), intent(in)                  :: cfile
+subroutine read_hdf5_txdict(file_id)
+    integer (kind=HID_T), intent(in) :: file_id 
 
     CHARACTER(LEN=9), PARAMETER  :: data_group = "Data"
     CHARACTER(LEN=9), PARAMETER  :: data_mt_group = "Data/MT"
@@ -623,9 +600,7 @@ subroutine read_hdf5_txdict(cfile)
     ! ALLOCATE(rdata(size(txDict)))
   
     write(0,*) 'Reading Transmitter Dictionary'
-    CALL open_read_hdf5(cfile) 
-    write(0,*) cfile,' is open and ready to read the transmitter dictionary'
- 
+
     CALL h5gopen_f(file_id, data_mt_txdict_group, group_id, hdferr)
     CALL h5dopen_f (group_id, "periods", dset_id, hdferr)
 
@@ -641,13 +616,9 @@ subroutine read_hdf5_txdict(cfile)
 
     CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE,rdata, dim1d, hdferr)
 
-
 !    att_data = read_hdf5_attr('order') ! change this from subroutine call everywhere
 
-
     write(0,*) 'Transmitter Attribute ', att_data
-
-    CALL close_hdf5(cfile)
 
     call setup_txDict(nTx,rdata,2) 
     call print_txDict()
@@ -657,8 +628,8 @@ end subroutine read_hdf5_txdict
 
 ! !**********************************************************************
 !     !READ HDF5 
-subroutine read_hdf5_rxdict(cfile)
-    character(*), intent(in)                  :: cfile
+subroutine read_hdf5_rxdict(file_id)
+    integer (kind=HID_T), intent(in) :: file_id
  
   
     CHARACTER(LEN=9), PARAMETER  :: data_group = "Data"
@@ -677,10 +648,6 @@ subroutine read_hdf5_rxdict(cfile)
     CHARACTER(len=100), Dimension(1), allocatable :: att_xyz(:)
     integer                        :: ii, hdferr,rz, istat, nSites, attr_num
     INTEGER(SIZE_T)                :: size
-
-
-    write(0,*) 'Reading Reciever Dictionary'
-    CALL open_read_hdf5(cfile) 
 
     CALL h5gopen_f(file_id, data_mt_rxdict_group, group_id, hdferr)
    
@@ -746,11 +713,10 @@ subroutine read_hdf5_rxdict(cfile)
     deallocate(elv, lat, lon,codes_data, STAT=istat)
     deallocate(r2data, STAT=istat)
  
-    Call close_hdf5(cfile)
 end subroutine read_hdf5_rxdict
 ! !********************************************************************** 
-subroutine read_hdf5_typelist(cfile)
-    character(*), intent(in)                  :: cfile
+subroutine read_hdf5_typelist(file_id)
+    integer (kind=HID_T), intent(in) :: file_id
   
     CHARACTER(LEN=18), parameter :: data_typelist = "Data/MT/typelist"
     CHARACTER(LEN=19), parameter :: data_typelist_T = "Data/MT/typelist/T"
@@ -764,7 +730,6 @@ subroutine read_hdf5_typelist(cfile)
     character(len=100),allocatable, dimension(1) :: att_T(:), att_Z(:)
     character(len = 30)           :: tran_name
     logical                        :: exists, tran_comp
-    call open_read_hdf5(cfile) 
     CALL setup_typeDict()
 
     ! Read tipper definition, if exists in file
@@ -870,21 +835,17 @@ subroutine read_hdf5_typelist(cfile)
         ! deallocate(att_Z, STAT = istat)
     end if
     
-    call close_hdf5(cfile) 
 end subroutine read_hdf5_typelist
    
 ! ! !**********************************************************************
-subroutine read_hdf5_datablocks(allData, cfile)
-    character(*), intent(in)          :: cfile
+subroutine read_hdf5_datablocks(file_id, allData)
+    integer (kind=HID_T), intent(in)     :: file_id 
     type(dataVectorMTX_t), intent(inout) :: allData
    
-
     ! local
     INTEGER(HSIZE_T)               :: attrlen = 100 ! Length of the attribute string
     INTEGER(HSIZE_T), DIMENSION(1) :: dim1d ! Datasets dimensions for 1D arrays
     
-    
-
     !DATA BLOCKS NAMES  
     character(len=27)                  :: dblk_num, dbTZ, dblk
     character(len=2)                   ::  padded_i
@@ -901,11 +862,6 @@ subroutine read_hdf5_datablocks(allData, cfile)
     character(len=2), PARAMETER        :: Z = "/Z"
     integer                            :: nTx, nDt, nComp, nSite, dataType, hdferr, i, ii, istat, iDt, iTx, nRx, myint
 
-
-    ! Open the hdf5 file
-    call open_read_hdf5(cfile)
-    write(0,*) cfile,' is open and ready to read the data blocks'
-    
     call h5gopen_f(file_id, '/Data', group_id, hdferr)
    
     call h5lexists_f(file_id, mt_group_name, exists, hdferr)
@@ -1055,32 +1011,47 @@ subroutine read_hdf5_datablocks(allData, cfile)
 
     allData%allocated = .true.
 
- CALL close_hdf5(cfile)
-   
 end subroutine read_hdf5_datablocks
 
 !**********************************************************************
 subroutine write_hdf5_data(allData,cfile)
     character(*), intent(in)                  :: cfile
     type(dataVectorMTX_t), intent(in)        :: allData
+    integer (kind=HID_T) :: file_id
+
+    ! open HDF5
+    write(0,*) 'write_hdf5_data - start'
+
+    call open_hdf5(cfile, file_id)
     
-    call write_hdf5_txdict(cfile)
-    call write_hdf5_rxdict(cfile)
-    call write_hdf5_typelist(allData, cfile)
-    call write_hdf5_datablocks(allData, cfile)
-    
+    call write_hdf5_txdict(file_id)
+    call write_hdf5_rxdict(file_id)
+    call write_hdf5_typelist(file_id, allData)
+    call write_hdf5_datablocks(file_id, allData)
    
+    call close_hdf5(file_id)
+
+    write(0,*) 'write_hdf5_data - end'
+
 end subroutine
 
 ! !**********************************************************************
 subroutine read_hdf5_data(allData, cfile)
     character(*), intent(in)                  :: cfile
     type(dataVectorMTX_t), intent(inout)      :: allData
+    integer (kind=HID_T) :: file_id
 
-    call read_hdf5_txdict(cfile)
-    call read_hdf5_rxdict(cfile)
-    call read_hdf5_typelist(cfile)
-    call read_hdf5_datablocks(allData, cfile)
+    write(0,*) 'read_hdf5_data - start'
+
+    ! open HDF5
+    call open_read_hdf5(cfile, file_id)
+
+    call read_hdf5_txdict(file_id)
+    call read_hdf5_rxdict(file_id)
+    call read_hdf5_typelist(file_id)
+    call read_hdf5_datablocks(file_id, allData)
+
+    write(0,*) 'read_hdf5_data - end'
 
 end subroutine read_hdf5_data
 

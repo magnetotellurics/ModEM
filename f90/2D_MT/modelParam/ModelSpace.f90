@@ -93,14 +93,6 @@ end interface
 
 !  I/O interfaces
 
-interface write_modelParam
-   MODULE PROCEDURE write_modelParam_mackie
-end interface
-
-interface read_modelParam
-   MODULE PROCEDURE read_modelParam_mackie
-end interface
-
 interface writeVec_modelParam
    MODULE PROCEDURE writeVec_modelParam_binary
 end interface
