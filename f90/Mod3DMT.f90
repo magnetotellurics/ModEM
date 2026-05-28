@@ -13,6 +13,8 @@ program Mod3DMT
      use DCG
      use LBFGS
      use utilities
+     use ModelSpaceIO
+     use DataIO
      !use mtinvsetup
 
 #ifdef MPI
@@ -43,7 +45,6 @@ program Mod3DMT
      call ModEM_timers_create("Total Time", .true.)
 #endif
 
-      call setup_IO()
 
 
 #ifdef MPI
@@ -61,6 +62,10 @@ program Mod3DMT
       call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
       write(6,*)'I am a SERIAL version'
 #endif
+
+      call ModEM_setup_IO(DATA_FILE_TYPE_ASCII, DATA_FILE_TYPE_ASCII, &
+                            WS_FILE_TYPE, WS_FILE_TYPE)
+
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations
 #ifdef MPI

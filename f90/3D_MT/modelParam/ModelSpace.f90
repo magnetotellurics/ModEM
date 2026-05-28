@@ -140,36 +140,6 @@ abstract interface
     end subroutine read_modelparam_interface
 end interface
 
-!  I/O interfaces
-!#ifdef HDF5
-
-!interface write_modelParam
-!   MODULE PROCEDURE write_modelParam_hdf5
-!end interface
-!
-!interface read_modelParam
-!   MODULE PROCEDURE read_modelParam_hdf5
-!end interface
-!
-!#else
-!
-!interface write_modelParam
-!   MODULE PROCEDURE write_modelParam_WS
-!end interface
-!
-!interface read_modelParam
-!   MODULE PROCEDURE read_modelParam_WS
-!end interface
-!
-!#endif
-
-!interface writeVec_modelParam
-!   MODULE PROCEDURE writeVec_modelParam_binary
-!end interface
-!
-!interface readVec_modelParam
-!   MODULE PROCEDURE readVec_modelParam_binary
-!end interface
 
 ! definitions for CmSqrt: must be consistent with the include file below
 
