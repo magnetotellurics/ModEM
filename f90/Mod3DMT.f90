@@ -51,6 +51,7 @@ program Mod3DMT
       if (taskid==0) then
           call parseArgs('Mod3DMT',cUserDef)  
           ! OR readStartup(rFile_Startup,cUserDef)
+          call process_optional_namelist(cUserDef)
           write(6,*)'I am a PARALLEL version'
           call Master_job_Distribute_userdef_control(cUserDef)
           open(ioMPI,file=cUserDef%wFile_MPI)
@@ -63,8 +64,8 @@ program Mod3DMT
       write(6,*)'I am a SERIAL version'
 #endif
 
-      call ModEM_setup_IO(DATA_FILE_TYPE_ASCII, DATA_FILE_TYPE_ASCII, &
-                            WS_FILE_TYPE, WS_FILE_TYPE)
+      call ModEM_setup_IO(trim(cUserDef % data_ftype_input_type), trim(cUserDef % data_ftype_output_type), &
+                            trim(cUserDef % model_ftype_input_type), trim(cUserDef % model_ftype_output_type))
 
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations

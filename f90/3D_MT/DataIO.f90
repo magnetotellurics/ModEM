@@ -1,6 +1,7 @@
 ! *****************************************************************************
 module DataIO
 
+    use utilities
     use dataspace
     use DataIO_ASCII
     use DataIO_HDF5
@@ -8,9 +9,6 @@ module DataIO
     implicit none
 
     public :: read_dataVectorMTX, write_dataVectorMTX, deall_dataFileInfo
-
-    character(len=*), parameter :: DATA_FILE_TYPE_ASCII = 'ASCII_LIST_FORMAT'
-    character(len=*), parameter :: DATA_FILE_TYPE_HDF5 = 'HDF5'
 
     character(len=512), private :: DATA_INPUT_FTYPE = DATA_FILE_TYPE_ASCII
     character(len=512), private :: DATA_OUTPUT_FTYPE = DATA_FILE_TYPE_ASCII
@@ -28,8 +26,9 @@ subroutine unsupported_DataIO_error(ftype_choice, input_or_output)
     character(len=*), intent(in) :: input_or_output
 
     ! TODO: Finish this error message
-    write(0,*) 'ERROR: DataIO'
-    call errStop('Modem not compiled with HDF5')
+    write(0,*) "ERROR: DataIO - Unsupported data filetype choice '", trim(ftype_choice), "' for data ", trim(input_or_output)
+    write(0,*) "ERRRO: Supported types are: '", trim(DATA_FILE_TYPE_ASCII), "' or '", trim(DATA_FILE_TYPE_HDF5), "'"
+    call ModEM_Abort()
 
 end subroutine unsupported_DataIO_error
 
@@ -63,29 +62,6 @@ subroutine setup_DataIO(input_ftype, output_ftype)
     end select
 
 end subroutine setup_DataIO
-
-
-subroutine compiled_with_HDF5_check()
-
-    implicit none
-#ifdef HDF5
-    ! ModEM is built with HDF5
-#else
-    call HDF5_not_built_error()
-#endif
-
-end subroutine compiled_with_HDF5_check
-
-subroutine HDF5_not_built_error()
-
-    implicit none
-
-    ! TODO: Finish this error message
-    write(0,*) 'ERROR: ModEM not compiled with HDF5'
-    call errStop('Modem not compiled with HDF5')
-
-end subroutine HDF5_not_built_error
-
 
 subroutine write_dataVectorMTX(allData,cfile)
 

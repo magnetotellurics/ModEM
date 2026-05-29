@@ -1,7 +1,7 @@
 module ModelSpaceIO
 
-    use Declaration_MPI
     use utilities
+    use Declaration_MPI
     use ModelSpace
     use ModelParam_IO_WS
 #ifdef HDF5
@@ -12,10 +12,6 @@ module ModelSpaceIO
 
     implicit none
 
-    character(len=*), parameter :: WS_FILE_TYPE = 'WSINV3DMT'
-    character(len=*), parameter :: HDF5_FILE_TYPE = 'HDF5'
-    character(len=*), parameter :: FTRAN_BINARY_FILE_TYPE = 'FORTRAN_BINARY'
-    character(len=*), parameter :: MACKIE_FILE_TYPE = 'MACKIE'
 
     character(len=*), private, parameter :: INPUT = 'input'
     character(len=*), private, parameter :: OUTPUT = 'output'
@@ -24,27 +20,6 @@ module ModelSpaceIO
     character(len=512), private :: OUTPUT_FILE_TYPE = WS_FILE_TYPE
 
 contains
-
-    subroutine compiled_with_HDF5_check()
-
-        implicit none
-#ifdef HDF5
-        ! ModEM is built with HDF5
-#else
-        call HDF5_not_built_error()
-#endif
-
-    end subroutine compiled_with_HDF5_check
-
-    subroutine HDF5_not_built_error()
-
-        implicit none
-
-        ! TODO: Finish this error message
-        write(0,*) 'ERROR: ModEM not compiled with HDF5'
-        call errStop('Modem not compiled with HDF5')
-
-    end subroutine HDF5_not_built_error
 
     subroutine unsupported_modelParamIO_error(ftype_choice, input_or_output)
 
@@ -55,7 +30,13 @@ contains
 
         ! TODO: Finish this error message
         write(0,*) "ERROR: Unsupported ftype choice: '", trim(ftype_choice), "' for ", trim(input_or_output)
-        call errStop('Unsupported file type')
+        write(0,*) "ERROR: Supported choiced are: "
+        write(0,*) "ERROR:   - '", trim(WS_FILE_TYPE), "'"
+        write(0,*) "ERROR:   - '", trim(FTRAN_BINARY_FILE_TYPE), "'"
+        write(0,*) "ERROR:   - '", trim(MACKIE_FILE_TYPE), "'"
+        write(0,*) "ERROR:   - '", trim(HDF5_FILE_TYPE), "' - Note: If compiled with HDF5"
+        write(0,*) "ERROR: See documentation for more information"
+        call errStop('Unsupported file type for model '//trim(input_or_output))
 
     end subroutine unsupported_modelParamIO_error
 
@@ -66,14 +47,10 @@ contains
         character(len=*), intent(in) :: input_ftype
         character(len=*), intent(in) :: output_ftype
 
-        write(0,*) 'Setting modelParamIO input_type to: ', trim(input_ftype)
-
         select case(input_ftype)
             case (WS_FILE_TYPE)
-                write(0,*) 'Here 1!'
                 INPUT_FILE_TYPE = WS_FILE_TYPE 
             case (HDF5_FILE_TYPE)
-                write(0,*) 'Here 1?'
                 call compiled_with_HDF5_check()
                 INPUT_FILE_TYPE = HDF5_FILE_TYPE
             case (FTRAN_BINARY_FILE_TYPE)
@@ -84,14 +61,10 @@ contains
                 call unsupported_modelParamIO_error(input_ftype, INPUT)
         end select
 
-
-        write(0,*) 'Setting modelParamIO output_type to: ', trim(output_ftype)
         select case(output_ftype)
             case (WS_FILE_TYPE)
-                write(0,*) 'HERE!'
                 OUTPUT_FILE_TYPE = WS_FILE_TYPE
             case (HDF5_FILE_TYPE)
-                write(0,*) 'HERE?'
                 call compiled_with_HDF5_check()
                 OUTPUT_FILE_TYPE = HDF5_FILE_TYPE
             case (FTRAN_BINARY_FILE_TYPE)
@@ -101,9 +74,6 @@ contains
             case default
                 call unsupported_modelParamIO_error(output_ftype, OUTPUT)
         end select
-
-
-        write(0,*) 'Done with Model Setup'
 
     end subroutine setup_modelParamIO
 
