@@ -161,16 +161,17 @@ end subroutine pack_userdef_control
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%option,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%prefix,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%data_ftype_input_type,80,MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%data_ftype_output_type,80,MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%model_ftype_input_type,80,MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%model_ftype_output_type,80,MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%lambda,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%eps,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%delta,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
 
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%CovType,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%output_level,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
-   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%data_ftype_input_type,80,MPI_CHARACTER,MPI_COMM_WORLD, ierr)
-   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%data_ftype_output_type,80,MPI_CHARACTER,MPI_COMM_WORLD, ierr)
-   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%model_ftype_input_type,80,MPI_CHARACTER,MPI_COMM_WORLD, ierr)
-   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%model_ftype_output_type,80,MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
 end subroutine unpack_userdef_control
 
@@ -196,6 +197,10 @@ subroutine check_userdef_control_MPI (which_proc,ctrl)
        write(6,*)trim(which_proc),' : ctrl%rFile_Prior ',trim(ctrl%rFile_Prior)
        write(6,*)trim(which_proc),' : ctrl%prefix ',trim(ctrl%prefix)
        write(6,*)trim(which_proc),' : ctrl%storeSolnsInfile ',ctrl%storeSolnsInfile
+       write(6,*)trim(which_proc),' : ctrl%data_ftype_input_type ',trim(ctrl%data_ftype_input_type)
+       write(6,*)trim(which_proc),' : ctrl%data_ftype_input_type ',trim(ctrl%data_ftype_output_type)
+       write(6,*)trim(which_proc),' : ctrl%model_ftype_input_type ',trim(ctrl%model_ftype_input_type)
+       write(6,*)trim(which_proc),' : ctrl%model_ftype_input_type ',trim(ctrl%model_ftype_output_type)
 
 
 end subroutine check_userdef_control_MPI

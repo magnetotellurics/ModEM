@@ -38,10 +38,9 @@ subroutine setup_DataIO(input_ftype, output_ftype)
 
     character(len=*), intent(in) :: input_ftype
     character(len=*), intent(in) :: output_ftype
+    integer :: i
 
-    write(0,*) 'setup_DataIO - ', trim(input_ftype), ' ', trim(output_ftype)
-
-    select case(input_ftype)
+    select case(trim(input_ftype))
         case (DATA_FILE_TYPE_ASCII)
             DATA_INPUT_FTYPE = DATA_FILE_TYPE_ASCII
         case (DATA_FILE_TYPE_HDF5)
@@ -51,7 +50,7 @@ subroutine setup_DataIO(input_ftype, output_ftype)
             call unsupported_DataIO_error(input_ftype, input)
     end select
 
-    select case(output_ftype)
+    select case(trim(output_ftype))
         case (DATA_FILE_TYPE_ASCII)
             DATA_OUTPUT_FTYPE = DATA_FILE_TYPE_ASCII
         case (DATA_FILE_TYPE_HDF5)
@@ -69,8 +68,6 @@ subroutine write_dataVectorMTX(allData,cfile)
 
     type(dataVectorMTX_t), intent(in)         :: allData
     character(*), intent(in)                  :: cfile
-
-    write(0,*) 'DATA_OUTPUT_FTYPE: ', trim(DATA_OUTPUT_FTYPE)
 
     select case(DATA_OUTPUT_FTYPE)
         case (DATA_FILE_TYPE_ASCII)
@@ -93,8 +90,6 @@ subroutine read_dataVectorMTX(allData,cfile)
 
     type(dataVectorMTX_t), intent(inout)   :: allData
     character(*), intent(in)               :: cfile
-
-    write(0,*) 'DATA_INPUT_FTYPE: ', trim(DATA_INPUT_FTYPE)
 
     select case(DATA_INPUT_FTYPE)
         case (DATA_FILE_TYPE_ASCII)

@@ -67,6 +67,11 @@ module UserCtrl
     ! Out-of-core file prefix for storing working E-field solutions (NCI)
     character(80)       :: prefix
 
+    character(80)       :: data_ftype_input_type
+    character(80)       :: data_ftype_output_type
+    character(80)       :: model_ftype_input_type
+    character(80)       :: model_ftype_output_type
+
 	! Specify damping parameter for the inversion
 	real(8)             :: lambda
 
@@ -85,10 +90,6 @@ module UserCtrl
     ! Reduce master memory usage by storing E-fields in files (NCI)
     logical             :: storeSolnsInFile
 
-    character(80)       :: data_ftype_input_type
-    character(80)       :: data_ftype_output_type
-    character(80)       :: model_ftype_input_type
-    character(80)       :: model_ftype_output_type
 
   end type userdef_control
 
@@ -878,11 +879,7 @@ Contains
      implicit none
   	 type(userdef_control), intent(inout)   :: ctrl
 
-     character(len=120) :: data_ftype_input_type
-     character(len=120) :: data_ftype_output_type
-     character(len=120) :: model_ftype_input_type
-     character(len=120) :: model_ftype_output_type
-     character(len=120) :: input_ftype, output_ftype
+     character(len=80) :: input_ftype = '', output_ftype = ''
      logical :: namelist_exists
 
      integer :: fid, iostat
@@ -890,22 +887,21 @@ Contains
      character(len=256) :: iomsg
 
      namelist /data_io/ input_ftype, output_ftype
-
      namelist /model_io/ input_ftype, output_ftype
 
      inquire(file=trim(MODEM_NAMELIST), exist=namelist_exists)
 
      if (.not. namelist_exists) then
 #ifdef HDF5
-         ctrl % data_ftype_input_type = DATA_FILE_TYPE_ASCII
-         ctrl % data_ftype_input_type = DATA_FILE_TYPE_ASCII
-         ctrl % model_ftype_input_type = WS_FILE_TYPE
-         ctrl % model_ftype_output_type = WS_FILE_TYPE
+         ctrl % data_ftype_input_type = trim(DATA_FILE_TYPE_ASCII)
+         ctrl % data_ftype_input_type = trim(DATA_FILE_TYPE_ASCII)
+         ctrl % model_ftype_input_type = trim(WS_FILE_TYPE)
+         ctrl % model_ftype_output_type = trim(WS_FILE_TYPE)
 #else
-         ctrl % data_ftype_input_type = DATA_FILE_TYPE_HDF5
-         ctrl % data_ftype_input_type = DATA_FILE_TYPE_HDF5
-         ctrl % model_ftype_input_type = HDF5_FILE_TYPE
-         ctrl % model_ftype_output_type = HDF5_FILE_TYPE
+         ctrl % data_ftype_input_type = trim(DATA_FILE_TYPE_HDF5)
+         ctrl % data_ftype_input_type = trim(DATA_FILE_TYPE_HDF5)
+         ctrl % model_ftype_input_type = trim(HDF5_FILE_TYPE)
+         ctrl % model_ftype_output_type = trim(HDF5_FILE_TYPE)
 #endif
          return
      end if
@@ -921,20 +917,20 @@ Contains
          call ModEM_abort()
      end if
 
+     input_ftype = ''
+     output_ftype = ''
+
      read(fid, nml=data_io, iostat=iostat, iomsg=iomsg)
      if (iostat /= 0) then
          write(0,*) "Failed to read 'data_io' namelist section in '", trim(MODEM_NAMELIST), "': ", trim(iomsg)
          call ModEM_abort()
      end if
 
-     write(0,*) 'READ data_IO:', trim(input_ftype), trim(output_ftype)
-
      ctrl % data_ftype_input_type = trim(input_ftype)
      ctrl % data_ftype_output_type = trim(output_ftype)
 
-     write(0,*) 'Data IO:'
-     write(0,*) 'input_ftype: ', trim(input_ftype)
-     write(0,*) 'output_ftype: ', trim(output_ftype)
+     input_ftype = ''
+     output_ftype = ''
 
      read(fid, nml=model_io, iostat=iostat, iomsg=iomsg)
      if (iostat /= 0) then
@@ -945,16 +941,6 @@ Contains
      ctrl % model_ftype_input_type = trim(input_ftype)
      ctrl % model_ftype_output_type = trim(output_ftype)
 
-     write(0,*) 'Model IO:'
-     write(0,*) 'input_ftype: ', trim(input_ftype), ' ', ctrl % model_ftype_input_type 
-     write(0,*) 'output_ftype: ', trim(output_ftype), ' ', ctrl % model_ftype_output_type
-
   end subroutine process_optional_namelist
-
-  subroutine output_optional_namelist()
-
-      implicit none
-
-  end subroutine output_optional_namelist
 
 end module UserCtrl

@@ -15,13 +15,13 @@ module utilities
 
   !character(80)  :: msg
 
-  character(len=*), parameter :: WS_FILE_TYPE = 'WSINV3DMT'
-  character(len=*), parameter :: HDF5_FILE_TYPE = 'HDF5'
-  character(len=*), parameter :: FTRAN_BINARY_FILE_TYPE = 'FORTRAN_BINARY'
-  character(len=*), parameter :: MACKIE_FILE_TYPE = 'MACKIE'
+  character(len=*), parameter :: WS_FILE_TYPE = "WSINV3DMT"
+  character(len=*), parameter :: HDF5_FILE_TYPE = "HDF5"
+  character(len=*), parameter :: FTRAN_BINARY_FILE_TYPE = "FORTRAN_BINARY"
+  character(len=*), parameter :: MACKIE_FILE_TYPE = "MACKIE"
 
-  character(len=*), parameter :: DATA_FILE_TYPE_ASCII = 'ASCII_LIST_FORMAT'
-  character(len=*), parameter :: DATA_FILE_TYPE_HDF5 = 'HDF5'
+  character(len=*), parameter :: DATA_FILE_TYPE_ASCII = "ASCII_LIST_FORMAT"
+  character(len=*), parameter :: DATA_FILE_TYPE_HDF5 = "HDF5"
 
 Contains
 

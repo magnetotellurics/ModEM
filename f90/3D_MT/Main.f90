@@ -366,9 +366,6 @@ Contains
     character(len=*), intent(in) :: model_input_type
     character(len=*), intent(in) :: model_output_type
 
-    write(0,*) 'ModEM_setup_IO: Data_ftypes: ', trim(data_input_type), ' ', trim(data_output_type)
-    write(0,*) 'ModEM_setup_IO: Model_ftypes: ', trim(model_input_type), ' ', trim(model_output_type)
-
     call setup_dataIO(data_input_type, data_output_type)
     call setup_modelParamIO(model_input_type, model_output_type)
 

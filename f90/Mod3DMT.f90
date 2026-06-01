@@ -64,8 +64,8 @@ program Mod3DMT
       write(6,*)'I am a SERIAL version'
 #endif
 
-      call ModEM_setup_IO(trim(cUserDef % data_ftype_input_type), trim(cUserDef % data_ftype_output_type), &
-                            trim(cUserDef % model_ftype_input_type), trim(cUserDef % model_ftype_output_type))
+      call ModEM_setup_IO(cUserDef % data_ftype_input_type, cUserDef % data_ftype_output_type, &
+                          cUserDef % model_ftype_input_type, cUserDef % model_ftype_output_type)
 
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations
