@@ -8,6 +8,12 @@ elseif (MODEM_BUILD_DIMS STREQUAL 3D)
     set(MODEM_EXE Mod3DMT_${FORWARD_FORMULATION})
     set(MODEM_MAIN_FILE Mod3DMT.f90)
     set(DIM_DIR 3D_MT)
+
+    message(STATUS "Spherical ${BUILD_SPHERICAL}")
+
+    if (BUILD_SPHERICAL)
+        string(APPEND MODEM_EXE "_SPH")
+    endif()
 endif()
 
 add_executable(${MODEM_EXE} ${MODEM_MAIN_FILE})
