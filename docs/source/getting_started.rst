@@ -7,11 +7,9 @@ Directory Structure
 The following files and sub-directories will be found:
 
 * **COPYRIGHT** - Please get familiar with the Copyright before using this code!
-* **README** - Explains how to obtain, install and update the code.
+* **README.md** - Explains how to obtain, install and update the code.
 * **doc/** - Provides additional documentation, including this user guide.
-* **examples/** - Provides a careful set of examples that are known to work.
 * **f90/** - The code base, makefiles and configuration scripts.
-* **matlab/** - Auxiliary Matlab scripts for file conversion, and others.
 
 Compiling ModEM
 ---------------
@@ -355,7 +353,7 @@ Normally, when running a docker container, the data created inside the container
 will be deleted when the container terminates. To prevent this, we can use a
 mount.
 
-Mounting will allow your local ModEM code direcotry to be mounted into the
+Mounting will allow your local ModEM code directory to be mounted into the
 docker container. That way any change you make in one will be reflected on the
 other.
 
@@ -428,7 +426,7 @@ Specifying mounts points
     https://docs.docker.com/engine/storage/bind-mounts/.
 
 You may want to add additional mounts in your docker container. For example, you
-might want to include the ModEM-Examples direcotry:
+might want to include the ModEM-Examples directory:
 
 .. code-block:: bash
 

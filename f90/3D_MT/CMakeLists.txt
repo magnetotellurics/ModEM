@@ -46,3 +46,13 @@ if(BUILD_MPI)
         PRIVATE Sub_MPI.f90
     )
 endif()
+
+if(BUILD_HDF5)
+    target_sources(${MODEM_EXE}
+        PRIVATE DataIO_HDF5.f90
+    )
+else()
+    target_sources(${MODEM_EXE}
+        PRIVATE DataIO.f90
+    )
+endif()

@@ -771,4 +771,200 @@ recursive subroutine QSort(a, ia, i0, i1)
 end subroutine QSort
 
 !**********************************************************************
+
+! The following License applies to expand_string :
+!
+! Copyright (c) 2013-2019,  Los Alamos National Security, LLC (LANS) (Ocean: LA-CC-13-047;
+! Land Ice: LA-CC-13-117) and the University Corporation for Atmospheric Research (UCAR).
+!
+! All rights reserved.
+!
+! LANS is the operator of the Los Alamos National Laboratory under Contract No.
+! DE-AC52-06NA25396 with the U.S. Department of Energy.  UCAR manages the National
+! Center for Atmospheric Research under Cooperative Agreement ATM-0753581 with the
+! National Science Foundation.  The U.S. Government has rights to use, reproduce,
+! and distribute this software.  NO WARRANTY, EXPRESS OR IMPLIED IS OFFERED BY
+! LANS, UCAR OR THE GOVERNMENT AND NONE OF THEM ASSUME ANY LIABILITY FOR THE USE
+! OF THIS SOFTWARE.  If software is modified to produce derivative works, such
+! modified software should be clearly marked, so as not to confuse it with the
+! version available from LANS and UCAR.
+!
+! Additionally, redistribution and use in source and binary forms, with or without
+! modification, are permitted provided that the following conditions are met:
+!
+! 1) Redistributions of source code must retain the above copyright notice, this
+! list of conditions and the following disclaimer.
+!
+! 2) Redistributions in binary form must reproduce the above copyright notice,
+! this list of conditions and the following disclaimer in the documentation and/or
+! other materials provided with the distribution.
+!
+! 3) None of the names of LANS, UCAR or the names of its contributors, if any, may
+! be used to endorse or promote products derived from this software without
+! specific prior written permission.
+!
+! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+! ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+! WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+! DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+! ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+! (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+! LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+! ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+!-----------------------------------------------------------------------
+!  routine expand_string - (Renamed from mpas_log.F log_expand_string to expand_string)
+!
+!> \brief This is a utility routine that inserts formatted variables into a string.
+!> \author Matt Hoffman
+!> \date   02/20/2017
+!> \details This routine inserts formatted variables into a string.
+!>   The variables to be expanded are represented with a '$' symbol followed
+!>   by one of these indicators:
+!>   $i -> integer, formatted to be length of integer
+!>   $l -> logical, fomatted as 'T' or 'F'
+!>   $r -> real,  formatted as 9 digits of precision for SP mode, 17 for DP mode
+!>                Floats are formatted using 'G' format which is smart about
+!>                displaying as a decimal or scientific notation based on the value.
+!>   The variable values to expand are supplied as optional arguments to this
+!>   routine.  The substitution indicators are expanded as they are encountered.
+!>   Thus, extra variable values will be ignored.  If the supplied variable values
+!>   run out before the $ expansion indicators are all replaced, the remaining
+!>   expansions will be filled with a fill value ('**').  The fill value is also
+!>   used if the expansion indicator is of an unknown type, where the valid types
+!>   are $i, $l, $r.
+!>   If the user prefers more specific formatting, they have to do it external
+!>   to this routine in a local string variable.  Similarly, character variables
+!>   can be handled by the string concatenation command (//).
+!>   This routine is based off of mpas_expand_string.
+!-----------------------------------------------------------------------
+subroutine expand_string(inString, outString, intArgs, logicArgs, realArgs)
+
+  implicit none
+
+  !-----------------------------------------------------------------
+  ! input variables
+  !-----------------------------------------------------------------
+  character (len=*), intent(in) :: inString  !< Input: message to be expanded
+
+  integer, dimension(:), intent(in), optional :: intArgs
+     !< Input, Optional: array of integer variable values to be used in expansion
+  logical, dimension(:), intent(in), optional :: logicArgs
+     !< Input, Optional: array of logical variable values to be used in expansion
+  real(kind=prec), dimension(:), intent(in), optional :: realArgs
+     !< Input, Optional: array of real variable values to be used in expansion
+
+  !-----------------------------------------------------------------
+  ! input/output variables
+  !-----------------------------------------------------------------
+
+  !-----------------------------------------------------------------
+  ! output variables
+  !-----------------------------------------------------------------
+  character (len=512), intent(out) :: outString  !< Output: expanded version of input message after expansion
+
+  !-----------------------------------------------------------------
+  ! local variables
+  !-----------------------------------------------------------------
+  integer :: i, curLen
+  integer :: nInts, nLogicals, nReals, nExps  !< the length of the variable arrays passed in
+  integer :: iInt, iLogical, iReal !< Counter for the current index into each variable array
+  character (len=64) :: realFormat  !< Format string to create to use for writing real variables to log file
+  integer :: realPrecision !< precision of a real variable
+
+  character (len=64) :: varPart
+  character (len=64) :: errVarPart ! string to use if variable expansion fails
+  logical :: charExpand
+
+  ! Initialize the current index for each variable array to 1
+  iInt = 1
+  iLogical = 1
+  iReal = 1
+
+  ! For each variable array, get the size.  Size is 0 if not present.
+  if (present(intArgs)) then
+     nInts = size(intArgs)
+  else
+     nInts = 0
+  endif
+
+  if (present(logicArgs)) then
+     nLogicals = size(logicArgs)
+  else
+     nLogicals = 0
+  endif
+
+  if (present(realArgs)) then
+     nReals = size(realArgs)
+  else
+     nReals = 0
+  endif
+
+  ! Initialize strings
+  write(outString,*) ''
+  write(varPart,*) ''
+  errVarPart = '**'  ! string to use if variable expansion fails
+
+  !Initialize char info
+  curLen = 0
+  charExpand = .false.
+
+  ! Loop over character positions in inString
+  do i = 1, len_trim(inString)
+     if (inString(i:i) == '$' .and. (.not. charExpand)) then
+         charExpand = .true.
+     else
+         if (charExpand) then
+            select case (inString(i:i))
+               case ('i')
+                  ! make the format large enough to include a large integer (up to 17 digits for 8-byte int)
+                  ! it will be trimmed below
+                  if (iInt <= nInts) then
+                     write(varPart,'(i17)') intArgs(iInt)
+                     iInt = iInt + 1
+                  else
+                     varPart = errVarPart
+                  endif
+               case ('l')
+                  if (iLogical <= nLogicals) then
+                     if (logicArgs(iLogical)) then
+                        write(varPart ,'(a)') 'T'
+                     else
+                        write(varPart ,'(a)') 'F'
+                     endif
+                     iLogical = iLogical + 1
+                  else
+                     varPart = errVarPart
+                  endif
+               case ('r')
+                  if (iReal <= nReals) then
+                     realPrecision = precision(realArgs(iReal))
+                     ! Note 7 additional characters may be needed beyond the precision
+                     ! e.g.: -1234567.89012345   G13.6   ->   -0.123457E+07
+                     write(realFormat, '(a, i2.2, a, i2.2, a)') '(G', realPrecision+7,'.', realPrecision, ')'
+                     write(varPart, trim(realFormat)) realArgs(iReal)
+                     iReal = iReal + 1
+                  else
+                     varPart = errVarPart
+                  endif
+               case ('$')
+                     varPart = '$'
+               case default
+                  varPart = errVarPart
+            end select
+            outString = outString(1:curLen) // trim(adjustl(varPart))
+
+            curLen = curLen + len_trim(adjustl(varPart))
+            charExpand = .false.
+         else
+            outString(curLen+1:curLen+1) = inString(i:i)
+            curLen = curLen+1
+         end if
+     end if
+  end do
+
+!--------------------------------------------------------------------
+end subroutine expand_string
 end module utilities

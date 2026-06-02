@@ -26,15 +26,16 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     target_compile_options(
         ${MODEM_EXE}
         PRIVATE
-        -cpp -ffree-line-length-none -fallow-argument-mismatch
         $<$<CONFIG:RELEASE>:-O3>
-
         $<$<CONFIG:DEBUG>:-O0>
         $<$<CONFIG:DEBUG>:-g>
-        $<$<CONFIG:DEBUG>:-fbacktrace>
-        $<$<CONFIG:DEBUG>:-fbounds-check>
+        $<$<COMPILE_LANGUAGE:Fortran>:-cpp>
+        $<$<COMPILE_LANGUAGE:Fortran>:-ffree-line-length-none>
+        $<$<COMPILE_LANGUAGE:Fortran>:-fallow-argument-mismatch>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-fbacktrace>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-fbounds-check>
     )
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel" OR CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     enable_language(C)
     find_library(MKL_INTEL_LP64 mkl_intel_lp64 HINTS $ENV{MKLROOT}/lib/intel64 ...)
     find_library(MKL_INTEL_THREAD mkl_intel_thread HINTS $ENV{MKLROOT}/lib/intel64 ...)
@@ -44,17 +45,17 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
     target_compile_options(
         ${MODEM_EXE}
         PRIVATE
-        -fpp
-        -parallel
         $<$<CONFIG:RELEASE>:-O3>
         $<$<CONFIG:RELEASE>:-w>
         $<$<CONFIG:DEBUG>:-O0>
-        $<$<COMPILE_LANGUAGE:Fortran>:-fp-stack-check>
-        $<$<COMPILE_LANGUAGE:Fortran>:-g>
-        $<$<COMPILE_LANGUAGE:Fortran>:-traceback>
-        $<$<COMPILE_LANGUAGE:Fortran>:-debug extend>
-        $<$<COMPILE_LANGUAGE:Fortran>:-check bounds>
+        $<$<CONFIG:DEBUG>:-g>
+        $<$<COMPILE_LANGUAGE:Fortran>:-fpp>
+        $<$<COMPILE_LANGUAGE:Fortran>:-parallel>
         $<$<COMPILE_LANGUAGE:Fortran>:-heap-array>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-fp-stack-check>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-traceback>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-debug extend>
+        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-check bounds>
     )
     target_link_libraries(
         ${MODEM_EXE}
@@ -70,7 +71,10 @@ elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
         -qopenmp
     )
 else()
-    message(FATAL_ERROR "Unknown/Unsupported Fortran Compiler: '${CMake_Fortran_COMPILER_ID}' - Supported compilers are < GNU | Ifort")
+    message(FATAL_ERROR
+        "Unknown/Unsupported Fortran Compiler: '${CMAKE_Fortran_COMPILER_ID}'\n"
+        "- Supported compilers are < GNU | ifort (Legacy Intel compiler) | ifx (Intel OneAPI compiler)>\n"
+        "- Of course you will need to specify the MPI wrapper: `-DCMAKE_Fortran_COMPILER=mpifort`")
 endif()
 
 
@@ -105,4 +109,9 @@ if (BUILD_GPU STREQUAL "CUDA")
     target_link_libraries(${MODEM_EXE} PRIVATE CUDA::cublas CUDA::cudart CUDA::cusparse CUDA::nvml)
 elseif (BUILD_GPU STREQUAL "HIP")
     target_link_libraries(${MODEM_EXE} PRIVATE "-lamdhip64 -lhipblas -lhipsparse -lstdc++")
+endif()
+
+if (BUILD_HDF5)
+    find_package(HDF5 REQUIRED COMPONENTS Fortran)
+    target_link_libraries(${MODEM_EXE} PRIVATE hdf5::hdf5_fortran)
 endif()

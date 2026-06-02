@@ -977,7 +977,7 @@ Contains
    ! solution does not satisfy the condition, then backtrack using
    ! cubic interpolation. 
    !
-   ! The initial step size is set outside of this routine (in the LBFGS)
+   ! The initial step size is set outside of this routine (in NLCGsolver)
    ! but these are the good choices (ref. Michael Ferris, Chapter 3, p 59):
    ! alpha_1 = alpha_{k-1} dotProd(grad_{k-1},h_{k-1})/dotProd(grad_k,h_k})
    ! or interpolate the quadratic to f(m_{k-1}), f(m_k) and
@@ -1086,11 +1086,7 @@ Contains
    ! f'(0) = (df/dm).dot.h
    g_0 = dotProd(grad,h)
 
-   ! setup the lower and upper boundary of alpha
-   alpha_l = R_ZERO
-   alpha_r = (f_0-(f_0*0.1))/(-g_0)/c2
-
-   ! alpha_1 is the initial step size, which is set in LBFGS
+   ! alpha_1 is the initial step size, which is set in NLCGsolver
    alpha_1 = alpha
    ! compute the trial mHat, f, dHat, eAll, rms
    mHat_1 = mHat_0
@@ -1140,6 +1136,9 @@ Contains
    call printf('QUADLS',lambda,alpha,f,mNorm,rms)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
    niter = niter + 1
+   ! use the two evaluated trial points to seed the sectioning bracket
+   alpha_l = min(alpha_1,alpha)*0.9 ! give a bit shrinkage to ensure progress
+   alpha_r = max(alpha_1,alpha)*1.1 ! give a bit expansion to ensure progress
    ! check whether the solution satisfies the sufficient decrease condition
    ! Strong Wolfe's condition needs the gradient 
    ! well, we are going to calculate it anyway - so why don't we do it now?
@@ -1172,14 +1171,15 @@ Contains
            endif
        endif
    else 
+       ! compute the gradient at the starting guess before using g_1
+       call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1)
+       g_1 = dotProd(grad, h) 
+       write(*,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
+       write(*,'(a4,es12.5)') ' g1=',g_1
+       write(ioLog,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
+       write(ioLog,'(a4,es12.5)') ' g1=',g_1
        if (f_1 < f_0) then! is the initial making any progress?
            ! Test if the initial guess is good for Strong Wolfe condition 
-           call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1)
-           g_1 = dotProd(grad, h) 
-           write(*,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
-           write(*,'(a4,es12.5)') ' g1=',g_1
-           write(ioLog,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
-           write(ioLog,'(a4,es12.5)') ' g1=',g_1
            if ((f_1 <= f_0 + c * alpha_1 * g_0).and.(abs(g_1) <= c2*abs(g_0))) then 
                write(*,'(a53)') 'Strong Wolfe Condition satisfied, exiting line search'
                write(ioLog,'(a53)') 'Strong Wolfe Condition satisfied, exiting line search'
@@ -1196,21 +1196,20 @@ Contains
                call deall_solnVectorMTX(eAll_1)
                return
            endif
+       endif
+       !ooops, we missed the Strong Wolfe's condtion (for one reason or 
+       !the other 
+       if ((alpha_r-alpha_l)*g_1<0) then
+           ! update the left boundary for alpha
+           alpha_l = alpha_1
        else
-           !ooops, we missed the Strong Wolfe's condtion (for one reason or 
-           !the other 
-           if ((alpha_r-alpha_l)*g_1<0) then
-               ! update the left boundary for alpha
-               alpha_l = alpha_1
-           else
-               ! update the right boundary for alpha
-               alpha_r = alpha_1
-           endif
+           ! update the right boundary for alpha
+           alpha_r = alpha_1
        endif
    endif
    ! someone has to spread the bad news
-   write(*,'(a50)') '!======Strong Wolfe Condition NOT satisfied!======'
-   write(ioLog,'(a50)') '!======Strong Wolfe Condition NOT satisfied!======'
+   write(*,'(a47)') '!=====Strong Wolfe Condition NOT satisfied!===='
+   write(ioLog,'(a47)') '!=====Strong Wolfe Condition NOT satisfied!===='
 
    if (f > f_0) then
    ! this should not happen, but in practice it is possible to end up with
@@ -1231,8 +1230,8 @@ Contains
        write(ioLog,'(a75)') 'Unable to fit a quadratic due to bad gradient estimate, exiting line search'
    else ! /inhales
        ! sectioning and fit cubic (initialize)
-       write(*,'(a50)') '!========Now sectioning with brute force========'
-       write(ioLog,'(a50)') '!========Now sectioning with brute force========'
+       write(*,'(a47)') '!=======Now sectioning with brute force========'
+       write(ioLog,'(a47)') '!=======Now sectioning with brute force========'
        write(6,*) 'alpha_l=',alpha_l,'alpha_r=',alpha_r
        write(ioLog,*) 'alpha_l=',alpha_l,'alpha_r=',alpha_r
        alpha_i = alpha_1 !START
@@ -1250,15 +1249,19 @@ Contains
            if ((b*b-3*a*g_0)<0) then ! failed to fit cubic
                write(*,'(a40)') 'SQRT of negative value in CUBIC INTERP!'
                write(ioLog,'(a40)') 'SQRT of negative value in CUBIC INTERP!'
-               write(*,'(a35)') 'using default value to bracket...'
-               write(ioLog,'(a35)') 'using default value to bracket...'
-               alpha = sqrt(alpha_l*alpha_r)
+               write(*,'(a39)') 'using safeguarded midpoint to bracket...'
+               write(ioLog,'(a39)') 'using safeguarded midpoint to bracket...'
+               alpha = 0.5d0*(alpha_l + alpha_r)
            else
                if (b<=R_ZERO) then ! fit cubic 
                    alpha = (- b + sqrt(b*b - 3.0*a*g_0))/(3.0*a)
                else
                    alpha = -g_0/(b+sqrt(b*b - 3.0*a*g_0))
                endif
+           endif
+           ! keep the sectioning step inside the current bracket
+           if ((alpha <= alpha_l).or.(alpha >= alpha_r)) then
+               alpha = 0.5d0*(alpha_l + alpha_r)
            endif
            ! compute the penalty functional
            call linComb(ONE,mHat_0,alpha,h,mHat)
@@ -1299,7 +1302,7 @@ Contains
            f_i = f_j
            alpha_j = alpha
            f_j = f
-           if (ibracket >= 5) then
+           if (ibracket >= 2) then
                write(*,'(a69)') 'Warning: exiting bracketing since the it has iterated too many times!'
                write(ioLog,'(a69)') 'Warning: exiting bracketing since the it has iterated too many times!'
                if (f < f_1) then

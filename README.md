@@ -1,11 +1,12 @@
+<img src='docs/source/imgs/ModEM_logo_wide_on_white_simple.png' width=675>
+
 Modular Electromagnetic Inversion Software (ModEM)
 ==================================================
 
-
 **ModEM: A modular system for inversion of electromagnetic geophysical data.**  
-**Authors**: Gary Egbert, Anna Kelbert, Naser Megbel & Hao Dong.
+**Authors**: Gary Egbert, Anna Kelbert, Naser Megbel, Hao Dong & Kush Tandon.
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17229575.svg)](https://doi.org/10.5281/zenodo.17229575)
+[![DOI](https://zenodo.org/badge/1025134680.svg)](https://doi.org/10.5281/zenodo.17229555)
 
 [ModEM Documentation](https://magnetotellurics.github.io/ModEM/)
 
@@ -73,6 +74,10 @@ that these downloads do not contain any git repository history or information.
 
 ## Dependencies
 
+ModEM can be compiled with any standard Fortran compiler, but has most often been
+compiled and tested with GFortran and Intel compilers. Likewise, ModEM is most often
+used with MPI and has been thoroughly tested with MPICH and OpenMPI.
+
 ModEM depends on the [LAPACK][lapack] and [BLAS][blas] libraries. Often, these
 are already included on most systems, but if not you will need to install them
 yourself and ensure they are properly linked in the `LIBS` and `LIBS_PATH`
@@ -81,9 +86,25 @@ variables of the Makefile.
 [lapack]:https://www.netlib.org/lapack/
 [blas]:https://www.netlib.org/blas/
 
-## Creating Makefiles from Configuration files
+## Building ModEM with CMake - Recommended
 
-The current build system for ModEM uses the `fmkmf.pl` Perl Script and the
+ModEM can now be built with CMake! Building with CMake is very easy,
+below is a quick-start to building with CMake:
+
+```bash
+$ cd ModEM
+$ mkdir build
+$ cd build
+$ cmake .. -DCMAKE_Fortran_COMPILER=mpifort
+$ make
+```
+
+For more information on building ModEM with CMake, and troubleshooting, please
+see the ModEM Documentation on [building with cmake](https://magnetotellurics.github.io/ModEM/building_with_cmake.html).
+
+## Building ModEM with the legacy build system
+
+The older build system for ModEM uses the `fmkmf.pl` Perl Script and the
 configuration scripts that are in `f90/CONFIG`: `f90/CONFIG/Configure`.
 Although ModEM uses Make and Makefiles, makefiles are meant to be created by
 these configuration scripts.
@@ -176,10 +197,10 @@ and passing it `MPI` as the type.
 
 # Basic ModEM Usage
 
-> **NOTE:** For a more detailed information on ModEM usage please see the [ModEM
-> User's Guide][Users-Guide].
+> **NOTE:** For a more detailed information on ModEM usage please see the
+> [ModEM Documentation](https://magnetotellurics.github.io/ModEM/).
 
-While the [User's Guide][Users-Guide] is the best resource for information on
+While the documentation above is the best resource for information on
 running ModEM, information can also be found by running the `Mod2DMT` or
 `Mod3DMT` executables with no arguments. Furthermore, specifying the job flag
 with no other arguments will produce a detailed usage description for that job
@@ -192,7 +213,7 @@ The examples below will use data and model files from the
 repository to obtain the data files and examples.
 
 [BLOCK2-Example]: https://github.com/magnetotellurics/ModEM-Examples/tree/main/Magnetotelluric/3D_MT/BLOCK2
-[Users-Guide]: https://github.com/magnetotellurics/ModEM/blob/main/doc/userguide/ModEM_UserGuide.pdf
+
 
 ## Forward Modeling
 
@@ -238,8 +259,8 @@ Of course, this will work only if you have 9 cores available on your system.
 > a max of `(2 x nTransmitters) + 1` tasks (except for the SP2 version
 > compiled with `-DFG`).
 
-> **NOTE:** Please see the [User's Guide][Users-Guide] for additional, optional arguments for
-> forward modeling.
+> **NOTE:** Please see the [ModEM Documentation](https://magnetotellurics.github.io/ModEM/)
+> for additional, optional arguments for forward modeling.
 
 ## Inversion Modeling
 
@@ -274,7 +295,8 @@ I NLCG rFile_Model rFile_Data [InvCtrl FwdCtrl CovCtrl StartModel]
 | StartModel | Starting model file |
 
 For more information on these arguments, and formats of the control files, and
-covariance files please see the [ModEM User's Guide][Users-Guide].
+covariance files please see the 
+[ModEM Documentation](https://magnetotellurics.github.io/ModEM/file_formats.html#model-covariance-files).
 
 Similar to the forward modeling, you can run the inverse modeling with MPI. The
 same rules as apply as to the number of transmitters and tasks: Must use at least two
@@ -291,7 +313,7 @@ A [Dockerfile][Dockerfile] has been provided that will create an Ubuntu docker
 container where you can compile and run ModEM. To run the ModEM docker
 container, first ensure you have [docker installed][Docker-Getting-Started] and
 running (Either have the docker [deamon running][Damon-running], or Docker
-[Desktop running][Docker-desktop].
+[Desktop running][Docker-desktop]).
 
 ## Building
 
@@ -348,10 +370,6 @@ $ docker run --mount=type=bind,source=/abosolute/path/to/ModEM,target=/root/ModE
 
 # More Information and Tools
 
-## Users Guide
-
-ModEM Users Guide is now online: https://magnetotellurics.github.io/ModEM/ .
-
 ## Related Repositories
 
 * [ModEM-Tools][ModEM-Tools] - A collection of MatLab and Python tools
@@ -383,37 +401,38 @@ included as branches in this repository under the following names:
 
 **If you use ModEM in your work, please cite the following two sources:**
 
-_Anna Kelbert, Naser Meqbel, Gary D. Egbert, Kush Tandon, ModEM: A modular system
-for inversion of electromagnetic geophysical data, Computers & Geosciences,
-Volume 66, 2014, Pages 40-53, ISSN 0098-3004,
-https://doi.org/10.1016/j.cageo.2014.01.010._ \[[PDF][Kelbert-2014-PDF]\]
+_Kelbert, A., Meqbel, N., Egbert, G. D., & Tandon, K. (2014). ModEM: A modular
+system for inversion of electromagnetic geophysical data. Computers and
+Geosciences, 66, 40–53, Elsevier. https://doi.org/10.1016/j.cageo.2014.01.010_
+\[[PDF][Kelbert-2014-PDF]\]
 
-[Kelbert-2014-PDF]: https://github.com/magnetotellurics/ModEM/blob/main/doc/Kelbert_et_al_2014_ModEM.pdf
+[Kelbert-2014-PDF]: https://github.com/magnetotellurics/ModEM/blob/main/docs/Kelbert_et_al_2014_ModEM.pdf
 
-_Egbert, Gary & Kelbert, Anna. (2012). Computational recipes for electromagnetic
-inverse problems. Geophysical Journal International. 189. 251-267.
-https://doi.org/10.1111/j.1365-246X.2011.05347.x._ 
+_Egbert, G. D., & Kelbert, A. (2012). Computational recipes for electromagnetic
+inverse problems. Geophysical Journal International, 189(1), 251–267, OUP.
+https://doi.org/10.1111/j.1365-246X.2011.05347.x_
 
-**If you use the SP/SP2 versions (divergence-free forward method) in your work, please 
-cite this source  as well:**
+**If you use the SP/SP2 versions (divergence-free forward method) in your work,
+please cite this source  as well:**
 
-_Hao Dong,  Gary D. Egbert. Divergence-free solutions to electromagnetic forward 
-and adjoint problems: a regularization approach, Geophysical Journal International,
-Volume 216(2), 2019, Pages 906–918, https://doi.org/10.1093/gji/ggy462_
+_Dong, H., & Egbert, G. D. (2019). Divergence-free solutions to electromagnetic
+forward and adjoint problems: a regularization approach. Geophysical Journal
+International, 216(2), 906–918, OUP. https://doi.org/10.1093/gji/ggy462_
 
 **If you use the CUDA/HIP interfaces of ModEM in your work, please also
 cite the following source as well:**
 
-_Hao Dong, Kai Sun, Gary Egbert, Anna Kelbert, Naser Meqbel, Hybrid CPU-GPU
-solution to regularized divergence-free curl-curl equations for electromagnetic
-inversion problems, Computers & Geosciences, Volume 184, 2024, 105518, ISSN
-0098-3004, https://doi.org/10.1016/j.cageo.2024.105518._
+_Dong, H., Sun, K., Egbert, G. D., Kelbert, A., & Meqbel, N. (2024). Hybrid
+CPU-GPU solution to regularized divergence-free curl-curl equations for
+electromagnetic inversion problems. Computers and Geosciences, 184, 05518,
+Elsevier. https://doi.org/10.1016/j.cageo.2024.105518_
+
 
 **If you invert MT transfer function that are not co-aligned with the model grid,
 please cite this paper as well:**
 
-_Liu, Z., Kelbert, A., & Chen, X. (2024) 3D magnetotelluric inversion with
-arbitrary data orientation angles Computers and Geosciences, 188, 105596,
+_Liu, Z., Kelbert, A., & Chen, X. (2024). 3D magnetotelluric inversion with
+arbitrary data orientation angles. Computers and Geosciences, 188, 105596,
 Elsevier. https://doi.org/10.1016/j.cageo.2024.105596_
 
 ## Spherical Coordinates
