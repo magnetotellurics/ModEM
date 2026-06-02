@@ -90,7 +90,7 @@ docs/build/
 # Explicitly **include** the Sphinx Makefile
 ! docs/Makefile
 
-# CMake Build
+# CMake Build and Generated Files
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
@@ -98,9 +98,16 @@ CMakeScripts
 Testing
 Makefile
 src/**Makefile
+out/
+build/
+*.cmake
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
+
+# Visual Studio Cache
+.vs/
+.vscode/

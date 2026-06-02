@@ -16,6 +16,7 @@ set_target_properties(${MODEM_EXE} PROPERTIES
     Fortran_MODULE_DIRECTORY obj
 )
 
+message(STATUS "ENV{MKLROOT} at configure time: '$ENV{MKLROOT}'")
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     target_compile_options(
         ${MODEM_EXE}
@@ -31,9 +32,9 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     )
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel" OR CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     enable_language(C)
-    find_library(MKL_INTEL_LP64 mkl_intel_lp64 HINTS $ENV{MKLROOT}/lib/intel64 ...)
-    find_library(MKL_INTEL_THREAD mkl_intel_thread HINTS $ENV{MKLROOT}/lib/intel64 ...)
-    find_library(MKL_CORE_LIB mkl_core HINTS $ENV{MKLROOT}/lib/intel64 ...)
+    find_library(MKL_INTEL_LP64 mkl_intel_lp64 HINTS $ENV{MKLROOT}/lib $ENV{MKLROOT}/lib/intel64 ...)
+    find_library(MKL_INTEL_THREAD mkl_intel_thread HINTS $ENV{MKLROOT}/lib $ENV{MKLROOT}/lib/intel64 ...)
+    find_library(MKL_CORE_LIB mkl_core HINTS $ENV{MKLROOT}/lib $ENV{MKLROOT}/lib/intel64 ...)
     find_package(Threads REQUIRED)
 
     target_compile_options(
