@@ -36,41 +36,112 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
         $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-fbacktrace>
         $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-fbounds-check>
     )
-elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel" OR CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel"
+    OR CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
+
     enable_language(C)
-    find_library(MKL_INTEL_LP64 mkl_intel_lp64 HINTS $ENV{MKLROOT}/lib $ENV{MKLROOT}/lib/intel64 ...)
-    find_library(MKL_INTEL_THREAD mkl_intel_thread HINTS $ENV{MKLROOT}/lib $ENV{MKLROOT}/lib/intel64 ...)
-    find_library(MKL_CORE_LIB mkl_core HINTS $ENV{MKLROOT}/lib $ENV{MKLROOT}/lib/intel64 ...)
+
+    find_library(MKL_INTEL_LP64   mkl_intel_lp64
+        HINTS $ENV{MKLROOT}/lib $ENV{MKLROOT}/lib/intel64 ...)
+    find_library(MKL_INTEL_THREAD mkl_intel_thread
+        HINTS $ENV{MKLROOT}/lib $ENV{MKLROOT}/lib/intel64 ...)
+    find_library(MKL_CORE_LIB     mkl_core
+        HINTS $ENV{MKLROOT}/lib $ENV{MKLROOT}/lib/intel64 ...)
+
     find_package(Threads REQUIRED)
 
-    target_compile_options(
-        ${MODEM_EXE}
-        PRIVATE
-        $<$<CONFIG:RELEASE>:-O3>
-        $<$<CONFIG:RELEASE>:-w>
-        $<$<CONFIG:DEBUG>:-O0>
-        $<$<CONFIG:DEBUG>:-g>
-        $<$<COMPILE_LANGUAGE:Fortran>:-fpp>
-        $<$<COMPILE_LANGUAGE:Fortran>:-parallel>
-        $<$<COMPILE_LANGUAGE:Fortran>:-heap-array>
-        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-fp-stack-check>
-        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-traceback>
-        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-debug extend>
-        $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-check bounds>
-    )
-    target_link_libraries(
-        ${MODEM_EXE}
-        PRIVATE
-        ${MKL_INTEL_LP64}
-        ${MKL_INTEL_THREAD}
-        ${MKL_CORE_LIB}
-        Threads::Threads
-    )
-    target_link_options(
-        ${MODEM_EXE}
-        PRIVATE
-        -qopenmp
-    )
+    if (WIN32)
+        # ---- Windows (Visual Studio + ifx/ifort) ----
+        target_compile_options(
+            ${MODEM_EXE}
+            PRIVATE
+            $<$<CONFIG:RELEASE>:/O3>
+            $<$<CONFIG:RELEASE>:/warn:none>        # similar to -w
+            $<$<CONFIG:DEBUG>:/Od>
+            $<$<CONFIG:DEBUG>:/Zi>
+            $<$<COMPILE_LANGUAGE:Fortran>:/fpp>
+            $<$<COMPILE_LANGUAGE:Fortran>:/Qparallel>
+            $<$<COMPILE_LANGUAGE:Fortran>:/heap-arrays>
+            $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:/check:stack>
+            $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:/traceback>
+            $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:/debug:full>
+            $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:/check:bounds>
+        )
+
+        # Intel OpenMP runtime (needed by mkl_intel_thread)
+        find_library(IOMP5_LIBRARY NAMES libiomp5md iomp5md
+            HINTS $ENV{ONEAPI_ROOT}/compiler/latest/lib ...)
+
+        target_link_libraries(
+            ${MODEM_EXE}
+            PRIVATE
+            ${MKL_INTEL_LP64}
+            ${MKL_INTEL_THREAD}
+            ${MKL_CORE_LIB}
+            ${IOMP5_LIBRARY}
+            Threads::Threads
+        )
+
+        target_link_options(
+            ${MODEM_EXE}
+            PRIVATE
+            /Qopenmp
+        )
+
+        if (BUILD_MPI)
+            find_library(IMPI_LIBRARY
+                NAMES impi
+                HINTS
+                "$ENV{I_MPI_ROOT}/lib"
+                "$ENV{I_MPI_ROOT}/lib/mpi/debug"
+            )
+            target_link_libraries(
+                ${MODEM_EXE}
+                PRIVATE
+                ${IMPI_LIBRARY}
+            )
+            target_include_directories(
+                ${MODEM_EXE}
+                PRIVATE
+                "$ENV{I_MPI_ROOT}/include"
+                "$ENV{I_MPI_ROOT}/include/mpi"
+            )
+        endif()
+
+    else()
+        # ---- Linux / macOS (Intel ifx/ifort with GCC/Clang-style flags) ----
+        target_compile_options(
+            ${MODEM_EXE}
+            PRIVATE
+            $<$<CONFIG:RELEASE>:-O3>
+            $<$<CONFIG:RELEASE>:-w>
+            $<$<CONFIG:DEBUG>:-O0>
+            $<$<CONFIG:DEBUG>:-g>
+            $<$<COMPILE_LANGUAGE:Fortran>:-fpp>
+            $<$<COMPILE_LANGUAGE:Fortran>:-parallel>
+            $<$<COMPILE_LANGUAGE:Fortran>:-heap-arrays>
+            $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-fp-stack-check>
+            $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-traceback>
+            $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-debug full>
+            $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:-check bounds>
+        )
+
+        target_link_libraries(
+            ${MODEM_EXE}
+            PRIVATE
+            ${MKL_INTEL_LP64}
+            ${MKL_INTEL_THREAD}
+            ${MKL_CORE_LIB}
+            Threads::Threads
+        )
+
+        target_link_options(
+            ${MODEM_EXE}
+            PRIVATE
+            -qopenmp
+        )
+    endif()
+
 else()
     message(FATAL_ERROR
         "Unknown/Unsupported Fortran Compiler: '${CMAKE_Fortran_COMPILER_ID}'\n"
