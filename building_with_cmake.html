@@ -53,6 +53,7 @@
 <li><a class="reference internal" href="#specifying-intel-instruction-set">Specifying Intel Instruction Set</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#building-modem-spherical-version">Building ModEM Spherical Version</a></li>
 <li><a class="reference internal" href="#building-gpu-capable-modem-with-cmake">Building GPU capable ModEM with CMake</a><ul>
 <li><a class="reference internal" href="#compiling-modem-gpu-code-with-cuda">Compiling ModEM GPU Code with CUDA</a><ul>
 <li><a class="reference internal" href="#specifying-cuda-gpu-compute-capability">Specifying CUDA GPU Compute Capability</a></li>
@@ -123,7 +124,7 @@ these cached variables, which is in <code class="docutils literal notranslate"><
 <p>To see the list of all CMAKE avaliable options for building ModEM, you can run:</p>
 <p><code class="docutils literal notranslate"><span class="pre">cmake</span> <span class="pre">.</span> <span class="pre">-LH</span></code></p>
 <p>or if you are in <code class="docutils literal notranslate"><span class="pre">ModEM/build</span></code>:</p>
-<p><code class="docutils literal notranslate"><span class="pre">cmake</span> <span class="pre">-S</span> <span class="pre">..</span> <span class="pre">-B</span> <span class="pre">.</span> <span class="pre">-LH</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">cmake</span> <span class="pre">..</span> <span class="pre">-LH</span></code></p>
 </div>
 <p>Navigate into ModEM and create a new directory, <code class="docutils literal notranslate"><span class="pre">build</span></code>. CMake is nice in that
 it allows us to build out of source. Change directory into this <code class="docutils literal notranslate"><span class="pre">build</span></code> directory:</p>
@@ -133,14 +134,11 @@ $ <span class="nb">cd</span> build
 </pre></div>
 </div>
 <p>Now, we can run CMake:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake -S .. -B . -DCMAKE_Fortran_COMPILER<span class="o">=</span>mpifort
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake .. -DCMAKE_Fortran_COMPILER<span class="o">=</span>mpifort
 </pre></div>
 </div>
-<p>In the above command, the <code class="docutils literal notranslate"><span class="pre">-S</span> <span class="pre">..</span></code> says that CMake should look in the directory
-above for the source and the <code class="docutils literal notranslate"><span class="pre">-B</span> <span class="pre">.</span></code> specifies that CMake should build in the
-current working directory.</p>
 <p>The above command prints some output:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake -S .. -B . -DCMAKE_Fortran_COMPILER<span class="o">=</span>mpifort
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake .. -DCMAKE_Fortran_COMPILER<span class="o">=</span>mpifort
 -- The Fortran compiler identification is LLVMFlang <span class="m">20</span>.1.8
 -- Detecting Fortran compiler ABI info
 -- Detecting Fortran compiler ABI info - <span class="k">done</span>
@@ -174,7 +172,7 @@ current working directory.</p>
 <p>CMake will try and locate BLAS and LAPACK automatically, if CMake has
 difficulties finding them, you can specify them by using the
 <code class="docutils literal notranslate"><span class="pre">LAPACK_LIBRARIES</span></code> or the <code class="docutils literal notranslate"><span class="pre">BLAS_LIBRARIES</span></code> CMake command-line:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake -S .. -B -DLAPACK_LIBRARIES<span class="o">=</span>/path/to/lapacklib/liblapack.a -DBLAS_LIBRARIES<span class="o">=</span>/path/to/lablaslib/libblas.a
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake .. -DLAPACK_LIBRARIES<span class="o">=</span>/path/to/lapacklib/liblapack.a -DBLAS_LIBRARIES<span class="o">=</span>/path/to/lablaslib/libblas.a
 </pre></div>
 </div>
 <p>After running CMake command above, and you see that the build files have been
@@ -248,7 +246,7 @@ when calling <code class="docutils literal notranslate"><span class="pre">cmake<
 <p>Again, once can use the following to display all the available options:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ mkdir build
 $ <span class="nb">cd</span> build
-$ cmake -B .. -S . -LH
+$ cmake .. -LH
 </pre></div>
 </div>
 <ul class="simple">
@@ -331,6 +329,30 @@ also explicitly specify your feature set:</p>
 </div>
 </div>
 </div>
+<div class="section" id="building-modem-spherical-version">
+<h1>Building ModEM Spherical Version<a class="headerlink" href="#building-modem-spherical-version" title="Permalink to this headline">¶</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The Spherical version of ModEM is experimental and will not work with
+traditional MT source setup. MT forward modeling in spherical coordinates
+relies on an external 1D forward model and the secondary field formulation
+option in ModEM to be physically correct.</p>
+<p>Using spherical coordinates with the tradtional MT source setup has not
+been shown to be physically accurate.</p>
+</div>
+<p>To build the experimental spherical version of ModEM you can specify the
+<code class="docutils literal notranslate"><span class="pre">BUILD_SPHERICAL</span></code> argument in CMake:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake .. -DBUILD_SPHERICAL<span class="o">=</span>on
+</pre></div>
+</div>
+<p>After running the above, you will presented with the same warning printed
+above, in order to fully build the experimental version, you must also pass the
+<cite>FORCE_SPHERICAL</cite> argument as well:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake .. -DBUILD_SPHERICAL<span class="o">=</span>on -DFORCE_SPHERICAL<span class="o">=</span>on
+$ make
+</pre></div>
+</div>
+</div>
 <div class="section" id="building-gpu-capable-modem-with-cmake">
 <h1>Building GPU capable ModEM with CMake<a class="headerlink" href="#building-gpu-capable-modem-with-cmake" title="Permalink to this headline">¶</a></h1>
 <p>The nice thing about CMake over the old configure script is that CMake can
@@ -350,7 +372,7 @@ environment is set to the toolkit installation location and/or <code class="docu
 available on the command line.</p>
 <p>To build ModEM with GPU CUDA we can run the following command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ mkdir build<span class="p">;</span> <span class="nb">cd</span> build
-$ cmake -S .. -B . -DCMAKE_Fortran_COMPILER<span class="o">=</span>mpifort -DBUILD_GPU<span class="o">=</span>CUDA
+$ cmake .. -DCMAKE_Fortran_COMPILER<span class="o">=</span>mpifort -DBUILD_GPU<span class="o">=</span>CUDA
 </pre></div>
 </div>
 <p>Again, you may need to specify LAPACK or BLAS libraries, see
@@ -397,12 +419,12 @@ Tesla V100-SXM2-16GB, 7.0
 </div>
 <p>You can specify your desired compute capability by specifying the
 <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> CMake command line option:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake -S .. -B . -DCMAKE_Fortran_COMPILER<span class="o">=</span>mpifort -DBUILD_GPU<span class="o">=</span>CUDA -DCMAKE_CUDA_ARCHITECTURES<span class="o">=</span><span class="s2">&quot;35;50;72&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake .. -DCMAKE_Fortran_COMPILER<span class="o">=</span>mpifort -DBUILD_GPU<span class="o">=</span>CUDA -DCMAKE_CUDA_ARCHITECTURES<span class="o">=</span><span class="s2">&quot;35;50;72&quot;</span>
 </pre></div>
 </div>
 <p>This will generate code for Cuda architectures 35, 50 and 72. You can also tell
 CMake to use whatever capability your GPU can handle with the <code class="docutils literal notranslate"><span class="pre">native</span></code> keyword:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake -S .. -B . -DCMAKE_Fortran_COMPILER<span class="o">=</span>mpifort -DBUILD_GPU<span class="o">=</span>CUDA -DCMAKE_CUDA_ARCHITECTURES<span class="o">=</span><span class="s2">&quot;native&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ cmake .. -DCMAKE_Fortran_COMPILER<span class="o">=</span>mpifort -DBUILD_GPU<span class="o">=</span>CUDA -DCMAKE_CUDA_ARCHITECTURES<span class="o">=</span><span class="s2">&quot;native&quot;</span>
 </pre></div>
 </div>
 <p>You can also specify <code class="docutils literal notranslate"><span class="pre">all</span></code> or <code class="docutils literal notranslate"><span class="pre">all-major</span></code>, which will generate code for all

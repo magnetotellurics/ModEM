@@ -39,7 +39,7 @@ Building ModEM with CMake
 
     or if you are in ``ModEM/build``:
 
-    ``cmake -S .. -B . -LH``
+    ``cmake .. -LH``
 
 Navigate into ModEM and create a new directory, ``build``. CMake is nice in that
 it allows us to build out of source. Change directory into this ``build`` directory:
@@ -54,17 +54,13 @@ Now, we can run CMake:
 
 .. code-block:: bash
 
-    $ cmake -S .. -B . -DCMAKE_Fortran_COMPILER=mpifort
-
-In the above command, the ``-S ..`` says that CMake should look in the directory
-above for the source and the ``-B .`` specifies that CMake should build in the
-current working directory.
+    $ cmake .. -DCMAKE_Fortran_COMPILER=mpifort
 
 The above command prints some output:
 
 .. code-block:: bash
 
-    $ cmake -S .. -B . -DCMAKE_Fortran_COMPILER=mpifort
+    $ cmake .. -DCMAKE_Fortran_COMPILER=mpifort
     -- The Fortran compiler identification is LLVMFlang 20.1.8
     -- Detecting Fortran compiler ABI info
     -- Detecting Fortran compiler ABI info - done
@@ -100,7 +96,7 @@ difficulties finding them, you can specify them by using the
 
 .. code-block:: bash
 
-    $ cmake -S .. -B -DLAPACK_LIBRARIES=/path/to/lapacklib/liblapack.a -DBLAS_LIBRARIES=/path/to/lablaslib/libblas.a
+    $ cmake .. -DLAPACK_LIBRARIES=/path/to/lapacklib/liblapack.a -DBLAS_LIBRARIES=/path/to/lablaslib/libblas.a
 
 
 After running CMake command above, and you see that the build files have been
@@ -182,7 +178,7 @@ Again, once can use the following to display all the available options:
 
     $ mkdir build
     $ cd build
-    $ cmake -B .. -S . -LH
+    $ cmake .. -LH
 
 * 2D/3D Builds:
     * ``-DMODEM_BUILD_DIMS=<2D | 3D>``
@@ -243,6 +239,39 @@ also explicitly specify your feature set:
     $ cmake .. -DCMAKE_Fortran_FLAGS="-msse4.2"
 
 
+
+Building ModEM Spherical Version
+==================================
+
+.. warning::
+
+    The Spherical version of ModEM is experimental and will not work with
+    traditional MT source setup. MT forward modeling in spherical coordinates
+    relies on an external 1D forward model and the secondary field formulation
+    option in ModEM to be physically correct.
+
+    Using spherical coordinates with the tradtional MT source setup has not
+    been shown to be physically accurate.
+
+
+To build the experimental spherical version of ModEM you can specify the
+``BUILD_SPHERICAL`` argument in CMake:
+
+.. code-block:: bash
+
+   $ cmake .. -DBUILD_SPHERICAL=on
+
+
+After running the above, you will presented with the same warning printed
+above, in order to fully build the experimental version, you must also pass the
+`FORCE_SPHERICAL` argument as well:
+
+.. code-block:: bash
+
+   $ cmake .. -DBUILD_SPHERICAL=on -DFORCE_SPHERICAL=on
+   $ make
+
+
 Building GPU capable ModEM with CMake
 ======================================
 
@@ -271,7 +300,7 @@ To build ModEM with GPU CUDA we can run the following command:
 .. code-block:: bash
 
     $ mkdir build; cd build
-    $ cmake -S .. -B . -DCMAKE_Fortran_COMPILER=mpifort -DBUILD_GPU=CUDA
+    $ cmake .. -DCMAKE_Fortran_COMPILER=mpifort -DBUILD_GPU=CUDA
 
 Again, you may need to specify LAPACK or BLAS libraries, see
 :ref:`findlapack_n_blas`. After building, you should see confirmation that the
@@ -328,14 +357,14 @@ You can specify your desired compute capability by specifying the
 
 .. code-block:: bash
 
-    $ cmake -S .. -B . -DCMAKE_Fortran_COMPILER=mpifort -DBUILD_GPU=CUDA -DCMAKE_CUDA_ARCHITECTURES="35;50;72"
+    $ cmake .. -DCMAKE_Fortran_COMPILER=mpifort -DBUILD_GPU=CUDA -DCMAKE_CUDA_ARCHITECTURES="35;50;72"
 
 This will generate code for Cuda architectures 35, 50 and 72. You can also tell
 CMake to use whatever capability your GPU can handle with the ``native`` keyword:
 
 .. code-block:: bash
 
-    $ cmake -S .. -B . -DCMAKE_Fortran_COMPILER=mpifort -DBUILD_GPU=CUDA -DCMAKE_CUDA_ARCHITECTURES="native"
+    $ cmake .. -DCMAKE_Fortran_COMPILER=mpifort -DBUILD_GPU=CUDA -DCMAKE_CUDA_ARCHITECTURES="native"
 
 You can also specify ``all`` or ``all-major``, which will generate code for all
 or all major version. For more information on available options see:
@@ -404,3 +433,5 @@ Compiling ModEM GPU Code with HIP
 ----------------------------------
 
 Compiling the HIP code with CMAKE is currently a WIP.
+
+
