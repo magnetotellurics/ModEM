@@ -22,12 +22,15 @@
 module ModEM_logger
 
     use utilities
+#ifdef MPI
     use Declaration_MPI
+#endif
 
 implicit none
 
     character (len=512), private ::  log_fname
     integer, private :: log_fid = 0
+    integer :: task_id_lcl
 
 contains
 
@@ -46,10 +49,18 @@ subroutine ModEM_log_init(mainOnly)
         mainOnly_lcl = .true.
       end if
 
-      if ((taskid == 0 .and. mainOnly_lcl) .or. (.not. mainOnly_lcl)) then
-          write(log_fname, log_str_fmt) 'log.', taskid, '.modem.out'
+#ifdef MPI
+      ! Use taskid from Decleration_MPI
+      task_id_lcl = taskid
+#else
+      ! Only one logger
+      task_id_lcl = 0
+#endif
+
+      if ((task_id_lcl == 0 .and. mainOnly_lcl) .or. (.not. mainOnly_lcl)) then
+          write(log_fname, log_str_fmt) 'log.', task_id_lcl, '.modem.out'
           open(newunit=log_fid, file=log_fname, status='replace')
-          call ModEM_log("Log Initalized $i - "//trim(log_fname), intArgs=(/taskid/), mainOnly=mainOnly)
+          call ModEM_log("Log Initalized $i - "//trim(log_fname), intArgs=(/task_id_lcl/), mainOnly=mainOnly)
       end if
 
 end Subroutine ModEM_log_init
@@ -188,7 +199,7 @@ subroutine ModEM_log(msg, intArgs, realArgs, logicArgs, fid, mainOnly, flush_log
 
    call expand_string(msg, messageExpanded, intArgs, logicArgs, realArgs)
 
-   if ((mainOnly_lcl .and. taskid == 0) .or. (.not. mainOnly_lcl)) then
+   if ((mainOnly_lcl .and. task_id_lcl == 0) .or. (.not. mainOnly_lcl)) then
        write(fid_lcl,*) trim(messageExpanded)
 
        if (flush_lcl) then
