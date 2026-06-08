@@ -638,7 +638,6 @@ Contains
         integer                                 :: hdferr
       
         CALL h5fclose_f(file_id, hdferr)
-        CALL h5close_f(hdferr)
       
       end subroutine close_ef_hdf5
 

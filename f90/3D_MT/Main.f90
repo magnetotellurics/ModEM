@@ -11,6 +11,7 @@ module Main
   use userctrl
   use ioascii
   use dataio
+  use ModEM_HDF5
   implicit none
 
       ! I/O units ... reuse generic read/write units if
@@ -366,6 +367,16 @@ Contains
     character(len=*), intent(in) :: model_input_type
     character(len=*), intent(in) :: model_output_type
 
+    integer :: hdferr
+
+#ifdef HDF5
+    if (trim(data_input_type) == DATA_FILE_TYPE_HDF5 .or. trim(data_output_type) == DATA_FILE_TYPE_HDF5 &
+            .or. trim(model_input_type) == DATA_FILE_TYPE_HDF5 .or. trim(model_output_type) == DATA_FILE_TYPE_HDF5) then
+
+            call ModEM_HDF5_init()
+    end if
+#endif
+
     call setup_dataIO(data_input_type, data_output_type)
     call setup_modelParamIO(model_input_type, model_output_type)
 
@@ -378,6 +389,10 @@ Contains
   subroutine deallGlobalData()
 
 	integer	:: i, istat
+#ifdef HDF5
+    integer :: hdferr
+#endif
+
 
     write(6,*) 'Cleaning up...'
 
@@ -419,6 +434,14 @@ Contains
 	call deallEMsolveControl(solverParams) ! 3D_MT/FWD/EMsolve3D.f90
 
 	call deall_CmSqrt()
+
+#ifdef HDF5
+    call h5close_f(hdferr)
+    if (hdferr < 0) then
+       write(0,*) "ERROR: HDF5 Error on h5close_f (shutdown)"
+       call h5eprint_f(h5e_default_f, hdferr)
+    end if
+#endif
 
     if (output_level > 3) then
        write(0,*) 'All done.'

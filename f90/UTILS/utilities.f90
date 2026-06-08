@@ -1,5 +1,6 @@
 module utilities
 
+    use hdf5
 	use math_constants
 	implicit none
 
@@ -48,6 +49,19 @@ Contains
 #ifdef MPI
     integer :: ierr, error_code
 #endif
+
+#ifdef HDF5
+    integer :: hdferr
+#endif
+
+#ifdef HDF5
+    call h5close_f(hdferr)
+    if (hdferr < 0) then
+       write(0,*) "ERROR: HDF5 Error on h5close_f (shutdown)"
+       call h5eprint_f(h5e_default_f, hdferr)
+    end if
+#endif
+
 
 #ifdef MPI
     call MPI_Abort(MPI_COMM_WORLD, error_code, ierr)

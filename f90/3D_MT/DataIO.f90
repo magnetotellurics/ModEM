@@ -75,7 +75,7 @@ subroutine write_dataVectorMTX(allData,cfile)
         case (DATA_FILE_TYPE_HDF5)
             call compiled_with_HDF5_check()
 #ifdef HDF5
-            call write_hdf5_data(allData, cfile)
+            call write_data_hdf5(allData, cfile)
 #endif
         case default
     end select

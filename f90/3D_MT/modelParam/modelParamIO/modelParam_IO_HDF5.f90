@@ -7,7 +7,7 @@ use griddef
 
 implicit none
 
-integer(HID_T), private, save   :: group_id, attr_id, dset_id, dspace_id, atype_id, aspace_id ! file, data set, and dataspace handles
+integer(HID_T), private, save   :: attr_id, dset_id, dspace_id, atype_id, aspace_id ! file, data set, and dataspace handles
 
 public :: write_modelParam_hdf5
 public :: read_modelParam_hdf5
@@ -34,11 +34,7 @@ contains
 	  	  write(0,*) 'Will be writing the model output in cartesian HDF5 format...'
 	  end if
 
-      write(0,*) 'hdf5 - write_modelParam_hdf5 - file: ', trim(cfile)
-
-
       ! Open file here
-      call h5open_f(hdferr)
       call open_hdf5(cfile, file_id, H5F_ACC_TRUNC_F)
 	  call write_geometry_hdf5(file_id, m)
 	  call write_sigma_hdf5(file_id, m)
@@ -86,7 +82,6 @@ contains
 	  paramType = ''
 
 	  ! Now, reopen HDF5 to read the conductivity
-	    write(0,*) 'Reading Sigma'
 	    CALL open_read_hdf5(cfile, file_id)
 	    write(0,*) cfile,' is open and ready to read electrical conductivity'
 
@@ -126,7 +121,6 @@ contains
 
 	  ! Finally create the model parameter
 	  call create_modelParam(grid,paramType,m,ccond)
- 	  write(0,*) 'created grid and model parameters'
 
  	  ! In ModelSpace, save the user paramType for output
 	  userParamType = paramType
@@ -152,8 +146,6 @@ contains
         integer                                 :: hdferr
         logical                                 :: lexist
 
-        write(0,*) 'HDF5 - Creating file named: ', trim(cfile), 'Access mode: ', access_flags, H5F_ACC_EXCL_F, H5F_ACC_TRUNC_F
-
         call h5fcreate_f(cfile, H5F_ACC_TRUNC_F, file_id, hdferr)
 
         if (hdferr < 0) then
@@ -161,8 +153,6 @@ contains
             write(0,*) 'ERROR: In open_hdf5()'
             call ModEM_Abort()
         end if
-
-        write(0,*) 'HDF5 - File Opened! - file_id: ', file_id
 
     end subroutine open_hdf5
 
@@ -174,8 +164,6 @@ contains
         integer(kind=HID_T), intent(out)        :: file_id
         integer                                 :: hdferr
         logical                                 :: lexist
-
-        write(0,*) 'OPENING HDF5 for reading:', trim(cfile)
 
         inquire(file = cfile, exist = lexist)
         if (lexist) then
@@ -193,12 +181,9 @@ contains
         integer(kind=HID_T), intent(in)         :: file_id
         integer                                 :: hdferr
 
-        write(0,*) 'We are closing file_id: ', file_id
-
         ! TODO: Do we need to close all groups 
         ! CALL h5gclose_f(group_id, hdferr)
         CALL h5fclose_f(file_id, hdferr)
-        CALL h5close_f(hdferr)
 
     end subroutine close_hdf5
 
@@ -233,7 +218,8 @@ contains
                 call H5Screate_simple_f(1, dimsc, aspace_id, hdferr)
                 CALL h5acreate_f(path_id, attr_name , atype_id, aspace_id, attr_id, hdferr)
                 CALL h5awrite_f(attr_id, atype_id, attr_obj%att_real, dimsc, hdferr)
-                call H5Aclose_f(attr_id, hdferr)
+                call h5aclose_f(attr_id, hdferr)
+                call h5sclose_f(aspace_id, hdferr)
            end select
 
       end subroutine write_hdf5_attr
@@ -247,6 +233,7 @@ contains
         INTEGER(HSIZE_T)  :: attrlen  ! Length of the attribute string
         INTEGER(SIZE_T)   :: dimsc(1) ! Scalar or single value string
         REAL(dp)             :: att_data !attribute read buffer
+        integer (kind=HID_T) :: group_id
 
         call h5aopen_f(group_id, att_name, attr_id, hdferr)
 
@@ -279,8 +266,7 @@ contains
 
         INTEGER(8), DIMENSION(1) :: dim1d ! Datasets dimensions for 1D arrays
         integer           :: hdferr, ii
-
-        write(0,*) 'HDF5 - write_geometry_hdf5 - file_id: ', file_id
+        integer (kind=HID_T) :: group_id
 
         grid = m%grid
 
@@ -292,7 +278,7 @@ contains
 
         ! ! Write grid geometry definitions
         CALL h5gopen_f(file_id, "/", group_id, hdferr)
-        write(0,*) 'HDF5 - write_geometry_hdf5 - 1 '
+
         ! Assign attribute values
         attr_obj%att_real = -grid%ox
         call write_hdf5_attr('dbl','model_origin_x', attr_obj, group_id)
@@ -303,22 +289,16 @@ contains
         attr_obj%att_real = 0.0
         call write_hdf5_attr('dbl','model_rotation_angle', attr_obj, group_id)
 
-        write(0,*) 'HDF5 - write_geometry_hdf5 - 2'
-
-
         attr_obj%att_string = 'xy'
         call write_hdf5_attr('str','model_primary_coords', attr_obj, group_id)
         attr_obj%att_string = 'degrees'
         call write_hdf5_attr('str','model_rotation_units', attr_obj, group_id)
-
 
         dim1d(1) = nx   !might need to adjust this so that each celsize has the correct dimension length
         ! write the linear data array for NX
         CALL h5screate_simple_f(1, dim1d, dspace_id, hdferr)
         CALL h5dcreate_f(group_id, 'x', H5T_NATIVE_DOUBLE , dspace_id, dset_id, hdferr)
         CALL h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE , grid%xCenter, dim1d, hdferr)
-
-        write(0,*) 'HDF5 - write_geometry_hdf5 - 3'
 
         !write attributes for x dataset
         attr_obj%att_string = 'DIMENSION_SCALE'
@@ -332,15 +312,14 @@ contains
         attr_obj%att_string = 'meters'
         call write_hdf5_attr('str','units', attr_obj, dset_id)
 
-        write(0,*) 'HDF5 - write_geometry_hdf5 - 4'
+        call h5dclose_f(dset_id, hdferr)
+        call h5sclose_f(dspace_id, hdferr)
 
         ! write the linear data array for NY
         dim1d(1) = ny
         CALL h5screate_simple_f(1, dim1d, dspace_id, hdferr)
         CALL h5dcreate_f(group_id, 'y', H5T_NATIVE_DOUBLE, dspace_id, dset_id, hdferr)
         CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, grid%yCenter, dim1d, hdferr)
-
-        write(0,*) 'HDF5 - write_geometry_hdf5 - 5'
 
         !write attributes for y dataset
         attr_obj%att_string = 'DIMENSION_SCALE'
@@ -354,16 +333,14 @@ contains
         attr_obj%att_string = 'meters'
         call write_hdf5_attr('str','units', attr_obj, dset_id)
 
-        write(0,*) 'HDF5 - write_geometry_hdf5 - 6'
+        call h5dclose_f(dset_id, hdferr)
+        call h5sclose_f(dspace_id, hdferr)
 
         ! write the linear data array for NZ
         dim1d(1) = nzEarth
         CALL h5screate_simple_f(1, dim1d, dspace_id, hdferr)
         CALL h5dcreate_f(group_id, 'z', H5T_NATIVE_DOUBLE , dspace_id, dset_id, hdferr)
         CALL h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE , grid%zCenter(grid%NzAir+1:NzEarth+grid%NzAir), dim1d, hdferr)
-
-        write(0,*) 'HDF5 - write_geometry_hdf5 - 7'
-
 
         !write attributes for z dataset
         attr_obj%att_string = 'DIMENSION_SCALE'
@@ -377,12 +354,8 @@ contains
         attr_obj%att_string = 'meters'
         call write_hdf5_attr('str','units', attr_obj, dset_id)
 
-        write(0,*) 'HDF5 - write_geometry_hdf5 - 8'
-
-        ! attr_obj%int_array = [673, 0]
-        ! call write_hdf5_attr('int','REFERENCE_LIST', attr_obj, dset_id)
-
-        write(0,*) 'HDF5 - write_geometry_hdf5 '
+        call h5dclose_f(dset_id, hdferr)
+        call h5sclose_f(dspace_id, hdferr)
 
     end subroutine write_geometry_hdf5
 
@@ -400,6 +373,7 @@ contains
         INTEGER(HSIZE_T), DIMENSION(1)        :: dim1d ! Datasets dimensions for 1D arrays
         integer                               :: hdferr, istat
         integer                               :: Nx, Ny, NzEarth, i, j, k
+        integer (kind=HID_T) :: group_id
 
         paramType = userParamType
 
@@ -448,8 +422,6 @@ contains
         CHARACTER(LEN=10), parameter :: prop = "log10sigma"
         real(8)                               :: origin_x
 
-        write(0,*) 'write_sigma_hdf5 - start'
-
         ! Convert modelParam to natural log or log10 for output
         !paramType = userParamType
         paramType = 'LOG10'
@@ -482,8 +454,6 @@ contains
         ! Write the resistivity
         CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, ccond%v, dim3d, hdferr)
 
-        write(0,*) 'write_sigma_hdf5 - end'
-
     end subroutine write_sigma_hdf5
 
     !******************************************************************
@@ -505,6 +475,7 @@ contains
         real(8)                                    :: x, y, z
         real(8)                                    :: origin(3)
 
+        integer (kind=HID_T) :: group_id
 
         !!!!!!!!! READ X DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! Open X dataset and get dataspace dimensions
@@ -513,7 +484,6 @@ contains
         ! The npoints will be a differents size for each dataset
         call h5dget_space_f(dset_id, dspace_id, hdferr)
         call h5sget_simple_extent_npoints_f(dspace_id, nx, hdferr)
-        write(0,*) 'read ',nx,' X from file'
 
         !allocate the space for the local variable
         allocate(xctr(nx), STAT = istat)
@@ -526,7 +496,6 @@ contains
         ! The npoints will be a differents size for each dataset
         call h5dget_space_f(dset_id, dspace_id, hdferr)
         call h5sget_simple_extent_npoints_f(dspace_id, ny, hdferr)
-        write(0,*) 'read ',ny,' Y from file'
 
         !allocate the space for the local variable
         allocate(yctr(ny), STAT = istat)
@@ -541,14 +510,12 @@ contains
         ! The npoints will be a differents size for each dataset
         call h5dget_space_f(dset_id, dspace_id, hdferr)
         call h5sget_simple_extent_npoints_f(dspace_id, nz, hdferr)
-        write(0,*) 'read ',nz,' Z from file'
 
         !allocate the space for the local variable
         allocate(zctr(nz), STAT = istat)
 
         ! Read  grid geometries from Hdf5
         CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, zctr, dim1d, hdferr)
-        write(0,*) zctr
 
         ! Setup grid
         grid_x = nx

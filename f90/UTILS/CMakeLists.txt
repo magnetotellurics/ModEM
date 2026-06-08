@@ -18,3 +18,10 @@ if (USE_C_TIMERS)
 
     add_compile_definitions(USE_C_TIMERS)
 endif()
+
+if (BUILD_HDF5)
+    target_sources(${MODEM_EXE}
+        PRIVATE ModEM_HDF5_routines.f90
+    )
+
+endif()
