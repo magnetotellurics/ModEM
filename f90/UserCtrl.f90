@@ -19,6 +19,9 @@ module UserCtrl
   character*1, parameter  :: TEST_GRAD = 'g'
   character*1, parameter  :: TEST_ADJ = 'A'
   character*1, parameter  :: TEST_SENS = 'S'
+  character*1, parameter  :: GEN_NAMELIST = 'N'
+
+  character(len=*), parameter :: MODEM_NAMELIST = 'namelist.modem.nl'
 
   ! ***************************************************************************
   ! * userdef_control contains the list of all essential input information currently
@@ -51,6 +54,10 @@ module UserCtrl
 	character(80)       :: wFile_dModel
 	character(80)       :: wFile_EMsoln, wFile_EMrhs, wFile_Sens
 
+    ! Primary Field information
+    character(80)       :: primary_field ! Method for primary field, 'gen', 'file'
+    character(80)       :: primary_field_file
+
 	! Specify covariance configuration
 	character(80)       :: rFile_Cov
 
@@ -60,8 +67,8 @@ module UserCtrl
 	! Choose the sort of test / procedure variant you wish to perform
 	character(80)       :: option
 
-    	! Out-of-core file prefix for storing working E-field solutions (NCI)
-    	character(80)       :: prefix
+    ! Out-of-core file prefix for storing working E-field solutions (NCI)
+    character(80)       :: prefix
 
 	! Specify damping parameter for the inversion
 	real(8)             :: lambda
@@ -72,14 +79,16 @@ module UserCtrl
 	! Specify the magnitude for random perturbations
 	real(8)             :: delta
 
-    	! Specify the Covariance Type used in 3D (reserved for future use)
-    	integer             :: CovType
+    ! Specify the Covariance Type used in 3D (reserved for future use)
+    integer             :: CovType
 
 	! Indicate how much output you want
 	integer             :: output_level
 
-    	! Reduce master memory usage by storing E-fields in files (NCI)
-    	logical             :: storeSolnsInFile
+    ! Reduce master memory usage by storing E-fields in files (NCI)
+    logical             :: storeSolnsInFile
+
+    logical             :: SFF
 
   end type userdef_control
 
@@ -112,22 +121,25 @@ Contains
   	ctrl%rFile_dModel = 'n'
   	ctrl%wFile_dModel = 'n'
   	ctrl%rFile_EMrhs = 'n'
-    	ctrl%wFile_EMrhs = 'n'
-    	ctrl%rFile_EMsoln = 'n'
+    ctrl%wFile_EMrhs = 'n'
+    ctrl%rFile_EMsoln = 'n'
   	ctrl%wFile_EMsoln = 'n'
   	ctrl%rFile_Prior = 'n'
   	ctrl%wFile_Sens = 'n'
   	ctrl%rFile_Cov = 'n'
+    ctrl% primary_field = 'n'
+    ctrl% primary_field_file = 'n'
   	ctrl%search = 'NLCG'
   	ctrl%option = 'J'
   	ctrl%lambda = 10.
   	ctrl%eps = 1.0e-7
   	ctrl%delta = 0.05
-    	! 1 for AR, 2 for L1, 3 for L2
-    	ctrl%CovType = 1
+    ! 1 for AR, 2 for L1, 3 for L2
+    ctrl%CovType = 1
   	ctrl%output_level = 3	
 	ctrl%prefix = 'n'
 	ctrl%storeSolnsInFile = .false.
+    ctrl%SFF = .false.
 
     ! Using process ID in MPI output file name has the advantage that
     ! the user may run several instances of the program in one directory
@@ -838,6 +850,8 @@ Contains
            ctrl%wFile_Sens = temp(6)
         end if
 
+      case (GEN_NAMELIST) ! N - Generate the optional namelist - 'hidden' for now
+          ! NO-OP - Don't need to do anything here...
       case default
          call errStop('Unknown job. Please check your command line options')
 
@@ -850,4 +864,224 @@ Contains
      ctrl%job = job
 
   end subroutine parseArgs
+
+  subroutine generate_optional_nml()
+
+     implicit none
+
+     integer :: nl_fid
+     logical :: namelist_exists
+     character (len=256) :: iomsg
+     integer :: iostat
+
+     inquire(file=trim(MODEM_NAMELIST), exist=namelist_exists)
+     if (namelist_exists) then
+         write(0,*) "Namelist file '", trim(MODEM_NAMELIST), "' already exists"
+         write(0,*) "Delete it and re-run this program to overwrite it"
+         call ModEM_abort()
+     end if
+
+     open(newunit=nl_fid, file=trim(MODEM_NAMELIST), status='new', action='write', iostat=iostat, iomsg=iomsg)
+     if (iostat /= 0) then
+         write(0,*) "Failed to open namelist '", trim(MODEM_NAMELIST), "': ", trim(iomsg)
+         call ModEM_abort()
+     end if
+
+     call gen_nml_section_settings(nl_fid)
+
+     call gen_nml_section_grid(nl_fid)
+
+     close(nl_fid)
+
+  end subroutine generate_optional_nml
+
+  subroutine process_optional_namelist(ctrl)
+
+     implicit none
+     type(userdef_control), intent(inout)   :: ctrl
+
+     logical :: namelist_exists
+     integer :: nl_fid, iostat
+
+     character(len=256) :: iomsg
+
+     inquire(file=trim(MODEM_NAMELIST), exist=namelist_exists)
+
+     if (.not. namelist_exists) then
+         ! The namelist doesn't exist, so set defaults (if there are any)
+         ! and return
+         return
+     end if
+
+     write(0,*) "Optional ModEM namelist: '", trim(MODEM_NAMELIST), "' was found! Reading..."
+
+     open(newunit=nl_fid, file=trim(MODEM_NAMELIST), status='old', action='read', iostat=iostat, iomsg=iomsg)
+     if (iostat /= 0) then
+         write(0,*) "Failed to open namelist '", trim(MODEM_NAMELIST), "': ", trim(iomsg)
+         call ModEM_abort()
+     end if
+
+     ! The following subroutines *attempt* to read a namelist section.
+     ! We should allow namelist sections to appear in any order, and allow the user
+     ! to ommit any undesired sections.
+     !
+     ! So, we should rewind, so ftran can find the section we are asking for.
+     call process_nml_section_settings(ctrl, nl_fid)
+     rewind(nl_fid)
+
+     call process_nml_section_grid(ctrl, nl_fid)
+     rewind(nl_fid) ! Technically not necessary, but just continuing the pattern
+
+     close(nl_fid)
+
+  end subroutine process_optional_namelist
+
+  subroutine process_nml_section_settings(ctrl, nl_fid)
+
+     implicit none
+
+     type (userdef_control), intent(inout) :: ctrl
+     integer, intent(in) :: nl_fid
+
+     integer :: iostat
+     integer :: output_level_int
+
+     ! Namelist - &settings - section
+     character (len=80) :: output_level
+     character (len=256) :: iomsg
+
+
+     namelist /settings/ output_level
+
+
+     read(nl_fid, nml=settings, iostat=iostat, iomsg=iomsg)
+     if (iostat /= 0) then
+        ! Returns true if we have read to the EOF. Meaning that the section was not present (iostat == -1)
+        if (IS_IOSTAT_END(iostat)) then
+             write(0,*) "Optional namelist section '&settings' was not present in ", trim(MODEM_NAMELIST), " skipping..."
+             return
+        end if
+
+        ! Any other error means we have an error with the namelist
+        ! that should be reported to the user
+        write(0,*) "ERROR: Processing namelist section '&settings': ", trim(iomsg)
+        call ModEM_abort()
+     end if
+
+     write(0,*) "Optional namelist section '&settings' was read!"
+
+     ! Process output_level
+     select case (output_level) ! Determine output_level number for comparision in CL arg
+         case ('debug')
+           output_level_int = 5
+         case ('full')
+           output_level_int = 4
+         case ('regular')
+           output_level_int = 3
+         case ('compact')
+           output_level_int = 2
+         case ('result')
+           output_level_int = 1
+         case ('none')
+           output_level_int = 0
+         case default
+           output_level_int = 3
+    end select
+
+    ! Alert the user that we are changing the output level
+    if (output_level_int /= ctrl % output_level) then
+        ! output_level is the same so do nothing...
+        write(0,*) 'WARNING: -V argument is being overriden by optional output_level option in: ', trim(MODEM_NAMELIST)
+        select case (output_level)
+             case ('debug')
+               write(0,*) 'Output all information including debugging lines.'
+               ctrl%output_level = 5
+             case ('full')
+               write(0,*) 'Output full information to screen and to files.'
+               ctrl%output_level = 4
+             case ('regular')
+               write(0,*) 'Output information to files, and progress report to screen (default).'
+               ctrl%output_level = 3
+             case ('compact')
+               write(0,*) 'Output information to files, and compact summary to screen.'
+               ctrl%output_level = 2
+             case ('result')
+               write(0,*) 'Output minimal information to files, and result to screen.'
+               ctrl%output_level = 1
+             case ('none')
+               write(0,*) 'Output nothing at all except result to screen and to files.'
+               ctrl%output_level = 0
+             case default
+               ctrl%output_level = 3
+        end select
+    end if
+
+
+  end subroutine process_nml_section_settings
+
+  subroutine gen_nml_section_settings(nl_fid)
+
+      implicit none
+
+      integer, intent(in) :: nl_fid
+
+      write(nl_fid, *) "&settings"
+      write(nl_fid, *) "    ! 'output_level' below overrides -V passed in on the command line"
+      write(nl_fid, *) "    output_level = 'regular'"
+      write(nl_fid, *) "/"
+
+  end subroutine gen_nml_section_settings
+
+  subroutine process_nml_section_grid(ctrl, nl_fid)
+     implicit none
+
+     type (userdef_control), intent(inout) :: ctrl
+     integer, intent(in) :: nl_fid
+
+     integer :: iostat
+     character (len=256) :: iomsg
+
+     ! Namlist - &grid - section
+     character(len=80) :: primary_field
+     character(len=80) :: primary_field_file
+     logical :: sff
+
+     namelist /grid/ sff, primary_field, primary_field_file
+
+     read(nl_fid, nml=grid, iostat=iostat, iomsg=iomsg)
+     if (iostat /= 0) then
+        ! Returns true if we have read to the EOF. Meaning that the section was not present (iostat == -1)
+        if (IS_IOSTAT_END(iostat)) then 
+             write(0,*) "Optional namelist section '&grid' was not present in ", trim(MODEM_NAMELIST), " skipping..."
+             return
+        end if
+
+        ! Any other error means we have an error with the namelist
+        ! that should be reported to the user
+        write(0,*) "ERROR: Processing namelist section '&grid': ", trim(iomsg)
+        call ModEM_abort()
+     end if
+
+     write(0,*) "Optional namelist section '&grid' was read!"
+
+     ctrl % SFF = sff
+     ctrl % primary_field_file = primary_field_file
+
+  end subroutine process_nml_section_grid
+
+  subroutine gen_nml_section_grid(nl_fid)
+
+      implicit none
+
+      integer :: nl_fid
+
+      write(nl_fid, *) '&grid'
+      write(nl_fid, *) '    SFF = .false.  ! Currently unused'
+      write(nl_fid, *) '    primary_field = "file" ! Currently unused'
+      write(nl_fid, *) '    primary_field_file = "none" ! Currently unused'
+      write(nl_fid, *) '/'
+
+  end subroutine gen_nml_section_grid 
+
+
 end module UserCtrl
