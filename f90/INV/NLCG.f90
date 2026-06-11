@@ -396,7 +396,7 @@ Contains
         call linComb(ONE,m_minus_m0,ONE,m0,m)
         write(iterChar,'(i3.3)') iter
         if (output_level > 1) then
-          mFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.rho'
+          mFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.rho.h5'
           call write_modelParam(m,trim(mFile))
         end if
         if (output_level > 2) then
@@ -404,7 +404,7 @@ Contains
           call write_modelParam(mHat,trim(mHatFile))
         end if
         if (output_level > 2) then
-          dataFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.dat'
+          dataFile = trim(iterControl%fname)//'_NLCG_'//iterChar//'.dat.h5'
           call write_dataVectorMTX(dHat,trim(dataFile))
         end if
         ! compute residual for output: res = d-dHat; do not normalize by errors

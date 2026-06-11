@@ -180,8 +180,16 @@ program Mod3DMT
         end if
         if (write_model .and. write_data) then
             write(*,*) 'Writing model and data files and exiting...'
+#ifdef MPI
+            if (taskid == 0) then
+                call write_modelParam(sigma0,cUserDef%wFile_Model)
+                write(0,*) 'I am writing ', taskid
+                call write_dataVectorMTX(allData,cUserDef%wFile_Data)
+            end if
+#else
             call write_modelParam(sigma0,cUserDef%wFile_Model)
             call write_dataVectorMTX(allData,cUserDef%wFile_Data)
+#endif
         else if (write_model) then
             write(*,*) 'Writing model and exiting...'
             call write_modelParam(sigma0,cUserDef%wFile_Model)

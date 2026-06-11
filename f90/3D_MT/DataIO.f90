@@ -97,7 +97,7 @@ subroutine read_dataVectorMTX(allData,cfile)
         case (DATA_FILE_TYPE_HDF5)
             call compiled_with_HDF5_check()
 #ifdef HDF5
-            call read_hdf5_data(allData, cfile)
+            call read_data_hdf5(cfile, allData)
 #endif
         case default
     end select

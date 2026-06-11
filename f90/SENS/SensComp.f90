@@ -841,6 +841,7 @@ Contains
    call exitSolver(e0,e,comb)
    call deall_grid(grid)
 
+
   end subroutine cleanUp
 
 end module SensComp

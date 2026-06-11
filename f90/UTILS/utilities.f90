@@ -55,6 +55,8 @@ Contains
 #endif
 
 #ifdef HDF5
+    call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
     call h5close_f(hdferr)
     if (hdferr < 0) then
        write(0,*) "ERROR: HDF5 Error on h5close_f (shutdown)"

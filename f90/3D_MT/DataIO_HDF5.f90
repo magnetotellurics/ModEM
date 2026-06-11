@@ -61,8 +61,26 @@ module DataIO_HDF5
   logical, save, private  :: old_data_file_format = .true.
   integer(HID_T), private, save   :: group_id, attr_id, dset_id, dspace_id, atype_id, aspace_id, dtype_id ! file, data set, and dataspace handles
 
+  character(len=*), parameter :: DATA_GRP_NAME = "/Data"
 
-  public :: read_hdf5_data
+  character(len=*), parameter :: DATA_MT_GRP_NAME = "Data/MT"
+  character(len=*), parameter :: DATA_MT_TXDICT_GRP_NAME = "Data/MT/txdict"
+  character(len=*), parameter :: DATA_SET_PERIODS_NAME = "periods"
+  character(len=*), parameter :: DATA_MT_RXDICT_GRP = "Data/MT/rxdict"
+  character(len=*), parameter :: DATA_MT_TYPELIST_GRP_NAME = 'Data/MT/typelist'
+  character(len=*), parameter :: DATA_MT_DATABLOCK_BASE_NAME = 'Data/MT/datablock'
+
+  character(len=*), parameter :: MT_IMPEDANCE_VAR_NAME = 'Z'
+  character(len=*), parameter :: MT_TIPPER_VAR_NAME = 'T'
+
+  type :: datablock_iter_type
+    type(dataVectorMTX_t), pointer :: allData
+    integer (kind=HID_T) :: data_block_itx_gid
+    integer :: iTx
+    integer :: iDt
+  end type
+
+  public :: read_data_hdf5
   public :: write_data_hdf5
 
 
@@ -584,6 +602,100 @@ subroutine write_datablock(datablock_group_id, dataBlock)
 
 end subroutine write_datablock
 
+subroutine read_data_hdf5(cfile, allData)
+
+    implicit none
+
+    character(*), intent(in) :: cfile
+    type(dataVectorMTX_t), intent(inout) :: allData
+
+    integer (kind=HID_T) :: file_id
+
+    write(0,*) 'read_data_hdf5 - start'
+
+    call setup_typeDict()
+
+    call ModEM_HDF5_open(cfile, file_id, H5F_ACC_RDONLY_F)
+
+    write(0,*) 'read_data_hdf5 - 1'
+    call read_txdict(file_id)
+
+    write(0,*) 'read_data_hdf5 - 2'
+    call read_rxdict(file_id)
+
+    write(0,*) 'read_data_hdf5 - 3'
+    call read_typelist(file_id)
+
+    write(0,*) 'read_data_hdf5 - 4'
+    call read_datablocks(file_id, allData)
+
+    write(0,*) 'read_data_hdf5 - 5'
+    call ModEM_HDF5_close_file(file_id)
+
+    write(0,*) 'read_data_hdf5 - 6'
+
+
+end subroutine read_data_hdf5
+
+subroutine read_rxdict(file_id)
+
+    implicit none
+
+    integer (kind=HID_T) :: file_id
+    integer (kind=HID_T) :: file_id
+
+    integer (kind=HID_T) :: mt_rx_group_id
+    integer (kind=HID_T) :: elv
+
+    call ModEM_HDF5_open_group(file_id, , )
+
+end subroutine read_rxdict
+
+subroutine read_typelist(file_id)
+
+    implicit none
+
+
+
+
+end subroutine read_typelist
+
+
+subroutine read_txdict(file_id)
+
+    implicit none
+
+    integer (kind=HID_T), intent(in) :: file_id
+
+
+    integer (kind=HID_T) :: mt_tx_group_id
+    integer (kind=HID_T) :: periods_dset_id, periods_dspace_id
+
+    integer (kind=HSIZE_T) :: nperiods
+
+    real (kind=prec), dimension(:), allocatable :: periods
+
+    ! Open the MT Tx group
+    call ModEM_HDF5_open_group(file_id, DATA_MT_TXDICT_GRP_NAME, mt_tx_group_id)
+
+    ! Read the periods
+    call ModEM_HDF5_open_dataset(mt_tx_group_id, DATA_SET_PERIODS_NAME, periods_dset_id)
+    call ModEM_HDF5_get_dataspace(periods_dset_id, periods_dspace_id)
+    call ModEM_HDF5_get_dataspace_size(periods_dspace_id, nperiods)
+
+    allocate(periods(nperiods))
+
+    call ModEM_HDF5_read_dataset(periods_dset_id, H5T_NATIVE_DOUBLE, periods)
+    call setup_txDict(int(nPeriods, kind=SP), periods, 2)
+
+    deallocate(periods)
+
+    ! Open the MT Tx period group
+    call ModEM_HDF5_close_dataset(periods_dset_id)
+    call ModEM_HDF5_close_group(mt_tx_group_id)
+
+end subroutine read_txdict
+
 !**********************************************************************
 subroutine read_hdf5_txdict(file_id)
     integer (kind=HID_T), intent(in) :: file_id 
@@ -842,7 +954,286 @@ subroutine read_hdf5_typelist(file_id)
     end if
     
 end subroutine read_hdf5_typelist
-   
+
+subroutine read_datablocks(file_id, allData)
+
+    use iso_c_binding
+
+    implicit none
+
+    integer (kind=HID_T) :: file_id
+    type(dataVectorMTX_t), intent(inout) :: allData
+
+    character(len=*), parameter :: DATA_BLOCK_GROUP_NAME = '/Data/MT/datablock'
+    character(len=*), parameter :: MT_GROUP_NAME = 'MT'
+    integer (kind=HID_T) :: data_group_id, mt_group_id, data_block_itx_gid
+
+    character(len=512) :: data_block_iTx_name
+    logical :: exists
+
+    integer :: iTx, nTx
+    integer, target :: ndt
+    integer (kind=HSIZE_T) :: idx
+
+    type (c_funptr) :: funptr
+    type (c_ptr) :: ptr
+    integer, target :: ngrps
+    integer :: ret_value, hdferr_lcl
+
+    call ModEM_HDF5_open_group(file_id, DATA_GRP_NAME, data_group_id)
+    !call ModEM_HDF5_does_group_exist(data_group_id, MT_GROUP_NAME, exists)
+    !if (.false.) then
+    !    call errStop("No MT data group '"//trim(MT_GROUP_NAME)//"' in data file!")
+    !end if
+
+    call ModEM_HDF5_open_group(data_group_id, MT_GROUP_NAME, mt_group_id)
+
+    nTx = size(txDict)
+
+    call create_dataVectorMTX(nTx, allData)
+
+    do iTx = 1, nTx
+        write(data_block_iTx_name, '(a, a1, I0.2)') DATA_BLOCK_GROUP_NAME, '.', iTx
+        call ModEM_HDF5_open_group(file_id, data_block_itx_name, data_block_itx_gid)
+
+        call count_number_of_datablocks(data_block_itx_gid, ndt)
+
+        call create_dataVector(ndt, allData % d(iTx))
+        allData % d(iTx) % tx = iTx
+        allData % d(iTx) % txType = MT
+        
+        call data_iterate_datablocks(allData, data_block_itx_gid, iTx)
+
+        allData % d(iTx) % allocated = .true.
+
+        call ModEM_HDF5_close_group(data_block_itx_gid)
+    end do
+
+    allData % allocated = .true.
+
+    call ModEM_HDF5_close_group(mt_group_id)
+    call ModEM_HDF5_close_group(data_group_id)
+
+end subroutine read_datablocks
+
+
+integer function count_datablock_cb(loc_id, name, info, ndt) bind(c)
+
+    use iso_c_binding, only : c_ptr, c_null_char, c_f_pointer, c_int
+
+    implicit none 
+
+    integer (kind=HID_T), value:: loc_id
+    character(len=1), dimension(1:10) :: name ! must have LEN=1 for bind(C) strings
+    type (c_ptr) :: info
+    integer, volatile :: ndt
+
+    ndt = ndt + 1
+
+    count_datablock_cb = 0_c_int
+
+end function count_datablock_cb
+
+subroutine count_number_of_datablocks(data_block_itx_gid, nDt)
+
+    implicit none
+
+    integer (kind=HID_T), intent(in) :: data_block_itx_gid
+    integer, target, intent(out) :: ndt
+
+    type(c_ptr) :: ptr
+    type(c_funptr) :: funptr
+
+    integer (kind=HSIZE_T) :: idx
+    integer :: hdferr
+    integer :: return_value
+
+    ndt = 0 
+    idx = 0
+
+    ptr = c_loc(ndt)
+    funptr = c_funloc(count_datablock_cb)
+    call h5literate_f(data_block_itx_gid, H5_INDEX_NAME_F, H5_ITER_NATIVE_F, idx, funptr, ptr, return_value, hdferr)
+
+    !write(0,*) 'ndatablocks: ', ndt
+
+end subroutine count_number_of_datablocks
+
+subroutine data_iterate_datablocks(allData, data_block_itx_gid, iTx)
+
+    use iso_c_binding, only : c_ptr, c_loc, c_funptr
+
+    implicit none
+
+    type (dataVectorMTX_t), target, intent(inout) :: allData
+    integer (kind=HID_T), target, intent(in) :: data_block_itx_gid
+    integer, target, intent(in) :: iTx
+    
+    type (datablock_iter_type), pointer :: datablock_info
+    type (c_ptr) :: ptr
+    type (c_funptr) :: funptr
+
+    integer (kind=HSIZE_T) :: idx
+    integer :: hdferr
+    integer :: return_value
+
+
+    allocate(datablock_info)
+
+    datablock_info % allData => allData
+    datablock_info % data_block_itx_gid = data_block_itx_gid
+    datablock_info % iTx = iTx
+    datablock_info % iDt = 1
+
+    iDx = 0
+    funptr = c_funloc(read_datablock_func)
+    ptr = c_loc(datablock_info)
+
+    call h5literate_f(data_block_itx_gid, H5_INDEX_NAME_F, H5_ITER_NATIVE_F, idx, funptr, ptr, &
+            return_value, hdferr)
+
+
+    deallocate(datablock_info)
+
+end subroutine data_iterate_datablocks
+
+integer function read_datablock_func(loc_id, name, info, datablock_info_ptr) bind(c)
+
+    use iso_c_binding, only : c_ptr, c_null_char, c_f_pointer
+
+    implicit none
+
+    integer (kind=HID_T), value:: loc_id
+    character(len=1), dimension(1:10) :: name ! must have LEN=1 for bind(C) strings
+    type (c_ptr) :: info
+    type (c_ptr), value :: datablock_info_ptr
+
+    ! Local Variables
+    integer (kind=HID_T) :: block_group_id, parent_id
+    integer :: i
+    integer :: null_pos
+    character(len=10) :: group_name_string, group_name_string_clean
+    type (datablock_iter_type), pointer :: datablock_info
+
+    call c_f_pointer(datablock_info_ptr, datablock_info)
+
+    group_name_string = ''
+
+    parent_id = datablock_info % data_block_itx_gid
+
+    do i = 1, 10
+        group_name_string(i:i) = name(i)(1:1)
+    end do
+
+    null_pos = index(group_name_string, c_null_char)
+
+    group_name_string_clean = group_name_string(1:null_pos-1)
+    call ModEM_HDF5_open_group(parent_id, group_name_string, block_group_id)
+
+
+    select case(group_name_string_clean)
+        case (trim(MT_IMPEDANCE_VAR_NAME))
+            call process_mt_datablock(block_group_id, datablock_info, ImpType(trim(MT_IMPEDANCE_VAR_NAME)))
+        case (trim(MT_TIPPER_VAR_NAME))
+            call process_mt_datablock(block_group_id, datablock_info, ImpType(trim(MT_TIPPER_VAR_NAME)))
+        case default
+            write(0,*) 'This data type: ', trim(group_name_string), ' cannot yet be processed by ModEMs HDF5 module'
+            write(0,*) 'Skipping it....'
+    end select
+
+    call ModEM_HDF5_close_group(block_group_id)
+
+    datablock_info % iDt = datablock_info % idt + 1
+
+    read_datablock_func = 0 ! Return code - 0 continues to the next iteartion (see H5literate_f
+
+end function read_datablock_func
+
+subroutine process_mt_datablock(mt_group_id, datablock_info, MT_DATATYPE_NUM)
+
+    implicit none
+
+    integer (kind=HID_T) :: mt_group_id
+    type (datablock_iter_type), pointer, intent(in) :: datablock_info
+    integer, intent(in) :: MT_DATATYPE_NUM
+
+    type(dataVectorMTX_t), pointer :: allData
+    integer :: idt, iTx
+
+    integer :: dataType, nComp, nSite
+    logical :: isComplex
+
+    integer (kind=HID_T) :: std_dset_id, value_dset_id, irx_dset_id
+    integer (kind=HID_T) :: std_dspace_id, value_dspace_id, irx_dspace_id
+
+    integer (kind=HSIZE_T) :: std_size, value_size, irx_size
+
+    integer :: rank
+    integer (kind=HSIZE_T), allocatable :: std_dims(:), std_max_dims(:)
+    integer (kind=HSIZE_T), allocatable :: value_dims(:), value_max_dims(:)
+    integer (kind=HSIZE_T), allocatable :: irx_dims(:), irx_max_dims(:)
+
+    real (kind=prec), dimension(:,:), allocatable :: std, values
+    real (kind=prec), dimension(:), allocatable :: irx
+
+    dataType = MT_DATATYPE_NUM
+    isComplex = typeDict(datatype) % isComplex
+    nComp = typeDict(datatype) % nComp
+
+    allData => datablock_info % allData
+    iTx = datablock_info % iTx
+    idt = datablock_info % idt
+
+    call ModEM_HDF5_open_dataset(mt_group_id, 'std', std_dset_id)
+    call ModEM_HDF5_get_dataspace(std_dset_id, std_dspace_id)
+    call ModEM_HDF5_get_dataspace_dims(std_dspace_id, std_dims, std_max_dims, rank)
+
+    allocate(std(std_dims(1), std_dims(2)))
+    call ModEM_HDF5_read_dataset(std_dset_id, H5T_NATIVE_DOUBLE, std)
+
+    call ModEM_HDF5_close_dataspace(std_dspace_id)
+    call ModEM_HDF5_close_dataset(std_dset_id)
+
+    ! Open 'value'
+    call ModEM_HDF5_open_dataset(mt_group_id, 'value', value_dset_id)
+    call ModEM_HDF5_get_dataspace(value_dset_id, value_dspace_id)
+
+    call ModEM_HDF5_get_dataspace_dims(value_dspace_id, value_dims, value_max_dims, rank)
+
+    allocate(values(value_dims(1), value_dims(2)))
+    call ModEM_HDF5_read_dataset(value_dset_id, H5T_NATIVE_DOUBLE, values)
+
+    call ModEM_HDF5_close_dataspace(value_dspace_id)
+    call ModEM_HDF5_close_dataset(value_dset_id)
+
+    ! Open 'irx'
+    call ModEM_HDF5_open_dataset(mt_group_id, 'irx', irx_dset_id)
+    call ModEM_HDF5_get_dataspace(irx_dset_id, irx_dspace_id)
+
+    call ModEM_HDF5_get_dataspace_dims(irx_dspace_id, irx_dims, irx_max_dims, rank)
+
+    allocate(irx(irx_dims(1)))
+    call ModEM_HDF5_read_dataset(irx_dset_id, H5T_NATIVE_DOUBLE, irx)
+
+    call ModEM_HDF5_close_dataspace(irx_dspace_id)
+    call ModEM_HDF5_close_dataset(irx_dset_id)
+
+    nSite = irx_dims(1)
+
+    call create_datablock(nComp, nSite, allData % d(iTx) % data(iDt), isComplex, .true.)
+
+    allData % d(iTx) % data (idt) % error(:,:) = std
+    allData % d(iTx) % data (idt) % value(:,:) = values
+    allData % d(iTx) % data (idt) % rx(:) = irx
+    allData % d(iTx) % data (idt) % dataType = datatype
+
+    deallocate(std)
+    deallocate(values)
+    deallocate(irx)
+
+end subroutine process_mt_datablock
+
+
 ! ! !**********************************************************************
 subroutine read_hdf5_datablocks(file_id, allData)
     integer (kind=HID_T), intent(in)     :: file_id 
@@ -884,7 +1275,6 @@ subroutine read_hdf5_datablocks(file_id, allData)
     call create_dataVectorMTX(nTx, allData)
 
     do iTx = 1, nTx
-
         ! Name of the data block for this transmitter
         write(padded_i, '(I0.2)') iTx
         datablock_group = datablock//'.'//trim(padded_i)
@@ -946,7 +1336,6 @@ subroutine read_hdf5_datablocks(file_id, allData)
                     allocate(idx_data(dim1d(1)),STAT=istat)
                     CALL h5dread_f(dset_id, H5T_NATIVE_INTEGER, idx_data, dim1d, hdferr)
 
-                    
 
                     call create_dataBlock(nComp, nSite, allData%d(iTx)%data(ii), isComplex, .true.) 
                     allData%d(iTx)%data(ii)%error(:,:) = std
