@@ -8,7 +8,7 @@ program fwd1d
     type(conf1d_t)                              :: earth
     type(grid_t)                                :: grid
     type(modelParam_t)                          :: model,source,source_imag
-    type(cvector)                               :: h1d
+    type(cvector)                               :: h1d, e1d
     character(80)                               :: period_file,label
     character(80)                               :: layered_model_file
     character(80)                               :: source_model_file
@@ -26,6 +26,7 @@ program fwd1d
     write(*,*) 'Matlab code written by Jin Sun, last mod. 24 May 2010'
     write(*,*) 'Recoded in Fortran by Anna Kelbert, 11-13 July 2011'
     write(*,*) 'Data scaling updated by Anna Kelbert, 23-28 Nov 2011'
+    write(*,*) 'Added E-field; Anna Kelbert with Claude, 9 June 2026'
     write(*,*)
 
     !  parse command line
@@ -108,8 +109,14 @@ program fwd1d
     write(*,*) 'Tops of model layers: ',earth%layer
     write(*,*) 'Conductivity values:  ',earth%sigma
 
-    ! allocate the output cvector
+    ! allocate the output cvectors
     call create_cvector(grid, h1d, EDGE)
+
+    ! electric field is defined on FACEs in the global model;
+    ! here, we make the choice to output it on the primary grid
+    ! for use in other applications such as input to ModEM regional
+    ! but let's do it the right way: first, compute on faces
+    call create_cvector(grid, e1d, FACE) 
 
     icoeff = 0
 
@@ -118,18 +125,27 @@ program fwd1d
 
         days = T(i)/(24*3600)
         write(*,*) 'Computing the fields for period ',trim(ich),': ',days,' days'
-        call sourceField1d(earth,lmax,coeff(icoeff+1:icoeff+ncoeff),T(i),grid,h1d)
+        call sourceField1d(earth,lmax,coeff(icoeff+1:icoeff+ncoeff),T(i),grid,h1d,e1d)
         icoeff = icoeff + ncoeff
 
         call reset_time(fwd1d_timer)
 
-        cfile = trim(fields_output_file)//'_'//trim(ich)//'.field'
-        write(*,*) 'Writing to file: ',cfile
+        cfile = trim(fields_output_file)//'_'//trim(ich)//'.hfield'
+        write(*,*) 'Writing to H file: ',cfile
         open(ioWRITE,file=cfile,status='unknown',form='formatted',iostat=ios)
-        write(ioWRITE,'(a45,f9.3,a6)') "# FWD1D full EM field solution output for period ",   &
-                                            days,' days.'
+        write(ioWRITE,'(a47,f9.3,a6)') "# FWD1D full EM field solution H output for period ",   &
+                                            T(i),' secs.'
         write(ioWRITE,'(i3)') 1
         call write_cvector(ioWRITE,h1d)
+        close(ioWRITE)
+
+        cfile = trim(fields_output_file)//'_'//trim(ich)//'.efield'
+        write(*,*) 'Writing to E file: ',cfile
+        open(ioWRITE,file=cfile,status='unknown',form='formatted',iostat=ios)
+        write(ioWRITE,'(a47,f9.3,a6)') "# FWD1D full EM field solution E output for period ",   &
+                                            T(i),' secs.'
+        write(ioWRITE,'(i3)') 1
+        call write_cvector(ioWRITE,e1d)
         close(ioWRITE)
 
         write(*,*) 'Done writing to file: ',elapsed_time(fwd1d_timer),' secs'
@@ -141,6 +157,7 @@ program fwd1d
     call deall_modelParam(source)
     call deall_modelParam(source_imag)
     call deall_cvector(h1d)
+    call deall_cvector(e1d)
     call deall_grid(grid)
     write(*,*) 'Total time taken: ',saved_time(fwd1d_timer),' secs'
 

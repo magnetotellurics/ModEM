@@ -12,14 +12,14 @@
 # FFLAGS = -dalign -g -C -w  -L/usr/local/lib
 # LIBS = -xlic_lib=sunperf
 #  Uncomment these lines to make program with g95
-# include Makefile.local
-# OBJDIR = ./objs/3D_MT/G95Debug
-# F90 = g95
-# FFLAGS = -O2
-# FFLAGS = -g -ftrace=frame -fbounds-check
-# MPIFLAGS = -cpp # for serial code
-# MODULE = -fmod=$(OBJDIR)
-# LIBS = -lblas -llapack
+include Makefile.local
+OBJDIR = ./objs/3D_MT/GFortDebug
+F90 = gfortran
+FFLAGS = -O2
+#FFLAGS = -g -fbacktrace -fbounds-check
+MPIFLAGS = -cpp # for serial code
+MODULE = -fmod=$(OBJDIR)
+LIBS = -lblas -llapack
 #  Uncomment these lines to make program with Intel compiler
 # include Makefile.local
 # OBJDIR = ./objs/3D_MT/IFortDebug
@@ -42,13 +42,13 @@
 # LIBS = -L/usr/lib64 -llapack -lblas -lpgftnrtl -Mprof=lines
 
 # ------------------Macro-Defs---------------------
-include Makefile.local
-OBJDIR = ./objs/FWD1D/Release
-F90 = ifort 
-FFLAGS = -O3 -parallel -heap-arrays
-MPIFLAGS = -cpp
-MODULE = -module $(OBJDIR)
-LIBS = -lblas -llapack -parallel
+#include Makefile.local
+#OBJDIR = ./objs/FWD1D/Release
+#F90 = ifort 
+#FFLAGS = -O3 -parallel -heap-arrays
+#MPIFLAGS = -cpp
+#MODULE = -module $(OBJDIR)
+#LIBS = -lblas -llapack -parallel
 
 # -------------------End-macro-Defs---------------------------
 OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o $(OBJDIR)/field1d.o $(OBJDIR)/sg_scalar.o $(OBJDIR)/paramfunc.o $(OBJDIR)/modeldef.o $(OBJDIR)/model_operators.o $(OBJDIR)/modelmap.o $(OBJDIR)/ModelSpace.o $(OBJDIR)/FWD1D.o 

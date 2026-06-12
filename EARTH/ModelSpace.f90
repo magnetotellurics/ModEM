@@ -27,13 +27,16 @@ Contains
   ! * the same input format for now.
   ! * The optional output Pimag allows to use the same file format for the complex
   ! * spherical harmonic source vector storage...
+  ! * Historically period has been provided in "days" (secs = days * (24*3600))
+  ! * This makes no physical sense but we're sticking with that convention for now
+  ! * but I added the option to supply period in seconds
 
   subroutine read_modelParam(P,cfile,Pimag)
 
     character(*), intent(in)            :: cfile
     type (modelParam_t), intent(inout)  :: P
     type (modelParam_t), intent(inout), optional  :: Pimag ! used for sources only
-    integer                             :: ilayer,i,j,k,n,l,m,w
+    integer                             :: ilayer,i,j,k,k1,k2,n,l,m,w
     integer                             :: nF,nL
     integer                             :: sum,sum0,degree
     integer                             :: ios,istat
@@ -43,6 +46,7 @@ Contains
     character(200)                      :: prmname, string
     real(8)                             :: v,vimag,vmin,vmax
     real(8)                             :: period ! read in place of depth for sources
+    character(4)                        :: daysORsecs = 'days'
 
     lowerb = EARTH_R
     depth = 0.0d0
@@ -120,7 +124,20 @@ Contains
                     ! no regularisation specified for this layer
                     alpha = 0.0d0
                     beta  = 1.0d0
-                    k = len(string)
+                    k1 = index(string,'sec')
+                    k2 = index(string,'day')
+                    if ((k1==0) .and. (k2==0)) then
+                      ! assume period in days for backwards compatibility
+                      daysORsecs = 'days'
+                      k = len(string)
+                    else
+                      k = max(k1,k2)
+                      if (k1>0) then
+                        daysORsecs = 'secs'
+                      else
+                        daysORsecs = 'days'
+                      endif
+                    endif
             else
                     read(string(k+4:w),*) alpha,beta
             end if
@@ -134,6 +151,13 @@ Contains
                 j = index(string,'period')
                 read(string(i+7:j),*) degree
                 read(string(j+6:k),*) period
+                ! for historical reasons, periods used to be only supplied in "days"
+                ! and that behavior is expected throughout the code; converting to
+                ! days for now, may fix this later -
+                ! obviously, we should be working with secs all through the code
+                if (daysORsecs == 'secs') then
+                  period = period / (24*3600)
+                endif
                 !write(*,*) 'DEBUG 2: ', string(j+6:k)
             end if
 

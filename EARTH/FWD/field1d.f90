@@ -403,8 +403,13 @@ function contFrac(a,lmax,z) result (f)
         r=g*h
         f=f*r
 
+        ! abs(r-1) is NaN when f has overflowed; the comparison always fails, causing infinite loop
         if (abs(r-1)<=1.e-14) then
             conv=.true.
+            exit
+        end if
+        if (k > 10000) then
+            write(0,*) 'WARNING contFrac: no convergence after 10000 iterations at z=',z
             exit
         end if
         k=k+1;
@@ -479,6 +484,7 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     real(8), dimension(:), allocatable         :: rl
     complex(8), dimension(:), allocatable      :: kl
     real(8)             :: mu0,pi,omega,rmax
+    real(8)             :: overflow_arg
     integer             :: idr,idrmin,idrmax,ids,idsmin,idsmax
     integer             :: i,j,k,l,m,ll,Nl,Nrr,Nrs,istat
     logical             :: sumup
@@ -508,6 +514,19 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
         kl(j) = sqrt(cmplx(0.,1.)*omega*mu0*earth%sigma(j))
     end do
     rmax = earth%rmax + 1.0d0 ! add one meter to rmax to make sure the whole domain is included
+
+    ! Pre-flight check: Im(kl)*layer_thickness > ~500 causes exp() overflow in rbsls0 type 1,
+    ! producing Inf then NaN. Threshold 500 leaves margin before f64 max exp(709).
+    do j = 1, Nl-1
+        overflow_arg = abs(aimag(kl(j))) * (rl(j) - rl(j+1))
+        if (overflow_arg > 500.0d0) then
+            write(0,'(a,i3,a,es10.3,a,f10.3,a)') &
+                ' WARNING sourcePotential: layer ', j, &
+                ' |Im(kl)|*thickness =', overflow_arg, &
+                ' at T=', period, ' s'
+            write(0,*) '   Ricatti-Bessel type-1 will overflow -> NaN. Subdivide this layer.'
+        end if
+    end do
     !-----------------------------------------------------------!
 
     !Radial response
@@ -661,7 +680,7 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
 end subroutine
 
 
-subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
+subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
 	type (conf1d_t), intent(in)	        :: earth ! configuration structure
 	integer, intent(in)		            :: lmax ! maximum sph. harm. degree
@@ -669,6 +688,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
 	real(8), intent(in)                 :: period ! period in seconds
 	type (grid_t), intent(in)           :: grid ! grid for the field mapping
 	type (cvector), intent(inout)       :: H ! output magnetic field
+	type (cvector), intent(inout), optional    :: E ! output electric field
 	! local
 	real(8), dimension(:), allocatable  :: Rr,Rs
     integer, dimension(lmax)                   :: Ns
@@ -681,6 +701,9 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     integer             :: Np,Nt,Nr,Nrr,Nrs,Nd
     integer             :: i,j,k,l,m,istat,ncoeff,icoeff
     complex(8)          :: C
+    real(8)             :: mu0,pi,omega
+    complex(8)          :: iommu0
+    character(80)       :: errMsg
 
     !No computations are performed for l=0 (no magnetic monopoles) so zero coeff is never used
     ncoeff=0
@@ -725,13 +748,29 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     allocate(Tnr(Nrr,Nd),Tnsp(Nrs,Nd),STAT=istat)
     
     call sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
-    
+
+    ! NaN in Tnr/Tnsp means Ricatti-Bessel overflow in a thick conducting layer at this period.
+    ! sourcePotential will already have printed a per-layer WARNING above.
+    if (any(Tnr /= Tnr) .or. any(Tnsp /= Tnsp)) then
+        write(0,*) 'Warning: subdivide thick conducting layers in the Earth model to avoid overflow.'
+        write(errMsg,'(a,f10.3,a)') ' sourceField1d: NaN in source potentials at T=', period, ' s'
+        deallocate(Tnr, Tnsp, STAT=istat)
+        deallocate(Rr, Rs, STAT=istat)
+        call errStop(errMsg)
+    end if
+
     write(*,*) node_info,'Done computing potentials: ',elapsed_time(fwd1d_timer),' secs'
     call reset_time(fwd1d_timer)
+
+    mu0   = 1.256637e-6
+    pi    = 3.14159265357898
+    omega = 2*pi/period
+    iommu0 = dcmplx(0.0d0,1.0d0) * omega * mu0
 
     !-----------------------------------------------------------!
     !compute field components
     call zero_cvector(H)
+    if (present(E)) call zero_cvector(E)
 
     Yp(:,:) = cmplx(0.0d0,0.0d0)
     Yt(:,:) = cmplx(0.0d0,0.0d0)
@@ -914,6 +953,90 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
 
     legendre_allocated_at_nodes = .true.
     legendre_allocated_at_edges = .true.
+
+    ! th component of the electric field: E_theta = -i*omega*mu0 * Tnr/r/l(l+1) * Yp
+    ! node theta (j=1..Nt) loops North to South pole and undefined at South pole; 
+    ! mid-edge phi; k loops over cell-center radii Rr (not faces Rs)
+    if (present(E)) then
+    do j = 1,Nt
+
+        P_lm = node_P_lm(j,:,:)
+
+        do i = 1,Np
+
+            call vsharm(lmax,cos(grid%th(j)),grid%ph(i)+grid%dp(i)/2,P_lm,Yr,Yt,Yp)
+
+            do k = 1,Nrr
+
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    E%y(i,j,k) = E%y(i,j,k) - Yp(l,1)*coefl(1)*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))/(l*(l+1))
+
+                    do m = 1,l
+                        C = -(Yp(l,m+1)*coefl(2*m) + conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        E%y(i,j,k) = E%y(i,j,k) + C*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))
+                    end do
+
+                    icoeff = icoeff+2*l+1
+
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
+
+                E%y(i,j,k) = conjg(E%y(i,j,k))
+
+            end do ! r
+        end do ! ph
+    end do ! th
+    end if ! present(E)
+
+    ! ph component of the electric field: E_phi = +i*omega*mu0 * Tnr/r/l(l+1) * Yt
+    ! mid-edge theta (j=1..Nt) loops North to South pole;
+    ! node phi; k loops over cell-center radii Rr
+    if (present(E)) then
+    do j = 1,Nt
+
+        P_lm = edge_P_lm(j,:,:)
+
+        do i = 1,Np
+
+            call vsharm(lmax,cos(grid%th(j)+grid%dt(j)/2),grid%ph(i),P_lm,Yr,Yt)
+
+            do k = 1,Nrr
+
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    E%x(i,j,k) = E%x(i,j,k) + Yt(l,1)*coefl(1)*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))/(l*(l+1))
+
+                    do m = 1,l
+                        C = (Yt(l,m+1)*coefl(2*m) + conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        E%x(i,j,k) = E%x(i,j,k) + C*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))
+                    end do
+
+                    icoeff = icoeff+2*l+1
+
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
+
+                E%x(i,j,k) = conjg(E%x(i,j,k))
+
+            end do ! r
+        end do ! ph
+    end do ! th
+    end if ! present(E)
 
     write(*,*) node_info,'Done mapping to grid: ',elapsed_time(fwd1d_timer),' secs'
 
