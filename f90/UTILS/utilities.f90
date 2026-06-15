@@ -973,4 +973,26 @@ subroutine expand_string(inString, outString, intArgs, logicArgs, realArgs)
 
 !--------------------------------------------------------------------
 end subroutine expand_string
+
+subroutine compiled_with_HDF5_check()
+
+    implicit none
+#ifdef HDF5
+    ! ModEM is built with HDF5
+#else
+    call HDF5_not_built_error()
+#endif
+
+end subroutine compiled_with_HDF5_check
+
+subroutine HDF5_not_built_error()
+
+    implicit none
+
+    ! TODO: Finish this error message
+    write(0,*) 'ERROR: ModEM not compiled with HDF5'
+    call errStop('Modem not compiled with HDF5')
+
+end subroutine HDF5_not_built_error
+
 end module utilities

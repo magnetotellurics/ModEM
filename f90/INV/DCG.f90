@@ -8,6 +8,7 @@ module DCG
 	Use Main_MPI
 	use Sub_MPI
 #endif
+    use modelSpace
 implicit none
   type  :: DCGiterControl_t
      !NOTE: For the standard DCG algorethem only the first 4 attributes of the DCGiterControl_t are used. 

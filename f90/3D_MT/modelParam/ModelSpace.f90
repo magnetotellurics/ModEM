@@ -35,9 +35,6 @@ module ModelSpace
 
   implicit none
 
-#ifdef HDF5
-  integer(HID_T), private, save   :: file_id, group_id, attr_id, dset_id, dspace_id, atype_id, aspace_id ! file, data set, and dataspace handles
-#endif
 
   ! supported model parameter types (conductivity only)
    character(len=80), parameter		:: LOGE = 'LOGE'
@@ -122,35 +119,47 @@ interface countModelParam
    MODULE PROCEDURE count_modelParam
 end interface
 
-!  I/O interfaces
-#ifdef HDF5
+! IO Module Interfaces - These are implemented in modelParamIO (and it's submodules)
+interface
+    module subroutine setup_modelParamIO(input_ftype, output_ftype)
+        implicit none
+        character(len=*), intent(in) :: input_ftype
+        character(len=*), intent(in) :: output_ftype
+    end subroutine setup_modelParamIO
 
-interface write_modelParam
-   MODULE PROCEDURE write_modelParam_hdf5
+	module subroutine write_modelParam(m, cfile, comment)
+        implicit none
+        type(modelParam_t), intent(in):: m
+        character(len=*), intent(in) :: cfile
+        character(len=*), intent(in), optional :: comment
+    end subroutine write_modelParam
+
+    module subroutine read_modelParam(grid, airLayers, m, cfile)
+        use GridDef, only : grid_t, airLayers_t
+        implicit none
+        type(grid_t), target, intent(inout)  :: grid
+	    type(airLayers_t), intent(inout)	   :: airLayers
+        type(modelParam_t), intent(out)	   :: m
+        character(*), intent(in)             :: cfile
+    end subroutine read_modelParam
 end interface
 
-interface read_modelParam
-   MODULE PROCEDURE read_modelParam_hdf5
-end interface
+interface
+    module subroutine readVec_modelParam(grid,nSigma,sigma,header,cfile)
+      implicit none
+      type(grid_t), target, intent(inout)   :: grid
+      integer, intent(in)		:: nSigma
+      type(modelParam_t), intent(inout) 	:: sigma(nSigma)
+      character(*), intent(out)		:: header
+      character(*), intent(in)		:: cfile
+    end subroutine readVec_modelParam
 
-#else
-
-interface write_modelParam
-   MODULE PROCEDURE write_modelParam_WS
-end interface
-
-interface read_modelParam
-   MODULE PROCEDURE read_modelParam_WS
-end interface
-
-#endif
-
-interface writeVec_modelParam
-   MODULE PROCEDURE writeVec_modelParam_binary
-end interface
-
-interface readVec_modelParam
-   MODULE PROCEDURE readVec_modelParam_binary
+    module subroutine writeVec_modelParam(nSigma,sigma,header,cfile)
+        implicit none
+        integer, intent(in)		:: nSigma
+        character(*), intent(in)		:: header, cfile
+        type(modelParam_t), intent(in)	:: sigma(nSigma)
+    end subroutine writeVec_modelParam
 end interface
 
 ! definitions for CmSqrt: must be consistent with the include file below
@@ -168,18 +177,12 @@ Contains
 !  The included file must contain subroutines create_CmSqrt, deall_CmSqrt, multBy...
 #include "modelCov/RecursiveAR.inc"
 !#include "modelCov/Diffusion.inc"
-!  I/O choices
-#include "modelParamIO/Binary.inc"
-#include "modelParamIO/Mackie.inc"
-#include "modelParamIO/WS.inc"
-#ifdef HDF5
-#include "modelParamIO/HDF5.inc"
-#endif
 
 !  MPI model parameter, if needed
 #ifdef MPI
 #include "ModelParam_MPI.inc"
 #endif
+
 !**********************************************************************
 !
    !  create_modelParam allocates and initializes arrays for
@@ -243,7 +246,7 @@ Contains
      endif
 
    end subroutine deall_modelParam
-      
+
 	!**********************************************************************
   subroutine getType_modelParam(m,paramType)
       type(modelParam_t), intent(in)    :: m

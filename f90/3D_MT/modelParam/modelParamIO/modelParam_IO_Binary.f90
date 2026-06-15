@@ -1,7 +1,15 @@
+submodule (ModelSpace:ModelSpaceIO) modelParam_IO_Binary
+
+   use griddef
+
+implicit none
+
+contains
+
 ! Binary IO routines for 3D_MT modelParam (Gary Egbert's format)
 
   !******************************************************************
-   subroutine write_modelParam_binary(m,cfile)
+   module subroutine write_modelParam_binary(m,cfile, comment)
 
    !  open cfile on unit ioPrm, writes out object of
    !   type modelParam in standard *binary* format (comparable
@@ -11,6 +19,7 @@
 
       character(*), intent(in)  :: cfile
       type(modelParam_t), intent(in)              :: m
+      character(len=*), intent(in), optional :: comment
        integer               :: ios
       ! local
       type(rscalar)           :: ccond
@@ -40,7 +49,7 @@
       end subroutine write_modelParam_binary
 
   !******************************************************************
-   subroutine read_modelParam_binary(grid,m,cfile)
+   module subroutine read_modelParam_binary(grid,m,cfile)
 
    !  open cfile on unit ioPrm, writes out object of
    !   type modelParam in standard *binary* format (comparable
@@ -177,3 +186,5 @@
       enddo
       close(ioSens)
       end subroutine readVec_modelParam_binary
+
+end submodule modelParam_IO_Binary
