@@ -147,7 +147,6 @@ subroutine write_dataVectorMTX(allData,cfile)
         case default
     end select
 
-
 end subroutine write_dataVectorMTX
 
 
@@ -183,6 +182,29 @@ subroutine deall_dataFileInfo()
     end select
 
 end subroutine deall_dataFileInfo
+
+
+subroutine init_fileInfo(nTxt,nDt,nTx,nRx)
+
+  integer, intent(in) :: nTxt,nDt
+  integer, intent(in), optional :: nTx,nRx
+  integer     :: istat,iTxt,iDt
+
+  allocate(fileInfo(nTxt,nDt),STAT=istat)
+
+
+   do iTxt = 1,nTxt
+     do iDt = 1,nDt
+       fileInfo(iTxt,iDt)%defined = .false.
+       if (present(nTx) .and. present(nRx)) then
+         allocate(fileInfo(iTxt,iDt)%tx_index(nTx),STAT=istat)
+         allocate(fileInfo(iTxt,iDt)%dt_index(nTx),STAT=istat)
+         allocate(fileInfo(iTxt,iDt)%rx_index(nTx,nRx),STAT=istat)
+       end if
+     end do
+   end do
+
+end subroutine init_fileInfo
 
 
 end module DataIO

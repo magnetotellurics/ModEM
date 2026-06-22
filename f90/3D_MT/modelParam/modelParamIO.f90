@@ -150,8 +150,6 @@ contains
             return
         end if
 
-        write(0,*) taskid, 'Writing file: ', trim(cfile)
-
         select case(OUTPUT_FILE_TYPE)
             case (WS_FILE_TYPE)
                 call write_modelParam_WS(m, cfile, comment)
@@ -178,8 +176,6 @@ contains
         type(airLayers_t), intent(inout) :: airLayers
         type(modelParam_t), intent(out) :: m
         character(*), intent(in)             :: cfile
-
-        write(0,*) "Opening modelParam for file: ", trim(cfile)
 
         select case(INPUT_FILE_TYPE)
             case (WS_FILE_TYPE)

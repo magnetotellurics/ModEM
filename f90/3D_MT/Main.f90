@@ -187,9 +187,7 @@ Contains
 
 	if (exists) then
 	   ! Read background conductivity parameter and grid; complete airLayers setup
-       	   call read_modelParam(grid,airLayers,sigma0,cUserDef%rFile_Model)
-
-
+       call read_modelParam(grid,airLayers,sigma0,cUserDef%rFile_Model)
 	else
 	  call warning('No input model parametrization')
 

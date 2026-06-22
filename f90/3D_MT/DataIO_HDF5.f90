@@ -17,18 +17,12 @@ submodule (DataIO) DataIO_HDF5
 
   implicit none
 
-  private
-
   ! we are converting from an "old format" to a "new format"
   ! the only difference being that in the new format, there is
   ! an additional line in the head that indicates transmitter type.
   ! on output, use the same format as on input. AK 25 May 2018
-  logical, save, private  :: old_data_file_format = .true.
-  integer(HID_T), private, save   :: group_id, attr_id, dset_id, dspace_id, atype_id, aspace_id, dtype_id ! file, data set, and dataspace handles
-
-  public :: read_hdf5_data
-  public :: write_hdf5_data
-
+  logical :: old_data_file_format = .true.
+  integer(HID_T) :: group_id, attr_id, dset_id, dspace_id, atype_id, aspace_id, dtype_id ! file, data set, and dataspace handles
 
 Contains
 
@@ -77,7 +71,6 @@ subroutine close_hdf5(file_id)
 
     ! CALL h5gclose_f(group_id, hdferr)
     CALL h5fclose_f(file_id, hdferr)
-    CALL h5close_f(hdferr) 
    
 
 end subroutine close_hdf5
@@ -467,9 +460,6 @@ subroutine write_hdf5_datablocks(file_id, allData)
         CALL h5acreate_f(group_id, "Tx", atype_id, aspace_id,attr_id, hdferr)
         CALL h5awrite_f(attr_id, atype_id, dblk, dimsc, hdferr)
     
- 
-
-
         WRITE_DATA_TYPE: do ii = 1, alldata%d(iTx)%ndt !all data, d=datablocks ndt =datatypes 
         iDt = alldata%d(iTx)%data(ii)%datatype
             select case(iDt) !
@@ -986,8 +976,6 @@ subroutine write_hdf5_data(allData,cfile)
     integer (kind=HID_T) :: file_id
 
     ! open HDF5
-    write(0,*) 'write_hdf5_data - start'
-
     call open_hdf5(cfile, file_id)
     
     call write_hdf5_txdict(file_id)
@@ -997,8 +985,6 @@ subroutine write_hdf5_data(allData,cfile)
    
     call close_hdf5(file_id)
 
-    write(0,*) 'write_hdf5_data - end'
-
 end subroutine
 
 ! !**********************************************************************
@@ -1007,17 +993,21 @@ subroutine read_hdf5_data(allData, cfile)
     type(dataVectorMTX_t), intent(inout)      :: allData
     integer (kind=HID_T) :: file_id
 
-    write(0,*) 'read_hdf5_data - start'
+    ! integer :: nTxt, nDt
 
     ! open HDF5
     call open_read_hdf5(cfile, file_id)
+
+    ! Eventually, we will need to the fileInfo if we read HDF5
+    ! data and write out ASCII data.
+    ! nTxt = 5
+    ! nDt = size(typeDict)
+    ! call init_fileInfo(nTxt,nDt)
 
     call read_hdf5_txdict(file_id)
     call read_hdf5_rxdict(file_id)
     call read_hdf5_typelist(file_id)
     call read_hdf5_datablocks(file_id, allData)
-
-    write(0,*) 'read_hdf5_data - end'
 
 end subroutine read_hdf5_data
 

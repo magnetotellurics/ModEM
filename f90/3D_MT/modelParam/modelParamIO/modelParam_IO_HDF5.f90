@@ -5,11 +5,7 @@ use griddef
 
 implicit none
 
-integer(HID_T), private, save   :: attr_id, dset_id, dspace_id, atype_id, aspace_id ! file, data set, and dataspace handles
-
-public :: write_modelParam_hdf5
-public :: read_modelParam_hdf5
-
+integer(HID_T) :: attr_id, dset_id, dspace_id, atype_id, aspace_id ! file, data set, and dataspace handles
 
 contains
 
@@ -74,13 +70,14 @@ contains
 	  	  write(0,*) 'Will be reading the model input in cartesian HDF5 format...'
 	  end if
 
+      call open_read_hdf5(cfile, file_id)
+
 	  ! First read grid geometry from HDF5 file
 	  call read_geometry_hdf5(file_id, grid, airLayers)
 
 	  paramType = ''
 
 	  ! Now, reopen HDF5 to read the conductivity
-	    CALL open_read_hdf5(cfile, file_id)
 	    write(0,*) cfile,' is open and ready to read electrical conductivity'
 
 		!!!!!!!!! READ SIGMA DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -99,7 +96,7 @@ contains
 	   ! Read  grid geometries from Hdf5
 		CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, Sigma, dim3d, hdferr)
 
-	    call close_hdf5(file_id)
+        call close_hdf5(file_id)
 
 	  ! Set ParamType to be used when reading conductivity values
 	  paramType = 'LOG10'
@@ -144,6 +141,8 @@ contains
         integer                                 :: hdferr
         logical                                 :: lexist
 
+        CALL h5open_f(hdferr)
+
         call h5fcreate_f(cfile, H5F_ACC_TRUNC_F, file_id, hdferr)
 
         if (hdferr < 0) then
@@ -163,9 +162,9 @@ contains
         integer                                 :: hdferr
         logical                                 :: lexist
 
+        CALL h5open_f(hdferr)
         inquire(file = cfile, exist = lexist)
         if (lexist) then
-            CALL h5open_f(hdferr)
             CALL h5fopen_f(cfile, H5F_ACC_RDONLY_F, file_id, hdferr)
         else
             write(0,*) 'No HDF5 file to read'
@@ -180,7 +179,6 @@ contains
         integer                                 :: hdferr
 
         ! TODO: Do we need to close all groups 
-        ! CALL h5gclose_f(group_id, hdferr)
         CALL h5fclose_f(file_id, hdferr)
 
     end subroutine close_hdf5
@@ -529,8 +527,6 @@ contains
         x = read_hdf5_attr('model_origin_x')
         y = read_hdf5_attr('model_origin_y')
         z = read_hdf5_attr('model_origin_z')
-
-        call close_hdf5(file_id)
 
         origin(1) = -x
         origin(2) = -y

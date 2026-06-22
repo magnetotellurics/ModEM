@@ -49,7 +49,6 @@ module ioAscii
   use transmitters
   use receivers
   use datatypes
-  use modelParam_IO_HDF5
 
   implicit none
 
@@ -221,6 +220,42 @@ Contains
        write(0,*) inGrid%dx
     endif
   end subroutine FileWriteInit
+
+subroutine write_hdf5_attr(a_type, attr_name, attr_obj, path_id)
+   INTEGER(HID_T), intent(in)                   :: path_id
+    character(len=*), intent(in)                :: attr_name
+    type(custom_att),pointer,  intent(in)       :: attr_obj
+    character(len=3), intent(in)                :: a_type
+    integer                                     :: hdferr
+    INTEGER(HSIZE_T), DIMENSION(1)              :: dimsc = 1
+    INTEGER(HSIZE_T)                            :: attrlen  ! Length of the attribute string
+
+    ! Determine the HDF5 datatype of the value
+
+      select case (a_type)
+         case ('str')
+            attrlen = len(attr_obj%att_string)
+            CALL h5screate_simple_f(1, dimsc, aspace_id, hdferr)
+            CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, hdferr)
+            CALL h5tset_size_f(atype_id, attrlen, hdferr)
+            CALL h5acreate_f(path_id, attr_name , atype_id, aspace_id, attr_id, hdferr)
+            CALL h5awrite_f(attr_id, atype_id, attr_obj%att_string, dimsc, hdferr)
+         case ('int')
+            ! atype_id = H5T_NATIVE_INTEGER
+            CALL h5tcopy_f(H5T_NATIVE_INTEGER, atype_id, hdferr)
+            call H5Screate_simple_f(1, dimsc, aspace_id, hdferr)
+            CALL h5acreate_f(path_id, attr_name , atype_id, aspace_id, attr_id, hdferr)
+            CALL h5awrite_f(attr_id, atype_id, attr_obj%att_int, dimsc, hdferr)
+         case('dbl')
+            CALL h5tcopy_f(H5T_NATIVE_DOUBLE, atype_id, hdferr)
+            call H5Screate_simple_f(1, dimsc, aspace_id, hdferr)
+            CALL h5acreate_f(path_id, attr_name , atype_id, aspace_id, attr_id, hdferr)
+            CALL h5awrite_f(attr_id, atype_id, attr_obj%att_real, dimsc, hdferr)
+            call h5aclose_f(attr_id, hdferr)
+            call h5sclose_f(aspace_id, hdferr)
+       end select
+
+  end subroutine write_hdf5_attr
 
   ! ***************************************************************************
   ! write header for MT_fwd output files (except impedance file)
@@ -638,7 +673,6 @@ Contains
         integer                                 :: hdferr
       
         CALL h5fclose_f(file_id, hdferr)
-        CALL h5close_f(hdferr)
       
       end subroutine close_ef_hdf5
 
