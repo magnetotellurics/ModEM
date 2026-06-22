@@ -2,7 +2,7 @@
 
 add_subdirectory(Mod2d)
 
-if (!BUILD_SPHERICAL)
+if (NOT BUILD_SPHERICAL)
     target_sources(${MODEM_EXE}
         PRIVATE boundary_ws.f90
     )
