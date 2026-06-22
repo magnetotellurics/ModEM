@@ -481,12 +481,13 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     integer, dimension(lmax)    :: Ns
     complex(8), dimension(:), allocatable      :: rn0,rnp0,phn0,phnp0
     complex(8), dimension(:), allocatable      :: tnr1,tnsp1,tn,tnp,tni,tmp
+    complex(8), dimension(:), allocatable      :: Rl_core
     real(8), dimension(:), allocatable         :: rl
     complex(8), dimension(:), allocatable      :: kl
     real(8)             :: mu0,pi,omega,rmax
-    real(8)             :: overflow_arg
+    real(8)             :: overflow_arg,dr_sub,r_sub_bot,r_sub_top
     integer             :: idr,idrmin,idrmax,ids,idsmin,idsmax
-    integer             :: i,j,k,l,m,ll,Nl,Nrr,Nrs,istat
+    integer             :: i,j,k,l,m,ll,Nl,Nrr,Nrs,istat,nsub,isub
     logical             :: sumup
 
     !Physical model
@@ -515,16 +516,15 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     end do
     rmax = earth%rmax + 1.0d0 ! add one meter to rmax to make sure the whole domain is included
 
-    ! Pre-flight check: Im(kl)*layer_thickness > ~500 causes exp() overflow in rbsls0 type 1,
-    ! producing Inf then NaN. Threshold 500 leaves margin before f64 max exp(709).
+    ! Info: report layers that require sub-stepping (Im(kl)*thickness > 200).
     do j = 1, Nl-1
         overflow_arg = abs(aimag(kl(j))) * (rl(j) - rl(j+1))
-        if (overflow_arg > 500.0d0) then
-            write(0,'(a,i3,a,es10.3,a,f10.3,a)') &
-                ' WARNING sourcePotential: layer ', j, &
+        if (overflow_arg > 200.0d0) then
+            write(*,'(a,i3,a,es10.3,a,i3,a,f10.3,a)') &
+                ' INFO sourcePotential: layer ', j, &
                 ' |Im(kl)|*thickness =', overflow_arg, &
-                ' at T=', period, ' s'
-            write(0,*) '   Ricatti-Bessel type-1 will overflow -> NaN. Subdivide this layer.'
+                ', using ', max(1,ceiling(overflow_arg/200.0d0)), &
+                ' sub-steps at T=', period, ' s'
         end if
     end do
     !-----------------------------------------------------------!
@@ -558,55 +558,80 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     end if
 
     call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*rl(Nl),1,tn,tnp)
-    !write(*,*) 'tn: ',tn
-    !write(*,*) 'tnp: ',tnp
+
+    ! For l >> |kl_core * r_core| the type-1 Bessel function Sl(l) underflows to 0,
+    ! making tnp/tn = 0/0 = NaN. Compute the normalized impedance kl*(1/Rl - l/z0)
+    ! directly from Rl (which stays O(1) in the downward recurrence) to avoid 0/0.
+    allocate(Rl_core(lmax), STAT=istat)
+    call rrbessel(lmax, kl(Nl)*rl(Nl), Rl_core)
     do i = 1,lmax
-        tnp(i) = kl(Nl)*tnp(i)/tn(i)
+        tnp(i) = kl(Nl)*(1.0d0/Rl_core(i) - cmplx(real(i,8),0.0d0)/(kl(Nl)*rl(Nl)))
+    end do
+    deallocate(Rl_core, STAT=istat)
+
+    ! Guard against 0/0: when Sl(i) underflows, Tnr(core obs, i) also underflowed → 0 is correct.
+    do i = 1,lmax
+        if (abs(tn(i)) > 0.0d0) then
+            Tnr(:,i)=Tnr(:,i)/tn(i)
+            Tnsp(:,i)=Tnsp(:,i)/tn(i)
+        else
+            Tnr(:,i) = cmplx(0.0d0,0.0d0)
+            Tnsp(:,i) = cmplx(0.0d0,0.0d0)
+        end if
     end do
 
-    do i = 1,lmax
-        Tnr(:,i)=Tnr(:,i)/tn(i)
-        Tnsp(:,i)=Tnsp(:,i)/tn(i)
-    end do
-
-    !between layers
+    !between layers — sub-stepped to keep Im(kl)*dr_sub <= 200 within each rbslprop call,
+    !preventing exp() overflow in rbsls0 type 1 for thick conducting layers at short periods.
+    !The normalisation Tnr /= tn at each sub-step top advances the reference level so that
+    !all accumulated Tnr/Tnsp values remain O(1) regardless of layer thickness or period.
     do ll=Nl-1,1,-1
+
+        overflow_arg = abs(aimag(kl(ll))) * (rl(ll) - rl(ll+1))
+        nsub = max(1, ceiling(overflow_arg / 200.0d0))
+        dr_sub = (rl(ll) - rl(ll+1)) / nsub
 
         do i = 1,lmax
             phn0(i) = cmplx(1.0d0,0.0d0)
             phnp0(i) = tnp(i)/kl(ll)
         end do
+        r_sub_bot = rl(ll+1)
 
-        call find_index(Rr,rl(ll+1),rl(ll),idrmin,idrmax)
-        !write(*,*) 'Layer ',ll,': ',idrmin,idrmax
-        if ((idrmin > 0) .and. (idrmax > 0)) then
-            do idr=idrmin,idrmax
-                call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*Rr(idr),tnr1,tmp)
-                Tnr(idr,:)=tnr1(:)
-                !write(*,*) 'll,idr,tnr1: ',ll,idr,tnr1
+        do isub = 1,nsub
+            r_sub_top = rl(ll+1) + isub*dr_sub
+
+            call find_index(Rr,r_sub_bot,r_sub_top,idrmin,idrmax)
+            if ((idrmin > 0) .and. (idrmax > 0)) then
+                do idr=idrmin,idrmax
+                    call rbslprop(lmax,kl(ll)*r_sub_bot,phn0,phnp0,kl(ll)*Rr(idr),tnr1,tmp)
+                    Tnr(idr,:)=tnr1(:)
+                end do
+            end if
+
+            call find_index(Rs,r_sub_bot,r_sub_top,idsmin,idsmax)
+            if ((idsmin > 0) .and. (idsmax > 0)) then
+                do ids=idsmin,idsmax
+                    call rbslprop(lmax,kl(ll)*r_sub_bot,phn0,phnp0,kl(ll)*Rs(ids),tmp,tnsp1)
+                    Tnsp(ids,:)=kl(ll)*tnsp1(:)
+                end do
+            end if
+
+            call rbslprop(lmax,kl(ll)*r_sub_bot,phn0,phnp0,kl(ll)*r_sub_top,tn,tnp)
+
+            do i = 1,lmax
+                tnp(i) = kl(ll)*tnp(i)/tn(i)
             end do
-        end if
-
-        call find_index(Rs,rl(ll+1),rl(ll),idsmin,idsmax)
-        !write(*,*) 'Layer ',ll,': ',idsmin,idsmax
-        if ((idsmin > 0) .and. (idsmax > 0)) then
-            do ids=idsmin,idsmax
-                call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*Rs(ids),tmp,tnsp1)
-                Tnsp(ids,:)=kl(ll)*tnsp1(:)
-                !write(*,*) 'll,ids,tnsp1: ',ll,ids,tnsp1
+            do i = 1,lmax
+                Tnr(:,i)  = Tnr(:,i)  / tn(i)
+                Tnsp(:,i) = Tnsp(:,i) / tn(i)
             end do
-        end if
 
-        call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*rl(ll),tn,tnp)
+            do i = 1,lmax
+                phn0(i)  = cmplx(1.0d0,0.0d0)
+                phnp0(i) = tnp(i)/kl(ll)
+            end do
+            r_sub_bot = r_sub_top
 
-        do i = 1,lmax
-            tnp(i) = kl(ll)*tnp(i)/tn(i)
-        end do
-
-        do i = 1,lmax
-            Tnr(:,i)=Tnr(:,i)/tn(i)
-            Tnsp(:,i)=Tnsp(:,i)/tn(i)
-        end do
+        end do ! isub
 
     end do
 
