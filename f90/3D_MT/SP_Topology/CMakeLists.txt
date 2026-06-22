@@ -6,7 +6,7 @@ target_sources(${MODEM_EXE}
     PRIVATE vecTranslate.f90
 )
 
-if (!BUILD_SPHERICAL)
+if (NOT BUILD_SPHERICAL)
     target_sources(${MODEM_EXE}
         PRIVATE MetricElements_CSG.f90
     )

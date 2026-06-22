@@ -31,7 +31,7 @@ target_sources(${MODEM_EXE}
     PRIVATE Sub_MPI.f90
 )
 
-if (!BUILD_SPHERICAL)
+if (NOT BUILD_SPHERICAL)
     target_sources(${MODEM_EXE}
         PRIVATE GridCalc.f90
     )
