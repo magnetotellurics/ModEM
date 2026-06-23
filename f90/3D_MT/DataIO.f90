@@ -127,6 +127,14 @@ subroutine setup_DataIO(input_ftype, output_ftype)
             call unsupported_DataIO_error(output, output)
     end select
 
+    if (DATA_INPUT_FTYPE == DATA_FILE_TYPE_HDF5 .and. DATA_OUTPUT_FTYPE == DATA_FILE_TYPE_ASCII) then
+        write(0,*) 'ERROR: ModEM currently cannot read in HDF5 data files and write out ASCII files'
+        write(0,*) 'ERROR: However, currently ModEM can do: '
+        write(0,*) 'ERROR: ASCII -> HDF5, ASCII -> ASCII, HDF5 -> HDF5 for data files'
+        write(0,*) 'ERROR: Please update your selection in the call to ModEM_setup_IO'
+        call ModEM_abort()
+    end if
+
 end subroutine setup_DataIO
 
 subroutine write_dataVectorMTX(allData,cfile)
