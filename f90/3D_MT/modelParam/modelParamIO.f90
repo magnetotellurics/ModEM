@@ -2,6 +2,7 @@ submodule (ModelSpace) ModelSpaceIO
 
     use utilities
     use Declaration_MPI
+    !%use ModelSpace
 
     implicit none
 

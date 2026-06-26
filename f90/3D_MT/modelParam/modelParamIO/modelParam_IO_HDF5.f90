@@ -1,5 +1,6 @@
 submodule (ModelSpace:ModelSpaceIO) modelParam_IO_HDF5
 
+#ifdef HDF5
 use hdf5
 use griddef
 
@@ -558,5 +559,6 @@ contains
 
     end subroutine read_geometry_hdf5
 
+#endif
 
 end submodule ModelParam_IO_HDF5 

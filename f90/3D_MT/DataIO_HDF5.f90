@@ -5,6 +5,7 @@
 submodule (DataIO) DataIO_HDF5
   ! This module contains io routines for reading and writing the data vectors
   ! Version: 3D MT
+#ifdef HDF5
   use hdf5
   use math_constants
   use file_units
@@ -1010,5 +1011,6 @@ subroutine read_hdf5_data(allData, cfile)
     call read_hdf5_datablocks(file_id, allData)
 
 end subroutine read_hdf5_data
+#endif HDF5
 
 end submodule DataIO_HDF5
