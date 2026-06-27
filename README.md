@@ -33,3 +33,8 @@ To incorporate field1d.f90 into ModEM regional, we would have to perform the fol
 3) global Hy will be mapped to regional -Hx;
 4) special poles and zero longitude treatment will be removed;
 5) grid co-latitude $\theta$ will be computed from the latitude on entry to this code, but the indexing $j$ will now go South to North rather than North to South.
+
+For conversion between arrays computed with FWD1D and ModEM, we also need to be especially careful to make sure that all arrays are flipped with respect to the direction of $j$ index;
+and that all arrays are adjusted with respect to zero longitude so that the longitude index $i$ is adjusted to [i180+1:end 1:i180] where i180 corresponds to 180 degree longitude. If we are not careful, we run the risk of flipping the two hemispheres, which will result in a 180 degree longitudinal shift.
+
+The code has now been updated to produce the fields on either H-primary or E-primary grids. However, the coordinate conventions are still that of the global (FWD1D) model.

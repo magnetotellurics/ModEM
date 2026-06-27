@@ -9,6 +9,7 @@ program fwd1d
     type(grid_t)                                :: grid
     type(modelParam_t)                          :: model,source,source_imag
     type(cvector)                               :: h1d, e1d
+    character(len=1), parameter                 :: primary_grid = 'E'  ! 'H' or 'E'
     character(80)                               :: period_file,label
     character(80)                               :: layered_model_file
     character(80)                               :: source_model_file
@@ -27,6 +28,7 @@ program fwd1d
     write(*,*) 'Recoded in Fortran by Anna Kelbert, 11-13 July 2011'
     write(*,*) 'Data scaling updated by Anna Kelbert, 23-28 Nov 2011'
     write(*,*) 'Added E-field; Anna Kelbert with Claude, 9 June 2026'
+    write(*,*) 'Primary E grid option; Anna Kelbert w Claude, 26 June 2026'
     write(*,*)
 
     !  parse command line
@@ -97,7 +99,7 @@ program fwd1d
     earth%tol = 1.e-9
 
     ! set surface conductance (should be small since we're using 3D thinsheet)
-    earth%tau = 1.e2
+    earth%tau = 1.e-4
 
     ! save model in 1D configuration structure: layers include the core
     allocate(earth%layer(nL+1),earth%sigma(nL+1), STAT=istat)
@@ -110,18 +112,25 @@ program fwd1d
     write(*,*) 'Conductivity values:  ',earth%sigma
 
     ! allocate the output cvectors
-    call create_cvector(grid, h1d, EDGE)
-
-    ! electric field is defined on FACEs in the global model;
-    ! here, we make the choice to output it on the primary grid
-    ! for use in other applications such as input to ModEM regional
-    ! but let's do it the right way: first, compute on faces
-    call create_cvector(grid, e1d, FACE) 
+    if (primary_grid == 'H') then
+       ! magnetic field is primary in the global model; this is the default
+       write(*,*) 'Grid staggering: H on primary edges (EDGE), E on primary faces (FACE)'
+       call create_cvector(grid, h1d, EDGE)
+       call create_cvector(grid, e1d, FACE)
+    else if (primary_grid == 'E') then
+       ! electric field is primary; used e.g. as input to ModEM regional.
+       ! Note: coordinate conventions remain global — convert before use in MT.
+       write(*,*) 'Grid staggering: E on primary edges (EDGE), H on primary faces (FACE)'
+       call create_cvector(grid, e1d, EDGE)
+       call create_cvector(grid, h1d, FACE)
+    else
+       call errStop('Unknown primary_grid flag; valid options are H (default) and E')
+    end if
 
     icoeff = 0
 
     do i = 1,nper
-        write(ich,'(i3.3)') i
+        write(ich,'(i2.2)') i
 
         days = T(i)/(24*3600)
         write(*,*) 'Computing the fields for period ',trim(ich),': ',days,' days'
@@ -130,7 +139,7 @@ program fwd1d
 
         call reset_time(fwd1d_timer)
 
-        cfile = trim(fields_output_file)//'_'//trim(ich)//'.hfield'
+        cfile = trim(fields_output_file)//'.'//primary_grid//'-grid.T'//trim(ich)//'.hfield'
         write(*,*) 'Writing to H file: ',cfile
         open(ioWRITE,file=cfile,status='unknown',form='formatted',iostat=ios)
         write(ioWRITE,'(a47,f9.3,a6)') "# FWD1D full EM field solution H output for period ",   &
@@ -139,7 +148,7 @@ program fwd1d
         call write_cvector(ioWRITE,h1d)
         close(ioWRITE)
 
-        cfile = trim(fields_output_file)//'_'//trim(ich)//'.efield'
+        cfile = trim(fields_output_file)//'.'//primary_grid//'-grid.T'//trim(ich)//'.efield'
         write(*,*) 'Writing to E file: ',cfile
         open(ioWRITE,file=cfile,status='unknown',form='formatted',iostat=ios)
         write(ioWRITE,'(a47,f9.3,a6)') "# FWD1D full EM field solution E output for period ",   &
