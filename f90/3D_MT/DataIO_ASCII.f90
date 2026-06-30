@@ -69,7 +69,7 @@ Contains
 
   ! **************************************************************************
   ! Cleans up and deletes type dictionary at end of program execution
-  subroutine deall_fileInfo_ascii()
+  module subroutine deall_fileInfo_ascii()
 
     integer     :: i,j, istat
 
@@ -100,7 +100,7 @@ Contains
 ! with data ordered by site (NOT by frequency), so we are going into
 ! some pains here to write them out in this order ...
 
-   subroutine write_Z_list(allData,cfile)
+   module subroutine write_Z_list(allData,cfile)
 
     character(*), intent(in)                  :: cfile
     type(dataVectorMTX_t), intent(in)         :: allData
@@ -478,7 +478,7 @@ Contains
 ! logic here is quite complicated, but once written can be used
 ! to read any kind of data, by adding a new case statement.
 
-   subroutine read_Z_list(allData,cfile)
+   module subroutine read_Z_list(allData,cfile)
 
     character(*), intent(in)               :: cfile
     type(dataVectorMTX_t), intent(inout)   :: allData

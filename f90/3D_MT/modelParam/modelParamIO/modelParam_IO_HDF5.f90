@@ -11,7 +11,7 @@ integer(HID_T) :: attr_id, dset_id, dspace_id, atype_id, aspace_id ! file, data 
 contains
 
 	!******************************************************************
-	subroutine write_modelParam_hdf5(m,cfile,comment)
+	module subroutine write_modelParam_hdf5(m,cfile,comment)
 
 	  ! opens cfile on unit ioPrm, writes the object of
 	  ! type modelParam in HDF5/NetCDF4+ format, closes file
@@ -41,7 +41,7 @@ contains
 
 
 	!******************************************************************
-	subroutine read_modelParam_hdf5(grid,airLayers,m,cfile)
+	module subroutine read_modelParam_hdf5(grid,airLayers,m,cfile)
 
       ! opens cfile on unit ioPrm, reads the object of
       ! type modelParam in HDF5/NetCDF4+ format, closes file

@@ -10,7 +10,7 @@ contains
 ! I/O routines for 3D_MT modelParam - extended Randie Mackie's format
 
   !******************************************************************
-  subroutine read_modelParam_mackie(grid,m,cfile)
+  module subroutine read_modelParam_mackie(grid,m,cfile)
 
       !  open cfile on unit fid, writes out object of
       !   type modelParam in Randie Mackie's format, closes file
@@ -43,7 +43,7 @@ contains
   end subroutine read_modelParam_mackie
 
   !******************************************************************
-  subroutine write_modelParam_mackie(m,cfile)
+  module subroutine write_modelParam_mackie(m,cfile)
 
       !  open cfile on unit fid, writes out object of
       !   type modelParam in Randie Mackie's format, closes file

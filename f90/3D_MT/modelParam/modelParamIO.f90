@@ -139,7 +139,7 @@ contains
 
     end subroutine setup_modelParamIO
 
-    subroutine write_modelParam(m, cfile, comment)
+    module subroutine write_modelParam(m, cfile, comment)
 
         implicit none
 
@@ -169,7 +169,7 @@ contains
 
     end subroutine write_modelParam
 
-    subroutine read_modelParam(grid,airLayers,m,cfile)
+    module subroutine read_modelParam(grid,airLayers,m,cfile)
 
         implicit none
 
@@ -196,7 +196,7 @@ contains
 
     end subroutine read_modelParam
 
-    subroutine readVec_modelParam(grid,nSigma,sigma,header,cfile)
+    module subroutine readVec_modelParam(grid,nSigma,sigma,header,cfile)
 
       implicit none
 
@@ -208,7 +208,7 @@ contains
 
     end subroutine readVec_modelParam
 
-    subroutine writeVec_modelParam(nSigma,sigma,header,cfile)
+    module subroutine writeVec_modelParam(nSigma,sigma,header,cfile)
 
         implicit none
 

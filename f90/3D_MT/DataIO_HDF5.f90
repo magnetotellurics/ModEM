@@ -971,7 +971,7 @@ subroutine read_hdf5_datablocks(file_id, allData)
 end subroutine read_hdf5_datablocks
 
 !**********************************************************************
-subroutine write_hdf5_data(allData,cfile)
+module subroutine write_hdf5_data(allData,cfile)
     character(*), intent(in)                  :: cfile
     type(dataVectorMTX_t), intent(in)        :: allData
     integer (kind=HID_T) :: file_id
@@ -989,7 +989,7 @@ subroutine write_hdf5_data(allData,cfile)
 end subroutine
 
 ! !**********************************************************************
-subroutine read_hdf5_data(allData, cfile)
+module subroutine read_hdf5_data(allData, cfile)
     character(*), intent(in)                  :: cfile
     type(dataVectorMTX_t), intent(inout)      :: allData
     integer (kind=HID_T) :: file_id
