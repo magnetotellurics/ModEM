@@ -60,10 +60,14 @@ program Mod3DMT
       call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
       write(6,*)'I am a SERIAL version'
 #endif
+ 
+#ifdef HDF5
+      call ModEM_setup_IO(DATA_FILE_TYPE_HDF5, DATA_FILE_TYPE_HDF5, & ! Data Type
+                          HDF5_FILE_TYPE, HDF5_FILE_TYPE) ! Model Type
+#else
       call ModEM_setup_IO(DATA_FILE_TYPE_ASCII, DATA_FILE_TYPE_ASCII, & ! Data Type
                           WS_FILE_TYPE, WS_FILE_TYPE) ! Model Type
-
-
+#endif
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations
 #ifdef MPI
