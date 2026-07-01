@@ -888,7 +888,6 @@ Contains
      end if
 
      call gen_nml_section_settings(nl_fid)
-
      call gen_nml_section_grid(nl_fid)
 
      close(nl_fid)
@@ -950,9 +949,9 @@ Contains
      character (len=80) :: output_level
      character (len=256) :: iomsg
 
-
      namelist /settings/ output_level
 
+     output_level = 'regular'
 
      read(nl_fid, nml=settings, iostat=iostat, iomsg=iomsg)
      if (iostat /= 0) then
@@ -990,8 +989,9 @@ Contains
 
     ! Alert the user that we are changing the output level
     if (output_level_int /= ctrl % output_level) then
-        ! output_level is the same so do nothing...
-        write(0,*) 'WARNING: -V argument is being overriden by optional output_level option in: ', trim(MODEM_NAMELIST)
+        ! output_level differs, so override the current setting
+         write(0,*) 'WARNING: output_level from optional namelist overrides current output level (including any -V): ', &
+             trim(MODEM_NAMELIST)
         select case (output_level)
              case ('debug')
                write(0,*) 'Output all information including debugging lines.'
@@ -1015,7 +1015,6 @@ Contains
                ctrl%output_level = 3
         end select
     end if
-
 
   end subroutine process_nml_section_settings
 
@@ -1048,6 +1047,10 @@ Contains
 
      namelist /grid/ sff, primary_field, primary_field_file
 
+     sff = ctrl % SFF
+     primary_field = ctrl % primary_field
+     primary_field_file = ctrl % primary_field_file
+
      read(nl_fid, nml=grid, iostat=iostat, iomsg=iomsg)
      if (iostat /= 0) then
         ! Returns true if we have read to the EOF. Meaning that the section was not present (iostat == -1)
@@ -1065,6 +1068,7 @@ Contains
      write(0,*) "Optional namelist section '&grid' was read!"
 
      ctrl % SFF = sff
+     ctrl % primary_field = primary_field
      ctrl % primary_field_file = primary_field_file
 
   end subroutine process_nml_section_grid

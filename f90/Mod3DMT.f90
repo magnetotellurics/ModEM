@@ -58,6 +58,7 @@ program Mod3DMT
       end if
 #else
       call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
+      call process_optional_namelist(cUserDef)
       write(6,*)'I am a SERIAL version'
 #endif
       call initGlobalData(cUserDef)
@@ -420,7 +421,7 @@ program Mod3DMT
        end if
 #endif
      case (GEN_NAMELIST)
-         write(0,*) "Generating the optional namelist: '", trim(MODEM_NAMELIST), "' and quiting.."
+         write(0,*) "Generating the optional namelist: '", trim(MODEM_NAMELIST), "' and quitting.."
          call generate_optional_nml()
 
      case default
