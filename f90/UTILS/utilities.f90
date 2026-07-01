@@ -989,8 +989,9 @@ subroutine HDF5_not_built_error()
 
     implicit none
 
-    ! TODO: Finish this error message
-    write(0,*) 'ERROR: ModEM not compiled with HDF5'
+    write(0,*) 'ERROR: ModEM not compiled with HDF5 but HDF5 input/output was choosen'
+    write(0,*) 'ERROR: Build ModEM with HDF5 or choose a different input/output file type'
+    write(0,*) "ERROR: You can build ModEM with HDF5 by specifying '-DBUILD_HDF5=on' in CMake"
     call errStop('Modem not compiled with HDF5')
 
 end subroutine HDF5_not_built_error

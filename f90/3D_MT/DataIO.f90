@@ -94,7 +94,7 @@ subroutine unsupported_DataIO_error(ftype_choice, input_or_output)
 
     ! TODO: Finish this error message
     write(0,*) "ERROR: DataIO - Unsupported data filetype choice '", trim(ftype_choice), "' for data ", trim(input_or_output)
-    write(0,*) "ERRRO: Supported types are: '", trim(DATA_FILE_TYPE_ASCII), "' or '", trim(DATA_FILE_TYPE_HDF5), "'"
+    write(0,*) "ERROR: Supported types are: '", trim(DATA_FILE_TYPE_ASCII), "' or '", trim(DATA_FILE_TYPE_HDF5), "'"
     call ModEM_Abort()
 
 end subroutine unsupported_DataIO_error
@@ -124,7 +124,7 @@ subroutine setup_DataIO(input_ftype, output_ftype)
             call compiled_with_HDF5_check()
             DATA_OUTPUT_FTYPE = DATA_FILE_TYPE_HDF5
         case default
-            call unsupported_DataIO_error(output, output)
+            call unsupported_DataIO_error(output_ftype, output)
     end select
 
     if (DATA_INPUT_FTYPE == DATA_FILE_TYPE_HDF5 .and. DATA_OUTPUT_FTYPE == DATA_FILE_TYPE_ASCII) then
@@ -176,7 +176,7 @@ subroutine read_dataVectorMTX(allData,cfile)
         case default
     end select
 
-end subroutine 
+end subroutine read_dataVectorMTX
 
 subroutine deall_dataFileInfo()
 

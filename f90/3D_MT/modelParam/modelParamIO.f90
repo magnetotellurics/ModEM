@@ -92,7 +92,7 @@ contains
 
         ! TODO: Finish this error message
         write(0,*) "ERROR: Unsupported ftype choice: '", trim(ftype_choice), "' for ", trim(input_or_output)
-        write(0,*) "ERROR: Supported choiced are: "
+        write(0,*) "ERROR: Supported choices are: "
         write(0,*) "ERROR:   - '", trim(WS_FILE_TYPE), "'"
         write(0,*) "ERROR:   - '", trim(FTRAN_BINARY_FILE_TYPE), "'"
         write(0,*) "ERROR:   - '", trim(MACKIE_FILE_TYPE), "'"
