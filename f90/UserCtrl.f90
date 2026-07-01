@@ -72,8 +72,12 @@ module UserCtrl
 	! Specify the magnitude for random perturbations
 	real(8)             :: delta
 
-    	! Specify the Covariance Type used in 3D (reserved for future use)
-    	integer             :: CovType
+     	! Specify the Covariance Type used in 3D (reserved for future use)
+     	integer             :: CovType
+
+        ! Distortion inversion parameters
+        real(8)             :: nu_dist
+        character(80)       :: rFile_distortion
 
 	! Indicate how much output you want
 	integer             :: output_level
@@ -125,9 +129,11 @@ Contains
   	ctrl%delta = 0.05
     	! 1 for AR, 2 for L1, 3 for L2
     	ctrl%CovType = 1
-  	ctrl%output_level = 3	
+   ctrl%output_level = 3	
 	ctrl%prefix = 'n'
 	ctrl%storeSolnsInFile = .false.
+    ctrl%nu_dist = 1.0
+    ctrl%rFile_distortion = ''
 
     ! Using process ID in MPI output file name has the advantage that
     ! the user may run several instances of the program in one directory
@@ -489,7 +495,7 @@ Contains
            write(0,*) 'OR'
            write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [rFile_invCtrl rFile_fwdCtrl]'
            write(0,*)
-           write(*,*) 'NOTE: NLCG can be replaced with DCG or LBFGS to '
+           write(*,*) 'NOTE: NLCG can be replaced with DCG, LBFGS or NLCG_DIST to '
            write(*,*) '      select a different inverse algorithm'
            write(0,*)
            write(0,*) 'Here, rFile_invCtrl = the inversion control file in the format'
@@ -528,10 +534,10 @@ Contains
         else
            ctrl%search = temp(1)
            select case (ctrl%search)
-           case ('NLCG','DCG','Hybrid','LBFGS')
-              	! write(0,*) 'Inverse search ',trim(ctrl%search),' selected.'
+           case ('NLCG','DCG','Hybrid','LBFGS','NLCG_DIST')
+               	! write(0,*) 'Inverse search ',trim(ctrl%search),' selected.'
            case default
-		call errStop('Unknown inverse search. Usage: -I [NLCG | DCG | Hybrid | LBFGS]')
+		call errStop('Unknown inverse search. Usage: -I [NLCG | DCG | Hybrid | LBFGS | NLCG_DIST]')
            end select
 	       ctrl%rFile_Model = temp(2)
 	       ctrl%rFile_Data = temp(3)

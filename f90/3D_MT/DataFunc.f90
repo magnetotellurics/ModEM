@@ -30,7 +30,7 @@ module dataFunc
 
   !   Names of these routines must be as here, as these are called by
   !    top-level inversion routines
-  public                        :: dataResp, Lrows, Qrows
+  public                        :: dataResp, dataResp_dist, Lrows, Qrows
 
 
   !Keep the model responses as complex numbers (Z) which are required in Lrows subroutine.
@@ -140,7 +140,7 @@ Contains
 		   xyz = 3
 		   call BfromESetUp(ef%grid,omega,x,xyz,Lbz)   
 		   Z = dotProd_noConj_scvector_f(Lbz,ef%pol(1))	      
-	  case (Full_Impedance)
+	  case (Full_Impedance, Full_Impedance_Dist)
                x     = rxDict(iRX)%x         !Local site position (x,y,z)
          
          ! Liu Zhongyin, 2019.08.26, add hxazimuth, exazimuth
@@ -462,6 +462,44 @@ Contains
   end subroutine dataResp
 
 !****************************************************************************
+  subroutine dataResp_dist(ef, Sigma, C_site, iDT, iRX, Resp, Orient, Binv)
+    type(solnVector_t), intent(in) :: ef
+    type(modelParam_t), intent(in) :: Sigma
+    real(kind=prec), intent(in) :: C_site(2,2)
+    integer, intent(in) :: iDT, iRX
+    real(kind=prec), intent(inout) :: Resp(:)
+    type(orient_t), intent(in), optional :: Orient
+    complex(kind=prec), intent(out), optional :: Binv(2,2)
+
+    complex(kind=prec) :: Z(2,2), D_hat(2,2)
+    real(kind=prec) :: Resp_undist(8)
+    integer :: i, j
+
+    call dataResp(ef, Sigma, Full_Impedance, iRX, Resp_undist, Orient, Binv)
+
+    Z(1,1) = cmplx(Resp_undist(1), Resp_undist(2), prec)
+    Z(1,2) = cmplx(Resp_undist(3), Resp_undist(4), prec)
+    Z(2,1) = cmplx(Resp_undist(5), Resp_undist(6), prec)
+    Z(2,2) = cmplx(Resp_undist(7), Resp_undist(8), prec)
+
+    do i = 1, 2
+       do j = 1, 2
+          D_hat(i,j) = C_site(i,1) * Z(1,j) + C_site(i,2) * Z(2,j)
+       end do
+    end do
+
+    Resp(1) = real(D_hat(1,1))
+    Resp(2) = aimag(D_hat(1,1))
+    Resp(3) = real(D_hat(1,2))
+    Resp(4) = aimag(D_hat(1,2))
+    Resp(5) = real(D_hat(2,1))
+    Resp(6) = aimag(D_hat(2,1))
+    Resp(7) = real(D_hat(2,2))
+    Resp(8) = aimag(D_hat(2,2))
+
+  end subroutine dataResp_dist
+
+!****************************************************************************
   subroutine Lrows(e0,Sigma0,iDT,iRX,Orient,L)
   !  given input background electric field solution (both modes; e0),
   !  indices into data type/receiver dictionaries
@@ -525,17 +563,17 @@ Contains
 
 
   select case(iDT)
-     case(Full_Impedance)
-        nComp = 4
-        ComputeHz = .false.
-        do j = 1,2
-           do i = 1,2
-              IJ(1,2*(i-1)+j) = i
-              IJ(2,2*(i-1)+j) = j
-              IJ(3,2*(i-1)+j) = i
-           enddo
-        enddo
-        Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Orient,Binv)
+      case(Full_Impedance,Full_Impedance_Dist)
+         nComp = 4
+         ComputeHz = .false.
+         do j = 1,2
+            do i = 1,2
+               IJ(1,2*(i-1)+j) = i
+               IJ(2,2*(i-1)+j) = j
+               IJ(3,2*(i-1)+j) = i
+            enddo
+         enddo
+         Call dataResp(e0,Sigma0,Full_Impedance,iRX,Resp,Orient,Binv)
      case(Off_Diagonal_Impedance)
         nComp = 2
         ComputeHz = .false.
