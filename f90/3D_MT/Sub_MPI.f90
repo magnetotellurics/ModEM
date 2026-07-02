@@ -96,10 +96,10 @@ end subroutine count_number_of_messages_to_RECV
 	implicit none
 	integer Nbytes1,Nbytes2,Nbytes3,Nbytes4
 	!
-	CALL MPI_PACK_SIZE(80*24, MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
+	CALL MPI_PACK_SIZE(80*26, MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
 	CALL MPI_PACK_SIZE(3,     MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes2,  ierr)
 	CALL MPI_PACK_SIZE(2,     MPI_INTEGER,          MPI_COMM_WORLD, Nbytes3,  ierr)
-	CALL MPI_PACK_SIZE(1,     MPI_LOGICAL,          MPI_COMM_WORLD, Nbytes4,  ierr)
+	CALL MPI_PACK_SIZE(2,     MPI_LOGICAL,          MPI_COMM_WORLD, Nbytes4,  ierr)
 	Nbytes=(Nbytes1+Nbytes2+Nbytes3+Nbytes4)+1
 	!
 	if(.not. associated(userdef_control_package)) then
@@ -116,11 +116,12 @@ end subroutine count_number_of_messages_to_RECV
      	type(userdef_control), intent(in)   :: ctrl
         integer index
         index=1
-        call MPI_Pack(ctrl%job,80*24, MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(ctrl%job,80*26, MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%lambda,3, MPI_DOUBLE_PRECISION, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%CovType,1, MPI_INTEGER, userdef_control_package,  Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%output_level,1, MPI_INTEGER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%storeSolnsInFile,1,MPI_LOGICAL, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(ctrl%SFF,1,MPI_LOGICAL, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
 end subroutine pack_userdef_control
 
@@ -156,6 +157,10 @@ end subroutine pack_userdef_control
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%wFile_EMrhs,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%wFile_Sens,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
+   ! Primary Field Info
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%primary_field,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%primary_field_file,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Cov,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%search,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%option,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
@@ -168,31 +173,45 @@ end subroutine pack_userdef_control
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%CovType,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%output_level,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%storeSolnsInFile,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%SFF,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
+
 end subroutine unpack_userdef_control
 
 !********************************************************************
 subroutine check_userdef_control_MPI (which_proc,ctrl)
 
-	type(userdef_control), intent(in)   :: ctrl
-	character(20), intent(in)           :: which_proc
+    type(userdef_control), intent(in)   :: ctrl
+    character(20), intent(in)           :: which_proc
 
-       write(6,*)trim(which_proc),' : ctrl%wFile_Sens ',trim(ctrl%wFile_Sens)
-       write(6,*)trim(which_proc),' : ctrl%lambda ',(ctrl%lambda)
-       write(6,*)trim(which_proc),' : ctrl%eps ',(ctrl%eps)
-       write(6,*)trim(which_proc),' : ctrl%rFile_Cov ',trim(ctrl%rFile_Cov)
-       write(6,*)trim(which_proc),' : ctrl%search ',trim(ctrl%search)
-       write(6,*)trim(which_proc),' : ctrl%CovType ',ctrl%CovType
-       write(6,*)trim(which_proc),' : ctrl%output_level ',ctrl%output_level
-       write(6,*)trim(which_proc),' : ctrl%rFile_Model ',trim(ctrl%rFile_Model)
-       write(6,*)trim(which_proc),' : ctrl%rFile_Data ',trim(ctrl%rFile_Data)
-       write(6,*)trim(which_proc),' : ctrl%rFile_EMsoln ',trim(ctrl%rFile_EMsoln)
-       write(6,*)trim(which_proc),' : ctrl%rFile_fwdCtrl ',trim(ctrl%rFile_fwdCtrl)
-       write(6,*)trim(which_proc),' : ctrl%rFile_invCtrl ',trim(ctrl%rFile_invCtrl)
-       write(6,*)trim(which_proc),' : ctrl%rFile_Config ',trim(ctrl%rFile_Config)
-       write(6,*)trim(which_proc),' : ctrl%rFile_Prior ',trim(ctrl%rFile_Prior)
-       write(6,*)trim(which_proc),' : ctrl%prefix ',trim(ctrl%prefix)
-       write(6,*)trim(which_proc),' : ctrl%storeSolnsInfile ',ctrl%storeSolnsInfile
+    write(6,*)trim(which_proc),' : ctrl%wFile_Sens ',trim(ctrl%wFile_Sens)
+    write(6,*)trim(which_proc),' : ctrl%lambda ',(ctrl%lambda)
+    write(6,*)trim(which_proc),' : ctrl%eps ',(ctrl%eps)
+    write(6,*)trim(which_proc),' : ctrl%rFile_Cov ',trim(ctrl%rFile_Cov)
+    write(6,*)trim(which_proc),' : ctrl%search ',trim(ctrl%search)
+    write(6,*)trim(which_proc),' : ctrl%CovType ',ctrl%CovType
+    write(6,*)trim(which_proc),' : ctrl%output_level ',ctrl%output_level
+    write(6,*)trim(which_proc),' : ctrl%rFile_Model ',trim(ctrl%rFile_Model)
+    write(6,*)trim(which_proc),' : ctrl%rFile_Data ',trim(ctrl%rFile_Data)
+    write(6,*)trim(which_proc),' : ctrl%rFile_EMsoln ',trim(ctrl%rFile_EMsoln)
+    write(6,*)trim(which_proc),' : ctrl%rFile_fwdCtrl ',trim(ctrl%rFile_fwdCtrl)
+    write(6,*)trim(which_proc),' : ctrl%rFile_invCtrl ',trim(ctrl%rFile_invCtrl)
+    write(6,*)trim(which_proc),' : ctrl%rFile_Config ',trim(ctrl%rFile_Config)
+    write(6,*)trim(which_proc),' : ctrl%rFile_Prior ',trim(ctrl%rFile_Prior)
 
+    if (trim(ctrl % primary_field) /= 'n') then ! 'hidden option' only print if it has been set via namelist
+        write(6,*)trim(which_proc),' : ctrl%primary_field',trim(ctrl%primary_field)
+    end if
+
+    if (trim(ctrl % primary_field_file) /= 'n') then ! 'hidden option' only print if it has been set via namelist
+        write(6,*)trim(which_proc),' : ctrl%primary_field_file',trim(ctrl%primary_field_file)
+    end if
+
+    write(6,*)trim(which_proc),' : ctrl%prefix ',trim(ctrl%prefix)
+    write(6,*)trim(which_proc),' : ctrl%storeSolnsInfile ',ctrl%storeSolnsInfile
+
+    if (ctrl%SFF) then ! 'hidden option' only print if it has been set via namelist
+        write(6,*)trim(which_proc),' : ctrl%SFF',ctrl%SFF
+    end if
 
 end subroutine check_userdef_control_MPI
 !********************************************************************
