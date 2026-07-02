@@ -4,6 +4,7 @@ module LBFGS
 
 use invcore
 use utilities
+use ModelSpace
 
 implicit none
 

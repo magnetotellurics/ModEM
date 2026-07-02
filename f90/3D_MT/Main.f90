@@ -187,9 +187,7 @@ Contains
 
 	if (exists) then
 	   ! Read background conductivity parameter and grid; complete airLayers setup
-       	   call read_modelParam(grid,airLayers,sigma0,cUserDef%rFile_Model)
-
-
+       call read_modelParam(grid,airLayers,sigma0,cUserDef%rFile_Model)
 	else
 	  call warning('No input model parametrization')
 
@@ -353,6 +351,24 @@ Contains
 	return
 
   end subroutine initGlobalData	! initGlobalData
+
+
+  subroutine ModEM_setup_IO(data_input_type, data_output_type, &
+                            model_input_type, model_output_type)
+
+    implicit none
+
+    character(len=*), intent(in) :: data_input_type
+    character(len=*), intent(in) :: data_output_type
+    character(len=*), intent(in) :: model_input_type
+    character(len=*), intent(in) :: model_output_type
+
+    integer :: hdferr
+
+    call setup_dataIO(data_input_type, data_output_type)
+    call setup_modelParamIO(model_input_type, model_output_type)
+
+  end subroutine ModEM_setup_IO
 
 
   ! ***************************************************************************

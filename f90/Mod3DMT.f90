@@ -13,6 +13,7 @@ program Mod3DMT
      use DCG
      use LBFGS
      use utilities
+     use ModelSpace
      !use mtinvsetup
 
 #ifdef MPI
@@ -60,6 +61,14 @@ program Mod3DMT
       call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
       call process_optional_namelist(cUserDef)
       write(6,*)'I am a SERIAL version'
+#endif
+ 
+#ifdef HDF5
+      call ModEM_setup_IO(DATA_FILE_TYPE_HDF5, DATA_FILE_TYPE_HDF5, & ! Data Type
+                          HDF5_FILE_TYPE, HDF5_FILE_TYPE) ! Model Type
+#else
+      call ModEM_setup_IO(DATA_FILE_TYPE_ASCII, DATA_FILE_TYPE_ASCII, & ! Data Type
+                          WS_FILE_TYPE, WS_FILE_TYPE) ! Model Type
 #endif
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations
@@ -240,7 +249,7 @@ program Mod3DMT
          write(0,*) 'Output JT_multi_Tx_vec...'
          write(header,*) 'JT multi_Tx vectors'
          write(ioSens) header
-         call writeVec_modelParam_binary(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
+         call writeVec_modelParam(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
          close(ioSens)
 
      case (INVERSE)

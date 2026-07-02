@@ -5,6 +5,7 @@ module NLCG
 use ModEM_timers
 use invcore
 use utilities
+use ModelSpace
 
 
 implicit none
