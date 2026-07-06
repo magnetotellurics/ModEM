@@ -72,18 +72,17 @@ module UserCtrl
 	! Specify the magnitude for random perturbations
 	real(8)             :: delta
 
-     	! Specify the Covariance Type used in 3D (reserved for future use)
-     	integer             :: CovType
+    ! Specify the Covariance Type used in 3D (reserved for future use)
+    integer             :: CovType
 
-        ! Distortion inversion parameters
-        real(8)             :: nu_dist
-        character(80)       :: rFile_distortion
+    ! Distortion inversion parameters
+    real(8)             :: nu_dist
 
 	! Indicate how much output you want
 	integer             :: output_level
 
-    	! Reduce master memory usage by storing E-fields in files (NCI)
-    	logical             :: storeSolnsInFile
+    ! Reduce master memory usage by storing E-fields in files (NCI)
+    logical             :: storeSolnsInFile
 
   end type userdef_control
 
@@ -127,13 +126,12 @@ Contains
   	ctrl%lambda = 10.
   	ctrl%eps = 1.0e-7
   	ctrl%delta = 0.05
-    	! 1 for AR, 2 for L1, 3 for L2
-    	ctrl%CovType = 1
-   ctrl%output_level = 3	
+    ! 1 for AR, 2 for L2
+    ctrl%CovType = 1
+    ctrl%output_level = 3
 	ctrl%prefix = 'n'
 	ctrl%storeSolnsInFile = .false.
     ctrl%nu_dist = 1.0
-    ctrl%rFile_distortion = ''
 
     ! Using process ID in MPI output file name has the advantage that
     ! the user may run several instances of the program in one directory

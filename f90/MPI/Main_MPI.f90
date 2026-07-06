@@ -28,7 +28,7 @@ module Main_MPI
   type(solnVector_t), save, private    :: e,e0
   type(rhsVector_t) , save, private    :: b0,comb
   type(grid_t), target, save, private  :: grid
-  type(distortionParam_t), save :: worker_distC
+  type(distortionParam_t), save        :: worker_distC
 
 
 Contains
@@ -666,13 +666,19 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
      Call EdgeLength(grid, l_E)
      Call FaceArea(grid, S_F)
 
-      ! Compute the model Responses
+      ! get the distortion parameter pointer, if it is defined at all
+      ! should be .not. associated if not defined
       distP => get_distortionParam_ptr()
+      ! Compute the model Responses
       do iTx=1,nTx
           do i = 1,d1%d(iTx)%nDt
               d1%d(iTx)%data(i)%errorBar = .false.
               iDt = d1%d(iTx)%data(i)%dataType
               do j = 1,d1%d(iTx)%data(i)%nSite
+                  ! only compute the distortion response if the distortion 
+                  ! parameter is defined
+                  ! kind of a quick patch, needs to be fixed in a more 
+                  ! elegant manner
                   if (iDt == Full_Impedance_Dist .and. associated(distP)) then
                      iRXsite = d1%d(iTx)%data(i)%rx(j)
                      iDistSite = find_distortion_site_index(distP, iRXsite)
@@ -974,7 +980,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      type(solnVectorMTX_t)        :: eAll_out 
      type(solnVectorMTX_t)        :: eAll_temp
      type(dataVectorMTX_t)        :: d_temp
-    type(distortionParam_t), pointer :: distP
+     type(distortionParam_t), pointer :: distP
      
      logical        :: savedSolns,returne_m_vectors
      Integer        :: iper,ipol,nTx,iTx
@@ -1032,8 +1038,10 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      ! First ditribute both model parameters and data
      call Master_job_Distribute_Model(sigma)
      call Master_job_Distribute_Data(d)
+     ! see if distortion parameters are defined
      distP => get_distortionParam_ptr()
      if (associated(distP)) then
+         ! only distribute distortion parameters if they are defined
          call Master_job_Distribute_Distortion(distP, comm_current)
      else
          call Master_job_Distribute_Distortion(worker_distC, comm_current)
