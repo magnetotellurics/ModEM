@@ -4,7 +4,7 @@
 ! Recursive autoregression.                                            !
 !----------------------------------------------------------------------!
 ! *******************************************************************
-  function multBy_Cm(mhat) result (dm)
+  function multBy_Cm_AR(mhat) result (dm)
 
    ! Multiplies by the full model covariance,
    ! which is viewed as a smoothing operator. Intended
@@ -17,21 +17,21 @@
     type (modelParam_t)				    :: dm
 
     if (.not. CmSqrt%allocated) then
-    	call create_CmSqrt(mhat)
+    	call create_CmSqrt_AR(mhat)
     end if
 
     dm = mhat
 
-    call RecursiveAR(mhat%cellCond%v,dm%cellCond%v,2)
+    call RecursiveAR(mhat%cellCond%v,dm%cellCond%v,2*CmSqrt%N)
 
     dm%temporary = .true.
 
-  end function multBy_Cm
+  end function multBy_Cm_AR
 
 ! *******************************************************************
 
 ! *******************************************************************
-  function multBy_CmSqrt(mhat) result (dm)
+  function multBy_CmSqrt_AR(mhat) result (dm)
 
    ! Multiplies by the square root of the model covariance,
    ! which is viewed as a smoothing operator. Intended
@@ -44,7 +44,7 @@
     type (modelParam_t)				    :: dm
 
     if (.not. CmSqrt%allocated) then
-    	call create_CmSqrt(mhat)
+    	call create_CmSqrt_AR(mhat)
     end if
 
     dm = mhat
@@ -53,10 +53,10 @@
 
     dm%temporary = .true.
 
-  end function multBy_CmSqrt
+  end function multBy_CmSqrt_AR
 
 ! *******************************************************************
-  function multBy_CmSqrtInv(dm) result (mhat)
+  function multBy_CmSqrtInv_AR(dm) result (mhat)
 
    ! Multiplies by the inverse square root of the model covariance,
    ! which is viewed as a roughening operator. Intended
@@ -69,7 +69,7 @@
     type (modelParam_t)                 :: mhat
 
     if (.not. CmSqrt%allocated) then
-        call create_CmSqrt(dm)
+        call create_CmSqrt_AR(dm)
     end if
 
     mhat = dm
@@ -78,10 +78,10 @@
 
     mhat%temporary = .true.
 
-  end function multBy_CmSqrtInv
+  end function multBy_CmSqrtInv_AR
 
 ! *******************************************************************
-  subroutine create_CmSqrt(m,cfile)
+  subroutine create_CmSqrt_AR(m,cfile)
 
   	! Initializes CmSqrt variable stored in RecursiveAR.hd. If cfile
   	! is specified, gets this information from file.
@@ -111,7 +111,7 @@
 		! attempt to read CmSqrt from cfile
 	    inquire(FILE=cfile,EXIST=exists)
 	    if (exists) then
-	      call read_CmSqrt(cfile)
+	      call read_CmSqrt_AR(cfile)
 	    else
 	      call errStop('Unable to find the input covariance file '//trim(cfile)//' in create_CmSqrt')
 	    end if
@@ -121,10 +121,10 @@
 	    end if
     end if
 
-  end subroutine create_CmSqrt
+  end subroutine create_CmSqrt_AR
 
 ! *******************************************************************
-  subroutine deall_CmSqrt()
+  subroutine deall_CmSqrt_AR()
 
     integer                             :: istat
 
@@ -133,7 +133,7 @@
     call deall_iscalar(CmSqrt%mask)
     CmSqrt%allocated = .false.
 
-  end subroutine deall_CmSqrt
+  end subroutine deall_CmSqrt_AR
 
 ! *******************************************************************
 !
@@ -156,7 +156,7 @@
 !| 8. Two integer layer indices and Nx x Ny block of masks, repeated as needed.|
 !+-----------------------------------------------------------------------------+
 
-  subroutine read_CmSqrt(cfile)
+  subroutine read_CmSqrt_AR(cfile)
 
 	! The minimal covariance information includes the AR parameters
 	! alpha(k), beta(k) for smoothing in x, y directions and gamma for
@@ -271,7 +271,7 @@
     ! now, truncate the smoothing vector to the correct number of components
     call reall_sparsevecc(nS, CmSqrt%S)
 
-  end subroutine read_CmSqrt
+  end subroutine read_CmSqrt_AR
 
 ! *******************************************************************
 !

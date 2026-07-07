@@ -45,7 +45,7 @@
 
 ! 3) public procedures to create, deallocate and multiply by CmSqrt
 
-  public    :: create_CmSqrt, deall_CmSqrt, multBy_CmSqrt, read_CmSqrt,multBy_Cm
+  public    :: create_CmSqrt_AR, deall_CmSqrt_AR, multBy_CmSqrt_AR, read_CmSqrt_AR, multBy_Cm_AR
 
 ! 4) any private procedures required for the model covariance
 

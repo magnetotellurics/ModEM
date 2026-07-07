@@ -29,6 +29,7 @@ module ModelSpace
   use sg_scalar
   use sg_vector
   use sg_sparse_vector
+  use spOpTools
 #ifdef MPI
   use Declaration_MPI
 #endif
@@ -165,7 +166,11 @@ end interface
 ! definitions for CmSqrt: must be consistent with the include file below
 
 #include "modelCov/RecursiveAR.hd"
-!#include "modelCov/Diffusion.hd"
+#include "modelCov/BiHelmholtz.hd"
+
+  ! CovType: 1 = AR (default), 2 = Bi-Helmholtz
+  integer, save :: CovType = 1
+
 Contains
 
 ! *****************************************************************************
@@ -174,9 +179,74 @@ Contains
 !  model parameter structure
 #include "ModelMap.inc"
 
-!  The included file must contain subroutines create_CmSqrt, deall_CmSqrt, multBy...
+!  Backend implementations
 #include "modelCov/RecursiveAR.inc"
-!#include "modelCov/Diffusion.inc"
+#include "modelCov/BiHelmholtz.inc"
+
+!  Dispatcher functions: route to CovType=1 (AR) or CovType=2 (Bi-Helmholtz) backends
+
+  function multBy_Cm(mhat) result(dm)
+    type (modelParam_t), intent(in) :: mhat
+    type (modelParam_t)             :: dm
+    select case (CovType)
+    case (1)
+       dm = multBy_Cm_AR(mhat)
+    case (2)
+       dm = multBy_Cm_BiHelm(mhat)
+    case default
+       call errStop('Unknown CovType in multBy_Cm')
+    end select
+  end function multBy_Cm
+
+  function multBy_CmSqrt(mhat) result(dm)
+    type (modelParam_t), intent(in) :: mhat
+    type (modelParam_t)             :: dm
+    select case (CovType)
+    case (1)
+       dm = multBy_CmSqrt_AR(mhat)
+    case (2)
+       dm = multBy_CmSqrt_BiHelm(mhat)
+    case default
+       call errStop('Unknown CovType in multBy_CmSqrt')
+    end select
+  end function multBy_CmSqrt
+
+  function multBy_CmSqrtInv(dm) result(mhat)
+    type (modelParam_t), intent(in) :: dm
+    type (modelParam_t)             :: mhat
+    select case (CovType)
+    case (1)
+       mhat = multBy_CmSqrtInv_AR(dm)
+    case (2)
+       mhat = multBy_CmSqrtInv_BiHelm(dm)
+    case default
+       call errStop('Unknown CovType in multBy_CmSqrtInv')
+    end select
+  end function multBy_CmSqrtInv
+
+  subroutine create_CmSqrt(m, cfile)
+    type (modelParam_t), intent(in) :: m
+    character(*), intent(in), optional :: cfile
+    select case (CovType)
+    case (1)
+       call create_CmSqrt_AR(m, cfile)
+    case (2)
+       call create_CmSqrt_BiHelm(m, cfile)
+    case default
+       call errStop('Unknown CovType in create_CmSqrt')
+    end select
+  end subroutine create_CmSqrt
+
+  subroutine deall_CmSqrt()
+    select case (CovType)
+    case (1)
+       call deall_CmSqrt_AR()
+    case (2)
+       call deall_CmSqrt_BiHelm()
+    case default
+       call errStop('Unknown CovType in deall_CmSqrt')
+    end select
+  end subroutine deall_CmSqrt
 
 !  MPI model parameter, if needed
 #ifdef MPI

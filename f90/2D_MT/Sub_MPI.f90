@@ -100,7 +100,7 @@ end subroutine pack_userdef_control
  subroutine unpack_userdef_control(ctrl)
     implicit none
 
-     	type(userdef_control), intent(in)   :: ctrl
+     	type(userdef_control), intent(inout)   :: ctrl
         integer index
 
        index=1

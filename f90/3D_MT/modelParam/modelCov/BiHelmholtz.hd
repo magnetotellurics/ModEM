@@ -1,0 +1,41 @@
+!----------------------------------------------------------------------!
+! 3D_MT Bi-Helmholtz covariance (CovType=2): definitions.              !
+!                                                                      !
+!   K = C_m^{1/2} = A^{-1}  where A = kappa^2 I - Delta              !
+!   C_m = A^{-2}                                                      !
+!   K^{-1} = A                                                       !
+!----------------------------------------------------------------------!
+
+  type :: modelCovBiHelm_t
+
+    private
+
+    ! grid dimensions (earth cells only)
+    integer                                           :: Nx, Ny, NzEarth
+
+    ! BiHelmholtz parameter kappa (> 0)
+    real (kind=prec)                          :: kappa
+
+    ! sparse operator A = kappa^2 I - Delta (CSR format)
+    type (spMatCSR_Real)                             :: A
+
+    ! an integer array that defines regions for smoothing and scaling purposes
+    type (iscalar)                                    :: mask
+
+    ! PCG solver controls
+    real (kind=prec)                          :: pcg_tol
+    integer                                           :: pcg_maxIt
+
+    ! exception rules: turn off smoothing across boundaries between
+    ! specific mask-code pairs (order independent)
+    logical                                           :: tearMatrix(0:9, 0:9)
+    integer                                           :: nrules
+    integer, pointer, dimension(:, :)         :: tearPairs
+
+    ! true when all arrays are allocated, initialized and ready to use
+    logical                                           :: allocated
+
+  end type
+
+  ! CmSqrtBiHelm (an instance of modelCovBiHelm_t), saved and private
+  type (modelCovBiHelm_t), private, save               :: CmSqrtBiHelm
