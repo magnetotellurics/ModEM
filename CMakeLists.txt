@@ -99,6 +99,9 @@ if (FG)
         add_compile_definitions(FG)
 endif()
 
+if (FORWARD_FORMULATION STREQUAL "SP" OR FORWARD_FORMULATION STREQUAL "SP2")
+    add_compile_definitions(SP_FORM)
+endif()
 
 # Source Code
 add_subdirectory(f90)

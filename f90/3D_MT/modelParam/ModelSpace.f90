@@ -29,7 +29,9 @@ module ModelSpace
   use sg_scalar
   use sg_vector
   use sg_sparse_vector
+#ifdef SP_FORM
   use spOpTools
+#endif
 #ifdef MPI
   use Declaration_MPI
 #endif
@@ -166,7 +168,9 @@ end interface
 ! definitions for CmSqrt: must be consistent with the include file below
 
 #include "modelCov/RecursiveAR.hd"
+#ifdef SP_FORM
 #include "modelCov/BiHelmholtz.hd"
+#endif
 
   ! CovType: 1 = AR (default), 2 = Bi-Helmholtz
   integer, save :: CovType = 1
@@ -181,9 +185,22 @@ Contains
 
 !  Backend implementations
 #include "modelCov/RecursiveAR.inc"
+#ifdef SP_FORM
 #include "modelCov/BiHelmholtz.inc"
+#endif
 
-!  Dispatcher functions: route to CovType=1 (AR) or CovType=2 (Bi-Helmholtz) backends
+!  dummy functions for covtype (always available, not dependent on spOpTools)
+subroutine set_CovType(covTypeIn)
+  integer, intent(in) :: covTypeIn
+  CovType = covTypeIn
+end subroutine set_CovType
+
+function get_CovType() result(covTypeOut)
+  integer :: covTypeOut
+  covTypeOut = CovType
+end function get_CovType
+
+!  real functions: route to CovType=1 (AR) or CovType=2 (Bi-Helmholtz) backends
 
   function multBy_Cm(mhat) result(dm)
     type (modelParam_t), intent(in) :: mhat
@@ -191,8 +208,10 @@ Contains
     select case (CovType)
     case (1)
        dm = multBy_Cm_AR(mhat)
+#ifdef SP_FORM
     case (2)
        dm = multBy_Cm_BiHelm(mhat)
+#endif
     case default
        call errStop('Unknown CovType in multBy_Cm')
     end select
@@ -204,8 +223,10 @@ Contains
     select case (CovType)
     case (1)
        dm = multBy_CmSqrt_AR(mhat)
+#ifdef SP_FORM
     case (2)
        dm = multBy_CmSqrt_BiHelm(mhat)
+#endif
     case default
        call errStop('Unknown CovType in multBy_CmSqrt')
     end select
@@ -217,8 +238,10 @@ Contains
     select case (CovType)
     case (1)
        mhat = multBy_CmSqrtInv_AR(dm)
+#ifdef SP_FORM
     case (2)
        mhat = multBy_CmSqrtInv_BiHelm(dm)
+#endif
     case default
        call errStop('Unknown CovType in multBy_CmSqrtInv')
     end select
@@ -230,8 +253,10 @@ Contains
     select case (CovType)
     case (1)
        call create_CmSqrt_AR(m, cfile)
+#ifdef SP_FORM
     case (2)
        call create_CmSqrt_BiHelm(m, cfile)
+#endif
     case default
        call errStop('Unknown CovType in create_CmSqrt')
     end select
@@ -241,8 +266,10 @@ Contains
     select case (CovType)
     case (1)
        call deall_CmSqrt_AR()
+#ifdef SP_FORM
     case (2)
        call deall_CmSqrt_BiHelm()
+#endif
     case default
        call errStop('Unknown CovType in deall_CmSqrt')
     end select

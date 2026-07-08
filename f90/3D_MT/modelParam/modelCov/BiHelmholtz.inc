@@ -6,18 +6,6 @@
 !----------------------------------------------------------------------!
 
 ! *******************************************************************
-  subroutine set_CovType(covTypeIn)
-    integer, intent(in) :: covTypeIn
-    CovType = covTypeIn
-  end subroutine set_CovType
-
-! *******************************************************************
-  function get_CovType() result(covTypeOut)
-    integer :: covTypeOut
-    covTypeOut = CovType
-  end function get_CovType
-
-! *******************************************************************
   subroutine read_CmSqrt_BiHelm(cfile)
 
     ! Reads the BiHelmholtz covariance configuration from file.
