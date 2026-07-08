@@ -96,7 +96,7 @@ end subroutine count_number_of_messages_to_RECV
 	implicit none
 	integer Nbytes1,Nbytes2,Nbytes3,Nbytes4
 	!
-	CALL MPI_PACK_SIZE(80*26, MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
+	CALL MPI_PACK_SIZE(80*31, MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
 	CALL MPI_PACK_SIZE(3,     MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes2,  ierr)
 	CALL MPI_PACK_SIZE(2,     MPI_INTEGER,          MPI_COMM_WORLD, Nbytes3,  ierr)
 	CALL MPI_PACK_SIZE(2,     MPI_LOGICAL,          MPI_COMM_WORLD, Nbytes4,  ierr)
@@ -116,7 +116,7 @@ end subroutine count_number_of_messages_to_RECV
      	type(userdef_control), intent(in)   :: ctrl
         integer index
         index=1
-        call MPI_Pack(ctrl%job,80*26, MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(ctrl%job,80*31, MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%lambda,3, MPI_DOUBLE_PRECISION, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%CovType,1, MPI_INTEGER, userdef_control_package,  Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%output_level,1, MPI_INTEGER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
@@ -165,6 +165,10 @@ end subroutine pack_userdef_control
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%search,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%option,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%prefix,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%data_input_ftype,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%data_output_ftype,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%model_input_ftype,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%model_output_ftype,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%lambda,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%eps,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
@@ -207,6 +211,10 @@ subroutine check_userdef_control_MPI (which_proc,ctrl)
     end if
 
     write(6,*)trim(which_proc),' : ctrl%prefix ',trim(ctrl%prefix)
+    write(6,*)trim(which_proc),' : ',trim(ctrl%data_input_ftype)
+    write(6,*)trim(which_proc),' : ',trim(ctrl%data_output_ftype)
+    write(6,*)trim(which_proc),' : ',trim(ctrl%model_input_ftype)
+    write(6,*)trim(which_proc),' : ',trim(ctrl%model_output_ftype)
     write(6,*)trim(which_proc),' : ctrl%storeSolnsInfile ',ctrl%storeSolnsInfile
 
     if (ctrl%SFF) then ! 'hidden option' only print if it has been set via namelist

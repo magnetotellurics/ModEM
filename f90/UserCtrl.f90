@@ -70,6 +70,12 @@ module UserCtrl
     ! Out-of-core file prefix for storing working E-field solutions (NCI)
     character(80)       :: prefix
 
+    ! Data/Model input/output filetypes
+    character(80)       :: data_input_ftype
+    character(80)       :: data_output_ftype
+    character(80)       :: model_input_ftype
+    character(80)       :: model_output_ftype
+
 	! Specify damping parameter for the inversion
 	real(8)             :: lambda
 
@@ -138,6 +144,17 @@ Contains
     ctrl%CovType = 1
   	ctrl%output_level = 3	
 	ctrl%prefix = 'n'
+#ifdef HDF5
+    ctrl%data_input_ftype = DATA_FILE_TYPE_HDF5
+    ctrl%data_output_Ftype = DATA_FILE_TYPE_HDF5
+    ctrl%model_input_ftype = HDF5_FILE_TYPE
+    ctrl%model_output_ftype = HDF5_FILE_TYPE
+#else
+    ctrl%data_input_ftype = DATA_FILE_TYPE_ASCII
+    ctrl%data_output_Ftype = DATA_FILE_TYPE_ASCII
+    ctrl%model_input_ftype = WS_FILE_TYPE
+    ctrl%model_output_ftype = WS_FILE_TYPE
+#endif
 	ctrl%storeSolnsInFile = .false.
     ctrl%SFF = .false.
 
@@ -889,6 +906,8 @@ Contains
 
      call gen_nml_section_settings(nl_fid)
      call gen_nml_section_grid(nl_fid)
+     call gen_nml_section_data_io(nl_fid)
+     call gen_nml_section_model_io(nl_fid)
 
      close(nl_fid)
 
@@ -930,6 +949,12 @@ Contains
 
      call process_nml_section_grid(ctrl, nl_fid)
      rewind(nl_fid) ! Technically not necessary, but just continuing the pattern
+
+     call process_nml_section_data_io(ctrl, nl_fid)
+     rewind(nl_fid)
+
+     call process_nml_section_model_io(ctrl, nl_fid)
+     rewind(nl_fid)
 
      close(nl_fid)
 
@@ -1075,17 +1100,130 @@ Contains
 
   subroutine gen_nml_section_grid(nl_fid)
 
-      implicit none
+     implicit none
 
-      integer :: nl_fid
+     integer :: nl_fid
 
-      write(nl_fid, *) '&grid'
-      write(nl_fid, *) '    SFF = .false.  ! Currently unused'
-      write(nl_fid, *) '    primary_field = "file" ! Currently unused'
-      write(nl_fid, *) '    primary_field_file = "none" ! Currently unused'
-      write(nl_fid, *) '/'
+     write(nl_fid, *) '&grid'
+     write(nl_fid, *) '    SFF = .false.  ! Currently unused'
+     write(nl_fid, *) '    primary_field = "file" ! Currently unused'
+     write(nl_fid, *) '    primary_field_file = "none" ! Currently unused'
+     write(nl_fid, *) '/'
 
   end subroutine gen_nml_section_grid 
 
+  subroutine process_nml_section_data_io(ctrl, nl_fid)
+
+     implicit none
+
+     type (userdef_control), intent(inout) :: ctrl
+     integer, intent(in) :: nl_fid
+
+     character(len=80) :: input_ftype = ''
+     character(len=80) :: output_ftype = ''
+
+     integer :: iostat
+     character (len=256) :: iomsg
+
+     namelist /data_io/ input_ftype, output_ftype
+
+     input_ftype = trim(ctrl % data_input_ftype)
+     output_ftype = trim(ctrl % data_output_ftype)
+
+     read(nl_fid, nml=data_io, iostat=iostat, iomsg=iomsg)
+     if (iostat /= 0) then
+        ! Returns true if we have read to the EOF. Meaning that the section was not present (iostat == -1)
+        if (IS_IOSTAT_END(iostat)) then 
+             write(0,*) "Optional namelist section '&data_io' was not present in ", trim(MODEM_NAMELIST), " skipping..."
+             return
+        end if
+
+        ! Any other error means we have an error with the namelist
+        ! that should be reported to the user
+        write(0,*) "ERROR: Processing namelist section '&data_io': ", trim(iomsg)
+        call ModEM_abort()
+     end if
+
+     write(0,*) "Optional namelist section '&data_io' was read!"
+
+     ctrl % data_input_ftype = trim(input_ftype)
+     ctrl % data_output_ftype = trim(output_ftype)
+
+  end subroutine process_nml_section_data_io
+
+  subroutine gen_nml_section_data_io(nl_fid)
+
+     implicit none
+
+     integer, intent(in) :: nl_fid
+
+     write(nl_fid, *) '&data_io'
+#ifdef HDF5
+     write(nl_fid, *) '    input_ftype = "HDF5"'
+     write(nl_fid, *) '    output_ftype = "HDF5"'
+#else
+     write(nl_fid, *) '    input_ftype = "ASCII_LIST_FORMAT"'
+     write(nl_fid, *) '    output_ftype = "ASCII_LIST_FORMAT"'
+#endif
+     write(nl_fid, *) '/'
+
+  end subroutine gen_nml_section_data_io
+
+  subroutine process_nml_section_model_io(ctrl, nl_fid)
+
+     implicit none
+
+     type (userdef_control), intent(inout) :: ctrl
+     integer, intent(in) :: nl_fid
+
+     character(len=80) :: input_ftype = ''
+     character(len=80) :: output_ftype = ''
+
+     integer :: iostat
+     character (len=256) :: iomsg
+
+     namelist /model_io/ input_ftype, output_ftype
+
+     input_ftype = trim(ctrl % model_input_ftype)
+     output_ftype = trim(ctrl % model_output_ftype)
+
+     read(nl_fid, nml=model_io, iostat=iostat, iomsg=iomsg)
+     if (iostat /= 0) then
+        ! Returns true if we have read to the EOF. Meaning that the section was not present (iostat == -1)
+        if (IS_IOSTAT_END(iostat)) then 
+             write(0,*) "Optional namelist section '&model_io' was not present in ", trim(MODEM_NAMELIST), " skipping..."
+             return
+        end if
+
+        ! Any other error means we have an error with the namelist
+        ! that should be reported to the user
+        write(0,*) "ERROR: Processing namelist section '&model_io': ", trim(iomsg)
+        call ModEM_abort()
+     end if
+
+     write(0,*) "Optional namelist section '&model_io' was read!"
+
+     ctrl % model_input_ftype = trim(input_ftype)
+     ctrl % model_output_ftype = trim(output_ftype)
+
+  end subroutine process_nml_section_model_io
+
+  subroutine gen_nml_section_model_io(nl_fid)
+
+     implicit none
+
+     integer, intent(in) :: nl_fid
+
+     write(nl_fid, *) '&model_io'
+#ifdef HDF5
+     write(nl_fid, *) '    input_ftype = "HDF5"'
+     write(nl_fid, *) '    output_ftype = "HDF5"'
+#else
+     write(nl_fid, *) '    input_ftype = "WSINV3DMT"'
+     write(nl_fid, *) '    output_ftype = "WSINV3DMT"'
+#endif
+     write(nl_fid, *) '/'
+
+  end subroutine gen_nml_section_model_io
 
 end module UserCtrl
