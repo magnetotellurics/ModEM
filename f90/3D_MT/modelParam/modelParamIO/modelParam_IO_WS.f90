@@ -1,7 +1,15 @@
+submodule (ModelSpace:ModelSpaceIO) modelParam_IO_WS
+
+    use Griddef
+
+    implicit none
+
+contains
+
 ! I/O routines for 3D_MT modelParam - extended Weerachai Siripunvaraporn's format
 
 	!******************************************************************
-	subroutine read_modelParam_ws(grid,airLayers,m,cfile)
+	module subroutine read_modelParam_ws(grid,airLayers,m,cfile)
 
       ! opens cfile on unit ioPrm, writes out object of
       ! type modelParam in Weerachai Siripunvaraporn's format, closes file
@@ -120,7 +128,7 @@
 	end subroutine read_modelParam_ws
 
 	!******************************************************************
-	subroutine write_modelParam_ws(m,cfile,comment)
+	module subroutine write_modelParam_ws(m,cfile,comment)
 
       ! opens cfile on unit ioPrm, writes out object of
       ! type modelParam in Weerachai Siripunvaraporn's format, closes file
@@ -206,3 +214,6 @@
 	  call deall_grid(grid)
 
     end subroutine write_modelParam_ws
+
+
+end submodule modelParam_IO_WS

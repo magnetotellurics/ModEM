@@ -2,9 +2,10 @@
 !   This is the HDF5 I/O version coded by Spencer Wilbur (USGS) under the direction
 !   of Anna Kelbert, Jul. 2023. File intentionally misnamed; it is renamed at the
 !   level of the configuration file.
-module DataIO
+submodule (DataIO) DataIO_HDF5
   ! This module contains io routines for reading and writing the data vectors
   ! Version: 3D MT
+#ifdef HDF5
   use hdf5
   use math_constants
   use file_units
@@ -17,194 +18,60 @@ module DataIO
 
   implicit none
 
-  private
-
-!   switch between data formats by leaving uncommented one of the options below
-  interface write_dataVectorMTX
-	MODULE PROCEDURE write_hdf5_data  
-  end interface
-  
-  interface read_dataVectorMTX 
-    !MODULE PROCEDURE read_Z_list
-    MODULE PROCEDURE read_hdf5_data
-  end interface
-
-  interface deall_dataFileInfo
-    MODULE PROCEDURE deall_fileInfo
-  end interface
-
-  public     ::  write_dataVectorMTX, read_dataVectorMTX, deall_dataFileInfo
-
-  type :: data_file_block
-
-      ! this block of information constitutes user preferences about the data format;
-      ! there is one entry per each transmitter type and data type... (iTxt,iDt)
-      ! if there are multiple data blocks of the same transmitter & data types,
-      ! the last value is used.
-      character(200) :: info_in_file
-      character(20)  :: sign_info_in_file
-      integer        :: sign_in_file
-      character(20)  :: units_in_file
-      real           :: origin_in_file(2)
-      real           :: geographic_orientation
-
-     ! these lists contain the indices into the data vector for each data type;
-     ! they make it possible to sort the data by receiver for output.
-     ! no data denoted by zero index; dimensions (nTx) and (nTx,nRx).
-     ! these indices are typically allocated as we read the data file
-     integer, pointer, dimension(:)   :: tx_index
-     integer, pointer, dimension(:)   :: dt_index
-     integer, pointer, dimension(:,:) :: rx_index
-
-     ! some transmitter types and data types don't go together
-     logical         :: defined
-
-  end type data_file_block
-
-  ! private dictionary of data block info dimension (nTxt,nDt)
-  ! where nTxt = number of all possible transmitter types
-  !       nDt  = number of all possible data types
-  ! number of transmitter types comes from the DICT/txTypes module
-  ! and defines the number of conceptually different types of sources
-  type (data_file_block), pointer, save, private, dimension(:,:) :: fileInfo
-
   ! we are converting from an "old format" to a "new format"
   ! the only difference being that in the new format, there is
   ! an additional line in the head that indicates transmitter type.
   ! on output, use the same format as on input. AK 25 May 2018
-  logical, save, private  :: old_data_file_format = .true.
-  integer(HID_T), private, save   :: file_id, group_id, attr_id, dset_id, dspace_id, atype_id, aspace_id, dtype_id ! file, data set, and dataspace handles
+  logical :: old_data_file_format = .true.
+  integer(HID_T) :: group_id, attr_id, dset_id, dspace_id, atype_id, aspace_id, dtype_id ! file, data set, and dataspace handles
+
 Contains
-
-!**********************************************************************
-! Sorts out the data block header
-
-  function DataBlockHeader(txType,dataType) result (header)
-
-    integer, intent(in)         :: txType
-    integer, intent(in)         :: dataType
-    character(200)              :: header
-
-    select case (dataType)
-
-       case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
-          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error'
-
-       case(Full_Interstation_TF)
-          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Ref_Code Ref_Lat '// &
-                   'Ref_Lon Ref_X(m) Ref_Y(m) Ref_Z(m) Component Real Imag Error'
-
-       case(Off_Diagonal_Rho_Phase,Phase_Tensor)
-          header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Value Error'
-
-    end select
-
-  end function DataBlockHeader
-
-  ! **************************************************************************
-  ! Cleans up and deletes type dictionary at end of program execution
-  subroutine init_fileInfo(nTxt,nDt,nTx,nRx)
-
-    integer, intent(in) :: nTxt,nDt
-    integer, intent(in), optional :: nTx,nRx
-    integer     :: istat,iTxt,iDt
-
-    allocate(fileInfo(nTxt,nDt),STAT=istat)
-
-
-     do iTxt = 1,nTxt
-       do iDt = 1,nDt
-         fileInfo(iTxt,iDt)%defined = .false.
-         if (present(nTx) .and. present(nRx)) then
-           allocate(fileInfo(iTxt,iDt)%tx_index(nTx),STAT=istat)
-           allocate(fileInfo(iTxt,iDt)%dt_index(nTx),STAT=istat)
-           allocate(fileInfo(iTxt,iDt)%rx_index(nTx,nRx),STAT=istat)
-         end if
-       end do
-     end do
-
-  end subroutine init_fileInfo
-
-  ! **************************************************************************
-  ! Cleans up and deletes type dictionary at end of program execution
-  subroutine deall_fileInfo()
-
-    integer     :: i,j, istat
-
-    if (associated(fileInfo)) then
-
-     do i = 1,size(fileInfo,1)
-       do j = 1,size(fileInfo,2)
-          if (associated(fileInfo(i,j)%tx_index)) then
-             deallocate(fileInfo(i,j)%tx_index,STAT=istat)
-          end if
-          if (associated(fileInfo(i,j)%dt_index)) then
-             deallocate(fileInfo(i,j)%dt_index,STAT=istat)
-          end if
-          if (associated(fileInfo(i,j)%rx_index)) then
-             deallocate(fileInfo(i,j)%rx_index,STAT=istat)
-          end if
-       end do
-     end do
-
-     deallocate(fileInfo,STAT=istat)
-
-    end if
-
-  end subroutine deall_fileInfo
 
 !**********************************************************************  
  
 !********************************************************************** 
    !Subroutine to open the hdf5 for reading 
-subroutine open_read_hdf5(cfile)
+subroutine open_read_hdf5(cfile, file_id)
     character(*), intent(in)                :: cfile
+    integer (kind=HID_T), intent(out)       :: file_id
     integer                                 :: hdferr
     logical                                 :: lexist
 
-    inquire(file = cfile, exist = lexist)
-    if (lexist) then
-        CALL h5open_f(hdferr)
-        CALL h5fopen_f(cfile, H5F_ACC_RDONLY_F, file_id, hdferr)
-    else 
-        write(0,*) 'No HDF5 file to read'
-    end if 
+    CALL h5open_f(hdferr)
+    CALL h5fopen_f(cfile, H5F_ACC_RDONLY_F, file_id, hdferr)
 
 end subroutine open_read_hdf5
 
 !********************************************************************** 
    !This subroutine will either create a new hdf5 file based on the name 
    !given in the input or open an already exisiting file to be appended to 
-subroutine open_hdf5(cfile)
+subroutine open_hdf5(cfile, file_id)
     character(*), intent(in)                :: cfile
+    integer (kind=HID_T), intent(out) :: file_id
+
     integer                                 :: hdferr
     CHARACTER(LEN=4), PARAMETER  :: data_group = "Data"
     CHARACTER(LEN=7), PARAMETER  :: data_mt_group = "Data/MT"
     logical                      :: lexist
 
-    inquire(file = cfile, exist = lexist)
-    if (lexist) then 
-        CALL h5open_f(hdferr)
-        CALL h5fopen_f(cfile, H5F_ACC_RDWR_F, file_id, hdferr)
-    else 
-            CALL h5open_f(hdferr) ! throws error if cannot open 
-            CALL h5fcreate_f(cfile, H5F_ACC_TRUNC_F, file_id, hdferr)!create the file using the variable cfile given to the terminal when running the script 
+    write(0,*) 'OPENING ', trim(cfile), ' for writing'
+
+    CALL h5open_f(hdferr) ! throws error if cannot open 
+    CALL h5fcreate_f(cfile, H5F_ACC_TRUNC_F, file_id, hdferr)!create the file using the variable cfile given to the terminal when running the script 
+    
+    !Create the groups for the dataset
+    CALL h5gcreate_f(file_id, data_group, group_id, hdferr) 
+    CALL h5gcreate_f(file_id, data_mt_group, group_id, hdferr)
         
-            !Create the groups for the dataset
-            CALL h5gcreate_f(file_id, data_group, group_id, hdferr) 
-            CALL h5gcreate_f(file_id, data_mt_group, group_id, hdferr)
-        
-    end if
     
 end subroutine open_hdf5
 !********************************************************************** 
-subroutine close_hdf5(cfile)
-    character(*), intent(in)                :: cfile
+subroutine close_hdf5(file_id)
+    integer (kind=HID_T), intent(in)                :: file_id
     integer                                 :: hdferr
 
     ! CALL h5gclose_f(group_id, hdferr)
     CALL h5fclose_f(file_id, hdferr)
-    CALL h5close_f(hdferr) 
    
 
 end subroutine close_hdf5
@@ -304,9 +171,9 @@ end function read_hdf5_attr
 
 
 !********************************************************************** 
-subroutine write_hdf5_txdict(cfile,order)
+subroutine write_hdf5_txdict(file_id, order)
 
-    character(*), intent(in)                  :: cfile
+    integer (kind=HID_T), intent(in)                  :: file_id 
     character(*), intent(in), optional        :: order
 
     ! local
@@ -337,10 +204,8 @@ subroutine write_hdf5_txdict(cfile,order)
     end if
 
     ! open cfile and create the txdict group
-    CALL open_hdf5(cfile)
     !   !Create the groups for the dataset
     CALL h5gcreate_f(file_id, data_mt_txdict_group, group_id, hdferr)
-
 
     ! create attributes
     CALL write_hdf5_attr('order', order_attr)
@@ -350,22 +215,18 @@ subroutine write_hdf5_txdict(cfile,order)
     CALL h5dcreate_f(group_id, 'periods', H5T_NATIVE_DOUBLE, dspace_id, dset_id, hdferr)
     CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, period, dim1d, hdferr)
 
-
     ! ! close the data set and data space
     CALL h5dclose_f(dset_id, hdferr)
     CALL h5sclose_f(dspace_id, hdferr)
-
-    ! ! close the HDF5 file
-    CALL close_hdf5(cfile) 
 
     ! ! deallocate temporary linear arrays
     deallocate(period, stat=istat)
 
 end subroutine write_hdf5_txdict
 !********************************************************************** 
-subroutine write_hdf5_rxdict(cfile,primary_coords)
+subroutine write_hdf5_rxdict(file_id,primary_coords)
 
-    character(*), intent(in)                  :: cfile
+    integer (kind=HID_T), intent(in)                  :: file_id
     character(*), intent(in), optional        :: primary_coords
 
     ! local
@@ -396,17 +257,13 @@ subroutine write_hdf5_rxdict(cfile,primary_coords)
     allocate(rxdict_x(rz), rxdict_y(rz), rxdict_z(rz), STAT = istat)
     allocate(rxdict_xyz(3,rz), STAT = istat)
 
-    !open the file and create the rxdict group
-    CALL open_hdf5(cfile)
     CALL h5gcreate_f(file_id, data_mt_rxdict_group, group_id, hdferr)
-    
-   
+
     !Assign dimensions for the xyz dataset beacuse it is 2D and everything else in rxdict is 1D
     dim2d(1) = 3
     dim2d(2) = rz
 
     do ii= 1,rz
-
         rxdict_elv = rxDict(ii)%x(3)
         rxdict_codes(ii) = rxDict(ii)%id 
         rxdict_lat(ii) = rxDict(ii)%x(1)
@@ -470,10 +327,6 @@ subroutine write_hdf5_rxdict(cfile,primary_coords)
     CALL write_hdf5_attr('scalefactor', 'null', dset_id)
     CALL write_hdf5_attr('userinfo', 'null', dset_id)
     CALL write_hdf5_attr('zone', 'null', dset_id)
-    ! close the HDF5 file
-    CALL close_hdf5(cfile) 
-  
-
 
     ! deallocate temporary linear arrays
     deallocate(rxdict_codes,rxdict_lat,rxdict_lon,rxdict_elv, stat=istat)
@@ -481,8 +334,8 @@ subroutine write_hdf5_rxdict(cfile,primary_coords)
 
 end subroutine write_hdf5_rxdict
 !********************************************************************** 
-subroutine write_hdf5_typelist(allData, cfile)
-    character(*), intent(in)                :: cfile
+subroutine write_hdf5_typelist(file_id, allData)
+    integer (kind=HID_T), intent(in)  :: file_id
     type(dataVectorMTX_t), intent(in) :: allData
 
     ! local
@@ -502,7 +355,6 @@ subroutine write_hdf5_typelist(allData, cfile)
     CHARACTER(LEN=19), parameter :: data_typelist_Z = "Data/MT/typelist/Z"
   
 
-    CALL open_hdf5(cfile)
     CALL h5gcreate_f(file_id, data_typelist, group_id, hdferr)
    
         WRITE_DATA_TYPE: do k = 1, alldata%d(1)%ndt !all data, d= one datablock to look foir datatypes, ndt =datatypes 
@@ -572,12 +424,12 @@ subroutine write_hdf5_typelist(allData, cfile)
                         deallocate(id_z,STAT=istat)
             end select 
         end do WRITE_DATA_TYPE
-        CALL close_hdf5(cfile)
+
 end subroutine write_hdf5_typelist
 
 !********************************************************************** 
-subroutine write_hdf5_datablocks(allData, cfile)
-    character(*), intent(in)          :: cfile
+subroutine write_hdf5_datablocks(file_id, allData)
+    integer (kind=HID_T), intent(in)  :: file_id
     type(dataVectorMTX_t), intent(in) :: allData
       ! local
     INTEGER(HSIZE_T)               :: ndat     ! Number of data points in an array
@@ -594,10 +446,6 @@ subroutine write_hdf5_datablocks(allData, cfile)
     character(LEN=3), parameter      :: T = "/T"
     character(len=3), PARAMETER      :: Z = "/Z"
 
-
-
-    CALL open_hdf5(cfile)
-   
     do iTx= 1, size(alldata%d) !this provides number of data blocks !
         myint = iTx
         write(dblk_num, '(a, a1, I0.2)') data_block_group, '.', myint
@@ -613,9 +461,6 @@ subroutine write_hdf5_datablocks(allData, cfile)
         CALL h5acreate_f(group_id, "Tx", atype_id, aspace_id,attr_id, hdferr)
         CALL h5awrite_f(attr_id, atype_id, dblk, dimsc, hdferr)
     
- 
-
-
         WRITE_DATA_TYPE: do ii = 1, alldata%d(iTx)%ndt !all data, d=datablocks ndt =datatypes 
         iDt = alldata%d(iTx)%data(ii)%datatype
             select case(iDt) !
@@ -688,13 +533,11 @@ subroutine write_hdf5_datablocks(allData, cfile)
             end do WRITE_DATA_TYPE
     end do
 
-    CALL close_hdf5(cfile)
-
 end subroutine write_hdf5_datablocks
 
 !**********************************************************************
-subroutine read_hdf5_txdict(cfile)
-    character(*), intent(in)                  :: cfile
+subroutine read_hdf5_txdict(file_id)
+    integer (kind=HID_T), intent(in) :: file_id 
 
     CHARACTER(LEN=9), PARAMETER  :: data_group = "Data"
     CHARACTER(LEN=9), PARAMETER  :: data_mt_group = "Data/MT"
@@ -714,9 +557,7 @@ subroutine read_hdf5_txdict(cfile)
     ! ALLOCATE(rdata(size(txDict)))
   
     write(0,*) 'Reading Transmitter Dictionary'
-    CALL open_read_hdf5(cfile) 
-    write(0,*) cfile,' is open and ready to read the transmitter dictionary'
- 
+
     CALL h5gopen_f(file_id, data_mt_txdict_group, group_id, hdferr)
     CALL h5dopen_f (group_id, "periods", dset_id, hdferr)
 
@@ -732,13 +573,9 @@ subroutine read_hdf5_txdict(cfile)
 
     CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE,rdata, dim1d, hdferr)
 
-
 !    att_data = read_hdf5_attr('order') ! change this from subroutine call everywhere
 
-
     write(0,*) 'Transmitter Attribute ', att_data
-
-    CALL close_hdf5(cfile)
 
     call setup_txDict(nTx,rdata,2) 
     call print_txDict()
@@ -748,8 +585,8 @@ end subroutine read_hdf5_txdict
 
 ! !**********************************************************************
 !     !READ HDF5 
-subroutine read_hdf5_rxdict(cfile)
-    character(*), intent(in)                  :: cfile
+subroutine read_hdf5_rxdict(file_id)
+    integer (kind=HID_T), intent(in) :: file_id
  
   
     CHARACTER(LEN=9), PARAMETER  :: data_group = "Data"
@@ -768,10 +605,6 @@ subroutine read_hdf5_rxdict(cfile)
     CHARACTER(len=100), Dimension(1), allocatable :: att_xyz(:)
     integer                        :: ii, hdferr,rz, istat, nSites, attr_num
     INTEGER(SIZE_T)                :: size
-
-
-    write(0,*) 'Reading Reciever Dictionary'
-    CALL open_read_hdf5(cfile) 
 
     CALL h5gopen_f(file_id, data_mt_rxdict_group, group_id, hdferr)
    
@@ -837,11 +670,10 @@ subroutine read_hdf5_rxdict(cfile)
     deallocate(elv, lat, lon,codes_data, STAT=istat)
     deallocate(r2data, STAT=istat)
  
-    Call close_hdf5(cfile)
 end subroutine read_hdf5_rxdict
 ! !********************************************************************** 
-subroutine read_hdf5_typelist(cfile)
-    character(*), intent(in)                  :: cfile
+subroutine read_hdf5_typelist(file_id)
+    integer (kind=HID_T), intent(in) :: file_id
   
     CHARACTER(LEN=18), parameter :: data_typelist = "Data/MT/typelist"
     CHARACTER(LEN=19), parameter :: data_typelist_T = "Data/MT/typelist/T"
@@ -855,7 +687,6 @@ subroutine read_hdf5_typelist(cfile)
     character(len=100),allocatable, dimension(1) :: att_T(:), att_Z(:)
     character(len = 30)           :: tran_name
     logical                        :: exists, tran_comp
-    call open_read_hdf5(cfile) 
     CALL setup_typeDict()
 
     ! Read tipper definition, if exists in file
@@ -961,21 +792,17 @@ subroutine read_hdf5_typelist(cfile)
         ! deallocate(att_Z, STAT = istat)
     end if
     
-    call close_hdf5(cfile) 
 end subroutine read_hdf5_typelist
    
 ! ! !**********************************************************************
-subroutine read_hdf5_datablocks(allData, cfile)
-    character(*), intent(in)          :: cfile
+subroutine read_hdf5_datablocks(file_id, allData)
+    integer (kind=HID_T), intent(in)     :: file_id 
     type(dataVectorMTX_t), intent(inout) :: allData
    
-
     ! local
     INTEGER(HSIZE_T)               :: attrlen = 100 ! Length of the attribute string
     INTEGER(HSIZE_T), DIMENSION(1) :: dim1d ! Datasets dimensions for 1D arrays
     
-    
-
     !DATA BLOCKS NAMES  
     character(len=27)                  :: dblk_num, dbTZ, dblk
     character(len=2)                   ::  padded_i
@@ -992,11 +819,6 @@ subroutine read_hdf5_datablocks(allData, cfile)
     character(len=2), PARAMETER        :: Z = "/Z"
     integer                            :: nTx, nDt, nComp, nSite, dataType, hdferr, i, ii, istat, iDt, iTx, nRx, myint
 
-
-    ! Open the hdf5 file
-    call open_read_hdf5(cfile)
-    write(0,*) cfile,' is open and ready to read the data blocks'
-    
     call h5gopen_f(file_id, '/Data', group_id, hdferr)
    
     call h5lexists_f(file_id, mt_group_name, exists, hdferr)
@@ -1146,698 +968,49 @@ subroutine read_hdf5_datablocks(allData, cfile)
 
     allData%allocated = .true.
 
- CALL close_hdf5(cfile)
-   
 end subroutine read_hdf5_datablocks
 
 !**********************************************************************
-subroutine write_hdf5_data(allData,cfile)
+module subroutine write_hdf5_data(allData,cfile)
     character(*), intent(in)                  :: cfile
     type(dataVectorMTX_t), intent(in)        :: allData
+    integer (kind=HID_T) :: file_id
+
+    ! open HDF5
+    call open_hdf5(cfile, file_id)
     
-    call write_hdf5_txdict(cfile)
-    call write_hdf5_rxdict(cfile)
-    call write_hdf5_typelist(allData, cfile)
-    call write_hdf5_datablocks(allData, cfile)
-    
+    call write_hdf5_txdict(file_id)
+    call write_hdf5_rxdict(file_id)
+    call write_hdf5_typelist(file_id, allData)
+    call write_hdf5_datablocks(file_id, allData)
    
+    call close_hdf5(file_id)
+
 end subroutine
 
 ! !**********************************************************************
-subroutine read_hdf5_data(allData, cfile)
+module subroutine read_hdf5_data(allData, cfile)
     character(*), intent(in)                  :: cfile
     type(dataVectorMTX_t), intent(inout)      :: allData
+    integer (kind=HID_T) :: file_id
 
-    call read_hdf5_txdict(cfile)
-    call read_hdf5_rxdict(cfile)
-    call read_hdf5_typelist(cfile)
-    call read_hdf5_datablocks(allData, cfile)
+    ! integer :: nTxt, nDt
+
+    ! open HDF5
+    call open_read_hdf5(cfile, file_id)
+
+    ! Eventually, we will need to the fileInfo if we read HDF5
+    ! data and write out ASCII data.
+    ! nTxt = 5
+    ! nDt = size(typeDict)
+    ! call init_fileInfo(nTxt,nDt)
+
+    call read_hdf5_txdict(file_id)
+    call read_hdf5_rxdict(file_id)
+    call read_hdf5_typelist(file_id)
+    call read_hdf5_datablocks(file_id, allData)
 
 end subroutine read_hdf5_data
-!**********************************************************************
-! reads in the ASCII list data file, sets up all dictionaries
-! and the allData structure, including data and error bars.
-! logic here is quite complicated, but once written can be used
-! to read any kind of data, by adding a new case statement.
+#endif HDF5
 
-subroutine read_Z_list(allData,cfile)
-
-    character(*), intent(in)               :: cfile
-    type(dataVectorMTX_t), intent(inout)   :: allData
-    ! local variables
-    type(dataVectorMTX_t)           :: newData
-    integer                         :: nTx,nRx,nDt,ncomp,iRx,iTx,icomp
-    integer                         :: countData,countRx
-    complex(8), allocatable         :: value(:,:,:) ! (nTx,nRx,ncomp)
-    real(8), allocatable            :: error(:,:,:) ! (nTx,nRx,ncomp)
-    logical, allocatable            :: exist(:,:,:) ! (nTx,nRx,ncomp)
-    integer, allocatable            :: new_TxType(:) ! contains txType indices (nTx)
-    integer, allocatable            :: new_Tx(:) ! contains txDict indices (nTx)
-    integer, allocatable            :: new_Rx(:) ! contains rxDict indices (nRx)
-    character(2)                    :: temp
-    character(200)                  :: txTypeName,typeName,typeInfo,typeHeader
-    character(50)                   :: siteid,ref_siteid,compid
-    integer                         :: nTxt,iTxt,iDt,i,j,k,istat,ios
-    character(40)                   :: code,ref_code
-    real(8)                         :: x(3),ref_x(3), Period,SI_factor
-    real(8)                         :: lat,lon,ref_lat,ref_lon,rx_azimuth
-    real(8)                         :: Zreal, Zimag, Zerr
-    logical                         :: conjugate, errorBar, isComplex
-
-    ! 2022.09.28, Liu Zhongyin, add azimu variable
-    real(kind=prec), allocatable    :: HxAzimuth(:,:), ExAzimuth(:,:), HxAzimuth_ref(:,:) !(nTx,nRx)
-    real(kind=prec), allocatable    :: HyAzimuth(:,:), EyAzimuth(:,:), HyAzimuth_ref(:,:) !(nTx,nRx)
-    real(kind=prec)                 :: Hxangle, Exangle, Hxangle_ref, Hyangle, Eyangle, Hyangle_ref
-
-    integer                         :: ncount
-    character(1000)                 :: tmpline
-
-    !===========================================================================
-    !======================================================== New Local Variable
-    !===========================================================================
-    character(8)                    :: Dipole
-    character(40)              	    :: Txid=''
-    real(8) 			    :: Moment, Azi, Dip, LatTx, LongTx, Tx(3)
-    real(8)                         :: Omega, Amplitude
-    type(transmitter_t)             :: aTx
-
-    ! First, set up the data type dictionary, if it's not in existence yet
-    call setup_typeDict()
-
-    ! Save the user preferences
-    nTxt = 5
-    nDt = size(typeDict)
-    call init_fileInfo(nTxt,nDt)
-
-    ! Now, read the data file
-    open(unit=ioDat,file=cfile,form='formatted',status='old')
-      
-    ! Read the data blocks for each data type
-    READ_DATA_TYPE: do
-      
-    	read(ioDat,'(a2,a200)',iostat=ios) temp,typeInfo
-    	read(ioDat,'(a2,a200)',iostat=ios) temp,typeHeader
-    	read(ioDat,'(a2,a100)',iostat=ios) temp,typeName
-
-        ! If transmitter name exists, it precedes the typeName
-        if (temp(1:1) == '+') then
-            txTypeName = typeName
-            read(ioDat,'(a2,a100)',iostat=ios) temp,typeName
-            old_data_file_format = .false.
-        else
-            txTypeName = 'MT'
-        end if
-        iTxt = tx_type_index(txTypeName)
-    	if (ios /= 0) exit
-    
-    	! Read new data type
-    	call compact(typeName)
-    	iDt = ImpType(typeName)
-    	ncomp = typeDict(iDt)%nComp
-    	if (typeDict(iDt)%isComplex) then
-        	ncomp = ncomp/2
-    	end if
-
-        call compact(typeInfo)
-    	fileInfo(iTxt,iDt)%defined = .true.
-    	fileInfo(iTxt,iDt)%info_in_file = typeInfo
-    	
-    	! Sort out the sign convention
-    	read(ioDat,'(a2,a20)',iostat=ios) temp,fileInfo(iTxt,iDt)%sign_info_in_file
-    	if(index(fileInfo(iTxt,iDt)%sign_info_in_file,'-')>0) then
-      		fileInfo(iTxt,iDt)%sign_in_file = - 1
-    	else
-      		fileInfo(iTxt,iDt)%sign_in_file = 1
-    	end if
-    	if (fileInfo(iTxt,iDt)%sign_in_file == ISIGN) then
-      		conjugate = .false.
-    	else
-      		conjugate = .true.
-    	end if
-
-        read(ioDat,'(a2,a20)',iostat=ios) temp,fileInfo(iTxt,iDt)%units_in_file
-        SI_factor = ImpUnits(fileInfo(iTxt,iDt)%units_in_file,typeDict(iDt)%units)
-
-        read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%geographic_orientation
-        read(ioDat,*,iostat=ios) temp,fileInfo(iTxt,iDt)%origin_in_file(1),fileInfo(iTxt,iDt)%origin_in_file(2)
-        read(ioDat,*,iostat=ios) temp,nTx,nRx
-        !write(0,'(a6,i5,a18,i8,a24)') 'Found ',nTx,' transmitters and ',nRx,' receivers in data block'
-
-
-        if (output_level > 3) then
-            write(0,*) node_info,'Reading data type: ',trim(typeName)
-            write(0,*) node_info,'Sign convention in file: ',trim(fileInfo(iTxt,iDt)%sign_info_in_file)
-            write(0,*) node_info,'Units in file: ',trim(fileInfo(iTxt,iDt)%units_in_file)
-            write(0,*) node_info,'Number of transmitters: ',nTx
-            write(0,*) node_info,'Number of receivers: ',nRx
-        end if
-
-
-        ! Allocate temporary data arrays
-        allocate(new_TxType(nTx),new_Tx(nTx),new_Rx(nRx),STAT=istat)
-        allocate(value(nTx,nRx,ncomp),error(nTx,nRx,ncomp),exist(nTx,nRx,ncomp),STAT=istat)
-
-        ! 2022.09.28, Liu Zhongyin, add azimu allocation
-        allocate(HxAzimuth(nTx,nRx),stat=istat)
-        allocate(HyAzimuth(nTx,nRx),stat=istat)
-        allocate(ExAzimuth(nTx,nRx),stat=istat)
-        allocate(EyAzimuth(nTx,nRx),stat=istat)
-        allocate(HxAzimuth_ref(nTx,nRx),stat=istat)
-        allocate(HyAzimuth_ref(nTx,nRx),stat=istat)
-
-        new_TxType(:) = 0
-        new_Tx(:) = 0
-        new_Rx(:) = 0
-        value(:,:,:) = dcmplx(0.0d0,0.0d0)
-        error(:,:,:) = LARGE_REAL
-        exist(:,:,:) = .FALSE.
-        countData = 0
-
-        ! 2022.09.28, Liu Zhongyin, add azimu initial
-        HxAzimuth(:,:) = R_ZERO
-        HyAzimuth(:,:) = R_ZERO
-        ExAzimuth(:,:) = R_ZERO
-        EyAzimuth(:,:) = R_ZERO
-        HxAzimuth_ref(:,:) = R_ZERO
-        HyAzimuth_ref(:,:) = R_ZERO
-
-        READ_DATA_LINE: Do
-
-            select case (iDt)
-            case(Ex_Field,Ey_Field,Bx_Field,By_Field,Bz_Field)
-                if (iTxt == CSEM) then
-                    read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr
-                    if (ios /= 0 ) then
-                        backspace(ioDat)
-                        exit
-                    end if
-                    ! Find component id for this value
-                    icomp = ImpComp(compid,iDt)
-                    aTx%Tx_type='CSEM'
-                    aTx%nPol=1
-                    aTx%Dipole = Dipole
-                    aTx%period = Period
-                    aTx%omega = 2.0d0*PI/Period
-                    aTx%xyzTx = Tx
-                    aTx%azimuthTx = Azi
-                    aTx%dipTx = Dip
-                    atx%moment = Moment
-                    !aTx%id = Txid
-
-                else if (iTxt == TIDE) then
-                    read(ioDat,*,iostat=ios) Txid, Period, Amplitude, code, lat, lon, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr
-                    if (ios /= 0 ) then
-                        backspace(ioDat)
-                        exit
-                    end if
-                    ! Find component id for this value
-                    icomp = ImpComp(compid,iDt)
-                    aTx%Tx_type='TIDE'
-                    aTx%nPol=1
-                    aTx%omega = 2.0d0*PI/Period
-                    aTx%period = Period
-                    aTx%amplitude = Amplitude
-                    aTx%id = Txid
-                    call compact(aTx%id)
-
-                else
-                    read(ioDat,*,iostat=ios) Period, code, lat, lon, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr
-                    if (ios /= 0) then
-                        backspace(ioDat)
-                        exit
-                    end if
-                    ! Find component id for this value
-                    icomp = ImpComp(compid,iDt)
-                    aTx%Tx_type='MT'
-                    aTx%nPol=2
-                    aTx%Dipole =''
-                    aTx%period = Period
-                    aTx%omega = 2.0d0*PI/Period
-
-                end if
-
-                ! Now overwrite aTx%Tx_type with txTypeName... allows for general SFF computation
-                aTx%Tx_type = tx_type_name(iTxt)
-
-                iTx = update_txDict(aTx)
-
-                ! Update the receiver dictionary and index (sets up if necessary)
-                ! For now, make lat & lon part of site ID; could use directly in the future
-                write(siteid,'(a22,2f9.3)') code
-                iRx = update_rxDict(x,siteid)
-
-            case(Exy_Ampli_Phase)
-                read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zerr, rx_azimuth
-                if (ios /= 0) then
-                    backspace(ioDat)
-                    exit
-                end if
-            			
-                aTx%Tx_type='CSEM'
-                aTx%nPol=1
-                aTx%Dipole = Dipole
-                aTx%period = Period
-                aTx%omega = 2.0d0*PI/Period            		
-                aTx%xyzTx = Tx
-                aTx%azimuthTx = Azi
-                aTx%dipTx = Dip
-                atx%moment = Moment
-						
-                ! Find component id for this value
-                icomp = ImpComp(compid,iDt)
-
-                ! Update the transmitter dictionary and the index (sets up if necessary)
-                iTx = update_txDict(aTx)
-
-                ! Update the receiver dictionary and index (sets up if necessary)
-                ! For now, make lat & lon part of site ID; could use directly in the future
-                write(siteid,'(a20,2f9.3)') code,lat,lon
-                iRx = update_rxDict(x,siteid,rx_azimuth)
-		
-            case(Exy_Field)
-                read(ioDat,*,iostat=ios) Dipole, Period, Moment, Azi, Dip, Tx(1), Tx(2), Tx(3), code, x(1), x(2), x(3), compid, Zreal, Zimag, Zerr, rx_azimuth
-                if (ios /= 0) then
-                    backspace(ioDat)
-                    exit
-                end if
-            			
-                aTx%Tx_type='CSEM'
-                aTx%nPol=1
-                aTx%Dipole = Dipole
-                aTx%period = Period
-                aTx%omega = 2.0d0*PI/Period            		
-                aTx%xyzTx = Tx
-                aTx%azimuthTx = Azi
-                aTx%dipTx = Dip
-                atx%moment = Moment
-						
-                ! Find component id for this value
-                icomp = ImpComp(compid,iDt)
-
-                ! Update the transmitter dictionary and the index (sets up if necessary)
-                iTx = update_txDict(aTx)
-
-                ! Update the receiver dictionary and index (sets up if necessary)
-                ! For now, make lat & lon part of site ID; could use directly in the future
-                write(siteid,'(a20,2f9.3)') code,lat,lon
-                iRx = update_rxDict(x,siteid,rx_azimuth)
-		
-            case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
-                read(ioDat,'(a)',iostat=ios) tmpline
-
-                if ((ios /= 0) .or. (tmpline(1:1)=='#')) then
-                    backspace(ioDat)
-                    exit
-                end if
-
-                ! Liu Zhongyin, 2019.08.27, add new codes for reading data
-                backspace(ioDat)
-                call strcount(tmpline, ' ', ncount)
-                select case (ncount)
-                case(11)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr
-                    Hxangle = fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = fileInfo(iTxt,iDt)%geographic_orientation
-                    Hxangle_ref = 0.0
-                    Hyangle = Hxangle + 90.0
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(12)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = Hxangle
-                    Hxangle_ref = 0.0
-                    Hyangle = Hxangle + 90.0
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(13)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = Hxangle
-                    Hxangle_ref = 0.0
-                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(14)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Exangle
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Hxangle_ref = 0.0
-                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(15)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Exangle,Eyangle
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Hxangle_ref = 0.0
-                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Eyangle = Eyangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case default
-                    exit
-                end select
-		
-                ! Find component id for this value
-                icomp = ImpComp(compid,iDt)
-
-                ! Update the transmitter dictionary and the index (sets up if necessary)
-                aTx%Tx_type='MT'
-                aTx%nPol=2
-                aTx%period = Period
-                aTx%omega = 2.0d0*PI/Period
-                ! Now overwrite aTx%Tx_type with txTypeName... allows for general SFF computation
-                aTx%Tx_type = tx_type_name(iTxt)
-                iTx = update_txDict(aTx)
-
-                ! Update the receiver dictionary and index (sets up if necessary)
-                ! For now, make lat & lon part of site ID; could use directly in the future
-                
-                if (FindStr(gridCoords, CARTESIAN)>0) then
-                    write(siteid,'(a20,2f9.3)') code,lat,lon
-                   
-                elseif (FindStr(gridCoords, SPHERICAL)>0) then
-                write(siteid,'(a20,2f15.3)') code,x(1),x(2)
-                    x(1) = lat
-                    x(2) = lon
-                end if
-                iRx = update_rxDict(x,siteid)
-
-            case(Full_Interstation_TF)
-                read(ioDat,'(a)',iostat=ios) tmpline
-
-                if ((ios /= 0) .or. (tmpline(1:1)=='#')) then
-                    backspace(ioDat)
-                    exit
-                end if
-
-                ! Liu Zhongyin, 2019.08.27, add new codes for reading data
-                backspace(ioDat)
-                call strcount(tmpline, ' ', ncount)
-                select case (ncount)
-                case(17)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr
-                    Hxangle = fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = 0.0
-                    Hxangle_ref = fileInfo(iTxt,iDt)%geographic_orientation
-                    Hyangle = Hxangle + 90.0
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(18)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = 0.0
-                    Hxangle_ref = Hxangle
-                    Hyangle = Hxangle + 90.0
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(19)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hxangle_ref
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = 0.0
-                    Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
-                    Hyangle = Hxangle + 90.0
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(20)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Hxangle_ref
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = 0.0
-                    Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
-                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(21)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3), &
-                        ref_code,ref_lat,ref_lon,ref_x(1),ref_x(2),ref_x(3),compid,Zreal,Zimag,Zerr,Hxangle,Hyangle,Hxangle_ref,Hyangle_ref
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = 0.0
-                    Hxangle_ref = Hxangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
-                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hyangle_ref + fileInfo(iTxt,iDt)%geographic_orientation
-                case default
-                    exit
-                end select
-		
-                ! Find component id for this value
-                icomp = ImpComp(compid,iDt)
-
-                ! Update the transmitter dictionary and the index (sets up if necessary)
-                aTx%Tx_type='MT'
-                aTx%nPol=2
-                aTx%period = Period
-                aTx%omega = 2.0d0*PI/Period
-                iTx = update_txDict(aTx)
-
-                ! Update the receiver dictionary and index (sets up if necessary)
-                ! For now, make lat & lon part of site ID; could use directly in the future
-		! Note that rx_azimuth is NOT used for MT: instead, we're supporting the
-		! possibility that all fields components have different azimuths (stored in allData)
-                write(siteid,'(a22,2f9.3)') code,lat,lon
-                write(ref_siteid,'(a22,2f9.3)') ref_code,ref_lat,ref_lon
-		rx_azimuth = R_ZERO
-                iRx = update_rxDict(x,siteid,rx_azimuth,ref_x,ref_siteid)
-
-
-            case(Off_Diagonal_Rho_Phase,Phase_Tensor)
-                read(ioDat,'(a)',iostat=ios) tmpline
-
-                if ((ios /= 0) .or. (tmpline(1:1)=='#')) then
-                    backspace(ioDat)
-                    exit
-                end if
-
-                ! Liu Zhongyin, 2019.08.27, add new codes for reading data
-                backspace(ioDat)
-                call strcount(tmpline, ' ', ncount)
-                select case (ncount)
-                case(10)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr
-                    Hxangle = fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = fileInfo(iTxt,iDt)%geographic_orientation
-                    Hxangle_ref = 0.0
-                    Hyangle = Hxangle + 90.0
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(11)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = Hxangle
-                    Hxangle_ref = 0.0
-                    Hyangle = Hxangle + 90.0
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(12)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Hyangle
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = Hxangle
-                    Hxangle_ref = 0.0
-                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(13)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Hyangle,Exangle
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Hxangle_ref = 0.0
-                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Eyangle = Exangle + 90.0
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case(14)
-                    read(ioDat,*,iostat=ios) Period,code,lat,lon,x(1),x(2),x(3),compid,Zreal,Zerr,Hxangle,Hyangle,Exangle,Eyangle
-                    Hxangle = Hxangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Exangle = Exangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Hxangle_ref = 0.0
-                    Hyangle = Hyangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Eyangle = Eyangle + fileInfo(iTxt,iDt)%geographic_orientation
-                    Hyangle_ref = Hxangle_ref + 90.0
-                case default
-                    exit
-                end select
-
-                ! Find component id for this value
-                icomp = ImpComp(compid,iDt)
-
-                ! For apparent resistivities only, use log10 of the values
-                if (index(compid,'RHO')>0) then
-                    Zerr  = Zerr/Zreal/dlog(10.0d0) ! Propagation of error
-                    Zreal = log10(Zreal)
-                end if
-
-            	! For Phase only, using radians but reading degrees [LiuZhongyin 2017.05.27]
-            	if (index(compid,'PHS')>0) then
-                    if (conjugate) then
-                	Zreal = Zreal*D2R
-                    else
-                        Zreal = -Zreal*D2R
-                    endif
-                    Zerr  = Zerr*D2R
-                end if
-
-                ! Update the transmitter dictionary and the index (sets up if necessary)
-                aTx%Tx_type='MT'
-                aTx%nPol=2
-                aTx%period = Period
-                aTx%omega = 2.0d0*PI/Period
-                iTx = update_txDict(aTx)
-
-                ! Update the receiver dictionary and index (sets up if necessary)
-                ! For now, make lat & lon part of site ID; could use directly in the future
-                write(siteid,'(a22,2f9.3)') code,lat,lon
-                iRx = update_rxDict(x,siteid)
-
-            end select
-
-            ! complete transmitter dictionary update
-            do i = 1,nTx
-                if ((new_Tx(i) == iTx) .or. (new_Tx(i) == 0)) then
-                    exit
-                end if
-            end do
-            new_Tx(i) = iTx
-            new_TxType(i) = iTxt
-
-            ! complete receiver dictionary update
-            do j = 1,nRx
-                if ((new_Rx(j) == iRx) .or. (new_Rx(j) == 0)) then
-                    exit
-                end if
-            end do
-            new_Rx(j) = iRx
-
-            ! record the value for storage in the data vector
-            if (typeDict(iDt)%isComplex) then
-                if (conjugate) then
-                    value(i,j,icomp) = SI_factor * dcmplx(Zreal,-Zimag)
-                else
-                    value(i,j,icomp) = SI_factor * dcmplx(Zreal,Zimag)
-                end if
-            else
-                value(i,j,icomp) = SI_factor * Zreal
-            end if
-            error(i,j,icomp) = SI_factor * Zerr
-            exist(i,j,icomp) = .TRUE.
-
-            ! 2022.09.28, Liu Zhongyin, assign angle to azimu
-            HxAzimuth(i,j) = Hxangle
-            HyAzimuth(i,j) = Hyangle
-            ExAzimuth(i,j) = Exangle
-            EyAzimuth(i,j) = Eyangle
-            HxAzimuth_ref(i,j) = Hxangle_ref
-            HyAzimuth_ref(i,j) = Hyangle_ref
-
-            countData = countData + 1
-
-        end do READ_DATA_LINE
-
-	write(0,*) 'Read ',countData,' data values of ',trim(tx_type_name(iTxt)),' type ',trim(typeDict(iDt)%name),' from file'
-	call create_dataVectorMTX(nTx,newData)
-	newData%allocated = .TRUE.
-	errorBar = .TRUE.
-        SAVE_DATA: do i = 1,nTx
-
-	       ! Count how many receivers we really have for this transmitter
-	       countRx = 0
-	       do j = 1,nRx
-	        if(count(exist(i,j,:))>0) then
-	            countRx = countRx + 1
-	        end if
-	       end do
-
-	       ! Create a data vector for this transmitter and data type
-	       call create_dataVector(1,newData%d(i))
-	       newData%d(i)%tx = new_Tx(i)
-	       newData%d(i)%txType = new_TxType(i)
-	       newData%d(i)%allocated = .TRUE.
-	       call create_dataBlock(typeDict(iDt)%nComp,countRx,newData%d(i)%data(1),typeDict(iDt)%isComplex,errorBar)
-	       k = 1
-	       do j = 1,nRx
-	           ! If no data for this receiver, skip it
-	           if(count(exist(i,j,:))==0) then
-	            cycle
-	           end if
-	           ! Otherwise, write all components to data vector
-	           do icomp = 1,ncomp
-	            if(typeDict(iDt)%isComplex) then
-	               newData%d(i)%data(1)%value(2*icomp-1,k) = real(value(i,j,icomp))
-	               newData%d(i)%data(1)%value(2*icomp  ,k) = imag(value(i,j,icomp))
-	               newData%d(i)%data(1)%error(2*icomp-1,k) = error(i,j,icomp)
-	               newData%d(i)%data(1)%error(2*icomp  ,k) = error(i,j,icomp)
-	               newData%d(i)%data(1)%exist(2*icomp-1,k) = exist(i,j,icomp)
-	               newData%d(i)%data(1)%exist(2*icomp  ,k) = exist(i,j,icomp)
-
-	               ! 2022.09.28, Liu Zhongyin, add azimuth
-	               newData%d(i)%data(1)%orient(k)%azimuth%Hx = HxAzimuth(i,j)
-	               newData%d(i)%data(1)%orient(k)%azimuth%Hy = HyAzimuth(i,j)
-	               newData%d(i)%data(1)%orient(k)%azimuth%Ex = ExAzimuth(i,j)
-	               newData%d(i)%data(1)%orient(k)%azimuth%Ey = EyAzimuth(i,j)
-	               newData%d(i)%data(1)%orient(k)%azimuth%Hx_ref = HxAzimuth_ref(i,j)
-	               newData%d(i)%data(1)%orient(k)%azimuth%Hy_ref = HyAzimuth_ref(i,j)
-	            else
-	               newData%d(i)%data(1)%value(icomp,k) = real(value(i,j,icomp))
-	               newData%d(i)%data(1)%error(icomp,k) = error(i,j,icomp)
-	               newData%d(i)%data(1)%exist(icomp,k) = exist(i,j,icomp)
-
-	               ! 2022.09.28, Liu Zhongyin, add azimuth
-	               newData%d(i)%data(1)%orient(k)%azimuth%Hx = HxAzimuth(i,j)
-	               newData%d(i)%data(1)%orient(k)%azimuth%Hy = HyAzimuth(i,j)
-	               newData%d(i)%data(1)%orient(k)%azimuth%Ex = ExAzimuth(i,j)
-	               newData%d(i)%data(1)%orient(k)%azimuth%Ey = EyAzimuth(i,j)
-	               newData%d(i)%data(1)%orient(k)%azimuth%Hx_ref = HxAzimuth_ref(i,j)
-	               newData%d(i)%data(1)%orient(k)%azimuth%Hy_ref = HyAzimuth_ref(i,j)
-	            end if
-	           end do
-	           newData%d(i)%data(1)%rx(k) = new_Rx(j)
-	           k = k+1
-	       end do
-	       newData%d(i)%data(1)%dataType = iDt
-	       newData%d(i)%data(1)%tx = new_Tx(i)
-	       newData%d(i)%data(1)%txType = new_TxType(i)
-	       newData%d(i)%data(1)%allocated = .TRUE.
-
-        end do SAVE_DATA
-
-	! Merge the new data into the main data vector
-	call merge_dataVectorMTX(allData,newData,allData)
-    
-	! 2022.09.28, Liu Zhongyin, deallocate azimu
-	deallocate(HxAzimuth,stat=istat)
-	deallocate(HyAzimuth,stat=istat)
-	deallocate(ExAzimuth,stat=istat)
-	deallocate(EyAzimuth,stat=istat)
-	deallocate(HxAzimuth_ref,stat=istat)
-	deallocate(HyAzimuth_ref,stat=istat)
-
-	deallocate(value,error,exist,STAT=istat)
-	deallocate(new_TxType,new_Tx,new_Rx,STAT=istat)
-	call deall_dataVectorMTX(newData)
-
-    end do READ_DATA_TYPE
-
-    close(ioDat)
-
-    ! Finished reading the data: write an empty line to screen
-    write(0,*)
-
-    ! Finally, set up the index vectors in the data type dictionary - used for output
-    nTxt = 5
-    nTx = size(txDict)
-    nRx = size(rxDict)
-    do iTxt = 1,nTxt
-    	do iDt = 1,nDt
-		allocate(fileInfo(iTxt,iDt)%tx_index(nTx),STAT=istat)
-	        allocate(fileInfo(iTxt,iDt)%dt_index(nTx),STAT=istat)
-	        allocate(fileInfo(iTxt,iDt)%rx_index(nTx,nRx),STAT=istat)
-	        call index_dataVectorMTX(allData,iTxt,iDt,fileInfo(iTxt,iDt)%tx_index,fileInfo(iTxt,iDt)%dt_index,fileInfo(iTxt,iDt)%rx_index)
-	end do
-    end do
-
-   end subroutine read_Z_list
-
-
-end module DataIO
+end submodule DataIO_HDF5

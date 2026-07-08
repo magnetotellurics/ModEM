@@ -1,7 +1,16 @@
+submodule (ModelSpace:ModelSpaceIO) modelParam_IO_Mackie
+
+    use GridDef, only : grid_t
+    use sg_scalar
+
+    implicit none
+
+contains
+
 ! I/O routines for 3D_MT modelParam - extended Randie Mackie's format
 
   !******************************************************************
-  subroutine read_modelParam_mackie(grid,m,cfile)
+  module subroutine read_modelParam_mackie(grid,m,cfile)
 
       !  open cfile on unit fid, writes out object of
       !   type modelParam in Randie Mackie's format, closes file
@@ -34,7 +43,7 @@
   end subroutine read_modelParam_mackie
 
   !******************************************************************
-  subroutine write_modelParam_mackie(m,cfile)
+  module subroutine write_modelParam_mackie(m,cfile)
 
       !  open cfile on unit fid, writes out object of
       !   type modelParam in Randie Mackie's format, closes file
@@ -298,3 +307,5 @@
       deallocate(value)
 
   end subroutine writeRMgridCond
+
+end submodule modelParam_IO_Mackie
