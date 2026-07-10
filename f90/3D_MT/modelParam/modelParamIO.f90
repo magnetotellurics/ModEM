@@ -46,10 +46,11 @@ submodule (ModelSpace) ModelSpaceIO
 
     ! Reading Intefaces
     interface
-        module subroutine read_modelParam_binary(grid, m, cfile)
+        module subroutine read_modelParam_binary(grid, airLayers, m, cfile)
             use GridDef, only : grid_t
             implicit none
             type(grid_t), target, intent(inout)  :: grid
+	        type(airLayers_t), intent(inout)     :: airLayers
             type(modelParam_t), intent(out)      :: m
             character(*), intent(in)  :: cfile
         end subroutine read_modelParam_binary
@@ -63,9 +64,10 @@ submodule (ModelSpace) ModelSpaceIO
             character(*), intent(in) :: cfile
         end subroutine read_modelParam_WS
 
-        module subroutine read_modelParam_mackie(grid, m, cfile)
+        module subroutine read_modelParam_mackie(grid, airLayers, m, cfile)
             implicit none
             type(grid_t), target, intent(inout) :: grid
+	        type(airLayers_t), intent(inout)	:: airLayers
             type(modelParam_t), intent(out) :: m
             character(*), intent(in) :: cfile
         end subroutine read_modelParam_mackie
@@ -187,9 +189,9 @@ contains
                 call read_modelParam_hdf5(grid, airLayers, m, cfile)
 #endif
             case (FTRAN_BINARY_FILE_TYPE)
-                call read_modelParam_binary(grid, m, cfile)
+                call read_modelParam_binary(grid, airLayers, m, cfile)
             case (MACKIE_FILE_TYPE)
-                call read_modelParam_mackie(grid, m, cfile)
+                call read_modelParam_mackie(grid, airLayers, m, cfile)
             case default
                 call unsupported_modelParamIO_error(INPUT_FILE_TYPE, INPUT)
         end select

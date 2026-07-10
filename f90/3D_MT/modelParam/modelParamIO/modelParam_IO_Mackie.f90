@@ -10,7 +10,7 @@ contains
 ! I/O routines for 3D_MT modelParam - extended Randie Mackie's format
 
   !******************************************************************
-  module subroutine read_modelParam_mackie(grid,m,cfile)
+  module subroutine read_modelParam_mackie(grid,airLayers,m,cfile)
 
       !  open cfile on unit fid, writes out object of
       !   type modelParam in Randie Mackie's format, closes file
@@ -18,11 +18,12 @@ contains
       ! for setting the pointer to the grid in the modelParam
 
       type(grid_t), target, intent(inout) :: grid
+	  type(airLayers_t), intent(inout)	   :: airLayers
       type(modelParam_t), intent(out)	:: m
       character(*), intent(in)          :: cfile
       integer              :: ios
       ! local
-      character(80)                     :: type
+      character(80)                     :: type, paramType=''
       type(rscalar)                     :: ccond
 
  	  ! Read input files and set up basic grid geometry, conductivities,
@@ -35,7 +36,15 @@ contains
 	  call create_modelParam(grid,type,m,ccond)
 
 	  ! convert modelParam to the required paramType
-	  ! call setType_modelParam(m,paramType)
+      paramType = 'LOGE'
+	  call setType_modelParam(m,paramType)
+
+      ! Now, finish set up of the air layers structure using the grid...
+      call setup_airlayers(airLayers,grid)
+
+      ! Finally, insert correct air layers in the grid and run setup_grid
+      call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
+
 
 	  ! now done with ccond, so deallocate
 	  call deall_rscalar(ccond)

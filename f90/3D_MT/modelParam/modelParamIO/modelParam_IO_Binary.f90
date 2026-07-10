@@ -49,13 +49,14 @@ contains
       end subroutine write_modelParam_binary
 
   !******************************************************************
-   module subroutine read_modelParam_binary(grid,m,cfile)
+   module subroutine read_modelParam_binary(grid,airLayers, m,cfile)
 
    !  open cfile on unit ioPrm, writes out object of
    !   type modelParam in standard *binary* format (comparable
    !   format written by write_Cond3D), then close file
 
       type(grid_t), target, intent(inout)  :: grid
+	   type(airLayers_t), intent(inout)	   :: airLayers
       type(modelParam_t), intent(out)      :: m
       character(*), intent(in) 		       :: cfile
       integer                  :: ios
@@ -92,6 +93,13 @@ contains
 
 	  ! convert modelParam to the required paramType
 	  call setType_modelParam(m,paramType)
+
+      ! Now, finish set up of the air layers structure using the grid...
+      call setup_airlayers(airLayers,grid)
+
+      ! Finally, insert correct air layers in the grid and run setup_grid
+      call update_airlayers(grid,airLayers%Nz,airLayers%Dz)
+
 
 	  ! now done with ccond, so deallocate
 	  call deall_rscalar(ccond)
