@@ -147,9 +147,11 @@ contains
         character(len=*), intent(in) :: cfile
         character(len=*), intent(in), optional :: comment
 
+#ifdef MPI
         if (taskid /= 0) then
             return
         end if
+#endif
 
         select case(OUTPUT_FILE_TYPE)
             case (WS_FILE_TYPE)
