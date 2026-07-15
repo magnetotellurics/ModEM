@@ -33,7 +33,7 @@ Contains
 
     select case (dataType)
 
-       case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
+            case(Full_Impedance,Full_Impedance_Dist,Off_Diagonal_Impedance,Full_Vertical_Components)
           header = 'Period(s) Code GG_Lat GG_Lon X(m) Y(m) Z(m) Component Real Imag Error HxAzi HyAzi ExAzi EyAzi'
 
        case(Full_Interstation_TF)
@@ -256,7 +256,7 @@ Contains
 
             select case (iDt)
 
-                case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
+       case(Full_Impedance,Full_Impedance_Dist,Off_Diagonal_Impedance,Full_Vertical_Components)
 
                     do icomp = 1,ncomp/2
                         if (.not. exist(2*icomp-1)) then
@@ -745,7 +745,7 @@ Contains
                 write(siteid,'(a20,2f9.3)') code,lat,lon
                 iRx = update_rxDict(x,siteid,rx_azimuth)
 		
-            case(Full_Impedance,Off_Diagonal_Impedance,Full_Vertical_Components)
+                case(Full_Impedance,Full_Impedance_Dist,Off_Diagonal_Impedance,Full_Vertical_Components)
                 read(ioDat,'(a)',iostat=ios) tmpline
 
                 if ((ios /= 0) .or. (tmpline(1:1)=='#')) then

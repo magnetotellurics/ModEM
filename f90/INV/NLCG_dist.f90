@@ -143,6 +143,7 @@ Contains
     ! Distortion related parameters
     read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%nu
     if (output_level > 2) write(*,'(a36,g15.7)') string, ctrl%nu
+    read(ioInvCtrl, '(a36,i4)', iostat=ios) string ! skip nSigmaIter (currently unused, always 1)
     read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%nDistIter
     if (output_level > 2) write(*,'(a36,i4)') string, ctrl%nDistIter
     read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%alpha_C
@@ -153,6 +154,7 @@ Contains
     read(ioInvCtrl, '(a36,a80)', iostat=ios) string, ctrl%init_distFname
     if (output_level > 2) write(*,'(a36,a80)') string, ctrl%init_distFname
     ctrl%init_distFname = adjustl(ctrl%init_distFname)
+    if (len_trim(ctrl%init_distFname) == 0) ctrl%init_distFname = ''
 
     ! Optional advanced (reads: not very useful) controls
     ! read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%nCreset

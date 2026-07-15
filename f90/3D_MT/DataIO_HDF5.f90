@@ -391,7 +391,7 @@ subroutine write_hdf5_typelist(file_id, allData)
                         CALL h5dwrite_f(dset_id, atype_id, id_t, dim1d, hdferr)
                      
                         deallocate(id_t,STAT=istat)
-                case(Full_Impedance)
+                case(Full_Impedance, Full_Impedance_Dist)
                     ncomp = typeDict(iDt)%nComp
                     dim1d = (ncomp/2)
                         ! FOR TYPELIST Z
@@ -499,7 +499,7 @@ subroutine write_hdf5_datablocks(file_id, allData)
                 
                   
         
-                case(Full_Impedance)
+                case(Full_Impedance, Full_Impedance_Dist)
                     ncomp = allData%d(iTx)%data(ii)%nComp
                     nRx = allData%d(iTx)%data(ii)%nSite
                     dim2d = (/ncomp,nRx/)
