@@ -52,40 +52,43 @@ static inline int init_gpu_lock()
     close(fd);
     if (g_lock == MAP_FAILED) { g_lock = nullptr; return 1; }
 
-    // Coordinate exactly-once construction of std::atomic members.
-    // cnstr uses __atomic_* built-ins: safe on raw storage before object
-    // lifetime begins.
-    // cnstr: 0 = not constructed, 2 = init in progress, 1 = atomics live.
+    // Exactly-once (re-)initialization of std::atomic members.
+    // cnstr: 0=uninit/stale, 2=init-in-progress, 1=ready.
     //
-    // Retry loop:
-    //   - Only breaks when cnstr == 1 (atomics are live and ready).
-    //   - Retries initialization if cnstr goes 2 -> 0 (initializer crashed
-    //     or cleanup raced in).
-    //   - sched_yield() while waiting for another rank to finish so we
-    //     don't burn CPU on startup.
-    while (1) {
-        int old = __atomic_load_n(&g_lock->cnstr, __ATOMIC_ACQUIRE);
-        if (old == 1) break;   // atomics are live, proceed
+    // Both 0 (fresh shm) and 1 (stale from a previous crash — some
+    // occupied[] may still be DEVICE_IN_USE) trigger CAS to 2. The
+    // winner does placement-new + reset, clearing all stale lock bits.
+    // Losers yield while cnstr == 2. If the initializer crashes, cnstr
+    // may revert to 0; the next iteration retries.
+    //
+    // A cleanly-terminated previous job always calls shm_unlink, so
+    // finding an existing segment implies the last job crashed — it is
+    // safe to reconstruct atomics unconditionally.
 
-        if (old == 0) {
-            // Try to become the initializer: CAS 0 -> 2
-            if (__atomic_compare_exchange_n(&g_lock->cnstr, &old, 2,
-                                  false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) {
-                for (int i = 0; i < LOCK_MAX_DEVICES; i++)
-                    new (&g_lock->occupied[i]) std::atomic<int>(DEVICE_FREE);
-                for (int i = 0; i < LOCK_MAX_DEVICES; i++)
-                    g_lock->occupied[i].store(DEVICE_FREE,
-                                              std::memory_order_release);
-                __atomic_store_n(&g_lock->cnstr, 1, __ATOMIC_RELEASE);
-                break;  // cnstr is now 1
-            }
-            // Another rank beat us to 0->2; fall through to yield and re-check
+    for (;;) {
+        int old = __atomic_load_n(&g_lock->cnstr, __ATOMIC_ACQUIRE);
+
+        if (old == 2) {
+            do {
+                sched_yield();
+                old = __atomic_load_n(&g_lock->cnstr, __ATOMIC_ACQUIRE);
+            } while (old == 2);
+            continue;
         }
 
-        // cnstr == 2 (or we lost the CAS race): another init is in progress.
-        // Yield and retry; if the initializer crashed (cnstr reverts to 0) we
-        // will pick up init on the next iteration.
-        sched_yield();
+        // old is 0 (fresh) or 1 (stale ready with possibly stuck locks).
+        // Try CAS {0, 1} → 2 to become the (re-)initializer.
+        if (__atomic_compare_exchange_n(&g_lock->cnstr, &old, 2,
+                                         false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+        {
+            for (int i = 0; i < LOCK_MAX_DEVICES; i++)
+                new (&g_lock->occupied[i]) std::atomic<int>(DEVICE_FREE);
+            for (int i = 0; i < LOCK_MAX_DEVICES; i++)
+                g_lock->occupied[i].store(DEVICE_FREE, std::memory_order_release);
+            __atomic_store_n(&g_lock->cnstr, 1, __ATOMIC_RELEASE);
+            break;
+        }
+        // CAS failed — another rank changed cnstr; loop re-evaluates.
     }
 
     g_lock_inited = true;
