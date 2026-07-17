@@ -24,7 +24,7 @@ static constexpr int LOCK_MAX_DEVICES = 64;
 // All other members are std::atomic<int>, constructed by placement-new once,
 // then used via normal C++ atomic operations.
 struct alignas(64) GpuLock {
-    int cnstr;      // 0 = not constructed, 1 = atomics live
+    int cnstr;      // 0 = not constructed, 1 = atomics live, 2 = init in progress
     std::atomic<int> occupied[LOCK_MAX_DEVICES];
 };
 
@@ -53,31 +53,34 @@ static inline int init_gpu_lock()
 
     // Coordinate exactly-once construction of std::atomic members.   
     // cnstr uses __atomic_* built-ins: safe on raw storage       
+    // cnstr: 0 = not constructed, 1 = atomics live, 2 = init in progress
     // the winner does placement-new on every std::atomic<int>     
-    // the other (losers) spin-wait with ACQUIRE on "cnstr" until it's 1, 
+    // the other (losers) spin-wait on 2, until it's 1, 
     // then proceed to use the atomics.
-    // firstly reset the atomics be to be a valid state (DEVICE_FREE) 
-    // before the other process access them
-    for (int i = 0; i < LOCK_MAX_DEVICES; i++)
-        g_lock->occupied[i].store(DEVICE_FREE, std::memory_order_release);
-
+    // so CAS either succeeds, reveals cnstr=2 (spin), or reveals cnstr=1
+    // (ready).
     // useful for stale lock state if a previous run crashed or didn't 
     // clean up properly. I only encountered this once in HIP, but not in 
     // CUDA, so it may be a HIP bug.
 
-    if (__atomic_exchange_n(&g_lock->cnstr, 1, __ATOMIC_ACQ_REL) != 0) {
-        // Another process won the race — spin-wait until construction finishes.
-        while (!__atomic_load_n(&g_lock->cnstr, __ATOMIC_ACQUIRE))
+    int old = __atomic_load_n(&g_lock->cnstr, __ATOMIC_ACQUIRE);
+
+    if (old == 2) {
+        while (__atomic_load_n(&g_lock->cnstr, __ATOMIC_ACQUIRE) == 2)
             ;
-    } 
-    else {
-        // We are the winner — construct all std::atomic members.
+    } else if (__atomic_compare_exchange_n(&g_lock->cnstr, &old, 2,
+                          false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+    {
         for (int i = 0; i < LOCK_MAX_DEVICES; i++)
             new (&g_lock->occupied[i]) std::atomic<int>(DEVICE_FREE);
-
-        // cnstr is already 1 from the exchange above (ACQ_REL ensures
-        // the constructed atomics are visible to other processes).
+        for (int i = 0; i < LOCK_MAX_DEVICES; i++)
+            g_lock->occupied[i].store(DEVICE_FREE, std::memory_order_release);
+        __atomic_store_n(&g_lock->cnstr, 1, __ATOMIC_RELEASE);
+    } else if (old == 2) {
+        while (__atomic_load_n(&g_lock->cnstr, __ATOMIC_ACQUIRE) == 2)
+            ;
     }
+    // else old == 1: someone completed init before our CAS, no action needed
 
     g_lock_inited = true;
     return 0;
