@@ -56,12 +56,21 @@ static inline int init_gpu_lock()
     // the winner does placement-new on every std::atomic<int>     
     // the other (losers) spin-wait with ACQUIRE on "cnstr" until it's 1, 
     // then proceed to use the atomics.
+    // firstly reset the atomics be to be a valid state (DEVICE_FREE) 
+    // before the other process access them
+    for (int i = 0; i < LOCK_MAX_DEVICES; i++)
+        g_lock->occupied[i].store(DEVICE_FREE, std::memory_order_release);
+
+    // useful for stale lock state if a previous run crashed or didn't 
+    // clean up properly. I only encountered this once in HIP, but not in 
+    // CUDA, so it may be a HIP bug.
 
     if (__atomic_exchange_n(&g_lock->cnstr, 1, __ATOMIC_ACQ_REL) != 0) {
         // Another process won the race — spin-wait until construction finishes.
         while (!__atomic_load_n(&g_lock->cnstr, __ATOMIC_ACQUIRE))
             ;
-    } else {
+    } 
+    else {
         // We are the winner — construct all std::atomic members.
         for (int i = 0; i < LOCK_MAX_DEVICES; i++)
             new (&g_lock->occupied[i]) std::atomic<int>(DEVICE_FREE);
@@ -87,8 +96,11 @@ extern "C" void cf_releaseDev(int dev_idx)
 
 extern "C" void cf_cleanupLock()
 {
-    if (g_lock != nullptr && g_lock != MAP_FAILED)
+    if (g_lock != nullptr && g_lock != MAP_FAILED) {
+        // also reset cnstr so the next init_gpu_lock starts cleanly
+        __atomic_store_n(&g_lock->cnstr, 0, __ATOMIC_RELEASE);
         munmap(g_lock, sizeof(GpuLock));
+    }
     shm_unlink("/ModEM_gpu_lock");
     g_lock = nullptr;
     g_lock_inited = false;
