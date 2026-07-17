@@ -65,11 +65,13 @@ static inline int init_gpu_lock()
     // finding an existing segment implies the last job crashed — it is
     // safe to reconstruct atomics unconditionally.
 
-    for (;;) {
+    while (1) {
         int old = __atomic_load_n(&g_lock->cnstr, __ATOMIC_ACQUIRE);
 
         if (old == 2) {
+	        // Another rank is initializing; yield until it finishes.
             do {
+		        // yield, instead of busy-waiting...
                 sched_yield();
                 old = __atomic_load_n(&g_lock->cnstr, __ATOMIC_ACQUIRE);
             } while (old == 2);
@@ -88,7 +90,8 @@ static inline int init_gpu_lock()
             __atomic_store_n(&g_lock->cnstr, 1, __ATOMIC_RELEASE);
             break;
         }
-        // CAS failed — another rank changed cnstr; loop re-evaluates.
+        // else
+        // CAS failed — another rank changed cnstr; loop and re-evaluates.
     }
 
     g_lock_inited = true;
