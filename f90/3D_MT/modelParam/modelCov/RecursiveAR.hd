@@ -1,5 +1,12 @@
 !----------------------------------------------------------------------!
 ! 3D_MT model covariance by Gary Egbert and Anna Kelbert: definitions. !
+!                                                                      !
+!   Unified cov file format (line 17):                                !
+!     Nx Ny NzEarth FileType   (3 ints = legacy AR, 4 ints = new)    !
+!     Sx, Sy, Sz (smoothing parameters)                               !
+!     N (number of smoothing passes)                                   !
+!     nrules, mask1 mask2 smoothing (exception rules, 3 per rule)     !
+!     mask blocks (read_iscalar format)                                !
 !----------------------------------------------------------------------!
 
 ! 1) modelCov_t data type with private attributes

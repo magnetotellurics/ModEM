@@ -182,6 +182,9 @@
 
     integer       			 :: Nx, Ny, NzEarth, nrules, nS, i, j, k, n, istat
     integer                  :: fid = 30
+    integer                  :: fileType
+    real (kind=prec), allocatable :: tempSx(:), tempSy(:)
+    real (kind=prec)         :: tempN, tempSz
 
 	if (.not. CmSqrt%allocated) then
 		call errStop('Model covariance must be allocated before reading from file in read_CmSqrt')
@@ -194,19 +197,34 @@
        read(fid,*)
     end do
 
-	! read grid dimensions
-	read(fid,*) Nx,Ny,NzEarth
+	! detect filetype and read grid dimensions from line 17
+	call detect_cov_filetype(fid, Nx, Ny, NzEarth, fileType)
 	CmSqrt%Nx = Nx
 	CmSqrt%Ny = Ny
 	CmSqrt%NzEarth = NzEarth
 
-	! read smoothing parameters
-    read(fid,*) CmSqrt%Sx
-    read(fid,*) CmSqrt%Sy
-    read(fid,*) CmSqrt%Sz
-
-	! read number of times to apply the smoothing
-	read(fid,*) CmSqrt%N
+	if (fileType == 1) then
+	   ! normal AR read: read smoothing parameters and N
+	   read(fid,*) CmSqrt%Sx
+	   read(fid,*) CmSqrt%Sy
+	   read(fid,*) CmSqrt%Sz
+	   read(fid,*) CmSqrt%N
+	else
+	   ! fileType=2 with CovType=1 selected: read mask, use AR defaults
+	   write(0,*) 'Warning: BiHelmholtz cov file read with CovType=1.'
+	   write(0,*) '  Using AR defaults for Sx, Sy, Sz, N.'
+	   allocate(tempSx(NzEarth), tempSy(NzEarth), STAT=istat)
+	   read(fid,*) tempSx
+	   read(fid,*) tempSy
+	   read(fid,*) tempSz
+	   deallocate(tempSx, tempSy, STAT=istat)
+	   ! skip N, kappa, pcg_tol, pcg_maxIt (parameter array for CovType=2)
+	   read(fid,*) tempN, tempSz, tempSz, tempSz
+	   CmSqrt%Sx = 0.3
+	   CmSqrt%Sy = 0.3
+	   CmSqrt%Sz = 0.3
+	   CmSqrt%N = 1
+	end if
 
 	! read exception rules for smoothing across surfaces
     read(fid,*) nrules

@@ -9,11 +9,22 @@
   subroutine read_CmSqrt_BiHelm(cfile)
 
     ! Reads the BiHelmholtz covariance configuration from file.
+    ! Supports the unified cov file format:
+    !   Line 17: Nx Ny NzEarth FileType  (or legacy Nx Ny NzEarth)
+    !   Sx, Sy, Sz (placeholders)
+    !   Parameter array (CovType-specific)
+    !   nrules, exception rules (3 values per rule)
+    !   mask blocks
+    ! When fileType=1 (AR format) is detected with CovType=2 selected,
+    ! reads the mask and uses BiHelmholtz defaults.
 
     character(*), intent(in)                         :: cfile
-    integer                                           :: fid, j, covTypeRead
-    integer                                           :: Nx, Ny, NzEarth
-    integer                                           :: istat
+    integer                                          :: fid, j, fileType
+    integer                                          :: Nx, Ny, NzEarth, nrules
+    integer                                          :: istat
+    real (kind=prec), allocatable                    :: tempSx(:), tempSy(:)
+    real (kind=prec)                                 :: tempSz
+    integer                                          :: tempN
 
     fid = 30
     open(unit=fid,file=cfile,form='formatted',status='old')
@@ -23,14 +34,8 @@
        read(fid,*)
     end do
 
-    ! read CovType (must be 2)
-    read(fid,*) covTypeRead
-    if (covTypeRead /= 2) then
-       call errStop('BiHelmholtz covariance file must have CovType=2 on line 17')
-    end if
-
-    ! read grid dimensions
-    read(fid,*) Nx, Ny, NzEarth
+    ! detect filetype and read grid dimensions from line 17
+    call detect_cov_filetype(fid, Nx, Ny, NzEarth, fileType)
     if (Nx <= 0 .or. Ny <= 0 .or. NzEarth <= 0) then
        call errStop('Invalid grid dimensions in covariance file '//cfile)
     end if
@@ -38,34 +43,58 @@
     CmSqrtBiHelm%Ny = Ny
     CmSqrtBiHelm%NzEarth = NzEarth
 
-    ! read kappa (dimensionless, correlation length ~ 1/kappa cells)
-    read(fid,*) CmSqrtBiHelm%kappa
-    if (CmSqrtBiHelm%kappa <= 0.0_prec) then
-       call errStop('BiHelmholtz kappa must be positive in covariance file '//cfile)
+    if (fileType == 2) then
+       ! normal BiHelmholtz read: skip Sx, Sy, Sz (placeholders)
+       allocate(tempSx(NzEarth), tempSy(NzEarth), STAT=istat)
+       read(fid,*) tempSx
+       read(fid,*) tempSy
+       read(fid,*) tempSz
+       deallocate(tempSx, tempSy, STAT=istat)
+       ! read parameter array: N kappa pcg_tol pcg_maxIt
+       ! All 4 values on one line; read in a single statement so that
+       ! list-directed I/O does not advance past the record boundary.
+       read(fid,*,iostat=istat) tempN, CmSqrtBiHelm%kappa, &
+            CmSqrtBiHelm%pcg_tol, CmSqrtBiHelm%pcg_maxIt
+       if (istat /= 0) then
+          call errStop('Error reading BiHelmholtz parameters in '//cfile)
+       end if
+       if (CmSqrtBiHelm%kappa <= 0.0_prec) then
+          call errStop('BiHelmholtz kappa must be positive in covariance file '//cfile)
+       end if
+       if (CmSqrtBiHelm%pcg_tol <= 0.0_prec) then
+          call errStop('BiHelmholtz pcg_tol must be positive in covariance file '//cfile)
+       end if
+       if (CmSqrtBiHelm%pcg_maxIt <= 0) then
+          call errStop('BiHelmholtz pcg_maxIt must be positive in covariance file '//cfile)
+       end if
+    else
+       ! fileType=1 with CovType=2 selected: read mask, use BiHelmholtz defaults
+       write(0,*) 'Warning: AR cov file read with CovType=2.'
+       write(0,*) '  Using BiHelmholtz defaults for kappa, pcg parameters.'
+       allocate(tempSx(NzEarth), tempSy(NzEarth), STAT=istat)
+       read(fid,*) tempSx
+       read(fid,*) tempSy
+       read(fid,*) tempSz
+       deallocate(tempSx, tempSy, STAT=istat)
+       ! skip N (AR smoothing passes)
+       read(fid,*) tempN
+       CmSqrtBiHelm%kappa = 0.5_prec
+       CmSqrtBiHelm%pcg_tol = 1.0e-7_prec
+       CmSqrtBiHelm%pcg_maxIt = 250
     end if
 
-    ! read solver controls
-    read(fid,*,iostat=istat) CmSqrtBiHelm%pcg_tol
-    if (istat /= 0 .or. CmSqrtBiHelm%pcg_tol <= 0.0_prec) then
-       call errStop('BiHelmholtz pcg_tol must be positive in covariance file '//cfile)
+    ! read exception rules (3 values per rule; third value unused for CovType=2)
+    read(fid,*,iostat=istat) nrules
+    if (istat /= 0 .or. nrules < 0) then
+       call errStop('Invalid nrules in covariance file '//cfile)
     end if
-    read(fid,*,iostat=istat) CmSqrtBiHelm%pcg_maxIt
-    if (istat /= 0 .or. CmSqrtBiHelm%pcg_maxIt <= 0) then
-       call errStop('BiHelmholtz pcg_maxIt must be positive in covariance file '//cfile)
-    end if
-
-    ! read exception rules (order-independent mask-code pairs: smoothing
-    ! is turned off across faces between cells with these mask codes)
-    read(fid,*,iostat=istat) CmSqrtBiHelm%nrules
-    if (istat /= 0 .or. CmSqrtBiHelm%nrules < 0) then
-       call errStop('BiHelmholtz cov file must have nrules (>= 0) after pcg_maxIt')
-    end if
+    CmSqrtBiHelm%nrules = nrules
     CmSqrtBiHelm%tearMatrix = .false.
-    if (CmSqrtBiHelm%nrules > 0) then
-       allocate(CmSqrtBiHelm%tearPairs(2, CmSqrtBiHelm%nrules), stat=istat)
+    if (nrules > 0) then
+       allocate(CmSqrtBiHelm%tearPairs(2, nrules), stat=istat)
        if (istat /= 0) call errStop('Memory allocation failed for tearPairs')
-       do j = 1, CmSqrtBiHelm%nrules
-          read(fid,*) CmSqrtBiHelm%tearPairs(1,j), CmSqrtBiHelm%tearPairs(2,j)
+       do j = 1, nrules
+          read(fid,*) CmSqrtBiHelm%tearPairs(1,j), CmSqrtBiHelm%tearPairs(2,j), tempSz
           if (CmSqrtBiHelm%tearPairs(1,j) < 0 .or. CmSqrtBiHelm%tearPairs(1,j) > 9 .or. &
               CmSqrtBiHelm%tearPairs(2,j) < 0 .or. CmSqrtBiHelm%tearPairs(2,j) > 9) then
              call errStop('Invalid mask code in tear rule (must be 0-9)')
@@ -177,8 +206,8 @@
     ! Counting pass first, then fill pass.
 
     type (modelParam_t), intent(in) :: m
-    integer                         :: Nx, Ny, NzEarth, nCells, nzAir
-    integer                         :: i, j, k, kz, idx, idx_nb
+    integer                         :: Nx, Ny, NzEarth, nCells
+    integer                         :: i, j, k, idx, idx_nb
     integer                         :: nnz, nz, istat, p
    real (kind=prec)                :: kappa2
    real (kind=prec)                :: diagA
@@ -187,7 +216,6 @@
     Nx = m%Nx
     Ny = m%Ny
     NzEarth = m%NzEarth
-    nzAir = m%grid%nzAir
     nCells = Nx * Ny * NzEarth
     kappa2 = CmSqrtBiHelm%kappa**2
 
@@ -248,7 +276,6 @@
 
     ! Pass 2: fill columns and values
     do k = 1, NzEarth
-       kz = k + nzAir
        do j = 1, Ny
           do i = 1, Nx
              idx = (k-1)*Nx*Ny + (j-1)*Nx + i

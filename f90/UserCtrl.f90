@@ -134,7 +134,7 @@ Contains
   	ctrl%lambda = 10.
   	ctrl%eps = 1.0e-7
   	ctrl%delta = 0.05
-    ! 1 for AR, 2 for L1, 3 for L2
+    ! 1 for AR (default), 2 for Bi-Helmholtz
     ctrl%CovType = 1
   	ctrl%output_level = 3	
 	ctrl%prefix = 'n'
@@ -1054,7 +1054,7 @@ Contains
       write(nl_fid, *) "&settings"
       write(nl_fid, *) "    ! 'output_level' below overrides -V passed in on the command line"
       write(nl_fid, *) "    output_level = 'regular'"
-      write(nl_fid, *) "    ! CovType: 1 = AR (default), 2 = Bi-Helmholtz. Overrides -C CLI 6th arg, overridden by inv-ctrl 9th line."
+      write(nl_fid, *) "    ! CovType: 1 = AR (default), 2 = Bi-Helmholtz. (Note: namelist value is not currently applied; use -C CLI or inv-ctrl instead.)"
       write(nl_fid, *) "    CovType = 1"
       write(nl_fid, *) "/"
 
@@ -1180,11 +1180,10 @@ Contains
 !   Priority (low -> high):
 !     1) default (1) in initUserCtrl
 !     2) -C CLI optional 6th arg (APPLY_COV only)
-!     3) namelist.modem.nl &settings section
-!     4) inversion control file 9th line (-I only)
+!     3) inversion control file 9th line (-I only)
 !
-! Call this after parseArgs and process_optional_namelist, before
-! initGlobalData invokes set_CovType(ctrl%CovType).
+! Call this after parseArgs and before initGlobalData invokes
+! set_CovType(ctrl%CovType).
   subroutine finalize_covType(ctrl)
 
    implicit none

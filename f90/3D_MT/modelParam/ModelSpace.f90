@@ -740,4 +740,43 @@ end function get_CovType
 
   end subroutine getValueUpdated_modelParam
 
+!**********************************************************************
+!  Detects the filetype (CovType) from line 17 of a covariance file.
+!  Reads the first non-blank line after the 16-line header and parses:
+!    - 4 ints (Nx Ny NzEarth FileType): new format, FileType must be 1 or 2
+!    - 3 ints (Nx Ny NzEarth):          legacy format, defaults to FileType=1
+!    - anything else:                   error
+!
+!  Both read_CmSqrt_AR and read_CmSqrt_BiHelm call this routine.
+
+  subroutine detect_cov_filetype(fid, Nx, Ny, NzEarth, fileType)
+
+    integer, intent(in)                          :: fid
+    integer, intent(out)                         :: Nx, Ny, NzEarth, fileType
+    character(len=256)                           :: line
+    integer                                      :: istat
+
+    ! skip blank lines after header
+    do
+       read(fid, '(A)', iostat=istat) line
+       if (istat /= 0) call errStop('Error reading covariance file after header')
+       line = adjustl(line)
+       if (line /= '') exit
+    end do
+
+    ! try 4 ints (new format: Nx Ny NzEarth FileType)
+    read(line, *, iostat=istat) Nx, Ny, NzEarth, fileType
+    if (istat == 0 .and. fileType >= 1 .and. fileType <= 2) return
+
+    ! try 3 ints (legacy: Nx Ny NzEarth, default to CovType=1)
+    read(line, *, iostat=istat) Nx, Ny, NzEarth
+    if (istat == 0) then
+       fileType = 1
+       return
+    end if
+
+    call errStop('Invalid grid dimensions / CovType in covariance file')
+
+  end subroutine detect_cov_filetype
+
 end module ModelSpace
