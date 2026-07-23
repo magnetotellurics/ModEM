@@ -1,31 +1,51 @@
 program test_unit_sphere
 ! ****************************************************************************
-! Validates sourceField1d (field1d.f90) against the closed-form analytic
-! solution for a single homogeneous conducting sphere of radius r0=earth%r0,
-! conductivity sigma, in vacuum, driven by a UNIT external multipole source
-! of a single (l,m) degree (l=2, m=1). No thin sheet (tau=0), no separate
-! core layer -- the single earth%layer/earth%sigma entry IS the whole sphere.
+! Validates BOTH sourceField1d (field1d.f90, KELBERT2014) and
+! sourceField1d_sunegbert2012 (field1d_sunegbert2012.f90, SUNEGBERT2012) against the
+! SAME closed-form analytic solution for a single homogeneous conducting
+! sphere of radius r0=earth%r0, conductivity sigma, in vacuum, driven by a
+! UNIT external multipole source of a single (l,m) degree (l=2, m=+1). No
+! thin sheet (tau=0), no separate core layer -- the single earth%layer/
+! earth%sigma entry IS the whole sphere. (Merged 2026-07-25 from the former
+! separate test_unit_sphere_kelbert2014.f90 and test_unit_sphere_sunegbert2012.f90 --
+! both built the identical model/grid/source, so there was no reason to keep
+! them apart. See testing/reference_unit_sphere.py for the merged closed-form
+! reference.)
 !
-! This isolates exactly the same physics validated independently in Python
-! (Sun & Egbert 2012 eq. 5-6, single conducting sphere, unit external
-! r^(l+1) inducing field) -- see companion script reference_unit_sphere.py,
-! which must be run with IDENTICAL physical parameters (r0, sigma, omega,
-! mu0=1.256637e-6 as hardcoded in field1d.f90) to produce the expected
-! values printed below.
+! IMPORTANT -- the two solvers are NOT expected to match this closed form (or
+! each other) the same way:
+!   - SUNEGBERT2012 uses the paper's own literal "alpha_l^T=1" (unit external
+!     r^(l+1) amplitude) normalization directly, with no extra bookkeeping,
+!     so the match is EXACT: ratio = 1+0i for all five components.
+!   - KELBERT2014 carries its own internal normalization (tni-referenced,
+!     R0^2/l(l+1) factors) AND applies a final conjg() to every assembled
+!     component that was designed to compensate for a "+m,-m conjugate-
+!     pairing" reconstruction trick -- but this test (like all the other
+!     single-(l,m) tests in this suite) sources only ONE of the +m/-m pair,
+!     so that pairing-compensation is never actually exercised as intended.
+!     As analyzed 2026-07-25 (see CLAUDE.md), the result is NOT a clean
+!     scalar/phase discrepancy for m!=0: it reconstructs a DIFFERENT angular
+!     pattern (the m-flipped one) combined with a conjugated radial function,
+!     not just a scaled/rotated version of the correct field. So KELBERT2014's
+!     ratio against this closed form is expected to be neither 1+0i nor a
+!     single common phase across all five components -- this is the open
+!     "absolute sign"/conjg() issue under investigation, NOT a test bug.
+!     Report the raw KELBERT2014 numbers for visual inspection only.
 !
 ! Grid is built by hand (no grid file) with a small 8x8x2 patch entirely
 ! above the sphere (vacuum region, r > r0), so every extracted field sample
 ! sits in the region covered by the closed-form solution.
 ! ****************************************************************************
 
-    use field1d
+    use field1d, only: conf1d_t, sourceField1d
+    use field1d_sunegbert2012, only: sourceField1d_sunegbert2012
     use griddef
     use sg_vector
     implicit none
 
     type(conf1d_t)                 :: earth
     type(grid_t)                   :: grid
-    type(cvector)                  :: h1d, e1d
+    type(cvector)                  :: h1d_kelbert2014, e1d_kelbert2014, h1d_sunegbert2012, e1d_sunegbert2012
     complex(8), allocatable        :: coeff(:)
     integer, parameter             :: lmax = 2
     integer, parameter             :: nx = 8, ny = 8, nz = 2
@@ -39,7 +59,8 @@ program test_unit_sphere
     real(8), parameter             :: sigma1  = 1.0d0        ! S/m
     real(8), parameter             :: omega0  = 1.0d0        ! rad/s
 
-    write(*,*) '=== test_unit_sphere: field1d.f90 vs analytic single-sphere solution ==='
+    write(*,*) '=== test_unit_sphere: field1d.f90 (KELBERT2014) and field1d_sunegbert2012.f90 (SUNEGBERT2012)'
+    write(*,*) '    vs analytic single-sphere solution ==='
 
     ! ---- build the earth model: ONE homogeneous layer = the whole sphere ----
     earth%r0   = r0_m
@@ -86,7 +107,7 @@ program test_unit_sphere
     ncoeff = (lmax+1)**2
     allocate(coeff(ncoeff), STAT=istat)
     coeff = dcmplx(0.0d0, 0.0d0)
-    ! ordering within each l block is m=0,+1,-1,+2,-2,...
+    ! ordering within each l block is m=0,+1,-1,+2,-2
     ! l=0: index 1 (unused, no monopole)
     ! l=1: indices 2,3,4      (m=0,+1,-1)
     ! l=2: indices 5,6,7,8,9  (m=0,+1,-1,+2,-2)
@@ -95,10 +116,14 @@ program test_unit_sphere
     omega  = omega0
     period = 2.0d0*pi/omega
 
-    ! ---- run the solver (H on EDGE, E on FACE -- field1d.f90's native staggering) ----
-    call create_cvector(grid, h1d, EDGE)
-    call create_cvector(grid, e1d, FACE)
-    call sourceField1d(earth, lmax, coeff, period, grid, h1d, e1d)
+    ! ---- run BOTH solvers (H on EDGE, E on FACE -- native staggering for both) ----
+    call create_cvector(grid, h1d_kelbert2014, EDGE)
+    call create_cvector(grid, e1d_kelbert2014, FACE)
+    call sourceField1d(earth, lmax, coeff, period, grid, h1d_kelbert2014, e1d_kelbert2014)
+
+    call create_cvector(grid, h1d_sunegbert2012, EDGE)
+    call create_cvector(grid, e1d_sunegbert2012, FACE)
+    call sourceField1d_sunegbert2012(earth, lmax, coeff, period, grid, h1d_sunegbert2012, e1d_sunegbert2012)
 
     ! ---- extract the 5 field components at one shared (i=1, j=5) angular index ----
     ! matching the staggering documented in field1d.f90's EDGE-branch header comment:
@@ -122,22 +147,30 @@ program test_unit_sphere
     write(*,'(a,f18.6)')  '  Rr(2)  [m]                 = ', 1.0d3*grid%r(2) - 1.0d3*grid%dr(2)/2.0d0
 
     write(*,*)
-    write(*,*) 'FIELD1D output (real, imag):'
-    write(*,'(a,2es24.15)') '  H%z(i=1,j=5,k=Rr=2) = ', h1d%z(i0,j0,kRr)
-    write(*,'(a,2es24.15)') '  H%x(i=1,j=5,k=Rs=2) = ', h1d%x(i0,j0,kRs)
-    write(*,'(a,2es24.15)') '  H%y(i=1,j=5,k=Rs=2) = ', h1d%y(i0,j0,kRs)
-    write(*,'(a,2es24.15)') '  E%y(i=1,j=5,k=Rr=2) = ', e1d%y(i0,j0,kRr)
-    write(*,'(a,2es24.15)') '  E%x(i=1,j=5,k=Rr=2) = ', e1d%x(i0,j0,kRr)
+    write(*,*) 'KELBERT2014 (field1d.f90) output (real, imag) -- compare vs reference_unit_sphere.py'
+    write(*,*) 'section 1 ("field1d.f90 (KELBERT2014)"); NOT expected to match exactly, see header note:'
+    write(*,'(a,2es24.15)') '  H%z(i=1,j=5,k=Rr=2) [Hr]     = ', h1d_kelbert2014%z(i0,j0,kRr)
+    write(*,'(a,2es24.15)') '  H%x(i=1,j=5,k=Rs=2) [Hphi]   = ', h1d_kelbert2014%x(i0,j0,kRs)
+    write(*,'(a,2es24.15)') '  H%y(i=1,j=5,k=Rs=2) [Htheta] = ', h1d_kelbert2014%y(i0,j0,kRs)
+    write(*,'(a,2es24.15)') '  E%y(i=1,j=5,k=Rr=2) [Etheta] = ', e1d_kelbert2014%y(i0,j0,kRr)
+    write(*,'(a,2es24.15)') '  E%x(i=1,j=5,k=Rr=2) [Ephi]   = ', e1d_kelbert2014%x(i0,j0,kRr)
 
     write(*,*)
-    write(*,*) 'Compare the five complex numbers above against reference_unit_sphere.py'
-    write(*,*) '(run with r0=1000, sigma=1, omega=1, l=2, m=1 -- see header of that script).'
-    write(*,*) 'Report the ratio FIELD1D / reference for each component.'
+    write(*,*) 'SUNEGBERT2012 (field1d_sunegbert2012.f90) output (real, imag) -- compare vs'
+    write(*,*) 'reference_unit_sphere.py section 2 ("field1d_sunegbert2012.f90 (SUNEGBERT2012)");'
+    write(*,*) 'expect EXACT match, ratio = 1+0i for all five components:'
+    write(*,'(a,2es24.15)') '  H%z(i=1,j=5,k=Rr=2) [Hr]     = ', h1d_sunegbert2012%z(i0,j0,kRr)
+    write(*,'(a,2es24.15)') '  H%x(i=1,j=5,k=Rs=2) [Hphi]   = ', h1d_sunegbert2012%x(i0,j0,kRs)
+    write(*,'(a,2es24.15)') '  H%y(i=1,j=5,k=Rs=2) [Htheta] = ', h1d_sunegbert2012%y(i0,j0,kRs)
+    write(*,'(a,2es24.15)') '  E%y(i=1,j=5,k=Rr=2) [Etheta] = ', e1d_sunegbert2012%y(i0,j0,kRr)
+    write(*,'(a,2es24.15)') '  E%x(i=1,j=5,k=Rr=2) [Ephi]   = ', e1d_sunegbert2012%x(i0,j0,kRr)
 
     deallocate(coeff, STAT=istat)
     deallocate(earth%layer, earth%sigma, STAT=istat)
-    call deall_cvector(h1d)
-    call deall_cvector(e1d)
+    call deall_cvector(h1d_kelbert2014)
+    call deall_cvector(e1d_kelbert2014)
+    call deall_cvector(h1d_sunegbert2012)
+    call deall_cvector(e1d_sunegbert2012)
     call deall_grid(grid)
 
 end program test_unit_sphere

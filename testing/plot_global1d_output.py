@@ -86,8 +86,8 @@ import matplotlib.pyplot as plt
 # ----------------------------------------------------------------------
 #EFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.Mode1.fix.E-grid.T01.efield"
 #HFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.Mode1.fix.E-grid.T01.hfield"
-EFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.Mode2.E-grid.T01.efield"
-HFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.Mode2.E-grid.T01.hfield"
+EFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.test_m-ve.sunegbert2012.E-grid.T01.efield"
+HFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.test_m-ve.sunegbert2012.E-grid.T01.hfield"
 
 PERIOD = 1000.0
 SCALING = PERIOD / 5.0        # matches the user's MATLAB snippet exactly

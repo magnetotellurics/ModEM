@@ -1,23 +1,56 @@
 """
 General (l, m) demo -- generalizes demo_l1_mneg1.py from a single (l=1, m=-1)
-term to a superposition of any number of (K0, l, m) source terms, and
-produces TWO figures from one shared setup: the induced E field
-(general_lm_pattern_e.png) and the induced H field (general_lm_pattern_h.png).
+term to a superposition of any number of source terms, and produces TWO
+figures from one shared setup: the induced E field (general_lm_pattern_e.png)
+and the induced H field (general_lm_pattern_h.png).
 
-KEY POINT (unchanged from demo_l1_mneg1.py): the radial solve (solve_layered /
-closed_form_single_sphere) takes only `l` as an argument -- it is completely
-insensitive to m, because l(l+1) is the eigenvalue of the angular Laplacian
-for EVERY m. So each (l, m) term in the source list below gets its own radial
-solve keyed only on its l (solves are cached so repeated l's aren't re-solved),
-and the different m's only change the ANGULAR shape of the source current and
-of the resulting fields, via C_lm/Y_lm -- exactly as in demo_l1_mneg1.py, just
-summed over multiple terms the way demo_superposition.py sums over multiple l
-(m=0) terms.
+INPUT FORMAT: source coefficients are given in GLOBAL1D_COEFF, the SAME
+packed format global1d's .prm files / field1d.f90's and field1d_sunegbert2012.f90's
+`coeff(:)` arrays use: for degree l=0..LMAX, a block of (2l+1) complex
+values ordered m=0,+1,-1,+2,-2,...,+l,-l (l=0's single entry is always
+unused -- no monopole term). Paste directly from a .prm file's real/imag
+columns, or from a Fortran `coeff(:)` array literal, in this same order --
+see unpack_global1d_coeff() below for the exact index formula.
 
-Fields (and the source pattern) from each (K0, l, m) term are computed at the
-SAME evaluation radius and summed coherently (complex superposition) before
-plotting -- this reproduces demo_l1_mneg1.py exactly when
-SOURCE_TERMS = [(1.0, 1, -1)].
+OUTPUT CONVENTION: all computed fields (and the plotted source pattern) are
+in field1d.f90/field1d_sunegbert2012.f90's NATIVE e^{-iwt} time convention, directly
+comparable to their raw .hfield/.efield output with no further conjugation
+needed. This requires THREE corrections on top of pythonSolver's own native
+e^{+iwt} machinery (solve_layered / fields_from_R_general / C_lm), all
+found and verified 2026-07-23 while cross-validating field1d_sunegbert2012.f90 (see
+CLAUDE.md, "Cross-convention comparison rule", and
+pythonSolver/reference_earth_l1mneg1.py for the original derivation/check):
+  1. normalize by sqrt(l(l+1)) -- pythonSolver's own convention is
+     T=R(r)*Y_l^m/sqrt(l(l+1)), field1d_sunegbert2012's is T_l(r)*Y_l^m directly (no
+     norm division), so this factor is needed on TOP of solve_layered's own
+     "A" (external-amplitude) normalization;
+  2. flip the sign of m -- conjugating a field also conjugates its e^{imphi}
+     angular dependence, turning an (l,+m) pattern into an (l,-m)-like one,
+     so field1d's (l,+m) term corresponds to conj(pythonSolver's (l,-m)
+     term), NOT conj(pythonSolver's (l,+m) term);
+  3. H picks up an extra overall -1 that E (and, by the same "polar vector"
+     reasoning, the source current K) does not -- H is a pseudovector
+     (reverses under true time-reversal, being sourced by currents), E is a
+     polar vector (does not). NOTE: the -1-for-H-only rule was empirically
+     verified for E/H fields specifically (l=1,m=-1, Earth-scale, see
+     CLAUDE.md); applying the SAME (E-type, +1) rule to the source pattern
+     Ktheta/Kphi below is a reasonable extension (same "polar vector" type
+     as E) but has not been independently re-verified on its own.
+
+COEFFICIENT SCALING: none -- each raw GLOBAL1D_COEFF value is used as-is, no
+extra rescaling. (A Period/5 rescaling, matching MATLAB's PrimaryField.m
+"shc" scaling before TSModel.ShcInc, was tried 2026-07-23 and removed
+2026-07-25 to keep this demo consistent with FWD1D.f90/field1d_sunegbert2012.f90's
+own driver-level behaviour, which applies no such rescaling either; see
+CLAUDE.md, "Matching MATLAB/SIEM's practical coefficient scaling" for the
+historical note.)
+
+KEY POINT (unchanged from demo_l1_mneg1.py): the radial solve (solve_layered)
+takes only `l` as an argument -- it is completely insensitive to m, because
+l(l+1) is the eigenvalue of the angular Laplacian for EVERY m. So each
+(l, m) term gets its own radial solve keyed only on its l (cached, so
+repeated l's aren't re-solved), and the different m's only change the
+ANGULAR shape of the source current and of the resulting fields.
 """
 import numpy as np
 import matplotlib
@@ -27,9 +60,7 @@ import matplotlib.pyplot as plt
 from spherical_em_induction import solve_layered, C_lm, fields_from_R_general
 
 # ----------------------------------------------------------------------
-# Configuration: Earth model, evaluation radius, and the (K0, l, m) source
-# terms to superpose. Add/remove/edit entries in SOURCE_TERMS freely --
-# everything below (both figures) adapts automatically.
+# Configuration: Earth model and evaluation radius.
 # ----------------------------------------------------------------------
 
 mu0 = 4 * np.pi * 1e-7
@@ -48,18 +79,51 @@ r_eval = a                   # ground level
 # Hr/Htheta/Hphi directly on a colatitude x [0,360] grid.
 PLOT_MT_CONVENTION = True
 
-SOURCE_TERMS = [
-    # (K0, l, m)
-    (1.0, 1, 0),
-    #(-0.5, 1, 1),
-    #(0.5, 1, -1),
-    #(0.4, 2, 0),
-    #(0.3, 2, 2),
+# ----------------------------------------------------------------------
+# Source coefficients, global1d packed format -- see module docstring.
+# Default below reproduces the old demo's default, SOURCE_TERMS=[(0.5,1,-1)]:
+# LMAX=1, l=1 block (indices 1..3) = [m=0, m=+1, m=-1] = [0, 0, 0.5].
+# ----------------------------------------------------------------------
+LMAX = 1
+GLOBAL1D_COEFF = [
+    0.0 + 0.0j,   # l=0, m=0  (unused -- no monopole)
+    0.0 + 0.0j,   # l=1, m=0
+    0.0 + 0.0j,   # l=1, m=+1
+    0.5 + 0.0j,   # l=1, m=-1
 ]
+
+
+def unpack_global1d_coeff(coeff, lmax):
+    """Unpack a global1d-format packed coeff(:) array into a list of
+    (coeff, l, m) tuples (m=-l..l, zero entries dropped). Index formula
+    (0-indexed here; matches field1d_sunegbert2012.f90's 1-indexed
+    coeff(l*l+1), coeff(l*l+2*m), coeff(l*l+2*m+1) exactly, offset by 1):
+        coeff2(l, 0)  = coeff[l*l]
+        coeff2(l, +m) = coeff[l*l + 2*m - 1]   for m=1..l
+        coeff2(l, -m) = coeff[l*l + 2*m]       for m=1..l
+    """
+    expected_len = (lmax + 1) ** 2
+    if len(coeff) != expected_len:
+        raise ValueError(f"GLOBAL1D_COEFF has length {len(coeff)}, expected "
+                          f"(LMAX+1)^2={expected_len} for LMAX={lmax}")
+    terms = []
+    for l in range(1, lmax + 1):
+        base = l * l
+        if coeff[base] != 0:
+            terms.append((coeff[base], l, 0))
+        for m in range(1, l + 1):
+            if coeff[base + 2 * m - 1] != 0:
+                terms.append((coeff[base + 2 * m - 1], l, m))
+            if coeff[base + 2 * m] != 0:
+                terms.append((coeff[base + 2 * m], l, -m))
+    return terms
+
+
+SOURCE_TERMS = unpack_global1d_coeff(GLOBAL1D_COEFF, LMAX)
 
 # ----------------------------------------------------------------------
 # Angular grid. theta (colatitude, 0..pi) is always used for the physics
-# (Y_lm/S_l/C_lm need colatitude). phi spans [-pi,pi) under MT convention
+# (Y_lm/C_lm need colatitude). phi spans [-pi,pi) under MT convention
 # (-> longitude [-180,180] directly, no wraparound reordering needed) or
 # [0,2pi) otherwise.
 # ----------------------------------------------------------------------
@@ -81,18 +145,25 @@ else:
 
 # ----------------------------------------------------------------------
 # Radial solves, cached by l (m does not affect the radial problem at all --
-# see module docstring above / spherical_em_induction.py's own comments)
+# see module docstring above / spherical_em_induction.py's own comments).
+# Solved once at K0=1 (pythonSolver's own convention); A is solve_layered's
+# own external-amplitude readback for that K0=1 solve, used below to
+# normalize to unit external amplitude before rescaling by the user's actual
+# (global1d-convention) coefficient.
 # ----------------------------------------------------------------------
 degrees = sorted({l for _, l, _ in SOURCE_TERMS})
 radial_solutions = {}
 for l in degrees:
-    sol = solve_layered(l, [a], [sigma], [mu0], mu0, c, 1.0, omega)  # K0=1 here;
-    Rval = sol['R'](np.array([r_eval]))[0]                            # actual K0 applied
-    Rpval = sol['Rp'](np.array([r_eval]))[0]                          # per-term below
-    radial_solutions[l] = (Rval, Rpval)
+    sol = solve_layered(l, [a], [sigma], [mu0], mu0, c, 1.0, omega)
+    Rval1 = sol['R'](np.array([r_eval]))[0]
+    Rpval1 = sol['Rp'](np.array([r_eval]))[0]
+    A1 = sol['A']
+    radial_solutions[l] = (Rval1, Rpval1, A1)
 
 # ----------------------------------------------------------------------
-# Superpose source pattern and induced E, H fields over all (K0, l, m) terms
+# Superpose source pattern and induced E, H fields over all source terms,
+# converting each term to field1d_sunegbert2012's native e^{-iwt} convention via the
+# norm + m-flip + H-sign correction described in the module docstring.
 # ----------------------------------------------------------------------
 Ctheta_total = np.zeros_like(TH, dtype=complex)
 Cphi_total = np.zeros_like(TH, dtype=complex)
@@ -102,29 +173,42 @@ Hr_total = np.zeros_like(TH, dtype=complex)
 Htheta_total = np.zeros_like(TH, dtype=complex)
 Hphi_total = np.zeros_like(TH, dtype=complex)
 
-for K0, l, m in SOURCE_TERMS:
-    Rval, Rpval = radial_solutions[l]
+for coeff_raw, l, m in SOURCE_TERMS:
+    Rval1, Rpval1, A1 = radial_solutions[l]
+    norm = np.sqrt(l * (l + 1))
+    m_python = -m   # correction 2: m-flip
 
-    Ctheta, Cphi = C_lm(l, m, TH, PH)
-    Ctheta_total += K0 * Ctheta
-    Cphi_total += K0 * Cphi
+    coeff = coeff_raw   # no extra rescaling -- see module docstring, "COEFFICIENT SCALING"
 
-    fields = fields_from_R_general(l, m, r_eval, TH, PH, K0 * Rval, K0 * Rpval, mu0, omega)
-    Etheta_total += fields['Etheta']
-    Ephi_total += fields['Ephi']
-    Hr_total += fields['Hr']
-    Htheta_total += fields['Htheta']
-    Hphi_total += fields['Hphi']
+    fields_py = fields_from_R_general(l, m_python, r_eval, TH, PH, Rval1, Rpval1, mu0, omega)
+    Ctheta_py, Cphi_py = C_lm(l, m_python, TH, PH)
 
-# MT-convention fields: Ex=-Etheta, Ey=+Ephi, Hx=-Htheta, Hy=+Hphi, Hz=-Hr
-# (matches PrimaryField.m's sign convention exactly).
+    scale_E = coeff * norm / A1          # correction 1 (norm) folded in; H sign is +1 for E/K
+    scale_H = -scale_E                    # correction 3: extra -1 for H only
+
+    Ctheta_total += scale_E * np.conj(Ctheta_py)
+    Cphi_total += scale_E * np.conj(Cphi_py)
+    Etheta_total += scale_E * np.conj(fields_py['Etheta'])
+    Ephi_total += scale_E * np.conj(fields_py['Ephi'])
+    Hr_total += scale_H * np.conj(fields_py['Hr'])
+    Htheta_total += scale_H * np.conj(fields_py['Htheta'])
+    Hphi_total += scale_H * np.conj(fields_py['Hphi'])
+
+# MT-convention fields: Ex=-Etheta, Ey=+Ephi, Hx=-Htheta, Hy=+Hphi, Hz=+Hr
+# (matches PrimaryField.m's sign convention exactly; these relationships are
+# convention-independent, unaffected by the e^{-iwt}/e^{+iwt} correction above.
+# NOTE: Hz=+Hr, NOT -Hr -- "down" is already the natural sign of Hr in
+# global1d's own convention, confirmed directly by the user and applied the
+# same way in plot_global1d_output.py's Fz=Fr.T; an earlier version of this
+# line had the extra flip, which showed up as a sign mismatch on Hz alone
+# once compared directly against field1d_sunegbert2012 output, 2026-07-23).
 Ex_total = -Etheta_total
 Ey_total = Ephi_total
 Hx_total = -Htheta_total
 Hy_total = Hphi_total
-Hz_total = -Hr_total
+Hz_total = Hr_total
 
-terms_str = ", ".join(f"(K0={K0},l={l},m={m})" for K0, l, m in SOURCE_TERMS)
+terms_str = ", ".join(f"(coeff={coeff},l={l},m={m})" for coeff, l, m in SOURCE_TERMS)
 
 
 def _plot(panels, suptitle, fname):
@@ -141,7 +225,7 @@ def _plot(panels, suptitle, fname):
             if not PLOT_MT_CONVENTION:
                 ax.invert_yaxis()   # colatitude: put theta=0 (N pole) at top
             # latitude already increases upward -> no inversion needed for MT convention
-    plt.suptitle(f"{suptitle}\n{terms_str}", fontsize=10)
+    plt.suptitle(f"{suptitle} (native e^-iwt, field1d convention)\n{terms_str}", fontsize=10)
     plt.tight_layout()
     plt.savefig(fname, dpi=140)
     print(f"Saved -> {fname}")
@@ -183,7 +267,7 @@ else:
     ]
 _plot(h_panels, "Superposed induced H field pattern", "general_lm_pattern_h.png")
 
-print(f"Source terms: {SOURCE_TERMS}")
+print(f"Source terms (global1d/coeff convention, LMAX={LMAX}): {SOURCE_TERMS}")
 if PLOT_MT_CONVENTION:
     print(f"max|Ex| = {np.max(np.abs(Ex_total)):.3e}   max|Ey| = {np.max(np.abs(Ey_total)):.3e}")
     print(f"max|Hx| = {np.max(np.abs(Hx_total)):.3e}   max|Hy| = {np.max(np.abs(Hy_total)):.3e}   max|Hz| = {np.max(np.abs(Hz_total)):.3e}")

@@ -361,21 +361,32 @@ def fields_from_R_general(l, m, r, theta, phi, Rval, Rpval, mu, omega):
     (T-only, i.e. P=0) solution T(r,theta,phi) = R(r) Y_l^m(theta,phi)/sqrt(l(l+1)):
 
         H = (1/r) grad_a(dT/dr) - (r_hat/r^2) laplacian_a(T)
-        E = -i*omega*mu * r_hat x grad_a(T)      (source-free / conductor interior)
+        E = -i*omega*mu * (r_hat/r) x grad_a(T)      (source-free / conductor interior)
 
-    Reduces to fields_from_R() above when m=0 (regression-tested).
+    Reduces to fields_from_R() above when m=0, UP TO an explicit 1/mu factor
+    in fields_from_R's Hr/Htheta -- that function uses a different (flux-
+    function / vector-potential) normalization of R(r) than the T-potential
+    ansatz used here; the two are not literally interchangeable term-by-term
+    even after the fix below (see note in the module docstring / commit
+    notes). Not "regression-tested" against fields_from_R as an earlier
+    version of this docstring claimed.
     """
     Ctheta, Cphi = C_lm(l, m, theta, phi)
     Y = Y_lm(l, m, theta, phi)
     dYdt = dY_lm_dtheta(l, m, theta, phi)
     norm = np.sqrt(l * (l + 1))
 
-    # E = -i*omega*mu * r_hat x grad_a(T);  r_hat x grad_a(Y) = -sqrt(l(l+1)) * (Ctheta,Cphi)
-    Etheta = 1j * omega * mu * Rval * norm * Ctheta / norm  # = i*omega*mu*Rval*Ctheta
-    Ephi = 1j * omega * mu * Rval * Cphi
+    # E = -i*omega*mu * (r_hat/r) x grad_a(T);  r_hat x grad_a(Y) = -sqrt(l(l+1)) * (Ctheta,Cphi)
+    # NOTE the explicit 1/r -- eq (5) of the paper has it; a previous version
+    # of this function omitted it (a real bug, found 2026-07-22).
+    Etheta = 1j * omega * mu * Rval * Ctheta / r
+    Ephi = 1j * omega * mu * Rval * Cphi / r
 
-    # H components from T = R(r) Y/sqrt(l(l+1))
-    Hr = -l * (l + 1) * Rval * Y / (norm * r ** 2)
+    # H components from T = R(r) Y/sqrt(l(l+1)).
+    # Hr = -(1/r^2)*laplacian_a(T) = -(1/r^2)*(-l(l+1))*T = +l(l+1)/r^2 * T
+    # (paper's eq 9: laplacian_a(Y_l^m) = -l(l+1)*Y_l^m) -- a previous
+    # version of this function had the opposite sign (found 2026-07-22).
+    Hr = l * (l + 1) * Rval * Y / (norm * r ** 2)
     Htheta = Rpval / (r * norm) * dYdt
     Hphi = Rpval / (r * norm) * (1j * m / np.sin(theta)) * Y
 

@@ -13,7 +13,7 @@ Sun, J. and Egbert, G.D., 2012. A thin-sheet model for global electromagnetic in
 In its original version, field1d.f90 is written for the global code following the conventions of Uyeshima & Schultz (2000). This means the following assumptions & configurations:
 
 1) H is defined on the primary grid (EDGEs), E is defined on the dual grid (FACEs);
-2) Hx stands for $H_\phi$ and denotes the *longitudinal* component, East to West;
+2) Hx stands for $H_\phi$ and denotes the *longitudinal* component, West to East;
 3) Hy stands for $H_\theta$ and denotes the *latitudinal* component, North to South ($\theta$ is co-latitude);
 4) Hz stands for $H_r$ and points down;
 5) global grid is assumed and includes the poles and zero longitude model wrapping.
@@ -21,7 +21,7 @@ In its original version, field1d.f90 is written for the global code following th
 In contrast, the ModEM regional conventions are as follows:
 
 1) E is defined on the primary grid (EDGEs), H is defined on the dual grid (FACEs);
-2) Hy stands for $H_\phi$ and denotes the *longitudinal* component, East to West;
+2) Hy stands for $H_\phi$ and denotes the *longitudinal* component, West to East;
 3) Hx stands for $H_\theta$ and denotes the *latitudinal* component, South to North ($\theta$ is latitude);
 4) Hz stands for $H_r$ and points down;
 5) regional grid is assumed, with no special treatment for the poles or zero longitude.
@@ -38,3 +38,43 @@ For conversion between arrays computed with FWD1D and ModEM, we also need to be 
 and that all arrays are adjusted with respect to zero longitude so that the longitude index $i$ is adjusted to [i180+1:end 1:i180] where i180 corresponds to 180 degree longitude. If we are not careful, we run the risk of flipping the two hemispheres, which will result in a 180 degree longitudinal shift.
 
 The code has now been updated to produce the fields on either H-primary or E-primary grids. However, the coordinate conventions are still that of the global (FWD1D) model.
+
+Sign convention:
+FWD1D uses exp(- i\omega\mu) convention. This is consistent with the default ISIGN = -1 in ModEM. This is also consistent with Jin's Matlab code.
+The 3D global code uses exp(+ i\omega\mu) convention. 
+The new pythonSolver code also uses exp(+ i\omega\mu). 
+There is a conjugate operator that is applied to all fields at the end of FWD1D computations, in the original Kelbert et al 2014 version of the code. I thought that was needed for compatibility with the global Fortran code. Turns out that it partially compensates for the coefficient ordering/scaling conventions in vsharm but in fact, it may be an erroneous way to do this. Will revisit in a future commit (soon! - this needs to be resolved). This code used to work correctly with the 3D global, but I no longer remember the details of how it worked.
+The new implementation in FWD1D that Claude derived directly from the Sun & Egbert 2012 publication does not suffer from this uncertainty, and is now validated.
+The conventions for the coefficients make all the difference and I need to understand which of the multiple conventions to use! See the comparison with the Python code in demo_general_lm.py.
+
+I compared the current implementation between FWD1D Fortran code (Kelbert et al 2014 version) and the Matlab code (with Jin's settings in TSModel). I run the comparison using MTsource.1000sec.Mode1.prm and MTsource.1000sec.Mode2.prm, where Mode1 is non-zonal and Mode2 is zonal. These two settings are intended to imitate regional MT code. For Mode1 (non-zonal) both E_theta and E_phi are identical between Fortran and Matlab, and look correct as far as I can tell. For Mode2 (zonal, P10) E_theta is zero as expected. The real component of E_phi is consistent (and correct). The imaginary component of E_phi is negative in Fortran and positive in Matlab. Both components should be positive for this 1D model (based on a comparison with an independent MT calculation using ModEM). The comparison with the Python code was showing consistent Hx,Hy and a (-1i) factor in Hz,Ex,Ey. All of this was so confusing that I had Claude write a new Fortran code from scratch; this code based on Sun & Egbert 2012 is now consistent with the Python code - after an array of convention adjustments!!! - and with analytic solutions. Next, we need to understand what is consistent with ModEM and with Gary's ionospheric source modeling in Matlab. The Matlab code has not been updated to reflect any of our new findings. We believe it to be correct but it's probably only correct due to a cancellation of multiple inconsistencies. It hasn't really been carefully tested in its current form.
+
+
+### Which `l` and `m` parameters shift the pattern by -90° in longitude?
+
+Same `l=1, m=±1` — a longitude shift is a pure rotation about the polar
+axis, which never mixes different `l` or `m` (it only rephases each
+`m`-component's coefficient, since `Y_l^m(θ, φ−Δφ) = Y_l^m(θ,φ)·e^{-imΔφ}`).
+What changes is the **phase of `K0`**.
+
+**General rule:** to shift the pattern by `Δφ` in longitude, multiply the
+coefficient for order `m` by `e^{imΔφ}`.
+
+For `Δφ = -90°`, that factor is `e^{imπ/2} = i^m`:
+
+```python
+SOURCE_TERMS = [
+    (-0.5j, 1, 1),
+    (-0.5j, 1, -1),
+]
+
+(-0.5 · i = -0.5j for m=1; 0.5 · i⁻¹ = 0.5·(-i) = -0.5j for m=-1 —
+they land on the same value here only because the current pair happens to
+be antisymmetric, a_{-1} = -a_1; that won't generally hold for other
+starting coefficients.)
+
+Cross-check: (-0.5, 1, 1), (0.5, 1, -1) corresponds to a cos(φ) pattern
+(peak at φ=0, a field oriented along x̂). Shifting cos(φ) by -90°
+gives cos(φ+90°) = -sin(φ), which is exactly what the -0.5j pair
+produces — the negative of the sin(φ) pattern derived independently for
+a field along ŷ.

@@ -38,7 +38,13 @@ module field1d
 
   public        :: legendre_deallocate_at_nodes
   public        :: legendre_deallocate_at_edges
-  public        :: sourceField1d
+  public        :: sourceField1d, sourcePotential
+  ! Widened for reuse by the independent field1d_sunegbert2012 module (Sun & Egbert,
+  ! 2012, Section 2 solver): these Legendre/VSH routines are pure angular
+  ! math, already verified against sympy (see CLAUDE.md), and are shared
+  ! rather than re-derived to avoid re-introducing the kind of subtle
+  ! phase/sign bug that took a long time to isolate here.
+  public        :: legendre_norm, legendre_sch, vsharm
 
 
 Contains
@@ -757,6 +763,22 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
     complex(8)          :: iommu0
     character(80)       :: errMsg
 
+    ! NOTE on the final conjg() applied to every H and E component below
+    ! (H%x, H%y, H%z, E%x, E%y, in both the EDGE and FACE branches -- e.g.
+    ! "H%x(i,j,k) = conjg(H%x(i,j,k))"): this conjugation is NOT a fix for the
+    ! time convention. It exists purely to compensate for vsharm's internal
+    ! phase convention (reconstructing the field from its m=0,1,...,lmax
+    ! storage plus the m,-m conjugate-pairing scheme in the do-m loops below)
+    ! -- a spatial/angular bookkeeping matter, unrelated to time dependence.
+    ! The code's native time convention is e^{-i*omega*t} throughout (see
+    ! kl = sqrt(i*omega*mu0*sigma) in sourcePotential), and the fields ARE
+    ! ALREADY correct for that convention once this conjugation is applied --
+    ! no further time-convention conjugation is needed on this side. Comparing
+    ! against an e^{+i*omega*t}-convention solver (e.g. pythonSolver/
+    ! spherical_em_induction.py) requires an ADDITIONAL, separate conjugation
+    ! of one side or the other for the time convention -- do not conflate the
+    ! two operations.
+
     !No computations are performed for l=0 (no magnetic monopoles) so zero coeff is never used
     ncoeff=0
     do l=0,lmax
@@ -896,7 +918,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     H%x(i,j,k) = H%x(i,j,k) + Yp(l,1)*coefl(1)*(Tnsp(k,l)*((R0**2)/Rs(k)))/(l*(l+1))
 
                     do m = 1,l
-                        C = (Yp(l,m+1)*coefl(2*m) + conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         H%x(i,j,k) = H%x(i,j,k) + C*(Tnsp(k,l)*((R0**2)/Rs(k)))
                     end do
 
@@ -906,7 +928,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                H%x(i,j,k) = conjg(H%x(i,j,k))
+                H%x(i,j,k) = conjg(H%x(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -948,7 +970,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     H%y(i,j,k) = H%y(i,j,k) + Yt(l,1)*coefl(1)*(Tnsp(k,l)*((R0**2)/Rs(k)))/(l*(l+1))
 
                     do m = 1,l
-                        C = (Yt(l,m+1)*coefl(2*m) + conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         H%y(i,j,k) = H%y(i,j,k) + C*(Tnsp(k,l)*((R0**2)/Rs(k)))
                     end do
 
@@ -959,7 +981,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                H%y(i,j,k) = conjg(H%y(i,j,k))
+                H%y(i,j,k) = conjg(H%y(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1003,7 +1025,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     H%z(i,j,k) = H%z(i,j,k) - Yr(l,1)*coefl(1)*(Tnr(k,l)*(R0**2/Rr(k)**2))
 
                     do m = 1,l
-                        C = - (Yr(l,m+1)*coefl(2*m) + conjg(Yr(l,m+1))*coefl(2*m+1))
+                        C = - (Yr(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yr(l,m+1))*coefl(2*m+1))
                         H%z(i,j,k) = H%z(i,j,k) + C*(Tnr(k,l)*(R0**2/Rr(k)**2))
                     end do
 
@@ -1013,7 +1035,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                H%z(i,j,k) = conjg(H%z(i,j,k))
+                H%z(i,j,k) = conjg(H%z(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1047,7 +1069,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     E%y(i,j,k) = E%y(i,j,k) - Yp(l,1)*coefl(1)*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))/(l*(l+1))
 
                     do m = 1,l
-                        C = -(Yp(l,m+1)*coefl(2*m) + conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = -(Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         E%y(i,j,k) = E%y(i,j,k) + C*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))
                     end do
 
@@ -1057,7 +1079,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                E%y(i,j,k) = conjg(E%y(i,j,k))
+                E%y(i,j,k) = conjg(E%y(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1089,7 +1111,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     E%x(i,j,k) = E%x(i,j,k) + Yt(l,1)*coefl(1)*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))/(l*(l+1))
 
                     do m = 1,l
-                        C = (Yt(l,m+1)*coefl(2*m) + conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         E%x(i,j,k) = E%x(i,j,k) + C*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))
                     end do
 
@@ -1099,7 +1121,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                E%x(i,j,k) = conjg(E%x(i,j,k))
+                E%x(i,j,k) = conjg(E%x(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1143,7 +1165,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     H%y(i,j,k) = H%y(i,j,k) + Yt(l,1)*coefl(1)*(Tnrp(k,l)*((R0**2)/Rr(k)))/(l*(l+1))
 
                     do m = 1,l
-                        C = (Yt(l,m+1)*coefl(2*m) + conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         H%y(i,j,k) = H%y(i,j,k) + C*(Tnrp(k,l)*((R0**2)/Rr(k)))
                     end do
 
@@ -1152,7 +1174,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                H%y(i,j,k) = conjg(H%y(i,j,k))
+                H%y(i,j,k) = conjg(H%y(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1184,7 +1206,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     H%x(i,j,k) = H%x(i,j,k) + Yp(l,1)*coefl(1)*(Tnrp(k,l)*((R0**2)/Rr(k)))/(l*(l+1))
 
                     do m = 1,l
-                        C = (Yp(l,m+1)*coefl(2*m) + conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         H%x(i,j,k) = H%x(i,j,k) + C*(Tnrp(k,l)*((R0**2)/Rr(k)))
                     end do
 
@@ -1193,7 +1215,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                H%x(i,j,k) = conjg(H%x(i,j,k))
+                H%x(i,j,k) = conjg(H%x(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1225,7 +1247,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     H%z(i,j,k) = H%z(i,j,k) - Yr(l,1)*coefl(1)*(Tns(k,l)*(R0**2/Rs(k)**2))
 
                     do m = 1,l
-                        C = - (Yr(l,m+1)*coefl(2*m) + conjg(Yr(l,m+1))*coefl(2*m+1))
+                        C = - (Yr(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yr(l,m+1))*coefl(2*m+1))
                         H%z(i,j,k) = H%z(i,j,k) + C*(Tns(k,l)*(R0**2/Rs(k)**2))
                     end do
 
@@ -1234,7 +1256,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                H%z(i,j,k) = conjg(H%z(i,j,k))
+                H%z(i,j,k) = conjg(H%z(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1266,7 +1288,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     E%x(i,j,k) = E%x(i,j,k) + Yt(l,1)*coefl(1)*(iommu0*Tns(k,l)*(R0**2/Rs(k)))/(l*(l+1))
 
                     do m = 1,l
-                        C = (Yt(l,m+1)*coefl(2*m) + conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         E%x(i,j,k) = E%x(i,j,k) + C*(iommu0*Tns(k,l)*(R0**2/Rs(k)))
                     end do
 
@@ -1275,7 +1297,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                E%x(i,j,k) = conjg(E%x(i,j,k))
+                E%x(i,j,k) = conjg(E%x(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1305,7 +1327,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     E%y(i,j,k) = E%y(i,j,k) - Yp(l,1)*coefl(1)*(iommu0*Tns(k,l)*(R0**2/Rs(k)))/(l*(l+1))
 
                     do m = 1,l
-                        C = -(Yp(l,m+1)*coefl(2*m) + conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = -(Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         E%y(i,j,k) = E%y(i,j,k) + C*(iommu0*Tns(k,l)*(R0**2/Rs(k)))
                     end do
 
@@ -1314,7 +1336,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                E%y(i,j,k) = conjg(E%y(i,j,k))
+                E%y(i,j,k) = conjg(E%y(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
