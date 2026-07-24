@@ -174,6 +174,9 @@ Contains
     real(8), dimension(:), allocatable              :: x,y,z,ph,th,r
     integer                                         :: ios,istat,i
     logical                                         :: exists
+    character(len=200)                              :: header_line
+    real(8)                                         :: corner_lon
+    real(8)                                         :: phi_shift
 
     inquire(FILE=trim(cfile),EXIST=exists)
     if(exists) then
@@ -184,7 +187,20 @@ Contains
       stop
     end if
 
-    read(ioGrd,*) nx,ny,nzAir,nzCrust,nzEarth
+    ! header line: "nx ny nzAir nzCrust nzEarth [corner_lon]" -- the OPTIONAL
+    ! trailing corner_lon (degrees) is the absolute longitude of the grid's
+    ! lower-left corner (i=1, minimum longitude/westernmost); co-latitude
+    ! (y, below) and radius (z, below) are ALREADY absolute in the file, so
+    ! no separate anchor is needed for those. Read the line as a string
+    ! first and parse it with IOSTAT so its absence (older grid files) is
+    ! not an error -- corner_lon then defaults to 0, exactly reproducing
+    ! the previous hardcoded ph(1)=0 behavior.
+    read(ioGrd,'(A)') header_line
+    read(header_line,*,IOSTAT=ios) nx,ny,nzAir,nzCrust,nzEarth,corner_lon
+    if (ios /= 0) then
+        read(header_line,*) nx,ny,nzAir,nzCrust,nzEarth
+        corner_lon = 0.0d0
+    end if
 
     nz = nzAir + nzCrust + nzEarth
 
@@ -223,12 +239,18 @@ Contains
 
     ! now, define ph,th,r in radians and km
     allocate(ph(nx+1),th(ny+1),r(nz+1), STAT=istat)
-    ph(1) = 0.0d0
+
+    ! anchor phi at the corner's true longitude (mod 360), instead of the
+    ! historical hardcoded ph(1)=0.0d0 (corner_lon defaults to 0 above when
+    ! absent from the file, exactly reproducing the previous behavior).
+    phi_shift = modulo(corner_lon, 360.0d0) * d2r
+
+    ph(1) = phi_shift
     do i=1,nx
       ph(i+1) = ph(i)+x(i)*d2r
     end do
     !ph(nx+1) = ph(1) ! don't do that - problems with interpolation!!!!
-    th(1:ny+1) = y(1:ny+1)*d2r
+    th(1:ny+1) = y(1:ny+1)*d2r   ! already absolute co-latitude, no shift needed
     r(1:nz+1) = z(1:nz+1)
 
     ! save the cell nodes and distances in radians and km, respectively

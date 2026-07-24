@@ -88,7 +88,7 @@ LMAX = 1
 GLOBAL1D_COEFF = [
     0.0 + 0.0j,   # l=0, m=0  (unused -- no monopole)
     0.0 + 0.0j,   # l=1, m=0
-    0.0 + 0.0j,   # l=1, m=+1
+    -0.5 + 0.0j,   # l=1, m=+1
     0.5 + 0.0j,   # l=1, m=-1
 ]
 

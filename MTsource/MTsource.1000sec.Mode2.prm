@@ -1,0 +1,8 @@
+Format: harmonic periods 1 degree 1
+
+linear degree 1 period 1000.000000 secs
+l	m	real	imag	min	max
+0	0	0.000000E+00	0.000000E+00	-1.000000	1.000000	const
+1	0	1.000000E+00	0.000000E+00	-1.000000	1.000000	const
+1	1	0.000000E+00	0.000000E+00	-1.000000	1.000000	const
+1	-1	0.000000E+00	0.000000E+00	-1.000000	1.000000	const

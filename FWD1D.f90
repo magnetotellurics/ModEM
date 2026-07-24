@@ -4,6 +4,7 @@ program fwd1d
     use field1d_sunegbert2012, only: sourceField1d_sunegbert2012
     use modelspace
     use sg_vector
+    use math_constants, only: PI, D2R, R2D
     implicit none
 
     ! ---------------------------------------------------------------------
@@ -91,7 +92,7 @@ program fwd1d
     !     ordered m=0,+1,-1,+2,-2,...,+l,-l -- see field1d_sunegbert2012.f90's
     !     sourceField1d_sunegbert2012 for the exact index formula).
     ! ---------------------------------------------------------------------
-    character(len=20), parameter                :: SOLVER = 'KELBERT2014'  ! 'KELBERT2014' (default) or 'SUNEGBERT2012'
+    character(len=20), parameter                :: SOLVER = 'SUNEGBERT2012'  ! 'KELBERT2014' (default) or 'SUNEGBERT2012'
 
     type(conf1d_t)                              :: earth
     type(grid_t)                                :: grid
@@ -110,6 +111,9 @@ program fwd1d
     character(3)                                :: ich
     complex(8), allocatable, dimension(:)       :: coeff
     integer                                     :: i,icoeff,nL,nper,ncoeff,lmax,Nt,Np,Nr,narg,ios,istat
+    character(30)                               :: argstr
+    logical                                     :: apply_fake_center
+    real(8)                                     :: fake_center_lat, fake_center_lon
 
     write(*,*) 'Copyright (c) 2010-2011 Oregon State University'
     write(*,*) 'College of Earth, Ocean and Atmospheric Sciences'
@@ -119,6 +123,7 @@ program fwd1d
     write(*,*) 'Added E-field; Anna Kelbert with Claude, 9 June 2026'
     write(*,*) 'Primary E grid option; Anna Kelbert w Claude, 26 June 2026'
     write(*,*) 'Second (SUNEGBERT2012) solver + solver-selection option; Anna Kelbert w Claude, 24 July 2026'
+    write(*,*) 'Optional "fake pole" grid recentering; Anna Kelbert w Claude, 25 July 2026'
     if (SOLVER == 'KELBERT2014') then
         write(*,*) 'Solver: KELBERT2014 (field1d.f90 -- Kelbert et al., 2014, benchmark study) [DEFAULT]'
     else if (SOLVER == 'SUNEGBERT2012') then
@@ -131,7 +136,13 @@ program fwd1d
     !  parse command line
     narg = command_argument_count()
     if (narg < 4) then
-        write(0,*) 'Usage: ./FWD1D layered_model_file source_model_file grid_file fields_output_file'
+        write(0,*) 'Usage: ./FWD1D layered_model_file source_model_file grid_file fields_output_file &
+                    &[fake_center_lat_deg fake_center_lon_deg]'
+        write(0,*) '  The two optional trailing arguments, if given, must be given together: they'
+        write(0,*) '  request a "fake pole" recentering of the input grid (see recenter_grid_fake_pole'
+        write(0,*) '  below) -- useful for evaluating a regional grid (e.g. USA.0.25x0.25.grd) as if'
+        write(0,*) '  it were located somewhere else on the sphere (e.g. at the equator/zero meridian,'
+        write(0,*) '  or wherever the field of interest peaks), WITHOUT editing the grid file itself.'
         stop
     end if
 
@@ -140,6 +151,19 @@ program fwd1d
     call get_command_argument(2, source_model_file)
     call get_command_argument(3, grid_file)
     call get_command_argument(4, fields_output_file)
+
+    ! optional 5th/6th arguments: "fake pole" grid recentering (both or neither)
+    apply_fake_center = .false.
+    if (narg == 5) then
+        call errStop('FWD1D: fake_center_lat_deg and fake_center_lon_deg must both be given together &
+                      &(got only one of the two optional trailing arguments)')
+    else if (narg >= 6) then
+        apply_fake_center = .true.
+        call get_command_argument(5, argstr)
+        read(argstr,*) fake_center_lat
+        call get_command_argument(6, argstr)
+        read(argstr,*) fake_center_lon
+    end if
 
     ! save periods in days
 !    open(ioREAD,file=period_file,status='old',form='formatted',iostat=ios)
@@ -187,6 +211,12 @@ program fwd1d
 
     ! reading grid file (r is in km decreasing from top to bottom)
     call read_grid(grid,grid_file)
+
+    ! optionally recenter the grid onto a "fake pole" -- see subroutine header
+    ! comment below for exactly what this does and does not do.
+    if (apply_fake_center) then
+        call recenter_grid_fake_pole(grid, fake_center_lat, fake_center_lon)
+    end if
 
     ! set earth radius and domain top radius (in meters)
     earth%r0  = 6371.0e3
@@ -282,5 +312,74 @@ program fwd1d
     call deall_cvector(e1d)
     call deall_grid(grid)
     write(*,*) 'Total time taken: ',saved_time(fwd1d_timer),' secs'
+
+contains
+
+    subroutine recenter_grid_fake_pole(grid_arg, center_lat_deg, center_lon_deg)
+        ! Recenters an existing (theta,phi) grid, IN PLACE, onto a "fake"
+        ! center point, by a simple additive shift of every theta node value
+        ! and phi node value -- NOT a true 3-D spherical rotation. This is
+        ! the standard "fake pole" trick for evaluating a small-to-moderate
+        ! regional patch (e.g. USA.0.25x0.25.grd) as if it were located
+        ! somewhere else on the sphere: the grid's own internal (theta,phi)
+        ! structure (cell widths grid%dt/grid%dp, extent, resolution) is
+        ! preserved EXACTLY; only its absolute position on the sphere
+        ! changes, by translating every node by the same (dtheta,dphi) --
+        ! i.e. treating the patch as if the sphere were locally flat over
+        ! its extent. This is an approximation, not an exact rotation (an
+        ! exact rotation would also change the *shape* of a rectangular
+        ! theta x phi patch as it moves away from the equator/moves in
+        ! longitude); it is adequate for patches that are not enormous
+        ! relative to the sphere, which is the regime this option is meant
+        ! for. Only field1d.f90/field1d_sunegbert2012.f90's OWN sourceField1d
+        ! calls (later in this program) are affected -- the source
+        ! coefficients (coeff(:), from source_model_file) are NOT touched;
+        ! they remain defined relative to the TRUE global pole/meridian, so
+        ! the physical multipole source pattern does not move, only the
+        ! observation grid does.
+        !
+        ! center_lat_deg/center_lon_deg (input, degrees, ordinary geographic
+        ! latitude [-90,90] and longitude [-180,180] or [0,360)): the point
+        ! that the grid's own geometric center -- the midpoint of its
+        ! min/max theta extent and of its min/max phi extent, in its
+        ! ORIGINAL, as-read-from-file coordinates -- is moved to. E.g.
+        ! center_lat_deg=0, center_lon_deg=-90 places the grid's center at
+        ! the equator, 90 degrees West.
+        type(grid_t), intent(inout) :: grid_arg
+        real(8), intent(in)         :: center_lat_deg, center_lon_deg
+        real(8) :: theta_c_old, phi_c_old, theta_c_new, phi_c_new, dtheta, dphi
+        integer :: ii
+
+        theta_c_old = (minval(grid_arg%th(1:grid_arg%ny+1)) + maxval(grid_arg%th(1:grid_arg%ny+1))) / 2.0d0
+        phi_c_old   = (minval(grid_arg%ph(1:grid_arg%nx+1)) + maxval(grid_arg%ph(1:grid_arg%nx+1))) / 2.0d0
+
+        theta_c_new = (90.0d0 - center_lat_deg) * D2R
+        phi_c_new   = modulo(center_lon_deg, 360.0d0) * D2R
+
+        dtheta = theta_c_new - theta_c_old
+        dphi   = phi_c_new - phi_c_old
+
+        do ii = 1, grid_arg%ny+1
+            grid_arg%th(ii) = grid_arg%th(ii) + dtheta
+        end do
+        do ii = 1, grid_arg%nx+1
+            grid_arg%ph(ii) = modulo(grid_arg%ph(ii) + dphi, 2.0d0*PI)
+        end do
+        ! grid_arg%dt/grid_arg%dp (cell widths) are unaffected by a uniform node shift.
+
+        write(*,*)
+        write(*,*) 'Applying fake-pole grid recentering (see recenter_grid_fake_pole in FWD1D.f90):'
+        write(*,'(a,f9.4,a,f9.4,a)') '   original grid center (colat,lon) = (', theta_c_old*R2D, ', ', phi_c_old*R2D, ') deg'
+        write(*,'(a,f9.4,a,f9.4,a)') '   requested center (lat,lon)       = (', center_lat_deg, ', ', center_lon_deg, ') deg'
+        write(*,'(a,f9.4,a,f9.4,a)') '   shift applied (dtheta,dphi)      = (', dtheta*R2D, ', ', dphi*R2D, ') deg'
+        write(*,*)
+
+        if (minval(grid_arg%th(1:grid_arg%ny+1)) <= 0.0d0 .or. maxval(grid_arg%th(1:grid_arg%ny+1)) >= PI) then
+            call errStop('recenter_grid_fake_pole: requested center pushes the grid across a pole &
+                          &(theta out of the open interval (0,180) deg) -- choose a fake center &
+                          &farther from the poles, or a smaller/narrower grid extent')
+        end if
+
+    end subroutine recenter_grid_fake_pole
 
 end program fwd1d

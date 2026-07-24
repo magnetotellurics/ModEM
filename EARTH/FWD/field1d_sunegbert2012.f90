@@ -126,10 +126,30 @@ contains
         complex(8), dimension(:), intent(inout)  :: Rl
         complex(8), dimension(lmax) :: Rl_prev
         complex(8) :: Rnext, Rcur
-        integer    :: l, Ltop, buffer
+        integer    :: l, Ltop, buffer, buffer_cap
         logical    :: converged
 
         buffer = max(50, 4*lmax + 4*ceiling(abs(z)))
+        ! The FIRST pass below can never register as "converged" (Rl_prev
+        ! starts at the 1e30 sentinel, guaranteeing a mismatch on purpose,
+        ! so there are always >=2 real estimates to compare) -- so the loop
+        ! always doubles buffer at least once even when the initial buffer
+        ! was already more than sufficient. A FIXED cap (e.g. 200000) is
+        ! therefore only safe when |z| is small enough that the initial
+        ! buffer itself is well under the cap; for a large |z| (e.g. the
+        ! Earth's core: earth%sigma for the core layer is hardcoded to 1e5
+        ! S/m in FWD1D.f90, so |kl*r_core| ~ 1e5 at ordinary MT periods),
+        ! the initial buffer can ALREADY exceed a fixed 200000 cap, so the
+        ! very first mandatory doubling trips the "no convergence" warning
+        ! even though the Miller recursion itself converges just fine --
+        ! found 2026-07-27, `riccati_ratio_psi` warned at every call for a
+        ! realistic layered Earth model (layered.prm) at T=1000s. Scale the
+        ! cap off the INITIAL buffer instead, so at least a few real
+        ! doublings are always possible regardless of |z|; this subroutine
+        ! is called only once or twice per period (not per grid point,
+        ! see sourcePotential_sunegbert2012), so the extra iterations for
+        ! large |z| are computationally cheap.
+        buffer_cap = max(200000, 8*buffer)
         Rl_prev(:) = dcmplx(1.0d30, 0.0d0)
 
         do
@@ -149,7 +169,7 @@ contains
 
             Rl_prev(:) = Rl(:)
             buffer = buffer*2
-            if (buffer > 200000) then
+            if (buffer > buffer_cap) then
                 write(0,*) 'WARNING field1d_sunegbert2012/riccati_ratio_psi: no convergence at z=',z
                 exit
             end if
@@ -529,6 +549,8 @@ contains
         complex(8) :: iomu0, csum
         integer    :: Np, Nt, Nr, Nrr, Nrs, ncoeff
         integer    :: i, j, k, l, m, istat
+        integer    :: j1, j2
+        real(8), parameter :: pole_tol = 1.0d-8 ! radians; true global poles only, not regional-grid edges
 
         ncoeff = 0
         do l = 0,lmax
@@ -596,7 +618,17 @@ contains
         !   E%x (phi,   FACE x): mid_th  x node_ph x Rr -- Yt, Tnr   (if present)
 
         ! H%x -- phi component: H_phi = +(1/r) * T'(r) * Yp(l,m)
-        do j = 2,Nt
+        ! node theta: when H%gridType==EDGE, H%x is undefined at BOTH the
+        ! North pole (j=1, theta=0) and the South pole (j=Nt+1, theta=pi)
+        ! -- skip each endpoint ONLY if this grid actually reaches it.
+        ! The below logic allows for global vs regional grids;
+        ! it's good practice to define regional grids away from the poles - for
+        ! polar regions, will need to rotate to fake pole (supported)
+        j1 = 1
+        j2 = Nt+1
+        if (grid%th(1) < pole_tol) j1 = 2
+        if (grid%th(Nt+1) > PI - pole_tol) j2 = Nt
+        do j = j1,j2
             call legendre_norm(lmax, cos(grid%th(j)), P_lm)
             do i = 1,Np
                 call vsharm(lmax, cos(grid%th(j)), grid%ph(i)+grid%dp(i)/2, P_lm, Y, Yt, Yp)
@@ -648,7 +680,12 @@ contains
 
         if (present(E)) then
         ! E%y -- theta component: E_theta = +(i*omega*mu0/r) * T(r) * Yp(l,m)
-        do j = 1,Nt
+        ! node theta: when H%gridType==EDGE (so E%gridType==FACE), E%y is
+        ! undefined at BOTH poles -- j1/j2 computed above for H%x, same
+        ! node-theta range. The below logic allows for global vs regional grids;
+        ! it's good practice to define regional grids away from the poles - for
+        ! polar regions, will need to rotate to fake pole (supported)
+        do j = j1,j2
             call legendre_norm(lmax, cos(grid%th(j)), P_lm)
             do i = 1,Np
                 call vsharm(lmax, cos(grid%th(j)), grid%ph(i)+grid%dp(i)/2, P_lm, Y, Yt, Yp)
@@ -692,8 +729,19 @@ contains
         !   E%x (phi,   EDGE x): node_th x mid_ph  x Rs -- Yt, Tns   (if present)
         !   E%y (theta, EDGE y): mid_th  x node_ph x Rs -- Yp, Tns   (if present)
 
+        ! Node-theta components below (H%y on FACE, E%x on EDGE) use Yt and
+        ! are undefined at BOTH the North pole (j=1, theta=0) and the South
+        ! pole (j=Nt+1, theta=pi) -- skip each endpoint ONLY if this grid
+        ! actually reaches it. The below logic allows for global vs regional grids;
+        ! it's good practice to define regional grids away from the poles - for
+        ! polar regions, will need to rotate to fake pole (supported)
+        j1 = 1
+        j2 = Nt+1
+        if (grid%th(1) < pole_tol) j1 = 2
+        if (grid%th(Nt+1) > PI - pole_tol) j2 = Nt
+
         ! H%y -- theta component
-        do j = 2,Nt
+        do j = j1,j2
             call legendre_norm(lmax, cos(grid%th(j)), P_lm)
             do i = 1,Np
                 call vsharm(lmax, cos(grid%th(j)), grid%ph(i)+grid%dp(i)/2, P_lm, Y, Yt)
@@ -744,8 +792,11 @@ contains
         end do
 
         if (present(E)) then
-        ! E%x -- phi component
-        do j = 2,Nt
+        ! E%x -- phi component (node theta -- j1/j2 computed above, same
+        ! node-theta range as H%y). The below logic allows for global vs regional grids;
+        ! it's good practice to define regional grids away from the poles - for
+        ! polar regions, will need to rotate to fake pole (supported)
+        do j = j1,j2
             call legendre_norm(lmax, cos(grid%th(j)), P_lm)
             do i = 1,Np
                 call vsharm(lmax, cos(grid%th(j)), grid%ph(i)+grid%dp(i)/2, P_lm, Y, Yt)

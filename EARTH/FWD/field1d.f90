@@ -758,6 +758,8 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
     integer             :: idr,idrmin,idrmax,ids,idsmin,idsmax
     integer             :: Np,Nt,Nr,Nrr,Nrs,Nd
     integer             :: i,j,k,l,m,istat,ncoeff,icoeff
+    integer             :: j1,j2
+    real(8), parameter  :: pole_tol = 1.0d-8 ! radians; true global poles only, not regional-grid edges
     complex(8)          :: C
     real(8)             :: mu0,pi,omega
     complex(8)          :: iommu0
@@ -882,8 +884,17 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
     !   E%y (theta, FACE y): node_th × mid_ph  × Rr — Yp — Tnr    (if present)
     !   E%x (phi,   FACE x): mid_th  × node_ph × Rr — Yt — Tnr    (if present)
 
-    ! ph component of the field (skip the poles)
-    do j = 2,Nt
+    ! ph component of the field (H%x, H_phi): node theta. On edges,
+    ! H%x is undefined at BOTH the North pole (j=1, theta=0) and the South
+    ! pole (j=Nt+1, theta=pi) -- skip each endpoint ONLY if this grid
+    ! actually reaches it. The below logic allows for global vs regional grids;
+    ! it's good practice to define regional grids away from the poles - for
+    ! polar regions, will need to rotate to fake pole (supported)
+    j1 = 1
+    j2 = Nt+1
+    if (grid%th(1) < pole_tol) j1 = 2
+    if (grid%th(Nt+1) > pi - pole_tol) j2 = Nt
+    do j = j1,j2
 
         ! for efficiency, call this once for each theta and use in vsharm
         if (legendre_allocated_at_nodes) then
@@ -1044,11 +1055,15 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
     legendre_allocated_at_nodes = .true.
     legendre_allocated_at_edges = .true.
 
-    ! th component of the electric field: E_theta = -i*omega*mu0 * Tnr/r/l(l+1) * Yp
-    ! node theta (j=1..Nt) loops North to South pole and undefined at South pole; 
-    ! mid-edge phi; k loops over cell-center radii Rr (not faces Rs)
+    ! th component of the electric field (E%y, E_theta): node theta. When
+    ! H%gridType==EDGE (so E%gridType==FACE), E%y is undefined at BOTH the
+    ! North pole and the South pole -- j1/j2 computed above for H%x, same
+    ! node-theta range, skip each endpoint only if this grid actually
+    ! reaches it. The below logic allows for global vs regional grids;
+    ! it's good practice to define regional grids away from the poles - for
+    ! polar regions, will need to rotate to fake pole (supported)
     if (present(E)) then
-    do j = 1,Nt
+    do j = j1,j2
 
         P_lm = node_P_lm(j,:,:)
 
@@ -1139,8 +1154,19 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
     !   E%x (phi,   EDGE x): node_th × mid_ph  × Rs — Yt — Tns   (if present)
     !   E%y (theta, EDGE y): mid_th  × node_ph × Rs — Yp — Tns   (if present)
 
+    ! Node-theta components below (H%y on FACE, E%x on EDGE) are undefined
+    ! at BOTH the North pole (j=1, theta=0) and the South pole (j=Nt+1,
+    ! theta=pi) -- skip each endpoint ONLY if this grid actually reaches it.
+    ! The below logic allows for global vs regional grids;
+    ! it's good practice to define regional grids away from the poles - for
+    ! polar regions, will need to rotate to fake pole (supported)
+    j1 = 1
+    j2 = Nt+1
+    if (grid%th(1) < pole_tol) j1 = 2
+    if (grid%th(Nt+1) > pi - pole_tol) j2 = Nt
+
     ! H%y — theta component: node theta (skip poles), mid phi, cell-centre r
-    do j = 2,Nt
+    do j = j1,j2
 
         if (legendre_allocated_at_nodes) then
             P_lm = node_P_lm(j,:,:)
@@ -1266,9 +1292,13 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
     legendre_allocated_at_edges = .true.
 
     ! E%x — phi component: E_phi = +i*omega*mu0 * Tns/Rs/l(l+1) * Yt
-    ! node theta (skip poles), mid phi, face r
+    ! node theta (skip poles only if this grid reaches them -- j1/j2
+    ! computed above, same node-theta range as H%y)
+    ! The below logic allows for global vs regional grids;
+    ! it's good practice to define regional grids away from the poles - for
+    ! polar regions, will need to rotate to fake pole (supported)
     if (present(E)) then
-    do j = 2,Nt
+    do j = j1,j2
 
         P_lm = node_P_lm(j,:,:)
 
