@@ -49,8 +49,97 @@ The conventions for the coefficients make all the difference and I need to under
 
 I compared the current implementation between FWD1D Fortran code (Kelbert et al 2014 version) and the Matlab code (with Jin's settings in TSModel). I run the comparison using MTsource.1000sec.Mode1.prm and MTsource.1000sec.Mode2.prm, where Mode1 is non-zonal and Mode2 is zonal. These two settings are intended to imitate regional MT code. For Mode1 (non-zonal) both E_theta and E_phi are identical between Fortran and Matlab, and look correct as far as I can tell. For Mode2 (zonal, P10) E_theta is zero as expected. The real component of E_phi is consistent (and correct). The imaginary component of E_phi is negative in Fortran and positive in Matlab. Both components should be positive for this 1D model (based on a comparison with an independent MT calculation using ModEM). The comparison with the Python code was showing consistent Hx,Hy and a (-1i) factor in Hz,Ex,Ey. All of this was so confusing that I had Claude write a new Fortran code from scratch; this code based on Sun & Egbert 2012 is now consistent with the Python code - after an array of convention adjustments!!! - and with analytic solutions. Next, we need to understand what is consistent with ModEM and with Gary's ionospheric source modeling in Matlab. The Matlab code has not been updated to reflect any of our new findings. We believe it to be correct but it's probably only correct due to a cancellation of multiple inconsistencies. It hasn't really been carefully tested in its current form.
 
+### Long-term solution: will provide three output options
 
-### Which `l` and `m` parameters shift the pattern by -90° in longitude?
+Kelbert (2006) (based on Uyeshima & Schultz (2000))
+
+which uses exp(+ i omega t) and Schmidt semi-normalized harmonics with no Condon-Shortley phase; coordinates are (phi,theta,r) where phi is West to East, theta is North to South, r is down
+Output:
+1) H is defined on the primary grid (EDGEs), E is defined on the dual grid (FACEs);
+2) Hx stands for $H_\phi$ and denotes the *longitudinal* component, West to East;
+3) Hy stands for $H_\theta$ and denotes the *colatitudinal* component, North to South ($\theta$ is co-latitude);
+4) Hz stands for $H_r$ and points down;
+5) global grid is assumed and includes the poles and zero longitude model wrapping.
+
+Sun & Egbert (2012) 
+
+which uses exp(- i omega t) with fully-normalized harmonics and Condon-Shortley phase; coordinates are (theta,phi,r) where phi is West to East, theta is North to South, r is up
+Output:
+1) E is defined on the primary grid (EDGEs), H is defined on the dual grid (FACEs);
+2) Hy stands for $H_\phi$ and denotes the *longitudinal* component, West to East;
+3) Hx stands for $H_\theta$ and denotes the *colatitudinal* component, North to South ($\theta$ is co-latitude);
+4) Hz stands for $H_r$ and points up;
+5) global grid is assumed and includes the poles and zero longitude model wrapping.
+
+Egbert & Kelbert (2012)
+
+which uses exp(-i omega t) and (when forced externally) uses fully-normalized harmonics with no Condon-Shortley phase, coordinates are (theta,phi,r) where phi is West to East, theta is South to North, r is down
+Output:
+1) E is defined on the primary grid (EDGEs), H is defined on the dual grid (FACEs);
+2) Hy stands for $H_\phi$ and denotes the *longitudinal* component, West to East;
+3) Hx stands for $H_\theta$ and denotes the *latitudinal* component, South to North ($\theta$ is latitude);
+4) Hz stands for $H_r$ and points down;
+5) regional grid is assumed, with no special treatment for the poles or zero longitude.
+
+Note that at present the electric fields, as directly computed, do not match the +ve real, +ve imaginary convention of traditional ModEM for the simple Mode 1 & Mode 2 sources. Hopefully this will be fixed once all the conventions are carefully applied.
+
+After the latest fixes, the 1D impedances now match, as follows.
+
+```
+ === test_vs_modem_1D: field1d.f90 AND field1d_sunegbert2012.f90 vs ModEM small_predicted.dat ===
+
+ Read  47 layers from USA_small_1D.prm
+
+ --- Mode2 (zonal, l=1 m=0): Zyx = Ey/Hx ---
+    T(s)        solver                Zyx_calc         Zyx_ModEM(conj)                                                    %|Z|diffphase diff(d
+             Done computing potentials:    1.95312500E-03  secs
+             Allocating Legendre polynomials at grid nodes
+             Allocating Legendre polynomials at grid edges
+             Done mapping to grid:    0.00000000      secs
+    10.0   KELBERT2014 -2.3168E+00  9.7432E-01   -2.3374E+00  9.7540E-01        0.7665      0.1580
+    10.0 SUNEGBERT2012 -2.3168E+00  9.7432E-01   -2.3374E+00  9.7540E-01        0.7665      0.1580
+             Done computing potentials:    0.00000000      secs
+             Legendre polynomials pre-allocated at grid nodes
+             Legendre polynomials pre-allocated at grid edges
+             Done mapping to grid:    0.00000000      secs
+   100.0   KELBERT2014 -1.6330E+00  6.7216E-01   -1.6411E+00  6.8096E-01        0.6105      0.1630
+   100.0 SUNEGBERT2012 -1.6330E+00  6.7216E-01   -1.6411E+00  6.8096E-01        0.6105      0.1630
+             Done computing potentials:    0.00000000      secs
+             Legendre polynomials pre-allocated at grid nodes
+             Legendre polynomials pre-allocated at grid edges
+             Done mapping to grid:    0.00000000      secs
+  1000.0   KELBERT2014 -6.3911E-01  5.1723E-01   -6.3453E-01  5.2363E-01        0.0622      0.5469
+  1000.0 SUNEGBERT2012 -6.3911E-01  5.1723E-01   -6.3453E-01  5.2363E-01        0.0622      0.5469
+
+ --- Mode1 (l=1 m=+-1): Zxy = Ex/Hy, evaluated at phi=90deg ---
+    T(s)        solver                Zxy_calc         Zxy_ModEM(conj)                                                    %|Z|diffphase diff(d
+             Done computing potentials:    1.95312500E-03  secs
+             Legendre polynomials pre-allocated at grid nodes
+             Legendre polynomials pre-allocated at grid edges
+             Done mapping to grid:    0.00000000      secs
+    10.0   KELBERT2014  2.3168E+00 -9.7432E-01    2.3373E+00 -9.7539E-01        0.7634      0.1576
+    10.0 SUNEGBERT2012  2.3168E+00 -9.7432E-01    2.3373E+00 -9.7539E-01        0.7634      0.1576
+             Done computing potentials:    0.00000000      secs
+             Legendre polynomials pre-allocated at grid nodes
+             Legendre polynomials pre-allocated at grid edges
+             Done mapping to grid:    0.00000000      secs
+   100.0   KELBERT2014  1.6330E+00 -6.7216E-01    1.6410E+00 -6.8092E-01        0.6074      0.1624
+   100.0 SUNEGBERT2012  1.6330E+00 -6.7216E-01    1.6410E+00 -6.8092E-01        0.6074      0.1624
+             Done computing potentials:    0.00000000      secs
+             Legendre polynomials pre-allocated at grid nodes
+             Legendre polynomials pre-allocated at grid edges
+             Done mapping to grid:    0.00000000      secs
+  1000.0   KELBERT2014  6.3911E-01 -5.1723E-01    6.3456E-01 -5.2360E-01        0.0620      0.5439
+  1000.0 SUNEGBERT2012  6.3911E-01 -5.1723E-01    6.3456E-01 -5.2360E-01        0.0620      0.5439
+  ```
+
+### Shifting the source by -90° in longitude to best match Mode 1 in ModEM
+
+The coefficients -0.5 for l=1 m=+1 and 0.5 for l=1 m=-1 produce a purely 
+real (zero imaginary component) South to North global source field.
+While a longitudinal shift makes no difference for transfer function computation,
+it helps to be consistent with traditional ModEM MT conventions in terms of 
+the electric fields as well.
 
 Same `l=1, m=±1` — a longitude shift is a pure rotation about the polar
 axis, which never mixes different `l` or `m` (it only rephases each
@@ -78,3 +167,8 @@ Cross-check: (-0.5, 1, 1), (0.5, 1, -1) corresponds to a cos(φ) pattern
 gives cos(φ+90°) = -sin(φ), which is exactly what the -0.5j pair
 produces — the negative of the sin(φ) pattern derived independently for
 a field along ŷ.
+
+However, in practice we're going with a simpler solution. I implemented
+an option to supply a fake grid center for regional grids, and setting
+it to "0 90" will center the grid +90° in longitude, producing the same
+result as a shift in the source pattern would achieve at "0 0".

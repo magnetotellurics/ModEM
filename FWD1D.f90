@@ -92,7 +92,7 @@ program fwd1d
     !     ordered m=0,+1,-1,+2,-2,...,+l,-l -- see field1d_sunegbert2012.f90's
     !     sourceField1d_sunegbert2012 for the exact index formula).
     ! ---------------------------------------------------------------------
-    character(len=20), parameter                :: SOLVER = 'SUNEGBERT2012'  ! 'KELBERT2014' (default) or 'SUNEGBERT2012'
+    character(len=20), parameter                :: SOLVER = 'KELBERT2014'  ! 'KELBERT2014' (default) or 'SUNEGBERT2012'
 
     type(conf1d_t)                              :: earth
     type(grid_t)                                :: grid

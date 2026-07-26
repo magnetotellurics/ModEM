@@ -765,21 +765,44 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
     complex(8)          :: iommu0
     character(80)       :: errMsg
 
-    ! NOTE on the final conjg() applied to every H and E component below
-    ! (H%x, H%y, H%z, E%x, E%y, in both the EDGE and FACE branches -- e.g.
-    ! "H%x(i,j,k) = conjg(H%x(i,j,k))"): this conjugation is NOT a fix for the
-    ! time convention. It exists purely to compensate for vsharm's internal
-    ! phase convention (reconstructing the field from its m=0,1,...,lmax
-    ! storage plus the m,-m conjugate-pairing scheme in the do-m loops below)
-    ! -- a spatial/angular bookkeeping matter, unrelated to time dependence.
-    ! The code's native time convention is e^{-i*omega*t} throughout (see
-    ! kl = sqrt(i*omega*mu0*sigma) in sourcePotential), and the fields ARE
-    ! ALREADY correct for that convention once this conjugation is applied --
-    ! no further time-convention conjugation is needed on this side. Comparing
-    ! against an e^{+i*omega*t}-convention solver (e.g. pythonSolver/
-    ! spherical_em_induction.py) requires an ADDITIONAL, separate conjugation
-    ! of one side or the other for the time convention -- do not conflate the
-    ! two operations.
+    ! NOTE on reconstructing each field component from vsharm's m=0,1,...,lmax
+    ! storage via the +m/-m conjugate-pairing scheme in the do-m loops below:
+    ! Y_l^{-m} = (-1)^m * conjg(Y_l^{+m}) (standard, Condon-Shortley-phase
+    ! identity -- verified against vsharm's own Y/Yt/Yp output by direct
+    ! symbolic comparison for l<=3, all m). Each `C` below builds
+    ! Y_l^{+m}*coefl(+m) + Y_l^{-m}*coefl(-m) directly from this identity and
+    ! is added straight into the component, exactly like the m=0 (zonal) term
+    ! just above it, which has no conjugate partner at all. No further
+    ! conjugation of any kind is applied anywhere in this routine: once the
+    ! (-1)^m identity is used correctly term-by-term, the reconstruction is
+    ! already exact and complete -- an earlier version of this code applied an
+    ! extra conjg() (first to the whole assembled component, later, briefly,
+    ! to just the +m/-m paired sum) that turned out to be unnecessary
+    ! left-over compensation for a since-fixed missing-(-1)^m bug, and caused
+    ! the m=0 and +m/-m paths to treat the same (m-independent) radial
+    ! potential Tnr/Tnsp inconsistently -- conjugated for paired terms,
+    ! unconjugated for m=0 -- an internal inconsistency confirmed via
+    ! testing/test_kelbert2014_vs_modem_1D.f90 (Mode1 vs Mode2 disagreeing on
+    ! whether Zxy=-Zyx needs an extra conjugation). The code's native time
+    ! convention is e^{-i*omega*t} throughout (see kl = sqrt(i*omega*mu0*sigma)
+    ! in sourcePotential) and is unrelated to any of the above -- comparing
+    ! against an e^{+i*omega*t}-convention solver needs its own, separate
+    ! conjugation on one side or the other, not conflated with this note.
+    !
+    ! NOTE on the explicit sign of the three T(r)-valued components (H_r,
+    ! E_theta, E_phi -- built from Tnr/Tns, the potential's VALUE) relative to
+    ! the two T'(r)-valued components (H_theta, H_phi -- built from Tnsp/Tnrp,
+    ! the potential's r-derivative): these three now carry the SAME explicit
+    ! sign as Sun & Egbert (2012) eq (5)-(6) (module field1d_sunegbert2012),
+    ! confirmed via testing/test_kelbert2014_vs_sunegbert2012_l1m0.f90 giving
+    ! ratio=+1 for every component once this fix was applied. Before this fix
+    ! (2026-07-26) these three had the OPPOSITE explicit sign from Sun & Egbert
+    ! while H_theta/H_phi already agreed -- confirmed (via that same test) to
+    ! be a pure formula-sign difference, NOT a difference in Tnr/Tnsp's own
+    ! values (which were already identical between the two modules to begin
+    ! with) -- i.e. this was a genuine, fixable discrepancy from the Kelbert,
+    ! Egbert & Schultz (2008) lineage this file otherwise follows, not a
+    ! documented, deliberate alternate convention worth preserving.
 
     !No computations are performed for l=0 (no magnetic monopoles) so zero coeff is never used
     ncoeff=0
@@ -925,9 +948,10 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     !ordered m=0,1,-1,2,-2 etc (NOT like in Matlab)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
-                    !m=0 goes first
+                    !m=0: no conjugate partner, added directly
                     H%x(i,j,k) = H%x(i,j,k) + Yp(l,1)*coefl(1)*(Tnsp(k,l)*((R0**2)/Rs(k)))/(l*(l+1))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
                         C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         H%x(i,j,k) = H%x(i,j,k) + C*(Tnsp(k,l)*((R0**2)/Rs(k)))
@@ -938,8 +962,6 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     deallocate(coefl, STAT=istat)
 
                 end do ! degrees
-
-                H%x(i,j,k) = conjg(H%x(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -977,22 +999,20 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     !ordered m=0,1,-1,2,-2 etc (NOT like in Matlab)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
-                    !m=0 goes first
+                    !m=0: no conjugate partner, added directly
                     H%y(i,j,k) = H%y(i,j,k) + Yt(l,1)*coefl(1)*(Tnsp(k,l)*((R0**2)/Rs(k)))/(l*(l+1))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
                         C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         H%y(i,j,k) = H%y(i,j,k) + C*(Tnsp(k,l)*((R0**2)/Rs(k)))
                     end do
-
 
                     icoeff = icoeff+2*l+1
 
                     deallocate(coefl, STAT=istat)
 
                 end do ! degrees
-
-                H%y(i,j,k) = conjg(H%y(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1032,11 +1052,12 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     !ordered m=0,1,-1,2,-2 etc (NOT like in Matlab)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
-                    !m=0 goes first
-                    H%z(i,j,k) = H%z(i,j,k) - Yr(l,1)*coefl(1)*(Tnr(k,l)*(R0**2/Rr(k)**2))
+                    !m=0: no conjugate partner, added directly
+                    H%z(i,j,k) = H%z(i,j,k) + Yr(l,1)*coefl(1)*(Tnr(k,l)*(R0**2/Rr(k)**2))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
-                        C = - (Yr(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yr(l,m+1))*coefl(2*m+1))
+                        C = (Yr(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yr(l,m+1))*coefl(2*m+1))
                         H%z(i,j,k) = H%z(i,j,k) + C*(Tnr(k,l)*(R0**2/Rr(k)**2))
                     end do
 
@@ -1045,8 +1066,6 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     deallocate(coefl, STAT=istat)
 
                 end do ! degrees
-
-                H%z(i,j,k) = conjg(H%z(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1081,10 +1100,12 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
-                    E%y(i,j,k) = E%y(i,j,k) - Yp(l,1)*coefl(1)*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))/(l*(l+1))
+                    !m=0: no conjugate partner, added directly
+                    E%y(i,j,k) = E%y(i,j,k) + Yp(l,1)*coefl(1)*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))/(l*(l+1))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
-                        C = -(Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         E%y(i,j,k) = E%y(i,j,k) + C*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))
                     end do
 
@@ -1094,14 +1115,12 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                E%y(i,j,k) = conjg(E%y(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
-
             end do ! r
         end do ! ph
     end do ! th
     end if ! present(E)
 
-    ! ph component of the electric field: E_phi = +i*omega*mu0 * Tnr/r/l(l+1) * Yt
+    ! ph component of the electric field: E_phi = -i*omega*mu0 * Tnr/r/l(l+1) * Yt
     ! mid-edge theta (j=1..Nt) loops North to South pole;
     ! node phi; k loops over cell-center radii Rr
     if (present(E)) then
@@ -1123,10 +1142,12 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
-                    E%x(i,j,k) = E%x(i,j,k) + Yt(l,1)*coefl(1)*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))/(l*(l+1))
+                    !m=0: no conjugate partner, added directly
+                    E%x(i,j,k) = E%x(i,j,k) - Yt(l,1)*coefl(1)*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))/(l*(l+1))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
-                        C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = -(Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         E%x(i,j,k) = E%x(i,j,k) + C*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))
                     end do
 
@@ -1135,8 +1156,6 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     deallocate(coefl, STAT=istat)
 
                 end do ! degrees
-
-                E%x(i,j,k) = conjg(E%x(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1188,8 +1207,10 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     allocate(coefl(2*l+1), STAT=istat)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
+                    !m=0: no conjugate partner, added directly
                     H%y(i,j,k) = H%y(i,j,k) + Yt(l,1)*coefl(1)*(Tnrp(k,l)*((R0**2)/Rr(k)))/(l*(l+1))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
                         C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         H%y(i,j,k) = H%y(i,j,k) + C*(Tnrp(k,l)*((R0**2)/Rr(k)))
@@ -1199,8 +1220,6 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     deallocate(coefl, STAT=istat)
 
                 end do ! degrees
-
-                H%y(i,j,k) = conjg(H%y(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1229,8 +1248,10 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     allocate(coefl(2*l+1), STAT=istat)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
+                    !m=0: no conjugate partner, added directly
                     H%x(i,j,k) = H%x(i,j,k) + Yp(l,1)*coefl(1)*(Tnrp(k,l)*((R0**2)/Rr(k)))/(l*(l+1))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
                         C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         H%x(i,j,k) = H%x(i,j,k) + C*(Tnrp(k,l)*((R0**2)/Rr(k)))
@@ -1240,8 +1261,6 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     deallocate(coefl, STAT=istat)
 
                 end do ! degrees
-
-                H%x(i,j,k) = conjg(H%x(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph
@@ -1270,10 +1289,12 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     allocate(coefl(2*l+1), STAT=istat)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
-                    H%z(i,j,k) = H%z(i,j,k) - Yr(l,1)*coefl(1)*(Tns(k,l)*(R0**2/Rs(k)**2))
+                    !m=0: no conjugate partner, added directly
+                    H%z(i,j,k) = H%z(i,j,k) + Yr(l,1)*coefl(1)*(Tns(k,l)*(R0**2/Rs(k)**2))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
-                        C = - (Yr(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yr(l,m+1))*coefl(2*m+1))
+                        C = (Yr(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yr(l,m+1))*coefl(2*m+1))
                         H%z(i,j,k) = H%z(i,j,k) + C*(Tns(k,l)*(R0**2/Rs(k)**2))
                     end do
 
@@ -1282,8 +1303,6 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                H%z(i,j,k) = conjg(H%z(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
-
             end do ! r
         end do ! ph
     end do ! th
@@ -1291,7 +1310,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
     legendre_allocated_at_nodes = .true.
     legendre_allocated_at_edges = .true.
 
-    ! E%x — phi component: E_phi = +i*omega*mu0 * Tns/Rs/l(l+1) * Yt
+    ! E%x — phi component: E_phi = -i*omega*mu0 * Tns/Rs/l(l+1) * Yt
     ! node theta (skip poles only if this grid reaches them -- j1/j2
     ! computed above, same node-theta range as H%y)
     ! The below logic allows for global vs regional grids;
@@ -1315,10 +1334,12 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     allocate(coefl(2*l+1), STAT=istat)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
-                    E%x(i,j,k) = E%x(i,j,k) + Yt(l,1)*coefl(1)*(iommu0*Tns(k,l)*(R0**2/Rs(k)))/(l*(l+1))
+                    !m=0: no conjugate partner, added directly
+                    E%x(i,j,k) = E%x(i,j,k) - Yt(l,1)*coefl(1)*(iommu0*Tns(k,l)*(R0**2/Rs(k)))/(l*(l+1))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
-                        C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = -(Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         E%x(i,j,k) = E%x(i,j,k) + C*(iommu0*Tns(k,l)*(R0**2/Rs(k)))
                     end do
 
@@ -1327,14 +1348,12 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
                 end do ! degrees
 
-                E%x(i,j,k) = conjg(E%x(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
-
             end do ! r
         end do ! ph
     end do ! th
     end if ! present(E)
 
-    ! E%y — theta component: E_theta = -i*omega*mu0 * Tns/Rs/l(l+1) * Yp
+    ! E%y — theta component: E_theta = +i*omega*mu0 * Tns/Rs/l(l+1) * Yp
     ! mid theta, node phi, face r
     if (present(E)) then
     do j = 1,Nt
@@ -1354,10 +1373,12 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     allocate(coefl(2*l+1), STAT=istat)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
-                    E%y(i,j,k) = E%y(i,j,k) - Yp(l,1)*coefl(1)*(iommu0*Tns(k,l)*(R0**2/Rs(k)))/(l*(l+1))
+                    !m=0: no conjugate partner, added directly
+                    E%y(i,j,k) = E%y(i,j,k) + Yp(l,1)*coefl(1)*(iommu0*Tns(k,l)*(R0**2/Rs(k)))/(l*(l+1))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
-                        C = -(Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         E%y(i,j,k) = E%y(i,j,k) + C*(iommu0*Tns(k,l)*(R0**2/Rs(k)))
                     end do
 
@@ -1365,8 +1386,6 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
                     deallocate(coefl, STAT=istat)
 
                 end do ! degrees
-
-                E%y(i,j,k) = conjg(E%y(i,j,k)) ! vsharm phase compensation only -- NOT an e^{-iwt} time-convention fix, see note above sourceField1d body
 
             end do ! r
         end do ! ph

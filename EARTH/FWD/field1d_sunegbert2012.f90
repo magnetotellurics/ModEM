@@ -5,8 +5,8 @@ module field1d_sunegbert2012
     ! electromagnetic induction", Geophys. J. Int. 189, 343-356, Section 2
     ! ("The homogeneous layered earth") + Appendix A.
     !
-    ! Written independently of EARTH/FWD/field1d.f90 (which follows Uyeshima &
-    ! Schultz, 2000's notation) as a cross-check: no radial-solver or
+    ! Written independently of EARTH/FWD/field1d.f90 (which follows Kelbert,
+    ! Egbert & Schultz, 2008's notation) as a cross-check: no radial-solver or
     ! field-assembly code is shared between the two modules. Only the
     ! already-verified angular (Legendre / vector spherical harmonic) machinery
     ! is reused from field1d, per CLAUDE.md's documented, sympy-checked
