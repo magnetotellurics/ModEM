@@ -1,6 +1,6 @@
 program test_earth_l1mneg1
 ! ****************************************************************************
-! Cross-check of field1d_sunegbert2012.f90 against pythonSolver/spherical_em_induction.py
+! Cross-check of field1d_s2.f90 against pythonSolver/spherical_em_induction.py
 ! (fields_from_R_general, now fixed -- see 2026-07-22/23 fixes) at Earth scale
 ! and physical parameters already used repeatedly earlier in this project:
 ! r0=6.371e6 m, uniform 100 Ohm.m from centre to surface, T=1000 s. Source is
@@ -9,8 +9,8 @@ program test_earth_l1mneg1
 ! on Hz,Ex,Ey").
 !
 ! Grid is hand-built (no grid file), entirely in the vacuum region above r0,
-! same pattern as test_unit_sphere_sunegbert2012.f90 (which already validated
-! field1d_sunegbert2012 for l=2,m=1 against a closed-form single-sphere solution to
+! same pattern as test_unit_sphere_s2.f90 (which already validated
+! field1d_s2 for l=2,m=1 against a closed-form single-sphere solution to
 ! ~5 significant figures).
 !
 ! Companion script: reference_earth_l1mneg1.py -- uses spherical_em_induction's
@@ -19,10 +19,10 @@ program test_earth_l1mneg1
 ! the SAME uniform 100 Ohm.m model, normalized via solve_layered's own
 ! returned "A" (external amplitude) so the K0/source-shell trick's accuracy
 ! doesn't matter -- and the e^{+iwt}->e^{-iwt} conjugation needed to compare
-! against field1d_sunegbert2012.f90's native convention.
+! against field1d_s2.f90's native convention.
 ! ****************************************************************************
 
-    use field1d_sunegbert2012
+    use field1d_s2
     use field1d, only: conf1d_t
     use griddef
     use sg_vector
@@ -44,7 +44,7 @@ program test_earth_l1mneg1
     real(8), parameter             :: sigma1  = 1.0d-2       ! S/m (100 Ohm.m)
     real(8), parameter             :: period0 = 1000.0d0     ! s
 
-    write(*,*) '=== test_earth_l1mneg1: field1d_sunegbert2012.f90 vs spherical_em_induction.py (l=1,m=-1) ==='
+    write(*,*) '=== test_earth_l1mneg1: field1d_s2.f90 vs spherical_em_induction.py (l=1,m=-1) ==='
 
     ! ---- build the earth model: ONE homogeneous layer = the whole sphere ----
     earth%r0   = r0_m
@@ -99,13 +99,13 @@ program test_earth_l1mneg1
     omega  = 2.0d0*pi/period0
     period = period0
 
-    ! ---- run the solver (H on EDGE, E on FACE -- field1d_sunegbert2012's native staggering) ----
+    ! ---- run the solver (H on EDGE, E on FACE -- field1d_s2's native staggering) ----
     call create_cvector(grid, h1d, EDGE)
     call create_cvector(grid, e1d, FACE)
-    call sourceField1d_sunegbert2012(earth, lmax, coeff, period, grid, h1d, e1d)
+    call sourceField1d_s2(earth, lmax, coeff, period, grid, h1d, e1d)
 
     ! ---- extract the 5 field components at one shared (i=1, j=5) angular index ----
-    ! (same staggering/indices as test_unit_sphere_sunegbert2012.f90):
+    ! (same staggering/indices as test_unit_sphere_s2.f90):
     !   H%x (phi,   EDGE x): node_th  x mid_ph  x Rs
     !   H%y (theta, EDGE y): mid_th   x node_ph x Rs
     !   H%z (r,     EDGE z): node_th  x node_ph x Rr

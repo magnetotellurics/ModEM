@@ -10,7 +10,7 @@ H) are shown.
 
 --- File format (confirmed directly against field1d.f90/FWD1D.f90's
     write_cvector output and cross-checked against the MATLAB read_field.m
-    reader -- see CLAUDE.md) ---
+    reader) ---
 
 Line 1: comment header (skip)
 Line 2: "  1" (unused)
@@ -27,53 +27,44 @@ k=1 (top of the domain, zero tangential-phi E in air far from source) while
 the "y" (theta) column is nonzero even near the top -- consistent with
 x=phi, y=theta, z=r.)
 
---- Two different named "Hx/Hy/Hz" (or Ex/Ey/Ez) conventions -- do not
-    confuse them; this script's PLOT_MT_CONVENTION targets the SECOND one
-    (per user, 2026-07-22) ---
+--- Output-convention-aware plotting (rewritten 2026-07-26 to match
+    output_convention.f90's Part 2 rewrite) ---
 
-field1d.f90 was ORIGINALLY written for the global code following Uyeshima &
-Schultz (2000):
-  1) H on the primary grid (EDGEs), E on the dual grid (FACEs)
-  2) Hx = H_phi, the *longitudinal* component (East-West axis)
-  3) Hy = H_theta, the *latitudinal* component, North-to-South (theta = CO-latitude)
-  4) Hz = H_r, points down
-  5) global grid: includes the poles and zero-longitude wrapping
+field1d.f90/field1d_s2.f90's raw component slots are FIXED
+regardless of any relabeling: cvector%x = phi component, %y = theta
+component, %z = r component (see above) -- this never changes. What USED TO
+change, via this script's own PLOT_MT_CONVENTION toggle, was an extra
+Python-side relabeling step (Ex=-Etheta, Ey=+Ephi, Hz=+Hr, Hx=-Htheta,
+Hy=+Hphi) applied AFTER reading the raw file, to reproduce the ModEM
+regional "MT convention" naming by hand.
 
-ModEM's regional convention is different:
-  1) E on the primary grid (EDGEs), H on the dual grid (FACEs) -- OPPOSITE
-     staggering from the global convention above
-  2) Hy = H_phi, the *longitudinal* component (East-West axis)
-  3) Hx = H_theta, the *latitudinal* component, South-to-North (theta =
-     LATITUDE here, not co-latitude -- opposite sign sense from Uyeshima &
-     Schultz's theta)
-  4) Hz = H_r, points down
-  5) regional grid: no special treatment for poles or zero-longitude wrap
+That relabeling is now done, correctly and completely, on the FORTRAN side
+by EARTH/FWD/output_convention.f90's apply_output_convention -- FWD1D.f90's
+output files are ALREADY in whatever convention was requested
+(OUTPUT_CONVENTION), including the theta index-reversal + component
+negation (colatitude N->S <-> latitude S->N) and r index-reversal + negation
+(up/radius <-> down/depth) that PLOT_MT_CONVENTION used to approximate by
+hand. Applying the OLD Python-side relabeling on top of an ALREADY-relabeled
+file would double-apply it and silently produce a wrong (double-flipped)
+result -- so this script no longer does ANY relabeling of its own. It plots
+the file's raw phi/theta/r component slots directly, and the ONLY
+convention-dependent adjustment it makes is to the GRID AXIS interpretation
+(mapping array index -> physical latitude/depth correctly when the file's
+own recorded theta_convention/r_convention indicate the array was
+reversed relative to the .grd file's native colatitude/radius ordering --
+see read_field()'s header-parsing and to_latlon_mt()'s th_deg_full/r_index
+handling below). The active convention's name (and, if extracted, its five
+dimension values) is read directly from the file's own header line and
+printed in the figure title -- see read_field()'s CONVENTION_KEYS parsing.
 
-FWD1D.f90 hardcodes primary_grid='E', i.e. E on EDGEs / H on FACEs -- this
-matches the ModEM REGIONAL staggering, not the original global Uyeshima &
-Schultz one, even though the underlying field1d.f90 physics/module is the
-same code either way. (This is also why the l=1,m=-1 Ex/Ey/Hz-vs-Hx/Hy
-diagnostic investigation in CLAUDE.md had to trace through Tnrp/Tns, the
-FACE-branch potentials, rather than Tnr/Tnsp.)
-
-PLOT_MT_CONVENTION=True below targets the ModEM regional naming (since
-that's what PrimaryField.m and everything else in this comparison expects):
-  Ex = -Etheta (South->North), Ey = +Ephi (East-West axis, positive=East --
-       confirmed 2026-07-22: "East to West" in both convention descriptions
-       is a descriptive axis label, NOT a sign statement; standard eastward
-       phi-hat is positive, no extra flip), Ez/Hz = +Er/+Hr (down --
-       confirmed 2026-07-22: global1d's Hr/Er ALREADY point down, i.e. no
-       extra sign flip is needed to get Ez/Hz; H%z/E%z's leading minus sign
-       in field1d.f90's formula is baked into the Mie-potential derivation
-       itself, not a separate up->down relabeling); same pattern for H
-       (Hx=-Htheta, Hy=+Hphi, Hz=+Hr).
-PLOT_MT_CONVENTION=False shows the RAW physical Etheta/Ephi/Hr/Htheta/Hphi
-components directly (no sign flips, no relabeling) -- these are the same
-raw numbers either named convention above is built from; this script just
-doesn't relabel them to either scheme in this mode.
+Older field files, written before this convention metadata existed, have no
+such header fields; read_field() falls back to convention=None in that case
+and to_latlon_mt() makes no theta/r reversal adjustment (reproducing the
+original, pre-Part-2 axis behavior) -- a printed note flags when this
+fallback is in effect so a plot's axes are never silently mislabeled.
 
 The "mysterious factor" from the user's MATLAB snippet (an unresolved
-overall sign/phase, still open per CLAUDE.md) is kept here as an explicit,
+overall sign/phase, still open) is kept here as an explicit,
 separately-toggleable FACTOR variable rather than baked in.
 
 --- Regional / non-global grids (added 2026-07-25) ---
@@ -152,26 +143,24 @@ import matplotlib.pyplot as plt
 # command-line arguments (see __main__ / parse_args() below) -- the values
 # below are only used as their DEFAULTS when the script is run with no
 # arguments, so `python plot_global1d_output.py` still works out of the box.
-DEFAULT_EFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.test_m-ve.sunegbert2012.E-grid.T01.efield"
-DEFAULT_HFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.test_m-ve.sunegbert2012.E-grid.T01.hfield"
+DEFAULT_EFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.test_m-ve.s2.E-grid.T01.efield"
+DEFAULT_HFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.test_m-ve.s2.E-grid.T01.hfield"
 
 PERIOD = 1000.0
 SCALING = PERIOD / 5.0        # matches the user's MATLAB snippet exactly
-FACTOR = 1.0                  # +0j  # "mysterious factor" placeholder -- still open, see CLAUDE.md
+FACTOR = 1.0                  # +0j  # "mysterious factor" placeholder -- still open
 R_INDEX = 13                  # 1-indexed; k=13 = first layer at/below the surface
                                # (12 air layers above, per global.1.0x1.0.grd header "...12 0 47")
+                               # -- this indexes into the field FILE's own k-axis; if the file's
+                               # r_convention differs from the solvers' native R_UP, to_latlon()
+                               # remaps it automatically so R_INDEX still means "the same physical
+                               # layer counting from the top/air side", see NATIVE_R_CONVENTION below.
 
-# If True, plot E as Ex (South->North, = -Etheta), Ey (West->East, = +Ephi),
-# and H as Hx (=-Htheta), Hy (=+Hphi), Hz (down, =+Hr -- global1d's Hr/Er
-# already point down, no extra flip needed), on a
-# latitude x [-180,180] longitude grid -- this is the ModEM REGIONAL naming
-# convention (Hx=Htheta-as-latitude, Hy=Hphi), matching PrimaryField.m
-# exactly -- NOT the original global Uyeshima & Schultz (2000) convention
-# field1d.f90 was originally written for, which swaps the Hx/Hy letters and
-# uses co-latitude instead of latitude (see module docstring above). If
-# False, plot Etheta/Ephi and Hr/Htheta/Hphi directly (raw, unrelabeled) on
-# a colatitude x [0,360] grid.
-PLOT_MT_CONVENTION = True
+# Both field1d.f90 and field1d_s2.f90's native r_convention is
+# R_UP (confirmed 2026-07-26, see output_convention.f90) -- used
+# below to figure out whether a given output file's r-axis was reversed
+# relative to the .grd file's own (always top-to-bottom) k-ordering.
+NATIVE_R_CONVENTION = 'R_UP'
 
 
 def parse_args():
@@ -186,7 +175,7 @@ def parse_args():
                          help="Optional .grd file used to generate efield_file/hfield_file -- "
                               "plots on the ACTUAL (possibly regional, non-uniform) grid node "
                               "positions instead of assuming a global uniform grid. See "
-                              "read_grid_file()/to_latlon_mt()'s docstrings.")
+                              "read_grid_file()/to_latlon()'s docstrings.")
     parser.add_argument("--fake-center-lat", type=float, default=None, dest="fake_center_lat",
                          metavar="LAT_DEG",
                          help="If --grid was recentered via FWD1D's optional \"fake pole\" "
@@ -198,30 +187,61 @@ def parse_args():
     return parser.parse_args()
 
 
-def output_png_names(efield_file, hfield_file, mt_convention, r_index):
+def output_png_names(efield_file, hfield_file, convention_name, r_index):
     """Derive descriptive output filenames from the INPUT file names, e.g.
-    'MT.200ohmm.1000sec.Mode1.E-grid.T01.efield' + MT convention + r_index=13
-    -> 'MT.200ohmm.1000sec.Mode1.E-grid.T01.Ex_Ey.r13.png' -- so the plot
-    filename alone identifies which run and which components it came from."""
+    'MT.200ohmm.1000sec.Mode1.E-grid.T01.efield' + convention 'EGBERTKELBERT2012'
+    + r_index=13 -> 'MT.200ohmm.1000sec.Mode1.E-grid.T01.EGBERTKELBERT2012.Etheta_Ephi.r13.png'
+    -- so the plot filename alone identifies which run, which convention, and
+    which r-layer it came from. convention_name may be None (older files with
+    no convention metadata) -- falls back to 'raw'. The efield_file/hfield_file
+    stems are usually IDENTICAL except for their .efield/.hfield suffix (e.g.
+    both from the same FWD1D run), so an explicit 'Etheta_Ephi'/'Hr_Htheta_Hphi'
+    component tag is included as well -- WITHOUT it the two output filenames
+    would collide and the H plot would silently overwrite the E plot (this bug
+    existed transiently while output_png_names was being rewritten, caught by
+    checking the actual saved filenames)."""
     def stem(path, suffix):
         base = os.path.basename(path)
         if base.lower().endswith(suffix):
             base = base[:-len(suffix)]
         return base
 
-    comp_e = "Ex_Ey" if mt_convention else "Etheta_Ephi"
-    comp_h = "Hx_Hy_Hz" if mt_convention else "Hr_Htheta_Hphi"
-    out_e = f"{stem(efield_file, '.efield')}.{comp_e}.r{r_index}.png"
-    out_h = f"{stem(hfield_file, '.hfield')}.{comp_h}.r{r_index}.png"
+    tag = convention_name if convention_name else "raw"
+    out_e = f"{stem(efield_file, '.efield')}.{tag}.Etheta_Ephi.r{r_index}.png"
+    out_h = f"{stem(hfield_file, '.hfield')}.{tag}.Hr_Htheta_Hphi.r{r_index}.png"
     return out_e, out_h
 
 
 # ----------------------------------------------------------------------
 # Fortran cvector-file reader (matches write_cvector / read_field.m exactly)
 # ----------------------------------------------------------------------
+
+# Keys FWD1D.f90 writes into its header line, and how each parses. All are
+# optional -- older field files (written before output_convention.f90
+# existed) simply won't have any of these, and read_field() returns
+# convention=None in that case. See FWD1D.f90's per-period loop, the two
+# `hdr = "# FWD1D ..." // "OUTPUT_CONVENTION=" // ...` lines.
+_CONVENTION_KEYS = ("OUTPUT_CONVENTION", "SOLVER", "time", "norm", "theta", "r")
+
+
+def _parse_convention_header(line):
+    """Extracts KEY=VALUE tokens (space-separated, no spaces within a value)
+    for each of _CONVENTION_KEYS found in the header comment line. Returns
+    None if none of the keys are present (older file, no convention
+    metadata) -- otherwise a dict with whichever keys WERE found (all of
+    them, for any file written by the current FWD1D.f90)."""
+    found = {}
+    for tok in line.split():
+        if "=" in tok:
+            key, _, val = tok.partition("=")
+            if key in _CONVENTION_KEYS:
+                found[key] = val
+    return found if found else None
+
+
 def read_field(fname):
     with open(fname) as f:
-        f.readline()  # header comment line
+        header_line = f.readline()  # header comment line -- may carry convention metadata
         f.readline()  # "  1"
         nx, ny, nz, gridType = f.readline().split()
         nx, ny, nz = int(nx), int(ny), int(nz)
@@ -230,13 +250,16 @@ def read_field(fname):
         n = (nx + 1) * (ny + 1) * (nz + 1)
         data = np.loadtxt(f, max_rows=n)
 
+    convention = _parse_convention_header(header_line)
+
     # columns: i j k  xr xi yr yi zr zi  (1-indexed i,j,k; i=phi fastest)
     # NOTE: the file's own column labels are the generic cvector "x,y,z" slots,
     # but per GridDef.f90 these are NOT Cartesian -- they are phi,theta,r.
-    # Named accordingly here (Cphi/Ctheta/Cr, not Cx/Cy/Cz) so nothing
-    # downstream can mistake them for an already-MT-convention Cartesian
-    # field -- global1d's raw output is phi/theta/r; MT convention (Ex/Ey/Ez)
-    # is only applied later, explicitly, in to_latlon_mt() when requested.
+    # Named accordingly here (Cphi/Ctheta/Cr, not Cx/Cy/Cz). These are the
+    # RAW values as written by FWD1D.f90 -- already in whatever convention
+    # is recorded in `convention` above (see output_convention.f90); this
+    # script applies NO further relabeling to them, only grid-axis
+    # adjustments (see to_latlon()).
     Cphi = data[:, 3] + 1j * data[:, 4]     # phi component
     Ctheta = data[:, 5] + 1j * data[:, 6]   # theta component
     Cr = data[:, 7] + 1j * data[:, 8]       # r component
@@ -247,7 +270,8 @@ def read_field(fname):
     Ctheta = Ctheta.reshape(shape, order='F')
     Cr = Cr.reshape(shape, order='F')
 
-    return dict(phi=Cphi, theta=Ctheta, r=Cr, nx=nx, ny=ny, nz=nz, gridType=gridType)
+    return dict(phi=Cphi, theta=Ctheta, r=Cr, nx=nx, ny=ny, nz=nz, gridType=gridType,
+                convention=convention)
 
 
 def read_grid_file(fname):
@@ -330,14 +354,43 @@ def recenter_fake_pole(th_deg, ph_deg, center_lat_deg, center_lon_deg):
 
 # Per-(gridType, raw component) staggering, derived directly from
 # create_cvector/write_cvector (sg_vector.f90) -- see module docstring,
-# "Mid-theta/mid-phi zero-padding". 'node': full nx+1/ny+1 valid positions,
-# matching the file's node grid exactly. 'mid': only nx/ny valid positions
-# (a cell-center quantity); the file's leftover row/column is zero-padding,
-# not data.
+# "Mid-theta/mid-phi zero-padding". 'node': full nx+1/ny+1 (or nz+1 for r)
+# valid positions, matching the file's node grid exactly. 'mid': only nx/ny
+# (or nz for r) valid positions (a cell-center quantity); the file's leftover
+# row/column/layer is zero-padding, not data. Three-tuples are
+# (phi_kind, theta_kind, r_kind) -- added r_kind 2026-07-26 (see
+# "r-axis mid/node off-by-one" fix in to_latlon()/_r_index_for_component()):
+# EDGE %z and FACE %x/%y are 'mid'-r (size nz); everything else is 'node'-r
+# (size nz+1).
 _KIND = {
-    'EDGE': {'phi': ('mid', 'node'), 'theta': ('node', 'mid'), 'r': ('node', 'node')},
-    'FACE': {'phi': ('node', 'mid'), 'theta': ('mid', 'node'), 'r': ('mid', 'mid')},
+    'EDGE': {'phi': ('mid', 'node', 'node'), 'theta': ('node', 'mid', 'node'), 'r': ('node', 'node', 'mid')},
+    'FACE': {'phi': ('node', 'mid', 'mid'), 'theta': ('mid', 'node', 'mid'), 'r': ('mid', 'mid', 'node')},
 }
+
+
+def _r_index_for_component(r_index, nz, r_kind, r_reversed):
+    """Maps the user-facing r_index (meaning: 'the same physical layer,
+    counting from the top/air side, in the solver's NATIVE r ordering') to
+    the actual 1-indexed k-slot to read from the FILE's raw component array.
+
+    If not r_reversed: file ordering already matches native -- no change.
+
+    If r_reversed (apply_output_convention's r-transform ran): the reversal
+    happens on the SOLVER's OWN cvector array, whose r-axis size is nz+1 for
+    a 'node'-r component but only nz for a 'mid'-r component (see _KIND) --
+    write_cvector then copies that array into file-slots 1..N (N=nz+1 or nz)
+    UNCHANGED, always leaving file-slot N+1..nz+1 (if any) as zero-padding.
+    So the correct remap is native_slot -> (N+1-native_slot) where N is THAT
+    component's own r-axis size, NOT a single shared (nz+1) for every
+    component -- using the wrong N here previously caused an off-by-one that,
+    for a 'mid'-r component (e.g. E_phi/E%x on a FACE grid), could silently
+    read an adjacent, wrong-signed layer instead of the intended one (found
+    2026-07-26 while investigating a reported E_phi sign discrepancy under
+    OUTPUT_CONVENTION=EGBERTKELBERT2012 on a regional grid)."""
+    if not r_reversed:
+        return r_index
+    n = nz if r_kind == 'mid' else (nz + 1)
+    return n + 1 - r_index
 
 
 def _theta_positions(theta_deg_full, kind):
@@ -386,56 +439,73 @@ def _component_latlon(raw2d, ph_deg_full, th_deg_full, phi_kind, theta_kind, is_
     return lon_deg, lat_deg, data
 
 
-def to_latlon_mt(field, r_index, scaling, factor, mt_convention=True,
-                  th_deg=None, ph_deg=None):
+def to_latlon(field, r_index, scaling, factor, th_deg=None, ph_deg=None):
     """
-    field: dict from read_field() (phi/theta/r component arrays, shape
-           (nx+1, ny+1, nz+1), axis0=phi ascending, axis1=theta
-           (colatitude) ascending, axis2=r-index)
+    Maps field's raw phi/theta/r component arrays (from read_field(),
+    ALREADY in whatever convention FWD1D.f90 produced -- no relabeling
+    applied here or anywhere else in this script) to (lon_deg, lat_deg,
+    data) triples ready for pcolormesh.
 
-    th_deg/ph_deg (optional): the ACTUAL node positions (degrees) for this
-    grid, e.g. from read_grid_file() (+ optionally recenter_fake_pole()).
-    If omitted (both None), falls back to the ORIGINAL assumption of a
-    global grid uniformly covering phi=[0,360], theta=[0,180]
-    (np.linspace) -- correct for e.g. global.1.0x1.0.grd, WRONG for a
-    regional grid. Pass them explicitly for any regional/non-global grid.
+    The only convention-dependent adjustment made here is to the GRID AXIS
+    interpretation: if field['convention'] records theta_convention=
+    'LAT_S2N' (i.e. output_convention.f90's apply_output_convention
+    reversed the theta index relative to the .grd file's native colatitude
+    North->South ordering), th_deg_full is reversed here BEFORE computing
+    node/mid-cell positions, so array index j still maps to the correct
+    physical node -- verified algebraically to reproduce the exact node/
+    mid-cell position a direct (un-reversed-array) derivation gives, for
+    both node- and mid-theta components. Similarly, if r_convention differs
+    from NATIVE_R_CONVENTION (both solvers' native value, 'R_UP'), r_index
+    is remapped so it still selects the same physical layer counting from
+    the top/air side. If field['convention'] is None (older file, no
+    metadata), NO reversal is applied -- reproduces the original,
+    pre-Part-2 axis behavior exactly.
 
-    Returns a dict of THREE independent (lon_deg, lat_deg, data) tuples --
-    one per output field component -- NOT a single shared (lon,lat) pair,
-    because a mid-staggered component's true grid is offset (by half a
-    cell) from a node-staggered one's, and has one fewer valid row/column
-    (see module docstring, "Mid-theta/mid-phi zero-padding"). Each data
-    array has shape (n_lat, n_lon) for that component specifically, ready
-    for pcolormesh(lon_deg, lat_deg, data).
+    KNOWN GAP (pre-existing, not introduced here): r_index is applied
+    uniformly to all three components' k-axis, but (mirroring the
+    node/mid-theta distinction already handled for theta/phi) one of the
+    three is actually a "mid-r" quantity on a given EDGE/FACE gridType,
+    with its own zero-padding slot -- unlike theta/phi, this was never
+    given the same mid/node-aware treatment, before or after this change.
 
-    If mt_convention: keys are 'x','y','z' with Fx=South->North (=-Ftheta),
-    Fy=West->East (=+Fphi), Fz=down (=+Fr -- global1d's Hr/Er already point
-    down, no extra flip) -- the ModEM REGIONAL naming convention, matches
-    PrimaryField.m exactly (NOT the original global Uyeshima & Schultz
-    convention field1d.f90 was written for -- see module docstring). Note
-    Fx's grid comes from the raw THETA component's staggering, Fy's from
-    raw PHI, Fz's from raw R (the sign flip doesn't change staggering).
+    th_deg/ph_deg (optional): the ACTUAL, NATIVE node positions (degrees)
+    for this grid (e.g. from read_grid_file()) -- always pass the grid
+    file's own colatitude/top-to-bottom ordering here, NEVER pre-reversed;
+    this function performs any needed reversal itself. If omitted (both
+    None), falls back to the ORIGINAL assumption of a global grid uniformly
+    covering phi=[0,360], theta=[0,180] (np.linspace) -- correct for e.g.
+    global.1.0x1.0.grd, WRONG for a regional grid.
 
-    If not mt_convention: keys are 'theta','phi','r', values unrelabeled,
-    no sign flips.
+    Returns a dict with keys 'phi','theta','r' (the field's own raw
+    component naming -- unrelabeled), each an independent (lon_deg,
+    lat_deg, data) tuple (mid-staggered components have a genuinely offset
+    grid from node-staggered ones, see module docstring).
     """
-    nx, ny = field['nx'], field['ny']
+    nx, ny, nz = field['nx'], field['ny'], field['nz']
+    conv = field.get('convention')
     regional = th_deg is not None or ph_deg is not None
     if regional and (th_deg is None or ph_deg is None):
-        raise ValueError("to_latlon_mt: th_deg and ph_deg must be given together")
+        raise ValueError("to_latlon: th_deg and ph_deg must be given together")
 
     if not regional:
         ph_deg_full = np.linspace(0.0, 360.0, nx + 1)
-        th_deg_full = np.linspace(0.0, 180.0, ny + 1)     # colatitude
+        th_deg_full = np.linspace(0.0, 180.0, ny + 1)     # colatitude, native N->S
     else:
         ph_deg_full = np.asarray(ph_deg, dtype=float)
         th_deg_full = np.asarray(th_deg, dtype=float)
         if len(ph_deg_full) != nx + 1 or len(th_deg_full) != ny + 1:
             raise ValueError(
-                f"to_latlon_mt: grid size mismatch -- field file has nx={nx},ny={ny} "
+                f"to_latlon: grid size mismatch -- field file has nx={nx},ny={ny} "
                 f"(expects {nx+1} phi / {ny+1} theta nodes), grid gave "
                 f"{len(ph_deg_full)} phi / {len(th_deg_full)} theta nodes"
             )
+
+    theta_reversed = bool(conv) and conv.get('theta') == 'LAT_S2N'
+    if theta_reversed:
+        th_deg_full = th_deg_full[::-1]
+
+    r_reversed = bool(conv) and conv.get('r') is not None and conv.get('r') != NATIVE_R_CONVENTION
+
     # "does phi genuinely wrap the full sphere" -- checked from the actual
     # extent rather than just "was --grid given", so an explicitly-supplied
     # GLOBAL .grd file (e.g. global.1.0x1.0.grd via --grid) is still handled
@@ -445,30 +515,28 @@ def to_latlon_mt(field, r_index, scaling, factor, mt_convention=True,
 
     gridType = field['gridType']
     if gridType not in _KIND:
-        raise ValueError(f"to_latlon_mt: unknown gridType {gridType!r}")
+        raise ValueError(f"to_latlon: unknown gridType {gridType!r}")
     kind = _KIND[gridType]
 
-    Ftheta = field['theta'][:, :, r_index - 1] * scaling * factor
-    Fphi = field['phi'][:, :, r_index - 1] * scaling * factor
-    Fr = field['r'][:, :, r_index - 1] * scaling * factor
+    # Each component gets its OWN r-index -- theta/phi/r kinds can differ in
+    # r-staggering too (see _KIND/_r_index_for_component), not just phi/theta.
+    r_idx_theta = _r_index_for_component(r_index, nz, kind['theta'][2], r_reversed)
+    r_idx_phi = _r_index_for_component(r_index, nz, kind['phi'][2], r_reversed)
+    r_idx_r = _r_index_for_component(r_index, nz, kind['r'][2], r_reversed)
 
-    if not mt_convention:
-        lon_t, lat_t, Dtheta = _component_latlon(Ftheta, ph_deg_full, th_deg_full, *kind['theta'], is_global)
-        lon_p, lat_p, Dphi = _component_latlon(Fphi, ph_deg_full, th_deg_full, *kind['phi'], is_global)
-        lon_r, lat_r, Dr = _component_latlon(Fr, ph_deg_full, th_deg_full, *kind['r'], is_global)
-        return {'theta': (lon_t, lat_t, Dtheta), 'phi': (lon_p, lat_p, Dphi), 'r': (lon_r, lat_r, Dr)}
+    Ftheta = field['theta'][:, :, r_idx_theta - 1] * scaling * factor
+    Fphi = field['phi'][:, :, r_idx_phi - 1] * scaling * factor
+    Fr = field['r'][:, :, r_idx_r - 1] * scaling * factor
 
-    lon_x, lat_x, Dx = _component_latlon(Ftheta, ph_deg_full, th_deg_full, *kind['theta'], is_global)
-    lon_y, lat_y, Dy = _component_latlon(Fphi, ph_deg_full, th_deg_full, *kind['phi'], is_global)
-    lon_z, lat_z, Dz = _component_latlon(Fr, ph_deg_full, th_deg_full, *kind['r'], is_global)
-    return {'x': (lon_x, lat_x, -Dx),   # South->North
-            'y': (lon_y, lat_y, Dy),    # West->East
-            'z': (lon_z, lat_z, Dz)}    # down (already the case, see module docstring)
+    lon_t, lat_t, Dtheta = _component_latlon(Ftheta, ph_deg_full, th_deg_full, *kind['theta'][:2], is_global)
+    lon_p, lat_p, Dphi = _component_latlon(Fphi, ph_deg_full, th_deg_full, *kind['phi'][:2], is_global)
+    lon_r, lat_r, Dr = _component_latlon(Fr, ph_deg_full, th_deg_full, *kind['r'][:2], is_global)
+    return {'theta': (lon_t, lat_t, Dtheta), 'phi': (lon_p, lat_p, Dphi), 'r': (lon_r, lat_r, Dr)}
 
 
 def _plot(panels, suptitle, fname, xlabel, ylabel, invert_y):
     """panels: list of (lon_or_phi_deg, lat_or_theta_deg, data, title) --
-    EACH panel carries its OWN grid now (see to_latlon_mt's docstring: a
+    EACH panel carries its OWN grid now (see to_latlon's docstring: a
     mid-staggered component's grid is genuinely offset from a node-staggered
     one's, so they can no longer share one x_deg/y_deg pair)."""
     n = len(panels)
@@ -514,49 +582,68 @@ if __name__ == "__main__":
     elif args.fake_center_lat is not None or args.fake_center_lon is not None:
         raise ValueError("--fake-center-lat/--fake-center-lon require --grid to also be given")
 
-    OUT_E_PNG, OUT_H_PNG = output_png_names(args.efield_file, args.hfield_file, PLOT_MT_CONVENTION, R_INDEX)
-
-    E = to_latlon_mt(Efield, R_INDEX, SCALING, FACTOR, PLOT_MT_CONVENTION, th_deg=th_deg, ph_deg=ph_deg)
-    H = to_latlon_mt(Hfield, R_INDEX, SCALING, FACTOR, PLOT_MT_CONVENTION, th_deg=th_deg, ph_deg=ph_deg)
-
-    if PLOT_MT_CONVENTION:
-        Ex_lon, Ex_lat, Ex = E['x']
-        Ey_lon, Ey_lat, Ey = E['y']
-        Hz_lon, Hz_lat, Hz = H['z']
-        Hx_lon, Hx_lat, Hx = H['x']
-        Hy_lon, Hy_lat, Hy = H['y']
-        e_panels = [
-            (Ex_lon, Ex_lat, Ex, r"$E_x$ (S$\to$N)"),
-            (Ey_lon, Ey_lat, Ey, r"$E_y$ (W$\to$E)"),
-        ]
-        h_panels = [
-            (Hz_lon, Hz_lat, Hz, r"$H_z$ (down)"),
-            (Hx_lon, Hx_lat, Hx, r"$H_x$ (S$\to$N)"),
-            (Hy_lon, Hy_lat, Hy, r"$H_y$ (W$\to$E)"),
-        ]
-        xlabel, ylabel, invert_y = "longitude (deg)", "latitude (deg)", False
-        e_names, h_names = ("Ex", "Ey"), ("Hx", "Hy", "Hz")
+    # Convention metadata, extracted directly from the field files' own
+    # header lines (read_field() -> _parse_convention_header()) -- no
+    # command-line toggle needed any more, since the file itself records
+    # what convention it's in. E and H files from the same FWD1D run always
+    # carry identical convention metadata; fall back to whichever is present.
+    conv = Efield['convention'] or Hfield['convention']
+    if conv:
+        conv_name = conv.get('OUTPUT_CONVENTION', '?')
+        conv_desc = (f"{conv_name}  [solver={conv.get('SOLVER','?')} "
+                     f"time={conv.get('time','?')} norm={conv.get('norm','?')} "
+                     f"theta={conv.get('theta','?')} r={conv.get('r','?')}]")
+        # Short form for the figure title (full conv_desc doesn't fit --
+        # printed to the console instead, see below).
+        conv_title = f"{conv.get('SOLVER','?')}, {conv_name}"
+        theta_reversed = conv.get('theta') == 'LAT_S2N'
+        print(f"Convention (from file header): {conv_desc}")
     else:
-        Et_lon, Et_lat, Etheta = E['theta']
-        Ep_lon, Ep_lat, Ephi = E['phi']
-        Ht_lon, Ht_lat, Ftheta = H['theta']
-        Hp_lon, Hp_lat, Fphi = H['phi']
-        Hr_lon, Hr_lat, Fr = H['r']
-        e_panels = [
-            (Et_lon, Et_lat, Etheta, r"$E_\theta$"),
-            (Ep_lon, Ep_lat, Ephi, r"$E_\phi$"),
-        ]
-        h_panels = [
-            (Hr_lon, Hr_lat, Fr, r"$H_r$"),
-            (Ht_lon, Ht_lat, Ftheta, r"$H_\theta$"),
-            (Hp_lon, Hp_lat, Fphi, r"$H_\phi$"),
-        ]
-        xlabel, ylabel, invert_y = "longitude / phi (deg)", "colatitude / theta (deg)", True
-        e_names, h_names = ("Etheta", "Ephi"), ("Hr", "Htheta", "Hphi")
+        conv_name = None
+        conv_desc = "unknown (no convention metadata in file header -- older file?)"
+        conv_title = "convention unknown"
+        theta_reversed = False
+        print(f"No convention metadata found in file header -- {conv_desc}; "
+              f"axes assumed native (colatitude North->South, no reversal applied)")
 
-    _plot(e_panels, f"global1d output: E field, T={PERIOD}s, r-index={R_INDEX}",
+    OUT_E_PNG, OUT_H_PNG = output_png_names(args.efield_file, args.hfield_file, conv_name, R_INDEX)
+
+    E = to_latlon(Efield, R_INDEX, SCALING, FACTOR, th_deg=th_deg, ph_deg=ph_deg)
+    H = to_latlon(Hfield, R_INDEX, SCALING, FACTOR, th_deg=th_deg, ph_deg=ph_deg)
+
+    # Raw phi/theta/r component slots, plotted exactly as read -- NO
+    # relabeling of any kind (see module docstring): the file is already in
+    # whatever convention conv_desc above records.
+    Et_lon, Et_lat, Etheta = E['theta']
+    Ep_lon, Ep_lat, Ephi = E['phi']
+    Ht_lon, Ht_lat, Ftheta = H['theta']
+    Hp_lon, Hp_lat, Fphi = H['phi']
+    Hr_lon, Hr_lat, Fr = H['r']
+    e_panels = [
+        (Et_lon, Et_lat, Etheta, r"$E_\theta$"),
+        (Ep_lon, Ep_lat, Ephi, r"$E_\phi$"),
+    ]
+    h_panels = [
+        (Hr_lon, Hr_lat, Fr, r"$H_r$"),
+        (Ht_lon, Ht_lat, Ftheta, r"$H_\theta$"),
+        (Hp_lon, Hp_lat, Fphi, r"$H_\phi$"),
+    ]
+    e_names, h_names = ("Etheta", "Ephi"), ("Hr", "Htheta", "Hphi")
+    xlabel, ylabel = "longitude (deg)", "latitude (deg)"
+    # invert_y: put north at the top of the plot. When theta was reversed
+    # (LAT_S2N), latitude already ASCENDS with array index (south->north),
+    # matplotlib's default already puts north at top -- no invert needed.
+    # When not reversed (native colatitude N->S, or no metadata), latitude
+    # DESCENDS with array index -- invert to put north at top, matching the
+    # pre-Part-2 script's tested behavior for this case.
+    invert_y = not theta_reversed
+
+    # Short title only (solver + convention name) -- the full dimension
+    # breakdown (conv_desc) is printed to the console above instead; it's too
+    # long to fit in the figure title.
+    _plot(e_panels, f"E field, T={PERIOD}s, r-index={R_INDEX} -- {conv_title}",
           OUT_E_PNG, xlabel, ylabel, invert_y)
-    _plot(h_panels, f"global1d output: H field, T={PERIOD}s, r-index={R_INDEX}",
+    _plot(h_panels, f"H field, T={PERIOD}s, r-index={R_INDEX} -- {conv_title}",
           OUT_H_PNG, xlabel, ylabel, invert_y)
 
     for name, (_, _, data, _) in zip(e_names, e_panels):

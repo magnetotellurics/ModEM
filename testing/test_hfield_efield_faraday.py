@@ -4,8 +4,8 @@ ACTUAL .hfield/.efield output files, via numerical (finite-difference)
 differentiation on the grid -- companion to test_pythonsolver_faraday.py,
 which did the same self-consistency check on spherical_em_induction.py's
 analytic fields instead. Together these two tests localize whether the
-l=1,m=-1 "(-1i) on Hz,Ex,Ey but not Hx,Hy" discrepancy (see CLAUDE.md,
-2026-07-22) is a field1d.f90 bug, a pythonSolver bug, or neither.
+l=1,m=-1 "(-1i) on Hz,Ex,Ey but not Hx,Hy" discrepancy (found 2026-07-22)
+is a field1d.f90 bug, a pythonSolver bug, or neither.
 
 Only the RADIAL component of Faraday's law is checked:
 
@@ -17,7 +17,7 @@ that naively compared Etheta/Ephi/Hr at the same raw (i,j,k) file index,
 which gave meaningless noise): with primary_grid='E' (hardcoded in
 FWD1D.f90), E%gridType=EDGE and H%gridType=FACE, so Etheta, Ephi, Hr live on
 DIFFERENT, staggered sub-grids, not the same physical (theta,phi) points.
-Per field1d.f90's FACE-branch loop headers (see CLAUDE.md):
+Per field1d.f90's FACE-branch loop headers:
     H%z (r,     FACE z): mid_theta  x mid_phi  x Rs
     E%x (phi,   EDGE x): node_theta x mid_phi  x Rs
     E%y (theta, EDGE y): mid_theta  x node_phi x Rs
@@ -37,14 +37,14 @@ these neighbors -- no interpolation, no assumed sign flips.
 """
 import numpy as np
 
-EFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.test_m-ve.sunegbert2012.E-grid.T01.efield"
-HFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.test_m-ve.sunegbert2012.E-grid.T01.hfield"
+EFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.test_m-ve.s2.E-grid.T01.efield"
+HFIELD_FILE = r"C:\Users\Anna Kelbert\Developer\ModEM-global1d\MTsource\MT.1000sec.test_m-ve.s2.E-grid.T01.hfield"
 
 PERIOD = 1000.0
 omega = 2 * np.pi / PERIOD
 mu0 = 1.256637e-6   # matches the constant hardcoded in field1d.f90 / TSModel.m
 
-R_INDEX = 13         # 1-indexed; k=13 = first layer at/below the surface (see CLAUDE.md)
+R_INDEX = 13         # 1-indexed; k=13 = first layer at/below the surface
 
 # test point: comfortably interior (away from poles, away from the phi=0/360
 # wraparound seam), 0-indexed into Hr's own (mid_phi, mid_theta) grid

@@ -39,9 +39,9 @@ module field1d
   public        :: legendre_deallocate_at_nodes
   public        :: legendre_deallocate_at_edges
   public        :: sourceField1d, sourcePotential
-  ! Widened for reuse by the independent field1d_sunegbert2012 module (Sun & Egbert,
+  ! Widened for reuse by the independent field1d_s2 module (Sun & Egbert,
   ! 2012, Section 2 solver): these Legendre/VSH routines are pure angular
-  ! math, already verified against sympy (see CLAUDE.md), and are shared
+  ! math, already independently verified against sympy, and are shared
   ! rather than re-derived to avoid re-introducing the kind of subtle
   ! phase/sign bug that took a long time to isolate here.
   public        :: legendre_norm, legendre_sch, vsharm
@@ -782,7 +782,7 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
     ! the m=0 and +m/-m paths to treat the same (m-independent) radial
     ! potential Tnr/Tnsp inconsistently -- conjugated for paired terms,
     ! unconjugated for m=0 -- an internal inconsistency confirmed via
-    ! testing/test_kelbert2014_vs_modem_1D.f90 (Mode1 vs Mode2 disagreeing on
+    ! testing/test_s1_vs_modem_1D.f90 (Mode2 vs Mode1 disagreeing on
     ! whether Zxy=-Zyx needs an extra conjugation). The code's native time
     ! convention is e^{-i*omega*t} throughout (see kl = sqrt(i*omega*mu0*sigma)
     ! in sourcePotential) and is unrelated to any of the above -- comparing
@@ -793,16 +793,18 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
     ! E_theta, E_phi -- built from Tnr/Tns, the potential's VALUE) relative to
     ! the two T'(r)-valued components (H_theta, H_phi -- built from Tnsp/Tnrp,
     ! the potential's r-derivative): these three now carry the SAME explicit
-    ! sign as Sun & Egbert (2012) eq (5)-(6) (module field1d_sunegbert2012),
-    ! confirmed via testing/test_kelbert2014_vs_sunegbert2012_l1m0.f90 giving
+    ! sign as Sun & Egbert (2012) eq (5)-(6) (module field1d_s2),
+    ! confirmed via testing/test_s1_vs_s2_l1m0.f90 giving
     ! ratio=+1 for every component once this fix was applied. Before this fix
     ! (2026-07-26) these three had the OPPOSITE explicit sign from Sun & Egbert
     ! while H_theta/H_phi already agreed -- confirmed (via that same test) to
     ! be a pure formula-sign difference, NOT a difference in Tnr/Tnsp's own
     ! values (which were already identical between the two modules to begin
-    ! with) -- i.e. this was a genuine, fixable discrepancy from the Kelbert,
-    ! Egbert & Schultz (2008) lineage this file otherwise follows, not a
-    ! documented, deliberate alternate convention worth preserving.
+    ! with) -- i.e. this was a genuine, fixable discrepancy from the Kelbert
+    ! (2006) lineage this file otherwise follows (best published reference:
+    ! Sun, Kelbert & Egbert (2015), J. Geophys. Res. Solid Earth, 120(10),
+    ! 6771-6796), not a documented, deliberate alternate convention worth
+    ! preserving.
 
     !No computations are performed for l=0 (no magnetic monopoles) so zero coeff is never used
     ncoeff=0
@@ -1122,13 +1124,19 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
     ! ph component of the electric field: E_phi = -i*omega*mu0 * Tnr/r/l(l+1) * Yt
     ! mid-edge theta (j=1..Nt) loops North to South pole;
-    ! node phi; k loops over cell-center radii Rr
+    ! node phi (i=1..Np+1); k loops over cell-center radii Rr
+    ! FIX (2026-07-26): loop previously stopped at i=Np, leaving E%x(Np+1,:,:)
+    ! at its zero_cvector default -- harmless for a GLOBAL grid (that slot is
+    ! a true 360deg wraparound duplicate of i=1, dropped by downstream
+    ! plotting anyway) but a genuine missing boundary value for a REGIONAL
+    ! grid (found via a real E_phi-plots-as-zero-at-the-last-column report on
+    ! a primary_grid='H' run over USA.0.25x0.25.grd).
     if (present(E)) then
     do j = 1,Nt
 
         P_lm = edge_P_lm(j,:,:)
 
-        do i = 1,Np
+        do i = 1,Np+1
 
             call vsharm(lmax,cos(grid%th(j)+grid%dt(j)/2),grid%ph(i),P_lm,Yr,Yt)
 

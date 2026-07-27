@@ -6,9 +6,9 @@ directly (both independently validated/fixed earlier in this session -- see
 pythonSolver/test_pythonsolver_Rval_Rpval.py for solve_layered's Rval/Rpval,
 and pythonSolver/test_pythonsolver_faraday.py for fields_from_R_general's
 Faraday-law self-consistency, both passing to ~machine precision after the
-2026-07-22 fixes). Unlike reference_unit_sphere_sunegbert2012.py (which used a
+2026-07-22 fixes). Unlike reference_unit_sphere_s2.py (which used a
 separately re-derived closed form), this script cross-checks
-field1d_sunegbert2012.f90 against the SAME validated pythonSolver machinery used
+field1d_s2.f90 against the SAME validated pythonSolver machinery used
 throughout this project.
 
 Physical setup matches test_earth_l1mneg1.f90 EXACTLY: r0=6.371e6 m, uniform
@@ -17,17 +17,17 @@ unit external multipole.
 
 Normalization: rather than relying on the "distant source shell" (c=200*a)
 trick to be an exact unit external field (it's only an approximation, though
-a very good one -- see CLAUDE.md, "A ~= 1.0 to high precision"), this script
+a very good one -- A comes out ~= 1.0 to high precision), this script
 reads solve_layered's own returned external amplitude 'A' and divides by it.
 pythonSolver's OWN convention is T(r,theta,phi)=R(r)*Y_l^m/sqrt(l(l+1)) (see
 fields_from_R_general's docstring) -- an EXTRA factor of sqrt(l(l+1)) beyond
-1/A is needed to reach field1d_sunegbert2012.f90's convention (T_l(r) multiplies
+1/A is needed to reach field1d_s2.f90's convention (T_l(r) multiplies
 Y_l^m directly, no norm division). Found 2026-07-23 by direct comparison
-against field1d_sunegbert2012.f90's actual output (l=1,m=-1): dividing by A alone
+against field1d_s2.f90's actual output (l=1,m=-1): dividing by A alone
 left a clean, uniform-across-all-5-components factor of sqrt(l(l+1))=sqrt(2)
 in the magnitude.
 
-Time convention and m: pythonSolver is native e^{+iwt}; field1d_sunegbert2012.f90 is
+Time convention and m: pythonSolver is native e^{+iwt}; field1d_s2.f90 is
 native e^{-iwt} (same convention as field1d.f90). For the SAME physical
 source, F_fortran(l,+m) = conj(F_python(l,-m)) -- NOTE THE SIGN FLIP ON m --
 because conjugating a field also conjugates its e^{i*m*phi} angular
@@ -43,7 +43,7 @@ that E-components do not, under this same conjugate+m-flip operation -- H is
 a pseudovector (reverses under true time-reversal, since it is sourced by
 currents) while E is a polar vector (does not) -- so this is expected, not a
 bug. Confirmed empirically 2026-07-23: after the norm and m-flip fixes, all
-5 components' ratios (field1d_sunegbert2012 / this-reference) were real, with H's
+5 components' ratios (field1d_s2 / this-reference) were real, with H's
 exactly -1 and E's exactly +1 (before including this sign); baking the sign
 in here makes the expected ratio exactly +1 for every component.
 

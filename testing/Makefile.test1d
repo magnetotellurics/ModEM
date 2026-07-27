@@ -1,23 +1,27 @@
-# Makefile for the field1d.f90 / field1d_sunegbert2012.f90 validation tests:
-#   test_unit_sphere        -- field1d.f90 (KELBERT2014) and
-#                               field1d_sunegbert2012.f90 (SUNEGBERT2012) vs the
-#                               same closed form (l=2,m=1) -- KELBERT2014 is
+# Makefile for the field1d.f90 / field1d_s2.f90 validation tests:
+#   test_unit_sphere        -- field1d.f90 (S1) and
+#                               field1d_s2.f90 (S2) vs the
+#                               same closed form (l=2,m=1) -- S1 is
 #                               diagnostic-only (no clean match expected, see
-#                               reference_unit_sphere.py), SUNEGBERT2012 is exact
-#   test_earth_l1mneg1      -- field1d_sunegbert2012.f90 vs pythonSolver, exact (l=1,m=-1)
+#                               reference_unit_sphere.py), S2 is exact
+#   test_earth_l1mneg1      -- field1d_s2.f90 vs pythonSolver, exact (l=1,m=-1)
 #   test_Tnr_uniform_sphere -- field1d.f90's sourcePotential vs closed form
-#   test_kelbert2014_vs_sunegbert2012_l1m0 -- field1d.f90 vs field1d_sunegbert2012.f90 directly, l=1,m=0
-#   test_vs_modem_1D        -- field1d.f90 (KELBERT2014) AND field1d_sunegbert2012.f90
-#                               (SUNEGBERT2012), both vs an independent ModEM
+#   test_s1_vs_s2_l1m0 -- field1d.f90 vs field1d_s2.f90 directly, l=1,m=0
+#   test_vs_modem_1D        -- field1d.f90 (S1) AND field1d_s2.f90
+#                               (S2), both vs an independent ModEM
 #                               3D-code benchmark (Zxy/Zyx), Mode1 and Mode2
 #                               sources, T=10/100/1000s -- both solvers now
 #                               expected to pass cleanly, see CLAUDE.md
-# (test_unit_sphere_kelbert2014.f90 and test_unit_sphere_sunegbert2012.f90 were
+#   test_norm_condon_shortley            -- output_convention.f90's rescale_source_coeffs vs
+#                               hand-computed Schmidt/full norm and Condon-Shortley ratios
+#   test_reversals          -- output_convention.f90's apply_output_convention
+#                               theta/r index-reversal + component-negation logic
+# (test_unit_sphere_s1.f90 and test_unit_sphere_s2.f90 were
 # merged into the single test_unit_sphere.f90 above, 2026-07-25, since both
 # built the identical model/grid/source -- see testing/TESTING_MANUAL.md.
-# test_kelbert2014_vs_modem_1D.f90 and test_sunegbert2012_vs_modem_1D.f90 were
+# test_s1_vs_modem_1D.f90 and test_s2_vs_modem_1D.f90 were
 # likewise merged into test_vs_modem_1D.f90, 2026-07-26, once field1d.f90's
-# T(r)-valued formula signs were fixed to match field1d_sunegbert2012.f90/
+# T(r)-valued formula signs were fixed to match field1d_s2.f90/
 # Sun & Egbert (2012) and both solvers agree with ModEM with no compensation.)
 # Mirrors Makefile1d but only builds the field1d.f90 dependency chain
 # (utilities, polpak, GridDef, sg_vector) -- no ModelSpace/LAPACK needed.
@@ -30,8 +34,8 @@
 # Usage (from within testing/):
 #   make -f Makefile.test1d
 #   ./test_unit_sphere / ./test_earth_l1mneg1 /
-#   ./test_Tnr_uniform_sphere / ./test_kelbert2014_vs_sunegbert2012_l1m0 /
-#   ./test_vs_modem_1D
+#   ./test_Tnr_uniform_sphere / ./test_s1_vs_s2_l1m0 /
+#   ./test_vs_modem_1D / ./test_norm_condon_shortley / ./test_reversals
 
 ROOT = ..
 
@@ -44,21 +48,21 @@ MODULE = -J$(OBJDIR)
 
 OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o \
       $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o \
-      $(OBJDIR)/field1d.o $(OBJDIR)/field1d_sunegbert2012.o
+      $(OBJDIR)/output_convention.o $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
 
-all: test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_kelbert2014_vs_sunegbert2012_l1m0 test_vs_modem_1D
+all: test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D test_norm_condon_shortley test_reversals
 
-# field1d.f90 (KELBERT2014) and field1d_sunegbert2012.f90 (SUNEGBERT2012) vs
+# field1d.f90 (S1) and field1d_s2.f90 (S2) vs
 # the same closed form (l=2,m=1)
 test_unit_sphere: $(OBJDIR) $(OBJ) $(OBJDIR)/test_unit_sphere.o
 	$(F90) -o test_unit_sphere $(OBJ) $(OBJDIR)/test_unit_sphere.o
 
-# field1d_sunegbert2012.f90, exact cross-check vs pythonSolver (l=1,m=-1, Earth scale)
+# field1d_s2.f90, exact cross-check vs pythonSolver (l=1,m=-1, Earth scale)
 test_earth_l1mneg1: $(OBJDIR) $(OBJ) $(OBJDIR)/test_earth_l1mneg1.o
 	$(F90) -o test_earth_l1mneg1 $(OBJ) $(OBJDIR)/test_earth_l1mneg1.o
 
 # field1d.f90-only test (Tnr/Tnsp/Tnrp/Tns vs closed form) -- doesn't need
-# field1d_sunegbert2012.o, linked in anyway via the shared $(OBJ).
+# field1d_s2.o, linked in anyway via the shared $(OBJ).
 test_Tnr_uniform_sphere: $(OBJDIR) $(OBJ) $(OBJDIR)/test_Tnr_uniform_sphere.o
 	$(F90) -o test_Tnr_uniform_sphere $(OBJ) $(OBJDIR)/test_Tnr_uniform_sphere.o
 
@@ -83,37 +87,53 @@ $(OBJDIR)/GridDef.o: $(ROOT)/EARTH/GridDef.f90 $(OBJDIR)/math_constants.o $(OBJD
 $(OBJDIR)/sg_vector.o: $(ROOT)/FIELDS/FiniteDiff3D/sg_vector.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/GridDef.o
 	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/FIELDS/FiniteDiff3D/sg_vector.f90 -o $(OBJDIR)/sg_vector.o
 
+$(OBJDIR)/output_convention.o: $(ROOT)/EARTH/FWD/output_convention.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/sg_vector.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/EARTH/FWD/output_convention.f90 -o $(OBJDIR)/output_convention.o
+
 $(OBJDIR)/field1d.o: $(ROOT)/EARTH/FWD/field1d.f90 $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o
 	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/EARTH/FWD/field1d.f90 -o $(OBJDIR)/field1d.o
 
-$(OBJDIR)/field1d_sunegbert2012.o: $(ROOT)/EARTH/FWD/field1d_sunegbert2012.f90 $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o  $(OBJDIR)/field1d.o
-	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/EARTH/FWD/field1d_sunegbert2012.f90 -o $(OBJDIR)/field1d_sunegbert2012.o
+$(OBJDIR)/field1d_s2.o: $(ROOT)/EARTH/FWD/field1d_s2.f90 $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o  $(OBJDIR)/field1d.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/EARTH/FWD/field1d_s2.f90 -o $(OBJDIR)/field1d_s2.o
 
-$(OBJDIR)/test_unit_sphere.o: test_unit_sphere.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_sunegbert2012.o
+$(OBJDIR)/test_unit_sphere.o: test_unit_sphere.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
 	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_unit_sphere.f90 -o $(OBJDIR)/test_unit_sphere.o
 
-$(OBJDIR)/test_earth_l1mneg1.o: test_earth_l1mneg1.f90 $(OBJDIR)/field1d.o  $(OBJDIR)/field1d_sunegbert2012.o
+$(OBJDIR)/test_earth_l1mneg1.o: test_earth_l1mneg1.f90 $(OBJDIR)/field1d.o  $(OBJDIR)/field1d_s2.o
 	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_earth_l1mneg1.f90 -o $(OBJDIR)/test_earth_l1mneg1.o
 
 $(OBJDIR)/test_Tnr_uniform_sphere.o: test_Tnr_uniform_sphere.f90 $(OBJDIR)/field1d.o
 	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_Tnr_uniform_sphere.f90 -o $(OBJDIR)/test_Tnr_uniform_sphere.o
 
-# field1d.f90 vs field1d_sunegbert2012.f90 direct side-by-side, l=1,m=0 (P10) --
+# field1d.f90 vs field1d_s2.f90 direct side-by-side, l=1,m=0 (P10) --
 # resolves field1d.f90's long-open "absolute sign" question, see CLAUDE.md
-test_kelbert2014_vs_sunegbert2012_l1m0: $(OBJDIR) $(OBJ) $(OBJDIR)/test_kelbert2014_vs_sunegbert2012_l1m0.o
-	$(F90) -o test_kelbert2014_vs_sunegbert2012_l1m0 $(OBJ) $(OBJDIR)/test_kelbert2014_vs_sunegbert2012_l1m0.o
+test_s1_vs_s2_l1m0: $(OBJDIR) $(OBJ) $(OBJDIR)/test_s1_vs_s2_l1m0.o
+	$(F90) -o test_s1_vs_s2_l1m0 $(OBJ) $(OBJDIR)/test_s1_vs_s2_l1m0.o
 
-$(OBJDIR)/test_kelbert2014_vs_sunegbert2012_l1m0.o: test_kelbert2014_vs_sunegbert2012_l1m0.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_sunegbert2012.o
-	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_kelbert2014_vs_sunegbert2012_l1m0.f90 -o $(OBJDIR)/test_kelbert2014_vs_sunegbert2012_l1m0.o
+$(OBJDIR)/test_s1_vs_s2_l1m0.o: test_s1_vs_s2_l1m0.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_s1_vs_s2_l1m0.f90 -o $(OBJDIR)/test_s1_vs_s2_l1m0.o
 
-# field1d.f90 AND field1d_sunegbert2012.f90, both vs an independent ModEM
+# field1d.f90 AND field1d_s2.f90, both vs an independent ModEM
 # benchmark, post T(r)-formula-sign fix (merges the former
-# test_kelbert2014_vs_modem_1D and test_sunegbert2012_vs_modem_1D)
+# test_s1_vs_modem_1D and test_s2_vs_modem_1D)
 test_vs_modem_1D: $(OBJDIR) $(OBJ) $(OBJDIR)/test_vs_modem_1D.o
 	$(F90) -o test_vs_modem_1D $(OBJ) $(OBJDIR)/test_vs_modem_1D.o
 
-$(OBJDIR)/test_vs_modem_1D.o: test_vs_modem_1D.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_sunegbert2012.o
+$(OBJDIR)/test_vs_modem_1D.o: test_vs_modem_1D.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
 	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_vs_modem_1D.f90 -o $(OBJDIR)/test_vs_modem_1D.o
 
+# output_convention.f90 unit tests (Part 2)
+test_norm_condon_shortley: $(OBJDIR) $(OBJ) $(OBJDIR)/test_norm_condon_shortley.o
+	$(F90) -o test_norm_condon_shortley $(OBJ) $(OBJDIR)/test_norm_condon_shortley.o
+
+$(OBJDIR)/test_norm_condon_shortley.o: test_norm_condon_shortley.f90 $(OBJDIR)/output_convention.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_norm_condon_shortley.f90 -o $(OBJDIR)/test_norm_condon_shortley.o
+
+test_reversals: $(OBJDIR) $(OBJ) $(OBJDIR)/test_reversals.o
+	$(F90) -o test_reversals $(OBJ) $(OBJDIR)/test_reversals.o
+
+$(OBJDIR)/test_reversals.o: test_reversals.f90 $(OBJDIR)/output_convention.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_reversals.f90 -o $(OBJDIR)/test_reversals.o
+
 clean:
-	rm -rf $(OBJDIR) test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_kelbert2014_vs_sunegbert2012_l1m0 test_vs_modem_1D
+	rm -rf $(OBJDIR) test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D test_norm_condon_shortley test_reversals

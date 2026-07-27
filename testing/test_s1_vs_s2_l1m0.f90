@@ -1,24 +1,24 @@
-program test_kelbert2014_vs_sunegbert2012_l1m0
+program test_s1_vs_s2_l1m0
 ! ****************************************************************************
 ! Direct side-by-side comparison of field1d.f90's sourceField1d (the ORIGINAL
-! solver, Uyeshima & Schultz-style normalization) against field1d_sunegbert2012.f90's
-! sourceField1d_sunegbert2012 (the independently-derived, independently-validated --
+! solver, Uyeshima & Schultz-style normalization) against field1d_s2.f90's
+! sourceField1d_s2 (the independently-derived, independently-validated --
 ! see TESTING_MANUAL.md sections 1-2 -- Sun & Egbert 2012 solver), for the
 ! SAME model, grid, and pure (l=1, m=0 = "P10"/zonal) unit source.
 !
-! Motivation: field1d.f90 has a long-unresolved "absolute sign" question for
-! exactly this l=1,m=0 term (see CLAUDE.md, "Open issue: E-field phase/sign
-! convention for the P10 term" -- the ModEM ground-truth comparison found
-! Mode2's E_phi imaginary part had the OPPOSITE sign from what MATLAB/Fortran
-! produced, never conclusively resolved). field1d_sunegbert2012.f90 is now
-! independently validated in an ABSOLUTE sense (closed form + pythonSolver
-! cross-check, both to ~5 significant figures), so it can serve as ground
-! truth: the two solvers' outputs are expected to differ by an overall
-! complex constant per component-type (different normalization conventions,
-! see CLAUDE.md), but that constant should be the SAME sign/phase across all
-! 5 components if field1d.f90's own internal sign bookkeeping is consistent
-! for this term; a component whose ratio breaks that pattern points at
-! exactly where the absolute sign issue lives.
+! Motivation: field1d.f90 had a long-unresolved "absolute sign" question for
+! exactly this l=1,m=0 (E-field phase/sign convention for the P10 term) --
+! the ModEM ground-truth comparison found Mode1's E_phi imaginary part had
+! the OPPOSITE sign from what MATLAB/Fortran produced, never conclusively
+! resolved at the time. field1d_s2.f90 is now independently validated in an
+! ABSOLUTE sense (closed form + pythonSolver cross-check, both to ~5
+! significant figures), so it can serve as ground truth: the two solvers'
+! outputs are expected to differ by an overall complex constant per
+! component-type (different normalization conventions), but that constant
+! should be the SAME sign/phase across all 5 components if field1d.f90's own
+! internal sign bookkeeping is consistent for this term; a component whose
+! ratio breaks that pattern points at exactly where the absolute sign issue
+! lives.
 !
 ! Model/grid/staggering are IDENTICAL to test_earth_l1mneg1.f90 (uniform 100
 ! Ohm.m sphere, r0=6.371e6 m, T=1000s, H on EDGE / E on FACE), so the two
@@ -27,14 +27,14 @@ program test_kelbert2014_vs_sunegbert2012_l1m0
 ! ****************************************************************************
 
     use field1d, only: conf1d_t, sourceField1d
-    use field1d_sunegbert2012, only: sourceField1d_sunegbert2012
+    use field1d_s2, only: sourceField1d_s2
     use griddef
     use sg_vector
     implicit none
 
     type(conf1d_t)                 :: earth
     type(grid_t)                   :: grid
-    type(cvector)                  :: h1d_old, e1d_old, h1d_sunegbert2012, e1d_sunegbert2012
+    type(cvector)                  :: h1d_old, e1d_old, h1d_s2, e1d_s2
     complex(8), allocatable        :: coeff(:)
     integer, parameter             :: lmax = 1
     integer, parameter             :: nx = 8, ny = 8, nz = 2
@@ -48,7 +48,7 @@ program test_kelbert2014_vs_sunegbert2012_l1m0
     real(8), parameter             :: sigma1  = 1.0d-2       ! S/m (100 Ohm.m)
     real(8), parameter             :: period0 = 1000.0d0     ! s
 
-    write(*,*) '=== test_kelbert2014_vs_sunegbert2012_l1m0: field1d.f90 vs field1d_sunegbert2012.f90 (l=1,m=0, P10) ==='
+    write(*,*) '=== test_s1_vs_s2_l1m0: field1d.f90 vs field1d_s2.f90 (l=1,m=0, P10) ==='
 
     ! ---- build the earth model: ONE homogeneous layer = the whole sphere ----
     earth%r0   = r0_m
@@ -104,9 +104,9 @@ program test_kelbert2014_vs_sunegbert2012_l1m0
     call create_cvector(grid, e1d_old, FACE)
     call sourceField1d(earth, lmax, coeff, period, grid, h1d_old, e1d_old)
 
-    call create_cvector(grid, h1d_sunegbert2012, EDGE)
-    call create_cvector(grid, e1d_sunegbert2012, FACE)
-    call sourceField1d_sunegbert2012(earth, lmax, coeff, period, grid, h1d_sunegbert2012, e1d_sunegbert2012)
+    call create_cvector(grid, h1d_s2, EDGE)
+    call create_cvector(grid, e1d_s2, FACE)
+    call sourceField1d_s2(earth, lmax, coeff, period, grid, h1d_s2, e1d_s2)
 
     ! ---- extract the 5 field components at one shared (i=1, j=5) angular index ----
     ! (identical staggering/indices to test_earth_l1mneg1.f90):
@@ -121,12 +121,12 @@ program test_kelbert2014_vs_sunegbert2012_l1m0
     kRr = 2
 
     write(*,*)
-    write(*,'(a,3(a24))') '  component  ', 'field1d.f90 (old)', 'field1d_sunegbert2012.f90', 'ratio old/sunegbert2012'
-    call report('Hr    ', h1d_old%z(i0,j0,kRr), h1d_sunegbert2012%z(i0,j0,kRr))
-    call report('Hphi  ', h1d_old%x(i0,j0,kRs), h1d_sunegbert2012%x(i0,j0,kRs))
-    call report('Htheta', h1d_old%y(i0,j0,kRs), h1d_sunegbert2012%y(i0,j0,kRs))
-    call report('Etheta', e1d_old%y(i0,j0,kRr), e1d_sunegbert2012%y(i0,j0,kRr))
-    call report('Ephi  ', e1d_old%x(i0,j0,kRr), e1d_sunegbert2012%x(i0,j0,kRr))
+    write(*,'(a,3(a24))') '  component  ', 'field1d.f90 (old)', 'field1d_s2.f90', 'ratio old/s2'
+    call report('Hr    ', h1d_old%z(i0,j0,kRr), h1d_s2%z(i0,j0,kRr))
+    call report('Hphi  ', h1d_old%x(i0,j0,kRs), h1d_s2%x(i0,j0,kRs))
+    call report('Htheta', h1d_old%y(i0,j0,kRs), h1d_s2%y(i0,j0,kRs))
+    call report('Etheta', e1d_old%y(i0,j0,kRr), e1d_s2%y(i0,j0,kRr))
+    call report('Ephi  ', e1d_old%x(i0,j0,kRr), e1d_s2%x(i0,j0,kRr))
 
     write(*,*)
     write(*,*) 'If field1d.f90 is internally sign-consistent for this term, all 5 ratios'
@@ -139,22 +139,22 @@ program test_kelbert2014_vs_sunegbert2012_l1m0
     deallocate(earth%layer, earth%sigma, STAT=istat)
     call deall_cvector(h1d_old)
     call deall_cvector(e1d_old)
-    call deall_cvector(h1d_sunegbert2012)
-    call deall_cvector(e1d_sunegbert2012)
+    call deall_cvector(h1d_s2)
+    call deall_cvector(e1d_s2)
     call deall_grid(grid)
 
 contains
 
-    subroutine report(name, v_old, v_sunegbert2012)
+    subroutine report(name, v_old, v_s2)
         character(*), intent(in) :: name
-        complex(8), intent(in)   :: v_old, v_sunegbert2012
+        complex(8), intent(in)   :: v_old, v_s2
         complex(8)               :: ratio
         real(8)                  :: ang
 
-        ratio = v_old / v_sunegbert2012
+        ratio = v_old / v_s2
         ang = atan2(aimag(ratio), dble(ratio)) * 180.0d0 / pi
         write(*,'(2x,a,2x,2es12.4,2x,2es12.4,2x,2es12.4,a,f7.2,a)') &
-            name, v_old, v_sunegbert2012, ratio, '  (angle=', ang, ' deg)'
+            name, v_old, v_s2, ratio, '  (angle=', ang, ' deg)'
     end subroutine report
 
-end program test_kelbert2014_vs_sunegbert2012_l1m0
+end program test_s1_vs_s2_l1m0

@@ -49,6 +49,23 @@ The conventions for the coefficients make all the difference and I need to under
 
 I compared the current implementation between FWD1D Fortran code (Kelbert et al 2014 version) and the Matlab code (with Jin's settings in TSModel). I run the comparison using MTsource.1000sec.Mode1.prm and MTsource.1000sec.Mode2.prm, where Mode1 is non-zonal and Mode2 is zonal. These two settings are intended to imitate regional MT code. For Mode1 (non-zonal) both E_theta and E_phi are identical between Fortran and Matlab, and look correct as far as I can tell. For Mode2 (zonal, P10) E_theta is zero as expected. The real component of E_phi is consistent (and correct). The imaginary component of E_phi is negative in Fortran and positive in Matlab. Both components should be positive for this 1D model (based on a comparison with an independent MT calculation using ModEM). The comparison with the Python code was showing consistent Hx,Hy and a (-1i) factor in Hz,Ex,Ey. All of this was so confusing that I had Claude write a new Fortran code from scratch; this code based on Sun & Egbert 2012 is now consistent with the Python code - after an array of convention adjustments!!! - and with analytic solutions. Next, we need to understand what is consistent with ModEM and with Gary's ionospheric source modeling in Matlab. The Matlab code has not been updated to reflect any of our new findings. We believe it to be correct but it's probably only correct due to a cancellation of multiple inconsistencies. It hasn't really been carefully tested in its current form.
 
+### Fix MT polarization mode name mislabeling in solution/RHS I/O
+
+Throughout ModEM — boundary_ws.f90 and boundary_wsS.f90 (identical convention in both), and the write loop do k=1,2 that calls EfileWrite(..., k, ...) — array position/index 1 is Ey-polarization-dominant, and index 2 is Ex-polarization-dominant. Accordingly, the real, physical write order in the binary electric field output file (unaffected by the label bug) is: for each period, block 1 = Ey-polarization solution, block 2 = Ex-polarization solution. Note also that the Matlab reader (rdExyzAll.m) also has it right: it hardcodes Modes={'Y','X'}, i.e. Modes{1}='Y' (Ey), Modes{2}='X' (Ex).
+
+However, the string written into each block's header ('Ey'/'Ex' from Pol_name) had them backwards — note however that the block order and the field data themselves are correct and self-consistent throughout the rest of the codebase (confirmed that DataFunc.f90 never reads Pol_name, only the integer index). In SolnSpace.f90, only the character labels in create_solnVector and create_rhsVector were reversed but are now correctly hardcoded Pol_name(1)='Ey', Pol_name(2)='Ex'.
+
+This only corrects the descriptive ModeName string written into .esoln/.rhs file headers. Zxy/Zyx, transfer functions, -F predicted-data output, and inversion results are unaffected; no existing results need to be rerun. This particular finding is confirmed thoroughly using Claude by direct inspection of solved field magnitudes (position 1 is Ey-dominant, position 2 is Ex-dominant, both Cartesian
+and spherical builds) and by tracing that Pol_name is never read by
+DataFunc.f90 or any other data/Jacobian code, which use the plain
+integer index throughout. 
+
+### The history of the two solvers
+
+According to commit history, S1 is written by Anna Kelbert in July 2011 to replicate the (then current) Matlab 1D code written by Jin Sun. This code was used for global 3D inversion with complex (and complicated) sources and was originally written using the native conventions of KELBERT2006, but the best published reference for this code came much later: Sun, J., Kelbert, A., &amp; Egbert, G. D. (2015). Ionospheric current source modeling and global geomagnetic induction using ground geomagnetic observatory data. Journal of Geophysical Research (solid Earth), 120(10), 6771–6796, Wiley. https://doi.org/10.1002/2015JB012063
+In this set of revisions, the native conventions of S1 have been adjusted to those of S2 for consistency with the newly developed code, S2.
+S2 is written by Anna Kelbert and Claude in July 2026 and is designed to closely follow the Sun & Egbert 2012 publication. It is natively written in the S2 conventions. 
+
 ### Long-term solution: will provide three output options
 
 Kelbert (2006) (based on Uyeshima & Schultz (2000))
@@ -86,7 +103,7 @@ Note that at present the electric fields, as directly computed, do not match the
 After the latest fixes, the 1D impedances now match, as follows.
 
 ```
- === test_vs_modem_1D: field1d.f90 AND field1d_sunegbert2012.f90 vs ModEM small_predicted.dat ===
+ === test_vs_modem_1D: field1d.f90 AND field1d_s2.f90 vs ModEM small_predicted.dat ===
 
  Read  47 layers from USA_small_1D.prm
 
@@ -96,20 +113,20 @@ After the latest fixes, the 1D impedances now match, as follows.
              Allocating Legendre polynomials at grid nodes
              Allocating Legendre polynomials at grid edges
              Done mapping to grid:    0.00000000      secs
-    10.0   KELBERT2014 -2.3168E+00  9.7432E-01   -2.3374E+00  9.7540E-01        0.7665      0.1580
-    10.0 SUNEGBERT2012 -2.3168E+00  9.7432E-01   -2.3374E+00  9.7540E-01        0.7665      0.1580
+    10.0   S1 -2.3168E+00  9.7432E-01   -2.3374E+00  9.7540E-01        0.7665      0.1580
+    10.0 S2 -2.3168E+00  9.7432E-01   -2.3374E+00  9.7540E-01        0.7665      0.1580
              Done computing potentials:    0.00000000      secs
              Legendre polynomials pre-allocated at grid nodes
              Legendre polynomials pre-allocated at grid edges
              Done mapping to grid:    0.00000000      secs
-   100.0   KELBERT2014 -1.6330E+00  6.7216E-01   -1.6411E+00  6.8096E-01        0.6105      0.1630
-   100.0 SUNEGBERT2012 -1.6330E+00  6.7216E-01   -1.6411E+00  6.8096E-01        0.6105      0.1630
+   100.0   S1 -1.6330E+00  6.7216E-01   -1.6411E+00  6.8096E-01        0.6105      0.1630
+   100.0 S2 -1.6330E+00  6.7216E-01   -1.6411E+00  6.8096E-01        0.6105      0.1630
              Done computing potentials:    0.00000000      secs
              Legendre polynomials pre-allocated at grid nodes
              Legendre polynomials pre-allocated at grid edges
              Done mapping to grid:    0.00000000      secs
-  1000.0   KELBERT2014 -6.3911E-01  5.1723E-01   -6.3453E-01  5.2363E-01        0.0622      0.5469
-  1000.0 SUNEGBERT2012 -6.3911E-01  5.1723E-01   -6.3453E-01  5.2363E-01        0.0622      0.5469
+  1000.0   S1 -6.3911E-01  5.1723E-01   -6.3453E-01  5.2363E-01        0.0622      0.5469
+  1000.0 S2 -6.3911E-01  5.1723E-01   -6.3453E-01  5.2363E-01        0.0622      0.5469
 
  --- Mode1 (l=1 m=+-1): Zxy = Ex/Hy, evaluated at phi=90deg ---
     T(s)        solver                Zxy_calc         Zxy_ModEM(conj)                                                    %|Z|diffphase diff(d
@@ -117,20 +134,20 @@ After the latest fixes, the 1D impedances now match, as follows.
              Legendre polynomials pre-allocated at grid nodes
              Legendre polynomials pre-allocated at grid edges
              Done mapping to grid:    0.00000000      secs
-    10.0   KELBERT2014  2.3168E+00 -9.7432E-01    2.3373E+00 -9.7539E-01        0.7634      0.1576
-    10.0 SUNEGBERT2012  2.3168E+00 -9.7432E-01    2.3373E+00 -9.7539E-01        0.7634      0.1576
+    10.0   S1  2.3168E+00 -9.7432E-01    2.3373E+00 -9.7539E-01        0.7634      0.1576
+    10.0 S2  2.3168E+00 -9.7432E-01    2.3373E+00 -9.7539E-01        0.7634      0.1576
              Done computing potentials:    0.00000000      secs
              Legendre polynomials pre-allocated at grid nodes
              Legendre polynomials pre-allocated at grid edges
              Done mapping to grid:    0.00000000      secs
-   100.0   KELBERT2014  1.6330E+00 -6.7216E-01    1.6410E+00 -6.8092E-01        0.6074      0.1624
-   100.0 SUNEGBERT2012  1.6330E+00 -6.7216E-01    1.6410E+00 -6.8092E-01        0.6074      0.1624
+   100.0   S1  1.6330E+00 -6.7216E-01    1.6410E+00 -6.8092E-01        0.6074      0.1624
+   100.0 S2  1.6330E+00 -6.7216E-01    1.6410E+00 -6.8092E-01        0.6074      0.1624
              Done computing potentials:    0.00000000      secs
              Legendre polynomials pre-allocated at grid nodes
              Legendre polynomials pre-allocated at grid edges
              Done mapping to grid:    0.00000000      secs
-  1000.0   KELBERT2014  6.3911E-01 -5.1723E-01    6.3456E-01 -5.2360E-01        0.0620      0.5439
-  1000.0 SUNEGBERT2012  6.3911E-01 -5.1723E-01    6.3456E-01 -5.2360E-01        0.0620      0.5439
+  1000.0   S1  6.3911E-01 -5.1723E-01    6.3456E-01 -5.2360E-01        0.0620      0.5439
+  1000.0 S2  6.3911E-01 -5.1723E-01    6.3456E-01 -5.2360E-01        0.0620      0.5439
   ```
 
 ### Shifting the source by -90° in longitude to best match Mode 1 in ModEM

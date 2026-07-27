@@ -5,7 +5,7 @@ figures from one shared setup: the induced E field (general_lm_pattern_e.png)
 and the induced H field (general_lm_pattern_h.png).
 
 INPUT FORMAT: source coefficients are given in GLOBAL1D_COEFF, the SAME
-packed format global1d's .prm files / field1d.f90's and field1d_sunegbert2012.f90's
+packed format global1d's .prm files / field1d.f90's and field1d_s2.f90's
 `coeff(:)` arrays use: for degree l=0..LMAX, a block of (2l+1) complex
 values ordered m=0,+1,-1,+2,-2,...,+l,-l (l=0's single entry is always
 unused -- no monopole term). Paste directly from a .prm file's real/imag
@@ -13,15 +13,15 @@ columns, or from a Fortran `coeff(:)` array literal, in this same order --
 see unpack_global1d_coeff() below for the exact index formula.
 
 OUTPUT CONVENTION: all computed fields (and the plotted source pattern) are
-in field1d.f90/field1d_sunegbert2012.f90's NATIVE e^{-iwt} time convention, directly
+in field1d.f90/field1d_s2.f90's NATIVE e^{-iwt} time convention, directly
 comparable to their raw .hfield/.efield output with no further conjugation
 needed. This requires THREE corrections on top of pythonSolver's own native
 e^{+iwt} machinery (solve_layered / fields_from_R_general / C_lm), all
-found and verified 2026-07-23 while cross-validating field1d_sunegbert2012.f90 (see
-CLAUDE.md, "Cross-convention comparison rule", and
-pythonSolver/reference_earth_l1mneg1.py for the original derivation/check):
+found and verified 2026-07-23 while cross-validating field1d_s2.f90 (the
+"Cross-convention comparison rule" -- see
+testing/reference_earth_l1mneg1.py for the original derivation/check):
   1. normalize by sqrt(l(l+1)) -- pythonSolver's own convention is
-     T=R(r)*Y_l^m/sqrt(l(l+1)), field1d_sunegbert2012's is T_l(r)*Y_l^m directly (no
+     T=R(r)*Y_l^m/sqrt(l(l+1)), field1d_s2's is T_l(r)*Y_l^m directly (no
      norm division), so this factor is needed on TOP of solve_layered's own
      "A" (external-amplitude) normalization;
   2. flip the sign of m -- conjugating a field also conjugates its e^{imphi}
@@ -32,18 +32,17 @@ pythonSolver/reference_earth_l1mneg1.py for the original derivation/check):
      reasoning, the source current K) does not -- H is a pseudovector
      (reverses under true time-reversal, being sourced by currents), E is a
      polar vector (does not). NOTE: the -1-for-H-only rule was empirically
-     verified for E/H fields specifically (l=1,m=-1, Earth-scale, see
-     CLAUDE.md); applying the SAME (E-type, +1) rule to the source pattern
+     verified for E/H fields specifically (l=1,m=-1, Earth-scale --
+     see testing/reference_earth_l1mneg1.py); applying the SAME
+     (E-type, +1) rule to the source pattern
      Ktheta/Kphi below is a reasonable extension (same "polar vector" type
      as E) but has not been independently re-verified on its own.
 
 COEFFICIENT SCALING: none -- each raw GLOBAL1D_COEFF value is used as-is, no
 extra rescaling. (A Period/5 rescaling, matching MATLAB's PrimaryField.m
 "shc" scaling before TSModel.ShcInc, was tried 2026-07-23 and removed
-2026-07-25 to keep this demo consistent with FWD1D.f90/field1d_sunegbert2012.f90's
-own driver-level behaviour, which applies no such rescaling either; see
-CLAUDE.md, "Matching MATLAB/SIEM's practical coefficient scaling" for the
-historical note.)
+2026-07-25 to keep this demo consistent with FWD1D.f90/field1d_s2.f90's
+own driver-level behaviour, which applies no such rescaling either.)
 
 KEY POINT (unchanged from demo_l1_mneg1.py): the radial solve (solve_layered)
 takes only `l` as an argument -- it is completely insensitive to m, because
@@ -96,7 +95,7 @@ GLOBAL1D_COEFF = [
 def unpack_global1d_coeff(coeff, lmax):
     """Unpack a global1d-format packed coeff(:) array into a list of
     (coeff, l, m) tuples (m=-l..l, zero entries dropped). Index formula
-    (0-indexed here; matches field1d_sunegbert2012.f90's 1-indexed
+    (0-indexed here; matches field1d_s2.f90's 1-indexed
     coeff(l*l+1), coeff(l*l+2*m), coeff(l*l+2*m+1) exactly, offset by 1):
         coeff2(l, 0)  = coeff[l*l]
         coeff2(l, +m) = coeff[l*l + 2*m - 1]   for m=1..l
@@ -162,7 +161,7 @@ for l in degrees:
 
 # ----------------------------------------------------------------------
 # Superpose source pattern and induced E, H fields over all source terms,
-# converting each term to field1d_sunegbert2012's native e^{-iwt} convention via the
+# converting each term to field1d_s2's native e^{-iwt} convention via the
 # norm + m-flip + H-sign correction described in the module docstring.
 # ----------------------------------------------------------------------
 Ctheta_total = np.zeros_like(TH, dtype=complex)
@@ -201,7 +200,7 @@ for coeff_raw, l, m in SOURCE_TERMS:
 # global1d's own convention, confirmed directly by the user and applied the
 # same way in plot_global1d_output.py's Fz=Fr.T; an earlier version of this
 # line had the extra flip, which showed up as a sign mismatch on Hz alone
-# once compared directly against field1d_sunegbert2012 output, 2026-07-23).
+# once compared directly against field1d_s2 output, 2026-07-23).
 Ex_total = -Etheta_total
 Ey_total = Ephi_total
 Hx_total = -Htheta_total

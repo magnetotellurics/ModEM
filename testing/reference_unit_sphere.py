@@ -4,7 +4,7 @@ Reference values for test_unit_sphere.f90.
 Single homogeneous conducting sphere, radius r0, conductivity sigma, in
 vacuum, driven by a UNIT external (l,m) multipole (Theta_ext(r)=r^(l+1),
 amplitude 1). Computes the field components using Sun & Egbert (2012)
-eq.(5)-(6), independently derived (see field1d_sunegbert2012.f90's module
+eq.(5)-(6), independently derived (see field1d_s2.f90's module
 docstring for the derivation).
 
 Physical parameters match test_unit_sphere.f90 EXACTLY:
@@ -13,13 +13,13 @@ Physical parameters match test_unit_sphere.f90 EXACTLY:
 
 Merged 2026-07-25 from the former separate reference_unit_sphere.py (which
 compared, indirectly via a s=-1/conjugate dance, against field1d.f90 only) and
-reference_unit_sphere_sunegbert2012.py (which compared, directly and exactly,
-against field1d_sunegbert2012.f90) into ONE script with TWO clearly labeled
+reference_unit_sphere_s2.py (which compared, directly and exactly,
+against field1d_s2.f90) into ONE script with TWO clearly labeled
 sections, since both use the identical closed-form machinery below -- only
 the pass/fail criterion differs between the two solvers (see each section's
 own docstring for why).
 
-IMPORTANT: field1d.f90/field1d_sunegbert2012.f90 are BOTH native e^{-iwt}
+IMPORTANT: field1d.f90/field1d_s2.f90 are BOTH native e^{-iwt}
 (kl=sqrt(i*omega*mu0*sigma)), so s=+1 below is directly comparable to either
 solver's raw output with no extra time-convention conjugation.
 """
@@ -67,7 +67,7 @@ def solve_unit_external(l, k1, a):
     Continuity of T' at a: (l+1)*a^l - l*B*a^-(l+1) = C*Fap
                             => l*a^-(l+1)*B + C*Fap = (l+1)*a^l   (note: +Fap,
     not -Fap -- an earlier version of this function had a sign error here,
-    found 2026-07-23 by direct comparison against field1d_sunegbert2012.f90's own
+    found 2026-07-23 by direct comparison against field1d_s2.f90's own
     eq(23)-based radial solve, which -- independently -- matches to ~1e-9
     once this sign is corrected)."""
     Fa, Fap = rj(l, k1, a), rj_prime(l, k1, a)
@@ -94,7 +94,7 @@ def dY_dtheta(l, m, theta, phi, h=1e-7):
 
 
 def fields(Th, Thp, r, theta, phi, l, m, s):
-    """s=+1: e^{-iwt} (field1d.f90/field1d_sunegbert2012.f90 native). s=-1: e^{+iwt}."""
+    """s=+1: e^{-iwt} (field1d.f90/field1d_s2.f90 native). s=-1: e^{+iwt}."""
     Yv = Y_lm(l, m, theta, phi)
     Yt = dY_dtheta(l, m, theta, phi)
     Yp = (1j * m / np.sin(theta)) * Yv
@@ -134,25 +134,25 @@ print(f"k (native e^-iwt) = {k_ft:.8e},  |k*r0| = {abs(k_ft)*r0:.6f}")
 print(f"B (external-region beta/alpha, native e^-iwt) = {B_ft:.10e}")
 
 # ============================================================================
-# Section 1: field1d.f90 (KELBERT2014)
+# Section 1: field1d.f90 (S1)
 #
-# KELBERT2014 carries its own internal REAL normalization constants per
+# S1 carries its own internal REAL normalization constants per
 # component (R0^2/r^n factors, an extra 1/(l(l+1)) on the tangential H and E
 # components that H_r does not have) AND applies a final conjg() to every
 # assembled component intended to compensate for a "+m,-m conjugate-pairing"
 # reconstruction trick that this test (sourcing only m=+1, not the pair) never
-# actually exercises as intended. As analyzed 2026-07-25 (see CLAUDE.md), the
+# actually exercises as intended. As analyzed 2026-07-25, the
 # result is NOT a clean scalar/phase discrepancy for m!=0 -- so do NOT expect
 # ratio = 1+0i, or even a single common phase across all five components, when
-# comparing these numbers against test_unit_sphere.f90's KELBERT2014 output.
+# comparing these numbers against test_unit_sphere.f90's S1 output.
 # Printed for visual/diagnostic inspection only (kept in its original s=-1
-# form: what MUST match, if KELBERT2014's own bookkeeping were internally
+# form: what MUST match, if S1's own bookkeeping were internally
 # consistent for this term, is the PHASE of field1d_component / conj(this
-# s=-1 value) -- that ratio should come out real; per the analysis above and
-# in CLAUDE.md, it generally will NOT for m!=0, which is exactly the point).
+# s=-1 value) -- that ratio should come out real; per the analysis above,
+# it generally will NOT for m!=0, which is exactly the point).
 # ============================================================================
 print()
-print("=== Section 1: field1d.f90 (KELBERT2014) -- diagnostic only, no clean match expected ===")
+print("=== Section 1: field1d.f90 (S1) -- diagnostic only, no clean match expected ===")
 print(f"{'component':16s} {'(r,theta,phi)':45s} {'value @ s=-1 (+iwt)':>45s}")
 for name, (r, th, ph, which) in points.items():
     Th_py, Thp_py = Theta_ext_region(r, l, B_py)
@@ -161,15 +161,15 @@ for name, (r, th, ph, which) in points.items():
     print(f"{name:16s} r={r:8.2f} th={th:.10f} ph={ph:.10f}   {val.real:+.10e} {val.imag:+.10e}j")
 
 # ============================================================================
-# Section 2: field1d_sunegbert2012.f90 (SUNEGBERT2012)
+# Section 2: field1d_s2.f90 (S2)
 #
-# SUNEGBERT2012 uses this exact formula and this exact "alpha_l^T=1" (unit
+# S2 uses this exact formula and this exact "alpha_l^T=1" (unit
 # external amplitude) normalization directly -- so the expected match against
-# test_unit_sphere.f90's SUNEGBERT2012 output is EXACT (ratio = 1+0i for all
+# test_unit_sphere.f90's S2 output is EXACT (ratio = 1+0i for all
 # five components), not just phase-equal.
 # ============================================================================
 print()
-print("=== Section 2: field1d_sunegbert2012.f90 (SUNEGBERT2012) -- expect EXACT match, ratio=1+0i ===")
+print("=== Section 2: field1d_s2.f90 (S2) -- expect EXACT match, ratio=1+0i ===")
 print(f"{'component':16s} {'(r,theta,phi)':45s} {'value @ native e^-iwt':>45s}")
 for name, (r, th, ph, which) in points.items():
     Th, Thp = Theta_ext_region(r, l, B_ft)
@@ -178,6 +178,6 @@ for name, (r, th, ph, which) in points.items():
     print(f"{name:16s} r={r:8.2f} th={th:.10f} ph={ph:.10f}   {val.real:+.10e} {val.imag:+.10e}j")
 
 print()
-print("Compare Section 1 against test_unit_sphere.f90's 'KELBERT2014 (field1d.f90)' block")
-print("(diagnostic only) and Section 2 against its 'SUNEGBERT2012 (field1d_sunegbert2012.f90)'")
-print("block (expect ratio FIELD1D_SUNEGBERT2012/reference = 1+0i).")
+print("Compare Section 1 against test_unit_sphere.f90's 'S1 (field1d.f90)' block")
+print("(diagnostic only) and Section 2 against its 'S2 (field1d_s2.f90)'")
+print("block (expect ratio FIELD1D_S2/reference = 1+0i).")

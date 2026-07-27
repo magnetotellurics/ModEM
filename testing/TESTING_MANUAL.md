@@ -1,7 +1,7 @@
-# Testing manual: `field1d_sunegbert2012.f90` validation
+# Testing manual: `field1d_s2.f90` validation
 
 This is a step-by-step walkthrough of the test suite that validates
-`EARTH/FWD/field1d_sunegbert2012.f90` (the independent Sun & Egbert 2012 solver) —
+`EARTH/FWD/field1d_s2.f90` (the independent Sun & Egbert 2012 solver) —
 first against an independently-derived closed-form solution, then against
 `pythonSolver/spherical_em_induction.py`. See `CLAUDE.md` for the full
 narrative (bugs found/fixed, derivations) — this file is the practical
@@ -20,13 +20,13 @@ make -f Makefile.test1d
 builds all four test executables: `test_unit_sphere` (§1, l=2,m=1 closed-form
 check for BOTH solvers), `test_earth_l1mneg1` (§2, l=1,m=-1 vs pythonSolver
 check), `test_Tnr_uniform_sphere` (§3, `field1d.f90`'s `sourcePotential`
-check), and `test_kelbert2014_vs_sunegbert2012_l1m0` (direct `field1d.f90` vs
-`field1d_sunegbert2012.f90` side-by-side, l=1,m=0 — see its own header
+check), and `test_s1_vs_s2_l1m0` (direct `field1d.f90` vs
+`field1d_s2.f90` side-by-side, l=1,m=0 — see its own header
 comment and `CLAUDE.md` for what this one is investigating). `test_unit_sphere`/
-`test_earth_l1mneg1`/`test_kelbert2014_vs_sunegbert2012_l1m0` link against both
-`field1d_sunegbert2012.f90` and `field1d.f90`; `test_Tnr_uniform_sphere` links
-against `field1d.f90` only. (`test_unit_sphere_kelbert2014.f90` and
-`test_unit_sphere_sunegbert2012.f90` — which built the identical model/grid/
+`test_earth_l1mneg1`/`test_s1_vs_s2_l1m0` link against both
+`field1d_s2.f90` and `field1d.f90`; `test_Tnr_uniform_sphere` links
+against `field1d.f90` only. (`test_unit_sphere_s1.f90` and
+`test_unit_sphere_s2.f90` — which built the identical model/grid/
 source — were merged into the single `test_unit_sphere.f90` above, 2026-07-25;
 consolidated 2026-07-23 from a former separate `build_test_Tnr.sh` script.)
 
@@ -40,10 +40,10 @@ against this same setup; `reference_unit_sphere.py` prints the matching
 closed-form reference in two labeled sections, since the two solvers are
 NOT expected to match the closed form (or each other) the same way:
 
-- **`field1d_sunegbert2012.f90` (SUNEGBERT2012)** uses the paper's own literal
+- **`field1d_s2.f90` (S2)** uses the paper's own literal
   normalization ("coefficient of `r^(l+1)`=1"), so this comparison is
   expected to match the closed form **exactly** (not just in phase).
-- **`field1d.f90` (KELBERT2014)** carries its own internal normalization
+- **`field1d.f90` (S1)** carries its own internal normalization
   (`tni`-referenced, `R0^2/l(l+1)` factors) AND applies a final `conjg()` to
   every assembled component that was designed to compensate for a `+m,-m`
   conjugate-pairing reconstruction trick — but this test, like every other
@@ -54,7 +54,7 @@ NOT expected to match the closed form (or each other) the same way:
   (the `m`-flipped one) combined with a conjugated radial function. Printed
   for diagnostic inspection only; do **not** expect a real, let alone
   `1+0i`, ratio here. This is the open "absolute sign"/`conjg()` issue,
-  not a test bug — see §`test_kelbert2014_vs_sunegbert2012_l1m0` and
+  not a test bug — see §`test_s1_vs_s2_l1m0` and
   `CLAUDE.md` for the ongoing investigation.
 
 ```
@@ -64,7 +64,7 @@ python reference_unit_sphere.py
 
 ### Expected (correct) output
 
-`reference_unit_sphere.py`, Section 2 (SUNEGBERT2012):
+`reference_unit_sphere.py`, Section 2 (S2):
 ```
 component        (r,theta,phi)                                                       value @ native e^-iwt
 Hr (H%z)         r= 1525.00 th=1.8325957146 ph=0.0000000000   +1.7667764256e+03 +7.6668657838e+00j
@@ -74,10 +74,10 @@ Etheta (E%y)     r= 1525.00 th=1.8325957146 ph=0.3926990817   -5.3876610799e-01 
 Ephi (E%x)       r= 1525.00 th=1.9307704850 ph=0.0000000000   +7.3643022448e-03 -1.6970527415e+00j
 ```
 
-`./test_unit_sphere`, SUNEGBERT2012 block:
+`./test_unit_sphere`, S2 block:
 ```
- SUNEGBERT2012 (field1d_sunegbert2012.f90) output (real, imag) -- compare vs
- reference_unit_sphere.py section 2 ("field1d_sunegbert2012.f90 (SUNEGBERT2012)");
+ S2 (field1d_s2.f90) output (real, imag) -- compare vs
+ reference_unit_sphere.py section 2 ("field1d_s2.f90 (S2)");
  expect EXACT match, ratio = 1+0i for all five components:
   H%z(i=1,j=5,k=Rr=2) [Hr]     =    1.766772564157752E+03   7.720591661637887E+00
   H%x(i=1,j=5,k=Rs=2) [Hphi]   =   -4.582930754781241E+02   1.108770810024113E+03
@@ -86,13 +86,13 @@ Ephi (E%x)       r= 1525.00 th=1.9307704850 ph=0.0000000000   +7.3643022448e-03 
   E%x(i=1,j=5,k=Rr=2) [Ephi]   =    7.415908258769074E-03  -1.697049115420322E+00
 ```
 
-**Pass criterion (SUNEGBERT2012 block only)**: ratio (Fortran / reference)
+**Pass criterion (S2 block only)**: ratio (Fortran / reference)
 ≈ 1+0i for all 5 components, to ~5 significant figures (residual ~1e-5,
-from `field1d_sunegbert2012.f90`'s deliberate `r0+1m` epsilon shift and the
+from `field1d_s2.f90`'s deliberate `r0+1m` epsilon shift and the
 reference's finite-difference `ψ_l'` approximation — both harmless, see
 `CLAUDE.md`).
 
-The KELBERT2014 block (Section 1 of the reference script, `./test_unit_sphere`'s
+The S1 block (Section 1 of the reference script, `./test_unit_sphere`'s
 first output block) is diagnostic only — see the note above; do not expect a
 passing ratio there.
 
@@ -211,12 +211,12 @@ steps 1–2's closed-form/cross-solver checks instead).
 
 | What | How | Where |
 |---|---|---|
-| `field1d_sunegbert2012.f90` radial + angular + assembly, l=2,m=1 | closed form, exact | §1 |
+| `field1d_s2.f90` radial + angular + assembly, l=2,m=1 | closed form, exact | §1 |
 | `field1d.f90` radial + angular + assembly, l=2,m=1 | closed form, diagnostic only (no clean match expected) | §1 |
-| `field1d_sunegbert2012.f90` radial + angular + assembly, l=1,m=-1, Earth scale | pythonSolver cross-check, exact | §2 |
+| `field1d_s2.f90` radial + angular + assembly, l=1,m=-1, Earth scale | pythonSolver cross-check, exact | §2 |
 | `field1d.f90`'s `sourcePotential` radial functions only | closed form, exact | §3 |
 | Any `.hfield`/`.efield` output's E/H differential consistency | Faraday's law, numerical | §4 |
-| `field1d.f90` vs `field1d_sunegbert2012.f90` direct comparison, l=1,m=0 | side-by-side, investigates `conjg()`/absolute-sign issue | `test_kelbert2014_vs_sunegbert2012_l1m0` (see `CLAUDE.md`) |
+| `field1d.f90` vs `field1d_s2.f90` direct comparison, l=1,m=0 | side-by-side, investigates `conjg()`/absolute-sign issue | `test_s1_vs_s2_l1m0` (see `CLAUDE.md`) |
 | `spherical_em_induction.py`'s own `solve_layered` | closed form, exact | `pythonSolver/test_pythonsolver_Rval_Rpval.py` |
 | `spherical_em_induction.py`'s own `fields_from_R_general` | Faraday's law, self-consistency | `pythonSolver/test_pythonsolver_faraday.py` |
 | `spherical_em_induction.py`'s general-`m` vs `solve_layered`/closed-form regression | internal regression | `pythonSolver/test_validate.py`, `test_general_lm.py` |

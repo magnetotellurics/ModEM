@@ -4,7 +4,7 @@ Independent prediction of sourcePotential's Tnr(surface, l=1) for a uniform
 value printed by test_Tnr_uniform_sphere.f90.
 
 This is NOT a re-derivation of the E-field/Faraday-law physics (that attempt
-had an unresolved sign error, see CLAUDE.md). It is the algebraic trace of
+had an unresolved sign error). It is the algebraic trace of
 what sourcePotential ITSELF computes (field1d.f90:472-731), for the special
 case of a single uniform layer down to r=0 (lmax=1):
 

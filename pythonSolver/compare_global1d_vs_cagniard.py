@@ -5,11 +5,11 @@ radius, thin skin depth vs radius) locally approach the classical flat-
 halfspace Cagniard impedance at the surface?
 
 REVIVED 2026-07-23 (was previously parked, using the older m=0-specific
-fields_from_R and no field1d_sunegbert2012-style conjugation rule). Now uses
+fields_from_R and no field1d_s2-style conjugation rule). Now uses
 fields_from_R_general and the fully-validated conjugate + m-flip + H-sign
-correction from CLAUDE.md's "Cross-convention comparison rule" (the same
-recipe that gave an exact, ~5-significant-figure match between
-field1d_sunegbert2012.f90 and pythonSolver for l=1,m=-1 -- see
+"Cross-convention comparison rule" correction (the same recipe that gave an
+exact, ~5-significant-figure match between
+field1d_s2.f90 and pythonSolver for l=1,m=-1 -- see
 testing/TESTING_MANUAL.md). m=0 makes the m-flip a no-op here, but the
 norm=sqrt(l(l+1)) and H-sign=-1 (E-sign=+1) corrections still apply.
 
@@ -22,7 +22,7 @@ magnitude. But the PHASE comes out exactly 90 degrees off from Cagniard's
 +Z_cagniard) -- reproducing, with the NOW fully bug-fixed/validated E,H
 formulas and comparison rule, the SAME "90 degree" offset originally noted
 (and, at the time, suspected to be a hand-derivation bug) before
-field1d_sunegbert2012.f90/the comparison rule existed. Getting the identical 90
+field1d_s2.f90/the comparison rule existed. Getting the identical 90
 degrees with an independently-validated pipeline is evidence this is a
 REAL, reproducible relationship, not a bug -- most likely reflecting a
 genuine quadrature relationship between the spherical formalism's "external
@@ -38,7 +38,7 @@ build on, rather than trying to re-derive it by hand again.
 IMPORTANT convention note: spherical_em_induction.py uses e^{+i*omega*t}
 (k^2 = -i*omega*mu*sigma, see its module docstring and k_of()). global1d /
 ModEM use e^{-i*omega*t} (kl = sqrt(+i*omega*mu0*sigma) in TSModel.m /
-field1d.f90 / field1d_sunegbert2012.f90).
+field1d.f90 / field1d_s2.f90).
 """
 import numpy as np
 from spherical_em_induction import closed_form_single_sphere, fields_from_R_general
@@ -78,12 +78,12 @@ print(f"\nAt r=a, theta=90deg, pythonSolver native (e^+iwt):")
 print(f"  Ephi_raw   = {F['Ephi']}")
 print(f"  Htheta_raw = {F['Htheta']}")
 
-# convert to field1d_sunegbert2012.f90's native e^-iwt convention: norm factor +
-# conjugate + m-flip (no-op, m=0) + H-sign (-1 for H, +1 for E) -- see
-# CLAUDE.md, "Cross-convention comparison rule".
+# convert to field1d_s2.f90's native e^-iwt convention: norm factor +
+# conjugate + m-flip (no-op, m=0) + H-sign (-1 for H, +1 for E) --
+# the "Cross-convention comparison rule".
 Ephi_fortran = norm * np.conj(F['Ephi'] / A)
 Htheta_fortran = -norm * np.conj(F['Htheta'] / A)
-print(f"\nConverted to field1d_sunegbert2012.f90 convention (e^-iwt), unit external field:")
+print(f"\nConverted to field1d_s2.f90 convention (e^-iwt), unit external field:")
 print(f"  Ephi_fortran   = {Ephi_fortran}")
 print(f"  Htheta_fortran = {Htheta_fortran}")
 
@@ -96,7 +96,7 @@ print(f"  Htheta_fortran = {Htheta_fortran}")
 # identical to either Zxy or Zyx of the full impedance tensor without
 # further identification -- see the module docstring's "quadrature" note.
 Z_like = Ephi_fortran / Htheta_fortran
-print(f"\n  Ephi/Htheta (field1d_sunegbert2012 e^-iwt convention) = {Z_like}")
+print(f"\n  Ephi/Htheta (field1d_s2 e^-iwt convention) = {Z_like}")
 print(f"  |Z_like|  = {abs(Z_like):.6e}")
 print(f"  phase     = {np.degrees(np.angle(Z_like)):.2f} deg")
 

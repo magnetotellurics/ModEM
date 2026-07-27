@@ -6,7 +6,7 @@ for Fortran's Tnr/Tnsp/Tnrp/Tns in uniform_sphere_Tnr_predict.py -- but this
 time using pythonSolver's NATIVE e^{+i*omega*t} convention (k=sqrt(-i*omega*
 mu*sigma), via spherical_em_induction.py's own k_of()), not global1d's.
 
-Motivation (see CLAUDE.md, 2026-07-22 entry): comparing global1d against
+Motivation (2026-07-22): comparing global1d against
 pythonSolver for l=1,m=-1 shows Hz,Ex,Ey (all built from T(r)/Rval) picking
 up an extra factor of (-1i) relative to Hx,Hy (built from T'(r)/Rpval),
 after accounting for the e^{+iwt}<->e^{-iwt} conjugation. Fortran's Tnr/Tns

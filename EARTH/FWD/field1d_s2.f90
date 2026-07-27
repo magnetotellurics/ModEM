@@ -1,16 +1,19 @@
 ! *****************************************************************************
-module field1d_sunegbert2012
+module field1d_s2
     ! Independent Fortran implementation of the layered-earth 1D EM induction
     ! solver derived in Sun & Egbert (2012), "A thin-sheet model for global
     ! electromagnetic induction", Geophys. J. Int. 189, 343-356, Section 2
     ! ("The homogeneous layered earth") + Appendix A.
     !
-    ! Written independently of EARTH/FWD/field1d.f90 (which follows Kelbert,
-    ! Egbert & Schultz, 2008's notation) as a cross-check: no radial-solver or
+    ! Written independently of EARTH/FWD/field1d.f90 (S1 -- originally written
+    ! using Kelbert (2006)'s conventions, later adjusted to match S2's for
+    ! consistency; best published reference is Sun, Kelbert & Egbert (2015),
+    ! J. Geophys. Res. Solid Earth, 120(10), 6771-6796) as a cross-check: no
+    ! radial-solver or
     ! field-assembly code is shared between the two modules. Only the
     ! already-verified angular (Legendre / vector spherical harmonic) machinery
-    ! is reused from field1d, per CLAUDE.md's documented, sympy-checked
-    ! verification of its Condon-Shortley phase convention -- re-deriving that
+    ! is reused from field1d, whose Condon-Shortley phase convention has
+    ! already been independently verified against sympy -- re-deriving that
     ! by hand a second time would only re-risk the kind of subtle phase bug
     ! this project has already spent a long time isolating and fixing.
     !
@@ -73,7 +76,7 @@ module field1d_sunegbert2012
     ! multipole moment" of the source (text following eq 23) -- the whole
     ! radial profile is normalized here to alpha_l^T=1 ("per unit external
     ! field", the same convention field1d.f90's sourcePotential uses), and
-    ! sourceField1d_sunegbert2012 multiplies by the user's coeff(l,m) afterward.
+    ! sourceField1d_s2 multiplies by the user's coeff(l,m) afterward.
     !
     ! Numerically this reuses the same two robustness techniques already
     ! proven in field1d.f90's sourcePotential -- both are standard, paper-
@@ -92,7 +95,7 @@ module field1d_sunegbert2012
 
     private
 
-    public :: sourcePotential_sunegbert2012, sourceField1d_sunegbert2012
+    public :: sourcePotential_s2, sourceField1d_s2
 
 contains
 
@@ -147,7 +150,7 @@ contains
         ! cap off the INITIAL buffer instead, so at least a few real
         ! doublings are always possible regardless of |z|; this subroutine
         ! is called only once or twice per period (not per grid point,
-        ! see sourcePotential_sunegbert2012), so the extra iterations for
+        ! see sourcePotential_s2), so the extra iterations for
         ! large |z| are computationally cheap.
         buffer_cap = max(200000, 8*buffer)
         Rl_prev(:) = dcmplx(1.0d30, 0.0d0)
@@ -170,7 +173,7 @@ contains
             Rl_prev(:) = Rl(:)
             buffer = buffer*2
             if (buffer > buffer_cap) then
-                write(0,*) 'WARNING field1d_sunegbert2012/riccati_ratio_psi: no convergence at z=',z
+                write(0,*) 'WARNING field1d_s2/riccati_ratio_psi: no convergence at z=',z
                 exit
             end if
         end do
@@ -260,7 +263,7 @@ contains
     ! alpha_l^T = 1 (per unit external multipole amplitude)
     !===========================================================================
 
-    subroutine sourcePotential_sunegbert2012(earth, lmax, period, Rr, Rs, Tnr, Tnsp, Tnrp, Tns)
+    subroutine sourcePotential_s2(earth, lmax, period, Rr, Rs, Tnr, Tnsp, Tnrp, Tns)
 
         type(conf1d_t), intent(in)          :: earth
         integer, intent(in)                 :: lmax
@@ -278,7 +281,7 @@ contains
         integer :: j, l, nsub, isub, istat
 
         if (lmax <= 0) then
-            write(0,*) 'Error in sourcePotential_sunegbert2012: no potentials for degree 0'
+            write(0,*) 'Error in sourcePotential_s2: no potentials for degree 0'
             return
         end if
 
@@ -439,7 +442,7 @@ contains
         ! amplitude, same convention as field1d.f90/pythonSolver's K0). Since
         ! x^(l+1)=r^(l+1)/r1^(l+1), the coefficient-of-x^(l+1)=1 basis and the
         ! coefficient-of-r^(l+1)=1 basis differ by exactly r1^(l+1) (found by
-        ! direct comparison against reference_unit_sphere_sunegbert2012.py, 2026-07-23)
+        ! direct comparison against reference_unit_sphere_s2.py, 2026-07-23)
         ! -- dividing by alpha_raw(l)/rl(1)**(l+1) (instead of alpha_raw(l)
         ! alone) restores the intended convention. This factor is applied
         ! once, multiplicatively, here -- unlike the raw r1^(l+1) terms
@@ -505,7 +508,7 @@ contains
 
         deallocate(rl, kl, STAT=istat)
 
-    end subroutine sourcePotential_sunegbert2012
+    end subroutine sourcePotential_s2
 
     !===========================================================================
     ! Angular helper: Y_l^m (or Yt_l^m, Yp_l^m) for negative m, via the
@@ -530,7 +533,7 @@ contains
     ! Field assembly
     !===========================================================================
 
-    subroutine sourceField1d_sunegbert2012(earth, lmax, coeff, period, grid, H, E)
+    subroutine sourceField1d_s2(earth, lmax, coeff, period, grid, H, E)
 
         type(conf1d_t), intent(in)              :: earth
         integer, intent(in)                     :: lmax
@@ -557,7 +560,7 @@ contains
             ncoeff = ncoeff + (2*l+1)
         end do
         if (size(coeff) /= ncoeff) then
-            write(0,*) 'Error in sourceField1d_sunegbert2012: bad sph. harm. coeffs vector (size ', &
+            write(0,*) 'Error in sourceField1d_s2: bad sph. harm. coeffs vector (size ', &
                        size(coeff),'); must be size ',ncoeff
         end if
 
@@ -588,13 +591,13 @@ contains
         allocate(Tnr(Nrr,lmax), Tnsp(Nrs,lmax), STAT=istat)
         if (H%gridType == FACE) then
             allocate(Tnrp(Nrr,lmax), Tns(Nrs,lmax), STAT=istat)
-            call sourcePotential_sunegbert2012(earth, lmax, period, Rr, Rs, Tnr, Tnsp, Tnrp, Tns)
+            call sourcePotential_s2(earth, lmax, period, Rr, Rs, Tnr, Tnsp, Tnrp, Tns)
         else
-            call sourcePotential_sunegbert2012(earth, lmax, period, Rr, Rs, Tnr, Tnsp)
+            call sourcePotential_s2(earth, lmax, period, Rr, Rs, Tnr, Tnsp)
         end if
 
         if (any(Tnr /= Tnr) .or. any(Tnsp /= Tnsp)) then
-            write(0,*) 'Error in sourceField1d_sunegbert2012: NaN in source potentials at T=',period,' s'
+            write(0,*) 'Error in sourceField1d_s2: NaN in source potentials at T=',period,' s'
             deallocate(Tnr, Tnsp, STAT=istat)
             if (H%gridType == FACE) deallocate(Tnrp, Tns, STAT=istat)
             deallocate(Rr, Rs, coeff2, STAT=istat)
@@ -702,9 +705,12 @@ contains
         end do
 
         ! E%x -- phi component: E_phi = -(i*omega*mu0/r) * T(r) * Yt(l,m)
+        ! node phi (i=1..Np+1) -- FIX (2026-07-26): loop previously stopped at
+        ! i=Np, leaving E%x(Np+1,:,:) at its zero_cvector default; see the
+        ! identical fix + rationale in field1d.f90's corresponding E%x block.
         do j = 1,Nt
             call legendre_norm(lmax, cos(grid%th(j)+grid%dt(j)/2), P_lm)
-            do i = 1,Np
+            do i = 1,Np+1
                 call vsharm(lmax, cos(grid%th(j)+grid%dt(j)/2), grid%ph(i), P_lm, Y, Yt)
                 do k = 1,Nrr
                     csum = dcmplx(0.0d0,0.0d0)
@@ -831,13 +837,13 @@ contains
         end if ! present(E)
 
         else
-            write(0,*) 'Error in sourceField1d_sunegbert2012: unknown H%gridType: ', trim(H%gridType)
+            write(0,*) 'Error in sourceField1d_s2: unknown H%gridType: ', trim(H%gridType)
         end if
 
         deallocate(Tnr, Tnsp, STAT=istat)
         if (H%gridType == FACE) deallocate(Tnrp, Tns, STAT=istat)
         deallocate(Rr, Rs, coeff2, STAT=istat)
 
-    end subroutine sourceField1d_sunegbert2012
+    end subroutine sourceField1d_s2
 
-end module field1d_sunegbert2012
+end module field1d_s2
