@@ -494,23 +494,24 @@ Contains
 
           ! Recompute dHat and rms with new C (cheap, locked eAll)
           call reComputedHat_dist(d, eAll, m, distC, dHat, rms)
-          distNorm = psi_C(distC)
-
-          ! Recompute sigma gradient at NEW C (same mHat) — restart CG
-          call gradient_dist(lambda, distControl%nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll)
-          call linComb(MinusONE, gradM, R_ZERO, gradM, g)
-          h = g
-          nCG = 0
-          gnorm = sqrt(dotProd(gradM, gradM))
-          alpha = distControl%startdm / max(gnorm, R_TINY)
-          write(*,'(a39)') 'CG restarted after C-update (steepest descent)'
-          write(ioLog,'(a39)') 'CG restarted after C-update (steepest descent)'
        else
           write(*,'(a40)') '   DistLS: C-update skipped (locked)    '
           write(ioLog,'(a40)') '   DistLS: C-update skipped (locked)    '
        end if
 
        ! === Phase 2: nSigmaIter sigma-only NLCG iterations (C fixed) ===
+       ! Recompute sigma gradient at NEW C (same mHat) — restart CG
+       call gradient_dist(lambda, distControl%nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll)
+       call linComb(MinusONE, gradM, R_ZERO, gradM, g)
+       h = g
+       nCG = 0
+       gnorm = sqrt(dotProd(gradM, gradM))
+       alpha = distControl%startdm / max(gnorm, R_TINY)
+       write(*,'(a39)') 'CG restarted after C-update (steepest descent)'
+       write(ioLog,'(a39)') 'CG restarted after C-update (steepest descent)'
+       write(*,'(a36,i3,a16,i3)') 'Phase 2: Inner sigma loop (up to ', distControl%nSigmaIter, ' iterations)'
+       write(ioLog,'(a36,i3,a16,i3)') 'Phase 2: Inner sigma loop (up to ', distControl%nSigmaIter, ' iterations)'
+
        sigmaLoop: do inner = 1, distControl%nSigmaIter
           if ((rms < distControl%rmsTol) .or. (iter >= distControl%maxIter)) exit blockLoop
 
@@ -528,93 +529,97 @@ Contains
                h, alpha, value, gradM, rms, nLS, dHat, eAll)
           nfunc = nfunc + nLS
 
-          ! Update alpha for next sigma line search
-          alpha = 2.0_prec * (value - valuePrev) / max(grad_dot_h, R_TINY)
-          alpha = (ONE + 0.01_prec) * alpha
+           ! Update alpha for next sigma line search
+           alpha = 2.0_prec * (value - valuePrev) / grad_dot_h
+           alpha = (ONE + 0.01_prec) * alpha
 
-          call ModEM_timers_stop("NLCG_DIST Iteration", .false.)
-          call ModEM_timers_print("NLCG_DIST Iteration", ioLog)
+           ! Stall check (before CG beta, so lambda update resets CG correctly)
+           distNorm = psi_C(distC)
+           if (abs(rmsPrev - rms) < distControl%fdiffTol) then
+              call update_damping_parameter_dist(lambda, mHat, distNorm, value, gradM)
+              if (lambda < distControl%lambdaTol) then
+                 write(*,'(a55)') 'Unable to get out of a local minimum. Exiting...'
+                 write(ioLog,'(a55)') 'Unable to get out of a local minimum. Exiting...'
+                 exit blockLoop
+              end if
+              gnorm = sqrt(dotProd(gradM, gradM))
+              alpha = min(ONE, distControl%startdm) / gnorm
+              call linComb(MinusONE, gradM, R_ZERO, gradM, g)
+              write(*,'(a55)') 'Restarting NLCG with damping parameter updated'
+              write(ioLog,'(a55)') 'Restarting NLCG with damping parameter updated'
+              Nmodel = countModelParam(mHat)
+              mNorm = dotProd(mHat, mHat) / Nmodel
+              call printf('to', lambda, alpha, value, mNorm, rms)
+              call printf('to', lambda, alpha, value, mNorm, rms, logFile)
+              call ModEM_timers_stop("NLCG_DIST Iteration", .false.)
+              call ModEM_timers_print("NLCG_DIST Iteration", ioLog)
+              h = g
+              nCG = 0
+              cycle sigmaLoop
+           end if
 
-          write(*,'(a25,i5)') 'Completed sigma iteration ',iter
-          write(ioLog,'(a25,i5)') 'Completed sigma iteration ',iter
+           ! Write intermediate output
+           if (mod(iter, distControl%nskip) == 0) then
+              call CmSqrtMult(mHat, m_minus_m0)
+              call linComb(ONE, m_minus_m0, ONE, m0, m)
+              write(iterChar, '(i3.3)') iter
+              if (output_level > 1) then
+                 mFile = trim(distControl%fname)//'_NLCG_DIST_'//iterChar//'.rho'
+                 call write_modelParam(m, trim(mFile))
+              end if
+              if (output_level > 2) then
+                 mHatFile = trim(distControl%fname)//'_NLCG_DIST_'//iterChar//'.prm'
+                 call write_modelParam(mHat, trim(mHatFile))
+              end if
+              if (output_level > 2) then
+                 dataFile = trim(distControl%fname)//'_NLCG_DIST_'//iterChar//'.dat'
+                 call write_dataVectorMTX(dHat, trim(dataFile))
+              end if
+              if (output_level > 2) then
+                 res = d
+                 call linComb(ONE, d, MinusONE, dHat, res)
+                 resFile = trim(distControl%fname)//'_NLCG_DIST_'//iterChar//'.res'
+                 call write_dataVectorMTX(res, trim(resFile))
+                 call deall_dataVectorMTX(res)
+              end if
+              ! Write distortion matrices
+              distFile = trim(distControl%fname)//'_'//trim(distControl%distFname)
+              call write_distortionParam(trim(distFile), distC)
+           end if
 
-          Nmodel = countModelParam(mHat)
-          mNorm = dotProd(mHat, mHat) / Nmodel
-          call printf('with', lambda, alpha, value, mNorm, rms)
-          call printf('with', lambda, alpha, value, mNorm, rms, logFile)
+           ! Sigma gradient at new mHat (C still fixed)
+           gPrev = g
+           call gradient_dist(lambda, distControl%nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll)
+           call linComb(MinusONE, gradM, R_ZERO, gradM, g)
 
-          ! Write intermediate output
-          if (mod(iter, distControl%nskip) == 0) then
-             call CmSqrtMult(mHat, m_minus_m0)
-             call linComb(ONE, m_minus_m0, ONE, m0, m)
-             write(iterChar, '(i3.3)') iter
-             if (output_level > 1) then
-                mFile = trim(distControl%fname)//'_NLCG_DIST_'//iterChar//'.rho'
-                call write_modelParam(m, trim(mFile))
-             end if
-             if (output_level > 2) then
-                mHatFile = trim(distControl%fname)//'_NLCG_DIST_'//iterChar//'.prm'
-                call write_modelParam(mHat, trim(mHatFile))
-             end if
-             if (output_level > 2) then
-                dataFile = trim(distControl%fname)//'_NLCG_DIST_'//iterChar//'.dat'
-                call write_dataVectorMTX(dHat, trim(dataFile))
-             end if
-             if (output_level > 2) then
-                res = d
-                call linComb(ONE, d, MinusONE, dHat, res)
-                resFile = trim(distControl%fname)//'_NLCG_DIST_'//iterChar//'.res'
-                call write_dataVectorMTX(res, trim(resFile))
-                call deall_dataVectorMTX(res)
-             end if
-             ! Write distortion matrices
-             distFile = trim(distControl%fname)//'_'//trim(distControl%distFname)
-             call write_distortionParam(trim(distFile), distC)
-          end if
+           ! CG beta (Polak-Ribiere) for model gradient
+           g_dot_g = dotProd(g, g)
+           g_dot_gPrev = dotProd(g, gPrev)
+           gPrev_dot_gPrev = dotProd(gPrev, gPrev)
+           g_dot_h = dotProd(g, h)
 
-          ! Sigma gradient at new mHat (C still fixed)
-          gPrev = g
-          call gradient_dist(lambda, distControl%nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll)
-          call linComb(MinusONE, gradM, R_ZERO, gradM, g)
+           beta = (g_dot_g - g_dot_gPrev) / gPrev_dot_gPrev
 
-          ! Check for stall: update lambda (same RMS-only criterion as NLCG)
-          if (abs(rmsPrev - rms) < distControl%fdiffTol) then
-             call update_damping_parameter_dist(lambda, mHat, distNorm, value, gradM)
-             if (lambda < distControl%lambdaTol) then
-                write(*,'(a55)') 'Unable to get out of a local minimum. Exiting...'
-                write(ioLog,'(a55)') 'Unable to get out of a local minimum. Exiting...'
-                exit blockLoop
-             end if
-             gnorm = sqrt(dotProd(gradM, gradM))
-             alpha = min(ONE, distControl%startdm) / gnorm
-             call linComb(MinusONE, gradM, R_ZERO, gradM, g)
-             write(*,'(a55)') 'Restarting NLCG with damping parameter updated'
-             call printf('to', lambda, alpha, value, mNorm, rms)
-             write(ioLog,'(a55)') 'Restarting NLCG with damping parameter updated'
-             call printf('to', lambda, alpha, value, mNorm, rms, logFile)
-             h = g
-             nCG = 0
-             exit sigmaLoop  ! exit inner loop — new C-update may help
-          end if
+           if ((g_dot_g + beta * g_dot_h <= R_ZERO) .and. (nCG >= distControl%nCGmax)) then
+              write(*,'(a45)') 'Restarting NLCG to restore orthogonality'
+              write(ioLog,'(a45)') 'Restarting NLCG to restore orthogonality'
+              nCG = 0
+              beta = R_ZERO
+           else
+              nCG = nCG + 1
+           end if
+           call linComb(ONE, g, beta, h, h)
 
-          ! CG beta (Polak-Ribiere) for model gradient
-          g_dot_g = dotProd(g, g)
-          g_dot_gPrev = dotProd(g, gPrev)
-          gPrev_dot_gPrev = dotProd(gPrev, gPrev)
-          g_dot_h = dotProd(g, h)
+           ! Timer/printf at end of inner loop
+           Nmodel = countModelParam(mHat)
+           mNorm = dotProd(mHat, mHat) / Nmodel
+           call printf('with', lambda, alpha, value, mNorm, rms)
+           call printf('with', lambda, alpha, value, mNorm, rms, logFile)
 
-          beta = (g_dot_g - g_dot_gPrev) / max(gPrev_dot_gPrev, R_TINY)
+           call ModEM_timers_stop("NLCG_DIST Iteration", .false.)
+           call ModEM_timers_print("NLCG_DIST Iteration", ioLog)
 
-          if ((g_dot_g + beta * g_dot_h <= R_ZERO) .and. (nCG >= distControl%nCGmax)) then
-             write(*,'(a45)') 'Restarting NLCG to restore orthogonality'
-             write(ioLog,'(a45)') 'Restarting NLCG to restore orthogonality'
-             nCG = 0
-             beta = R_ZERO
-          else
-             nCG = nCG + 1
-          end if
-          call linComb(ONE, g, beta, h, h)
-       end do sigmaLoop
+        end do sigmaLoop
     end do blockLoop
 
     ! Final output
