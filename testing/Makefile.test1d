@@ -7,7 +7,7 @@
 #   test_earth_l1mneg1      -- field1d_s2.f90 vs pythonSolver, exact (l=1,m=-1)
 #   test_Tnr_uniform_sphere -- field1d.f90's sourcePotential vs closed form
 #   test_s1_vs_s2_l1m0 -- field1d.f90 vs field1d_s2.f90 directly, l=1,m=0
-#   test_vs_modem_1D        -- field1d.f90 (S1) AND field1d_s2.f90
+#   test_vs_modem_1D_impedance        -- field1d.f90 (S1) AND field1d_s2.f90
 #                               (S2), both vs an independent ModEM
 #                               3D-code benchmark (Zxy/Zyx), Mode1 and Mode2
 #                               sources, T=10/100/1000s -- both solvers now
@@ -20,7 +20,7 @@
 # merged into the single test_unit_sphere.f90 above, 2026-07-25, since both
 # built the identical model/grid/source -- see testing/TESTING_MANUAL.md.
 # test_s1_vs_modem_1D.f90 and test_s2_vs_modem_1D.f90 were
-# likewise merged into test_vs_modem_1D.f90, 2026-07-26, once field1d.f90's
+# likewise merged into test_vs_modem_1D_impedance.f90, 2026-07-26, once field1d.f90's
 # T(r)-valued formula signs were fixed to match field1d_s2.f90/
 # Sun & Egbert (2012) and both solvers agree with ModEM with no compensation.)
 # Mirrors Makefile1d but only builds the field1d.f90 dependency chain
@@ -35,7 +35,7 @@
 #   make -f Makefile.test1d
 #   ./test_unit_sphere / ./test_earth_l1mneg1 /
 #   ./test_Tnr_uniform_sphere / ./test_s1_vs_s2_l1m0 /
-#   ./test_vs_modem_1D / ./test_norm_condon_shortley / ./test_reversals
+#   ./test_vs_modem_1D_impedance / ./test_norm_condon_shortley / ./test_reversals
 
 ROOT = ..
 
@@ -50,7 +50,7 @@ OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o \
       $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o \
       $(OBJDIR)/output_convention.o $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
 
-all: test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D test_norm_condon_shortley test_reversals
+all: test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals
 
 # field1d.f90 (S1) and field1d_s2.f90 (S2) vs
 # the same closed form (l=2,m=1)
@@ -116,11 +116,11 @@ $(OBJDIR)/test_s1_vs_s2_l1m0.o: test_s1_vs_s2_l1m0.f90 $(OBJDIR)/field1d.o $(OBJ
 # field1d.f90 AND field1d_s2.f90, both vs an independent ModEM
 # benchmark, post T(r)-formula-sign fix (merges the former
 # test_s1_vs_modem_1D and test_s2_vs_modem_1D)
-test_vs_modem_1D: $(OBJDIR) $(OBJ) $(OBJDIR)/test_vs_modem_1D.o
-	$(F90) -o test_vs_modem_1D $(OBJ) $(OBJDIR)/test_vs_modem_1D.o
+test_vs_modem_1D_impedance: $(OBJDIR) $(OBJ) $(OBJDIR)/test_vs_modem_1D_impedance.o
+	$(F90) -o test_vs_modem_1D_impedance $(OBJ) $(OBJDIR)/test_vs_modem_1D_impedance.o
 
-$(OBJDIR)/test_vs_modem_1D.o: test_vs_modem_1D.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
-	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_vs_modem_1D.f90 -o $(OBJDIR)/test_vs_modem_1D.o
+$(OBJDIR)/test_vs_modem_1D_impedance.o: test_vs_modem_1D_impedance.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_vs_modem_1D_impedance.f90 -o $(OBJDIR)/test_vs_modem_1D_impedance.o
 
 # output_convention.f90 unit tests (Part 2)
 test_norm_condon_shortley: $(OBJDIR) $(OBJ) $(OBJDIR)/test_norm_condon_shortley.o
@@ -136,4 +136,4 @@ $(OBJDIR)/test_reversals.o: test_reversals.f90 $(OBJDIR)/output_convention.o $(O
 	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_reversals.f90 -o $(OBJDIR)/test_reversals.o
 
 clean:
-	rm -rf $(OBJDIR) test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D test_norm_condon_shortley test_reversals
+	rm -rf $(OBJDIR) test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals

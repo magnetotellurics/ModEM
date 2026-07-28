@@ -103,7 +103,7 @@ Note that at present the electric fields, as directly computed, do not match the
 After the latest fixes, the 1D impedances now match, as follows.
 
 ```
- === test_vs_modem_1D: field1d.f90 AND field1d_s2.f90 vs ModEM small_predicted.dat ===
+ === test_vs_modem_1D_impedance: field1d.f90 AND field1d_s2.f90 vs ModEM small_predicted.dat ===
 
  Read  47 layers from USA_small_1D.prm
 
@@ -173,6 +173,7 @@ SOURCE_TERMS = [
     (-0.5j, 1, 1),
     (-0.5j, 1, -1),
 ]
+```
 
 (-0.5 · i = -0.5j for m=1; 0.5 · i⁻¹ = 0.5·(-i) = -0.5j for m=-1 —
 they land on the same value here only because the current pair happens to
@@ -189,3 +190,190 @@ However, in practice we're going with a simpler solution. I implemented
 an option to supply a fake grid center for regional grids, and setting
 it to "0 90" will center the grid +90° in longitude, producing the same
 result as a shift in the source pattern would achieve at "0 0".
+
+
+### E-field sign test: global1d vs. ModEM (2026-07-27)
+
+Direct comparison of raw E-field signs between `FWD1D` (both solvers) and ModEM's
+spherical 3D solver, on ModEM's own regional test setup, per the recipe: run ModEM
+on `USA_small_1D.rho`/`small_test.dat`, compare `out.esoln` against the corresponding
+global1d `layered.prm` + `Mode1`/`Mode2` run.
+
+#### 1. Rebuild ModEM (was stale, predating the `SolnSpace.f90` `Pol_name` fix)
+
+```bash
+cd ../ModEM/build-serial
+make Mod3DMT_SP2_SPH -j8
+```
+
+```
+[  1%] Building Fortran object f90/CMakeFiles/Mod3DMT_SP2_SPH.dir/3D_MT/SolnSpace.f90.o
+[  3%] Linking Fortran executable ../Mod3DMT_SP2_SPH
+[100%] Built target Mod3DMT_SP2_SPH
+```
+
+Confirms the binary really was stale before this rebuild (`SolnSpace.f90.o` needed
+recompiling) and now includes the `Pol_name` fix (`iMode=1 -> 'Ey'`, `iMode=2 -> 'Ex'`).
+
+#### 2. Run ModEM on the small USA model
+
+```bash
+cd testing
+../../ModEM/build-serial/Mod3DMT_SP2_SPH -F USA_small_1D.rho small_test.dat out.dat out.esoln fwd.ctrl
+```
+
+```
+ Saving the EM solution...
+ E-fields written to out.esoln
+ Exiting...
+ ============= ModEM Run Report ============
+Timer: '                       Forward'		 Elapsed Time: 00:00:00:136447584
+Timer: '                    Total Time'		 Elapsed Time: 00:00:00:207395328
+ ============================
+```
+
+#### 3. Extract raw E from `out.esoln`
+
+```bash
+python check_esoln_signs.py
+```
+
+```
+T=   10.0s  Mode1 (Ey-pol)  Ey(i=5,j=4,k=13) = +1.685099e-03 +4.039246e-03j
+T=   10.0s  Mode2 (Ex-pol)  Ex(i=4,j=5,k=13) = +1.685694e-03 +4.040911e-03j
+T=  100.0s  Mode1 (Ey-pol)  Ey(i=5,j=4,k=13) = +1.241170e-02 +2.781752e-02j
+T=  100.0s  Mode2 (Ex-pol)  Ex(i=4,j=5,k=13) = +1.241320e-02 +2.783342e-02j
+T= 1000.0s  Mode1 (Ey-pol)  Ey(i=5,j=4,k=13) = +9.239718e-02 +9.166828e-02j
+T= 1000.0s  Mode2 (Ex-pol)  Ex(i=4,j=5,k=13) = +9.246905e-02 +9.177637e-02j
+```
+
+**Clean +Re, +Im for both modes, all three periods.**
+
+#### 4. Run `FWD1D` with `SOLVER='S1'` (already the default) on the matching global1d source
+
+Grid: `MTsource/USA.0.25x0.25.grd`, fake pole `(0, -90)` (this project's established USA-grid
+recipe). Model: `MTsource/layered.prm`. `OUTPUT_CONVENTION='EGBERTKELBERT2012'` (default).
+
+```bash
+./FWD1D MTsource/layered.prm MTsource/MTsource.1000sec.Mode1.prm MTsource/USA.0.25x0.25.grd testing/test_vs_modem_1D/out 0 -90
+./FWD1D MTsource/layered.prm MTsource/MTsource.1000sec.Mode2.prm MTsource/USA.0.25x0.25.grd testing/test_vs_modem_1D/out 0 -90
+```
+
+```
+ Grid staggering: E on primary edges (EDGE), H on primary faces (FACE)
+ Computing the fields for period 01:    1.1574074074074073E-002  days
+ Writing to H file: testing/test_vs_modem_1D/out.s1.EGBERTKELBERT2012.E-grid.T01.hfield
+ Writing to E file: testing/test_vs_modem_1D/out.s1.EGBERTKELBERT2012.E-grid.T01.efield
+```
+*(repeated for Mode2; output files renamed `mode1.s1.efield`/`mode2.s1.efield` etc.)*
+
+#### 5. Switch to `SOLVER='S2'`, rebuild, repeat
+
+```bash
+# edit FWD1D.f90: SOLVER = 'S2'
+make -f Makefile1d FWD1D
+./FWD1D MTsource/layered.prm MTsource/MTsource.1000sec.Mode1.prm MTsource/USA.0.25x0.25.grd testing/test_vs_modem_1D/out 0 -90
+./FWD1D MTsource/layered.prm MTsource/MTsource.1000sec.Mode2.prm MTsource/USA.0.25x0.25.grd testing/test_vs_modem_1D/out 0 -90
+# edit FWD1D.f90 back: SOLVER = 'S1'  (restored to the committed default)
+make -f Makefile1d FWD1D
+```
+
+#### 6. Extract raw E from the `.efield` files
+
+Under `EGBERTKELBERT2012`, `theta_convention`'s transform already replaces the old manual
+`Ex=-Etheta` relabeling, so post-transform `%y` (theta slot) = "Ex" (north) and `%x` (phi slot)
+= "Ey" (east) directly, no further sign flip needed. Read at `k=13` (this project's standard
+near-surface index), checked at several `(i,j)` to confirm lateral robustness (zonal Mode1 is
+phi-independent as expected; Mode2's off-target component is near-zero noise as expected):
+
+```bash
+python extract.py mode1.s1.efield mode1.s2.efield mode2.s1.efield mode2.s2.efield
+```
+
+```
+--- mode1.s1.efield ---  i=142 j=68 k=13:  east(Ey)= -3.124855e-04 -7.681966e-06j
+--- mode1.s2.efield ---  i=142 j=68 k=13:  east(Ey)= -6.249712e-04 -1.536394e-05j
+--- mode2.s1.efield ---  i=142 j=68 k=13:  north(Ex)= +2.209606e-04 +5.431970e-06j
+--- mode2.s2.efield ---  i=142 j=68 k=13:  north(Ex)= +4.419213e-04 +1.086395e-05j
+```
+
+#### Result
+
+| Mode | Field extracted | S1 | S2 | ModEM (`out.esoln`, T=1000s) | Match? |
+|---|---|---|---|---|---|
+| **Mode1** (zonal, m=0/P10 — matches ModEM's true `iMode=1`/Ey) | east (Ey) | `-3.1249E-04 -7.6820E-06j` | `-6.2497E-04 -1.5364E-05j` | `+9.2397E-02 +9.1668E-02j` | ❌ **sign flipped** (Re and Im both negative vs. ModEM's positive) |
+| **Mode2** (non-zonal, m=±1 — matches ModEM's true `iMode=2`/Ex) | north (Ex) | `+2.2096E-04 +5.4320E-06j` | `+4.4192E-04 +1.0864E-05j` | `+9.2469E-02 +9.1776E-02j` | ⚠️ **inconclusive — see follow-up below** |
+
+```bash
+./FWD1D MTsource/layered.prm MTsource/MTsource.1000sec.Mode2.prm MTsource/USA.0.25x0.25.grd testing/test_vs_modem_1D/out0+90 0 90
+# (edit FWD1D.f90: SOLVER='S2', rebuild, repeat, then restore SOLVER='S1' and rebuild)
+python extract.py mode2.s1.fake0+90.efield mode2.s2.fake0+90.efield
+```
+
+```
+--- mode2.s1.fake0+90.efield ---  i=142 j=68 k=13:  north(Ex)= -2.209606e-04 -5.431970e-06j
+--- mode2.s2.fake0+90.efield ---  i=142 j=68 k=13:  north(Ex)= -4.419213e-04 -1.086395e-05j
+```
+
+| Fake pole | S1 north(Ex) | S2 north(Ex) |
+|---|---|---|
+| `(0, -90)` | `+2.2096E-04 +5.4320E-06j` | `+4.4192E-04 +1.0864E-05j` |
+| `(0, +90)` | `-2.2096E-04 -5.4320E-06j` | `-4.4192E-04 -1.0864E-05j` |
+
+Exact sign flip, identical magnitude, between the two longitudes. **This means Mode2's earlier
+"match" with ModEM was not solid evidence of a correct convention** — it depends entirely on an
+untested assumption about how global1d's `phi=0` lines up with ModEM's actual station orientation.
+Choosing `(0,+90)` instead would have produced the opposite ("mismatch") conclusion for Mode2.
+
+**Conclusion (RESOLVED, 2026-07 — supersedes the "sign flip" reading above).** With `(0, 90)` as
+the correct fake pole, BOTH modes show the same `-Re,+Im` vs ModEM's `+Re,+Im`. This is **not a sign
+bug or conjugation**: global1d and ModEM differ by a single multiplicative complex constant per
+period, `c = E_global1d/E_ModEM = i·ω·μ₀·G`, verified constant over depth, scaling as ω, and
+mode-independent. It is the **potential-vs-field source-normalization** difference (global1d's source
+is a toroidal *potential* amplitude, ModEM's is a boundary *E-field*; Faraday's `∇×E=iωμ₀H` relates
+them — hence the `i`). It cancels identically in `Z=E/H`, which is why the impedance always matched.
+See the next section and **`docs/source_normalization.md` / `.pdf`** for the full derivation, and use
+the `EGBERTKELBERT2012_MODEM` output preset to remove it.
+
+## The toroidal source potential, the uniform inducing field, and the ModEM normalization
+
+Full write-up with derivations: **[`docs/source_normalization.md`](docs/source_normalization.md)**
+(and the compiled **`docs/source_normalization.pdf`**). Summary:
+
+- **The toroidal potential defines a quasi-uniform *magnetic* field, not an electric one.** For the
+  external `l=1` (P10) part, `T_1 = coeff·r²`, the code's own field formulas give
+  `H = 2·coeff·√(3/4π)·ẑ` — a spatially uniform axial **H**. The electric field is the induced
+  toroidal response, `E_φ ∝ iωμ₀·coeff·r·sinθ` (not uniform, and carrying the explicit `iωμ₀`).
+  "Toroidal" names the *electric* field's geometry (`E_r=0`, purely horizontal); the magnetic field
+  is poloidal (`H_r≠0`, the vertical/Z component). This is the standard deep-Earth induction picture.
+
+- **global1d ↔ ModEM:** the two codes' "unit sources" differ (a potential ∝ uniform H vs a boundary
+  E-field), so their raw E fields differ by `c = i·ω·μ₀·G`. `G` is derived from the **air-layer
+  geometry**: ModEM's boundary E is imposed at the top of the ~1000 km air column, and the surface
+  field is set by the air thickness `d_air`, giving
+
+  ```
+  G = -H_θ(surface)·(d_air + C)  ≈  (3/2)·√(3/(4π))·d_air  ≈  0.733·d_air ,
+  ```
+
+  where `(3/2) = (2 − Q₁)` with `Q₁→1/2` the l=1 deep-induction Q-response, `√(3/4π)` the
+  fully-normalized `Y_1^0` amplitude, and `C` the earth's C-response (the small period-dependent
+  residual). Verified against global1d's own surface `H_θ` (≈0.72, nearly period-independent).
+
+- **The `EGBERTKELBERT2012_MODEM` output preset** (now the default `OUTPUT_CONVENTION` in `FWD1D.f90`)
+  is identical to `EGBERTKELBERT2012` but additionally rescales the output `E` and `H` by
+  `1/(i·ω·μ₀·G)` with `G` from the grid's air thickness. This converts global1d's toroidal-potential
+  normalization to ModEM's boundary-E-field normalization. It applies the same complex factor to E
+  and H, so `Z=E/H` (the physics) is preserved. The residual (few-percent amplitude, `<~5°` phase,
+  growing with period) is a **genuine flat-vs-spherical model difference**, with global1d the more
+  accurate fully-spherical solution.
+
+- **Validated against trusted Cartesian ModEM.** The spherical ModEM build (`Mod3DMT_SP2_SPH`) needs
+  `-DFORCE_SPHERICAL`, which bypasses a guard warning that it is *experimental and "will not work with
+  traditional MT source setup"* — the very `COMPUTE_BC` path used here. So the derivation was
+  cross-checked against **Cartesian ModEM** (trusted) on a ρ=100 Ω·m halfspace. The air-column
+  formula `Z_e/(Z_e − iωμ₀d_air)` matches Cartesian ModEM to **0.2–0.6 %, ±0.1° at all periods**
+  (4–4000 s), and the full normalized preset gives `|r|` = **1.006** (perfect) at 4 s rising cleanly
+  to 1.145 at 3981 s — confirming the framework and that the residual is genuine flat-vs-spherical
+  physics, not an artifact of the experimental spherical BC. See
+  [`testing/test_vs_modem_1D/cartesian_sanity_check.md`](testing/test_vs_modem_1D/cartesian_sanity_check.md).

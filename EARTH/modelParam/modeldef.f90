@@ -139,6 +139,15 @@ module modeldef
 	  integer											  :: nL
 	  type (modelLayer_t), dimension(:), pointer		  :: L
 
+	  ! for source structures ONLY: number of modes per period (default 1,
+	  ! for backward compatibility with source files that don't specify
+	  ! 'modes' in the header -- see read_modelParam). nL = nPeriods*nModes;
+	  ! the flat L(1:nL) array is ordered periods-outer/modes-inner, i.e.
+	  ! L(1:nModes) are the nModes modes of period 1, L(nModes+1:2*nModes)
+	  ! are period 2's modes, etc. Meaningless (stays 1, unused) for
+	  ! non-source ('layers') parametrizations.
+	  integer											  :: nModes = 1
+
 	  ! all coefficient and function information
 	  integer											  :: nc ! number of active coeffs
 	  type (modelCoeff_t), dimension(:,:), pointer		  :: c	! structure of all coeffs

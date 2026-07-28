@@ -2,7 +2,7 @@ program test_diagnose_egbertkelbert
 ! ****************************************************************************
 ! DIAGNOSTIC (not a permanent regression test): compares (a) the raw native
 ! E-field with the OLD-STYLE manual MT relabeling (Ex=-Etheta, Ey=+Ephi --
-! this is what test_vs_modem_1D.f90 already validated against ModEM via
+! this is what test_vs_modem_1D_impedance.f90 already validated against ModEM via
 ! Zxy/Zyx, <1% agreement) against (b) the SAME physical quantity computed by
 ! running the FULL new pipeline: rescale_source_coeffs(...,EGBERTKELBERT2012)
 ! BEFORE the solve, then apply_output_convention(...,EGBERTKELBERT2012) AFTER

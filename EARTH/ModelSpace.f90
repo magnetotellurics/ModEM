@@ -36,8 +36,8 @@ Contains
     character(*), intent(in)            :: cfile
     type (modelParam_t), intent(inout)  :: P
     type (modelParam_t), intent(inout), optional  :: Pimag ! used for sources only
-    integer                             :: ilayer,i,j,k,k1,k2,n,l,m,w
-    integer                             :: nF,nL
+    integer                             :: ilayer,i,j,k,k1,k2,md,n,l,m,w
+    integer                             :: nF,nL,nPer,nModes,iPer,iMode
     integer                             :: sum,sum0,degree
     integer                             :: ios,istat
     real(8)                             :: upperb,lowerb,width,depth,alpha,beta,weight
@@ -46,6 +46,7 @@ Contains
     character(200)                      :: prmname, string
     real(8)                             :: v,vimag,vmin,vmax
     real(8)                             :: period ! read in place of depth for sources
+    real(8)                             :: group_period
     character(4)                        :: daysORsecs = 'days'
 
     lowerb = EARTH_R
@@ -77,7 +78,19 @@ Contains
        stop
     else
       i = max(index(prmname,'layers'),index(prmname,'periods'))
-      read(prmname(i+7:len(prmname)),*) nL
+      read(prmname(i+7:len(prmname)),*) nPer
+      ! optional 'modes M' token (source files only -- 'layers'-type model
+      ! files never have it): number of modes per period, all nPer periods
+      ! assumed to have the SAME nModes (checked below, once all blocks
+      ! have been read). Backward compatible: absent -> nModes=1, exactly
+      ! reproducing the old 'periods N degree D' behavior (nL=N).
+      md = index(prmname,'modes')
+      if (md > 0) then
+          read(prmname(md+6:len(prmname)),*) nModes
+      else
+          nModes = 1
+      end if
+      nL = nPer * nModes
       i = index(prmname,'degree')
       read(prmname(i+7:len(prmname)),*) degree
       write(6,*) node_info,trim(prmname)
@@ -85,11 +98,16 @@ Contains
 
 
     call create_modelParam(P,nL,degree)
+    P%nModes = nModes
     if (isComplex) then
        call create_modelParam(Pimag,nL,degree)
+       Pimag%nModes = nModes
     end if
 
     write(6,'(a60,i3)') 'Number of layers/periods in script: ',P%nL
+    if (nModes > 1) then
+        write(6,'(a45,i3,a10,i3)') 'Read as: number of periods = ',nPer,'; modes = ',nModes
+    end if
 
 
     ! Unwind spherical harmonic parametrization
@@ -189,6 +207,28 @@ Contains
        if (period > 0.0d0) then
           call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,weight,if_log_char,period)
           call setLayer_modelParam(Pimag,n,upperb,lowerb,alpha,beta,weight,if_log_char,period)
+
+          ! validate that all nModes blocks within a period-group really do
+          ! share the same period -- catches a mistake in how the file was
+          ! assembled (e.g. a mode's line accidentally given the wrong
+          ! period) that would otherwise silently mis-pair periods/modes
+          ! downstream. Blocks are assumed ordered periods-outer/modes-
+          ! inner: block n belongs to period-group iPer=((n-1)/nModes)+1,
+          ! mode iMode=mod(n-1,nModes)+1 within it.
+          iPer  = (n-1)/nModes + 1
+          iMode = mod(n-1,nModes) + 1
+          if (iMode == 1) then
+              group_period = period
+          else if (abs(period-group_period) > 1.0d-6*max(abs(period),1.0d0)) then
+              write(0,'(a,i3,a,i3,a,i3,a,f14.6,a,i3,a,f14.6)') &
+                  'Error: (read_modelParam) block ',n,' (period-group ',iPer,', mode ',iMode, &
+                  ') has period ',period,' but period-group ',iPer,' started with period ',group_period
+              write(0,*) 'Error: (read_modelParam) all nModes blocks within a period-group must &
+                          &share the same period -- check the source .prm file for a mismatched &
+                          &period value, or that nModes in the header matches every group''s actual &
+                          &mode count'
+              stop
+          end if
        else
           call setLayer_modelParam(P,n,upperb,lowerb,alpha,beta,weight,if_log_char)
        end if
@@ -201,11 +241,40 @@ Contains
        !write(6,'(a46,i2,a2,i3)') 'Number of coefficients in layer ',n,': ',sum
 
        do i=1,sum
+          ! The trailing columns (min, max, const/range) set inversion bounds and
+          ! freeze status; they are OPTIONAL because forward modeling only needs the
+          ! coefficient value(s). Read the whole line, then parse with a fallback: try
+          ! the full "l m value [imag] min max const/range" form first, and if that
+          ! fails (columns absent), read just "l m value [imag]" and default the
+          ! inversion-only fields to full range, frozen ('const').
+          read(ioPrm,'(a)',iostat=ios) string
+          if (ios /= 0) then
+            write(0, *) 'Error: (read_modelParam) failed to read coefficient line ',i,' for block ',n
+            stop
+          end if
+          vmin = -1.0d0
+          vmax =  1.0d0
+          if_var_char = 'const'
           if (isComplex) then
-            read(ioPrm,*,iostat=ios) l,m,v,vimag,vmin,vmax,if_var_char
+            read(string,*,iostat=istat) l,m,v,vimag,vmin,vmax,if_var_char
+            if (istat /= 0) then
+              vmin = -1.0d0; vmax = 1.0d0; if_var_char = 'const'
+              read(string,*,iostat=istat) l,m,v,vimag
+            end if
             !write(*,'(i4,2e14.6)') i,v,vimag
           else
-            read(ioPrm,*,iostat=ios) l,m,v,vmin,vmax,if_var_char
+            read(string,*,iostat=istat) l,m,v,vmin,vmax,if_var_char
+            if (istat /= 0) then
+              vmin = -1.0d0; vmax = 1.0d0; if_var_char = 'const'
+              read(string,*,iostat=istat) l,m,v
+            end if
+          end if
+          if (istat /= 0) then
+            write(0, *) 'Error: (read_modelParam) could not parse coefficient line: ',trim(string)
+            write(0, *) 'Error: (read_modelParam) expected "l m value [min max const/range]"'
+            write(0, *) 'Error: (read_modelParam) (or "l m real imag [min max const/range]" for sources).'
+            write(0, *) 'Error: (read_modelParam) if file looks OK, try running dos2unix on it. Exiting...'
+            stop
           end if
           if (if_var_char == 'range') then
             if_fixed = .FALSE.

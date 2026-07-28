@@ -70,7 +70,7 @@ module output_convention
     ! transform, same as any other non-native target.
     ! ==========================================================================
 
-    use math_constants, only: prec, PI
+    use math_constants, only: prec, PI, MU_0
     use sg_vector, only: cvector
 
     implicit none
@@ -79,9 +79,9 @@ module output_convention
     public :: output_convention_t
     public :: TIME_POSITIVE, TIME_NEGATIVE, NORM_SCHMIDT, NORM_FULL, &
               THETA_COLAT, THETA_LAT, R_DOWN, R_UP
-    public :: KELBERT2006, SUNEGBERT2012, EGBERTKELBERT2012
+    public :: KELBERT2006, SUNEGBERT2012, EGBERTKELBERT2012, EGBERTKELBERT2012_MODEM
     public :: get_convention, native_convention
-    public :: rescale_source_coeffs, apply_output_convention
+    public :: rescale_source_coeffs, apply_output_convention, apply_modem_normalization
 
     ! ------- enumerated tokens (character params keep the .prm/config human-readable) -------
     character(len=10), parameter :: TIME_POSITIVE = 'PLUS_IWT'
@@ -102,22 +102,30 @@ module output_convention
         character(len=10) :: theta_convention   ! THETA_COLAT | THETA_LAT
         character(len=6)  :: r_convention       ! R_DOWN | R_UP
         character(len=1)  :: primary_grid       ! 'H' | 'E'  (records intended staggering)
+        ! .true. = additionally rescale the OUTPUT fields by 1/(i*omega*mu0*G)
+        ! to match ModEM's boundary-E-field source normalization instead of
+        ! global1d's toroidal-potential normalization (see apply_modem_norm-
+        ! alization and docs/source_normalization.pdf). Purely a field-value
+        ! rescale of the finished output; does NOT change any of the seven
+        ! bookkeeping dimensions above. Default .false. for every preset
+        ! except EGBERTKELBERT2012_MODEM.
+        logical            :: modem_normalize = .false.
     end type output_convention_t
 
     ! ------- the three predefined conventions (kept exactly as specified --
     ! see the NATIVE CONVENTIONS note above for why these are fixed, named
     ! targets, not necessarily any solver's raw native output) -------
     type(output_convention_t), parameter :: KELBERT2006 = output_convention_t( &
-        'KELBERT2006', TIME_POSITIVE, NORM_SCHMIDT, .false., THETA_COLAT, R_DOWN, 'H')
+        'KELBERT2006', TIME_POSITIVE, NORM_SCHMIDT, .false., THETA_COLAT, R_DOWN, 'H', .false.)
 
     type(output_convention_t), parameter :: SUNEGBERT2012 = output_convention_t( &
-        'SUNEGBERT2012', TIME_NEGATIVE, NORM_FULL, .true., THETA_COLAT, R_UP, 'E')
+        'SUNEGBERT2012', TIME_NEGATIVE, NORM_FULL, .true., THETA_COLAT, R_UP, 'E', .false.)
 
     ! condon_shortley=.true. here (2026-07-26, per direct user instruction, for
     ! validation purposes): confirmed empirically (test_diagnose_egbertkelbert.f90)
     ! that ModEM's own .prm source-coefficient files are ALREADY written in
     ! vsharm's native CS-included basis (they reproduce ModEM correctly when fed
-    ! UNSCALED into either solver, see test_vs_modem_1D.f90) -- .false. here
+    ! UNSCALED into either solver, see test_vs_modem_1D_impedance.f90) -- .false. here
     ! (the original spec's assumption) spuriously flips every odd-m source
     ! (e.g. Mode2, l=1 m=+-1) via rescale_source_coeffs's (-1)^m term while
     ! leaving m=0 sources (e.g. Mode1) untouched, producing a mode-dependent
@@ -127,7 +135,31 @@ module output_convention
     ! .false. may still be needed for that use case -- track separately,
     ! do not silently revert this field back to .false.
     type(output_convention_t), parameter :: EGBERTKELBERT2012 = output_convention_t( &
-        'EGBERTKELBERT2012', TIME_NEGATIVE, NORM_FULL, .true., THETA_LAT, R_DOWN, 'E')
+        'EGBERTKELBERT2012', TIME_NEGATIVE, NORM_FULL, .true., THETA_LAT, R_DOWN, 'E', .false.)
+
+    ! EGBERTKELBERT2012_MODEM: identical field bookkeeping to EGBERTKELBERT2012,
+    ! but additionally rescales the OUTPUT E and H by 1/(i*omega*mu0*G) so the
+    ! amplitude/phase match ModEM's boundary-E-field source normalization
+    ! rather than global1d's toroidal-potential normalization. The two differ
+    ! by exactly c = i*omega*mu0*G (G a real geometric constant set by the
+    ! air-layer thickness) -- the potential-vs-field relationship of Faraday's
+    ! law; see apply_modem_normalization and docs/source_normalization.pdf for
+    ! the full derivation. Applying the SAME complex factor to both E and H
+    ! preserves Z=E/H, so no physics is changed -- only the (arbitrary) source-
+    ! normalization convention. Intended for direct raw-field interoperability
+    ! with ModEM (e.g. feeding global1d fields into ModEM as boundary values);
+    ! the match is exact for the l=1/P10-at-equator MT modes in the deep-
+    ! induction limit, with a few-% amplitude / <~5deg phase residual (the
+    ! earth's C-response and the flat-vs-spherical difference) -- both genuine
+    ! model differences, not convention artifacts. VALIDATED against trusted
+    ! CARTESIAN ModEM (rho=100 halfspace): the air-column formula matches to
+    ! 0.2-0.6% at all periods, and this preset gives |ratio|=1.006 (perfect)
+    ! at short period rising cleanly to 1.145 at 3981s -- confirming the
+    ! residual is genuine flat-vs-spherical physics, not an artifact of the
+    ! experimental spherical ModEM BC. See docs/source_normalization.md/.pdf
+    ! sec.6 and testing/test_vs_modem_1D/cartesian_sanity_check.md.
+    type(output_convention_t), parameter :: EGBERTKELBERT2012_MODEM = output_convention_t( &
+        'EGBERTKELBERT2012_MODEM', TIME_NEGATIVE, NORM_FULL, .true., THETA_LAT, R_DOWN, 'E', .true.)
 
 contains
 
@@ -136,9 +168,10 @@ contains
         character(*), intent(in)   :: name
         type(output_convention_t)  :: conv
         select case (trim(name))
-            case ('KELBERT2006');        conv = KELBERT2006
-            case ('SUNEGBERT2012');      conv = SUNEGBERT2012
-            case ('EGBERTKELBERT2012');  conv = EGBERTKELBERT2012
+            case ('KELBERT2006');           conv = KELBERT2006
+            case ('SUNEGBERT2012');         conv = SUNEGBERT2012
+            case ('EGBERTKELBERT2012');     conv = EGBERTKELBERT2012
+            case ('EGBERTKELBERT2012_MODEM'); conv = EGBERTKELBERT2012_MODEM
             case default
                 write(0,*) 'output_convention: unknown convention name: ', trim(name)
                 stop 1
@@ -318,5 +351,46 @@ contains
         V%y = V%y(:, :, size(V%y,3):1:-1)
         V%z = V%z(:, :, size(V%z,3):1:-1)
     end subroutine reverse_r_index
+
+    !===========================================================================
+    ! (c) ModEM source-normalization rescale -- applied AFTER apply_output_-
+    !     convention, only for target conventions with modem_normalize=.true.
+    !===========================================================================
+
+    subroutine apply_modem_normalization(H, E, omega, d_air)
+        ! Rescales BOTH H and E (every component) by the single complex factor
+        !     1 / (i * omega * mu0 * G),   G = (3/2) * sqrt(3/(4*pi)) * d_air,
+        ! converting global1d's toroidal-potential ("unit external multipole")
+        ! source normalization into ModEM's boundary-E-field ("unit surface E")
+        ! normalization. The two differ by exactly c = i*omega*mu0*G -- the
+        ! potential-vs-field factor of Faraday's law (see the header comment on
+        ! the EGBERTKELBERT2012_MODEM preset and, for the full derivation,
+        ! docs/source_normalization.md / .pdf).
+        !
+        ! G is derived from the AIR-LAYER GEOMETRY: d_air is the air-column
+        ! thickness (top-of-grid radius minus Earth radius, in metres); the
+        ! (3/2)*sqrt(3/(4*pi)) factor is |H_theta(surface)| per unit source for
+        ! the l=1 (P10/MT) mode at the equator in the deep-induction limit
+        ! (Q_1 -> 1/2): (2 - Q_1) = 3/2 combines the uniform-external (2) and
+        ! induced (-Q_1) parts, sqrt(3/(4*pi)) is the fully-normalized Y_1^0
+        ! amplitude. This is EXACT for l=1 at the equator in that limit; a
+        ! few-% amplitude / <~5deg phase residual remains (the earth's finite-Q
+        ! C-response and ModEM's flat-vs-spherical BC), both genuine model
+        ! differences. Applying the same factor to E and H preserves Z=E/H.
+        !
+        ! d_air must be passed by the caller (from the grid: grid%r(1)*1e3 minus
+        ! Earth radius r0), and omega=2*pi/period for the current period, since
+        ! this module does not own the grid or the period loop.
+        type(cvector), intent(inout) :: H, E
+        real(prec), intent(in)       :: omega, d_air
+        real(prec)                   :: G
+        complex(prec)                :: factor
+
+        G = 1.5_prec * sqrt(3.0_prec/(4.0_prec*PI)) * d_air
+        factor = 1.0_prec / dcmplx(0.0_prec, omega*MU_0*G)   ! 1/(i*omega*mu0*G)
+
+        H%x = factor*H%x ; H%y = factor*H%y ; H%z = factor*H%z
+        E%x = factor*E%x ; E%y = factor*E%y ; E%z = factor*E%z
+    end subroutine apply_modem_normalization
 
 end module output_convention

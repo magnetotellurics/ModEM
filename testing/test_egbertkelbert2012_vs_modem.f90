@@ -1,7 +1,7 @@
 program test_egbertkelbert2012_vs_modem
 ! ****************************************************************************
 ! Closes the "NOT yet validated" gap flagged in CLAUDE.md (Part 3, criterion 2):
-! test_vs_modem_1D.f90 validates the two solvers' RAW native output against
+! test_vs_modem_1D_impedance.f90 validates the two solvers' RAW native output against
 ! ModEM (via small_predicted.dat's Zxy/Zyx), with NO rescale_source_coeffs or
 ! apply_output_convention applied at all. This program runs the SAME two
 ! source patterns (Mode1=zonal/l=1,m=0, Mode2=l=1,m=+-1) through the FULL

@@ -1,4 +1,4 @@
-program test_vs_modem_1D
+program test_vs_modem_1D_impedance
 ! ****************************************************************************
 ! Merges test_s1_vs_modem_1D.f90 and test_s2_vs_modem_1D.f90
 ! into one driver (same pattern as test_unit_sphere.f90, which runs both
@@ -78,7 +78,7 @@ program test_vs_modem_1D
     real(8), parameter :: mu0_local = 1.256637d-6   ! matches field1d.f90's own literal
     real(8), parameter :: Z_SI_to_practical = 1.0d-3 / mu0_local
 
-    write(*,*) '=== test_vs_modem_1D: field1d.f90 AND field1d_s2.f90 vs ModEM small_predicted.dat ==='
+    write(*,*) '=== test_vs_modem_1D_impedance: field1d.f90 AND field1d_s2.f90 vs ModEM small_predicted.dat ==='
     write(*,*)
 
     ! ---- earth model: USA_small_1D.prm's own 47 layers + FWD1D.f90's hardcoded core ----
@@ -255,4 +255,4 @@ contains
 
     end subroutine read_layered_prm
 
-end program test_vs_modem_1D
+end program test_vs_modem_1D_impedance
