@@ -95,7 +95,7 @@ module field1d_s2
 
     private
 
-    public :: sourcePotential_s2, sourceField1d_s2
+    public :: sourcePotential_s2, sourceField1d_s2, surfaceField1d_s2
 
 contains
 
@@ -845,5 +845,110 @@ contains
         deallocate(Rr, Rs, coeff2, STAT=istat)
 
     end subroutine sourceField1d_s2
+
+    !=======================================================================
+    ! surfaceField1d_s2 (S2): evaluate the full EM field at the Earth's
+    ! SURFACE (r = earth%r0 = R_earth) at the LATERAL CELL CENTRES of the
+    ! grid (theta = grid%th(j)+grid%dt(j)/2, phi = grid%ph(i)+grid%dp(i)/2),
+    ! for validation and plotting. S2 counterpart of field1d.f90's
+    ! surfaceField1d -- same Sun & Egbert (2012) eq (5)-(6) assembly as
+    ! sourceField1d_s2's EDGE branch, specialized to the single radius r=R0.
+    ! Returns all six components co-located at one common set of surface
+    ! points, native e^{-i*omega*t}, in Hsurf/Esurf(Np,Nt,3), component
+    ! index 1=radial (r), 2=colatitude (theta), 3=longitude (phi); E_r=0.
+    !=======================================================================
+    subroutine surfaceField1d_s2(earth,lmax,coeff,period,grid,Hsurf,Esurf)
+
+        type(conf1d_t), intent(in)                  :: earth
+        integer, intent(in)                         :: lmax
+        complex(8), dimension(:), intent(in)        :: coeff
+        real(8), intent(in)                         :: period
+        type(grid_t), intent(in)                    :: grid
+        complex(8), dimension(:,:,:), intent(out)   :: Hsurf, Esurf ! (Np,Nt,3)
+        ! local
+        real(8), dimension(1)                       :: Rr, Rs
+        complex(8), dimension(1,lmax)               :: Tnr, Tnsp
+        real(8), dimension(lmax+1,lmax+1)           :: P_lm
+        complex(8), dimension(lmax,lmax+1)          :: Y, Yt, Yp
+        complex(8), dimension(:,:), allocatable     :: coeff2
+        real(8)     :: R0, th_mid, ph_mid, omega
+        complex(8)  :: iomu0, csr, cst, csp
+        integer     :: Np, Nt, i, j, l, m, istat
+
+        Np = grid%nx
+        Nt = grid%ny
+        R0 = earth%r0
+        omega = 2.0d0*PI/period
+        iomu0 = dcmplx(0.0d0,1.0d0) * omega * MU_0
+
+        ! unpack flat, degree-blocked coeff(:) into coeff2(l,-l:l) (as in
+        ! sourceField1d_s2): degree-l block starts at l^2+1, size 2l+1,
+        ! ordered m=0,1,-1,2,-2,...
+        allocate(coeff2(lmax,-lmax:lmax), STAT=istat)
+        coeff2(:,:) = dcmplx(0.0d0,0.0d0)
+        do l = 1,lmax
+            coeff2(l,0) = coeff(l*l+1)
+            do m = 1,l
+                coeff2(l,m)  = coeff(l*l+2*m)
+                coeff2(l,-m) = coeff(l*l+2*m+1)
+            end do
+        end do
+
+        ! source potentials at the single surface radius r = R_earth
+        Rr(1) = R0
+        Rs(1) = R0
+        call sourcePotential_s2(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
+
+        if (any(Tnr /= Tnr) .or. any(Tnsp /= Tnsp)) then
+            deallocate(coeff2, STAT=istat)
+            call errStop('surfaceField1d_s2: NaN in source potentials at the surface')
+        end if
+
+        Hsurf = dcmplx(0.0d0,0.0d0)
+        Esurf = dcmplx(0.0d0,0.0d0)
+
+        do j = 1,Nt
+            th_mid = grid%th(j) + grid%dt(j)/2
+            call legendre_norm(lmax,cos(th_mid),P_lm)
+            do i = 1,Np
+                ph_mid = grid%ph(i) + grid%dp(i)/2
+                call vsharm(lmax,cos(th_mid),ph_mid,P_lm,Y,Yt,Yp)
+
+                csr = dcmplx(0.0d0,0.0d0)
+                cst = dcmplx(0.0d0,0.0d0)
+                csp = dcmplx(0.0d0,0.0d0)
+                do l = 1,lmax
+                    do m = -l,l
+                        ! Hr = (l(l+1)/r^2) T(r) Y ; at r=R0 -> l(l+1)/R0^2
+                        csr = csr + coeff2(l,m)*Tnr(1,l)*dble(l*(l+1))/R0**2*Yval(Y,l,m,lmax)
+                        ! Htheta = (1/r) T'(r) Yt ; at r=R0 -> Tnsp/R0
+                        cst = cst + coeff2(l,m)*Tnsp(1,l)/R0*Yval(Yt,l,m,lmax)
+                        ! Hphi = (1/r) T'(r) Yp
+                        csp = csp + coeff2(l,m)*Tnsp(1,l)/R0*Yval(Yp,l,m,lmax)
+                    end do
+                end do
+                Hsurf(i,j,1) = csr
+                Hsurf(i,j,2) = cst
+                Hsurf(i,j,3) = csp
+
+                cst = dcmplx(0.0d0,0.0d0)
+                csp = dcmplx(0.0d0,0.0d0)
+                do l = 1,lmax
+                    do m = -l,l
+                        ! Etheta = (i*omega*mu0/r) T(r) Yp ; at r=R0 -> iomu0*Tnr/R0
+                        cst = cst + coeff2(l,m)*iomu0*Tnr(1,l)/R0*Yval(Yp,l,m,lmax)
+                        ! Ephi = -(i*omega*mu0/r) T(r) Yt
+                        csp = csp - coeff2(l,m)*iomu0*Tnr(1,l)/R0*Yval(Yt,l,m,lmax)
+                    end do
+                end do
+                Esurf(i,j,2) = cst
+                Esurf(i,j,3) = csp
+                ! Esurf(i,j,1) = 0 (toroidal field, E_r=0)
+            end do ! phi
+        end do ! theta
+
+        deallocate(coeff2, STAT=istat)
+
+    end subroutine surfaceField1d_s2
 
 end module field1d_s2

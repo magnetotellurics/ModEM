@@ -38,7 +38,7 @@ module field1d
 
   public        :: legendre_deallocate_at_nodes
   public        :: legendre_deallocate_at_edges
-  public        :: sourceField1d, sourcePotential
+  public        :: sourceField1d, sourcePotential, surfaceField1d
   ! Widened for reuse by the independent field1d_s2 module (Sun & Egbert,
   ! 2012, Section 2 solver): these Legendre/VSH routines are pure angular
   ! math, already independently verified against sympy, and are shared
@@ -1411,5 +1411,111 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
     deallocate(Rr,Rs,STAT=istat)
 
 end subroutine
+
+!**********************************************************************
+! surfaceField1d (S1): evaluate the full EM field at the Earth's SURFACE
+! (r = earth%r0 = R_earth) at the LATERAL CELL CENTRES of the grid
+! (theta = grid%th(j)+grid%dt(j)/2, phi = grid%ph(i)+grid%dp(i)/2),
+! for validation and plotting.
+!
+! Unlike sourceField1d (which fills the full 3D staggered cvectors, with
+! different components living at different lateral/radial positions),
+! this returns all six field components CO-LOCATED at one common set of
+! surface points. Same physics/formulas as sourceField1d's EDGE branch,
+! specialized to the single radius r=R0 (so the radial factors R0^2/r^2,
+! R0^2/r all collapse), in the solver's native e^{-i*omega*t} convention.
+!
+! Hsurf, Esurf are dimensioned (grid%nx, grid%ny, 3) = (Np, Nt, 3);
+! component index 1 = radial (r), 2 = colatitude (theta), 3 = longitude
+! (phi). E_r is identically zero (toroidal field). The caller passes the
+! same (already convention-rescaled) coeff block it passes to
+! sourceField1d, and applies any time-conjugation / modem normalization
+! itself, so the surface output matches the volume output's convention.
+subroutine surfaceField1d(earth,lmax,coeff,period,grid,Hsurf,Esurf)
+
+    type (conf1d_t), intent(in)                 :: earth
+    integer, intent(in)                         :: lmax
+    complex(8), dimension(:), intent(in)        :: coeff
+    real(8), intent(in)                         :: period
+    type (grid_t), intent(in)                   :: grid
+    complex(8), dimension(:,:,:), intent(out)   :: Hsurf, Esurf ! (Np,Nt,3)
+    ! local
+    real(8), dimension(1)                       :: Rr, Rs
+    complex(8), dimension(1,lmax)               :: Tnr, Tnsp
+    real(8), dimension(lmax+1,lmax+1)           :: P_lm
+    complex(8), dimension(lmax,lmax+1)          :: Yp, Yt, Yr
+    complex(8), dimension(:), allocatable       :: coefl
+    real(8)     :: R0, th_mid, ph_mid, mu0, pi, omega
+    complex(8)  :: iommu0, C
+    integer     :: Np, Nt, i, j, l, m, icoeff, istat
+
+    Np = grid%nx
+    Nt = grid%ny
+    R0 = earth%r0
+
+    mu0    = 1.256637e-6
+    pi     = 3.14159265357898
+    omega  = 2*pi/period
+    iommu0 = dcmplx(0.0d0,1.0d0) * omega * mu0
+
+    ! source potentials at the single surface radius r = R_earth
+    Rr(1) = R0
+    Rs(1) = R0
+    call sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
+
+    if (any(Tnr /= Tnr) .or. any(Tnsp /= Tnsp)) then
+        call errStop('surfaceField1d: NaN in source potentials at the surface')
+    end if
+
+    Hsurf = dcmplx(0.0d0,0.0d0)
+    Esurf = dcmplx(0.0d0,0.0d0)
+
+    do j = 1,Nt
+        th_mid = grid%th(j) + grid%dt(j)/2
+        call legendre_norm(lmax,cos(th_mid),P_lm)
+        do i = 1,Np
+            ph_mid = grid%ph(i) + grid%dp(i)/2
+            call vsharm(lmax,cos(th_mid),ph_mid,P_lm,Yr,Yt,Yp)
+
+            icoeff = 1
+            do l = 1,lmax
+                allocate(coefl(2*l+1), STAT=istat)
+                coefl = coeff(icoeff+1:icoeff+2*l+1) ! m=0,1,-1,2,-2,...
+
+                ! m=0 (no conjugate partner), added directly -- at r=R0 the
+                ! radial factors R0^2/Rr^2 (Hr) and R0^2/Rs, R0^2/Rr (tangential)
+                ! reduce to 1 and R0 respectively.
+                Hsurf(i,j,1) = Hsurf(i,j,1) + Yr(l,1)*coefl(1)*Tnr(1,l)
+                Hsurf(i,j,2) = Hsurf(i,j,2) + Yt(l,1)*coefl(1)*Tnsp(1,l)*R0/(l*(l+1))
+                Hsurf(i,j,3) = Hsurf(i,j,3) + Yp(l,1)*coefl(1)*Tnsp(1,l)*R0/(l*(l+1))
+                Esurf(i,j,2) = Esurf(i,j,2) + Yp(l,1)*coefl(1)*iommu0*Tnr(1,l)*R0/(l*(l+1))
+                Esurf(i,j,3) = Esurf(i,j,3) - Yt(l,1)*coefl(1)*iommu0*Tnr(1,l)*R0/(l*(l+1))
+
+                ! +-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
+                do m = 1,l
+                    ! Hr: no 1/(l(l+1)) factor (matches H%z above)
+                    C = Yr(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yr(l,m+1))*coefl(2*m+1)
+                    Hsurf(i,j,1) = Hsurf(i,j,1) + C*Tnr(1,l)
+                    ! Htheta
+                    C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                    Hsurf(i,j,2) = Hsurf(i,j,2) + C*Tnsp(1,l)*R0
+                    ! Hphi
+                    C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                    Hsurf(i,j,3) = Hsurf(i,j,3) + C*Tnsp(1,l)*R0
+                    ! Etheta
+                    C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                    Esurf(i,j,2) = Esurf(i,j,2) + C*iommu0*Tnr(1,l)*R0
+                    ! Ephi (note the leading minus, matching E%x)
+                    C = -(Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                    Esurf(i,j,3) = Esurf(i,j,3) + C*iommu0*Tnr(1,l)*R0
+                end do
+
+                icoeff = icoeff + 2*l+1
+                deallocate(coefl, STAT=istat)
+            end do ! degrees
+        end do ! phi
+    end do ! theta
+
+end subroutine surfaceField1d
 
 end module field1d

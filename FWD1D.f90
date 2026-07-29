@@ -1,11 +1,11 @@
 program fwd1d
 
-    use field1d, only: conf1d_t, fwd1d_timer, sourceField1d
-    use field1d_s2, only: sourceField1d_s2
+    use field1d, only: conf1d_t, fwd1d_timer, sourceField1d, surfaceField1d
+    use field1d_s2, only: sourceField1d_s2, surfaceField1d_s2
     use output_convention
     use modelspace
     use sg_vector
-    use math_constants, only: PI, D2R, R2D
+    use math_constants, only: PI, D2R, R2D, MU_0
     implicit none
 
     ! ---------------------------------------------------------------------
@@ -79,7 +79,7 @@ program fwd1d
     !     e^{-i*omega*t} convention directly, with no implicit downstream
     !     conjugation baked in -- any e^{+i*omega*t} consumer (e.g. the
     !     global 3D code) is expected to apply that conjugation itself, the
-    !     same way testing/test_vs_modem_1D_impedance.f90 conjugates ModEM's own
+    !     same way testing/test_vs_modem_1D_impedance.f90 conjugates ModEM's
     !     e^{+i*omega*t}-labeled reference values rather than the solver's
     !     raw output. Separately (and unrelated to this convention change):
     !     S1's three T(r)-valued formulas (Hr, Etheta, Ephi) were fixed to
@@ -143,12 +143,36 @@ program fwd1d
     !   'GLOBAL' -- the original per-period ASCII format (write_cvector),
     !       H and E both written, human-readable, native (phi,theta,r)
     !       component/axis ordering.
+    !   'OFF' -- skip the volume (grid) field computation AND output
+    !       entirely; only the surface output is produced. Requires
+    !       OUTPUT_SURFACE=.true. (otherwise there would be nothing to
+    !       output). Useful when only the surface fields are needed (much
+    !       faster: the expensive full-grid solve over all radii is skipped;
+    !       the surface routine does its own single-radius potential solve).
     character(len=10), parameter                :: OUTPUT_FORMAT = 'MODEM'
+
+    ! Optional SURFACE-FIELD output (for validation and plotting). When
+    ! .true., additionally write -- per period and per mode -- the full H
+    ! and E field evaluated at the Earth's SURFACE (r = R_earth) at the
+    ! lateral CELL CENTRES of the grid, with all six components CO-LOCATED
+    ! (unlike the staggered volume output, where each component lives at a
+    ! different lateral/radial position). Written as a simple ASCII table
+    ! (lat, lon + the six complex components) in the same OUTPUT_CONVENTION
+    ! as the volume fields, so it is directly comparable to them and to
+    ! ModEM. Purely additive: does not alter the 'MODEM'/'GLOBAL' output.
+    logical, parameter                          :: OUTPUT_SURFACE = .true.
 
     type(conf1d_t)                              :: earth
     type(grid_t)                                :: grid
     type(modelParam_t)                          :: model,source,source_imag
     type(cvector)                               :: h1d, e1d
+    ! surface-field output (OUTPUT_SURFACE): all 6 components co-located at
+    ! r=R_earth, lateral cell centres. dims (Np,Nt,3); comp 1=r,2=theta,3=phi.
+    complex(8), allocatable, dimension(:,:,:)   :: Hsurf, Esurf
+    character(240)                              :: sfile
+    real(8)                                     :: th_mid, ph_mid, lat_deg, lon_deg, d_air, Gnorm
+    complex(8)                                  :: msfac
+    integer                                     :: is, js
     character(len=1)                            :: primary_grid  ! set below from native%primary_grid ('H' or 'E')
     character(80)                               :: period_file,label
     character(80)                               :: layered_model_file
@@ -352,11 +376,28 @@ program fwd1d
        call errStop('Unknown primary_grid flag; valid options are H (default) and E')
     end if
 
+    if (OUTPUT_SURFACE) then
+       allocate(Hsurf(grid%nx,grid%ny,3), Esurf(grid%nx,grid%ny,3), STAT=istat)
+    end if
+
     ! output filename tag, so the two solvers' output never collides
     if (SOLVER == 'S1') then
         solver_tag = 's1'
     else
         solver_tag = 's2'
+    end if
+
+    ! validate OUTPUT_FORMAT and its interaction with OUTPUT_SURFACE
+    if (OUTPUT_FORMAT /= 'MODEM' .and. OUTPUT_FORMAT /= 'GLOBAL' .and. OUTPUT_FORMAT /= 'OFF') then
+        call errStop('Unknown OUTPUT_FORMAT flag; valid options are MODEM (default), GLOBAL and OFF')
+    end if
+    if (OUTPUT_FORMAT == 'OFF' .and. .not. OUTPUT_SURFACE) then
+        call errStop('OUTPUT_FORMAT=OFF leaves no output: set OUTPUT_SURFACE=.true. to write the &
+                      &surface fields, or choose OUTPUT_FORMAT=MODEM/GLOBAL for the volume output')
+    end if
+    if (OUTPUT_FORMAT == 'OFF') then
+        write(*,*) 'OUTPUT_FORMAT=OFF: skipping the volume (grid) field computation and output; &
+                   &writing surface output only.'
     end if
 
     if (OUTPUT_FORMAT == 'MODEM' .and. primary_grid /= 'E') then
@@ -396,18 +437,53 @@ program fwd1d
         ! basis, e.g. OUTPUT_CONVENTION='SUNEGBERT2012').
         call rescale_source_coeffs(coeff(icoeff+1:icoeff+ncoeff), lmax, target_conv)
 
-        if (SOLVER == 'S1') then
-            call sourceField1d(earth,lmax,coeff(icoeff+1:icoeff+ncoeff),T(i),grid,h1d,e1d)
-        else
-            call sourceField1d_s2(earth,lmax,coeff(icoeff+1:icoeff+ncoeff),T(i),grid,h1d,e1d)
+        ! volume (grid) field solve -- skipped entirely when OUTPUT_FORMAT='OFF'
+        ! (surface-only run). This is the expensive part (full-grid mapping over
+        ! all radii); the surface routine below does its own cheap single-radius solve.
+        if (OUTPUT_FORMAT /= 'OFF') then
+            if (SOLVER == 'S1') then
+                call sourceField1d(earth,lmax,coeff(icoeff+1:icoeff+ncoeff),T(i),grid,h1d,e1d)
+            else
+                call sourceField1d_s2(earth,lmax,coeff(icoeff+1:icoeff+ncoeff),T(i),grid,h1d,e1d)
+            end if
         end if
+
+        ! optional surface-field output: evaluate all six components at
+        ! r=R_earth, lateral cell centres, from the SAME (rescaled) coeff
+        ! block, then apply the same value-changing convention transforms the
+        ! volume output receives below (time conjugation if native/target time
+        ! conventions differ; ModEM source normalization if requested) so the
+        ! surface fields are in the same OUTPUT_CONVENTION as the volume ones.
+        ! (The theta/r index REVERSALS that apply_output_convention also does
+        ! are irrelevant here -- the surface file carries explicit lat/lon for
+        ! every point, so there is no array-index-to-position ambiguity.)
+        if (OUTPUT_SURFACE) then
+            if (SOLVER == 'S1') then
+                call surfaceField1d(earth,lmax,coeff(icoeff+1:icoeff+ncoeff),T(i),grid,Hsurf,Esurf)
+            else
+                call surfaceField1d_s2(earth,lmax,coeff(icoeff+1:icoeff+ncoeff),T(i),grid,Hsurf,Esurf)
+            end if
+            if (native%time_convention /= target_conv%time_convention) then
+                Hsurf = conjg(Hsurf); Esurf = conjg(Esurf)
+            end if
+            if (target_conv%modem_normalize) then
+                d_air = grid%r(1)*1.0d3 - earth%r0
+                Gnorm = 1.5d0 * sqrt(3.0d0/(4.0d0*PI)) * d_air
+                msfac = 1.0d0 / dcmplx(0.0d0, (2.0d0*PI/T(i))*MU_0*Gnorm)
+                Hsurf = msfac*Hsurf; Esurf = msfac*Esurf
+            end if
+        end if
+
         icoeff = icoeff + ncoeff
 
         ! (b) map native solver output -> target convention AFTER solving --
         ! time/theta/r only; no-op in every dimension where native already
         ! matches target_conv (see output_convention.f90's
-        ! apply_output_convention).
-        call apply_output_convention(h1d, e1d, native, target_conv)
+        ! apply_output_convention). Skipped for OUTPUT_FORMAT='OFF' (h1d/e1d
+        ! were never computed above).
+        if (OUTPUT_FORMAT /= 'OFF') then
+            call apply_output_convention(h1d, e1d, native, target_conv)
+        end if
 
         ! (c) optional ModEM source-normalization rescale (only for target
         ! conventions with modem_normalize=.true., e.g. EGBERTKELBERT2012_MODEM)
@@ -417,7 +493,7 @@ program fwd1d
         ! global1d's toroidal-potential normalization. Preserves Z. See
         ! output_convention.f90's apply_modem_normalization / the
         ! EGBERTKELBERT2012_MODEM preset / docs/source_normalization.pdf.
-        if (target_conv%modem_normalize) then
+        if (OUTPUT_FORMAT /= 'OFF' .and. target_conv%modem_normalize) then
             call apply_modem_normalization(h1d, e1d, 2.0d0*PI/T(i), grid%r(1)*1.0d3 - earth%r0)
         end if
 
@@ -462,8 +538,47 @@ program fwd1d
             write(ioWRITE,'(i3)') 1
             call write_cvector(ioWRITE,e1d)
             close(ioWRITE)
+        else if (OUTPUT_FORMAT == 'OFF') then
+            ! surface-only run: no volume output (validated at startup)
+            continue
         else
-            call errStop('Unknown OUTPUT_FORMAT flag; valid options are MODEM (default) and GLOBAL')
+            call errStop('Unknown OUTPUT_FORMAT flag; valid options are MODEM (default), GLOBAL and OFF')
+        end if
+
+        ! surface-field output (validation/plotting): one ASCII table per
+        ! period/mode, all six components co-located at r=R_earth, lateral
+        ! cell centres. Columns: lat lon then Re/Im of Hr,Htheta,Hphi,
+        ! Er,Etheta,Ephi (Er is identically zero). lat/lon are the cell-centre
+        ! coordinates AFTER any fake-pole recentering (i.e. as the fields were
+        ! actually evaluated).
+        if (OUTPUT_SURFACE) then
+            sfile = trim(fields_output_file)//'.'//trim(solver_tag)//'.'//trim(OUTPUT_CONVENTION)// &
+                    '.T'//trim(ich)//'.mode'//trim(ichmode)//'.surface'
+            write(*,*) 'Writing surface fields to: ',trim(sfile)
+            open(ioWRITE,file=sfile,status='unknown',form='formatted',iostat=ios)
+            write(period_str,'(f9.3)') T(i)
+            hdr = "# FWD1D SURFACE fields (r=R_earth, cell centres) for period "//trim(adjustl(period_str))// &
+                  " secs, mode "//trim(ichmode)//". OUTPUT_CONVENTION="//trim(OUTPUT_CONVENTION)// &
+                  " SOLVER="//trim(SOLVER)//" time="//trim(target_conv%time_convention)
+            write(ioWRITE,'(a)') trim(hdr)
+            write(ioWRITE,'(a)') "# lat_deg lon_deg  Re(Hr) Im(Hr) Re(Hth) Im(Hth) Re(Hph) Im(Hph)"// &
+                                 "  Re(Er) Im(Er) Re(Eth) Im(Eth) Re(Eph) Im(Eph)"
+            do js = 1,grid%ny
+                th_mid = grid%th(js) + grid%dt(js)/2
+                lat_deg = 90.0d0 - th_mid*R2D
+                do is = 1,grid%nx
+                    ph_mid = grid%ph(is) + grid%dp(is)/2
+                    lon_deg = ph_mid*R2D
+                    write(ioWRITE,'(2f11.4,12es16.7)') lat_deg, lon_deg, &
+                        real(Hsurf(is,js,1)), aimag(Hsurf(is,js,1)), &
+                        real(Hsurf(is,js,2)), aimag(Hsurf(is,js,2)), &
+                        real(Hsurf(is,js,3)), aimag(Hsurf(is,js,3)), &
+                        real(Esurf(is,js,1)), aimag(Esurf(is,js,1)), &
+                        real(Esurf(is,js,2)), aimag(Esurf(is,js,2)), &
+                        real(Esurf(is,js,3)), aimag(Esurf(is,js,3))
+                end do
+            end do
+            close(ioWRITE)
         end if
 
         write(*,*) 'Done writing to file: ',elapsed_time(fwd1d_timer),' secs'
@@ -475,6 +590,7 @@ program fwd1d
 
     deallocate(depths,coeff,coeff_real,coeff_imag,logrho,T, STAT=istat)
     deallocate(earth%layer,earth%sigma, STAT=istat)
+    if (OUTPUT_SURFACE) deallocate(Hsurf, Esurf, STAT=istat)
     call deall_modelParam(model)
     call deall_modelParam(source)
     call deall_modelParam(source_imag)
