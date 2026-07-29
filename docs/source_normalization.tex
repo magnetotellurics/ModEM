@@ -1,0 +1,197 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\newcommand{\rhat}{\hat{\mathbf r}}
+\newcommand{\zhat}{\hat{\mathbf z}}
+\newcommand{\that}{\hat{\boldsymbol\theta}}
+\newcommand{\dair}{d_{\mathrm{air}}}
+\newcommand{\Emodem}{E_{\mathrm{ModEM}}}
+\newcommand{\Eg}{E_{\mathrm{global1d}}}
+
+\title{The toroidal source potential, the uniform inducing field,\\
+and the \textsc{global1d}$\leftrightarrow$\textsc{ModEM} normalization factor}
+\author{Anna Kelbert with Claude}
+\date{July 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\textsc{global1d} (\texttt{field1d.f90}/\texttt{field1d\_s2.f90}) drives its solution with an
+\emph{external toroidal potential amplitude} $\mathrm{coeff}(l,m)$; \textsc{ModEM}'s regional 3-D
+solver drives its solution with a \emph{boundary electric field} of unit amplitude. Because a
+\emph{potential} and a \emph{field} are related by Faraday's law $\nabla\times\mathbf E=i\omega\mu_0
+\mathbf H$, the raw electric fields the two codes produce for their respective unit sources differ by
+a single multiplicative complex constant per period, $c=\Eg/\Emodem=i\,\omega\,\mu_0\,G$, with $G$ a
+real geometric constant set by the \emph{air-layer thickness} and the surface magnetic response. This
+note explains the physics (the toroidal potential defines a quasi-uniform \emph{magnetic} field, not
+an electric one), derives $G$ from the air-layer geometry, and defines a normalized output preset
+that matches \textsc{ModEM}'s normalization. There is \textbf{no bug and no sign/time-convention
+error}: $c$ cancels identically in the impedance $Z=E/H$, so the two codes agree on $Z$, apparent
+resistivity and transfer functions to $<1\%$. The apparent ``$-\mathrm{Re},+\mathrm{Im}$ vs
+$+\mathrm{Re},+\mathrm{Im}$ sign flip'' in raw fields is simply the ${\approx}90^\circ$ phase of the
+$i\omega\mu_0$ factor.
+\end{abstract}
+
+\section{The toroidal potential and the fields it produces}
+Under the quasi-static approximation a divergence-free field on a sphere admits a Mie
+(poloidal--toroidal) decomposition. In the insulating air there are no currents, so the poloidal
+electric potential $P$ vanishes (Sun \& Egbert 2012, eqs.~21--22) and an external MT/ionospheric
+source drives only the toroidal potential $T$. With $P\equiv0$, eqs.~(5)--(6) reduce to
+\begin{equation}
+\mathbf E=-i\omega\mu_0\,\frac{\rhat}{r}\times\nabla_a T,\qquad
+\mathbf H=\frac1r\nabla_a\frac{\partial T}{\partial r}-\frac{\rhat}{r^2}\nabla_a^2 T .
+\end{equation}
+Writing $T(r,\theta,\phi)=\sum_{l,m}\mathrm{coeff}(l,m)\,T_l(r)\,Y_l^m(\theta,\phi)$ and using
+$\rhat\times\that=\hat{\boldsymbol\phi}$, $\nabla_a^2 Y_l^m=-l(l+1)Y_l^m$, the components are
+(\texttt{field1d\_s2.f90}, l.\,42--47)
+\begin{equation}
+\begin{aligned}
+E_\theta&=+\tfrac{i\omega\mu_0}{r}T_l Y_p, & E_\phi&=-\tfrac{i\omega\mu_0}{r}T_l Y_t, & E_r&=0,\\
+H_r&=+\tfrac{l(l+1)}{r^2}T_l Y, & H_\theta&=+\tfrac1r T_l' Y_t, & H_\phi&=+\tfrac1r T_l' Y_p,
+\end{aligned}
+\end{equation}
+with $Y_t=\partial Y/\partial\theta$, $Y_p=(1/\sin\theta)\partial Y/\partial\phi$. The single scalar
+$T$ generates a \textbf{toroidal electric field} ($E_r=0$; the name refers to this) and a
+\textbf{poloidal magnetic field} ($H_r\neq0$, the vertical/$Z$ component at the ground)---the
+standard deep-Earth induction picture.
+
+\section{The (external) toroidal potential is a quasi-uniform magnetic field}
+In the air $T$ is harmonic radially, $T_l(r)=\alpha r^{l+1}+\beta r^{-l}$: an external ($\alpha$,
+source) plus internal ($\beta$, induced) part. \textsc{global1d} sets $\mathrm{coeff}(l,m)=1$
+$\Rightarrow\alpha=1$ (unit coefficient of $r^{l+1}$; \texttt{field1d\_s2.f90}, l.\,437--458). For
+$l=1,m=0$ with $Y_1^0=\sqrt{3/4\pi}\,\cos\theta$ and $T_1^{\mathrm{ext}}=\alpha r^2$,
+\begin{equation}
+H_r=2\alpha\sqrt{\tfrac{3}{4\pi}}\cos\theta,\qquad
+H_\theta=-2\alpha\sqrt{\tfrac{3}{4\pi}}\sin\theta,
+\end{equation}
+and since $\cos\theta\,\rhat-\sin\theta\,\that=\zhat$,
+\begin{equation}
+\boxed{\ \mathbf H^{\mathrm{ext}}=2\alpha\sqrt{\tfrac{3}{4\pi}}\,\zhat\ }
+\qquad\text{a spatially uniform axial magnetic field.}
+\end{equation}
+The induced electric field is \emph{not} uniform and carries the explicit $i\omega\mu_0$:
+$E_\phi=+i\omega\mu_0\,\alpha\,r\sqrt{3/4\pi}\,\sin\theta$. \textbf{Thus the (external, $l=1$)
+toroidal potential defines a quasi-uniform inducing \emph{magnetic} field, and $E$ is the
+$i\omega\mu_0$-scaled induced response.}
+
+\section{\textsc{global1d} vs \textsc{ModEM}: $c=i\omega\mu_0 G$}
+\textsc{global1d}'s unit source ($\propto$ uniform $H$) and \textsc{ModEM}'s unit source (a boundary
+$E$-field) differ by the potential-vs-field relationship. The measured ratio $c=\Eg/\Emodem$ is
+(i)~\emph{constant over depth}---a multiplicative, not antilinear, relationship;
+(ii)~\emph{scaling as $\omega$}: $|c|/\omega$ constant and $\arg c\to90^\circ$ at short period
+$\Rightarrow c=i\omega\mu_0 G$; (iii)~\emph{mode-independent}. The $i$ is Faraday's law; the small
+residual ($\arg c$ drifting $90^\circ\!\to\!95^\circ$ over $T=10\to1000\,$s) is the earth's induction
+response (\S4) plus \textsc{ModEM}'s flat-vs-spherical boundary approximation.
+
+\section{Derivation of $G$ from the air-layer geometry}
+\paragraph{ModEM's surface field.} \textsc{ModEM} drives a unit $E$ at the top of the domain, a
+height $\dair\approx1000\,$km above the surface, and solves a 1-D column
+(\texttt{Mod2d/WSfwd1Dmod.f90}). In the insulating air $d^2E/dz^2=0$, so $E$ is linear in height and
+$H$ is uniform (as in \S2). With $E(0)=1$ and surface impedance $Z_e=E_s/H_s$,
+\begin{equation}
+\Emodem(\text{surface})=\frac{Z_e}{Z_e-i\omega\mu_0\dair}\approx\frac{-Z_e}{i\omega\mu_0\dair},
+\end{equation}
+since $|Z_e|\ll\omega\mu_0\dair$ for a $1000\,$km air column. \textsc{ModEM}'s surface field is set
+by the air thickness.
+
+\paragraph{The ratio.} \textsc{global1d} obeys $E_\phi=Z_e H_\theta$ at the surface (same $Z_e$).
+Taking the ratio, $Z_e$ cancels:
+\begin{equation}
+c=\frac{\Eg}{\Emodem}=H_\theta(Z_e-i\omega\mu_0\dair)=E_\phi-i\omega\mu_0\dair H_\theta
+=-i\omega\mu_0\,H_\theta\,(\dair+C),
+\end{equation}
+where $C\equiv Z_e/(i\omega\mu_0)$ is the C-response ($\approx4,28,132\,$km at $T=10,100,1000\,$s).
+Hence
+\begin{equation}
+\boxed{\ G=-H_\theta(\text{surface})\,(\dair+C)\;\approx\;-H_\theta\,\dair\ }
+\end{equation}
+the surface horizontal field times the air-layer thickness; $C$ is the period-dependent residual.
+
+\paragraph{The geometric value of $H_\theta$.} From $T_1(r)=r^2+\beta/r$ at $r_0$,
+$T_1'(r_0)=2r_0-\beta/r_0^2$, so
+\begin{equation}
+H_\theta(\text{surface})=-\Big(2-\tfrac{\beta}{r_0^3}\Big)\sqrt{\tfrac{3}{4\pi}}\sin\theta
+=-(2-Q_1)\sqrt{\tfrac{3}{4\pi}}\sin\theta,
+\end{equation}
+with $Q_1=\beta/r_0^3$ the $l=1$ Q-response (limits $Q_1=0$ insulator, $Q_1=l/(l+1)=\tfrac12$ perfect
+conductor). At MT/geomagnetic periods the mantle is a good conductor, $Q_1\to\tfrac12$, and at the
+equator
+\begin{equation}
+\boxed{\ G=\tfrac32\sqrt{\dfrac{3}{4\pi}}\ \dair\;\approx\;0.733\,\dair\ }
+\end{equation}
+Here $\tfrac32=(2-Q_1)$ combines external ($2$) and induced ($-Q_1$) parts, $\sqrt{3/4\pi}$ is the
+$Y_1^0$ amplitude, and $\dair=\texttt{grid\%r(1)}\!\cdot\!1000-r_0\approx1.0\times10^{6}\,\mathrm{m}$.
+
+\paragraph{Numerical verification.}
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+$T$ (s) & $|H_\theta|$ & $|G|/\dair$ (meas.) & $\arg G$\\
+\midrule
+10 & 0.718 & 0.719 & $+0.65^\circ$\\
+100 & 0.721 & 0.730 & $+1.59^\circ$\\
+1000 & 0.720 & 0.783 & $+4.73^\circ$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The derived $\tfrac32\sqrt{3/4\pi}=0.733$ straddles the measured $|G|/\dair$ (best at $100\,$s); the
+drift and growing $\arg G$ are the $(\dair+C)$ correction. $H_\theta$ is nearly period-independent,
+confirming it is geometric in the deep-induction limit ($Q_1\approx\tfrac12$).
+
+\section{The normalized output preset}
+To express \textsc{global1d}'s fields in \textsc{ModEM}'s normalization, multiply by $1/c$:
+\begin{equation}
+(\mathbf E,\mathbf H)_{\mathrm{norm}}=\frac{1}{i\omega\mu_0 G}(\mathbf E,\mathbf H),
+\qquad G=\tfrac32\sqrt{\tfrac{3}{4\pi}}\,\dair,
+\end{equation}
+with $\dair$ from the grid and $\omega$ from the period. Applying the same complex factor to $E$ and
+$H$ (equivalently rotating $\mathrm{coeff}$ by $1/i=-i$ and scaling) \textbf{preserves $Z=E/H$}: the
+physics is untouched; only the source-normalization convention changes. Implemented as the
+\texttt{EGBERTKELBERT2012\_MODEM} preset (\texttt{output\_convention.f90}). The factor removes the
+exact $i\omega\mu_0$ and the air-thickness scaling; residuals (the $C$-response, finite $Q$, and
+flat-vs-spherical) leave a few-percent amplitude and ${\lesssim}5^\circ$ phase mismatch at long
+period, $\to 0$ at short period---genuine physics differences, not artifacts.
+
+\section{Validation against Cartesian ModEM}
+The spherical \textsc{ModEM} runs used to \emph{measure} $c$ (\texttt{Mod3DMT\_SP2\_SPH}) require
+building with \texttt{-DBUILD\_SPHERICAL -DFORCE\_SPHERICAL}, bypassing a guard that warns the
+spherical version is \emph{experimental and ``will not work with traditional MT source setup''}---and
+the internal \texttt{COMPUTE\_BC} boundary condition IS that traditional (WS/REBOCC per-column) setup.
+The derivation was therefore cross-checked against \textbf{Cartesian ModEM} (trusted and accurate) on
+a $\rho{=}100\,\Omega$m halfspace with the same $1000\,$km/12-layer air.
+
+\emph{Air-column mechanism} (the heart of $G$): Cartesian \textsc{ModEM}'s surface $E$ equals the
+analytic $Z_e/(Z_e-i\omega\mu_0\dair)$ (with $Z_e=-i\omega\mu_0/\sqrt{-i\omega\mu_0\sigma}$) to
+$0.2$--$0.6\%$, $\pm0.1^\circ$ at every period from $4$ to $4000\,$s.
+
+\emph{Full preset}, $r=\Eg^{\mathrm{norm}}(\text{equator})/\Emodem^{\mathrm{cart}}$:
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+$T$ (s) & 3.98 & 1000 & 3981\\
+\midrule
+$|r|$ & 1.006 & 1.073 & 1.145\\
+$\arg r$ & $+0.2^\circ$ & $+3.6^\circ$ & $+6.4^\circ$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The match is essentially perfect in the flat-earth limit ($|r|=1.006$, $+0.2^\circ$ at $4\,$s, where
+$G$ is exact and $Q_1\to\tfrac12$) and the residual grows monotonically and cleanly with period as
+curvature enters; Cartesian \textsc{ModEM} is laterally uniform to $0.00\%$. This validates the
+$i\omega\mu_0G$ framework on trusted code and shows the residual is the \textbf{genuine
+flat-vs-spherical} physics---\textsc{global1d} being the more accurate spherical solution---not an
+artifact of the experimental spherical BC.
+
+\paragraph{Generality.} The derivation is for $l=1$ (P10 / MT modes) at the equator in the
+deep-induction limit. In general $H_\theta=-[(l+1)-l\,Q_l]\,r_0^{\,l-1}\,\partial_\theta Y_l^0$
+depends on $(l,\theta)$, so a single scalar $G$ is exact only for the $l=1$ equatorial case the MT
+modes reduce to---the relevant limit for MT interoperability.
+
+\end{document}
