@@ -79,7 +79,7 @@ module output_convention
     public :: output_convention_t
     public :: TIME_POSITIVE, TIME_NEGATIVE, NORM_SCHMIDT, NORM_FULL, &
               THETA_COLAT, THETA_LAT, R_DOWN, R_UP
-    public :: KELBERT2006, SUNEGBERT2012, EGBERTKELBERT2012, EGBERTKELBERT2012_MODEM
+    public :: KELBERT2006, SUNEGBERT2012, EGBERTKELBERT2012, EGBERTKELBERT2012_MODEM, LWS
     public :: RADIAL_SURFACE, RADIAL_MULTIPOLE, RADIAL_DIMENSIONAL
     public :: get_convention, native_convention, native_radial
     public :: rescale_source_coeffs, apply_output_convention, apply_modem_normalization
@@ -131,20 +131,30 @@ module output_convention
         character(len=12)  :: radial_norm = RADIAL_SURFACE
     end type output_convention_t
 
-    ! ------- the three predefined conventions (kept exactly as specified --
-    ! see the NATIVE CONVENTIONS note above for why these are fixed, named
-    ! targets, not necessarily any solver's raw native output) -------
-    ! radial_norm is RADIAL_SURFACE for every preset here (S1-native / O(1) /
-    ! ModEM-compatible scale) -- this reproduces the behavior in force before
-    ! radial_norm was made an explicit dimension, and keeps S1 unchanged (so
-    ! ModEM compatibility is preserved). Set it to RADIAL_MULTIPOLE for Sun &
-    ! Egbert's own eq-(6) potential-coefficient scale, or RADIAL_DIMENSIONAL
-    ! for their literal r^(l+1)=1 text (numerically unstable at high degree).
+    ! ------- the predefined conventions (fixed, named targets) -------
+    !
+    ! Per-preset radial_norm choices:
+    !   SUNEGBERT2012          RADIAL_MULTIPOLE -- so this preset IS S2's EXACT
+    !                          native convention (S2 + SUNEGBERT2012 = identity;
+    !                          see native_convention). Sun & Egbert eq-(6),
+    !                          unit (r/a)^(l+1) potential-coefficient scale.
+    !   KELBERT2006,           RADIAL_SURFACE   -- S1-native / O(1) / ModEM-
+    !   EGBERTKELBERT2012,     compatible surface-field scale. (Under
+    !   EGBERTKELBERT2012_MODEM  modem_normalize, the radial target is forced to
+    !                          SURFACE anyway -- see FWD1D.f90 -- so the value
+    !                          here is what a NON-modem variant would use.)
+    !   LWS          RADIAL_SURFACE, but condon_shortley=.false. --
+    !                          "S1's native convention with Condon-Shortley OFF"
+    !                          (see its own note below).
     type(output_convention_t), parameter :: KELBERT2006 = output_convention_t( &
         'KELBERT2006', TIME_POSITIVE, NORM_SCHMIDT, .false., THETA_COLAT, R_DOWN, 'H', .false., RADIAL_SURFACE)
 
+    ! SUNEGBERT2012 = S2's EXACT native convention (see native_convention):
+    ! MINUS_IWT, FULLY_NORM, Condon-Shortley included, colatitude N->S, r up,
+    ! E-primary, no ModEM rescale, MULTIPOLE radial. Selecting this preset with
+    ! SOLVER='S2' is a mechanical identity (all convention transforms are no-ops).
     type(output_convention_t), parameter :: SUNEGBERT2012 = output_convention_t( &
-        'SUNEGBERT2012', TIME_NEGATIVE, NORM_FULL, .true., THETA_COLAT, R_UP, 'E', .false., RADIAL_SURFACE)
+        'SUNEGBERT2012', TIME_NEGATIVE, NORM_FULL, .true., THETA_COLAT, R_UP, 'E', .false., RADIAL_MULTIPOLE)
 
     ! condon_shortley=.true. here (2026-07-26, per direct user instruction, for
     ! validation purposes): confirmed empirically (test_diagnose_egbertkelbert.f90)
@@ -186,6 +196,23 @@ module output_convention
     type(output_convention_t), parameter :: EGBERTKELBERT2012_MODEM = output_convention_t( &
         'EGBERTKELBERT2012_MODEM', TIME_NEGATIVE, NORM_FULL, .true., THETA_LAT, R_DOWN, 'E', .true., RADIAL_SURFACE)
 
+    ! LWS (NASA "Living With a Star" project): S1's native convention (see
+    ! native_convention('S1'): MINUS_IWT, FULLY_NORM, colatitude N->S, r up,
+    ! E-primary, SURFACE radial) but with Condon-Shortley OFF
+    ! (condon_shortley=.false.). It is NOT a solver-native output for either
+    ! solver (both solvers are natively CS-included, via vsharm) -- it is a
+    ! TARGET convention: the output layer flips the (-1)^m Condon-Shortley phase
+    ! (rescale_source_coeffs / apply_norm_cs) so the fields come out in the
+    ! non-CS basis. Provided to test the hypothesis that the LWS / MATLAB-SIEM
+    ! (@TSModel, tanField.m / radField.m) .prm source coefficients are authored
+    ! in the non-CS convention -- run OUTPUT_CONVENTION='LWS' and compare against
+    ! the MATLAB output. As with every preset, the output is defined by the
+    ! CONVENTION alone: S1+LWS and S2+LWS produce identical fields (the flip is
+    ! applied identically for both). The solver internals are unchanged and
+    ! remain CS-included.
+    type(output_convention_t), parameter :: LWS = output_convention_t( &
+        'LWS', TIME_NEGATIVE, NORM_FULL, .false., THETA_COLAT, R_UP, 'E', .false., RADIAL_SURFACE)
+
 contains
 
     ! resolve a name string -> convention (for a config-file / CUSTOM interface later)
@@ -197,29 +224,38 @@ contains
             case ('SUNEGBERT2012');         conv = SUNEGBERT2012
             case ('EGBERTKELBERT2012');     conv = EGBERTKELBERT2012
             case ('EGBERTKELBERT2012_MODEM'); conv = EGBERTKELBERT2012_MODEM
+            case ('LWS');         conv = LWS
+            ! NOTE: 'NATIVE' is NOT resolved here -- it is solver-specific (S1
+            ! and S2 have different native conventions), so FWD1D.f90 resolves
+            ! OUTPUT_CONVENTION='NATIVE' to native_convention(SOLVER) directly.
             case default
                 write(0,*) 'output_convention: unknown convention name: ', trim(name)
                 stop 1
         end select
     end function get_convention
 
-    ! Native (raw, un-transformed) convention actually produced by each
-    ! solver, empirically verified -- see the NATIVE CONVENTIONS note above.
+    ! Native (raw, un-transformed) convention actually produced by each solver.
+    ! This is the SINGLE SOURCE OF TRUTH for "native": every convention transform
+    ! (rescale_source_coeffs, rescale_source_radial, apply_output_convention)
+    ! converts native_convention(solver) -> target, and OUTPUT_CONVENTION='NATIVE'
+    ! (resolved in FWD1D.f90) simply sets target = native_convention(SOLVER),
+    ! which makes ALL of those transforms mechanical no-ops -> exact raw output.
+    !
     ! S1 and S2 share the same native time/norm/CS/theta/r/primary bookkeeping
-    ! (the SUNEGBERT2012 preset's values), and differ natively in exactly ONE
+    ! (the SUNEGBERT2012 preset's values -- MINUS_IWT, FULLY_NORM, CS-included,
+    ! colatitude N->S, r up, E-primary), and differ natively in exactly ONE
     ! dimension: the RADIAL source-amplitude normalization (S1=SURFACE,
-    ! S2=MULTIPOLE, see native_radial). That difference is reconciled by
-    ! rescale_source_radial, NOT by apply_output_convention (which handles only
-    ! time/theta/r), so the radial_norm carried here is informational (banner /
-    ! metadata); the actual per-degree radial rescale reads native_radial(solver)
-    ! directly.
+    ! S2=MULTIPOLE, see native_radial). Because SUNEGBERT2012 itself now carries
+    ! RADIAL_MULTIPOLE, native_convention('S2') == SUNEGBERT2012 exactly (S2 +
+    ! SUNEGBERT2012 is the identity); native_convention('S1') is the same but
+    ! with radial_norm = SURFACE.
     function native_convention(solver) result(conv)
         character(*), intent(in)   :: solver
         type(output_convention_t)  :: conv
         select case (trim(solver))
             case ('S1', 'S2')
-                conv = SUNEGBERT2012
-                conv%radial_norm = native_radial(solver)
+                conv = SUNEGBERT2012                     ! shared native bookkeeping
+                conv%radial_norm = native_radial(solver) ! the one solver-specific dimension
             case default
                 write(0,*) 'output_convention: unknown solver: ', trim(solver)
                 stop 1

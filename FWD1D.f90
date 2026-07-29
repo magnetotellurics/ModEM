@@ -112,7 +112,15 @@ program fwd1d
     ! selects the numerics only) -- see EARTH/FWD/output_convention.f90 for
     ! the full definition of the field-bookkeeping dimensions this selects,
     ! and the named presets available here:
-    !   'KELBERT2006', 'SUNEGBERT2012', 'EGBERTKELBERT2012'
+    !   'NATIVE' -- output in the ACTIVE solver's EXACT native convention (raw,
+    !       no transforms). Solver-specific: for SOLVER='S2' this equals
+    !       SUNEGBERT2012 exactly; for SOLVER='S1' it is the same but SURFACE
+    !       radial. Resolved to native_convention(SOLVER); guaranteed identity.
+    !   'KELBERT2006', 'SUNEGBERT2012' (= S2's native), 'EGBERTKELBERT2012'
+    !   'LWS' -- S1's native but with Condon-Shortley OFF; for testing
+    !       whether the LWS / MATLAB-SIEM .prm coefficients are authored in the
+    !       non-CS convention (see output_convention.f90). Solver internals are
+    !       unchanged (still CS-included); this only flips the output basis.
     !   'EGBERTKELBERT2012_MODEM' (DEFAULT) -- same as EGBERTKELBERT2012 but
     !       ALSO rescales the output E and H by 1/(i*omega*mu0*G) so their
     !       amplitude AND phase match ModEM's boundary-E-field source
@@ -122,8 +130,9 @@ program fwd1d
     !       by the air-layer thickness). Preserves Z=E/H (no physics changed);
     !       matches ModEM to a few-% amplitude / <~5deg phase for the P10/MT
     !       modes. Full derivation: docs/source_normalization.md / .pdf.
-    character(len=24), parameter                :: OUTPUT_CONVENTION = 'SUNEGBERT2012'
+    character(len=24), parameter                :: OUTPUT_CONVENTION = 'LWS'
     type(output_convention_t)                   :: target_conv, native
+    character(len=12)                           :: eff_radial  ! radial target actually used (SURFACE forced under modem_normalize)
 
     ! Desired OUTPUT FIELD FORMAT (orthogonal to both SOLVER and
     ! OUTPUT_CONVENTION -- this controls only how the already-converted
@@ -237,9 +246,34 @@ program fwd1d
     ! native_convention()), not hardcoded, so switching SOLVER now also
     ! switches which grid staggering is used.
     native      = native_convention(SOLVER)
-    target_conv = get_convention(OUTPUT_CONVENTION)
+    ! OUTPUT_CONVENTION='NATIVE' means "output in the active solver's exact
+    ! native convention" -- it is solver-specific (S1 and S2 differ), so it is
+    ! resolved here to native_convention(SOLVER) rather than being a fixed
+    ! preset. With target==native, every convention transform below is a
+    ! mechanical no-op, so the fields are written exactly as the solver produces
+    ! them (raw output). All other names are fixed presets (get_convention).
+    if (trim(OUTPUT_CONVENTION) == 'NATIVE') then
+        target_conv = native
+        write(*,*) 'Output convention requested: NATIVE (= ',trim(SOLVER), &
+                   ' native convention; all dimensions shown on the next line)'
+    else
+        target_conv = get_convention(OUTPUT_CONVENTION)
+        write(*,*) 'Output convention requested: ', trim(OUTPUT_CONVENTION)
+    end if
     primary_grid = native%primary_grid
-    write(*,*) 'Output convention requested: ', trim(OUTPUT_CONVENTION)
+
+    ! ModEM normalization is calibrated in the SURFACE radial scale (G was
+    ! derived there; see apply_modem_normalization). So when modem_normalize is
+    ! requested, force the radial target to SURFACE regardless of the
+    ! convention's radial_norm -- this makes modem normalization correct under
+    ! ANY output convention (option (a)). The final output is ModEM's fixed
+    ! absolute scale either way, so radial_norm is genuinely superseded here.
+    if (target_conv%modem_normalize) then
+        eff_radial = RADIAL_SURFACE
+    else
+        eff_radial = target_conv%radial_norm
+    end if
+
     write(*,*) '  (solver native: time=',trim(native%time_convention),' norm=',trim(native%harmonic_norm), &
                ' CS=',native%condon_shortley,' theta=',trim(native%theta_convention), &
                ' r=',trim(native%r_convention),' primary=',native%primary_grid, &
@@ -447,7 +481,7 @@ program fwd1d
         ! them produce identical output. See output_convention.f90's
         ! rescale_source_radial / radial_amplitude for the full rationale.
         call rescale_source_radial(coeff(icoeff+1:icoeff+ncoeff), lmax, SOLVER, &
-                                   target_conv%radial_norm, earth%r0)
+                                   eff_radial, earth%r0)
 
         ! volume (grid) field solve -- skipped entirely when OUTPUT_FORMAT='OFF'
         ! (surface-only run). This is the expensive part (full-grid mapping over
