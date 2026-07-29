@@ -72,11 +72,18 @@ module field1d_s2
     ! onto that layer's own (psi_l, xi_l) basis is the same physics, more
     ! directly implemented. The thin-sheet jump (eq 17) is applied at the
     ! surface, and the (alpha_l^T, beta_l^T) split in the air is obtained by
-    ! matching (eq 23). alpha_l^T is exactly the paper's own "external
-    ! multipole moment" of the source (text following eq 23) -- the whole
-    ! radial profile is normalized here to alpha_l^T=1 ("per unit external
-    ! field", the same convention field1d.f90's sourcePotential uses), and
-    ! sourceField1d_s2 multiplies by the user's coeff(l,m) afterward.
+    ! matching (eq 23). The whole radial profile is normalized here to the
+    ! DIMENSIONLESS external-multipole scale: the coefficient of (r/r0)^(l+1)
+    ! in the air is 1 (i.e. the external part T_l(r0)=1 at the surface), NOT
+    ! the coefficient of the dimensional r^(l+1). This is exactly the
+    ! normalization the original Sun & Egbert (2012) Matlab solver uses
+    ! (GlobalDV/ThinSheet/SIEM/airprop.m works in rr=r/r0 throughout), and it
+    ! keeps T_l O(1) at EVERY degree -- essential for numerical stability at
+    ! high l (a dimensional r^(l+1)=1 normalization blows up as r0^(l+1) ~ 1e34
+    ! by l=4 and overflows double precision by l~45). sourceField1d_s2
+    ! multiplies by the user's coeff(l,m) afterward; the driver's
+    ! radial_renorm_factor (output_convention.f90) then rescales this common S2
+    ! scale onto S1's reference scale so the two solvers' outputs agree.
     !
     ! Numerically this reuses the same two robustness techniques already
     ! proven in field1d.f90's sourcePotential -- both are standard, paper-
@@ -434,27 +441,23 @@ contains
             beta_norm(l) = (dble(l+1)*rn0(l) - rl(1)*rnp0(l)) / dble(2*l+1)
         end do
 
-        ! IMPORTANT: normalizing Tnr(:,l)/=alpha_raw(l) alone only sets the
-        ! coefficient of x^(l+1) (x=r/r1) to 1 -- NOT the coefficient of the
-        ! physical r^(l+1), which is what "alpha_l^T=1" is supposed to mean
-        ! (T_l(r)=r^(l+1)+beta*r^-l with UNIT coefficient on r^(l+1), matching
-        ! how coeff(l,m) is meant to represent the actual external source
-        ! amplitude, same convention as field1d.f90/pythonSolver's K0). Since
-        ! x^(l+1)=r^(l+1)/r1^(l+1), the coefficient-of-x^(l+1)=1 basis and the
-        ! coefficient-of-r^(l+1)=1 basis differ by exactly r1^(l+1) (found by
-        ! direct comparison against reference_unit_sphere_s2.py, 2026-07-23)
-        ! -- dividing by alpha_raw(l)/rl(1)**(l+1) (instead of alpha_raw(l)
-        ! alone) restores the intended convention. This factor is applied
-        ! once, multiplicatively, here -- unlike the raw r1^(l+1) terms
-        ! removed from the eq(23)/eq(18) algebra above, it cannot compound
-        ! into overflow, though for lmax high enough that r1**(lmax+1)
-        ! itself approaches complex(8) range (~1e308; irrelevant for
-        ! realistic MT lmax) it would eventually need sub-stepping too.
+        ! Normalize so the coefficient of x^(l+1) (x=r/r1) in the air is 1 --
+        ! the DIMENSIONLESS external-multipole scale (external part T_l(r1)=1 at
+        ! the surface). We deliberately do NOT multiply back r1^(l+1) to reach a
+        ! "coefficient of r^(l+1)=1" (r in metres) scale: that re-materializes
+        ! r1^(l+1) ~ r0^(l+1), which is astronomically large (~1e34 by l=4) and
+        ! overflows complex(8) for l >~ 45. The original Sun & Egbert (2012)
+        ! Matlab solver normalizes EXACTLY this dimensionless way
+        ! (GlobalDV/ThinSheet/SIEM/airprop.m works in rr=r/r0 throughout, the
+        ! external potential being (r/r0)^(n+1)) -- which is precisely what
+        ! keeps the paper's algorithm numerically stable at high degree. The
+        ! driver's radial_renorm_factor (output_convention.f90) then rescales
+        ! this common S2 scale onto S1's reference scale so the two agree.
         do l = 1,lmax
             if (abs(alpha_raw(l)) > 0.0d0) then
                 block
                     complex(8) :: norm_factor
-                    norm_factor = alpha_raw(l) / rl(1)**(l+1)
+                    norm_factor = alpha_raw(l)
                     Tnr(:,l) = Tnr(:,l)/norm_factor
                     Tnsp(:,l) = Tnsp(:,l)/norm_factor
                     if (present(Tnrp)) Tnrp(:,l) = Tnrp(:,l)/norm_factor
@@ -471,11 +474,11 @@ contains
         end do
 
         !--------------------------------------------------------------
-        ! Air region (eq 18, quasi-static limit), same r/r1-relative
-        ! rewrite: with x=r/r1, T_l(r) = r1^(l+1)*[x^(l+1) + beta_norm*x^(-l)]
-        ! (the r1^(l+1) restores the coefficient-of-r^(l+1)=1 convention, see
-        ! note above), and, by the chain rule (dx/dr = 1/r1),
-        ! T_l'(r) = r1^l*[(l+1)*x^l - l*beta_norm*x^-(l+1)].
+        ! Air region (eq 18, quasi-static limit), in the DIMENSIONLESS x=r/r1
+        ! normalization (coefficient of x^(l+1) = 1, see note above -- NO
+        ! r1^(l+1) prefactor, so T_l and T_l' stay O(1) at every degree):
+        !     T_l(r)  = x^(l+1) + beta_norm*x^(-l)
+        !     T_l'(r) = (1/r1)*[(l+1)*x^l - l*beta_norm*x^(-l-1)]  (chain rule, dx/dr=1/r1)
         !--------------------------------------------------------------
         call find_index(Rr, rl(1), rmax, idrmin, idrmax)
         if ((idrmin > 0) .and. (idrmax > 0)) then
@@ -484,9 +487,9 @@ contains
                     real(8) :: x
                     x = Rr(idr)/rl(1)
                     do l = 1,lmax
-                        Tnr(idr,l) = rl(1)**(l+1) * (x**(l+1) + beta_norm(l)*x**(-l))
-                        if (present(Tnrp)) Tnrp(idr,l) = rl(1)**l * (dble(l+1)*x**l &
-                                                        - dble(l)*beta_norm(l)*x**(-l-1))
+                        Tnr(idr,l) = x**(l+1) + beta_norm(l)*x**(-l)
+                        if (present(Tnrp)) Tnrp(idr,l) = (dble(l+1)*x**l &
+                                                        - dble(l)*beta_norm(l)*x**(-l-1)) / rl(1)
                     end do
                 end block
             end do
@@ -499,8 +502,8 @@ contains
                     real(8) :: x
                     x = Rs(ids)/rl(1)
                     do l = 1,lmax
-                        Tnsp(ids,l) = rl(1)**l * (dble(l+1)*x**l - dble(l)*beta_norm(l)*x**(-l-1))
-                        if (present(Tns)) Tns(ids,l) = rl(1)**(l+1) * (x**(l+1) + beta_norm(l)*x**(-l))
+                        Tnsp(ids,l) = (dble(l+1)*x**l - dble(l)*beta_norm(l)*x**(-l-1)) / rl(1)
+                        if (present(Tns)) Tns(ids,l) = x**(l+1) + beta_norm(l)*x**(-l)
                     end do
                 end block
             end do

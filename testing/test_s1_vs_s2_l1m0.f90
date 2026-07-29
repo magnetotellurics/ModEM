@@ -18,7 +18,12 @@ program test_s1_vs_s2_l1m0
 ! should be the SAME sign/phase across all 5 components if field1d.f90's own
 ! internal sign bookkeeping is consistent for this term; a component whose
 ! ratio breaks that pattern points at exactly where the absolute sign issue
-! lives.
+! lives. (As of the 2026 dimensionless-radial fix in field1d_s2.f90, that
+! overall constant is ~ r0^2/(l(l+1)) ~ 2.03e13 for l=1 -- S1's native SURFACE
+! radial normalization vs S2's native MULTIPOLE, see output_convention.f90's
+! native_radial/radial_amplitude; it was ~0.5 before that fix. Only the
+! magnitude changed; the phase-consistency-across-components check is
+! unaffected.)
 !
 ! Model/grid/staggering are IDENTICAL to test_earth_l1mneg1.f90 (uniform 100
 ! Ohm.m sphere, r0=6.371e6 m, T=1000s, H on EDGE / E on FACE), so the two

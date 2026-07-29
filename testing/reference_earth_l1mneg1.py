@@ -105,7 +105,13 @@ for name, (r, th, ph, which, sign) in points.items():
     Rval = sol['R'](np.array([r]))[0]
     Rpval = sol['Rp'](np.array([r]))[0]
     F = fields_from_R_general(l, m_python, r, th, ph, Rval, Rpval, mu0, omega)
-    val_fortran_convention = sign * norm * np.conj(F[which] / A)
+    # /(a+1)^(l+1): field1d_s2.f90 now normalizes T_l to the DIMENSIONLESS
+    # (r/r1)^(l+1)=1 scale (r1 = earth%r0 + 1 m, the "+1 m above the thin
+    # sheet" reference radius in sourcePotential_s2) after the 2026 fix, rather
+    # than the old dimensional r^(l+1)=1. This reference otherwise matches the
+    # old dimensional S2, so scale it by 1/r1^(l+1) to match the new S2.
+    r1 = a + 1.0
+    val_fortran_convention = sign * norm * np.conj(F[which] / A) / r1**(l + 1)
     print(f"{name:16s} r={r:12.3f} th={th:.10f} ph={ph:.10f}   "
           f"{val_fortran_convention.real:+.10e} {val_fortran_convention.imag:+.10e}j")
 

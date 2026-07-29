@@ -79,8 +79,19 @@ def solve_unit_external(l, k1, a):
 
 
 def Theta_ext_region(r, l, B):
-    Th = r ** (l + 1) + B * r ** (-l)
-    Thp = (l + 1) * r ** l - l * B * r ** (-l - 1)
+    # DIMENSIONLESS (r/r1)^(l+1)=1 external normalization (MULTIPOLE), matching
+    # field1d_s2.f90's radial normalization after the 2026 dimensionless-radial
+    # fix (its sourcePotential_s2 now normalizes T_l to coeff-of-(r/r1)^(l+1)=1,
+    # like the Sun & Egbert Matlab solver, so T_l stays O(1) at every degree).
+    # The normalization radius is the solver's own rl(1) = earth%r0 + 1 m (the
+    # "+1 m above the thin sheet" reference radius, sourcePotential_s2) -- the
+    # +1 m is negligible at Earth scale but is 0.1%*(l+1) here (r0=1000 m), so
+    # it must be included for an exact ratio=1 match. B (internal/external
+    # ratio) is unchanged (it is a ratio, independent of the overall scale).
+    r1 = r0 + 1.0
+    scale = r1 ** (-(l + 1))
+    Th = (r ** (l + 1) + B * r ** (-l)) * scale
+    Thp = ((l + 1) * r ** l - l * B * r ** (-l - 1)) * scale
     return Th, Thp
 
 

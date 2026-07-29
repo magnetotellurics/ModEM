@@ -80,8 +80,10 @@ module output_convention
     public :: TIME_POSITIVE, TIME_NEGATIVE, NORM_SCHMIDT, NORM_FULL, &
               THETA_COLAT, THETA_LAT, R_DOWN, R_UP
     public :: KELBERT2006, SUNEGBERT2012, EGBERTKELBERT2012, EGBERTKELBERT2012_MODEM
-    public :: get_convention, native_convention
+    public :: RADIAL_SURFACE, RADIAL_MULTIPOLE, RADIAL_DIMENSIONAL
+    public :: get_convention, native_convention, native_radial
     public :: rescale_source_coeffs, apply_output_convention, apply_modem_normalization
+    public :: rescale_source_radial, radial_amplitude
 
     ! ------- enumerated tokens (character params keep the .prm/config human-readable) -------
     character(len=10), parameter :: TIME_POSITIVE = 'PLUS_IWT'
@@ -92,10 +94,20 @@ module output_convention
     character(len=10), parameter :: THETA_LAT   = 'LAT_S2N'    ! latitude,   South->North
     character(len=6),  parameter :: R_DOWN = 'R_DOWN'          ! r increases downward (depth)
     character(len=6),  parameter :: R_UP   = 'R_UP'            ! r increases upward (radius)
+    ! Per-degree RADIAL (source-amplitude) normalization -- i.e. what
+    ! coeff(l,m)=1 means for the radial part of the field. This is the ONE
+    ! convention dimension where the two solvers genuinely differ natively
+    ! (S1=SURFACE, S2=MULTIPOLE, see native_radial); reconciling it is what
+    ! makes S1 and S2 produce identical output for the same OUTPUT_CONVENTION.
+    ! See radial_amplitude() for the exact per-degree factors -- that single
+    ! function is the place to adjust or add a per-degree radial normalization.
+    character(len=12), parameter :: RADIAL_MULTIPOLE   = 'MULTIPOLE'   ! S2 native; Sun & Egbert eq (6), unit (r/a)^(l+1) potential coeff; A = 1
+    character(len=12), parameter :: RADIAL_SURFACE     = 'SURFACE'     ! S1 native; unit surface radial field; A = R0^2/(l(l+1))
+    character(len=12), parameter :: RADIAL_DIMENSIONAL = 'DIMENSIONAL' ! Sun & Egbert text, unit r^(l+1) (r in metres); A = R0^(l+1) -- OVERFLOWS for l >~ 44
 
     ! ------- the convention type: five field-bookkeeping dimensions + primary_grid -------
     type :: output_convention_t
-        character(len=24) :: name              ! 'KELBERT2006' etc, for logging
+        character(len=24) :: name               ! 'KELBERT2006' etc, for logging
         character(len=10) :: time_convention    ! TIME_POSITIVE | TIME_NEGATIVE
         character(len=16) :: harmonic_norm      ! NORM_SCHMIDT | NORM_FULL
         logical            :: condon_shortley   ! .true. = Condon-Shortley phase included
@@ -110,16 +122,29 @@ module output_convention
         ! bookkeeping dimensions above. Default .false. for every preset
         ! except EGBERTKELBERT2012_MODEM.
         logical            :: modem_normalize = .false.
+        ! Per-degree RADIAL source-amplitude normalization (RADIAL_MULTIPOLE |
+        ! RADIAL_SURFACE | RADIAL_DIMENSIONAL). Reconciles the two solvers'
+        ! different native radial normalizations (S1=SURFACE, S2=MULTIPOLE) so
+        ! that BOTH produce identical output at the chosen scale. Default
+        ! SURFACE (O(1) fields, S1-native, ModEM-compatible). Applied to the
+        ! source coeff per degree before the solve (rescale_source_radial).
+        character(len=12)  :: radial_norm = RADIAL_SURFACE
     end type output_convention_t
 
     ! ------- the three predefined conventions (kept exactly as specified --
     ! see the NATIVE CONVENTIONS note above for why these are fixed, named
     ! targets, not necessarily any solver's raw native output) -------
+    ! radial_norm is RADIAL_SURFACE for every preset here (S1-native / O(1) /
+    ! ModEM-compatible scale) -- this reproduces the behavior in force before
+    ! radial_norm was made an explicit dimension, and keeps S1 unchanged (so
+    ! ModEM compatibility is preserved). Set it to RADIAL_MULTIPOLE for Sun &
+    ! Egbert's own eq-(6) potential-coefficient scale, or RADIAL_DIMENSIONAL
+    ! for their literal r^(l+1)=1 text (numerically unstable at high degree).
     type(output_convention_t), parameter :: KELBERT2006 = output_convention_t( &
-        'KELBERT2006', TIME_POSITIVE, NORM_SCHMIDT, .false., THETA_COLAT, R_DOWN, 'H', .false.)
+        'KELBERT2006', TIME_POSITIVE, NORM_SCHMIDT, .false., THETA_COLAT, R_DOWN, 'H', .false., RADIAL_SURFACE)
 
     type(output_convention_t), parameter :: SUNEGBERT2012 = output_convention_t( &
-        'SUNEGBERT2012', TIME_NEGATIVE, NORM_FULL, .true., THETA_COLAT, R_UP, 'E', .false.)
+        'SUNEGBERT2012', TIME_NEGATIVE, NORM_FULL, .true., THETA_COLAT, R_UP, 'E', .false., RADIAL_SURFACE)
 
     ! condon_shortley=.true. here (2026-07-26, per direct user instruction, for
     ! validation purposes): confirmed empirically (test_diagnose_egbertkelbert.f90)
@@ -129,13 +154,13 @@ module output_convention
     ! (the original spec's assumption) spuriously flips every odd-m source
     ! (e.g. Mode2, l=1 m=+-1) via rescale_source_coeffs's (-1)^m term while
     ! leaving m=0 sources (e.g. Mode1) untouched, producing a mode-dependent
-    ! sign inconsistency. NOTE (2026-07-26, per user): the historical ModEM
+    ! sign inconsistency. NOTE (2026-07-26, A. Kelbert): the historical ModEM
     ! solver this convention is named for never actually used spherical
     ! harmonics at all; a future CUSTOM/named preset with condon_shortley=
     ! .false. may still be needed for that use case -- track separately,
     ! do not silently revert this field back to .false.
     type(output_convention_t), parameter :: EGBERTKELBERT2012 = output_convention_t( &
-        'EGBERTKELBERT2012', TIME_NEGATIVE, NORM_FULL, .true., THETA_LAT, R_DOWN, 'E', .false.)
+        'EGBERTKELBERT2012', TIME_NEGATIVE, NORM_FULL, .true., THETA_LAT, R_DOWN, 'E', .false., RADIAL_SURFACE)
 
     ! EGBERTKELBERT2012_MODEM: identical field bookkeeping to EGBERTKELBERT2012,
     ! but additionally rescales the OUTPUT E and H by 1/(i*omega*mu0*G) so the
@@ -159,7 +184,7 @@ module output_convention
     ! experimental spherical ModEM BC. See docs/source_normalization.md/.pdf
     ! sec.6 and testing/test_vs_modem_1D/cartesian_sanity_check.md.
     type(output_convention_t), parameter :: EGBERTKELBERT2012_MODEM = output_convention_t( &
-        'EGBERTKELBERT2012_MODEM', TIME_NEGATIVE, NORM_FULL, .true., THETA_LAT, R_DOWN, 'E', .true.)
+        'EGBERTKELBERT2012_MODEM', TIME_NEGATIVE, NORM_FULL, .true., THETA_LAT, R_DOWN, 'E', .true., RADIAL_SURFACE)
 
 contains
 
@@ -180,25 +205,43 @@ contains
 
     ! Native (raw, un-transformed) convention actually produced by each
     ! solver, empirically verified -- see the NATIVE CONVENTIONS note above.
-    ! As of 2026-07-27, S1 and S2 have IDENTICAL native conventions in every
-    ! dimension (including primary_grid, now 'E' for both) -- both cases
-    ! simply return the SUNEGBERT2012 preset (S2's native convention). Kept
-    ! as a solver-name lookup (rather than having callers use the
-    ! SUNEGBERT2012 preset directly) so
-    ! FWD1D.f90 stays agnostic to the fact that the two happen to coincide
-    ! today -- if a future solver's native output genuinely differs, only
-    ! this function needs a new case, not every call site.
+    ! S1 and S2 share the same native time/norm/CS/theta/r/primary bookkeeping
+    ! (the SUNEGBERT2012 preset's values), and differ natively in exactly ONE
+    ! dimension: the RADIAL source-amplitude normalization (S1=SURFACE,
+    ! S2=MULTIPOLE, see native_radial). That difference is reconciled by
+    ! rescale_source_radial, NOT by apply_output_convention (which handles only
+    ! time/theta/r), so the radial_norm carried here is informational (banner /
+    ! metadata); the actual per-degree radial rescale reads native_radial(solver)
+    ! directly.
     function native_convention(solver) result(conv)
         character(*), intent(in)   :: solver
         type(output_convention_t)  :: conv
         select case (trim(solver))
             case ('S1', 'S2')
                 conv = SUNEGBERT2012
+                conv%radial_norm = native_radial(solver)
             case default
                 write(0,*) 'output_convention: unknown solver: ', trim(solver)
                 stop 1
         end select
     end function native_convention
+
+    ! Native per-degree RADIAL (source-amplitude) normalization of each solver.
+    ! S1 (field1d.f90) assembles Hr with an R0^2/r^2 factor, so its external
+    ! radial field at the surface is exactly Y_l^m for coeff=1 -> RADIAL_SURFACE.
+    ! S2 (field1d_s2.f90) uses Sun & Egbert eq (6) (l(l+1)/r^2) with the
+    ! dimensionless (r/a)^(l+1)=1 potential -> RADIAL_MULTIPOLE.
+    function native_radial(solver) result(rn)
+        character(*), intent(in) :: solver
+        character(len=12)        :: rn
+        select case (trim(solver))
+            case ('S1'); rn = RADIAL_SURFACE
+            case ('S2'); rn = RADIAL_MULTIPOLE
+            case default
+                write(0,*) 'output_convention: unknown solver: ', trim(solver)
+                stop 1
+        end select
+    end function native_radial
 
     !===========================================================================
     ! (a) Source-coefficient rescale -- applied BEFORE the solve.
@@ -288,6 +331,83 @@ contains
         end if
 
     end subroutine apply_norm_cs
+
+    !===========================================================================
+    ! (a2) Radial (source-amplitude) renormalization -- applied BEFORE the solve,
+    !      right after rescale_source_coeffs. Converts the source coeff from the
+    !      SOLVER's native radial normalization (native_radial(solver)) to the
+    !      TARGET radial normalization requested by the OUTPUT_CONVENTION
+    !      (target_radial), per DEGREE l. Because BOTH solvers are then expressed
+    !      in the SAME target radial scale, S1 and S2 produce IDENTICAL output
+    !      (up to each solver's independent numerical accuracy) for the same
+    !      coeff and the same OUTPUT_CONVENTION.
+    !
+    !      Why this is needed and is NOT covered by rescale_source_coeffs above:
+    !      that routine reconciles the ANGULAR (spherical-harmonic norm + CS
+    !      phase) convention only. The RADIAL / source-amplitude normalization --
+    !      what "coeff(l,m)=1" means for the radial part of the field -- is a
+    !      genuinely separate convention dimension, and the ONE dimension where
+    !      S1 and S2 differ natively (S1=SURFACE, S2=MULTIPOLE, see
+    !      native_radial). The per-degree amplitudes of the named conventions are
+    !      defined in radial_amplitude(); the rescale factor is simply
+    !      A(target,l) / A(native(solver),l). Applied identically to E and H, so
+    !      Z = E/H is unchanged.
+    !===========================================================================
+    subroutine rescale_source_radial(coeff, lmax, solver, target_radial, r0)
+        complex(prec), dimension(:), intent(inout) :: coeff  ! m=0,1,-1,2,-2,... order
+        integer, intent(in)                        :: lmax
+        character(len=*), intent(in)               :: solver        ! 'S1' | 'S2'
+        character(len=*), intent(in)               :: target_radial ! RADIAL_* token
+        real(prec), intent(in)                     :: r0            ! Earth radius, metres
+        integer           :: l, m, idx
+        real(prec)        :: fac
+        character(len=12) :: native
+
+        native = native_radial(solver)
+        idx = 1                                        ! coeff(1) is l=0 (unused)
+        do l = 1, lmax
+            fac = radial_amplitude(target_radial, l, r0) / radial_amplitude(native, l, r0)
+            idx = idx + 1
+            coeff(idx) = coeff(idx) * fac                    ! m=0
+            do m = 1, l
+                coeff(idx+1) = coeff(idx+1) * fac            ! +m
+                coeff(idx+2) = coeff(idx+2) * fac            ! -m
+                idx = idx + 2
+            end do
+        end do
+    end subroutine rescale_source_radial
+
+    real(prec) function radial_amplitude(radial_norm, l, r0) result(A)
+        ! Per-degree amplitude A(l) of a named RADIAL normalization, relative to
+        ! the MULTIPOLE baseline (Sun & Egbert eq (6) with the dimensionless
+        ! (r/a)^(l+1)=1 potential, A=1). A field expressed in convention X equals
+        ! (the same field in MULTIPOLE) * A(X,l). THIS is the single place to
+        ! adjust or add a per-degree radial normalization: add a case with your
+        ! own A(l) formula.
+        !   RADIAL_MULTIPOLE   : A = 1               -- S2 native; coeff of (r/a)^(l+1)=1
+        !   RADIAL_SURFACE     : A = R0^2/(l(l+1))   -- S1 native; unit surface radial field
+        !   RADIAL_DIMENSIONAL : A = R0^(l+1)        -- Sun & Egbert text, coeff of r^(l+1)=1
+        !                                               (r in metres) -- OVERFLOWS for l >~ 44
+        character(len=*), intent(in) :: radial_norm
+        integer, intent(in)          :: l
+        real(prec), intent(in)       :: r0
+        select case (trim(radial_norm))
+            case (RADIAL_MULTIPOLE)
+                A = 1.0_prec
+            case (RADIAL_SURFACE)
+                A = r0*r0 / real(l*(l+1), prec)
+            case (RADIAL_DIMENSIONAL)
+                if (l+1 > 44) then
+                    write(0,*) 'output_convention: RADIAL_DIMENSIONAL overflows double precision at l=',l, &
+                               ' (R0^(l+1) > ~1e308). Use RADIAL_SURFACE or RADIAL_MULTIPOLE for high degree.'
+                    stop 1
+                end if
+                A = r0**(l+1)
+            case default
+                write(0,*) 'output_convention: unknown radial_norm: ', trim(radial_norm)
+                stop 1
+        end select
+    end function radial_amplitude
 
     !===========================================================================
     ! (b) Output-array transform -- applied AFTER the solve.

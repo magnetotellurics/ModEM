@@ -122,7 +122,7 @@ program fwd1d
     !       by the air-layer thickness). Preserves Z=E/H (no physics changed);
     !       matches ModEM to a few-% amplitude / <~5deg phase for the P10/MT
     !       modes. Full derivation: docs/source_normalization.md / .pdf.
-    character(len=24), parameter                :: OUTPUT_CONVENTION = 'EGBERTKELBERT2012_MODEM'
+    character(len=24), parameter                :: OUTPUT_CONVENTION = 'SUNEGBERT2012'
     type(output_convention_t)                   :: target_conv, native
 
     ! Desired OUTPUT FIELD FORMAT (orthogonal to both SOLVER and
@@ -242,10 +242,12 @@ program fwd1d
     write(*,*) 'Output convention requested: ', trim(OUTPUT_CONVENTION)
     write(*,*) '  (solver native: time=',trim(native%time_convention),' norm=',trim(native%harmonic_norm), &
                ' CS=',native%condon_shortley,' theta=',trim(native%theta_convention), &
-               ' r=',trim(native%r_convention),' primary=',native%primary_grid,')'
+               ' r=',trim(native%r_convention),' primary=',native%primary_grid, &
+               ' radial=',trim(native%radial_norm),')'
     write(*,*) '  (target:        time=',trim(target_conv%time_convention),' norm=',trim(target_conv%harmonic_norm), &
                ' CS=',target_conv%condon_shortley,' theta=',trim(target_conv%theta_convention), &
-               ' r=',trim(target_conv%r_convention),' primary=',target_conv%primary_grid,')'
+               ' r=',trim(target_conv%r_convention),' primary=',target_conv%primary_grid, &
+               ' radial=',trim(target_conv%radial_norm),')'
     write(*,*)
 
     !  parse command line
@@ -436,6 +438,16 @@ program fwd1d
         ! target_conv already matches vsharm's own fixed FULL/CS-included
         ! basis, e.g. OUTPUT_CONVENTION='SUNEGBERT2012').
         call rescale_source_coeffs(coeff(icoeff+1:icoeff+ncoeff), lmax, target_conv)
+
+        ! (a2) radial (source-amplitude) renormalization: convert this solver's
+        ! native radial normalization (native_radial(SOLVER)) to the target
+        ! radial normalization requested by OUTPUT_CONVENTION
+        ! (target_conv%radial_norm, default RADIAL_SURFACE), per degree. This is
+        ! the ONE dimension where S1 and S2 differ natively; reconciling it makes
+        ! them produce identical output. See output_convention.f90's
+        ! rescale_source_radial / radial_amplitude for the full rationale.
+        call rescale_source_radial(coeff(icoeff+1:icoeff+ncoeff), lmax, SOLVER, &
+                                   target_conv%radial_norm, earth%r0)
 
         ! volume (grid) field solve -- skipped entirely when OUTPUT_FORMAT='OFF'
         ! (surface-only run). This is the expensive part (full-grid mapping over
