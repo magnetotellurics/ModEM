@@ -245,8 +245,12 @@ module output_convention
     ! CONVENTION alone: S1+LWS and S2+LWS produce identical fields (both
     ! transforms are applied identically for both solvers). The solver
     ! internals are unchanged and remain CS-included / T-parameterized.
-    type(output_convention_t), parameter :: LWS = output_convention_t( &
-        'LWS', TIME_NEGATIVE, NORM_FULL, .false., THETA_COLAT, R_UP, 'E', .false., RADIAL_POTENTIAL)
+    !  - Sun & Egbert global grid convention best for comparison with the Matlab code
+    !type(output_convention_t), parameter :: LWS = output_convention_t( &
+    !    'LWS', TIME_NEGATIVE, NORM_FULL, .false., THETA_COLAT, R_UP, 'E', .false., RADIAL_POTENTIAL)
+    !  - MT grid convention best for computing the primary fields with ModEM
+     type(output_convention_t), parameter :: LWS = output_convention_t( &
+        'LWS', TIME_NEGATIVE, NORM_FULL, .false., THETA_LAT, R_DOWN, 'E', .false., RADIAL_POTENTIAL)
 
 contains
 
