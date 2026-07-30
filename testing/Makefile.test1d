@@ -16,6 +16,9 @@
 #                               hand-computed Schmidt/full norm and Condon-Shortley ratios
 #   test_reversals          -- output_convention.f90's apply_output_convention
 #                               theta/r index-reversal + component-negation logic
+#   test_radial_potential   -- output_convention.f90's RADIAL_POTENTIAL radial_amplitude
+#                               vs RADIAL_SURFACE*l (external-potential V / Gauss-coefficient
+#                               formulation vs toroidal-potential T), and the LWS preset
 # (test_unit_sphere_s1.f90 and test_unit_sphere_s2.f90 were
 # merged into the single test_unit_sphere.f90 above, 2026-07-25, since both
 # built the identical model/grid/source -- see testing/TESTING_MANUAL.md.
@@ -35,7 +38,8 @@
 #   make -f Makefile.test1d
 #   ./test_unit_sphere / ./test_earth_l1mneg1 /
 #   ./test_Tnr_uniform_sphere / ./test_s1_vs_s2_l1m0 /
-#   ./test_vs_modem_1D_impedance / ./test_norm_condon_shortley / ./test_reversals
+#   ./test_vs_modem_1D_impedance / ./test_norm_condon_shortley / ./test_reversals /
+#   ./test_radial_potential
 
 ROOT = ..
 
@@ -50,7 +54,7 @@ OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o \
       $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o \
       $(OBJDIR)/output_convention.o $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
 
-all: test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals
+all: test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals test_radial_potential
 
 # field1d.f90 (S1) and field1d_s2.f90 (S2) vs
 # the same closed form (l=2,m=1)
@@ -135,5 +139,11 @@ test_reversals: $(OBJDIR) $(OBJ) $(OBJDIR)/test_reversals.o
 $(OBJDIR)/test_reversals.o: test_reversals.f90 $(OBJDIR)/output_convention.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o
 	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_reversals.f90 -o $(OBJDIR)/test_reversals.o
 
+test_radial_potential: $(OBJDIR) $(OBJ) $(OBJDIR)/test_radial_potential.o
+	$(F90) -o test_radial_potential $(OBJ) $(OBJDIR)/test_radial_potential.o
+
+$(OBJDIR)/test_radial_potential.o: test_radial_potential.f90 $(OBJDIR)/output_convention.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_radial_potential.f90 -o $(OBJDIR)/test_radial_potential.o
+
 clean:
-	rm -rf $(OBJDIR) test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals
+	rm -rf $(OBJDIR) test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals test_radial_potential

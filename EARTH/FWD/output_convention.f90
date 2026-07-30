@@ -80,7 +80,7 @@ module output_convention
     public :: TIME_POSITIVE, TIME_NEGATIVE, NORM_SCHMIDT, NORM_FULL, &
               THETA_COLAT, THETA_LAT, R_DOWN, R_UP
     public :: KELBERT2006, SUNEGBERT2012, EGBERTKELBERT2012, EGBERTKELBERT2012_MODEM, LWS
-    public :: RADIAL_SURFACE, RADIAL_MULTIPOLE, RADIAL_DIMENSIONAL
+    public :: RADIAL_SURFACE, RADIAL_MULTIPOLE, RADIAL_DIMENSIONAL, RADIAL_POTENTIAL
     public :: get_convention, native_convention, native_radial
     public :: rescale_source_coeffs, apply_output_convention, apply_modem_normalization
     public :: rescale_source_radial, radial_amplitude
@@ -101,9 +101,26 @@ module output_convention
     ! makes S1 and S2 produce identical output for the same OUTPUT_CONVENTION.
     ! See radial_amplitude() for the exact per-degree factors -- that single
     ! function is the place to adjust or add a per-degree radial normalization.
+    !
+    ! Two distinct FORMULATIONS are represented here, not just four scale
+    ! choices:
+    !   TOROIDAL POTENTIAL (T) family -- RADIAL_MULTIPOLE, RADIAL_SURFACE,
+    !     RADIAL_DIMENSIONAL. All three parameterize coeff(l,m) as an
+    !     amplitude of the solvers' own toroidal potential T_l(r), whose
+    !     source (regular-at-origin) term in the insulating atmosphere is
+    !     T_l^ext(r) = alpha_l^T * (r/R0)^(l+1) (Sun & Egbert eq 6) -- they
+    !     differ only in what numeric scale alpha_l^T=1 corresponds to.
+    !   EXTERNAL (SCALAR) POTENTIAL (V) family -- RADIAL_POTENTIAL. A
+    !     genuinely different formulation: coeff(l,m) parameterizes the
+    !     classical external/inducing geomagnetic potential V instead of T,
+    !     i.e. the Gauss-coefficient convention V = R0*sum_l (r/R0)^l *
+    !     epsilon_l^m * Y_l^m used throughout classical geomagnetism and
+    !     ionospheric-current (Sq/LWS-style) source modeling. See
+    !     radial_amplitude() for the T<->V derivation and A(l).
     character(len=12), parameter :: RADIAL_MULTIPOLE   = 'MULTIPOLE'   ! S2 native; Sun & Egbert eq (6), unit (r/a)^(l+1) potential coeff; A = 1
     character(len=12), parameter :: RADIAL_SURFACE     = 'SURFACE'     ! S1 native; unit surface radial field; A = R0^2/(l(l+1))
     character(len=12), parameter :: RADIAL_DIMENSIONAL = 'DIMENSIONAL' ! Sun & Egbert text, unit r^(l+1) (r in metres); A = R0^(l+1) -- OVERFLOWS for l >~ 44
+    character(len=12), parameter :: RADIAL_POTENTIAL   = 'V_POTENTIAL' ! external scalar potential V (Gauss coefficient) parameterization; A = R0^2/(l+1)
 
     ! ------- the convention type: five field-bookkeeping dimensions + primary_grid -------
     type :: output_convention_t
@@ -143,8 +160,11 @@ module output_convention
     !   EGBERTKELBERT2012_MODEM  modem_normalize, the radial target is forced to
     !                          SURFACE anyway -- see FWD1D.f90 -- so the value
     !                          here is what a NON-modem variant would use.)
-    !   LWS          RADIAL_SURFACE, but condon_shortley=.false. --
-    !                          "S1's native convention with Condon-Shortley OFF"
+    !   LWS                    RADIAL_POTENTIAL (external scalar potential V /
+    !                          Gauss-coefficient parameterization -- a genuinely
+    !                          DIFFERENT formulation than the other presets'
+    !                          toroidal-potential T family, see the RADIAL_*
+    !                          declarations above), AND condon_shortley=.false.
     !                          (see its own note below).
     type(output_convention_t), parameter :: KELBERT2006 = output_convention_t( &
         'KELBERT2006', TIME_POSITIVE, NORM_SCHMIDT, .false., THETA_COLAT, R_DOWN, 'H', .false., RADIAL_SURFACE)
@@ -198,20 +218,35 @@ module output_convention
 
     ! LWS (NASA "Living With a Star" project): S1's native convention (see
     ! native_convention('S1'): MINUS_IWT, FULLY_NORM, colatitude N->S, r up,
-    ! E-primary, SURFACE radial) but with Condon-Shortley OFF
-    ! (condon_shortley=.false.). It is NOT a solver-native output for either
-    ! solver (both solvers are natively CS-included, via vsharm) -- it is a
-    ! TARGET convention: the output layer flips the (-1)^m Condon-Shortley phase
-    ! (rescale_source_coeffs / apply_norm_cs) so the fields come out in the
-    ! non-CS basis. Provided to test the hypothesis that the LWS / MATLAB-SIEM
-    ! (@TSModel, tanField.m / radField.m) .prm source coefficients are authored
-    ! in the non-CS convention -- run OUTPUT_CONVENTION='LWS' and compare against
-    ! the MATLAB output. As with every preset, the output is defined by the
-    ! CONVENTION alone: S1+LWS and S2+LWS produce identical fields (the flip is
-    ! applied identically for both). The solver internals are unchanged and
-    ! remain CS-included.
+    ! E-primary) but with TWO deviations from native, both testing hypotheses
+    ! about how the LWS-style (ionospheric-current / Sq) source coefficients
+    ! this project uses are actually authored:
+    !
+    !   (1) radial_norm = RADIAL_POTENTIAL, not RADIAL_SURFACE. This is a
+    !       genuinely different FORMULATION, not just a different scale: LWS/
+    !       Sq-current source coefficients are conventionally given as the
+    !       classical external geomagnetic potential's Gauss coefficients
+    !       (coeff(l,m) = epsilon_l^m, parameterizing V = R0*sum_l (r/R0)^l *
+    !       epsilon_l^m * Y_l^m), NOT as an amplitude of the solvers' own
+    !       toroidal potential T. RADIAL_POTENTIAL performs exactly that
+    !       reinterpretation (A(l) = R0^2/(l+1), see radial_amplitude's
+    !       derivation) so a coeff(:) authored as external-potential Gauss
+    !       coefficients drives the solver correctly.
+    !   (2) condon_shortley = .false. It is NOT a solver-native output for
+    !       either solver (both solvers are natively CS-included, via
+    !       vsharm) -- the output layer flips the (-1)^m Condon-Shortley phase
+    !       (rescale_source_coeffs / apply_norm_cs) so the fields come out in
+    !       the non-CS basis, testing the hypothesis that the LWS / MATLAB-SIEM
+    !       (@TSModel, tanField.m / radField.m) .prm source coefficients are
+    !       authored in the non-CS convention.
+    !
+    ! Run OUTPUT_CONVENTION='LWS' and compare against the MATLAB/SIEM output to
+    ! test both hypotheses. As with every preset, the output is defined by the
+    ! CONVENTION alone: S1+LWS and S2+LWS produce identical fields (both
+    ! transforms are applied identically for both solvers). The solver
+    ! internals are unchanged and remain CS-included / T-parameterized.
     type(output_convention_t), parameter :: LWS = output_convention_t( &
-        'LWS', TIME_NEGATIVE, NORM_FULL, .false., THETA_COLAT, R_UP, 'E', .false., RADIAL_SURFACE)
+        'LWS', TIME_NEGATIVE, NORM_FULL, .false., THETA_COLAT, R_UP, 'E', .false., RADIAL_POTENTIAL)
 
 contains
 
@@ -424,6 +459,24 @@ contains
         !   RADIAL_SURFACE     : A = R0^2/(l(l+1))   -- S1 native; unit surface radial field
         !   RADIAL_DIMENSIONAL : A = R0^(l+1)        -- Sun & Egbert text, coeff of r^(l+1)=1
         !                                               (r in metres) -- OVERFLOWS for l >~ 44
+        !   RADIAL_POTENTIAL   : A = R0^2/(l+1)      -- external scalar potential V
+        !                                               (Gauss coefficient) parameterization.
+        !     Derivation: in the insulating atmosphere (sigma=0, curl H=0), H=-grad(V)
+        !     is valid. Comparing that identity to the solvers' own H formulas
+        !     (H_theta=(1/r)*T_l'(r)*Yt, H_r=(l(l+1)/r^2)*T_l(r)*Y -- see
+        !     field1d_s2.f90's header) gives V_l(r) = -T_l'(r) (and T_l''=
+        !     l(l+1)/r^2*T_l confirms both solve the same source-free radial ODE).
+        !     The classical external/inducing potential expansion is
+        !     V = R0*sum_l (r/R0)^l * epsilon_l^m * Y_l^m (the regular-at-origin,
+        !     r-growing term -- the standard Gauss-coefficient convention used in
+        !     geomagnetism and ionospheric-current/Sq source modeling). Substituting
+        !     T_l^ext(r) = alpha_l^T*(r/R0)^(l+1) (MULTIPOLE's own source term) and
+        !     differentiating: V_l^ext(r) = -alpha_l^T*(l+1)/R0*(r/R0)^l, so matching
+        !     powers gives epsilon_l^m proportional to alpha_l^T/(l+1), i.e.
+        !     A(l) = R0^2/(l+1) -- the RADIAL_SURFACE formula with the extra 1/l
+        !     factor removed (as for RADIAL_SURFACE, the sign is absorbed into the
+        !     convention -- A(l) is a plain positive real scale, matching every
+        !     other radial_norm case here).
         character(len=*), intent(in) :: radial_norm
         integer, intent(in)          :: l
         real(prec), intent(in)       :: r0
@@ -439,6 +492,8 @@ contains
                     stop 1
                 end if
                 A = r0**(l+1)
+            case (RADIAL_POTENTIAL)
+                A = r0*r0 / real(l+1, prec)
             case default
                 write(0,*) 'output_convention: unknown radial_norm: ', trim(radial_norm)
                 stop 1
