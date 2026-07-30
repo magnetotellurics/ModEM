@@ -481,7 +481,7 @@ program Mod3DMT
 #else
       call ModEM_timers_report(6)
 #endif 
-      call ModEM_timers_destory_all()
+      call ModEM_timers_destroy_all()
 
 
 end program
