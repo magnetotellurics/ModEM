@@ -160,6 +160,24 @@ program fwd1d
     !       the surface routine does its own single-radius potential solve).
     character(len=10), parameter                :: OUTPUT_FORMAT = 'MODEM'
 
+    ! Output granularity for OUTPUT_FORMAT='MODEM' (ignored otherwise; the
+    ! 'GLOBAL' format already writes one file per period/mode unconditionally,
+    ! and 'OFF' writes no volume file at all). Mirrors ModEM's own
+    ! esoln_output namelist option (f90/UserCtrl.f90 / ioMod/ioAscii.f90's
+    ! write_solnVectorMTX) so files from either tool follow the same
+    ! convention:
+    !   'ALL' (default) -- one combined .esoln with every period/mode, exactly
+    !       as before.
+    !   'PER_PERIOD' -- one .esoln per period, bundling all of its modes.
+    !   'PER_PERIOD_MODE' -- one .esoln per individual (period,mode) pair.
+    ! Split files are tagged '.perN' / '.perN.modeM' (zero-padded to at least
+    ! 2 digits, e.g. period 3 -> "03" -- see tag_esoln_file) before the
+    ! '.esoln' extension; N/M are the GLOBAL 1-based period-group/mode index
+    ! (not renumbered to 1 per file), matching what's written into each
+    ! block's own iFreq/iMode header fields, so every file stays traceable
+    ! to its position in the original run.
+    character(len=20), parameter                :: ESOLN_OUTPUT = 'ALL'
+
     ! Optional SURFACE-FIELD output (for validation and plotting). When
     ! .true., additionally write -- per period and per mode -- the full H
     ! and E field evaluated at the Earth's SURFACE (r = R_earth) at the
@@ -442,7 +460,12 @@ program fwd1d
                       &so this should not happen unless native_convention() has been changed')
     end if
 
-    if (OUTPUT_FORMAT == 'MODEM') then
+    if (trim(ESOLN_OUTPUT) /= 'ALL' .and. trim(ESOLN_OUTPUT) /= 'PER_PERIOD' .and. &
+        trim(ESOLN_OUTPUT) /= 'PER_PERIOD_MODE') then
+        call errStop('Unknown ESOLN_OUTPUT flag; valid options are ALL (default), PER_PERIOD, PER_PERIOD_MODE')
+    end if
+
+    if (OUTPUT_FORMAT == 'MODEM' .and. trim(ESOLN_OUTPUT) == 'ALL') then
         modem_file = trim(fields_output_file)//'.'//trim(solver_tag)//'.'//trim(OUTPUT_CONVENTION)// &
                      '.esoln'
         write(*,*) 'Writing ModEM-format E-field solution to: ',trim(modem_file)
@@ -554,8 +577,34 @@ program fwd1d
         ! convention was used (see the header line and filename tag below).
         if (OUTPUT_FORMAT == 'MODEM') then
             omega_i = 2.0d0*PI/T(i)
-            call write_modem_efield_block(e1d, iper, imode, omega_i)
-            write(*,*) 'Wrote period ',trim(ich),' mode ',trim(ichmode),' to ',trim(modem_file)
+            select case (trim(ESOLN_OUTPUT))
+            case ('ALL')
+                ! single combined file, opened once before the loop
+                call write_modem_efield_block(e1d, iper, imode, omega_i)
+                write(*,*) 'Wrote period ',trim(ich),' mode ',trim(ichmode),' to ',trim(modem_file)
+            case ('PER_PERIOD')
+                ! one file per period-group: open on this period's first
+                ! mode, write every mode into it, close on its last mode
+                if (imode == 1) then
+                    modem_file = tag_esoln_file(trim(fields_output_file)//'.'//trim(solver_tag)// &
+                                 '.'//trim(OUTPUT_CONVENTION)//'.esoln', iper, 0)
+                    write(*,*) 'Writing ModEM-format E-field solution to: ',trim(modem_file)
+                    call write_modem_header(modem_file, grid, 1, n_modes)
+                end if
+                call write_modem_efield_block(e1d, iper, imode, omega_i)
+                write(*,*) 'Wrote period ',trim(ich),' mode ',trim(ichmode),' to ',trim(modem_file)
+                if (imode == n_modes) close(ioE)
+            case ('PER_PERIOD_MODE')
+                ! one file per (period,mode) pair: open, write the single
+                ! block, close, every iteration
+                modem_file = tag_esoln_file(trim(fields_output_file)//'.'//trim(solver_tag)// &
+                             '.'//trim(OUTPUT_CONVENTION)//'.esoln', iper, imode)
+                write(*,*) 'Writing ModEM-format E-field solution to: ',trim(modem_file)
+                call write_modem_header(modem_file, grid, 1, 1)
+                call write_modem_efield_block(e1d, iper, imode, omega_i)
+                write(*,*) 'Wrote period ',trim(ich),' mode ',trim(ichmode),' to ',trim(modem_file)
+                close(ioE)
+            end select
         else if (OUTPUT_FORMAT == 'GLOBAL') then
             cfile = trim(fields_output_file)//'.'//trim(solver_tag)//'.'//trim(OUTPUT_CONVENTION)// &
                     '.'//primary_grid//'-grid.T'//trim(ich)//'.mode'//trim(ichmode)//'.hfield'
@@ -630,7 +679,7 @@ program fwd1d
         write(*,*) 'Done writing to file: ',elapsed_time(fwd1d_timer),' secs'
     end do
 
-    if (OUTPUT_FORMAT == 'MODEM') then
+    if (OUTPUT_FORMAT == 'MODEM' .and. trim(ESOLN_OUTPUT) == 'ALL') then
         close(ioE)
     end if
 
@@ -861,6 +910,48 @@ contains
         write(ioE) transpose_12_reverse_3(e1d_arg%x)   ! ModEM's Ey (east)
         write(ioE) transpose_12_reverse_3(e1d_arg%z)   ! ModEM's Ez (down)
     end subroutine write_modem_efield_block
+
+    !**********************************************************************
+    ! Inserts a '.perN' (imode==0) or '.perN.modeM' (imode>0) tag into cfile,
+    ! before the file's own extension (text after the LAST '.') if it has
+    ! one, else appended at the end. N/M are zero-padded to at least 2
+    ! digits (e.g. period 3 -> "03", period 12 -> "12" -- common case of up
+    ! to 99 periods/modes sorts correctly on disk) via a field width wide
+    ! enough that 3+ digit values are shown in full, not overflowed.
+    ! Identical implementation to ModEM's own tag_esoln_file
+    ! (f90/3D_MT/ioMod/ioAscii.f90), kept in sync so files from either tool
+    ! follow the same naming convention.
+    function tag_esoln_file(cfile,iper,imode) result(tagged)
+        character(*), intent(in) :: cfile
+        integer, intent(in)      :: iper, imode
+        character(260)           :: tagged
+        character(260)           :: base, ext
+        character(20)            :: perstr, modestr
+        character(40)            :: tagpart
+        integer                  :: dotpos
+
+        dotpos = index(cfile,'.',back=.true.)
+        if (dotpos > 0) then
+            base = cfile(1:dotpos-1)
+            ext  = cfile(dotpos:)
+        else
+            base = cfile
+            ext  = ''
+        end if
+
+        write(perstr,'(i6.2)') iper
+        perstr = adjustl(perstr)
+        if (imode > 0) then
+            write(modestr,'(i6.2)') imode
+            modestr = adjustl(modestr)
+            tagpart = '.per'//trim(perstr)//'.mode'//trim(modestr)
+        else
+            tagpart = '.per'//trim(perstr)
+        end if
+
+        tagged = trim(base)//trim(tagpart)//trim(ext)
+
+    end function tag_esoln_file
 
     function transpose_12_reverse_3(A) result(B)
         ! Swaps the first two axes of a rank-3 complex array AND reverses
