@@ -68,6 +68,7 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#model-covariance-files">Model Covariance Files</a><ul>
+<li><a class="reference internal" href="#h2-bi-helmholtz-covariance-covtype-2">H2 (Bi-Helmholtz) Covariance (CovType=2)</a></li>
 <li><a class="reference internal" href="#including-an-ocean">Including an Ocean</a></li>
 <li><a class="reference internal" href="#including-topography">Including Topography</a></li>
 </ul>
@@ -647,8 +648,89 @@ ENDDO
 <p>Blocks are repeated as necessary — a single block is used in the simple example,
 indicating that the regions extend over all 11 layers (top-to-bottom) of this
 very small grid.</p>
+<div class="section" id="h2-bi-helmholtz-covariance-covtype-2">
+<h3>H2 (Bi-Helmholtz) Covariance (CovType=2)<a class="headerlink" href="#h2-bi-helmholtz-covariance-covtype-2" title="Permalink to this headline">¶</a></h3>
+<p>ModEM now supports an alternative regularization method based on the
+H2 (Bi-Helmholtz) operator, which provides isotropic smoothing with a
+(Matérn) covariance structure.</p>
+<p>To use H2 smoothing, set <code class="docutils literal notranslate"><span class="pre">CovType=2</span></code> in the inversion control file
+or command line, and provide a covariance file in the new unified format.</p>
+<p>The unified covariance file format uses line 17 to specify both grid dimensions
+and the CovType:</p>
+<ul class="simple">
+<li><p><strong>3 values</strong> (<code class="docutils literal notranslate"><span class="pre">Nx</span> <span class="pre">Ny</span> <span class="pre">NzEarth</span></code>): legacy format, defaults to CovType=1 (AR)</p></li>
+<li><p><strong>4 values</strong> (<code class="docutils literal notranslate"><span class="pre">Nx</span> <span class="pre">Ny</span> <span class="pre">NzEarth</span> <span class="pre">2</span></code>): new format, CovType=2 (H2)</p></li>
+</ul>
+<p>The file structure for CovType=2 is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Line 17:  Nx Ny NzEarth 2          &lt;-- grid dimensions + CovType
+Line 18:  Sx(1:NzEarth)             &lt;-- placeholder (not used by H2)
+Line 19:  Sy(1:NzEarth)             &lt;-- placeholder (not used by H2)
+Line 20:  Sz                         &lt;-- placeholder (not used by H2)
+Line 21:  N kappa pcg_tol pcg_maxIt  &lt;-- parameter array
+Line 22:  nrules                     &lt;-- number of exception rules
+Line 23+: mask1 mask2 smoothing      &lt;-- exception rules (3 values per rule)
+Line 24+: mask blocks                &lt;-- same format as CovType=1
+</pre></div>
+</div>
+<p>The H2 parameters are:</p>
+<ul class="simple">
+<li><p><strong>kappa</strong>: dimensionless smoothing parameter; correlation length ~ 1/kappa cells</p></li>
+<li><p><strong>pcg_tol</strong>: PCG solver tolerance (typically 1e-7)</p></li>
+<li><p><strong>pcg_maxIt</strong>: maximum PCG iterations (typically 250)</p></li>
+<li><p><strong>N</strong>: number of smoothing passes (typically 1, not used by H2)</p></li>
+</ul>
+<p>Example CovType=2 covariance file:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>+-----------------------------------------------------------------------------+
+| This file defines model covariance for the H2 (Bi-Helmholtz) smoother.      |
+| ...                                                                         |
++-----------------------------------------------------------------------------+
+21 28 11 2   &lt;-- Grid dimensions (Nx, Ny, NzEarth) + covtype
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 &lt;-- Sx, not used by H2
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 &lt;-- Sy, not used by H2
+0.1   &lt;-- Sz, not used by H2
+
+1 0.5 1e-7 250 &lt;-- Number of smoothings, kappa, PCG tolerance, max PCG iter
+
+1     &lt;-- Number of exception rules
+2 4 0.     &lt;-- Exception rule #1: smoothing across region 2, 4 boundary
+                this should be a real number; 0. means no smoothing
+                repeat these lines for each exception
+1 11   &lt;-- Start index array specification
+
+9 9 9 9 9 9 9 9 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+9 9 9 9 9 9 9 9 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+9 9 9 9 9 9 9 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+9 9 9 9 9 9 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+9 9 9 9 9 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+9 9 9 9 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+9 9 9 4 4 4 4 4 1 1 1 1 1 1 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 4 4 4 4 4 1 1 1 1 1 1 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 4 4 4 4 4 1 1 1 1 1 1 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 4 4 4 4 4 1 1 1 1 1 1 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 9 4 4 4 4 1 1 1 1 1 1 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 9 9 4 4 4 1 1 1 1 1 1 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 9 9 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 9 9 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 9 9 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 9 9 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 9 9 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 9 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 9 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+9 9 9 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+</pre></div>
+</div>
+<p>The Sx, Sy, Sz values are placeholders for future extensions and are not used in
+the current H2 implementation. Exception rules use the same 3-value
+format as CovType=1; the third value (smoothing) is read but not used for
+CovType=2 (tears are determined by rule presence).</p>
+<p><strong>Cross-compatibility</strong>: The code is tolerant when file and CovType don’t match.
+If a CovType=2 file is read with CovType=1 selected (or vice versa), a warning
+is printed and the mask is read from the file while defaults are used for the
+other parameters.</p>
 <p>For 2D MT, Weerachai Siripuvaraporn’s model covariance is used. No configuration
 file is currently allowed.</p>
+</div>
 <div class="section" id="including-an-ocean">
 <h3>Including an Ocean<a class="headerlink" href="#including-an-ocean" title="Permalink to this headline">¶</a></h3>
 <p>To include an ocean domain, which will have conductivity that is not changed
