@@ -1,0 +1,56 @@
+!----------------------------------------------------------------------!
+! 3D_MT H2 (Bi-Helmholtz) covariance (CovType=2): definitions.         !
+!                                                                      !
+!   K = C_m^{1/2} = A^{-1}  where A = kappa^2 I - Delta              !
+!   C_m = A^{-2}                                                      !
+!   K^{-1} = A                                                       !
+!                                                                      !
+!   Unified cov file format (line 17):                                !
+!     Nx Ny NzEarth FileType   (3 ints = legacy AR, 4 ints = new)    !
+!     Sx, Sy, Sz (placeholders, not used by H2)                       !
+!     N kappa pcg_tol pcg_maxIt (parameter array)                     !
+!     nrules, mask1 mask2 smoothing (exception rules, 3 per rule)     !
+!     mask blocks (read_iscalar format)                                !
+!----------------------------------------------------------------------!
+
+  type :: modelCovBiHelm_t
+
+    private
+
+    ! grid dimensions (earth cells only)
+    integer                                           :: Nx, Ny, NzEarth
+
+    ! H2 parameter kappa (> 0)
+    real (kind=prec)                          :: kappa
+
+    ! sparse operator A = kappa^2 I - Delta (CSR format)
+    type (spMatCSR_Real)                             :: A
+
+    ! an integer array that defines regions for smoothing and scaling purposes
+    type (iscalar)                                    :: mask
+
+    ! PCG solver controls
+    real (kind=prec)                          :: pcg_tol
+    integer                                           :: pcg_maxIt
+
+    ! exception rules: turn off smoothing across boundaries between
+    ! specific mask-code pairs (order independent)
+    logical                                           :: tearMatrix(0:9, 0:9)
+    integer                                           :: nrules
+    integer, pointer, dimension(:, :)         :: tearPairs
+
+    ! true when all arrays are allocated, initialized and ready to use
+    logical                                           :: allocated
+
+  end type
+
+  ! CmSqrtBiHelm (an instance of modelCovBiHelm_t), saved and private
+  type (modelCovBiHelm_t), private, save               :: CmSqrtBiHelm
+
+  ! public procedures to create, deallocate and multiply by CmSqrtBiHelm
+  public    :: create_CmSqrt_BiHelm, deall_CmSqrt_BiHelm, multBy_CmSqrt_BiHelm, &
+               multBy_Cm_BiHelm, multBy_CmSqrtInv_BiHelm
+
+  ! private procedures for the H2 (Bi-Helmholtz) covariance
+  private   :: apply_A_BiHelm, apply_freeze_semantics_BiHelm, solve_A_BiHelm, &
+               assemble_A_BiHelm, read_CmSqrt_BiHelm

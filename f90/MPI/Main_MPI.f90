@@ -1425,7 +1425,7 @@ end subroutine Master_job_keep_prev_eAll
 !################### Master_job_Distribute_userdef_control###################
 Subroutine Master_job_Distribute_userdef_control(ctrl, comm)
      implicit none
-     type(userdef_control), intent(in) :: ctrl
+     type(userdef_control), intent(inout) :: ctrl
      integer, intent(in), optional :: comm
      !local
      character(20)                 :: which_proc

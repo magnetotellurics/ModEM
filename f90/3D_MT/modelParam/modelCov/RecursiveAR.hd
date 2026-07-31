@@ -1,5 +1,12 @@
 !----------------------------------------------------------------------!
 ! 3D_MT model covariance by Gary Egbert and Anna Kelbert: definitions. !
+!                                                                      !
+!   Unified cov file format (line 17):                                !
+!     Nx Ny NzEarth FileType   (3 ints = legacy AR, 4 ints = new)    !
+!     Sx, Sy, Sz (smoothing parameters)                               !
+!     N (number of smoothing passes)                                   !
+!     nrules, mask1 mask2 smoothing (exception rules, 3 per rule)     !
+!     mask blocks (read_iscalar format)                                !
 !----------------------------------------------------------------------!
 
 ! 1) modelCov_t data type with private attributes
@@ -45,7 +52,7 @@
 
 ! 3) public procedures to create, deallocate and multiply by CmSqrt
 
-  public    :: create_CmSqrt, deall_CmSqrt, multBy_CmSqrt, read_CmSqrt,multBy_Cm
+  public    :: create_CmSqrt_AR, deall_CmSqrt_AR, multBy_CmSqrt_AR, read_CmSqrt_AR, multBy_Cm_AR
 
 ! 4) any private procedures required for the model covariance
 
