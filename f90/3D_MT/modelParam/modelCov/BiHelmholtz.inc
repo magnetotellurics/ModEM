@@ -1,14 +1,14 @@
 !----------------------------------------------------------------------!
-! 3D_MT Bi-Helmholtz covariance (CovType=2): procedures.               !
+! 3D_MT H2 (Bi-Helmholtz) covariance (CovType=2): procedures.          !
 !                                                                      !
-!   BiHelmholtz precision operator:  A = kappa^2 I - Delta                   !
+!   H2 precision operator:  A = kappa^2 I - Delta                      !
 !   Matérn order alpha=2:     C_m = A^{-2},  K = A^{-1}               !
 !----------------------------------------------------------------------!
 
 ! *******************************************************************
   subroutine read_CmSqrt_BiHelm(cfile)
 
-    ! Reads the BiHelmholtz covariance configuration from file.
+    ! Reads the H2 (Bi-Helmholtz) covariance configuration from file.
     ! Supports the unified cov file format:
     !   Line 17: Nx Ny NzEarth FileType  (or legacy Nx Ny NzEarth)
     !   Sx, Sy, Sz (placeholders)
@@ -16,7 +16,7 @@
     !   nrules, exception rules (3 values per rule)
     !   mask blocks
     ! When fileType=1 (AR format) is detected with CovType=2 selected,
-    ! reads the mask and uses BiHelmholtz defaults.
+    ! reads the mask and uses H2 defaults.
 
     character(*), intent(in)                         :: cfile
     integer                                          :: fid, j, fileType
@@ -44,7 +44,7 @@
     CmSqrtBiHelm%NzEarth = NzEarth
 
     if (fileType == 2) then
-       ! normal BiHelmholtz read: skip Sx, Sy, Sz (placeholders)
+        ! normal H2 read: skip Sx, Sy, Sz (placeholders)
        allocate(tempSx(NzEarth), tempSy(NzEarth), STAT=istat)
        read(fid,*) tempSx
        read(fid,*) tempSy
@@ -56,21 +56,21 @@
        read(fid,*,iostat=istat) tempN, CmSqrtBiHelm%kappa, &
             CmSqrtBiHelm%pcg_tol, CmSqrtBiHelm%pcg_maxIt
        if (istat /= 0) then
-          call errStop('Error reading BiHelmholtz parameters in '//cfile)
+           call errStop('Error reading H2 (Bi-Helmholtz) parameters in '//cfile)
        end if
        if (CmSqrtBiHelm%kappa <= 0.0_prec) then
-          call errStop('BiHelmholtz kappa must be positive in covariance file '//cfile)
+           call errStop('H2 kappa must be positive in covariance file '//cfile)
        end if
        if (CmSqrtBiHelm%pcg_tol <= 0.0_prec) then
-          call errStop('BiHelmholtz pcg_tol must be positive in covariance file '//cfile)
+           call errStop('H2 pcg_tol must be positive in covariance file '//cfile)
        end if
        if (CmSqrtBiHelm%pcg_maxIt <= 0) then
-          call errStop('BiHelmholtz pcg_maxIt must be positive in covariance file '//cfile)
+           call errStop('H2 pcg_maxIt must be positive in covariance file '//cfile)
        end if
     else
-       ! fileType=1 with CovType=2 selected: read mask, use BiHelmholtz defaults
-       write(0,*) 'Warning: AR cov file read with CovType=2.'
-       write(0,*) '  Using BiHelmholtz defaults for kappa, pcg parameters.'
+        ! fileType=1 with CovType=2 selected: read mask, use H2 defaults
+        write(0,*) 'Warning: AR cov file read with CovType=2.'
+        write(0,*) '  Using H2 defaults for kappa, pcg parameters.'
        allocate(tempSx(NzEarth), tempSy(NzEarth), STAT=istat)
        read(fid,*) tempSx
        read(fid,*) tempSy
@@ -114,7 +114,7 @@
 ! *******************************************************************
   subroutine create_CmSqrt_BiHelm(m, cfile)
 
-    ! Initializes the BiHelmholtz covariance. If cfile is provided, reads
+    ! Initializes the H2 (Bi-Helmholtz) covariance. If cfile is provided, reads
     ! configuration from file; otherwise uses defaults.
 
     type (modelParam_t), intent(in)     :: m
@@ -209,8 +209,8 @@
     integer                         :: Nx, Ny, NzEarth, nCells
     integer                         :: i, j, k, idx, idx_nb
     integer                         :: nnz, nz, istat, p
-   real (kind=prec)                :: kappa2
-   real (kind=prec)                :: diagA
+    real (kind=prec)               :: kappa2
+    real (kind=prec)               :: diagA
     integer, allocatable            :: rowT(:)
 
     Nx = m%Nx
@@ -464,7 +464,7 @@
     integer                       :: i, j, k, idx, it, istat
     real (kind=prec), allocatable :: r(:), p(:), z(:), q(:), x(:), b(:)
     real (kind=prec), allocatable :: diag(:)
-   real (kind=prec)              :: alpha, beta, rsold, rsnew, bnrm, denom
+    real (kind=prec)              :: alpha, beta, rsold, rsnew, bnrm, denom
     logical                       :: earlyExit
 
     Nx = size(rhs, 1)

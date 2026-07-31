@@ -49,7 +49,7 @@ module ModEM_timers
 
     public ModEM_timer_t
 
-    public ModEM_timers_create, ModEM_timers_destory, ModEM_timers_destory_all
+    public ModEM_timers_create, ModEM_timers_destroy, ModEM_timers_destroy_all
     public ModEM_timers_start, ModEM_timers_stop, ModEM_timers_stop_all
     public ModEM_timers_exist, ModEM_timers_get
     public ModEM_timers_print, ModEM_timers_print_all, ModEM_timers_report
@@ -279,7 +279,7 @@ module ModEM_timers
 
     end subroutine ModEM_timers_stop_all
 
-    subroutine ModEM_timers_destory(timer_name)
+    subroutine ModEM_timers_destroy(timer_name)
 
         implicit none
 
@@ -312,9 +312,9 @@ module ModEM_timers
             cur => cur % next
         end do
 
-    end subroutine ModEM_timers_destory
+    end subroutine ModEM_timers_destroy
 
-    subroutine ModEM_timers_destory_all()
+    subroutine ModEM_timers_destroy_all()
 
         implicit none
 
@@ -323,11 +323,11 @@ module ModEM_timers
         cur => timers % next
 
         do while (associated(cur))
-            call ModEM_timers_destory(cur % name)
+            call ModEM_timers_destroy(cur % name)
             cur => cur % next
         end do
 
-    end subroutine ModEM_timers_destory_all
+    end subroutine ModEM_timers_destroy_all
 
     subroutine ModEM_timers_print(timer_name, file)
 

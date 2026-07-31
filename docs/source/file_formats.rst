@@ -556,54 +556,54 @@ Blocks are repeated as necessary — a single block is used in the simple exampl
 indicating that the regions extend over all 11 layers (top-to-bottom) of this
 very small grid.
 
-Bi-Helmholtz Covariance (CovType=2)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+H2 (Bi-Helmholtz) Covariance (CovType=2)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-ModEM now supports an alternative regularization method based on the new 
-Bi-Helmholtz operator, which provides isotropic smoothing with a (Matérn) 
-covariance structure.
+ModEM now supports an alternative regularization method based on the 
+H2 (Bi-Helmholtz) operator, which provides isotropic smoothing with a 
+(Matérn) covariance structure.
 
-To use Bi-Helmholtz smoothing, set ``CovType=2`` in the inversion control file
+To use H2 smoothing, set ``CovType=2`` in the inversion control file
 or command line, and provide a covariance file in the new unified format.
 
 The unified covariance file format uses line 17 to specify both grid dimensions
 and the CovType:
 
 - **3 values** (``Nx Ny NzEarth``): legacy format, defaults to CovType=1 (AR)
-- **4 values** (``Nx Ny NzEarth 2``): new format, CovType=2 (Bi-Helmholtz)
+- **4 values** (``Nx Ny NzEarth 2``): new format, CovType=2 (H2)
 
 The file structure for CovType=2 is:
 
 .. code-block:: text
 
     Line 17:  Nx Ny NzEarth 2          <-- grid dimensions + CovType
-    Line 18:  Sx(1:NzEarth)             <-- placeholder (not used by Bi-Helmholtz)
-    Line 19:  Sy(1:NzEarth)             <-- placeholder (not used by Bi-Helmholtz)
-    Line 20:  Sz                         <-- placeholder (not used by Bi-Helmholtz)
+    Line 18:  Sx(1:NzEarth)             <-- placeholder (not used by H2)
+    Line 19:  Sy(1:NzEarth)             <-- placeholder (not used by H2)
+    Line 20:  Sz                         <-- placeholder (not used by H2)
     Line 21:  N kappa pcg_tol pcg_maxIt  <-- parameter array
     Line 22:  nrules                     <-- number of exception rules
     Line 23+: mask1 mask2 smoothing      <-- exception rules (3 values per rule)
     Line 24+: mask blocks                <-- same format as CovType=1
 
-The Bi-Helmholtz parameters are:
+The H2 parameters are:
 
 - **kappa**: dimensionless smoothing parameter; correlation length ~ 1/kappa cells
 - **pcg_tol**: PCG solver tolerance (typically 1e-7)
 - **pcg_maxIt**: maximum PCG iterations (typically 250)
-- **N**: number of smoothing passes (typically 1, not used by Bi-Helmholtz)
+- **N**: number of smoothing passes (typically 1, not used by H2)
 
 Example CovType=2 covariance file:
 
 .. code-block:: text
 
     +-----------------------------------------------------------------------------+
-    | This file defines model covariance for the Bi-Helmholtz smoother.           |
+    | This file defines model covariance for the H2 (Bi-Helmholtz) smoother.      |
     | ...                                                                         |
     +-----------------------------------------------------------------------------+
     21 28 11 2   <-- Grid dimensions (Nx, Ny, NzEarth) + covtype
-    0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 <-- Sx, not used by Bi-Helmholtz
-    0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 <-- Sy, not used by Bi-Helmholtz
-    0.1   <-- Sz, not used by Bi-Helmholtz
+    0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 <-- Sx, not used by H2
+    0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 <-- Sy, not used by H2
+    0.1   <-- Sz, not used by H2
 
     1 0.5 1e-7 250 <-- Number of smoothings, kappa, PCG tolerance, max PCG iter
 
@@ -636,7 +636,7 @@ Example CovType=2 covariance file:
     9 9 9 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
 
 The Sx, Sy, Sz values are placeholders for future extensions and are not used in 
-the current Bi-Helmholtz implementation. Exception rules use the same 3-value 
+the current H2 implementation. Exception rules use the same 3-value 
 format as CovType=1; the third value (smoothing) is read but not used for
 CovType=2 (tears are determined by rule presence).
 

@@ -172,7 +172,7 @@ end interface
 #include "modelCov/BiHelmholtz.hd"
 #endif
 
-  ! CovType: 1 = AR (default), 2 = Bi-Helmholtz
+  ! CovType: 1 = AR (default), 2 = H2 (Bi-Helmholtz)
   integer, save :: CovType = 1
 
 Contains
@@ -200,7 +200,7 @@ function get_CovType() result(covTypeOut)
   covTypeOut = CovType
 end function get_CovType
 
-!  real functions: route to CovType=1 (AR) or CovType=2 (Bi-Helmholtz) backends
+!  real functions: route to CovType=1 (AR) or CovType=2 (H2 / Bi-Helmholtz) backends
 
   function multBy_Cm(mhat) result(dm)
     type (modelParam_t), intent(in) :: mhat
@@ -766,7 +766,10 @@ end function get_CovType
 
     ! try 4 ints (new format: Nx Ny NzEarth FileType)
     read(line, *, iostat=istat) Nx, Ny, NzEarth, fileType
-    if (istat == 0 .and. fileType >= 1 .and. fileType <= 2) return
+    if (istat == 0) then
+       if (fileType >= 1 .and. fileType <= 2) return
+       call errStop('Invalid CovType in covariance file (must be 1 or 2)')
+    end if
 
     ! try 3 ints (legacy: Nx Ny NzEarth, default to CovType=1)
     read(line, *, iostat=istat) Nx, Ny, NzEarth

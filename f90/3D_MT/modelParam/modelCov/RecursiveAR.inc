@@ -22,7 +22,7 @@
 
     dm = mhat
 
-    call RecursiveAR(mhat%cellCond%v,dm%cellCond%v,2*CmSqrt%N)
+    call RecursiveAR(mhat%cellCond%v,dm%cellCond%v,2)
 
     dm%temporary = .true.
 
@@ -211,7 +211,7 @@
 	   read(fid,*) CmSqrt%N
 	else
 	   ! fileType=2 with CovType=1 selected: read mask, use AR defaults
-	   write(0,*) 'Warning: BiHelmholtz cov file read with CovType=1.'
+ 	   write(0,*) 'Warning: H2 cov file read with CovType=1.'
 	   write(0,*) '  Using AR defaults for Sx, Sy, Sz, N.'
 	   allocate(tempSx(NzEarth), tempSy(NzEarth), STAT=istat)
 	   read(fid,*) tempSx
