@@ -317,7 +317,7 @@ Contains
     real(kind=prec) :: mNorm_over_Nmodel ! lambda*||mHat||^2/Nmodel for phi_C_only
     real(kind=prec) :: grad_dot_h, g_dot_g, g_dot_gPrev, gPrev_dot_gPrev
     real(kind=prec) :: g_dot_h
-    integer :: iter, nCG, nLS, nLSC, nfunc, ios, i, j, inner
+    integer :: iter, nCG, nLS, nLSC, nfuncSigma, nfuncC, ios, i, j, inner
     logical :: hasCtrlFile, lockC, hasHistory
     character(3) :: iterChar
     character(100) :: mFile, mHatFile, gradFile, dataFile, resFile, logFile
@@ -373,7 +373,8 @@ Contains
     call func_dist(lambda, distControl%nu, d, m0, mHat, distC, value, mNorm, distNorm, dHat, eAll, rms)
     call printf('START', lambda, alpha, value, mNorm, rms)
     call printf('START', lambda, alpha, value, mNorm, rms, logFile)
-    nfunc = 1
+    nfuncSigma = 1
+    nfuncC = 0
 
     write(iterChar, '(i3.3)') 0
     ! output (smoothed) initial model and responses for later reference
@@ -488,7 +489,7 @@ Contains
              call copy_distortionParam(gradC, gC)
              hasHistory = .true.
              call copy_distortionParam(distC_work, distC)
-             nfunc = nfunc + nLSC
+             nfuncC = nfuncC + nLSC
              alpha_C = min(distControl%alpha_C, alpha_C * 2.0_prec)
           end do
 
@@ -501,7 +502,8 @@ Contains
 
        ! === Phase 2: nSigmaIter sigma-only NLCG iterations (C fixed) ===
        ! Recompute sigma gradient at NEW C (same mHat) — restart CG
-       call gradient_dist(lambda, distControl%nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll)
+       ! (C is frozen in Phase 2, so the C-gradient is not needed here)
+       call gradient_dist(lambda, distControl%nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll, needGradC=.false.)
        call linComb(MinusONE, gradM, R_ZERO, gradM, g)
        h = g
        nCG = 0
@@ -527,7 +529,7 @@ Contains
           write(ioLog,'(a30,i5)') ' Sigma NLCG iteration ',iter
           call lineSearchCubic(lambda, distControl%nu, d, m0, mHat, distC, &
                h, alpha, value, gradM, rms, nLS, dHat, eAll)
-          nfunc = nfunc + nLS
+          nfuncSigma = nfuncSigma + nLS
 
            ! Update alpha for next sigma line search
            alpha = 2.0_prec * (value - valuePrev) / grad_dot_h
@@ -589,7 +591,7 @@ Contains
 
            ! Sigma gradient at new mHat (C still fixed)
            gPrev = g
-           call gradient_dist(lambda, distControl%nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll)
+           call gradient_dist(lambda, distControl%nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll, needGradC=.false.)
            call linComb(MinusONE, gradM, R_ZERO, gradM, g)
 
            ! CG beta (Polak-Ribiere) for model gradient
@@ -626,8 +628,10 @@ Contains
     call CmSqrtMult(mHat, m_minus_m0)
     call linComb(ONE, m_minus_m0, ONE, m0, m)
     d = dHat
-    write(*,'(a25,i5,a25,i5)') 'NLCG_DIST iterations:', iter, ' function evaluations:', nfunc
-    write(ioLog,'(a25,i5,a25,i5)') 'NLCG_DIST iterations:', iter, ' function evaluations:', nfunc
+    write(*,'(a25,i5,a30,i5)') 'NLCG_DIST iterations:', iter, ' sigma function evaluations:', nfuncSigma
+    write(ioLog,'(a25,i5,a30,i5)') 'NLCG_DIST iterations:', iter, ' sigma function evaluations:', nfuncSigma
+    write(*,'(a30,i5,a8,i5,a1)') '       C function evaluations:', nfuncC, ' (total:', nfuncSigma + nfuncC, ')'
+    write(ioLog,'(a30,i5,a8,i5,a1)') '       C function evaluations:', nfuncC, ' (total:', nfuncSigma + nfuncC, ')'
     close(ioLog, iostat=ios)
 
     ! Write final distortion

@@ -234,12 +234,20 @@ Contains
                    enddo
                    cycle
                 end if
-                ! Normalized residual A_bar(iFunc) = conj(C·Z - D)_i / σ²_i
-                ! The standard LmultT reads conj(data) = cmplx(real, -imag)
-                do iFunc = 1, nFunc
-                   A_bar(iFunc) = cmplx(d%data(j)%value(2*iFunc-1,iSite), &
-                        -d%data(j)%value(2*iFunc,iSite), prec)
-                end do
+                 ! Normalized residual A_bar(iFunc) = conj(C·Z - D)_i / σ²_i
+                 ! The standard LmultT reads conj(data) = cmplx(real, -imag).
+                 ! Missing components (exist=.false.) must contribute zero: their
+                 ! raw (un-normalized) predicted values would otherwise leak
+                 ! spurious, C-weighted terms into the adjoint and inflate the
+                 ! model gradient.
+                 do iFunc = 1, nFunc
+                    if (d%data(j)%exist(2*iFunc-1,iSite)) then
+                       A_bar(iFunc) = cmplx(d%data(j)%value(2*iFunc-1,iSite), &
+                            -d%data(j)%value(2*iFunc,iSite), prec)
+                    else
+                       A_bar(iFunc) = cmplx(R_ZERO, R_ZERO, prec)
+                    end if
+                 end do
                 ! C_site2x2 = C^T (transpose of distortion matrix stored in column-major)
                 C_site2x2(1,1) = dataSens_distPtr%C(1,1,distIdx)
                 C_site2x2(1,2) = dataSens_distPtr%C(2,1,distIdx)
@@ -254,19 +262,22 @@ Contains
                 ! Lz(1) weight = C_11·conj(r1) + C_21·conj(r3) = C_site2x2(1,1)·A_bar(1) + C_site2x2(1,2)·A_bar(3)
                 ! Lz(2) weight = C_11·conj(r2) + C_21·conj(r4) = C_site2x2(1,1)·A_bar(2) + C_site2x2(1,2)·A_bar(4)
                 ! Lz(3) weight = C_12·conj(r1) + C_22·conj(r3) = C_site2x2(2,1)·A_bar(1) + C_site2x2(2,2)·A_bar(3)
-                ! Lz(4) weight = C_12·conj(r2) + C_22·conj(r4) = C_site2x2(2,1)·A_bar(2) + C_site2x2(2,2)·A_bar(4)
-                Z = C_site2x2(1,1)*A_bar(1) + C_site2x2(1,2)*A_bar(3)
-                exists = d%data(j)%exist(1,iSite)
-                if (exists) call add_sparseVrhsV(Z, Lz(1), comb)
-                Z = C_site2x2(1,1)*A_bar(2) + C_site2x2(1,2)*A_bar(4)
-                exists = d%data(j)%exist(3,iSite)
-                if (exists) call add_sparseVrhsV(Z, Lz(2), comb)
-                Z = C_site2x2(2,1)*A_bar(1) + C_site2x2(2,2)*A_bar(3)
-                exists = d%data(j)%exist(5,iSite)
-                if (exists) call add_sparseVrhsV(Z, Lz(3), comb)
-                Z = C_site2x2(2,1)*A_bar(2) + C_site2x2(2,2)*A_bar(4)
-                exists = d%data(j)%exist(7,iSite)
-                if (exists) call add_sparseVrhsV(Z, Lz(4), comb)
+                 ! Lz(4) weight = C_12·conj(r2) + C_22·conj(r4) = C_site2x2(2,1)·A_bar(2) + C_site2x2(2,2)·A_bar(4)
+                 ! Each Lz(k) receives contributions from its own component's
+                 ! residual (diagonal C) and from the cross-coupled component
+                 ! (off-diagonal C); add Lz(k) when either source is observed.
+                 Z = C_site2x2(1,1)*A_bar(1) + C_site2x2(1,2)*A_bar(3)
+                 exists = (d%data(j)%exist(1,iSite) .or. d%data(j)%exist(5,iSite))
+                 if (exists) call add_sparseVrhsV(Z, Lz(1), comb)
+                 Z = C_site2x2(1,1)*A_bar(2) + C_site2x2(1,2)*A_bar(4)
+                 exists = (d%data(j)%exist(3,iSite) .or. d%data(j)%exist(7,iSite))
+                 if (exists) call add_sparseVrhsV(Z, Lz(2), comb)
+                 Z = C_site2x2(2,1)*A_bar(1) + C_site2x2(2,2)*A_bar(3)
+                 exists = (d%data(j)%exist(1,iSite) .or. d%data(j)%exist(5,iSite))
+                 if (exists) call add_sparseVrhsV(Z, Lz(3), comb)
+                 Z = C_site2x2(2,1)*A_bar(2) + C_site2x2(2,2)*A_bar(4)
+                 exists = (d%data(j)%exist(3,iSite) .or. d%data(j)%exist(7,iSite))
+                 if (exists) call add_sparseVrhsV(Z, Lz(4), comb)
              else
                 iComp = 1
                 do iFunc  = 1, nFunc

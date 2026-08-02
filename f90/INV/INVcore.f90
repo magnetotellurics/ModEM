@@ -340,7 +340,7 @@ Contains
    end subroutine func_dist
 
 !**********************************************************************
-   subroutine gradient_dist(lambda, nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll)
+   subroutine gradient_dist(lambda, nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll, needGradC)
    ! calculate the gradient of the penalty functional with respect to both 
    ! model parameters and distortion parameters
    ! note that full eAll is required for the distortion gradient calculation, 
@@ -355,10 +355,12 @@ Contains
    type(distortionParam_t), intent(inout)  :: gradC
    type(dataVectorMTX_t), intent(inout)    :: dHat
    type(solnVectorMTX_t), intent(inout)    :: eAll
+   logical, intent(in), optional           :: needGradC
 
    type(dataVectorMTX_t)                   :: res
    type(modelParam_t)                      :: m, JTd, CmJTd
    real(kind=prec)                         :: Ndata, Nmodel
+   logical                                 :: computeGradC
 
      call CmSqrtMult(mHat,m)
      call linComb(ONE,m,ONE,m0,m)
@@ -381,7 +383,12 @@ Contains
       Nmodel = countModelParam(mHat)
       call linComb(MinusTWO/Ndata,CmJTd,TWO*lambda/Nmodel,mHat,gradM)
 
-      call compDistGrad(d, eAll, m, distC, nu, Ndata, gradC)
+      ! The C-gradient is only needed when C is being updated (Phase 1); the
+      ! inner sigma loop keeps C frozen, so skip it there to avoid a redundant
+      ! per-iteration compDistGrad computation.
+      computeGradC = .true.
+      if (present(needGradC)) computeGradC = needGradC
+      if (computeGradC) call compDistGrad(d, eAll, m, distC, nu, Ndata, gradC)
 
      call deall_dataVectorMTX(res)
      call deall_modelParam(m)
