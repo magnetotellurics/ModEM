@@ -52,6 +52,7 @@ program Mod3DMT
           ! OR readStartup(rFile_Startup,cUserDef)
           write(6,*)'I am a PARALLEL version'
           call process_optional_namelist(cUserDef)
+          call finalize_covType(cUserDef)
           call Master_job_Distribute_userdef_control(cUserDef)
           open(ioMPI,file=cUserDef%wFile_MPI)
           write(ioMPI,*) 'Total Number of nodes= ', number_of_workers
@@ -61,6 +62,7 @@ program Mod3DMT
 #else
       call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
       call process_optional_namelist(cUserDef)
+      call finalize_covType(cUserDef)
       write(6,*)'I am a SERIAL version'
 #endif
  
@@ -489,7 +491,7 @@ program Mod3DMT
 #else
       call ModEM_timers_report(6)
 #endif 
-      call ModEM_timers_destory_all()
+      call ModEM_timers_destroy_all()
 
 
 end program

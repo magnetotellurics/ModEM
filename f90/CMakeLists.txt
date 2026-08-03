@@ -149,11 +149,7 @@ else()
         "- Of course you will need to specify the MPI wrapper: `-DCMAKE_Fortran_COMPILER=mpifort`")
 endif()
 
-
-if (BUILD_MPI)
-    add_subdirectory("MPI")
-endif()
-
+add_subdirectory("MPI")
 add_subdirectory(${DIM_DIR})
 add_subdirectory("FIELDS/FiniteDiff3D")
 add_subdirectory("INV")

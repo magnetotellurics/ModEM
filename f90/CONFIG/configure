@@ -406,9 +406,11 @@ case $solver in
         source_dirs=( ${source_dirs[@]} ${MF_DIRS[@]} )
         ;;
     SP | sp)
+        FFLAGS="$FFLAGS -DSP_FORM"
         source_dirs=( ${source_dirs[@]} ${SP_DIRS[@]} )
         ;;
     SP2 | sp2)
+        FFLAGS="$FFLAGS -DSP_FORM"
         source_dirs=( ${source_dirs[@]} ${SP2_DIRS[@]} )
         ;;
 esac

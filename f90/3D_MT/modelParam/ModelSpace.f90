@@ -29,6 +29,9 @@ module ModelSpace
   use sg_scalar
   use sg_vector
   use sg_sparse_vector
+#ifdef SP_FORM
+  use spOpTools
+#endif
 #ifdef MPI
   use Declaration_MPI
 #endif
@@ -165,7 +168,13 @@ end interface
 ! definitions for CmSqrt: must be consistent with the include file below
 
 #include "modelCov/RecursiveAR.hd"
-!#include "modelCov/Diffusion.hd"
+#ifdef SP_FORM
+#include "modelCov/BiHelmholtz.hd"
+#endif
+
+  ! CovType: 1 = AR (default), 2 = H2 (Bi-Helmholtz)
+  integer, save :: CovType = 1
+
 Contains
 
 ! *****************************************************************************
@@ -174,9 +183,97 @@ Contains
 !  model parameter structure
 #include "ModelMap.inc"
 
-!  The included file must contain subroutines create_CmSqrt, deall_CmSqrt, multBy...
+!  Backend implementations
 #include "modelCov/RecursiveAR.inc"
-!#include "modelCov/Diffusion.inc"
+#ifdef SP_FORM
+#include "modelCov/BiHelmholtz.inc"
+#endif
+
+!  dummy functions for covtype (always available, not dependent on spOpTools)
+subroutine set_CovType(covTypeIn)
+  integer, intent(in) :: covTypeIn
+  CovType = covTypeIn
+end subroutine set_CovType
+
+function get_CovType() result(covTypeOut)
+  integer :: covTypeOut
+  covTypeOut = CovType
+end function get_CovType
+
+!  real functions: route to CovType=1 (AR) or CovType=2 (H2 / Bi-Helmholtz) backends
+
+  function multBy_Cm(mhat) result(dm)
+    type (modelParam_t), intent(in) :: mhat
+    type (modelParam_t)             :: dm
+    select case (CovType)
+    case (1)
+       dm = multBy_Cm_AR(mhat)
+#ifdef SP_FORM
+    case (2)
+       dm = multBy_Cm_BiHelm(mhat)
+#endif
+    case default
+       call errStop('Unknown CovType in multBy_Cm')
+    end select
+  end function multBy_Cm
+
+  function multBy_CmSqrt(mhat) result(dm)
+    type (modelParam_t), intent(in) :: mhat
+    type (modelParam_t)             :: dm
+    select case (CovType)
+    case (1)
+       dm = multBy_CmSqrt_AR(mhat)
+#ifdef SP_FORM
+    case (2)
+       dm = multBy_CmSqrt_BiHelm(mhat)
+#endif
+    case default
+       call errStop('Unknown CovType in multBy_CmSqrt')
+    end select
+  end function multBy_CmSqrt
+
+  function multBy_CmSqrtInv(dm) result(mhat)
+    type (modelParam_t), intent(in) :: dm
+    type (modelParam_t)             :: mhat
+    select case (CovType)
+    case (1)
+       mhat = multBy_CmSqrtInv_AR(dm)
+#ifdef SP_FORM
+    case (2)
+       mhat = multBy_CmSqrtInv_BiHelm(dm)
+#endif
+    case default
+       call errStop('Unknown CovType in multBy_CmSqrtInv')
+    end select
+  end function multBy_CmSqrtInv
+
+  subroutine create_CmSqrt(m, cfile)
+    type (modelParam_t), intent(in) :: m
+    character(*), intent(in), optional :: cfile
+    select case (CovType)
+    case (1)
+       call create_CmSqrt_AR(m, cfile)
+#ifdef SP_FORM
+    case (2)
+       call create_CmSqrt_BiHelm(m, cfile)
+#endif
+    case default
+       call errStop('Unknown CovType in create_CmSqrt')
+    end select
+  end subroutine create_CmSqrt
+
+  subroutine deall_CmSqrt()
+    select case (CovType)
+    case (1)
+       call deall_CmSqrt_AR()
+#ifdef SP_FORM
+    case (2)
+       call deall_CmSqrt_BiHelm()
+#endif
+    case default
+       call errStop('Unknown CovType in deall_CmSqrt')
+    end select
+  end subroutine deall_CmSqrt
 
 !  MPI model parameter, if needed
 #ifdef MPI
@@ -642,5 +739,47 @@ Contains
     updated = m%updated
 
   end subroutine getValueUpdated_modelParam
+
+!**********************************************************************
+!  Detects the filetype (CovType) from line 17 of a covariance file.
+!  Reads the first non-blank line after the 16-line header and parses:
+!    - 4 ints (Nx Ny NzEarth FileType): new format, FileType must be 1 or 2
+!    - 3 ints (Nx Ny NzEarth):          legacy format, defaults to FileType=1
+!    - anything else:                   error
+!
+!  Both read_CmSqrt_AR and read_CmSqrt_BiHelm call this routine.
+
+  subroutine detect_cov_filetype(fid, Nx, Ny, NzEarth, fileType)
+
+    integer, intent(in)                          :: fid
+    integer, intent(out)                         :: Nx, Ny, NzEarth, fileType
+    character(len=256)                           :: line
+    integer                                      :: istat
+
+    ! skip blank lines after header
+    do
+       read(fid, '(A)', iostat=istat) line
+       if (istat /= 0) call errStop('Error reading covariance file after header')
+       line = adjustl(line)
+       if (line /= '') exit
+    end do
+
+    ! try 4 ints (new format: Nx Ny NzEarth FileType)
+    read(line, *, iostat=istat) Nx, Ny, NzEarth, fileType
+    if (istat == 0) then
+       if (fileType >= 1 .and. fileType <= 2) return
+       call errStop('Invalid CovType in covariance file (must be 1 or 2)')
+    end if
+
+    ! try 3 ints (legacy: Nx Ny NzEarth, default to CovType=1)
+    read(line, *, iostat=istat) Nx, Ny, NzEarth
+    if (istat == 0) then
+       fileType = 1
+       return
+    end if
+
+    call errStop('Invalid grid dimensions / CovType in covariance file')
+
+  end subroutine detect_cov_filetype
 
 end module ModelSpace

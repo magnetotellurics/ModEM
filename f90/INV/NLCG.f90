@@ -496,7 +496,7 @@ Contains
    call deall_modelParam(h)
    call deall_modelParam(gPrev)
    call deall_solnVectorMTX(eAll)
-   call ModEM_timers_destory('NLCG Iteration')
+   call ModEM_timers_destroy('NLCG Iteration')
 
    end subroutine NLCGsolver
 

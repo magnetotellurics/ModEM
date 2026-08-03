@@ -216,6 +216,12 @@ Contains
         call create_rhsVectorMTX(allData%nTx,bAll)
     end if
 
+    !--------------------------------------------------------------------------
+    ! Set covariance backend.  cUserDef%CovType is already finalized by
+    ! UserCtrl::finalize_covType (invoked from Mod3DMT before initGlobalData),
+    ! absorbing any overrides from namelist, -C CLI arg, or inv-ctrl 9th line.
+    call set_CovType(cUserDef%CovType)
+
 	!--------------------------------------------------------------------------
 	!  Initialize additional data as necessary
 	select case (cUserDef%job)

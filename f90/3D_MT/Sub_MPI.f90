@@ -180,7 +180,7 @@ end subroutine unpack_userdef_control
 !********************************************************************
 subroutine check_userdef_control_MPI (which_proc,ctrl)
 
-    type(userdef_control), intent(in)   :: ctrl
+     	type(userdef_control), intent(inout)   :: ctrl
     character(20), intent(in)           :: which_proc
 
     write(6,*)trim(which_proc),' : ctrl%wFile_Sens ',trim(ctrl%wFile_Sens)
