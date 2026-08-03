@@ -157,11 +157,15 @@ Contains
     ctrl%init_distFname = adjustl(ctrl%init_distFname)
     if (len_trim(ctrl%init_distFname) == 0) ctrl%init_distFname = ''
 
-    ! Optional advanced (reads: not very useful) controls
-    ! read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%lambdaClock
-    ! if (output_level > 2 .and. ios == 0) write(*,'(a36,g15.7)') string, ctrl%lambdaClock
-    ! read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%nClockMinIter
-    ! if (output_level > 2 .and. ios == 0) write(*,'(a36,i4)') string, ctrl%nClockMinIter
+    ! Optional advanced controlling parameters
+    ! C-update lock: stop updating the distortion matrix once lambda has
+    ! dropped below lambdaClock (only considered after nClockMinIter model
+    ! iterations). EOF tolerated: old control files keep the defaults.
+    read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%lambdaClock
+    if (output_level > 2 .and. ios == 0) write(*,'(a36,g15.7)') string, ctrl%lambdaClock
+    read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%nClockMinIter
+    if (output_level > 2 .and. ios == 0) write(*,'(a36,i4)') string, ctrl%nClockMinIter
+
     ! read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%alphaMinScale
     ! if (output_level > 2 .and. ios == 0) write(*,'(a36,g15.7)') string, ctrl%alphaMinScale
     ! read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%alphaMaxScale
@@ -389,25 +393,11 @@ Contains
       call write_dataVectorMTX(dHat,trim(dataFile))
     end if
 
-    ! First gradient (both model and distortion)
-    call gradient_dist(lambda, distControl%nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll)
-
-    gnorm = sqrt(dotProd(gradM, gradM))
-    write(*,'(a44,es12.5)') '     GRAD: initial norm of model gradient is', gnorm
-    write(ioLog,'(a44,es12.5)') '     GRAD: initial norm of model gradient is', gnorm
-    if (gnorm < TOL6) then
-       call errStop('Problem with gradient computations: first gradient is zero')
-    else
-       alpha = distControl%startdm / gnorm
-       write(*,'(a39,es12.5)') 'The initial value of alpha updated to ', alpha
-       write(ioLog,'(a39,es12.5)') 'The initial value of alpha updated to ', alpha
-    end if
-
+    ! Initialise the CG loop counters; the first gradient (and its alpha) is
+    ! computed at the top of Phase 2 below, using the post-C-update gradient
+    ! that the first sigma line search actually employs.
     nCG = 0
     iter = 0
-    g = gradM
-    call linComb(MinusONE, gradM, R_ZERO, gradM, g)
-    h = g
 
     call ModEM_timers_create("NLCG_DIST Iteration", .false.)
 
@@ -508,7 +498,21 @@ Contains
        h = g
        nCG = 0
        gnorm = sqrt(dotProd(gradM, gradM))
-       alpha = distControl%startdm / max(gnorm, R_TINY)
+       ! On the first outer cycle report the post-C-update gradient (the one
+       ! the first sigma line search actually uses) and initialise alpha.
+       if (iter == 0) then
+          write(*,'(a44,es12.5)') '     GRAD: initial norm of model gradient is', gnorm
+          write(ioLog,'(a44,es12.5)') '     GRAD: initial norm of model gradient is', gnorm
+          if (gnorm < TOL6) then
+             call errStop('Problem with gradient computations: first gradient is zero')
+          else
+             alpha = distControl%startdm / gnorm
+             write(*,'(a39,es12.5)') 'The initial value of alpha updated to ', alpha
+             write(ioLog,'(a39,es12.5)') 'The initial value of alpha updated to ', alpha
+          end if
+       else
+          alpha = distControl%startdm / max(gnorm, R_TINY)
+       end if
        write(*,'(a39)') 'CG restarted after C-update (steepest descent)'
        write(ioLog,'(a39)') 'CG restarted after C-update (steepest descent)'
        write(*,'(a36,i3,a16,i3)') 'Phase 2: Inner sigma loop (up to ', distControl%nSigmaIter, ' iterations)'
