@@ -86,9 +86,9 @@ Contains
     ctrl%fname = 'Modular'
     ctrl%nskip = 1
     ! below are distortion-specific parameters
-    ctrl%nu = 10.0 ! note this is a large value, so the distortion 
+    ctrl%nu = 3.0  ! note 10 is a large value, so the distortion 
                    ! penalty is large (typical for data without strong    
-                    ! distortion).
+                   ! distortion). use 1-3 for data with visible distortion
     ctrl%nDistIter = 1 ! number of distortion line searches per block
     ctrl%nSigmaIter = 5 ! sigma-only NLCG iterations per block (C fixed)
     ctrl%alpha_C   = 0.1 ! initial step size for distortion line search
@@ -657,7 +657,7 @@ Contains
     call deall_distortionParam(hC)
     call deall_distortionParam(gPrevC)
     call deall_distortionParam(distC_work)
-    call ModEM_timers_destory('NLCG_DIST Iteration')
+    call ModEM_timers_destroy('NLCG_DIST Iteration')
 
   end subroutine NLCGsolver_dist
 
