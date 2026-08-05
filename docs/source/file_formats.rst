@@ -563,8 +563,10 @@ ModEM now supports an alternative regularization method based on the
 H2 (Bi-Helmholtz) operator, which provides isotropic smoothing with a 
 (Matérn) covariance structure.
 
-To use H2 smoothing, set ``CovType=2`` in the inversion control file
-or command line, and provide a covariance file in the new unified format.
+To use H2 smoothing, provide a covariance file in the new unified format.
+The covariance file itself selects the backend: line 17 of the 16-line
+header gives ``Nx Ny NzEarth <CovType>``, so no inversion-control-file or
+command-line setting is needed.
 
 The unified covariance file format uses line 17 to specify both grid dimensions
 and the CovType:

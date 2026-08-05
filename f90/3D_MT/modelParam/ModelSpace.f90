@@ -250,6 +250,32 @@ end function get_CovType
   subroutine create_CmSqrt(m, cfile)
     type (modelParam_t), intent(in) :: m
     character(*), intent(in), optional :: cfile
+    integer :: fid, ios, j, Nx, Ny, NzEarth, fileType
+    logical :: exists
+
+    if (present(cfile)) then
+       if (len_trim(cfile) > 0 .and. trim(cfile) /= 'n') then
+          inquire(FILE=cfile, EXIST=exists)
+          if (exists) then
+             ! The covariance file declares its own type on line 17 of the
+             ! 16-line header (Nx Ny NzEarth <1|2>). Derive the backend from
+             ! the file so CovType stays consistent with the loaded smoother.
+             open(newunit=fid, file=cfile, status='old', iostat=ios)
+             if (ios == 0) then
+                do j = 1, 16
+                   read(fid, *, iostat=ios)
+                   if (ios /= 0) exit
+                end do
+                if (ios == 0) then
+                   call detect_cov_filetype(fid, Nx, Ny, NzEarth, fileType)
+                   call set_CovType(fileType)
+                end if
+                close(fid)
+             end if
+          end if
+       end if
+    end if
+
     select case (CovType)
     case (1)
        call create_CmSqrt_AR(m, cfile)
