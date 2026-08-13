@@ -42,6 +42,18 @@
     </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Obtaining ModEM</a><ul>
+<li><a class="reference internal" href="#modem-branches">ModEM Branches</a><ul>
+<li><a class="reference internal" href="#main-and-develop">Main and Develop</a></li>
+<li><a class="reference internal" href="#svn-branches">SVN Branches</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
                         title="previous chapter">ModEM Documentation</a></p>
@@ -91,6 +103,49 @@ remote: Total 18608 (delta 162), reused 152 (delta 145), pack-reused 18409 (from
 Receiving objects: 100% (18608/18608), 73.43 MiB | 13.34 MiB/s, done.
 Resolving deltas: 100% (14565/14565), done.
 </pre></div>
+</div>
+<div class="section" id="modem-branches">
+<h2>ModEM Branches<a class="headerlink" href="#modem-branches" title="Permalink to this headline">¶</a></h2>
+<p>As noted in the README, there are several branches on ModEM which have been
+converted from ModEM’s OSU CEOAS Subversion (SVN) repository. Likewise, there
+are some specific branches worth noting.</p>
+<div class="section" id="main-and-develop">
+<h3>Main and Develop<a class="headerlink" href="#main-and-develop" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://github.com/magnetotellurics/ModEM">main branch</a> of ModEM holds
+the latest release of ModEM and contains code that has been more used and
+more thoroughly tested and is more stable then develop.</p>
+<p>The <a class="reference external" href="https://github.com/magnetotellurics/ModEM/tree/develop">develop branch</a>
+on the other hands contains the latest code changes the ModEM. While these
+features are new, they may not be as stable as they have not undergone
+significant testing and usage and may contain bugs or be incomplete.</p>
+</div>
+<div class="section" id="svn-branches">
+<h3>SVN Branches<a class="headerlink" href="#svn-branches" title="Permalink to this headline">¶</a></h3>
+<p>The complete SVN history has been preserved and converted into a git history.
+Some SVN branches, which SVN users my be familiar with, have been renamed:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>SVN Branch Name</p></th>
+<th class="head"><p>Git Branch Name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>trunk</p></td>
+<td><p>trunk</p></td>
+</tr>
+<tr class="row-odd"><td><p>stable-</p></td>
+<td><p>main</p></td>
+</tr>
+<tr class="row-even"><td><p>stable</p></td>
+<td><p>classic</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 </div>
 
