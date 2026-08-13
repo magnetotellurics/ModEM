@@ -34,19 +34,19 @@ Main and Develop
 ^^^^^^^^^^^^^^^^^
 
 The `main branch <https://github.com/magnetotellurics/ModEM>`_ of ModEM holds
-the latest release of ModEM and should contain code that has been more used and
-tested and should be more stable.
+the latest release of ModEM and contains code that has been more used and
+more thoroughly tested and is more stable then develop.
 
 The `develop branch <https://github.com/magnetotellurics/ModEM/tree/develop>`_
 on the other hands contains the latest code changes the ModEM. While these
 features are new, they may not be as stable as they have not undergone
-significant testing.
+significant testing and usage and may contain bugs or be incomplete.
 
 SVN Branches
 ^^^^^^^^^^^^^
 
 The complete SVN history has been preserved and converted into a git history.
-Some SVN branches, which SVN users my be familar with, have been renamed:
+Some SVN branches, which SVN users my be familiar with, have been renamed:
 
 ===============   ===============
 SVN Branch Name   Git Branch Name
