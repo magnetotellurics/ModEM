@@ -1,0 +1,190 @@
+Format: harmonic layers 47 degree 0
+
+log degree 0 layer 0.106911
+l	m	value	min	max
+0	0	0.902716	-1.000000	1.000000	range
+
+log degree 0 layer 0.232231
+l	m	value	min	max
+0	0	0.930606	-1.000000	1.000000	range
+
+log degree 0 layer 0.379131
+l	m	value	min	max
+0	0	0.958080	-1.000000	1.000000	range
+
+log degree 0 layer 0.551326
+l	m	value	min	max
+0	0	0.982418	-1.000000	1.000000	range
+
+log degree 0 layer 0.753173
+l	m	value	min	max
+0	0	0.987525	-1.000000	1.000000	range
+
+log degree 0 layer 0.989777
+l	m	value	min	max
+0	0	0.998452	-1.000000	1.000000	range
+
+log degree 0 layer 1.267123
+l	m	value	min	max
+0	0	1.005149	-1.000000	1.000000	range
+
+log degree 0 layer 1.592226
+l	m	value	min	max
+0	0	1.018516	-1.000000	1.000000	range
+
+log degree 0 layer 1.973311
+l	m	value	min	max
+0	0	1.078579	-1.000000	1.000000	range
+
+log degree 0 layer 2.420017
+l	m	value	min	max
+0	0	1.113340	-1.000000	1.000000	range
+
+log degree 0 layer 2.943643
+l	m	value	min	max
+0	0	1.191044	-1.000000	1.000000	range
+
+log degree 0 layer 3.557435
+l	m	value	min	max
+0	0	1.308256	-1.000000	1.000000	range
+
+log degree 0 layer 4.276920
+l	m	value	min	max
+0	0	1.495715	-1.000000	1.000000	range
+
+log degree 0 layer 5.120296
+l	m	value	min	max
+0	0	1.845196	-1.000000	1.000000	range
+
+log degree 0 layer 6.108898
+l	m	value	min	max
+0	0	2.083832	-1.000000	1.000000	range
+
+log degree 0 layer 7.267728
+l	m	value	min	max
+0	0	2.429956	-1.000000	1.000000	range
+
+log degree 0 layer 8.626108
+l	m	value	min	max
+0	0	2.716612	-1.000000	1.000000	range
+
+log degree 0 layer 10.218398
+l	m	value	min	max
+0	0	2.846257	-1.000000	1.000000	range
+
+log degree 0 layer 12.084868
+l	m	value	min	max
+0	0	2.898347	-1.000000	1.000000	range
+
+log degree 0 layer 14.272738
+l	m	value	min	max
+0	0	2.925399	-1.000000	1.000000	range
+
+log degree 0 layer 16.837348
+l	m	value	min	max
+0	0	2.814880	-1.000000	1.000000	range
+
+log degree 0 layer 19.843578
+l	m	value	min	max
+0	0	2.791245	-1.000000	1.000000	range
+
+log degree 0 layer 23.367458
+l	m	value	min	max
+0	0	2.776736	-1.000000	1.000000	range
+
+log degree 0 layer 27.498148
+l	m	value	min	max
+0	0	2.751134	-1.000000	1.000000	range
+
+log degree 0 layer 32.340098
+l	m	value	min	max
+0	0	2.711670	-1.000000	1.000000	range
+
+log degree 0 layer 38.015838
+l	m	value	min	max
+0	0	2.483383	-1.000000	1.000000	range
+
+log degree 0 layer 44.668878
+l	m	value	min	max
+0	0	2.444982	-1.000000	1.000000	range
+
+log degree 0 layer 52.467588
+l	m	value	min	max
+0	0	2.406856	-1.000000	1.000000	range
+
+log degree 0 layer 61.609148
+l	m	value	min	max
+0	0	2.290452	-1.000000	1.000000	range
+
+log degree 0 layer 72.324848
+l	m	value	min	max
+0	0	2.201304	-1.000000	1.000000	range
+
+log degree 0 layer 84.885748
+l	m	value	min	max
+0	0	2.188966	-1.000000	1.000000	range
+
+log degree 0 layer 99.609648
+l	m	value	min	max
+0	0	2.162296	-1.000000	1.000000	range
+
+log degree 0 layer 116.868848
+l	m	value	min	max
+0	0	2.270965	-1.000000	1.000000	range
+
+log degree 0 layer 137.100048
+l	m	value	min	max
+0	0	2.239587	-1.000000	1.000000	range
+
+log degree 0 layer 160.814948
+l	m	value	min	max
+0	0	2.195650	-1.000000	1.000000	range
+
+log degree 0 layer 188.613448
+l	m	value	min	max
+0	0	2.158639	-1.000000	1.000000	range
+
+log degree 0 layer 221.198748
+l	m	value	min	max
+0	0	2.065713	-1.000000	1.000000	range
+
+log degree 0 layer 259.395048
+l	m	value	min	max
+0	0	1.985777	-1.000000	1.000000	range
+
+log degree 0 layer 304.168548
+l	m	value	min	max
+0	0	1.795916	-1.000000	1.000000	range
+
+log degree 0 layer 356.651948
+l	m	value	min	max
+0	0	1.760795	-1.000000	1.000000	range
+
+log degree 0 layer 418.172648
+l	m	value	min	max
+0	0	1.754823	-1.000000	1.000000	range
+
+log degree 0 layer 490.287048
+l	m	value	min	max
+0	0	1.292912	-1.000000	1.000000	range
+
+log degree 0 layer 574.819048
+l	m	value	min	max
+0	0	1.225679	-1.000000	1.000000	range
+
+log degree 0 layer 673.907248
+l	m	value	min	max
+0	0	1.046871	-1.000000	1.000000	range
+
+log degree 0 layer 790.058248
+l	m	value	min	max
+0	0	0.283476	-1.000000	1.000000	range
+
+log degree 0 layer 926.209248
+l	m	value	min	max
+0	0	0.365415	-1.000000	1.000000	range
+
+log degree 0 layer 1085.805248
+l	m	value	min	max
+0	0	-0.088959	-1.000000	1.000000	range
+

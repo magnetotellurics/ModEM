@@ -1,0 +1,159 @@
+# Makefile for the field1d.f90 / field1d_s2.f90 validation tests:
+#   test_unit_sphere        -- field1d.f90 (S1) and
+#                               field1d_s2.f90 (S2) vs the
+#                               same closed form (l=2,m=1) -- S1 is
+#                               diagnostic-only (no clean match expected, see
+#                               reference_unit_sphere.py), S2 is exact
+#   test_earth_l1mneg1      -- field1d_s2.f90 vs pythonSolver, exact (l=1,m=-1)
+#   test_Tnr_uniform_sphere -- field1d.f90's sourcePotential vs closed form
+#   test_s1_vs_s2_l1m0 -- field1d.f90 vs field1d_s2.f90 directly, l=1,m=0
+#   test_vs_modem_1D_impedance        -- field1d.f90 (S1) AND field1d_s2.f90
+#                               (S2), both vs an independent ModEM
+#                               3D-code benchmark (Zxy/Zyx), Mode1 and Mode2
+#                               sources, T=10/100/1000s -- both solvers now
+#                               expected to pass cleanly, see CLAUDE.md
+#   test_norm_condon_shortley            -- output_convention.f90's rescale_source_coeffs vs
+#                               hand-computed Schmidt/full norm and Condon-Shortley ratios
+#   test_reversals          -- output_convention.f90's apply_output_convention
+#                               theta/r index-reversal + component-negation logic
+#   test_radial_potential   -- output_convention.f90's RADIAL_POTENTIAL radial_amplitude
+#                               vs RADIAL_SURFACE*l (external-potential V / Gauss-coefficient
+#                               formulation vs toroidal-potential T), and the LWS preset
+#   test_tau_sweep          -- field1d_s2.f90's earth%tau thin-sheet jump condition:
+#                               magnitude-error sweep and H phase/magnitude shift vs the
+#                               tau=0 (exact/analytic) reference; backs
+#                               docs/tau_sensitivity_analysis.tex/.md/.pdf
+# (test_unit_sphere_s1.f90 and test_unit_sphere_s2.f90 were
+# merged into the single test_unit_sphere.f90 above, 2026-07-25, since both
+# built the identical model/grid/source -- see testing/TESTING_MANUAL.md.
+# test_s1_vs_modem_1D.f90 and test_s2_vs_modem_1D.f90 were
+# likewise merged into test_vs_modem_1D_impedance.f90, 2026-07-26, once field1d.f90's
+# T(r)-valued formula signs were fixed to match field1d_s2.f90/
+# Sun & Egbert (2012) and both solvers agree with ModEM with no compensation.)
+# Mirrors Makefile1d but only builds the field1d.f90 dependency chain
+# (utilities, polpak, GridDef, sg_vector) -- no ModelSpace/LAPACK needed.
+#
+# Lives in a "testing" subdirectory one level below the repo root
+# (i.e. alongside FWD1D.f90, Makefile1d, Makefile.local, UTILS/, EARTH/, FIELDS/).
+# ROOT below is the only path that needs to change if you move this file
+# somewhere else relative to the repo root.
+#
+# Usage (from within testing/):
+#   make -f Makefile.test1d
+#   ./test_unit_sphere / ./test_earth_l1mneg1 /
+#   ./test_Tnr_uniform_sphere / ./test_s1_vs_s2_l1m0 /
+#   ./test_vs_modem_1D_impedance / ./test_norm_condon_shortley / ./test_reversals /
+#   ./test_radial_potential / ./test_tau_sweep
+
+ROOT = ..
+
+include $(ROOT)/Makefile.local
+OBJDIR = ./objs/test1d
+F90 = gfortran
+FFLAGS = -O2 -g -fbacktrace -fbounds-check
+MPIFLAGS = -cpp
+MODULE = -J$(OBJDIR)
+
+OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o \
+      $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o \
+      $(OBJDIR)/output_convention.o $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
+
+all: test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals test_radial_potential test_tau_sweep
+
+# field1d.f90 (S1) and field1d_s2.f90 (S2) vs
+# the same closed form (l=2,m=1)
+test_unit_sphere: $(OBJDIR) $(OBJ) $(OBJDIR)/test_unit_sphere.o
+	$(F90) -o test_unit_sphere $(OBJ) $(OBJDIR)/test_unit_sphere.o
+
+# field1d_s2.f90, exact cross-check vs pythonSolver (l=1,m=-1, Earth scale)
+test_earth_l1mneg1: $(OBJDIR) $(OBJ) $(OBJDIR)/test_earth_l1mneg1.o
+	$(F90) -o test_earth_l1mneg1 $(OBJ) $(OBJDIR)/test_earth_l1mneg1.o
+
+# field1d.f90-only test (Tnr/Tnsp/Tnrp/Tns vs closed form) -- doesn't need
+# field1d_s2.o, linked in anyway via the shared $(OBJ).
+test_Tnr_uniform_sphere: $(OBJDIR) $(OBJ) $(OBJDIR)/test_Tnr_uniform_sphere.o
+	$(F90) -o test_Tnr_uniform_sphere $(OBJ) $(OBJDIR)/test_Tnr_uniform_sphere.o
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+$(OBJDIR)/math_constants.o: $(ROOT)/UTILS/math_constants.f90
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/UTILS/math_constants.f90 -o $(OBJDIR)/math_constants.o
+
+$(OBJDIR)/utilities.o: $(ROOT)/UTILS/utilities.f90 $(OBJDIR)/math_constants.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/UTILS/utilities.f90 -o $(OBJDIR)/utilities.o
+
+$(OBJDIR)/polpak.o: $(ROOT)/UTILS/polpak.f90
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/UTILS/polpak.f90 -o $(OBJDIR)/polpak.o
+
+$(OBJDIR)/file_units.o: $(ROOT)/UTILS/file_units.f90
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/UTILS/file_units.f90 -o $(OBJDIR)/file_units.o
+
+$(OBJDIR)/GridDef.o: $(ROOT)/EARTH/GridDef.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/file_units.o $(OBJDIR)/utilities.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/EARTH/GridDef.f90 -o $(OBJDIR)/GridDef.o
+
+$(OBJDIR)/sg_vector.o: $(ROOT)/FIELDS/FiniteDiff3D/sg_vector.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/GridDef.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/FIELDS/FiniteDiff3D/sg_vector.f90 -o $(OBJDIR)/sg_vector.o
+
+$(OBJDIR)/output_convention.o: $(ROOT)/EARTH/FWD/output_convention.f90 $(OBJDIR)/math_constants.o $(OBJDIR)/sg_vector.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/EARTH/FWD/output_convention.f90 -o $(OBJDIR)/output_convention.o
+
+$(OBJDIR)/field1d.o: $(ROOT)/EARTH/FWD/field1d.f90 $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/EARTH/FWD/field1d.f90 -o $(OBJDIR)/field1d.o
+
+$(OBJDIR)/field1d_s2.o: $(ROOT)/EARTH/FWD/field1d_s2.f90 $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o  $(OBJDIR)/field1d.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) $(ROOT)/EARTH/FWD/field1d_s2.f90 -o $(OBJDIR)/field1d_s2.o
+
+$(OBJDIR)/test_unit_sphere.o: test_unit_sphere.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_unit_sphere.f90 -o $(OBJDIR)/test_unit_sphere.o
+
+$(OBJDIR)/test_earth_l1mneg1.o: test_earth_l1mneg1.f90 $(OBJDIR)/field1d.o  $(OBJDIR)/field1d_s2.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_earth_l1mneg1.f90 -o $(OBJDIR)/test_earth_l1mneg1.o
+
+$(OBJDIR)/test_Tnr_uniform_sphere.o: test_Tnr_uniform_sphere.f90 $(OBJDIR)/field1d.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_Tnr_uniform_sphere.f90 -o $(OBJDIR)/test_Tnr_uniform_sphere.o
+
+# field1d.f90 vs field1d_s2.f90 direct side-by-side, l=1,m=0 (P10) --
+# resolves field1d.f90's long-open "absolute sign" question, see CLAUDE.md
+test_s1_vs_s2_l1m0: $(OBJDIR) $(OBJ) $(OBJDIR)/test_s1_vs_s2_l1m0.o
+	$(F90) -o test_s1_vs_s2_l1m0 $(OBJ) $(OBJDIR)/test_s1_vs_s2_l1m0.o
+
+$(OBJDIR)/test_s1_vs_s2_l1m0.o: test_s1_vs_s2_l1m0.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_s1_vs_s2_l1m0.f90 -o $(OBJDIR)/test_s1_vs_s2_l1m0.o
+
+# field1d.f90 AND field1d_s2.f90, both vs an independent ModEM
+# benchmark, post T(r)-formula-sign fix (merges the former
+# test_s1_vs_modem_1D and test_s2_vs_modem_1D)
+test_vs_modem_1D_impedance: $(OBJDIR) $(OBJ) $(OBJDIR)/test_vs_modem_1D_impedance.o
+	$(F90) -o test_vs_modem_1D_impedance $(OBJ) $(OBJDIR)/test_vs_modem_1D_impedance.o
+
+$(OBJDIR)/test_vs_modem_1D_impedance.o: test_vs_modem_1D_impedance.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_vs_modem_1D_impedance.f90 -o $(OBJDIR)/test_vs_modem_1D_impedance.o
+
+# output_convention.f90 unit tests (Part 2)
+test_norm_condon_shortley: $(OBJDIR) $(OBJ) $(OBJDIR)/test_norm_condon_shortley.o
+	$(F90) -o test_norm_condon_shortley $(OBJ) $(OBJDIR)/test_norm_condon_shortley.o
+
+$(OBJDIR)/test_norm_condon_shortley.o: test_norm_condon_shortley.f90 $(OBJDIR)/output_convention.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_norm_condon_shortley.f90 -o $(OBJDIR)/test_norm_condon_shortley.o
+
+test_reversals: $(OBJDIR) $(OBJ) $(OBJDIR)/test_reversals.o
+	$(F90) -o test_reversals $(OBJ) $(OBJDIR)/test_reversals.o
+
+$(OBJDIR)/test_reversals.o: test_reversals.f90 $(OBJDIR)/output_convention.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_reversals.f90 -o $(OBJDIR)/test_reversals.o
+
+test_radial_potential: $(OBJDIR) $(OBJ) $(OBJDIR)/test_radial_potential.o
+	$(F90) -o test_radial_potential $(OBJ) $(OBJDIR)/test_radial_potential.o
+
+$(OBJDIR)/test_radial_potential.o: test_radial_potential.f90 $(OBJDIR)/output_convention.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_radial_potential.f90 -o $(OBJDIR)/test_radial_potential.o
+
+test_tau_sweep: $(OBJDIR) $(OBJ) $(OBJDIR)/test_tau_sweep.o
+	$(F90) -o test_tau_sweep $(OBJ) $(OBJDIR)/test_tau_sweep.o
+
+$(OBJDIR)/test_tau_sweep.o: test_tau_sweep.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_tau_sweep.f90 -o $(OBJDIR)/test_tau_sweep.o
+
+clean:
+	rm -rf $(OBJDIR) test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals test_radial_potential test_tau_sweep

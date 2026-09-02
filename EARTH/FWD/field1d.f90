@@ -38,7 +38,13 @@ module field1d
 
   public        :: legendre_deallocate_at_nodes
   public        :: legendre_deallocate_at_edges
-  public        :: sourceField1d
+  public        :: sourceField1d, sourcePotential, surfaceField1d
+  ! Widened for reuse by the independent field1d_s2 module (Sun & Egbert,
+  ! 2012, Section 2 solver): these Legendre/VSH routines are pure angular
+  ! math, already independently verified against sympy, and are shared
+  ! rather than re-derived to avoid re-introducing the kind of subtle
+  ! phase/sign bug that took a long time to isolate here.
+  public        :: legendre_norm, legendre_sch, vsharm
 
 
 Contains
@@ -403,8 +409,13 @@ function contFrac(a,lmax,z) result (f)
         r=g*h
         f=f*r
 
+        ! abs(r-1) is NaN when f has overflowed; the comparison always fails, causing infinite loop
         if (abs(r-1)<=1.e-14) then
             conv=.true.
+            exit
+        end if
+        if (k > 10000) then
+            write(0,*) 'WARNING contFrac: no convergence after 10000 iterations at z=',z
             exit
         end if
         k=k+1;
@@ -464,23 +475,38 @@ subroutine rbslprop(lmax,z0,phn0,phnp0,z,phn,phnp)
 
 end subroutine
 
-subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
+subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp,Tnrp,Tns)
 !in Matlab, optionally shift to mid-faces
 
     type (conf1d_t), intent(in)         :: earth ! configuration structure
     integer, intent(in)                 :: lmax ! maximum sph. harm. degree
     real(8), intent(in)                 :: period ! period in seconds
     real(8), dimension(:), intent(in)   :: Rr,Rs ! radii for vertical and lateral potentials
-    complex(8), dimension(:,:), intent(inout)  :: Tnr,Tnsp ! potential coefficients
+    complex(8), dimension(:,:), intent(inout)           :: Tnr,Tnsp  ! potential coefficients
+    complex(8), dimension(:,:), intent(inout), optional :: Tnrp,Tns  ! dual-grid potentials
+    !
+    ! The four potential arrays form a 2x2 table by radial position and quantity:
+    !
+    !                  cell-centre radii (Rr)    face radii (Rs)
+    !   T  (value):         Tnr                     Tns      (optional)
+    !   T' (r-deriv):       Tnrp     (optional)     Tnsp
+    !
+    ! Tnr and Tnsp are always computed (primary staggering: H on EDGE, E on FACE).
+    ! Tnrp and Tns are optional; pass them when the dual staggering is needed
+    ! (H on FACE, E on EDGE).  In conducting layers T' = kl * d(T)/d(kl*r);
+    ! in the air layer T' = d(T)/dr directly (no kl factor).  In both cases
+    ! the stored value equals dT/dr after the kl cancellation.
     ! local
     integer, dimension(lmax)    :: Ns
     complex(8), dimension(:), allocatable      :: rn0,rnp0,phn0,phnp0
     complex(8), dimension(:), allocatable      :: tnr1,tnsp1,tn,tnp,tni,tmp
+    complex(8), dimension(:), allocatable      :: Rl_core
     real(8), dimension(:), allocatable         :: rl
     complex(8), dimension(:), allocatable      :: kl
     real(8)             :: mu0,pi,omega,rmax
+    real(8)             :: overflow_arg,dr_sub,r_sub_bot,r_sub_top
     integer             :: idr,idrmin,idrmax,ids,idsmin,idsmax
-    integer             :: i,j,k,l,m,ll,Nl,Nrr,Nrs,istat
+    integer             :: i,j,k,l,m,ll,Nl,Nrr,Nrs,istat,nsub,isub
     logical             :: sumup
 
     !Physical model
@@ -508,6 +534,18 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
         kl(j) = sqrt(cmplx(0.,1.)*omega*mu0*earth%sigma(j))
     end do
     rmax = earth%rmax + 1.0d0 ! add one meter to rmax to make sure the whole domain is included
+
+    ! Info: report layers that require sub-stepping (Im(kl)*thickness > 200).
+    do j = 1, Nl-1
+        overflow_arg = abs(aimag(kl(j))) * (rl(j) - rl(j+1))
+        if (overflow_arg > 200.0d0) then
+            write(*,'(a,i3,a,es10.3,a,i3,a,f10.3,a)') &
+                ' INFO sourcePotential: layer ', j, &
+                ' |Im(kl)|*thickness =', overflow_arg, &
+                ', using ', max(1,ceiling(overflow_arg/200.0d0)), &
+                ' sub-steps at T=', period, ' s'
+        end if
+    end do
     !-----------------------------------------------------------!
 
     !Radial response
@@ -524,6 +562,7 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
         do idr=idrmin,idrmax
             call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*Rr(idr),1,tnr1,tmp)
             Tnr(idr,:)=tnr1(:)
+            if (present(Tnrp)) Tnrp(idr,:) = kl(Nl)*tmp(:)
             !write(*,*) 'core,idr,tnr1: ',Nl,idr,tnr1
         end do
     end if
@@ -534,60 +573,94 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
         do ids=idsmin,idsmax
             call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*Rs(ids),1,tmp,tnsp1)
             Tnsp(ids,:)=kl(Nl)*tnsp1(:)
+            if (present(Tns)) Tns(ids,:) = tmp(:)
             !write(*,*) 'core,ids,tnsp1: ',Nl,ids,tnsp1
         end do
     end if
 
     call rbsls0(lmax,kl(Nl)*rl(Nl),kl(Nl)*rl(Nl),1,tn,tnp)
-    !write(*,*) 'tn: ',tn
-    !write(*,*) 'tnp: ',tnp
+
+    ! For l >> |kl_core * r_core| the type-1 Bessel function Sl(l) underflows to 0,
+    ! making tnp/tn = 0/0 = NaN. Compute the normalized impedance kl*(1/Rl - l/z0)
+    ! directly from Rl (which stays O(1) in the downward recurrence) to avoid 0/0.
+    allocate(Rl_core(lmax), STAT=istat)
+    call rrbessel(lmax, kl(Nl)*rl(Nl), Rl_core)
     do i = 1,lmax
-        tnp(i) = kl(Nl)*tnp(i)/tn(i)
+        tnp(i) = kl(Nl)*(1.0d0/Rl_core(i) - cmplx(real(i,8),0.0d0)/(kl(Nl)*rl(Nl)))
+    end do
+    deallocate(Rl_core, STAT=istat)
+
+    ! Guard against 0/0: when Sl(i) underflows, Tnr(core obs, i) also underflowed → 0 is correct.
+    do i = 1,lmax
+        if (abs(tn(i)) > 0.0d0) then
+            Tnr(:,i)=Tnr(:,i)/tn(i)
+            Tnsp(:,i)=Tnsp(:,i)/tn(i)
+            if (present(Tnrp)) Tnrp(:,i) = Tnrp(:,i)/tn(i)
+            if (present(Tns))  Tns(:,i)  = Tns(:,i) /tn(i)
+        else
+            Tnr(:,i) = cmplx(0.0d0,0.0d0)
+            Tnsp(:,i) = cmplx(0.0d0,0.0d0)
+            if (present(Tnrp)) Tnrp(:,i) = cmplx(0.0d0,0.0d0)
+            if (present(Tns))  Tns(:,i)  = cmplx(0.0d0,0.0d0)
+        end if
     end do
 
-    do i = 1,lmax
-        Tnr(:,i)=Tnr(:,i)/tn(i)
-        Tnsp(:,i)=Tnsp(:,i)/tn(i)
-    end do
-
-    !between layers
+    !between layers — sub-stepped to keep Im(kl)*dr_sub <= 200 within each rbslprop call,
+    !preventing exp() overflow in rbsls0 type 1 for thick conducting layers at short periods.
+    !The normalisation Tnr /= tn at each sub-step top advances the reference level so that
+    !all accumulated Tnr/Tnsp values remain O(1) regardless of layer thickness or period.
     do ll=Nl-1,1,-1
+
+        overflow_arg = abs(aimag(kl(ll))) * (rl(ll) - rl(ll+1))
+        nsub = max(1, ceiling(overflow_arg / 200.0d0))
+        dr_sub = (rl(ll) - rl(ll+1)) / nsub
 
         do i = 1,lmax
             phn0(i) = cmplx(1.0d0,0.0d0)
             phnp0(i) = tnp(i)/kl(ll)
         end do
+        r_sub_bot = rl(ll+1)
 
-        call find_index(Rr,rl(ll+1),rl(ll),idrmin,idrmax)
-        !write(*,*) 'Layer ',ll,': ',idrmin,idrmax
-        if ((idrmin > 0) .and. (idrmax > 0)) then
-            do idr=idrmin,idrmax
-                call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*Rr(idr),tnr1,tmp)
-                Tnr(idr,:)=tnr1(:)
-                !write(*,*) 'll,idr,tnr1: ',ll,idr,tnr1
+        do isub = 1,nsub
+            r_sub_top = rl(ll+1) + isub*dr_sub
+
+            call find_index(Rr,r_sub_bot,r_sub_top,idrmin,idrmax)
+            if ((idrmin > 0) .and. (idrmax > 0)) then
+                do idr=idrmin,idrmax
+                    call rbslprop(lmax,kl(ll)*r_sub_bot,phn0,phnp0,kl(ll)*Rr(idr),tnr1,tmp)
+                    Tnr(idr,:)=tnr1(:)
+                    if (present(Tnrp)) Tnrp(idr,:) = kl(ll)*tmp(:)
+                end do
+            end if
+
+            call find_index(Rs,r_sub_bot,r_sub_top,idsmin,idsmax)
+            if ((idsmin > 0) .and. (idsmax > 0)) then
+                do ids=idsmin,idsmax
+                    call rbslprop(lmax,kl(ll)*r_sub_bot,phn0,phnp0,kl(ll)*Rs(ids),tmp,tnsp1)
+                    Tnsp(ids,:)=kl(ll)*tnsp1(:)
+                    if (present(Tns)) Tns(ids,:) = tmp(:)
+                end do
+            end if
+
+            call rbslprop(lmax,kl(ll)*r_sub_bot,phn0,phnp0,kl(ll)*r_sub_top,tn,tnp)
+
+            do i = 1,lmax
+                tnp(i) = kl(ll)*tnp(i)/tn(i)
             end do
-        end if
-
-        call find_index(Rs,rl(ll+1),rl(ll),idsmin,idsmax)
-        !write(*,*) 'Layer ',ll,': ',idsmin,idsmax
-        if ((idsmin > 0) .and. (idsmax > 0)) then
-            do ids=idsmin,idsmax
-                call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*Rs(ids),tmp,tnsp1)
-                Tnsp(ids,:)=kl(ll)*tnsp1(:)
-                !write(*,*) 'll,ids,tnsp1: ',ll,ids,tnsp1
+            do i = 1,lmax
+                Tnr(:,i)  = Tnr(:,i)  / tn(i)
+                Tnsp(:,i) = Tnsp(:,i) / tn(i)
+                if (present(Tnrp)) Tnrp(:,i) = Tnrp(:,i) / tn(i)
+                if (present(Tns))  Tns(:,i)  = Tns(:,i)  / tn(i)
             end do
-        end if
 
-        call rbslprop(lmax,kl(ll)*rl(ll+1),phn0,phnp0,kl(ll)*rl(ll),tn,tnp)
+            do i = 1,lmax
+                phn0(i)  = cmplx(1.0d0,0.0d0)
+                phnp0(i) = tnp(i)/kl(ll)
+            end do
+            r_sub_bot = r_sub_top
 
-        do i = 1,lmax
-            tnp(i) = kl(ll)*tnp(i)/tn(i)
-        end do
-
-        do i = 1,lmax
-            Tnr(:,i)=Tnr(:,i)/tn(i)
-            Tnsp(:,i)=Tnsp(:,i)/tn(i)
-        end do
+        end do ! isub
 
     end do
 
@@ -618,6 +691,8 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
     do i = 1,lmax
         Tnr(:,i)=Tnr(:,i)/tni(i)
         Tnsp(:,i)=Tnsp(:,i)/tni(i)
+        if (present(Tnrp)) Tnrp(:,i) = Tnrp(:,i) / tni(i)
+        if (present(Tns))  Tns(:,i)  = Tns(:,i)  / tni(i)
     end do
 
     !now use the renormalized tn & tnp to compute the potentials in the air layers
@@ -628,6 +703,7 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
             sumup = .true.
             call airprop(lmax,rl(1),tn,tnp,Rr(idr),tnr1,tmp,sumup)
             Tnr(idr,:)=tnr1(:)
+            if (present(Tnrp)) Tnrp(idr,:) = tmp(:)
             !write(*,*) 'air,idr,tnr1: ',1,idr,tnr1
         end do
     end if
@@ -639,6 +715,7 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
             sumup = .true.
             call airprop(lmax,rl(1),tn,tnp,Rs(ids),tmp,tnsp1,sumup)
             Tnsp(ids,:)=tnsp1(:)
+            if (present(Tns)) Tns(ids,:) = tmp(:)
             !write(*,*) 'air,ids,tnsp1: ',1,ids,tnsp1
         end do
     end if
@@ -661,7 +738,7 @@ subroutine sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
 end subroutine
 
 
-subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
+subroutine sourceField1d(earth,lmax,coeff,period,grid,H,E)
 
 	type (conf1d_t), intent(in)	        :: earth ! configuration structure
 	integer, intent(in)		            :: lmax ! maximum sph. harm. degree
@@ -669,18 +746,65 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
 	real(8), intent(in)                 :: period ! period in seconds
 	type (grid_t), intent(in)           :: grid ! grid for the field mapping
 	type (cvector), intent(inout)       :: H ! output magnetic field
+	type (cvector), intent(inout), optional    :: E ! output electric field
 	! local
 	real(8), dimension(:), allocatable  :: Rr,Rs
     integer, dimension(lmax)                   :: Ns
     real(8), dimension(lmax+1,lmax+1)          :: P_lm
     complex(8), dimension(lmax,lmax+1)         :: Yp,Yt,Yr ! indices (l,m+1), m=0,..,lmax
-	complex(8), dimension(:,:), allocatable    :: Tnr,Tnsp
+	complex(8), dimension(:,:), allocatable    :: Tnr,Tnsp,Tnrp,Tns
     complex(8), dimension(:), allocatable      :: coefl
 	real(8)				:: R0,dp,dt
     integer             :: idr,idrmin,idrmax,ids,idsmin,idsmax
     integer             :: Np,Nt,Nr,Nrr,Nrs,Nd
     integer             :: i,j,k,l,m,istat,ncoeff,icoeff
+    integer             :: j1,j2
+    real(8), parameter  :: pole_tol = 1.0d-8 ! radians; true global poles only, not regional-grid edges
     complex(8)          :: C
+    real(8)             :: mu0,pi,omega
+    complex(8)          :: iommu0
+    character(80)       :: errMsg
+
+    ! NOTE on reconstructing each field component from vsharm's m=0,1,...,lmax
+    ! storage via the +m/-m conjugate-pairing scheme in the do-m loops below:
+    ! Y_l^{-m} = (-1)^m * conjg(Y_l^{+m}) (standard, Condon-Shortley-phase
+    ! identity -- verified against vsharm's own Y/Yt/Yp output by direct
+    ! symbolic comparison for l<=3, all m). Each `C` below builds
+    ! Y_l^{+m}*coefl(+m) + Y_l^{-m}*coefl(-m) directly from this identity and
+    ! is added straight into the component, exactly like the m=0 (zonal) term
+    ! just above it, which has no conjugate partner at all. No further
+    ! conjugation of any kind is applied anywhere in this routine: once the
+    ! (-1)^m identity is used correctly term-by-term, the reconstruction is
+    ! already exact and complete -- an earlier version of this code applied an
+    ! extra conjg() (first to the whole assembled component, later, briefly,
+    ! to just the +m/-m paired sum) that turned out to be unnecessary
+    ! left-over compensation for a since-fixed missing-(-1)^m bug, and caused
+    ! the m=0 and +m/-m paths to treat the same (m-independent) radial
+    ! potential Tnr/Tnsp inconsistently -- conjugated for paired terms,
+    ! unconjugated for m=0 -- an internal inconsistency confirmed via
+    ! testing/test_s1_vs_modem_1D.f90 (Mode2 vs Mode1 disagreeing on
+    ! whether Zxy=-Zyx needs an extra conjugation). The code's native time
+    ! convention is e^{-i*omega*t} throughout (see kl = sqrt(i*omega*mu0*sigma)
+    ! in sourcePotential) and is unrelated to any of the above -- comparing
+    ! against an e^{+i*omega*t}-convention solver needs its own, separate
+    ! conjugation on one side or the other, not conflated with this note.
+    !
+    ! NOTE on the explicit sign of the three T(r)-valued components (H_r,
+    ! E_theta, E_phi -- built from Tnr/Tns, the potential's VALUE) relative to
+    ! the two T'(r)-valued components (H_theta, H_phi -- built from Tnsp/Tnrp,
+    ! the potential's r-derivative): these three now carry the SAME explicit
+    ! sign as Sun & Egbert (2012) eq (5)-(6) (module field1d_s2),
+    ! confirmed via testing/test_s1_vs_s2_l1m0.f90 giving
+    ! ratio=+1 for every component once this fix was applied. Before this fix
+    ! (2026-07-26) these three had the OPPOSITE explicit sign from Sun & Egbert
+    ! while H_theta/H_phi already agreed -- confirmed (via that same test) to
+    ! be a pure formula-sign difference, NOT a difference in Tnr/Tnsp's own
+    ! values (which were already identical between the two modules to begin
+    ! with) -- i.e. this was a genuine, fixable discrepancy from the Kelbert
+    ! (2006) lineage this file otherwise follows (best published reference:
+    ! Sun, Kelbert & Egbert (2015), J. Geophys. Res. Solid Earth, 120(10),
+    ! 6771-6796), not a documented, deliberate alternate convention worth
+    ! preserving.
 
     !No computations are performed for l=0 (no magnetic monopoles) so zero coeff is never used
     ncoeff=0
@@ -723,15 +847,37 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     Nd=lmax ! total number of degrees in sph. harm. expansion
 
     allocate(Tnr(Nrr,Nd),Tnsp(Nrs,Nd),STAT=istat)
-    
-    call sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
-    
+
+    if (H%gridType == FACE) then
+        allocate(Tnrp(Nrr,Nd),Tns(Nrs,Nd),STAT=istat)
+        call sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp,Tnrp,Tns)
+    else
+        call sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
+    end if
+
+    ! NaN in Tnr/Tnsp means Ricatti-Bessel overflow in a thick conducting layer at this period.
+    ! sourcePotential will already have printed a per-layer WARNING above.
+    if (any(Tnr /= Tnr) .or. any(Tnsp /= Tnsp)) then
+        write(0,*) 'Warning: subdivide thick conducting layers in the Earth model to avoid overflow.'
+        write(errMsg,'(a,f10.3,a)') ' sourceField1d: NaN in source potentials at T=', period, ' s'
+        deallocate(Tnr, Tnsp, STAT=istat)
+        if (H%gridType == FACE) deallocate(Tnrp, Tns, STAT=istat)
+        deallocate(Rr, Rs, STAT=istat)
+        call errStop(errMsg)
+    end if
+
     write(*,*) node_info,'Done computing potentials: ',elapsed_time(fwd1d_timer),' secs'
     call reset_time(fwd1d_timer)
+
+    mu0   = 1.256637e-6
+    pi    = 3.14159265357898
+    omega = 2*pi/period
+    iommu0 = dcmplx(0.0d0,1.0d0) * omega * mu0
 
     !-----------------------------------------------------------!
     !compute field components
     call zero_cvector(H)
+    if (present(E)) call zero_cvector(E)
 
     Yp(:,:) = cmplx(0.0d0,0.0d0)
     Yt(:,:) = cmplx(0.0d0,0.0d0)
@@ -753,8 +899,27 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
         write(*,*) node_info,'Legendre polynomials pre-allocated at grid edges'
     end if
 
-    ! ph component of the field (skip the poles)
-    do j = 2,Nt
+    if (H%gridType == EDGE) then
+
+    ! EDGE H staggering: H on primary-grid edges, E on primary-grid faces
+    !
+    !   H%x (phi,   EDGE x): node_th × mid_ph  × Rs — Yp — Tnsp
+    !   H%y (theta, EDGE y): mid_th  × node_ph × Rs — Yt — Tnsp
+    !   H%z (r,     EDGE z): node_th × node_ph × Rr — Yr — Tnr
+    !   E%y (theta, FACE y): node_th × mid_ph  × Rr — Yp — Tnr    (if present)
+    !   E%x (phi,   FACE x): mid_th  × node_ph × Rr — Yt — Tnr    (if present)
+
+    ! ph component of the field (H%x, H_phi): node theta. On edges,
+    ! H%x is undefined at BOTH the North pole (j=1, theta=0) and the South
+    ! pole (j=Nt+1, theta=pi) -- skip each endpoint ONLY if this grid
+    ! actually reaches it. The below logic allows for global vs regional grids;
+    ! it's good practice to define regional grids away from the poles - for
+    ! polar regions, will need to rotate to fake pole (supported)
+    j1 = 1
+    j2 = Nt+1
+    if (grid%th(1) < pole_tol) j1 = 2
+    if (grid%th(Nt+1) > pi - pole_tol) j2 = Nt
+    do j = j1,j2
 
         ! for efficiency, call this once for each theta and use in vsharm
         if (legendre_allocated_at_nodes) then
@@ -785,11 +950,12 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
                     !ordered m=0,1,-1,2,-2 etc (NOT like in Matlab)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
-                    !m=0 goes first
+                    !m=0: no conjugate partner, added directly
                     H%x(i,j,k) = H%x(i,j,k) + Yp(l,1)*coefl(1)*(Tnsp(k,l)*((R0**2)/Rs(k)))/(l*(l+1))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
-                        C = (Yp(l,m+1)*coefl(2*m) + conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         H%x(i,j,k) = H%x(i,j,k) + C*(Tnsp(k,l)*((R0**2)/Rs(k)))
                     end do
 
@@ -798,8 +964,6 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
                     deallocate(coefl, STAT=istat)
 
                 end do ! degrees
-
-                H%x(i,j,k) = conjg(H%x(i,j,k))
 
             end do ! r
         end do ! ph
@@ -837,22 +1001,20 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
                     !ordered m=0,1,-1,2,-2 etc (NOT like in Matlab)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
-                    !m=0 goes first
+                    !m=0: no conjugate partner, added directly
                     H%y(i,j,k) = H%y(i,j,k) + Yt(l,1)*coefl(1)*(Tnsp(k,l)*((R0**2)/Rs(k)))/(l*(l+1))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
-                        C = (Yt(l,m+1)*coefl(2*m) + conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
                         H%y(i,j,k) = H%y(i,j,k) + C*(Tnsp(k,l)*((R0**2)/Rs(k)))
                     end do
-
 
                     icoeff = icoeff+2*l+1
 
                     deallocate(coefl, STAT=istat)
 
                 end do ! degrees
-
-                H%y(i,j,k) = conjg(H%y(i,j,k))
 
             end do ! r
         end do ! ph
@@ -892,11 +1054,12 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
                     !ordered m=0,1,-1,2,-2 etc (NOT like in Matlab)
                     coefl = coeff(icoeff+1:icoeff+2*l+1)
 
-                    !m=0 goes first
-                    H%z(i,j,k) = H%z(i,j,k) - Yr(l,1)*coefl(1)*(Tnr(k,l)*(R0**2/Rr(k)**2))
+                    !m=0: no conjugate partner, added directly
+                    H%z(i,j,k) = H%z(i,j,k) + Yr(l,1)*coefl(1)*(Tnr(k,l)*(R0**2/Rr(k)**2))
 
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
                     do m = 1,l
-                        C = - (Yr(l,m+1)*coefl(2*m) + conjg(Yr(l,m+1))*coefl(2*m+1))
+                        C = (Yr(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yr(l,m+1))*coefl(2*m+1))
                         H%z(i,j,k) = H%z(i,j,k) + C*(Tnr(k,l)*(R0**2/Rr(k)**2))
                     end do
 
@@ -906,7 +1069,247 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
 
                 end do ! degrees
 
-                H%z(i,j,k) = conjg(H%z(i,j,k))
+            end do ! r
+        end do ! ph
+    end do ! th
+
+    legendre_allocated_at_nodes = .true.
+    legendre_allocated_at_edges = .true.
+
+    ! th component of the electric field (E%y, E_theta): node theta. When
+    ! H%gridType==EDGE (so E%gridType==FACE), E%y is undefined at BOTH the
+    ! North pole and the South pole -- j1/j2 computed above for H%x, same
+    ! node-theta range, skip each endpoint only if this grid actually
+    ! reaches it. The below logic allows for global vs regional grids;
+    ! it's good practice to define regional grids away from the poles - for
+    ! polar regions, will need to rotate to fake pole (supported)
+    if (present(E)) then
+    do j = j1,j2
+
+        P_lm = node_P_lm(j,:,:)
+
+        do i = 1,Np
+
+            call vsharm(lmax,cos(grid%th(j)),grid%ph(i)+grid%dp(i)/2,P_lm,Yr,Yt,Yp)
+
+            do k = 1,Nrr
+
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    !m=0: no conjugate partner, added directly
+                    E%y(i,j,k) = E%y(i,j,k) + Yp(l,1)*coefl(1)*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))/(l*(l+1))
+
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
+                    do m = 1,l
+                        C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        E%y(i,j,k) = E%y(i,j,k) + C*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))
+                    end do
+
+                    icoeff = icoeff+2*l+1
+
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
+
+            end do ! r
+        end do ! ph
+    end do ! th
+    end if ! present(E)
+
+    ! ph component of the electric field: E_phi = -i*omega*mu0 * Tnr/r/l(l+1) * Yt
+    ! mid-edge theta (j=1..Nt) loops North to South pole;
+    ! node phi (i=1..Np+1); k loops over cell-center radii Rr
+    ! FIX (2026-07-26): loop previously stopped at i=Np, leaving E%x(Np+1,:,:)
+    ! at its zero_cvector default -- harmless for a GLOBAL grid (that slot is
+    ! a true 360deg wraparound duplicate of i=1, dropped by downstream
+    ! plotting anyway) but a genuine missing boundary value for a REGIONAL
+    ! grid (found via a real E_phi-plots-as-zero-at-the-last-column report on
+    ! a primary_grid='H' run over USA.0.25x0.25.grd).
+    if (present(E)) then
+    do j = 1,Nt
+
+        P_lm = edge_P_lm(j,:,:)
+
+        do i = 1,Np+1
+
+            call vsharm(lmax,cos(grid%th(j)+grid%dt(j)/2),grid%ph(i),P_lm,Yr,Yt)
+
+            do k = 1,Nrr
+
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    !m=0: no conjugate partner, added directly
+                    E%x(i,j,k) = E%x(i,j,k) - Yt(l,1)*coefl(1)*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))/(l*(l+1))
+
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
+                    do m = 1,l
+                        C = -(Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        E%x(i,j,k) = E%x(i,j,k) + C*(iommu0*Tnr(k,l)*(R0**2/Rr(k)))
+                    end do
+
+                    icoeff = icoeff+2*l+1
+
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
+
+            end do ! r
+        end do ! ph
+    end do ! th
+    end if ! present(E)
+
+    else if (H%gridType == FACE) then
+
+    ! FACE H staggering: H on primary-grid faces, E on primary-grid edges
+    ! Angular positions and VSH mirror the EDGE staggering with x<->y swapped:
+    !
+    !   H%y (theta, FACE y): node_th × mid_ph  × Rr — Yt — Tnrp
+    !   H%x (phi,   FACE x): mid_th  × node_ph × Rr — Yp — Tnrp
+    !   H%z (r,     FACE z): mid_th  × mid_ph  × Rs — Yr — Tns
+    !   E%x (phi,   EDGE x): node_th × mid_ph  × Rs — Yt — Tns   (if present)
+    !   E%y (theta, EDGE y): mid_th  × node_ph × Rs — Yp — Tns   (if present)
+
+    ! Node-theta components below (H%y on FACE, E%x on EDGE) are undefined
+    ! at BOTH the North pole (j=1, theta=0) and the South pole (j=Nt+1,
+    ! theta=pi) -- skip each endpoint ONLY if this grid actually reaches it.
+    ! The below logic allows for global vs regional grids;
+    ! it's good practice to define regional grids away from the poles - for
+    ! polar regions, will need to rotate to fake pole (supported)
+    j1 = 1
+    j2 = Nt+1
+    if (grid%th(1) < pole_tol) j1 = 2
+    if (grid%th(Nt+1) > pi - pole_tol) j2 = Nt
+
+    ! H%y — theta component: node theta (skip poles), mid phi, cell-centre r
+    do j = j1,j2
+
+        if (legendre_allocated_at_nodes) then
+            P_lm = node_P_lm(j,:,:)
+        else
+            call legendre_norm(lmax,cos(grid%th(j)),P_lm)
+            node_P_lm(j,:,:) = P_lm
+        end if
+
+        do i = 1,Np
+
+            call vsharm(lmax,cos(grid%th(j)),grid%ph(i)+grid%dp(i)/2,P_lm,Yr,Yt)
+
+            do k = 1,Nrr
+
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    !m=0: no conjugate partner, added directly
+                    H%y(i,j,k) = H%y(i,j,k) + Yt(l,1)*coefl(1)*(Tnrp(k,l)*((R0**2)/Rr(k)))/(l*(l+1))
+
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
+                    do m = 1,l
+                        C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        H%y(i,j,k) = H%y(i,j,k) + C*(Tnrp(k,l)*((R0**2)/Rr(k)))
+                    end do
+
+                    icoeff = icoeff+2*l+1
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
+
+            end do ! r
+        end do ! ph
+    end do ! th
+
+    ! H%x — phi component: mid theta, node phi, cell-centre r
+    do j = 1,Nt
+
+        if (legendre_allocated_at_edges) then
+            P_lm = edge_P_lm(j,:,:)
+        else
+            call legendre_norm(lmax,cos(grid%th(j)+grid%dt(j)/2),P_lm)
+            edge_P_lm(j,:,:) = P_lm
+        end if
+
+        do i = 1,Np+1
+
+            call vsharm(lmax,cos(grid%th(j)+grid%dt(j)/2),grid%ph(i),P_lm,Yr,Yt,Yp)
+
+            do k = 1,Nrr
+
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    !m=0: no conjugate partner, added directly
+                    H%x(i,j,k) = H%x(i,j,k) + Yp(l,1)*coefl(1)*(Tnrp(k,l)*((R0**2)/Rr(k)))/(l*(l+1))
+
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
+                    do m = 1,l
+                        C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        H%x(i,j,k) = H%x(i,j,k) + C*(Tnrp(k,l)*((R0**2)/Rr(k)))
+                    end do
+
+                    icoeff = icoeff+2*l+1
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
+
+            end do ! r
+        end do ! ph
+    end do ! th
+
+    ! H%z — radial component: mid theta, mid phi, face r
+    do j = 1,Nt
+
+        if (legendre_allocated_at_edges) then
+            P_lm = edge_P_lm(j,:,:)
+        else
+            call legendre_norm(lmax,cos(grid%th(j)+grid%dt(j)/2),P_lm)
+            edge_P_lm(j,:,:) = P_lm
+        end if
+
+        do i = 1,Np
+
+            call vsharm(lmax,cos(grid%th(j)+grid%dt(j)/2),grid%ph(i)+grid%dp(i)/2,P_lm,Yr)
+
+            do k = 1,Nrs
+
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    !m=0: no conjugate partner, added directly
+                    H%z(i,j,k) = H%z(i,j,k) + Yr(l,1)*coefl(1)*(Tns(k,l)*(R0**2/Rs(k)**2))
+
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
+                    do m = 1,l
+                        C = (Yr(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yr(l,m+1))*coefl(2*m+1))
+                        H%z(i,j,k) = H%z(i,j,k) + C*(Tns(k,l)*(R0**2/Rs(k)**2))
+                    end do
+
+                    icoeff = icoeff+2*l+1
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
 
             end do ! r
         end do ! ph
@@ -915,11 +1318,204 @@ subroutine sourceField1d(earth,lmax,coeff,period,grid,H)
     legendre_allocated_at_nodes = .true.
     legendre_allocated_at_edges = .true.
 
+    ! E%x — phi component: E_phi = -i*omega*mu0 * Tns/Rs/l(l+1) * Yt
+    ! node theta (skip poles only if this grid reaches them -- j1/j2
+    ! computed above, same node-theta range as H%y)
+    ! The below logic allows for global vs regional grids;
+    ! it's good practice to define regional grids away from the poles - for
+    ! polar regions, will need to rotate to fake pole (supported)
+    if (present(E)) then
+    do j = j1,j2
+
+        P_lm = node_P_lm(j,:,:)
+
+        do i = 1,Np
+
+            call vsharm(lmax,cos(grid%th(j)),grid%ph(i)+grid%dp(i)/2,P_lm,Yr,Yt)
+
+            do k = 1,Nrs
+
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    !m=0: no conjugate partner, added directly
+                    E%x(i,j,k) = E%x(i,j,k) - Yt(l,1)*coefl(1)*(iommu0*Tns(k,l)*(R0**2/Rs(k)))/(l*(l+1))
+
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
+                    do m = 1,l
+                        C = -(Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        E%x(i,j,k) = E%x(i,j,k) + C*(iommu0*Tns(k,l)*(R0**2/Rs(k)))
+                    end do
+
+                    icoeff = icoeff+2*l+1
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
+
+            end do ! r
+        end do ! ph
+    end do ! th
+    end if ! present(E)
+
+    ! E%y — theta component: E_theta = +i*omega*mu0 * Tns/Rs/l(l+1) * Yp
+    ! mid theta, node phi, face r
+    if (present(E)) then
+    do j = 1,Nt
+
+        P_lm = edge_P_lm(j,:,:)
+
+        do i = 1,Np+1
+
+            call vsharm(lmax,cos(grid%th(j)+grid%dt(j)/2),grid%ph(i),P_lm,Yr,Yt,Yp)
+
+            do k = 1,Nrs
+
+                icoeff = 1
+
+                do l = 1,lmax
+
+                    allocate(coefl(2*l+1), STAT=istat)
+                    coefl = coeff(icoeff+1:icoeff+2*l+1)
+
+                    !m=0: no conjugate partner, added directly
+                    E%y(i,j,k) = E%y(i,j,k) + Yp(l,1)*coefl(1)*(iommu0*Tns(k,l)*(R0**2/Rs(k)))/(l*(l+1))
+
+                    !+-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
+                    do m = 1,l
+                        C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                        E%y(i,j,k) = E%y(i,j,k) + C*(iommu0*Tns(k,l)*(R0**2/Rs(k)))
+                    end do
+
+                    icoeff = icoeff+2*l+1
+                    deallocate(coefl, STAT=istat)
+
+                end do ! degrees
+
+            end do ! r
+        end do ! ph
+    end do ! th
+    end if ! present(E)
+
+    else
+        write(0,*) 'Error in sourceField1d: unknown H%gridType: ', trim(H%gridType)
+    end if ! H%gridType
+
     write(*,*) node_info,'Done mapping to grid: ',elapsed_time(fwd1d_timer),' secs'
 
     deallocate(Tnr,Tnsp,STAT=istat)
+    if (H%gridType == FACE) deallocate(Tnrp,Tns,STAT=istat)
     deallocate(Rr,Rs,STAT=istat)
 
 end subroutine
+
+!**********************************************************************
+! surfaceField1d (S1): evaluate the full EM field at the Earth's SURFACE
+! (r = earth%r0 = R_earth) at the LATERAL CELL CENTRES of the grid
+! (theta = grid%th(j)+grid%dt(j)/2, phi = grid%ph(i)+grid%dp(i)/2),
+! for validation and plotting.
+!
+! Unlike sourceField1d (which fills the full 3D staggered cvectors, with
+! different components living at different lateral/radial positions),
+! this returns all six field components CO-LOCATED at one common set of
+! surface points. Same physics/formulas as sourceField1d's EDGE branch,
+! specialized to the single radius r=R0 (so the radial factors R0^2/r^2,
+! R0^2/r all collapse), in the solver's native e^{-i*omega*t} convention.
+!
+! Hsurf, Esurf are dimensioned (grid%nx, grid%ny, 3) = (Np, Nt, 3);
+! component index 1 = radial (r), 2 = colatitude (theta), 3 = longitude
+! (phi). E_r is identically zero (toroidal field). The caller passes the
+! same (already convention-rescaled) coeff block it passes to
+! sourceField1d, and applies any time-conjugation / modem normalization
+! itself, so the surface output matches the volume output's convention.
+subroutine surfaceField1d(earth,lmax,coeff,period,grid,Hsurf,Esurf)
+
+    type (conf1d_t), intent(in)                 :: earth
+    integer, intent(in)                         :: lmax
+    complex(8), dimension(:), intent(in)        :: coeff
+    real(8), intent(in)                         :: period
+    type (grid_t), intent(in)                   :: grid
+    complex(8), dimension(:,:,:), intent(out)   :: Hsurf, Esurf ! (Np,Nt,3)
+    ! local
+    real(8), dimension(1)                       :: Rr, Rs
+    complex(8), dimension(1,lmax)               :: Tnr, Tnsp
+    real(8), dimension(lmax+1,lmax+1)           :: P_lm
+    complex(8), dimension(lmax,lmax+1)          :: Yp, Yt, Yr
+    complex(8), dimension(:), allocatable       :: coefl
+    real(8)     :: R0, th_mid, ph_mid, mu0, pi, omega
+    complex(8)  :: iommu0, C
+    integer     :: Np, Nt, i, j, l, m, icoeff, istat
+
+    Np = grid%nx
+    Nt = grid%ny
+    R0 = earth%r0
+
+    mu0    = 1.256637e-6
+    pi     = 3.14159265357898
+    omega  = 2*pi/period
+    iommu0 = dcmplx(0.0d0,1.0d0) * omega * mu0
+
+    ! source potentials at the single surface radius r = R_earth
+    Rr(1) = R0
+    Rs(1) = R0
+    call sourcePotential(earth,lmax,period,Rr,Rs,Tnr,Tnsp)
+
+    if (any(Tnr /= Tnr) .or. any(Tnsp /= Tnsp)) then
+        call errStop('surfaceField1d: NaN in source potentials at the surface')
+    end if
+
+    Hsurf = dcmplx(0.0d0,0.0d0)
+    Esurf = dcmplx(0.0d0,0.0d0)
+
+    do j = 1,Nt
+        th_mid = grid%th(j) + grid%dt(j)/2
+        call legendre_norm(lmax,cos(th_mid),P_lm)
+        do i = 1,Np
+            ph_mid = grid%ph(i) + grid%dp(i)/2
+            call vsharm(lmax,cos(th_mid),ph_mid,P_lm,Yr,Yt,Yp)
+
+            icoeff = 1
+            do l = 1,lmax
+                allocate(coefl(2*l+1), STAT=istat)
+                coefl = coeff(icoeff+1:icoeff+2*l+1) ! m=0,1,-1,2,-2,...
+
+                ! m=0 (no conjugate partner), added directly -- at r=R0 the
+                ! radial factors R0^2/Rr^2 (Hr) and R0^2/Rs, R0^2/Rr (tangential)
+                ! reduce to 1 and R0 respectively.
+                Hsurf(i,j,1) = Hsurf(i,j,1) + Yr(l,1)*coefl(1)*Tnr(1,l)
+                Hsurf(i,j,2) = Hsurf(i,j,2) + Yt(l,1)*coefl(1)*Tnsp(1,l)*R0/(l*(l+1))
+                Hsurf(i,j,3) = Hsurf(i,j,3) + Yp(l,1)*coefl(1)*Tnsp(1,l)*R0/(l*(l+1))
+                Esurf(i,j,2) = Esurf(i,j,2) + Yp(l,1)*coefl(1)*iommu0*Tnr(1,l)*R0/(l*(l+1))
+                Esurf(i,j,3) = Esurf(i,j,3) - Yt(l,1)*coefl(1)*iommu0*Tnr(1,l)*R0/(l*(l+1))
+
+                ! +-m pairs, via Y_l^{-m}=(-1)^m*conjg(Y_l^{+m})
+                do m = 1,l
+                    ! Hr: no 1/(l(l+1)) factor (matches H%z above)
+                    C = Yr(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yr(l,m+1))*coefl(2*m+1)
+                    Hsurf(i,j,1) = Hsurf(i,j,1) + C*Tnr(1,l)
+                    ! Htheta
+                    C = (Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                    Hsurf(i,j,2) = Hsurf(i,j,2) + C*Tnsp(1,l)*R0
+                    ! Hphi
+                    C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                    Hsurf(i,j,3) = Hsurf(i,j,3) + C*Tnsp(1,l)*R0
+                    ! Etheta
+                    C = (Yp(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yp(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                    Esurf(i,j,2) = Esurf(i,j,2) + C*iommu0*Tnr(1,l)*R0
+                    ! Ephi (note the leading minus, matching E%x)
+                    C = -(Yt(l,m+1)*coefl(2*m) + (-1)**m*conjg(Yt(l,m+1))*coefl(2*m+1))/(l*(l+1))
+                    Esurf(i,j,3) = Esurf(i,j,3) + C*iommu0*Tnr(1,l)*R0
+                end do
+
+                icoeff = icoeff + 2*l+1
+                deallocate(coefl, STAT=istat)
+            end do ! degrees
+        end do ! phi
+    end do ! theta
+
+end subroutine surfaceField1d
 
 end module field1d

@@ -15,3 +15,20 @@
 .*.swp
 .DS_store
 # Simulated Subversion default ignores end here
+
+# Fortran build artifacts
+*.mod
+objs/
+
+# Compiled executables
+FWD1D
+FWD1D.exe
+
+# Forward modelling output files
+*.efield
+*.hfield
+
+# Scratch and temporary files
+msg.txt
+CLAUDE_thinking.md
+debug/

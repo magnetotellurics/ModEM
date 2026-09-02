@@ -1,0 +1,441 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{longtable}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\newcommand{\rhat}{\hat{\mathbf r}}
+\newcommand{\thetahat}{\hat{\boldsymbol\theta}}
+
+\title{\textsc{global1d} output conventions: reference and\\ implementation guide}
+\author{Anna Kelbert with Claude}
+\date{September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\textsc{global1d} has two independent 1D layered-sphere solvers, \texttt{field1d.f90} (S1) and
+\texttt{field1d\_s2.f90} (S2). Each solves the same physics (a toroidal potential $T_l(r)$ driven
+by an external multipole source, propagated through a layered conductor) but the two were written
+15 years apart, from different source references, and originally disagreed on how the raw numbers
+are bookkept: which time convention, which spherical-harmonic normalization, which way $\theta$
+and $r$ increase, and what a unit source coefficient physically means.
+\texttt{EARTH/FWD/output\_convention.f90} resolves this with a \textbf{composable output-convention
+layer}: a small \texttt{output\_convention\_t} type describing seven bookkeeping dimensions, five
+named presets built from it, and a pair of transforms (one applied to the source coefficients
+before the solve, one applied to the finished field arrays after) that convert either solver's
+native output into any named convention. Neither solver's internal numerics are ever touched ---
+every convention change is a rescale before the solve or an array transform after it. This
+document is the finalized reference for what each dimension and preset means, exactly what the
+transforms compute, and how to extend the system.
+\end{abstract}
+
+\section{The seven bookkeeping dimensions}
+
+\texttt{output\_convention\_t} (\texttt{EARTH/FWD/output\_convention.f90}) tracks:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}cp{2.9cm}p{3.6cm}p{4.6cm}@{}}
+\toprule
+\# & Field & Values & Meaning \\
+\midrule
+1 & \texttt{time\_convention}    & \texttt{PLUS\_IWT} / \texttt{MINUS\_IWT} & $e^{+i\omega t}$ or $e^{-i\omega t}$ \\
+2 & \texttt{harmonic\_norm}      & \texttt{SCHMIDT\_SEMINORM} / \texttt{FULLY\_NORM} & spherical-harmonic normalization \\
+3 & \texttt{condon\_shortley}    & \texttt{.true.} / \texttt{.false.} & Condon-Shortley $(-1)^m$ phase \\
+4 & \texttt{theta\_convention}   & \texttt{COLAT\_N2S} / \texttt{LAT\_S2N} & colatitude N$\to$S, or latitude S$\to$N \\
+5 & \texttt{r\_convention}       & \texttt{R\_DOWN} / \texttt{R\_UP} & radius increasing with depth, or with $r$ \\
+6 & \texttt{primary\_grid}       & \texttt{'H'} / \texttt{'E'} & which field is EDGE-staggered (bookkeeping only) \\
+7 & \texttt{radial\_norm}        & \texttt{MULTIPOLE}/\texttt{SURFACE}/ \texttt{DIMENSIONAL}/\texttt{POTENTIAL} & meaning of a unit source coefficient \\
+\bottomrule
+\end{tabular}
+\caption{The seven convention dimensions tracked by \texttt{output\_convention\_t}.}
+\end{table}
+
+Plus one orthogonal boolean, \texttt{modem\_normalize}, which is not a bookkeeping choice but a
+value rescale (\S\ref{sec:modem}) --- it does not change what a field component \emph{represents},
+only its absolute scale, so it lives outside the seven dimensions above.
+
+Dimensions 1--3 are properties of the \textbf{input coefficients and the angular basis functions}
+they multiply; 4--5 are properties of the \textbf{output grid indexing and vector-component sign};
+6 records which of $H$/$E$ is EDGE-primary for the active solver (never itself transformed --- see
+\S\ref{sec:transform43}); 7 is a property of the \textbf{radial amplitude scale} of the source.
+
+\subsection*{Physical meaning of each dimension}
+
+\paragraph{Time convention.} Both solvers' internal radial ODE ($k_l=\sqrt{i\omega\mu_0\sigma}$) is
+solved natively in $e^{-i\omega t}$ (\texttt{MINUS\_IWT}). \texttt{PLUS\_IWT} output is produced by
+conjugating the finished field --- conjugating a signal is exactly the transform between the two
+time conventions.
+
+\paragraph{Harmonic normalization.} \texttt{vsharm} (the shared Legendre/angular-derivative routine
+both solvers call) is fixed, always fully-normalized (\texttt{FULLY\_NORM}):
+$Y_l^m = \sqrt{\tfrac{2l+1}{4\pi}\tfrac{(l-m)!}{(l+m)!}}\,P_l^m\,e^{im\phi}$. \texttt{SCHMIDT\_SEMINORM}
+output ($S_l^m = \sqrt{(2-\delta_{m0})\tfrac{(l-m)!}{(l+m)!}}\,P_l^m$, no $(2l+1)/(4\pi)$ growth
+factor) is produced by rescaling the SOURCE coefficients by
+$Y_{\rm schmidt}/Y_{\rm full}=\sqrt{4\pi(2-\delta_{m0})/(2l+1)}$ before the solve.
+
+\paragraph{Condon-Shortley phase.} \texttt{vsharm}'s $Y$ is fixed CS-included. The textbook identity
+$Y_l^{-m}=(-1)^m\,\overline{Y_l^m}$ is what makes the $\pm m$ coefficient-pairing reconstruction
+exact; requesting \texttt{condon\_shortley=.false.} output flips every odd-$m$ source coefficient
+by $(-1)^m$ before the solve.
+
+\paragraph{Theta convention.} \texttt{COLAT\_N2S} (colatitude, north pole to south pole, increasing)
+vs.\ \texttt{LAT\_S2N} (latitude, south to north, increasing) is the relabeling $\theta\to\pi-\theta$:
+the SAME physical field, viewed with the opposite array-index and angular-coordinate direction.
+
+\paragraph{R convention.} \texttt{R\_UP} (radius from Earth's center, increasing outward) vs.\
+\texttt{R\_DOWN} (depth below the surface, increasing inward) --- again a relabeling of the same
+physical field, this time along the radial index.
+
+\paragraph{Radial normalization.} What \texttt{coeff(l,m)=1} means for the radial part of the field
+--- see \S\ref{sec:radial} for the exact per-degree amplitude formulas. This is the one dimension
+where the two solvers genuinely differ natively (S1=\texttt{SURFACE}, S2=\texttt{MULTIPOLE});
+every other dimension the two solvers already agree on natively (\S\ref{sec:native}).
+
+\section{Native conventions of the two solvers}
+\label{sec:native}
+
+Both solvers now share \textbf{identical} native bookkeeping in six of the seven dimensions:
+\texttt{MINUS\_IWT}, \texttt{FULLY\_NORM}, Condon-Shortley included, \texttt{COLAT\_N2S},
+\texttt{R\_UP}, $E$-primary --- exactly the \texttt{SUNEGBERT2012} preset (\S\ref{sec:presets}).
+They differ natively in exactly one dimension, \texttt{radial\_norm}: S1 is native
+\texttt{SURFACE}, S2 is native \texttt{MULTIPOLE}.
+
+\begin{quote}
+\texttt{native\_convention('S1') = SUNEGBERT2012 preset, but radial\_norm = SURFACE} \\
+\texttt{native\_convention('S2') = SUNEGBERT2012 preset exactly (S2 + SUNEGBERT2012 is an identity)}
+\end{quote}
+
+\subsection*{History: why S1 originally differed, and why it doesn't any more}
+
+S1 (\texttt{field1d.f90}) was written in 2011 as a deliberate, faithful implementation of Kelbert
+(2006)'s own conventions --- the Global3D Fortran code that is part of ModEM --- and was used
+successfully with that code at the time. Two of Kelbert (2006)'s conventions are genuinely
+different physical choices from Sun \& Egbert (2012)'s (which S2, written in 2026, follows
+natively):
+
+\begin{enumerate}
+\item \textbf{$\rhat$ direction.} Kelbert (2006)'s radial unit vector points down (toward Earth's
+center); Sun \& Egbert's points up (away from center). In the poloidal/toroidal field formulas
+\begin{equation}
+H = \frac{1}{r}\nabla_a\!\left(\frac{dT}{dr}\right) - \frac{\rhat}{r^2}\nabla_a^2 T,
+\qquad
+E = -i\omega\mu_0\,\frac{\rhat}{r}\times\nabla_a T,
+\end{equation}
+$\nabla_a$/$\nabla_a^2$ are purely angular and unaffected by this choice; $H$'s second term (which
+gives $H_r$) is $\rhat$-multiplied and flips sign under $\rhat\to-\rhat$, while $H$'s first term
+($H_\theta$, $H_\phi$) has no $\rhat$ in it and does not; $E$ is entirely an
+$\rhat$-cross-product and flips as a whole. So the $\rhat$ convention affects $H_r$, $E_\theta$,
+$E_\phi$ together and leaves $H_\theta$, $H_\phi$ untouched --- this is the exact split originally
+observed between S1's raw output and S2's.
+\item \textbf{Time-convention output.} Kelbert (2006)/Global3D natively outputs $e^{+i\omega t}$
+fields, even though the internal radial solve is $e^{-i\omega t}$ natively (same as S2) ---
+conjugating the assembled field is exactly how that conversion was made.
+\end{enumerate}
+
+Both were genuine, deliberate design choices, not implementation errors. S1's raw/native output
+has since been re-pointed to match S2's convention directly (the $\rhat$-dependent formula signs
+were flipped in \texttt{field1d.f90}, and the time-convention conjugation was removed from the raw
+field assembly), so the two solvers now agree natively with no compensating sign anywhere in
+comparison code. Kelbert (2006)'s original convention is not lost --- it is exactly the
+\texttt{KELBERT2006} preset below, reachable from either solver via
+\texttt{OUTPUT\_CONVENTION='KELBERT2006'}.
+
+The one bug genuinely fixed along the way (not a convention difference): the time-convention
+conjugation used to be baked directly into the $\pm m$ coefficient-pairing assembly loop, where it
+incorrectly re-conjugated the shared radial factor for paired terms but not for the $m=0$ term ---
+producing inconsistent output for sources that don't supply a complete $+m/-m$ pair. Moving the
+conjugation to an explicit, correctly-scoped post-assembly step (\S\ref{sec:transform43}) fixed
+this.
+
+\section{The five named presets}
+\label{sec:presets}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lllllllll}
+\toprule
+Preset & time & norm & CS & theta & r & primary & modem & radial \\
+\midrule
+\texttt{KELBERT2006}      & \texttt{PLUS}  & Schmidt & off & N2S & down & H & off & Surface \\
+\texttt{SUNEGBERT2012}    & \texttt{MINUS} & Full    & on  & N2S & up   & E & off & Multipole \\
+\texttt{EGBERTKELBERT2012}& \texttt{MINUS} & Full    & on  & S2N & down & E & off & Surface \\
+\texttt{EGBERTKELBERT2012\_MODEM} & \texttt{MINUS} & Full & on & S2N & down & E & \textbf{on} & Surface \\
+\texttt{LWS}               & \texttt{MINUS} & Full    & \textbf{off} & S2N & down & E & off & Potential \\
+\bottomrule
+\end{tabular}
+\caption{The five named presets. ``time'' abbreviates \texttt{PLUS\_IWT}/\texttt{MINUS\_IWT};
+``theta'' N2S=\texttt{COLAT\_N2S}, S2N=\texttt{LAT\_S2N}.}
+\end{table}
+
+Plus \texttt{OUTPUT\_CONVENTION='NATIVE'}, which is not a fixed preset --- it resolves dynamically
+to \texttt{native\_convention(SOLVER)}, so \texttt{target==native} and every transform below is a
+mechanical no-op (a built-in round-trip-identity guarantee, not something that needs separate
+testing per preset).
+
+\begin{itemize}
+\item \textbf{\texttt{KELBERT2006}} --- the original 2011 S1 output convention (\S\ref{sec:native}).
+Named, not native to either solver's current code, but always reachable.
+\item \textbf{\texttt{SUNEGBERT2012}} --- S2's exact native convention. \texttt{SOLVER='S2'} with
+this preset is an identity: every transform is a no-op.
+\item \textbf{\texttt{EGBERTKELBERT2012}} --- the practical ``MT/ModEM-regional-like'' convention:
+latitude increasing south-to-north (so plots read north-up without a manual flip) and depth
+increasing downward, matching how ModEM regional output is typically read.
+\texttt{condon\_shortley=.true.} here was confirmed empirically against ModEM's own \texttt{.prm}
+source files (they reproduce ModEM correctly when fed unscaled into either solver) --- despite the
+historical ModEM solver this convention is named for never itself using spherical harmonics.
+\item \textbf{\texttt{EGBERTKELBERT2012\_MODEM}} --- identical bookkeeping to
+\texttt{EGBERTKELBERT2012}, plus the ModEM source-normalization value rescale
+(\S\ref{sec:modem}), for direct raw-field interoperability with ModEM.
+\item \textbf{\texttt{LWS}} --- for NASA ``Living With a Star'' ionospheric-current (Sq-style)
+sources. Two deviations from S1/S2's shared native bookkeeping, both testing hypotheses about how
+the LWS/MATLAB-SIEM source coefficients are actually authored: \texttt{radial\_norm=POTENTIAL}
+(source coefficients are the classical external geomagnetic potential's Gauss coefficients, not an
+amplitude of the solvers' own toroidal potential $T$ --- a genuinely different formulation, not
+just a different scale) and \texttt{condon\_shortley=.false.}.
+\end{itemize}
+
+\section{The transforms}
+
+Two are applied to the source coefficients before the solve; two are applied to the finished field
+arrays after.
+
+\subsection{Angular rescale (before the solve)}
+
+For each coefficient of degree $l$, order $m$ (in the solvers' own flat $m=0,+1,-1,+2,-2,\dots$
+ordering):
+\begin{align}
+&\text{if } \texttt{target\%condon\_shortley} = \texttt{.false.}: \quad c \mathrel{*}= (-1)^m \\
+&\text{if } \texttt{target\%harmonic\_norm} = \texttt{SCHMIDT\_SEMINORM}: \quad c \mathrel{*}= \sqrt{4\pi(2-\delta_{m0})/(2l+1)}
+\end{align}
+
+Both ratios are computed relative to \texttt{vsharm}'s own fixed basis (fully-normalized,
+Condon-Shortley included --- exactly \texttt{SUNEGBERT2012}'s values), never relative to a nominal
+``source file convention.'' This is what makes \texttt{target=SUNEGBERT2012} a mechanically
+verifiable no-op (ratio $=1$ for every $l,m$) and correctly reproduces the physical field for any
+other target, since feeding $\texttt{rescaled\_coeff} = \texttt{coeff}\cdot\texttt{ratio}$ into the
+unchanged solver --- which always combines coefficients with \texttt{vsharm}'s own fixed basis
+functions --- gives the same result as if the target's own basis functions had been used directly.
+
+The Condon-Shortley flip direction and its structure are on solid footing (independently verified
+against a symbolic reference for $l\le 3$, every $m$). The Schmidt/full normalization constant's
+absolute value has not been independently cross-checked against an external reference (neither Sun
+\& Egbert 2012 nor the project's Python solver define a Schmidt-seminormalized basis at all) ---
+flagged, not yet a concern for any currently-used preset since only \texttt{KELBERT2006} requests
+it and that preset is not load-bearing for any validated cross-check.
+
+\subsection{Radial rescale (before the solve)}
+\label{sec:radial}
+
+Reconciles the ONE dimension where S1 and S2 differ natively. For each degree $l$:
+\begin{equation}
+\texttt{coeff} \mathrel{*}= \frac{A(\texttt{target\_radial},l,R_0)}{A(\texttt{native\_radial(solver)},l,R_0)}
+\end{equation}
+where $A(\cdot,l,R_0)$ is defined relative to the \texttt{MULTIPOLE} baseline (a field expressed in
+convention X equals the same field in \texttt{MULTIPOLE} scaled by $A(X,l)$):
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lcp{8.2cm}@{}}
+\toprule
+\texttt{radial\_norm} & $A(l)$ & Meaning \\
+\midrule
+\texttt{MULTIPOLE}   & $1$              & S2 native. Sun \& Egbert eq.~(6): external term $T_l^{\rm ext}(r)=\alpha_l^T(r/R_0)^{l+1}$, unit $\alpha_l^T=1$. \\[2pt]
+\texttt{SURFACE}     & $R_0^2/(l(l{+}1))$ & S1 native. Unit external surface radial field ($H_r(R_0)=Y_l^m$ for coeff$=1$). \\[2pt]
+\texttt{DIMENSIONAL} & $R_0^{l+1}$      & Sun \& Egbert's own text convention, coefficient of $r^{l+1}=1$ ($r$ in metres). Overflows double precision for $l\gtrsim44$. \\[2pt]
+\texttt{POTENTIAL}   & $R_0^2/(l{+}1)$  & External scalar potential $V$ (Gauss-coefficient) parameterization: $V=R_0\sum_l(r/R_0)^l\varepsilon_l^m Y_l^m$, the classical geomagnetism/Sq-current convention. \\
+\bottomrule
+\end{tabular}
+\caption{Per-degree radial amplitude $A(l)$ for each \texttt{radial\_norm}.}
+\end{table}
+
+\texttt{POTENTIAL} is derived from the insulating-atmosphere identity $H=-\nabla V$ matched against
+the solvers' own $H$ formulas: $V_l(r)=-T_l'(r)$, giving $\varepsilon_l^m \propto \alpha_l^T/(l+1)$.
+\texttt{MULTIPOLE}/\texttt{SURFACE}/\texttt{DIMENSIONAL} all parameterize the same underlying
+quantity (an amplitude of the toroidal potential $T$), differing only in scale; \texttt{POTENTIAL}
+is a genuinely different formulation (the classical external potential $V$, used for
+ionospheric-current source coefficients), not just a rescaling.
+
+\subsection{Output-array transform (after the solve)}
+\label{sec:transform43}
+
+Applied to the finished $H$, $E$ cvectors:
+
+\begin{enumerate}
+\item \textbf{time}: if \texttt{native\%time\_convention} $\ne$ \texttt{target\%time\_convention}:
+conjugate every component of $H$ and $E$.
+\item \textbf{theta}: if \texttt{native\%theta\_convention} $\ne$ \texttt{target\%theta\_convention}:
+reverse the theta (2nd) index of every component array (each component's own extent --- EDGE/FACE
+staggering gives $H_x$/$H_y$/$H_z$ each a different theta extent), and negate the theta components
+($H_y$, $E_y$).
+\item \textbf{r}: if \texttt{native\%r\_convention} $\ne$ \texttt{target\%r\_convention}: reverse
+the $r$ (3rd) index of every component array, and negate the $r$ components ($H_z$, $E_z$).
+\end{enumerate}
+
+The index reversal and the component negation in steps 2--3 are a \textbf{matched pair, never
+applied separately}: the index reversal makes $\theta\to\pi-\theta$ (or the radial relabeling) a
+relabeling of the \emph{same} physical field at the \emph{same} physical point; the component
+negation accounts for the corresponding unit vector ($\thetahat$ or $\rhat$) flipping direction
+under that relabeling. Applying only one gives a field that looks right at the equator (or at the
+reference radius) but is wrong everywhere else --- this was verified explicitly with an
+off-equator physical sanity check ($H_\theta=\cos\theta$, confirming the transformed value equals
+$-\cos\theta$ re-evaluated at the mirrored node, not just a sign flip at one point).
+
+\texttt{primary\_grid} is never transformed here --- it is fixed by which raw solver ran (a solver
+produces $H$ on EDGE and $E$ on FACE, or vice versa, and that physical staggering doesn't change
+after the fact). The \texttt{primary\_grid} field on a \emph{target} preset is descriptive only;
+the driver always sets the actual \texttt{primary\_grid} flag from the active solver's own native
+value (\S\ref{sec:fwd1d}), never from the target convention.
+
+\subsection{ModEM source-normalization rescale (after \S\ref{sec:transform43}, opt-in)}
+\label{sec:modem}
+
+Applied only when \texttt{target\%modem\_normalize = .true.} (currently
+\texttt{EGBERTKELBERT2012\_MODEM}). Rescales every component of $H$ and $E$ by the single complex
+factor
+\begin{equation}
+\text{factor} = \frac{1}{i\omega\mu_0 G}, \qquad G = \frac{3}{2}\sqrt{\frac{3}{4\pi}}\,d_{\rm air},
+\end{equation}
+where $d_{\rm air}$ is the air-column thickness (grid-top radius minus Earth radius, metres) and
+$\omega=2\pi/\text{period}$. This converts global1d's toroidal-potential (``unit external
+multipole'') source normalization into ModEM's boundary-E-field (``unit surface $E$'')
+normalization --- the two differ by exactly $c=i\omega\mu_0G$, the potential-vs-field factor of
+Faraday's law (full derivation: \texttt{docs/source\_normalization.md}/\texttt{.pdf}). Applying the
+identical factor to $E$ and $H$ preserves $Z=E/H$, so no physics changes, only the (otherwise
+arbitrary) source-amplitude scale. Validated against Cartesian ModEM to 0.2--0.6\% at all tested
+periods.
+
+\section{\texttt{FWD1D.f90} wiring}
+\label{sec:fwd1d}
+
+Three orthogonal top-level parameters:
+
+\begin{verbatim}
+character(len=20) :: SOLVER            = 'S1'     ! numerics only: 'S1' or 'S2'
+character(len=24) :: OUTPUT_CONVENTION = 'LWS'    ! desired output bookkeeping
+character(len=10) :: OUTPUT_FORMAT     = 'MODEM'  ! serialization: MODEM|GLOBAL|OFF
+\end{verbatim}
+
+Per run:
+\begin{enumerate}
+\item \texttt{native = native\_convention(SOLVER)}.
+\item \texttt{target\_conv = native} if \texttt{OUTPUT\_CONVENTION='NATIVE'}, else
+\texttt{get\_convention(OUTPUT\_CONVENTION)}.
+\item \texttt{primary\_grid = native\%primary\_grid} --- \textbf{always} the active solver's own
+native staggering, never the target preset's \texttt{primary\_grid} field (descriptive only, per
+\S\ref{sec:transform43}).
+\item \texttt{eff\_radial = RADIAL\_SURFACE} if \texttt{target\_conv\%modem\_normalize}, else
+\texttt{target\_conv\%radial\_norm} (the ModEM rescale already fixes the final absolute scale, so
+a separate radial target would be redundant).
+\item Per period/mode block: \texttt{rescale\_source\_coeffs} (\S4.1) $\to$
+\texttt{rescale\_source\_radial} (\S4.2, \texttt{eff\_radial}) $\to$ run the selected solver on the
+rescaled coefficients (unchanged solver code) $\to$ \texttt{apply\_output\_convention}
+(\S\ref{sec:transform43}) $\to$ \texttt{apply\_modem\_normalization} if requested (\S\ref{sec:modem}).
+\item Write output, tagging filenames and the file header with the solver name and
+\texttt{OUTPUT\_CONVENTION} name so different solver/convention combinations never collide.
+\end{enumerate}
+
+\paragraph{Current defaults, and a documentation note.} As of this writing,
+\texttt{OUTPUT\_CONVENTION='LWS'} is the actual compiled default (set for the active
+LWS/ionospheric-source project work). \texttt{FWD1D.f90}'s own inline comment above the parameter
+still marks \texttt{'EGBERTKELBERT2012\_MODEM' (DEFAULT)} --- that comment is stale relative to the
+parameter's actual current value and should be updated to match whichever convention is genuinely
+the default at the time it's read.
+
+\texttt{OUTPUT\_FORMAT='MODEM'} requires \texttt{primary\_grid='E'} (both solvers' native default)
+since ModEM's own \texttt{.esoln} format is always EDGE-staggered $E$.
+
+\section{Implementation guide: extending or repeating this work}
+
+For a human or AI engineer adding a new convention, a new dimension, or applying this pattern to a
+different solver pair.
+
+\subsection{Adding a new named preset}
+
+Presets are pure data --- no solver code changes are ever needed. Add a new
+\texttt{type(output\_convention\_t), parameter} with all seven dimension values plus
+\texttt{modem\_normalize} and \texttt{radial\_norm}, and add a \texttt{case} to
+\texttt{get\_convention()}. That's it: every transform reads the preset's fields generically, so a
+new preset is usable everywhere immediately.
+
+\subsection{Adding a new convention dimension}
+
+\begin{enumerate}
+\item Add the field to \texttt{output\_convention\_t}, and add its value to \textbf{every}
+existing preset (including \texttt{KELBERT2006}, \texttt{SUNEGBERT2012}, etc.) so their meaning
+doesn't silently change.
+\item Decide which side of the solve it belongs on: does it affect what the \textbf{source
+coefficients} mean (extend \texttt{rescale\_source\_coeffs}/\texttt{rescale\_source\_radial},
+before the solve), or does it affect the \textbf{output array}'s indexing or component sign
+(extend \texttt{apply\_output\_convention}, after the solve)? Keep this distinction ---
+conflating the two makes the round-trip-identity guarantee (\S\ref{sec:presets},
+\texttt{OUTPUT\_CONVENTION='NATIVE'}) fail silently for one solver while passing for the other,
+since the solvers' own native coefficient/array conventions can differ independently on each
+side.
+\item If the new dimension involves an array-index reversal (like theta or r), always pair it
+with the matching component-sign negation (\S\ref{sec:transform43}) --- never one without the
+other.
+\item Add a self-consistency test (\S\ref{sec:verify}) before trusting the new dimension in a
+real comparison.
+\end{enumerate}
+
+\subsection{Verifying a change is safe}
+\label{sec:verify}
+
+\begin{itemize}
+\item \textbf{Angular rescale correctness}: hand-compute the $(-1)^m$ and Schmidt/full ratios for
+a few $(l,m)$ including $m=0$ (the easy-to-miss $(2-\delta_{m0})$ case), and assert
+\texttt{rescale\_source\_coeffs} matches, for every preset.
+\item \textbf{Index-reversal correctness}: build a \texttt{cvector} on both EDGE and FACE with a
+known synthetic pattern, apply the reversal+negation, and check both (a) the index reversal
+itself (each component's own extent, not a shared N --- EDGE/FACE staggering gives different
+components different extents along the reversed axis) and (b) a physical sanity check at an
+OFF-reference point (not just the equator/reference radius, where a sign-only bug can hide).
+\item \textbf{Solver agreement}: with the two solvers' remaining native difference
+(\texttt{radial\_norm}) reconciled, running both solvers under the SAME
+\texttt{OUTPUT\_CONVENTION} must give identical output, to numerical precision --- a single real
+ratio of 1, angle $0^\circ$, for every nonzero component of a representative test source.
+\item \textbf{Round-trip identity}: \texttt{OUTPUT\_CONVENTION='NATIVE'} must reproduce each
+solver's raw output bit-for-bit, for every solver --- this is a structural guarantee
+(\texttt{target==native} makes every \texttt{if} branch in every transform false), not something
+that can silently break unless a transform is miswired to run unconditionally.
+\item \textbf{External cross-check}: compare against an independent reference (closed-form
+solution, or another code's output) under a convention whose relationship to that reference is
+known --- this is the only check that catches an error shared by both solvers (a bug in the
+transform layer itself, or in the reference relationship), which the solver-agreement check above
+cannot.
+\end{itemize}
+
+\subsection{General lessons for repeating this pattern on a different solver pair}
+
+\begin{itemize}
+\item \textbf{Separate ``what does a source coefficient mean'' (angular norm, Condon-Shortley,
+radial amplitude scale) from ``what does the output array mean'' (time convention, index
+direction, component sign)} --- before vs.\ after the solve is the natural dividing line, and
+keeping it strict is what makes the round-trip-identity guarantee trustworthy.
+\item \textbf{Never bake a value-changing operation (like a time-convention conjugation) directly
+into a coefficient-reconstruction loop} that has its own internal structure (e.g.\ $\pm m$
+pairing) --- if the operation needs to apply to the whole assembled result but the loop's own
+logic only naturally covers part of it (e.g.\ paired terms but not an unpaired $m=0$ term), the
+two will interact incorrectly for inputs that don't exercise the loop's full intended structure.
+Keep such operations as a separate, explicit, always-correctly-scoped post-processing step
+instead.
+\item \textbf{Keep the convention module dependency-free of the solvers}: solvers and drivers
+depend on the convention type/transforms, never the reverse. This keeps every transform testable
+in isolation and keeps the solvers' own numerics untouched by convention concerns entirely.
+\item \textbf{Make every convention a plain data value (a preset), not a code path.} A new
+convention should never require new solver code or new \texttt{if SOLVER==...} branches anywhere
+outside the driver's convention-resolution step --- if it does, the dimension probably needs to
+move from ``output bookkeeping'' into ``solver behavior,'' which is a different kind of change.
+\end{itemize}
+
+\end{document}

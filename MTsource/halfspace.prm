@@ -1,0 +1,189 @@
+Format: harmonic layers 47 degree 0
+
+log degree 0 layer 0.106911 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 0.232231 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 0.379131 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 0.551326 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 0.753173 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 0.989777 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 1.267123 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 1.592226 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 1.973311 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 2.420017 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 2.943643 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 3.557435 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 4.276920 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 5.120296 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 6.108898 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 7.267728 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 8.626108 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 10.218398 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 12.084868 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 14.272738 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 16.837348 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 19.843578 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 23.367458 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 27.498148 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 32.340098 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 38.015838 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 44.668878 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 52.467588 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 61.609148 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 72.324848 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 84.885748 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 99.609648 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 116.868848 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 137.100048 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 160.814948 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 188.613448 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 221.198748 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 259.395048 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 304.168548 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 356.651948 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 418.172648 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 490.287048 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 574.819048 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 673.907248 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	2.000000	-1.000000	1.000000	range
+
+log degree 0 layer 790.058248 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	0.283476	-1.000000	1.000000	range
+
+log degree 0 layer 926.209248 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	0.365415	-1.000000	1.000000	range
+
+log degree 0 layer 1085.805248 reg 0.000000 1.000000 weight 1.000000
+l	m	value	min	max
+0	0	-0.088959	-1.000000	1.000000	range
