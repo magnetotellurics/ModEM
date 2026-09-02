@@ -65,6 +65,10 @@ public  :: LBFGSsolver
   type(LBFGSiterControl_t), private, save :: iterControl
   type(LBFGSiterCache_t), private, save :: iterCache
 
+  character(len=80), parameter :: STARTUP_LABEL = 'STARTUP'
+  character(len=80), parameter :: TRIAL_FWD_F_1_LABEL = 'F_1'
+  character(len=80), parameter :: FWD_F_LABEL = 'F'
+
 Contains
 
 !**********************************************************************
@@ -605,6 +609,7 @@ Contains
    type(dataVectorMTX_t)                           :: dHat_1
    type(solnVectorMTX_t)                         :: eAll_1
    character(100)							:: logFile
+   character(80)                    :: label
 
    ! parameters
    c = iterControl%c
@@ -643,7 +648,7 @@ Contains
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
 
    !  compute the penalty functional and predicted data at mHat_1
-   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
+   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1,label=TRIAL_FWD_F_1_LABEL)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1,logFile)
    niter = niter + 1
@@ -672,7 +677,7 @@ Contains
     !     alpha = alpha_i/TWO ! reset alpha to ensure progress
     ! end if
     call linComb(ONE,mHat_0,alpha,h,mHat)
-    call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+    call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
     call printf('QUADLS',lambda,alpha,f,mNorm,rms)
     call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
     niter = niter + 1
@@ -702,22 +707,25 @@ Contains
    end if
 
    if (starting_guess) then
-   	alpha = alpha_1
-   	dHat = dHat_1
-   	eAll = eAll_1
-   	mHat = mHat_1
-   	rms = rms_1
-   	f = f_1
+    label=TRIAL_FWD_F_1_LABEL
+    alpha = alpha_1
+    dHat = dHat_1
+    eAll = eAll_1
+    mHat = mHat_1
+    rms = rms_1
+    f = f_1
+   else
+    label=FWD_F_LABEL
    end if
 
    ! compute gradient of the full penalty functional and exit
     if (relaxation) then
-   		call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
-    	call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
-   		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
-   		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
-   	end if
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+        call linComb(ONE,mHat_0,gamma*alpha,h,mHat)
+        call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+        call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
+        call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
+    end if
+    call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=label)
     write(*,'(a39)') 'Gradient computed, line search finished'
     write(ioLog,'(a39)') 'Gradient computed, line search finished'
 
@@ -799,6 +807,7 @@ Contains
    type(dataVectorMTX_t)                           :: dHat_1
    type(solnVectorMTX_t)                         :: eAll_1
    character(100)							:: logFile
+   character(80)                            :: label
 
    ! parameters
    c = iterControl%c
@@ -833,7 +842,7 @@ Contains
    ! compute the trial mHat, f, dHat, eAll, rms
    mHat_1 = mHat_0
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
-   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
+   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1,label=TRIAL_FWD_F_1_LABEL)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha,f_1,mNorm_1,rms_1,logFile)
    niter = niter + 1
@@ -861,7 +870,7 @@ Contains
    	call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    	call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+    call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=TRIAL_FWD_F_1_LABEL)
     write(*,'(a45)') 'Quadratic has no minimum, exiting line search'
     write(ioLog,'(a45)') 'Quadratic has no minimum, exiting line search'
 	call deall_dataVectorMTX(dHat_1)
@@ -874,21 +883,24 @@ Contains
    ! otherwise compute the functional at the minimizer of the quadratic
    alpha = - b/(TWO*a)
    call linComb(ONE,mHat_0,alpha,h,mHat)
-   call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+   call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
    niter = niter + 1
    ! check whether the solution satisfies the sufficient decrease condition
    if (f < f_0 + c * alpha * g_0) then
     ! if the initial guess was better than what we found, take it
-   	if (f_1 < f) then
-   		starting_guess = .true.
-   		alpha = alpha_1
-   		dHat = dHat_1
-     	eAll = eAll_1
-   		mHat = mHat_1
-   		rms = rms_1
-   		f = f_1
+    if (f_1 < f) then
+        label = TRIAL_FWD_F_1_LABEL
+        starting_guess = .true.
+        alpha = alpha_1
+        dHat = dHat_1
+        eAll = eAll_1
+        mHat = mHat_1
+        rms = rms_1
+        f = f_1
+    else
+        label = FWD_F_LABEL
     end if
     ! compute the gradient and exit
     if (relaxation) then
@@ -898,7 +910,7 @@ Contains
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
 
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+    call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=label)
     write(*,'(a60)') 'Sufficient decrease condition satisfied, exiting line search'
     write(ioLog,'(a60)') 'Sufficient decrease condition satisfied, exiting line search'
 	call deall_dataVectorMTX(dHat_1)
@@ -940,7 +952,7 @@ Contains
         !  end if
         ! compute the penalty functional
         call linComb(ONE,mHat_0,alpha,h,mHat)
-        call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+        call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
         call printf('CUBICLS',lambda,alpha,f,mNorm,rms)
         call printf('CUBICLS',lambda,alpha,f,mNorm,rms,logFile)
         niter = niter + 1
@@ -968,12 +980,15 @@ Contains
 
    ! if the initial guess was better than what we found, take it
    if (starting_guess) then
-   	alpha = alpha_1
-   	dHat = dHat_1
-   	eAll = eAll_1
-   	mHat = mHat_1
-   	rms = rms_1
-   	f = f_1
+    label = TRIAL_FWD_F_1_LABEL
+    alpha = alpha_1
+    dHat = dHat_1
+    eAll = eAll_1
+    mHat = mHat_1
+    rms = rms_1
+    f = f_1
+   else
+    label = FWD_F_LABEL
    end if
 
    ! compute gradient of the full penalty functional and exit
@@ -983,7 +998,7 @@ Contains
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms)
    		call printf('RELAX',lambda,gamma*alpha,f,mNorm,rms,logFile)
    	end if
-    call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+    call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=label)
 	write(*,'(a39)') 'Gradient computed, line search finished'
     write(ioLog,'(a39)') 'Gradient computed, line search finished'
 
@@ -1129,7 +1144,7 @@ Contains
    mHat_1 = mHat_0
    ! mHat_1 = mHat_0 + dir*step
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
-   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1)
+   call func(lambda,d,m0,mHat_1,f_1,mNorm_1,dHat_1,eAll_1,rms_1,label=TRIAL_FWD_F_1_LABEL)
    call printf('STARTLS',lambda,alpha_1,f_1,mNorm_1,rms_1)
    call printf('STARTLS',lambda,alpha_1,f_1,mNorm_1,rms_1,logFile)
    niter = niter + 1
@@ -1158,7 +1173,7 @@ Contains
        rms = rms_1
        f = f_1
        ! compute the gradient and exit
-       call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+       call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=TRIAL_FWD_F_1_LABEL)
        write(*,'(a45)') 'Quadratic has no minimum, exiting line search'
        write(ioLog,'(a45)') 'Quadratic has no minimum, exiting line search'
        if (present(flag)) then
@@ -1172,7 +1187,7 @@ Contains
    end if
    ! otherwise compute the functional at the minimizer of the quadratic
    call linComb(ONE,mHat_0,alpha,h,mHat)
-   call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+   call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms)
    call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
    niter = niter + 1
@@ -1183,7 +1198,7 @@ Contains
    ! Strong Wolfe's condition needs the gradient 
    ! well, we are going to calculate it anyway - so why don't we do it now?
    if (f <= f_1) then 
-       call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+       call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=FWD_F_LABEL)
        g_1 = dotProd(grad, h)
        write(*,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
        write(*,'(a4,es12.5)') ' g1=',g_1
@@ -1223,6 +1238,12 @@ Contains
        write(ioLog,'(a4,es12.5)') ' g1=',g_1
        if (f_1 < f_0) then! is the initial making any progress?
            ! Test if the initial guess is good for Strong Wolfe condition 
+           call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1,label=TRIAL_FWD_F_1_LABEL)
+           g_1 = dotProd(grad, h) 
+           write(*,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
+           write(*,'(a4,es12.5)') ' g1=',g_1
+           write(ioLog,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
+           write(ioLog,'(a4,es12.5)') ' g1=',g_1
            if ((f_1 <= f_0 + c * alpha_1 * g_0).and.(abs(g_1) <= c2*abs(g_0))) then 
                write(*,'(a53)') 'Strong Wolfe Condition satisfied, exiting line search'
                write(ioLog,'(a53)') 'Strong Wolfe Condition satisfied, exiting line search'
@@ -1321,12 +1342,12 @@ Contains
            ! end if
            ! compute the penalty functional
            call linComb(ONE,mHat_0,alpha,h,mHat)
-           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
            call printf('CUBICLS',lambda,alpha,f,mNorm,rms)
            call printf('CUBICLS',lambda,alpha,f,mNorm,rms,logFile)
            niter = niter + 1
            ibracket = ibracket + 1
-           call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+           call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=FWD_F_LABEL)
            g_1 = dotProd(grad, h) 
            write(*,'(a29,es12.5)',advance='no') '    GRAD: computed, with g0=',g_0
            write(*,'(a4,es12.5)') ' g1=',g_1
@@ -1371,7 +1392,7 @@ Contains
                    starting_guess = .false.
                else 
                    starting_guess = .true.
-                   call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+                   call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=TRIAL_FWD_F_1_LABEL)
                endif
                exit
            endif
@@ -1386,7 +1407,7 @@ Contains
                    starting_guess = .false.
                else 
                    starting_guess = .true.
-                   call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1)
+                   call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1,label=TRIAL_FWD_F_1_LABEL)
                endif
                exit
            endif
@@ -1542,7 +1563,7 @@ Contains
    ! mHat_1 = mHat_0 + dir*step
    call linComb(ONE,mHat_0,alpha_1,h,mHat_1)
    ! compute the trial m, f, dHat, eAll, rms
-   call func(lambda,d,m0,mHat_1,f_1,mNorm,dHat_1,eAll_1,rms_1)
+   call func(lambda,d,m0,mHat_1,f_1,mNorm,dHat_1,eAll_1,rms_1,label=trim(TRIAL_FWD_F_1_LABEL))
    call printf('STARTLS',lambda,alpha_1,f_1,mNorm,rms_1)
    call printf('STARTLS',lambda,alpha_1,f_1,mNorm,rms_1,logFile)
    niter = niter + 1
@@ -1556,7 +1577,7 @@ Contains
        call ModEM_abort()
    end if
    ! calculate the gradient at the first guess
-   call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1)
+   call gradient(lambda,d,m0,mHat_1,grad,dHat_1,eAll_1,label=trim(TRIAL_FWD_F_1_LABEL))
    g_1 = dotProd(grad, h)
    grad_1 = grad
    write(*,'(a29,es12.5)',advance='no') &
@@ -1682,12 +1703,12 @@ Contains
            gPrev = g
            ! evaluate the function and derivetive at the new alpha
            call linComb(ONE,mHat_0,alpha,h,mHat)
-           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=trim(FWD_F_LABEL))
            call printf('CUBICLS',lambda,alpha,f,mNorm,rms)
            call printf('CUBICLS',lambda,alpha,f,mNorm,rms,logFile)
            niter = niter + 1
            nbracket = nbracket +1
-           call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+           call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=trim(FWD_F_LABEL))
            g = dotProd(grad, h) 
            if (f.lt.f_1) then
                alpha_1 = alpha
@@ -1748,7 +1769,7 @@ Contains
            alpha = alphaNext
            ! compute the penalty functional
            call linComb(ONE,mHat_0,alpha,h,mHat)
-           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
            call printf('QUADLS',lambda,alpha,f,mNorm,rms)
            call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
        else if ((istrapped .eq. 2).and.(nbracket.eq.0)) then ! try quadratic 
@@ -1758,7 +1779,7 @@ Contains
            alpha = alphaNext
            ! compute the penalty functional
            call linComb(ONE,mHat_0,alpha,h,mHat)
-           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
            call printf('QUADLS',lambda,alpha,f,mNorm,rms)
            call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
        else if ((istrapped .eq. -1).and.(nbracket.eq.0)) then ! jump 
@@ -1768,7 +1789,7 @@ Contains
            alpha = alphaNext
            ! compute the penalty functional
            call linComb(ONE,mHat_0,alpha,h,mHat)
-           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
            call printf('QUADLS',lambda,alpha,f,mNorm,rms)
            call printf('QUADLS',lambda,alpha,f,mNorm,rms,logFile)
        else ! cubic 
@@ -1778,7 +1799,7 @@ Contains
            alpha = alphaNext
            ! compute the penalty functional
            call linComb(ONE,mHat_0,alpha,h,mHat)
-           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms)
+           call func(lambda,d,m0,mHat,f,mNorm,dHat,eAll,rms,label=FWD_F_LABEL)
            call printf('CUBICLS',lambda,alpha,f,mNorm,rms)
            call printf('CUBICLS',lambda,alpha,f,mNorm,rms,logFile)
        endif
@@ -1788,7 +1809,7 @@ Contains
        fPrev = f
        gPrev = g
        !calculatie gradient to test the Wolfe condition
-       call gradient(lambda,d,m0,mHat,grad,dHat,eAll)
+       call gradient(lambda,d,m0,mHat,grad,dHat,eAll,label=FWD_F_LABEL)
        g = dotProd(grad, h) 
        if (f.lt.f_1) then
            alpha_1 = alpha

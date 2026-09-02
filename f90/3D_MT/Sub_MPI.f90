@@ -71,6 +71,18 @@ subroutine get_nPol_MPI(emsoln)
             nPol_MPI= emsoln%nPol
 
 end subroutine get_nPol_MPI
+
+function get_nPol(iPer) result(nPol)
+
+    implicit none
+
+    integer, intent(in) :: iPer
+    integer :: nPol
+    nPol = 0
+
+    nPol = txDict(iPer) % nPol
+
+end function get_nPol
 !****************************************************************************
 
 subroutine count_number_of_messages_to_RECV(eAll1)
