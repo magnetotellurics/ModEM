@@ -18,3 +18,10 @@ if (USE_C_TIMERS)
 
     add_compile_definitions(USE_C_TIMERS)
 endif()
+
+if (MODEM_MEMORY)
+    target_sources(${MODEM_EXE}
+        PRIVATE ModEM_memory.f90
+        PRIVATE ModEM_getrusage.c
+    )
+endif()
