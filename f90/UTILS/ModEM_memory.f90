@@ -34,10 +34,6 @@ module ModEM_memory
 
 contains
 
-    subroutine ModEM_memory_create_log_fname()
-
-    end subroutine
-
     subroutine ModEM_memory_get_maxrss(maxrss_bytes)
 
         implicit none
