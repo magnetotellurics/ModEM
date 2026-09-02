@@ -211,10 +211,10 @@ subroutine check_userdef_control_MPI (which_proc,ctrl)
     end if
 
     write(6,*)trim(which_proc),' : ctrl%prefix ',trim(ctrl%prefix)
-    write(6,*)trim(which_proc),' : ',trim(ctrl%data_input_ftype)
-    write(6,*)trim(which_proc),' : ',trim(ctrl%data_output_ftype)
-    write(6,*)trim(which_proc),' : ',trim(ctrl%model_input_ftype)
-    write(6,*)trim(which_proc),' : ',trim(ctrl%model_output_ftype)
+    write(6,*)trim(which_proc),' : ctrl%data_input_ftype ',trim(ctrl%data_input_ftype)
+    write(6,*)trim(which_proc),' : ctrl%data_output_ftype ',trim(ctrl%data_output_ftype)
+    write(6,*)trim(which_proc),' : ctrl%model_input_ftype ',trim(ctrl%model_input_ftype)
+    write(6,*)trim(which_proc),' : ctrl%model_output_ftype ',trim(ctrl%model_output_ftype)
     write(6,*)trim(which_proc),' : ctrl%storeSolnsInfile ',ctrl%storeSolnsInfile
 
     if (ctrl%SFF) then ! 'hidden option' only print if it has been set via namelist
