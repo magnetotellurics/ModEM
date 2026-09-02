@@ -82,6 +82,9 @@ module UserCtrl
     ! Specify the Covariance Type used in 3D (reserved for future use)
     integer             :: CovType
 
+    ! Distortion inversion parameters
+    real(8)             :: nu_dist
+
 	! Indicate how much output you want
 	integer             :: output_level
 
@@ -136,9 +139,10 @@ Contains
   	ctrl%delta = 0.05
     ! 1 for AR (default), 2 for H2 (Bi-Helmholtz)
     ctrl%CovType = 1
-  	ctrl%output_level = 3	
-	ctrl%prefix = 'n'
-	ctrl%storeSolnsInFile = .false.
+    ctrl%output_level = 3
+	  ctrl%prefix = 'n'
+	  ctrl%storeSolnsInFile = .false.
+    ctrl%nu_dist = 1.0
     ctrl%SFF = .false.
 
     ! Using process ID in MPI output file name has the advantage that
@@ -268,7 +272,7 @@ Contains
         write(*,*) ' -x  rFile_Model rFile_Data wFile_dModel [rFile_fwdCtrl]'
         write(*,*) '  Multiplies a data vector by J^T to output models for each transmitter'
         write(*,*) '[APPLY_COV]'
-        write(*,*) ' -C FWD rFile_Model wFile_Model [rFile_Cov [rFile_Prior [CovType]]]'
+        write(*,*) ' -C FWD rFile_Model wFile_Model [rFile_Cov [rFile_Prior]]'
         write(*,*) '  Applies the model covariance to produce a smooth model output'
         write(*,*) '  Optionally, also specify the prior model to compute resistivities'
         write(*,*) '  from model perturbation: m = C_m^{1/2} \\tilde{m} + m_0'
@@ -501,7 +505,7 @@ Contains
            write(0,*) 'OR'
            write(0,*) 'Usage: -I NLCG rFile_Model rFile_Data [rFile_invCtrl rFile_fwdCtrl]'
            write(0,*)
-           write(*,*) 'NOTE: NLCG can be replaced with DCG or LBFGS to '
+           write(*,*) 'NOTE: NLCG can be replaced with DCG, LBFGS or NLCG_DIST to '
            write(*,*) '      select a different inverse algorithm'
            write(0,*)
            write(0,*) 'Here, rFile_invCtrl = the inversion control file in the format'
@@ -513,10 +517,9 @@ Contains
            write(0,*) 'Restart when rms diff is less than : 2.0e-3'
            write(0,*) 'Exit search when rms is less than  : 1.05'
            write(0,*) 'Exit when lambda is less than      : 1.0e-4'
-           write(0,*) 'Maximum number of iterations       : 120'
-           write(0,*) 'Covariance backend CovType (optional): 1'
-           write(0,*)
-           write(0,*) 'NOTE: change the maximum number of iterations to '
+            write(0,*) 'Maximum number of iterations       : 120'
+            write(0,*)
+            write(0,*) 'NOTE: change the maximum number of iterations to '
            write(0,*) '    a value < 20 if DCG is the inverse algorithm'
            write(0,*)
            write(0,*) '      rFile_fwdCtrl = the forward solver control file in the format'
@@ -532,13 +535,14 @@ Contains
            write(0,*) 'Number of air layers and max height in km     : 12 1000'
            write(0,*) 'Forward solver method PCG|QMR|TFQMR|BICG      : QMR'
            write(0,*)
-           write(0,*) 'CovType=1 (AR, default): recursive exponential smoother.'
-           write(0,*) '  AR cov file format: 16-line header, N, Sx/Sy/Sz/S blocks, mask.'
-           write(0,*) 'CovType=2 (H2 / Bi-Helmholtz):  isotropic H2 smoother.'
-           write(0,*) '  H2 cov file format: 16-line header, CovType=2, Nx Ny NzEarth,'
+            write(0,*) 'The covariance backend is selected by the covariance file itself:'
+            write(0,*) '  line 17 of the 16-line header gives "Nx Ny NzEarth <CovType>" with'
+            write(0,*) '  CovType=1 (AR, default) or CovType=2 (H2 / Bi-Helmholtz).'
+            write(0,*) '  AR cov file format: 16-line header, N, Sx/Sy/Sz/S blocks, mask.'
+            write(0,*) '  H2 cov file format: 16-line header, CovType=2, Nx Ny NzEarth,'
             write(0,*) '    kappa (dimensionless, cells), pcg_tol, pcg_maxIt, mask blocks.'
-           write(0,*)
-           write(0,*) 'Optionally, may also supply'
+            write(0,*)
+            write(0,*) 'Optionally, may also supply'
            write(0,*)
            write(0,*) '      rFile_Cov     = the model covariance configuration file'
            write(0,*) '      rFile_dModel  = the starting model parameter perturbation'
@@ -547,10 +551,10 @@ Contains
         else
            ctrl%search = temp(1)
            select case (ctrl%search)
-           case ('NLCG','DCG','Hybrid','LBFGS')
-              	! write(0,*) 'Inverse search ',trim(ctrl%search),' selected.'
+           case ('NLCG','DCG','Hybrid','LBFGS','NLCG_DIST')
+               	! write(0,*) 'Inverse search ',trim(ctrl%search),' selected.'
            case default
-		call errStop('Unknown inverse search. Usage: -I [NLCG | DCG | Hybrid | LBFGS]')
+		call errStop('Unknown inverse search. Usage: -I [NLCG | DCG | Hybrid | LBFGS | NLCG_DIST]')
            end select
 	       ctrl%rFile_Model = temp(2)
 	       ctrl%rFile_Data = temp(3)
@@ -596,14 +600,14 @@ Contains
 
       case (APPLY_COV) ! C
         if (narg < 3) then
-           write(0,*) 'Usage: -C [FWD|INV] rFile_Model wFile_Model [rFile_Cov [rFile_Prior [CovType]]]'
+           write(0,*) 'Usage: -C [FWD|INV] rFile_Model wFile_Model [rFile_Cov [rFile_Prior]]'
            write(0,*)
-           write(0,*) ' -C FWD rFile_Model wFile_Model [rFile_Cov [rFile_Prior [CovType]]]'
+           write(0,*) ' -C FWD rFile_Model wFile_Model [rFile_Cov [rFile_Prior]]'
            write(0,*) '  Applies the model covariance to produce a smooth model output'
            write(0,*) '  Optionally, also specify the prior model to compute resistivities'
            write(0,*) '  from model perturbation: m = C_m^{1/2} \\tilde{m} + m_0'
            write(0,*)
-           write(0,*) ' -C INV rFile_Model wFile_Model [rFile_Cov [rFile_Prior [CovType]]]'
+           write(0,*) ' -C INV rFile_Model wFile_Model [rFile_Cov [rFile_Prior]]'
            write(0,*) '  Applies the inverse of model covariance (if implemented)'
            write(0,*) '  Optionally, also specify the prior model to compute starting'
            write(0,*) '  perturbation for the inversion: \\tilde{m} = C_m^{-1/2} (m - m_0)'
@@ -611,15 +615,16 @@ Contains
            write(0,*) '  always check your model for white noise after using this option.'
            write(0,*)
            write(0,*) 'Note -C options can be run in serial only.'
-           write(0,*) 'CovType=1 (AR, default): recursive exponential smoother.'
+           write(0,*) 'The covariance backend is selected by the covariance file itself:'
+           write(0,*) '  line 17 of the 16-line header gives "Nx Ny NzEarth <CovType>" with'
+           write(0,*) '  CovType=1 (AR, default) or CovType=2 (H2 / Bi-Helmholtz).'
            write(0,*) '  AR cov file format: 16-line header, N, Sx/Sy/Sz/S blocks, mask.'
-           write(0,*) 'CovType=2 (H2 / Bi-Helmholtz):  isotropic H2 smoother.'
            write(0,*) '  H2 cov file format: 16-line header, CovType=2, Nx Ny NzEarth,'
            write(0,*) '    kappa (dimensionless, cells), pcg_tol, pcg_maxIt, mask blocks.'
            write(0,*)
-            write(0,*) 'The optional CovType argument selects the covariance backend:'
-           write(0,*) '  1 = AR (default), 2 = H2 (Bi-Helmholtz).'
-           call ModEM_abort()
+            write(0,*) 'The covariance backend (CovType) is read from the covariance'
+           write(0,*) 'file; legacy 3-value headers default to CovType=1 (AR).'
+            call ModEM_abort()
         else
         ctrl%option = temp(1)
 	    ctrl%rFile_Model = temp(2)
@@ -630,12 +635,6 @@ Contains
         end if
         if (narg > 4) then
             ctrl%rFile_Prior = temp(5)
-        end if
-        if (narg > 5) then
-            read(temp(6), *, iostat=istat) ctrl%CovType
-            if (istat /= 0 .or. (ctrl%CovType /= 1 .and. ctrl%CovType /= 2)) then
-               call errStop('Invalid CovType for -C: must be 1 or 2')
-            end if
         end if
 
       case (DATA_FROM_E) ! d
@@ -994,9 +993,10 @@ Contains
 
      write(0,*) "Optional namelist section '&settings' was read!"
      ! NOTE: CovType namelist field is accepted but no longer processed.
-     ! CovType override sources (low->high priority): default(1) -> CLI 6th arg (-C) -> inv-ctrl 9th line (-I).
+     ! The covariance backend is now selected by the covariance file itself
+     ! (line 17 of the 16-line header: "Nx Ny NzEarth <1|2>").
      if (CovType /= ctrl % CovType) then
-        write(0,*) 'WARNING: CovType from optional namelist is ignored (use -C CLI or inv-ctrl instead).'
+        write(0,*) 'WARNING: CovType from optional namelist is ignored (set CovType in the covariance file header).'
      end if
 
      ! Process output_level
@@ -1057,8 +1057,8 @@ Contains
       write(nl_fid, *) "&settings"
       write(nl_fid, *) "    ! 'output_level' below overrides -V passed in on the command line"
       write(nl_fid, *) "    output_level = 'regular'"
-       write(nl_fid, *) "    ! CovType: 1 = AR (default), 2 = H2 (Bi-Helmholtz). (Note: namelist value is not currently applied; use -C CLI or inv-ctrl instead.)"
-      write(nl_fid, *) "    CovType = 1"
+       write(nl_fid, *) "    ! CovType: 1 = AR (default), 2 = H2 (Bi-Helmholtz). (Note: namelist value is not currently applied; set CovType in the covariance file header.)"
+       write(nl_fid, *) "    CovType = 1"
       write(nl_fid, *) "/"
 
   end subroutine gen_nml_section_settings
@@ -1118,95 +1118,6 @@ Contains
       write(nl_fid, *) '/'
 
   end subroutine gen_nml_section_grid 
-
-! *******************************************************************
-! Reads CovType from an inversion control file (*.inv).
-! Expected format: "Covariance backend CovType (optional): <1|2>"
-! on the 9th line of the file (after 8 mandatory lines).
-! Returns found=.true. if a valid CovType override was read.
-  subroutine read_covType_from_file(rFile, covType, found)
-
-     implicit none
-     character(*), intent(in)                    :: rFile
-     integer, intent(inout)                      :: covType
-     logical, intent(out)                        :: found
-     integer                                     :: iu, ios, i, parsedCovType, colonPos
-     logical                                     :: exists
-     character(256)                              :: line
-
-     found = .false.
-
-     if (len_trim(rFile) <= 1) return
-     if (trim(rFile) == 'n') return
-
-     inquire(FILE=rFile, EXIST=exists)
-     if (.not. exists) return
-
-     iu = 98
-     open(unit=iu, file=rFile, status='old', iostat=ios)
-     if (ios /= 0) return
-
-     ! Skip required first 8 lines in inversion control format.
-     do i = 1, 8
-        read(iu, '(a)', iostat=ios) line
-        if (ios /= 0) then
-           close(iu)
-           return
-        end if
-     end do
-
-     ! Optional 9th line: CovType selector, parsed from text after ':'
-     read(iu, '(a)', iostat=ios) line
-     if (ios == 0) then
-        colonPos = index(line, ':')
-        if (colonPos > 0) then
-           read(line(colonPos+1:), *, iostat=ios) parsedCovType
-           if (ios == 0) then
-              if ((parsedCovType == 1) .or. (parsedCovType == 2)) then
-                 covType = parsedCovType
-                 found = .true.
-              else
-                 write(0,*) 'Warning: invalid CovType in inverse control file (expected 1 or 2): ', parsedCovType
-              end if
-           end if
-        end if
-     end if
-
-     close(iu)
-
-  end subroutine read_covType_from_file
-
-! *******************************************************************
-! Finalizes CovType in ctrl by applying overrides from the inversion
-! control file (*.inv, 9th line). This is the highest-priority source:
-!
-!   Priority (low -> high):
-!     1) default (1) in initUserCtrl
-!     2) -C CLI optional 6th arg (APPLY_COV only)
-!     3) inversion control file 9th line (-I only)
-!
-! Call this after parseArgs and before initGlobalData invokes
-! set_CovType(ctrl%CovType).
-  subroutine finalize_covType(ctrl)
-
-     implicit none
-     type(userdef_control), intent(inout) :: ctrl
-
-     integer                              :: covTypeRead
-     logical                              :: found
-
-     ! Only INVERSE jobs have an inversion control file with a CovType line.
-     if (ctrl%job == INVERSE) then
-        call read_covType_from_file(ctrl%rFile_invCtrl, covTypeRead, found)
-        if (found) then
-           ctrl%CovType = covTypeRead
-           if (ctrl%output_level > 0) then
-              write(0,*) 'Setting CovType from inversion control file: ', covTypeRead
-           end if
-        end if
-     end if
-
-  end subroutine finalize_covType
 
 
 end module UserCtrl

@@ -10,6 +10,7 @@ module Main
   use userctrl
   use ioascii
   use dataio
+  use DistortionParam
   implicit none
 
       ! I/O units ... reuse generic read/write units if
@@ -42,6 +43,8 @@ module Main
   type(modelParam_t), save		:: dsigma
   !  storage for the inverse solution
   type(modelParam_t), save		:: sigma1
+  !  storage for the distortion matrices
+  type(distortionParam_t), save   :: distC
   !  currently only used for TEST_GRAD feature (otherwise, use allData)
   type(dataVectorMTX_t), save       :: predData
   !  also for TEST_GRAD feature...
@@ -212,12 +215,6 @@ Contains
     if (.not. COMPUTE_BC) then
         call create_rhsVectorMTX(allData%nTx,bAll)
     end if
-
-    !--------------------------------------------------------------------------
-    ! Set covariance backend.  cUserDef%CovType is already finalized by
-    ! UserCtrl::finalize_covType (invoked from Mod3DMT before initGlobalData),
-    ! absorbing any overrides from namelist, -C CLI arg, or inv-ctrl 9th line.
-    call set_CovType(cUserDef%CovType)
 
 	!--------------------------------------------------------------------------
 	!  Initialize additional data as necessary
@@ -409,6 +406,7 @@ Contains
 	call deall_modelParam(sigma0)
 	call deall_modelParam(dsigma)
 	call deall_modelParam(sigma1)
+        if (allocated(distC%C)) call deall_distortionParam(distC)
 
     if (output_level > 3) then
        write(0,*) 'Cleaning up dictionaries...'
@@ -430,6 +428,66 @@ Contains
     endif
 
   end subroutine deallGlobalData	! deallGlobalData
+
+  subroutine setup_distortion_for_inversion(d, distC)
+    type(dataVectorMTX_t), intent(in) :: d
+    type(distortionParam_t), intent(inout) :: distC
+    integer :: j, i, nSites, iSite, siteCount
+    integer, allocatable :: siteMap(:)
+
+    ! First pass: count unique sites across all data blocks with Full_Impedance_Dist
+    allocate(siteMap(2000))
+    siteMap = 0
+    siteCount = 0
+    do j = 1, d%nTx
+       do i = 1, d%d(j)%nDt
+          if (d%d(j)%data(i)%dataType /= Full_Impedance_Dist) cycle
+          do iSite = 1, d%d(j)%data(i)%nSite
+             call add_site_to_map(d%d(j)%data(i)%rx(iSite), siteCount, siteMap)
+          end do
+       end do
+    end do
+
+    nSites = siteCount
+    call deall_distortionParam(distC)
+    call create_distortionParam(nSites, distC)
+    siteCount = 0
+    do j = 1, d%nTx
+       do i = 1, d%d(j)%nDt
+          if (d%d(j)%data(i)%dataType /= Full_Impedance_Dist) cycle
+          do iSite = 1, d%d(j)%data(i)%nSite
+             call add_site_to_map(d%d(j)%data(i)%rx(iSite), siteCount, siteMap)
+          end do
+       end do
+    end do
+
+    do iSite = 1, nSites
+       distC%siteIndex(iSite) = siteMap(iSite)
+    end do
+    call identity_distortionParam(distC)
+    deallocate(siteMap)
+
+  contains
+
+    subroutine add_site_to_map(rxIdx, count, map)
+      integer, intent(in) :: rxIdx
+      integer, intent(inout) :: count
+      integer, intent(inout) :: map(:)
+      integer :: k
+      if (count == 0) then
+         count = 1
+         map(count) = rxIdx
+         return
+      end if
+      do k = 1, count
+         if (map(k) == rxIdx) return
+      end do
+      count = count + 1
+      if (count > size(map)) call errStop('Too many sites in setup_distortion_for_inversion')
+      map(count) = rxIdx
+    end subroutine add_site_to_map
+
+  end subroutine setup_distortion_for_inversion
 
 
 end module Main

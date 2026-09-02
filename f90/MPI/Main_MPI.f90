@@ -12,6 +12,7 @@ module Main_MPI
   use file_units
   use utilities
   use datasens
+  use DistortionParam
   use SolverSens
   use ForwardSolver
   use SensComp
@@ -27,6 +28,7 @@ module Main_MPI
   type(solnVector_t), save, private    :: e,e0
   type(rhsVector_t) , save, private    :: b0,comb
   type(grid_t), target, save, private  :: grid
+  type(distortionParam_t), save        :: worker_distC
 
 
 Contains
@@ -616,10 +618,12 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
      integer nTx
 
 
-     ! local variables
-     Integer        :: iper, comm_current
-     Integer        :: per_index,pol_index,stn_index,iTx,i,iDt,j
-     character(80)  :: job_name
+      ! local variables
+      Integer        :: iper, comm_current
+      Integer        :: per_index,pol_index,stn_index,iTx,i,iDt,j
+      Integer        :: iRXsite, iDistSite
+      character(80)  :: job_name
+      type(distortionParam_t), pointer :: distP => null()
 
      ! nTX is number of transmitters;
      nTx = d1%nTx
@@ -662,17 +666,43 @@ Subroutine Master_job_fwdPred(sigma,d1,eAll,comm)
      Call EdgeLength(grid, l_E)
      Call FaceArea(grid, S_F)
 
-     ! Compute the model Responces
-     do iTx=1,nTx
-         do i = 1,d1%d(iTx)%nDt
-             d1%d(iTx)%data(i)%errorBar = .false.
-             iDt = d1%d(iTx)%data(i)%dataType
-             do j = 1,d1%d(iTx)%data(i)%nSite
-                 call dataResp(eAll%solns(iTx),sigma,iDt,d1%d(iTx)%data(i)%rx(j),d1%d(iTx)%data(i)%value(:,j), &
-                           d1%d(iTx)%data(i)%orient(j))
-             end do
-         end do
-     end do
+      ! get the distortion parameter pointer, if it is defined at all
+      ! should be .not. associated if not defined
+      distP => get_distortionParam_ptr()
+      ! Compute the model Responses
+      do iTx=1,nTx
+          do i = 1,d1%d(iTx)%nDt
+              d1%d(iTx)%data(i)%errorBar = .false.
+              iDt = d1%d(iTx)%data(i)%dataType
+              do j = 1,d1%d(iTx)%data(i)%nSite
+                  ! only compute the distortion response if the distortion 
+                  ! parameter is defined
+                  ! kind of a quick patch, needs to be fixed in a more 
+                  ! elegant manner
+                  if (iDt == Full_Impedance_Dist .and. associated(distP)) then
+                     iRXsite = d1%d(iTx)%data(i)%rx(j)
+                     iDistSite = find_distortion_site_index(distP, iRXsite)
+                     if (iDistSite >= 1) then
+                        call dataResp_dist(eAll%solns(iTx), sigma, &
+                             distP%C(:,:,iDistSite), &
+                             Full_Impedance, iRXsite, &
+                             d1%d(iTx)%data(i)%value(:,j), &
+                             d1%d(iTx)%data(i)%orient(j))
+                     else
+                        call dataResp(eAll%solns(iTx),sigma,Full_Impedance, &
+                             d1%d(iTx)%data(i)%rx(j), &
+                             d1%d(iTx)%data(i)%value(:,j), &
+                             d1%d(iTx)%data(i)%orient(j))
+                     end if
+                  else
+                     call dataResp(eAll%solns(iTx),sigma,iDt, &
+                          d1%d(iTx)%data(i)%rx(j), &
+                          d1%d(iTx)%data(i)%value(:,j), &
+                          d1%d(iTx)%data(i)%orient(j))
+                  end if
+              end do
+          end do
+      end do
      ! clean up the grid elements stored in GridCalc on the master node
      call deall_rvector(l_E)
      call deall_rvector(S_F)
@@ -950,6 +980,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      type(solnVectorMTX_t)        :: eAll_out 
      type(solnVectorMTX_t)        :: eAll_temp
      type(dataVectorMTX_t)        :: d_temp
+     type(distortionParam_t), pointer :: distP
      
      logical        :: savedSolns,returne_m_vectors
      Integer        :: iper,ipol,nTx,iTx
@@ -1007,6 +1038,14 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      ! First ditribute both model parameters and data
      call Master_job_Distribute_Model(sigma)
      call Master_job_Distribute_Data(d)
+     ! see if distortion parameters are defined
+     distP => get_distortionParam_ptr()
+     if (associated(distP)) then
+         ! only distribute distortion parameters if they are defined
+         call Master_job_Distribute_Distortion(distP, comm_current)
+     else
+         call Master_job_Distribute_Distortion(worker_distC, comm_current)
+     end if
 
      dsigma_temp = sigma
      dsigma      = sigma
@@ -1054,6 +1093,64 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm)
      call deall_dataVectorMTX(d_temp)
    
 end Subroutine Master_job_JmultT
+
+
+!#########################  Master_job_Distribute_Distortion ###############
+Subroutine Master_job_Distribute_Distortion(dist,comm)
+
+     implicit none
+     type(distortionParam_t), intent(in)       :: dist
+     integer, intent(in), optional             :: comm
+     integer                                   :: comm_current, size_current
+     integer                                   :: nSites, iSite
+     real(kind=prec), allocatable              :: cVals(:)
+
+     if (present(comm)) then
+         if (comm .eq. MPI_COMM_NULL) then
+             comm_current = comm_world
+         else
+             comm_current = comm
+         endif
+     else
+         if (para_method.eq.0) then
+             comm_current = comm_world
+         else
+             comm_current = comm_leader
+         end if
+     end if
+
+     call MPI_COMM_SIZE(comm_current, size_current, ierr)
+
+     nSites = dist%nSites
+     if (nSites > 0) then
+         allocate(cVals(4*nSites))
+         do iSite = 1, nSites
+             cVals(4*iSite-3) = dist%C(1,1,iSite)
+             cVals(4*iSite-2) = dist%C(1,2,iSite)
+             cVals(4*iSite-1) = dist%C(2,1,iSite)
+             cVals(4*iSite  ) = dist%C(2,2,iSite)
+         end do
+     end if
+
+     do dest = 1, size_current-1
+         worker_job_task%what_to_do = 'SET_DISTORTION'
+         call create_worker_job_task_place_holder
+         call Pack_worker_job_task
+         call MPI_SEND(worker_job_package, Nbytes, MPI_PACKED, dest,    &
+    &         FROM_MASTER, comm_current, ierr)
+         call MPI_SEND(nSites, 1, MPI_INTEGER, dest, FROM_MASTER,       &
+    &         comm_current, ierr)
+         if (nSites > 0) then
+             call MPI_SEND(dist%siteIndex, nSites, MPI_INTEGER, dest,   &
+    &            FROM_MASTER, comm_current, ierr)
+             call MPI_SEND(cVals, 4*nSites, MPI_DOUBLE_PRECISION, dest, &
+    &            FROM_MASTER, comm_current, ierr)
+         end if
+     end do
+
+     if (allocated(cVals)) deallocate(cVals)
+
+end Subroutine Master_job_Distribute_Distortion
 
 
 !########################    Master_job_Jmult ##############################
@@ -1880,6 +1977,9 @@ Subroutine Worker_job(sigma,d)
  
      ! 2019.05.08, Liu Zhongyin, add isite for rx in dataBlock_t
      integer                       :: isite
+    integer                       :: nDistSites, k
+    integer, allocatable          :: distSiteIndex(:)
+    real(kind=prec), allocatable  :: distVals(:)
 
       
      ! time
@@ -1948,7 +2048,38 @@ Subroutine Worker_job(sigma,d)
          !            (worker_job_task%keep_E_soln), &
          !            '; several TX = ',worker_job_task%several_Tx,']'
 
-         if (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
+         if (trim(worker_job_task%what_to_do) .eq. 'SET_DISTORTION') then
+             if ((rank_local.eq.0) .or. (para_method.eq.0)) then
+                 call MPI_RECV(nDistSites, 1, MPI_INTEGER, 0,           &
+    &                FROM_MASTER, comm_current, STATUS, ierr)
+                 call deall_distortionParam(worker_distC)
+                 if (nDistSites > 0) then
+                     allocate(distSiteIndex(nDistSites))
+                     allocate(distVals(4*nDistSites))
+                     call MPI_RECV(distSiteIndex, nDistSites,           &
+    &                    MPI_INTEGER, 0, FROM_MASTER, comm_current,     &
+    &                    STATUS, ierr)
+                     call MPI_RECV(distVals, 4*nDistSites,              &
+    &                    MPI_DOUBLE_PRECISION, 0, FROM_MASTER,          &
+    &                    comm_current, STATUS, ierr)
+                     call create_distortionParam(nDistSites, worker_distC)
+                     worker_distC%siteIndex = distSiteIndex
+                     do k = 1, nDistSites
+                         worker_distC%C(1,1,k) = distVals(4*k-3)
+                         worker_distC%C(1,2,k) = distVals(4*k-2)
+                         worker_distC%C(2,1,k) = distVals(4*k-1)
+                         worker_distC%C(2,2,k) = distVals(4*k)
+                     end do
+                     deallocate(distSiteIndex)
+                     deallocate(distVals)
+                 end if
+                 call set_dataSens_distortion_ptr(worker_distC)
+             end if
+             now = MPI_Wtime()
+             time_passed = now - previous_time
+             previous_time = now
+
+         elseif (trim(worker_job_task%what_to_do) .eq. 'FORWARD') then
              ! forward modelling
              per_index=worker_job_task%per_index
              pol_index=worker_job_task%pol_index
@@ -2214,7 +2345,8 @@ Subroutine Worker_job(sigma,d)
                      e,comb)
                  write(6,'(a12,a18,i5,a12)') node_info,                   &
     &                ' Finished Receiving ', orginal_nPol, ' from Master'
-                 call LmultT(e0,sigma,d%d(per_index),comb)
+                        call set_dataSens_distortion_ptr(worker_distC)
+                  call LmultT(e0,sigma,d%d(per_index),comb)
                  call set_e_soln(pol_index,e)
              else
                  ! worker just fills in some dummy parameters

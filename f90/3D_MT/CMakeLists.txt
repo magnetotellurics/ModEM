@@ -21,6 +21,8 @@ add_subdirectory(modelParam)
 
 target_sources(${MODEM_EXE} 
     PRIVATE DataFunc.f90
+    PRIVATE DataIO.f90
+    PRIVATE DistortionParam.f90
     PRIVATE EMfieldInterp.f90
     PRIVATE ForwardSolver.f90
     PRIVATE GridDef.f90

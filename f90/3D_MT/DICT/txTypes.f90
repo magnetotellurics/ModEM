@@ -46,13 +46,16 @@ module txTypes
      ! MT
      txTypeDict(MT)%definedType(Full_Impedance) = .true.
 
-     allocate(txTypeDict(MT)%dataTypes(6),STAT=istat)
-     txTypeDict(MT)%dataTypes(1) = Full_Impedance
-     txTypeDict(MT)%dataTypes(2) = Off_Diagonal_Impedance
-     txTypeDict(MT)%dataTypes(3) = Full_Vertical_Components
-     txTypeDict(MT)%dataTypes(4) = Full_Interstation_TF
-     txTypeDict(MT)%dataTypes(5) = Off_Diagonal_Rho_Phase
-     txTypeDict(MT)%dataTypes(6) = Phase_Tensor
+      allocate(txTypeDict(MT)%dataTypes(7),STAT=istat)
+      txTypeDict(MT)%dataTypes(1) = Full_Impedance
+      txTypeDict(MT)%dataTypes(2) = Off_Diagonal_Impedance
+      txTypeDict(MT)%dataTypes(3) = Full_Vertical_Components
+      txTypeDict(MT)%dataTypes(4) = Full_Interstation_TF
+      txTypeDict(MT)%dataTypes(5) = Off_Diagonal_Rho_Phase
+      txTypeDict(MT)%dataTypes(6) = Phase_Tensor
+      txTypeDict(MT)%dataTypes(7) = Full_Impedance_Dist
+
+      txTypeDict(MT)%definedTypes(Full_Impedance_Dist) = .true.
 
      allocate(txTypeDict(SFF)%dataTypes(6),STAT=istat)
      txTypeDict(SFF)%dataTypes(1) = Ex_Field

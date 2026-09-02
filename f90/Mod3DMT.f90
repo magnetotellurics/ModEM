@@ -10,6 +10,7 @@ program Mod3DMT
      use SymmetryTest
      use Main
      use NLCG
+     use NLCG_dist
      use DCG
      use LBFGS
      use utilities
@@ -51,7 +52,6 @@ program Mod3DMT
           ! OR readStartup(rFile_Startup,cUserDef)
           write(6,*)'I am a PARALLEL version'
           call process_optional_namelist(cUserDef)
-          call finalize_covType(cUserDef)
           call Master_job_Distribute_userdef_control(cUserDef)
           open(ioMPI,file=cUserDef%wFile_MPI)
           write(ioMPI,*) 'Total Number of nodes= ', number_of_workers
@@ -61,7 +61,6 @@ program Mod3DMT
 #else
       call parseArgs('Mod3DMT',cUserDef) ! OR readStartup(rFile_Startup,cUserDef)
       call process_optional_namelist(cUserDef)
-      call finalize_covType(cUserDef)
       write(6,*)'I am a SERIAL version'
 #endif
  
@@ -254,14 +253,21 @@ program Mod3DMT
          call writeVec_modelParam(size(JT_multi_Tx_vec),JT_multi_Tx_vec,header,cUserDef%wFile_dModel)
          close(ioSens)
 
-     case (INVERSE)
+      case (INVERSE)
          call ModEM_timers_start("Total Inverse")
          if (trim(cUserDef%search) == 'NLCG') then
             ! sigma1 contains mHat on input (zero = starting from the prior)
              write(*,*) 'Starting the NLCG search...'
              sigma1 = dsigma
              call NLCGsolver(allData,cUserDef%lambda,sigma0,sigma1,       &
-     &            cUserDef%rFile_invCtrl)
+      &            cUserDef%rFile_invCtrl)
+
+         elseif (trim(cUserDef%search) == 'NLCG_DIST') then
+            write(*,*) 'Starting the NLCG_DIST search (joint distortion)...'
+            sigma1 = dsigma
+            call setup_distortion_for_inversion(allData, distC)
+            call NLCGsolver_dist(allData, cUserDef%lambda, cUserDef%nu_dist, &
+                 sigma0, sigma1, distC, cUserDef%rFile_invCtrl)
 
          elseif (trim(cUserDef%search) == 'DCG') then
              write(*,*) 'Starting the DCG search...'
