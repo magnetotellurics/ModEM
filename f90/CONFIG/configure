@@ -52,7 +52,7 @@ to_lower() {
 }
 
 usage() {
-    echo "Usage: $0 [-h] [-u] [-g release|debug] [-m mpi|serial] [-l solver] [-f] [-s] makefile compiler"
+    echo "Usage: $0 [-h] [-u] [-g release|debug] [-m mpi|serial] [-l solver] [-f] [-s] [-D] makefile compiler"
     echo "  -h Display full help message"
     echo "  -u Display this usage message"
 }
@@ -120,6 +120,7 @@ help() {
     echo "  -f Build with the Fine-Grained Parallel Version (-DFG on SP2)"
     echo "     Only available with with SP2"
     echo "  -s Build spherical version of ModEM"
+    echo "  -D Build HDF5 version of ModEM"
     echo ""
     echo ""
 }
@@ -182,9 +183,10 @@ mpi_or_serial="MPI"
 solver="SP2"
 fg_flag=False
 makefile_name=""
-spherical=False
+spherical=false
+build_HDF5=true
 
-while getopts "hg:m:l:fs" opt; do
+while getopts "hg:m:l:fsD" opt; do
     case "$opt" in
         g)
             release_or_debug="$OPTARG"
@@ -201,6 +203,9 @@ while getopts "hg:m:l:fs" opt; do
         s)
             show_spherical_warning
             spherical=true
+            ;;
+        D)
+            build_hdf5=true
             ;;
         h)
             help
@@ -354,6 +359,11 @@ if [ "$fg_flag" = "true" ] ; then
     FFLAGS="$DEFAULT_OPT $FFLAGS"
 fi
 
+if [ "$build_hdf5" = "true" ] ; then
+    FFLAGS="$FFLAGS -DHDF5"
+    LDLIBS="$LDLIBS -lhdf5_fortran -lhdf5"
+fi
+
 DEFAULT_DIRS=(
     "."
     "MPI"
@@ -396,9 +406,11 @@ case $solver in
         source_dirs=( ${source_dirs[@]} ${MF_DIRS[@]} )
         ;;
     SP | sp)
+        FFLAGS="$FFLAGS -DSP_FORM"
         source_dirs=( ${source_dirs[@]} ${SP_DIRS[@]} )
         ;;
     SP2 | sp2)
+        FFLAGS="$FFLAGS -DSP_FORM"
         source_dirs=( ${source_dirs[@]} ${SP2_DIRS[@]} )
         ;;
 esac

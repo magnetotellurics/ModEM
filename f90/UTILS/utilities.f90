@@ -13,7 +13,13 @@ module utilities
 
   end type timer_t
 
-  !character(80)  :: msg
+  character(len=*), parameter :: WS_FILE_TYPE = "WSINV3DMT"
+  character(len=*), parameter :: HDF5_FILE_TYPE = "HDF5"
+  character(len=*), parameter :: FTRAN_BINARY_FILE_TYPE = "FORTRAN_BINARY"
+  character(len=*), parameter :: MACKIE_FILE_TYPE = "MACKIE"
+
+  character(len=*), parameter :: DATA_FILE_TYPE_ASCII = "ASCII_LIST_FORMAT"
+  character(len=*), parameter :: DATA_FILE_TYPE_HDF5 = "HDF5"
 
 Contains
 
@@ -967,4 +973,27 @@ subroutine expand_string(inString, outString, intArgs, logicArgs, realArgs)
 
 !--------------------------------------------------------------------
 end subroutine expand_string
+
+subroutine compiled_with_HDF5_check()
+
+    implicit none
+#ifdef HDF5
+    ! ModEM is built with HDF5
+#else
+    call HDF5_not_built_error()
+#endif
+
+end subroutine compiled_with_HDF5_check
+
+subroutine HDF5_not_built_error()
+
+    implicit none
+
+    write(0,*) 'ERROR: ModEM not compiled with HDF5 but HDF5 input/output was choosen'
+    write(0,*) 'ERROR: Build ModEM with HDF5 or choose a different input/output file type'
+    write(0,*) "ERROR: You can build ModEM with HDF5 by specifying '-DBUILD_HDF5=on' in CMake"
+    call errStop('Modem not compiled with HDF5')
+
+end subroutine HDF5_not_built_error
+
 end module utilities

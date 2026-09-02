@@ -206,10 +206,19 @@ contains
 
        ! set up the mode names based on transmitter type;
        ! for now, only set up for MT. Used for I/O.
+       ! FIX (2026-07-27): boundary_ws.f90/boundary_wsS.f90's BC_x0_WS computes
+       ! imode=1 as Ey-polarization (only E0%y set) and imode=2 as
+       ! Ex-polarization (only E0%x set) -- the labels below previously had
+       ! this backwards (Pol_name(1)='Ex'), mislabeling the ModeName string
+       ! written into .esoln/.rhs file headers. Confirmed cosmetic-only: Pol_name
+       ! is never read by DataFunc.f90 or any other data/impedance/Jacobian
+       ! code (those use the plain integer index throughout), so this does not
+       ! change Zxy/Zyx, transfer functions, -F predicted-data output, or
+       ! inversion results -- only the descriptive label in solution/RHS files.
        if (trim(txDict(iTx)%tx_type) .eq. 'MT') then
         if (e%nPol == 2) then
-            e%Pol_name(1) = 'Ex'
-            e%Pol_name(2) = 'Ey'
+            e%Pol_name(1) = 'Ey'
+            e%Pol_name(2) = 'Ex'
         else
          call errStop('problem creating MT modes in create_solnVector')
         end if
@@ -978,10 +987,13 @@ contains
 
        ! set up the mode names based on transmitter type;
        ! for now, only set up for MT. Used for I/O.
+       ! FIX (2026-07-27): see the matching note in create_solnVector above --
+       ! imode=1 is actually Ey-polarization, imode=2 is Ex-polarization, per
+       ! boundary_ws.f90/boundary_wsS.f90's BC_x0_WS. Cosmetic-only label fix.
        if (trim(txDict(iTx)%tx_type) .eq. 'MT') then
         if (b%nPol == 2) then
-            b%Pol_name(1) = 'Ex'
-            b%Pol_name(2) = 'Ey'
+            b%Pol_name(1) = 'Ey'
+            b%Pol_name(2) = 'Ex'
         else
          call errStop('problem creating MT modes in create_rhsVector')
         end if

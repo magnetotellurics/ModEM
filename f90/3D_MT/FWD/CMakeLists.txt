@@ -2,9 +2,17 @@
 
 add_subdirectory(Mod2d)
 
+if (NOT BUILD_SPHERICAL)
+    target_sources(${MODEM_EXE}
+        PRIVATE boundary_ws.f90
+    )
+else()
+    target_sources(${MODEM_EXE}
+        PRIVATE boundary_wsS.f90
+    )
+endif()
+
 target_sources(${MODEM_EXE}
-    PRIVATE boundary_ws.f90
-    #PRIVATE boundary_wsS.f90
     PRIVATE nestedEM.f90
 )
 

@@ -7,8 +7,10 @@ project(ModEM VERSION 0
 enable_language(Fortran)
 
 option(BUILD_MPI "Build MPI version of MPI" ON)
+option(BUILD_HDF5 "Build with HDF5" OFF)
 option(FG "Build the Fine-Grained ModEM Version - (Only compatiable with SP2)" OFF)
 option(USE_C_TIMERS "Use the C timers in ModEM_timers" OFF)
+option(BUILD_SPHERICAL "Specify whether to build Spherical Coordinate version of ModEM" OFF)
 
 set(FORWARD_FORMULATION "SP2" CACHE STRING "Set the forward formulation: < MF | SP | SP2 >")
 set(MODEM_BUILD_DIMS "3D" CACHE STRING "Specify whether to build either the 2D or 3D versino of ModEM < 2D | 3D >")
@@ -21,13 +23,14 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+
 set(SUPPORTED_FORWARD_FORMULATIONS "MF;SP;SP2")
 set(SUPPORTED_MODEM_DIMS "2D;3D")
 set(SUPPORTED_GPU_OPTS "off;OFF;CUDA;HIP")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
-if (USE_C_TIMERS)
+if (USE_C_TIMERS OR BUILD_HDF5)
         enable_language(C)
 endif()
 
@@ -70,8 +73,20 @@ if (FG AND NOT FORWARD_FORMULATION STREQUAL SP2)
         message(FATAL_ERROR "You cannot build 'FG' with '${FORWARD_FORMULATION}' - Only SP2: -DFG=on -DFORWARD_FORMULATION=SP2")
 endif()
 
+if (BUILD_SPHERICAL AND NOT FORCE_SPHERICAL)
+        message(SEND_ERROR
+           "The Spherical Version is experimental and will not work with traditional MT source setup."
+           "For more information please see 'Spherical Coordinates' section in the README.md.\n"
+           "To bypass this error run cmake with: '-DBUILD_SPHERICAL -DFORCE_SPHERICAL' flags"
+        )
+endif()
+
 if (BUILD_MPI)
         add_compile_definitions(MPI)
+endif()
+
+if (BUILD_HDF5)
+        add_compile_definitions(HDF5)
 endif()
 
 if (BUILD_GPU STREQUAL "CUDA")
@@ -82,6 +97,10 @@ endif()
 
 if (FG)
         add_compile_definitions(FG)
+endif()
+
+if (FORWARD_FORMULATION STREQUAL "SP" OR FORWARD_FORMULATION STREQUAL "SP2")
+    add_compile_definitions(SP_FORM)
 endif()
 
 # Source Code

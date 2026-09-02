@@ -685,7 +685,7 @@ module hipFortMap
 
    ! hipblasZaxpy
    integer(c_int) function cublasZaxpy(handle,n,alpha,x,incx,y,incy) &
-    &             bind(C,name="hipblasZaxpy_v2")
+    &             bind(C,name="hipblasZaxpy")
      ! compute y = y + a*x with complex double precision
      ! note that x and y should be located in GPU memory
      use iso_c_binding
@@ -715,7 +715,7 @@ module hipFortMap
 
    ! hipblasZcopy
    integer(c_int) function cublasZcopy(handle,n,x,incx,y,incy) &
-    &             bind(C,name="hipblasZcopy_v2")
+    &             bind(C,name="hipblasZcopy")
      ! compute y = x with complex double precision
      use iso_c_binding
      implicit none
@@ -729,7 +729,7 @@ module hipFortMap
 
    ! hipblasDdot
    integer(c_int) function cublasDdot(handle,n,x,incx,y,incy,result) &
-    &            bind(C,name="hipblasDdot_v2")
+    &            bind(C,name="hipblasDdot")
      ! compute result = x dot y with double precision
      use iso_c_binding
      implicit none
@@ -744,7 +744,7 @@ module hipFortMap
 
    ! hipblasZdot
    integer(c_int) function cublasZdot(handle,n,x,incx,y,incy,result) &
-    &            bind(C,name="hipblasZdotc_v2")
+    &            bind(C,name="hipblasZdotc")
      ! compute result = x dot y with complex double precision
      use iso_c_binding
      implicit none
@@ -772,7 +772,7 @@ module hipFortMap
 
    ! hipblasZnrm2 there is no such thing like znrm2!
    integer(c_int) function cublasZnrm2(handle,n,x,incx,norm) &
-    &            bind(C,name="hipblasDznrm2_v2")
+    &            bind(C,name="hipblasDznrm2")
      ! compute result = norm(x) in complex double precision
      use iso_c_binding
      implicit none
@@ -1703,6 +1703,21 @@ module hipFortMap
      ! the current device idx
      integer(c_int),value ::  device_idx
    end function cf_resetFlag
+
+   ! cf_releaseDev - release the GPU gate so other processes can hook on
+   subroutine cf_releaseDev(device_idx) &
+    &              bind(C, name="cf_releaseDev")
+     use iso_c_binding
+     implicit none
+     integer(c_int), value :: device_idx
+   end subroutine cf_releaseDev
+
+   ! cf_cleanupLock - cleanup shared memory lock on program exit
+   subroutine cf_cleanupLock() &
+    &              bind(C, name="cf_cleanupLock")
+     use iso_c_binding
+     implicit none
+   end subroutine cf_cleanupLock
 
    end interface  
 

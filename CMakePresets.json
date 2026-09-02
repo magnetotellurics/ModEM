@@ -1,0 +1,402 @@
+﻿{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+
+    "configurePresets": [
+        {
+            "name": "windows-base",
+            "hidden": true,
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "installDir": "${sourceDir}/install/${presetName}",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe",
+                "CMAKE_GENERATOR_TOOLSET": "fortran=ifx",
+                "CMAKE_CONFIGURATION_TYPES": "Debug;Release;MinSizeRel;RelWithDebInfo"
+            },
+            "environment": {
+                "ONEAPI_ROOT": "C:/Program Files (x86)/Intel/oneAPI",
+                "IFORT_COMPILER_ROOT": "C:/Program Files (x86)/Intel/oneAPI/compiler/latest",
+                "MKLROOT": "C:/Program Files (x86)/Intel/oneAPI/mkl/latest",
+                "I_MPI_ROOT": "C:/Program Files (x86)/Intel/oneAPI/mpi/latest",
+                "MPI_HOME": "C:/Program Files (x86)/Intel/oneAPI/mpi/latest",
+                "CUDA_PATH": "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.4",
+                "HDF5_ROOT": "C:/Program Files/HDFGroup/HDF5/1.14.3",
+                "PATH": "C:/Program Files (x86)/Intel/oneAPI/compiler/latest/bin/;C:/Program Files (x86)/Intel/oneAPI/mpi/latest/bin/;C:/Program Files (x86)/Intel/oneAPI/mkl/latest/bin/;C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.4/bin/;C:/Program Files/HDFGroup/HDF5/1.14.3/bin/;%PATH%",
+                "LIB": "C:/Program Files (x86)/Intel/oneAPI/compiler/latest/lib;C:/Program Files (x86)/Intel/oneAPI/mkl/latest/lib;C:/Program Files (x86)/Intel/oneAPI/mpi/latest/lib/release_mt;C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.4/lib/x64;C:/Program Files/HDFGroup/HDF5/1.14.3/lib;%LIB%",
+                "INCLUDE": "C:/Program Files (x86)/Intel/oneAPI/compiler/latest/include;C:/Program Files (x86)/Intel/oneAPI/mkl/latest/include;C:/Program Files (x86)/Intel/oneAPI/mpi/latest/include;C:/Program Files (x86)/Intel/oneAPI/mpi/latest/include/mpi;C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.4/include;C:/Program Files/HDFGroup/HDF5/1.14.3/include;%INCLUDE%",
+                "CMAKE_PREFIX_PATH": "C:/Program Files (x86)/Intel/oneAPI/mkl/latest/lib/cmake;C:/Program Files (x86)/Intel/oneAPI/mpi/latest/lib/cmake/mpi;C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.4;C:/Program Files/HDFGroup/HDF5/1.14.3/cmake;%CMAKE_PREFIX_PATH%"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+
+ 
+        {
+            "name": "linux-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "installDir": "${sourceDir}/install/${presetName}",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "icx",
+                "CMAKE_CXX_COMPILER": "icpx",
+                "CMAKE_Fortran_COMPILER": "ifx"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            }
+        },
+
+        {
+            "name": "mac-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "installDir": "${sourceDir}/install/${presetName}",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "icx",
+                "CMAKE_CXX_COMPILER": "icpx",
+                "CMAKE_Fortran_COMPILER": "ifx"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            }
+        },
+
+        {
+            "name": "win-debug-sp2-serial",
+            "displayName": "Windows Debug SP2 (no MPI, no HDF5, no GPU)",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "OFF",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "win-debug-sp2-mpi",
+            "displayName": "Windows Debug SP2 + MPI",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "win-debug-sp2-mpi-cuda",
+            "displayName": "Windows Debug SP2 + MPI + CUDA",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "CUDA",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "win-debug-sp2-hdf5-serial",
+            "displayName": "Windows Debug SP2 + HDF5 (no MPI)",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "OFF",
+                "BUILD_HDF5": "ON",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "win-debug-sp2-hdf5-mpi",
+            "displayName": "Windows Debug SP2 + HDF5 + MPI",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "ON",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+
+        {
+            "name": "linux-debug-sp2-serial",
+            "displayName": "Linux Debug SP2 (no MPI, no HDF5, no GPU)",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "OFF",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "linux-debug-sp2-mpi",
+            "displayName": "Linux Debug SP2 + MPI",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "linux-debug-sp2-mpi-cuda",
+            "displayName": "Linux Debug SP2 + MPI + CUDA",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "CUDA",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "linux-debug-sp2-hdf5-serial",
+            "displayName": "Linux Debug SP2 + HDF5 (no MPI)",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "OFF",
+                "BUILD_HDF5": "ON",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "linux-debug-sp2-hdf5-mpi",
+            "displayName": "Linux Debug SP2 + HDF5 + MPI",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "ON",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+
+        {
+            "name": "mac-debug-sp2-serial",
+            "displayName": "macOS Debug SP2 (no MPI, no HDF5, no GPU)",
+            "inherits": "mac-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "OFF",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "mac-debug-sp2-mpi",
+            "displayName": "macOS Debug SP2 + MPI",
+            "inherits": "mac-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "mac-debug-sp2-mpi-cuda",
+            "displayName": "macOS Debug SP2 + MPI + CUDA",
+            "inherits": "mac-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "CUDA",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "mac-debug-sp2-hdf5-serial",
+            "displayName": "macOS Debug SP2 + HDF5 (no MPI)",
+            "inherits": "mac-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "OFF",
+                "BUILD_HDF5": "ON",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "mac-debug-sp2-hdf5-mpi",
+            "displayName": "macOS Debug SP2 + HDF5 + MPI",
+            "inherits": "mac-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "ON",
+                "BUILD_GPU": "OFF",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+
+        {
+            "name": "win-release-sp2",
+            "displayName": "Windows Release SP2 (MPI + CUDA, no HDF5)",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "CUDA",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "win-release-mf",
+            "displayName": "Windows Release MF (MPI + CUDA, no HDF5)",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "CUDA",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "MF",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+
+        {
+            "name": "linux-release-sp2",
+            "displayName": "Linux Release SP2 (MPI + CUDA, no HDF5)",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "CUDA",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "linux-release-mf",
+            "displayName": "Linux Release MF (MPI + CUDA, no HDF5)",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "CUDA",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "MF",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+
+        {
+            "name": "mac-release-sp2",
+            "displayName": "macOS Release SP2 (MPI + CUDA, no HDF5)",
+            "inherits": "mac-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "CUDA",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "SP2",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        },
+        {
+            "name": "mac-release-mf",
+            "displayName": "macOS Release MF (MPI + CUDA, no HDF5)",
+            "inherits": "mac-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_MPI": "ON",
+                "BUILD_HDF5": "OFF",
+                "BUILD_GPU": "CUDA",
+                "USE_C_TIMERS": "OFF",
+                "FG": "ON",
+                "FORWARD_FORMULATION": "MF",
+                "MODEM_BUILD_DIMS": "3D"
+            }
+        }
+    ]
+
+}

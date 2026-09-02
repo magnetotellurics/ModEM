@@ -214,7 +214,7 @@ if($optiond){
   print STDERR "# Main program is $mainprogfile \n" ;
 }
 # this subroutine (def below) does most of the work.
-process_fsource($mainprogfile);
+process_fsource($mainprogfile, 0);
 
 # set some makefile .
 
@@ -308,6 +308,7 @@ print "\n  \n";
 
 # End of main program
 
+
 ##############################################
 # Here is the subroutine that generates the compile entries in the makefile
 # These end up in the global array @global_outlines. The magic part is
@@ -315,7 +316,9 @@ print "\n  \n";
 ##############################################
 sub process_fsource {
 
-  my $mainprogfile=$_[0];
+  my ($mainprogfile, $is_submodule) = @_;
+
+
   if($optiond){
     print STDERR "# process_fsource called with arg $mainprogfile \n";
   }
@@ -331,30 +334,57 @@ sub process_fsource {
   my @modulelist=();
   my @includelist=();
   while ($line=<MAINPROG>) {
-    if ($line =~ /^[ \t]*use (\w+)/i ) { # line matches regexp between / /
+
+    if ($line =~ /^[ \t]*use (\w+)/i || $line =~ /^[ \t]*!%use (\w+)/i ) { # line matches regexp between / /
       my $modulefile = $1;
       if($optiond){
-		print STDERR "# $mainprogfile Uses Module $modulefile\n";
+        print STDERR "# $mainprogfile Uses Module $modulefile\n";
       }
       if ($modulefile =~ /MPI/) { # if MPI is found in module name, skip unless MPI is defined
-      	next unless ($DMPI);
+        next unless ($DMPI);
       }
       @modulelist=(@modulelist,$modulefile);
     } elsif  ($line =~ /^[ \t]*\#?include "(\S+)"/i ){
       my $includefile = $1;
       if($optiond){
-		print STDERR "# $mainprogfile Includes $includefile\n";
+        print STDERR "# $mainprogfile Includes $includefile\n";
       }
       if ($includefile =~ /MPI/) { # if MPI is found in module name, skip unless MPI is defined
-      	next unless ($DMPI);
+        next unless ($DMPI);
       }
       my $mainprogpath = dirname($mainprogfile);
       @includelist=(@includelist,"$mainprogpath/$includefile");
+    } elsif ($is_submodule && ($line =~ /^ *submodule (\(\w+\)) /i
+                               || $line =~ /^ *submodule (\(\w+:\w+\)) /i ) ) {
+
+        # If this file is a submodule, we also need to determine its
+        # ancestors, as these are depedencies that are not declared in a
+        # 'use' statement.
+        my $moduleAncestor = $1;
+        $moduleAncestor =~ s/[\(\)]//g;
+
+        # Submodules can have a 'chain' of ancestors, this allows for us
+        # to have up to two at the momemnt. If we need 2+ ancestors in the future
+        # (i.e. parent, grand-parent, great-grand-parent) we can edit this or
+        # consider only using two ancestors.
+        if (index($moduleAncestor, ':') != -1) {
+            my ($grandparent, $parent) = split /:/, $moduleAncestor;
+
+            @modulelist=(@modulelist,$grandparent);
+            @modulelist=(@modulelist,$parent);
+            if ($optiond) {
+                print STDERR "# submodule '$mainprogfile' has a parent and grandparent: $parent $grandparent\n";
+            }
+        } else {
+            @modulelist=(@modulelist,$moduleAncestor);
+            if ($optiond) {
+                print STDERR "# submodule '$mainprogfile' has a parent $moduleAncestor\n";
+            }
+        }
     }
   }
 
   close(MAINPROG);
-
   if($optiond){
     print STDERR "# Full list of modules in $mainprogfile: @modulelist \n";
     if (@includelist > 0) {
@@ -362,9 +392,7 @@ sub process_fsource {
     }
   }
   # Find which file each module is in.
-
-
-
+  #
  my @modfiles=();
  my @specialmodules=('iso_c_binding', 'mpi', 'hdf5', 'iso_fortran_env');
  MODLOOP:foreach $module (@modulelist){
@@ -375,36 +403,58 @@ sub process_fsource {
       @sourcefiles=grep /\.${sftag}\Z/, sort(readdir(DIRHANDLE));
     foreach $sourcefile (@sourcefiles){
       $pathsourcefile="$directory/$sourcefile";
-      #print "\# Checking $pathsourcefile\n";
+      #print STDERR "\# Checking $pathsourcefile For: $module\n";
       open( SOURCEFILE, "$pathsourcefile") or
 	die "Can't find source file $pathsourcefile: $! \n";
       while ($line=<SOURCEFILE>){
-	if ($line =~ /^ *module (\w+)/i ){
-	  if($1 =~ /^$module$/i){
-	    if($optiond){
-	      print STDERR "# Uses $module which is in $pathsourcefile\n";
+
+    if ($line =~ /^ *submodule (\(\w+\))/i || $line =~ /^ *submodule (\(\w+:\w+\))/i ) {
+        # Process submodules in a similar way to modules below. The line below
+        # matches the actual name of the submodule. If it matches what we are looking for
+        # $module, then add it as a dependency..
+        my ($submod_name) = $line =~ /^\s*submodule\s*\(\s*\w+(?::\s*\w+)?\s*\)\s*(\w+)\s*$/i;
+        if ($submod_name =~ /^$module$/i) {
+            @modfiles=(@modfiles,$pathsourcefile);
+        }
+
+        # Similarly to below, if this is a submodule that we haven't seen before
+        # add it to the list of global_modfiles, and then process it.
+	    if (not grep (/$pathsourcefile/,@global_modfiles )){
+            if ($optiond) {
+                print STDERR "$sourcefile is a submodule and not in the list - Add it to list and process it...\n";
+            }
+            @global_modfiles=(@global_modfiles, $pathsourcefile);
+            process_fsource($pathsourcefile, 1);
+            close (SOURCEFILE);
+            next MODLOOP;
 	    }
+    }
+
+	if ($line =~ /^ *module (\w+)/i ) {
+	  if($1 =~ /^$module$/i){
+        if($optiond){
+             print STDERR "# $mainprogfile Uses $module which is in $pathsourcefile\n";
+        }
 	    @modfiles=(@modfiles,$pathsourcefile);
 
 	    if (grep (/$pathsourcefile/,@global_modfiles )){
-	      if($optiond){
-		print STDERR "# $pathsourcefile already in list\n";
-	      }
-	    }
-	    else {
+             if($optiond){
+               print STDERR "# $pathsourcefile already in list\n";
+             }
+        } else {
 	      @global_modfiles=(@global_modfiles,$pathsourcefile);
-	      process_fsource($pathsourcefile);
-
+	      process_fsource($pathsourcefile, 0);
 	    }
 	    # We found this module -- go on to the next one
 	    close (SOURCEFILE);
 	    next MODLOOP;
-	  }
+      } 
 	}
       }
       close( SOURCEFILE );
     }
   }
+
   if (grep (/$module/,@specialmodules )){
     if($optiond){
       print STDERR "# $module is sourced through a library; skip processing\n";
@@ -413,6 +463,8 @@ sub process_fsource {
   else {  # exhausted source files
     print STDERR "Couldn't find source file for module $module\n";
   }
+
+
 }
 
 if ($WIN) {
@@ -438,15 +490,17 @@ $objfile="\$(OBJDIR)/$objfile";
 # list of dependencies
 @objlist=();
 foreach  $mf (@modfiles) {
+  #next unless defined $mf && $mf !~ /^\s*$/;
+
   $obj=$mf;
   # replace source file name with .o
   if ($WIN) {
   	$obj=~s/\.${sftag}/\.obj/;
   } else {
-  	$obj=~s/\.${sftag}/\.o/;
+  	$obj=~s/\.${sftag}/\.o/ if defined $obj;
   }
   # strip path so object files go in current dir
-  $obj=~s|.*/||;
+  $obj=~s|.*/|| if defined $obj;
   # now add the user-defined path to the object file
   $obj="\$(OBJDIR)/$obj";
   @objlist=(@objlist,$obj);
