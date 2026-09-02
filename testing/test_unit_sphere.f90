@@ -12,25 +12,20 @@ program test_unit_sphere
 ! them apart. See testing/reference_unit_sphere.py for the merged closed-form
 ! reference.)
 !
-! IMPORTANT -- the two solvers are NOT expected to match this closed form (or
-! each other) the same way:
+! IMPORTANT -- the two solvers are NOT expected to match this closed form the
+! same way, since they use different internal normalizations:
 !   - S2 uses the paper's own literal "alpha_l^T=1" (unit external
 !     r^(l+1) amplitude) normalization directly, with no extra bookkeeping,
 !     so the match is EXACT: ratio = 1+0i for all five components.
 !   - S1 carries its own internal normalization (tni-referenced,
-!     R0^2/l(l+1) factors) AND applies a final conjg() to every assembled
-!     component that was designed to compensate for a "+m,-m conjugate-
-!     pairing" reconstruction trick -- but this test (like all the other
-!     single-(l,m) tests in this suite) sources only ONE of the +m/-m pair,
-!     so that pairing-compensation is never actually exercised as intended.
-!     As analyzed 2026-07-25, the result is NOT a clean
-!     scalar/phase discrepancy for m!=0: it reconstructs a DIFFERENT angular
-!     pattern (the m-flipped one) combined with a conjugated radial function,
-!     not just a scaled/rotated version of the correct field. So S1's
-!     ratio against this closed form is expected to be neither 1+0i nor a
-!     single common phase across all five components -- this is the open
-!     "absolute sign"/conjg() issue under investigation, NOT a test bug.
-!     Report the raw S1 numbers for visual inspection only.
+!     R0^2/l(l+1) factors), and natively outputs H_r/E_theta/E_phi with the
+!     opposite sign convention from S2 (S1's r_hat points toward Earth's
+!     center, S2's points away -- two different, equally valid physical
+!     conventions). Its ratio against the closed form is a single REAL
+!     constant: ~+1.6667e5 for the three H components, ~-1.6667e5 for the
+!     two E components (H-vs-E sign split is the ordinary pseudovector/
+!     polar-vector distinction). NOT 1+0i -- S1's normalization was never
+!     calibrated to match the closed form's amplitude.
 !
 ! Grid is built by hand (no grid file) with a small 8x8x2 patch entirely
 ! above the sphere (vacuum region, r > r0), so every extracted field sample

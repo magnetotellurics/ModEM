@@ -19,6 +19,10 @@
 #   test_radial_potential   -- output_convention.f90's RADIAL_POTENTIAL radial_amplitude
 #                               vs RADIAL_SURFACE*l (external-potential V / Gauss-coefficient
 #                               formulation vs toroidal-potential T), and the LWS preset
+#   test_tau_sweep          -- field1d_s2.f90's earth%tau thin-sheet jump condition:
+#                               magnitude-error sweep and H phase/magnitude shift vs the
+#                               tau=0 (exact/analytic) reference; backs
+#                               docs/tau_sensitivity_analysis.tex/.md/.pdf
 # (test_unit_sphere_s1.f90 and test_unit_sphere_s2.f90 were
 # merged into the single test_unit_sphere.f90 above, 2026-07-25, since both
 # built the identical model/grid/source -- see testing/TESTING_MANUAL.md.
@@ -39,7 +43,7 @@
 #   ./test_unit_sphere / ./test_earth_l1mneg1 /
 #   ./test_Tnr_uniform_sphere / ./test_s1_vs_s2_l1m0 /
 #   ./test_vs_modem_1D_impedance / ./test_norm_condon_shortley / ./test_reversals /
-#   ./test_radial_potential
+#   ./test_radial_potential / ./test_tau_sweep
 
 ROOT = ..
 
@@ -54,7 +58,7 @@ OBJ = $(OBJDIR)/math_constants.o $(OBJDIR)/utilities.o $(OBJDIR)/polpak.o \
       $(OBJDIR)/file_units.o $(OBJDIR)/GridDef.o $(OBJDIR)/sg_vector.o \
       $(OBJDIR)/output_convention.o $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
 
-all: test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals test_radial_potential
+all: test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals test_radial_potential test_tau_sweep
 
 # field1d.f90 (S1) and field1d_s2.f90 (S2) vs
 # the same closed form (l=2,m=1)
@@ -145,5 +149,11 @@ test_radial_potential: $(OBJDIR) $(OBJ) $(OBJDIR)/test_radial_potential.o
 $(OBJDIR)/test_radial_potential.o: test_radial_potential.f90 $(OBJDIR)/output_convention.o
 	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_radial_potential.f90 -o $(OBJDIR)/test_radial_potential.o
 
+test_tau_sweep: $(OBJDIR) $(OBJ) $(OBJDIR)/test_tau_sweep.o
+	$(F90) -o test_tau_sweep $(OBJ) $(OBJDIR)/test_tau_sweep.o
+
+$(OBJDIR)/test_tau_sweep.o: test_tau_sweep.f90 $(OBJDIR)/field1d.o $(OBJDIR)/field1d_s2.o
+	$(F90) -c $(MODULE) $(FFLAGS) $(MPIFLAGS) test_tau_sweep.f90 -o $(OBJDIR)/test_tau_sweep.o
+
 clean:
-	rm -rf $(OBJDIR) test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals test_radial_potential
+	rm -rf $(OBJDIR) test_unit_sphere test_earth_l1mneg1 test_Tnr_uniform_sphere test_s1_vs_s2_l1m0 test_vs_modem_1D_impedance test_norm_condon_shortley test_reversals test_radial_potential test_tau_sweep

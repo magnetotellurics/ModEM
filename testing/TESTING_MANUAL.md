@@ -3,8 +3,7 @@
 This is a step-by-step walkthrough of the test suite that validates
 `EARTH/FWD/field1d_s2.f90` (the independent Sun & Egbert 2012 solver) —
 first against an independently-derived closed-form solution, then against
-`pythonSolver/spherical_em_induction.py`. See `CLAUDE.md` for the full
-narrative (bugs found/fixed, derivations) — this file is the practical
+`pythonSolver/spherical_em_induction.py`. This is the practical
 "how do I run it and what should I see" reference.
 
 All commands below assume `gfortran` and a Python environment with
@@ -21,8 +20,9 @@ builds all four test executables: `test_unit_sphere` (§1, l=2,m=1 closed-form
 check for BOTH solvers), `test_earth_l1mneg1` (§2, l=1,m=-1 vs pythonSolver
 check), `test_Tnr_uniform_sphere` (§3, `field1d.f90`'s `sourcePotential`
 check), and `test_s1_vs_s2_l1m0` (direct `field1d.f90` vs
-`field1d_s2.f90` side-by-side, l=1,m=0 — see its own header
-comment and `CLAUDE.md` for what this one is investigating). `test_unit_sphere`/
+`field1d_s2.f90` side-by-side, l=1,m=0 — see its own header comment; both
+solvers agree up to a single real normalization constant, per §1's finding).
+`test_unit_sphere`/
 `test_earth_l1mneg1`/`test_s1_vs_s2_l1m0` link against both
 `field1d_s2.f90` and `field1d.f90`; `test_Tnr_uniform_sphere` links
 against `field1d.f90` only. (`test_unit_sphere_s1.f90` and
@@ -37,64 +37,79 @@ consolidated 2026-07-23 from a former separate `build_test_Tnr.sh` script.)
 Physical setup: uniform 1 Ω·m sphere, radius 1000 m, ω=1 rad/s, unit
 external (l=2, m=+1) multipole. `test_unit_sphere.f90` runs BOTH solvers
 against this same setup; `reference_unit_sphere.py` prints the matching
-closed-form reference in two labeled sections, since the two solvers are
-NOT expected to match the closed form (or each other) the same way:
+closed-form reference in two labeled sections, since the two solvers use
+different internal normalizations:
 
-- **`field1d_s2.f90` (S2)** uses the paper's own literal
-  normalization ("coefficient of `r^(l+1)`=1"), so this comparison is
-  expected to match the closed form **exactly** (not just in phase).
+- **`field1d_s2.f90` (S2)** uses the paper's own literal normalization
+  ("coefficient of `r^(l+1)`=1"), so this comparison matches the closed
+  form **exactly** (not just in phase).
 - **`field1d.f90` (S1)** carries its own internal normalization
-  (`tni`-referenced, `R0^2/l(l+1)` factors) AND applies a final `conjg()` to
-  every assembled component that was designed to compensate for a `+m,-m`
-  conjugate-pairing reconstruction trick — but this test, like every other
-  single-`(l,m)` test in this suite, sources only ONE of the `+m/-m` pair,
-  so that pairing-compensation is never exercised as intended. As analyzed
-  2026-07-25 (see `CLAUDE.md`), the result for `m≠0` is NOT a clean scalar/
-  phase discrepancy — it reconstructs a genuinely different angular pattern
-  (the `m`-flipped one) combined with a conjugated radial function. Printed
-  for diagnostic inspection only; do **not** expect a real, let alone
-  `1+0i`, ratio here. This is the open "absolute sign"/`conjg()` issue,
-  not a test bug — see §`test_s1_vs_s2_l1m0` and
-  `CLAUDE.md` for the ongoing investigation.
+  (`tni`-referenced, `R0^2/l(l+1)` factors) and, separately, natively
+  outputs `H_r`/`E_theta`/`E_phi` with the opposite sign convention from S2
+  (S1's `r̂` points toward Earth's center, S2's points away — two different
+  but equally valid physical conventions). Its ratio against the closed
+  form is a single **real** constant — **≈+1.6667e5 for the three H
+  components, ≈−1.6667e5 for the two E components** (the sign split is the
+  ordinary H-vs-E pseudovector/polar-vector distinction) — not `1+0i`,
+  since S1's normalization was never calibrated to match the closed form's
+  amplitude.
 
 ```
 python reference_unit_sphere.py
 ./test_unit_sphere
 ```
 
-### Expected (correct) output
+### Expected output (regenerated 2026-09)
 
-`reference_unit_sphere.py`, Section 2 (S2):
+`reference_unit_sphere.py`:
 ```
-component        (r,theta,phi)                                                       value @ native e^-iwt
-Hr (H%z)         r= 1525.00 th=1.8325957146 ph=0.0000000000   +1.7667764256e+03 +7.6668657838e+00j
-Hphi (H%x)       r= 2000.00 th=1.8325957146 ph=0.3926990817   -4.5829869330e+02 +1.1087679955e+03j
-Htheta (H%y)     r= 2000.00 th=1.9307704850 ph=0.0000000000   +3.4851409098e+03 -2.5980129153e+00j
-Etheta (E%y)     r= 1525.00 th=1.8325957146 ph=0.3926990817   -5.3876610799e-01 -2.2590824824e-01j
-Ephi (E%x)       r= 1525.00 th=1.9307704850 ph=0.0000000000   +7.3643022448e-03 -1.6970527415e+00j
+=== Section 1: field1d.f90 (S1) ===
+component        (r,theta,phi)                                                           value @ s=-1 (+iwt)
+Hr (H%z)         r= 1525.00 th=1.8325957146 ph=0.0000000000   +1.7614866793e-06 -7.6439111111e-09j
+Hphi (H%x)       r= 2000.00 th=1.8325957146 ph=0.3926990817   -4.5857415588e-07 +1.1047658692e-06j
+Htheta (H%y)     r= 2000.00 th=1.9307704850 ph=0.0000000000   +3.4747063632e-06 +2.5902344387e-09j
+Etheta (E%y)     r= 1525.00 th=1.8325957146 ph=0.3926990817   +5.3908754226e-10 +2.2056156756e-10j
+Ephi (E%x)       r= 1525.00 th=1.9307704850 ph=0.0000000000   +7.3422534503e-12 +1.6919717486e-09j
+
+=== Section 2: field1d_s2.f90 (S2) -- expect EXACT match, ratio=1+0i ===
+component        (r,theta,phi)                                                         value @ native e^-iwt
+Hr (H%z)         r= 1525.00 th=1.8325957146 ph=0.0000000000   +1.7614866793e-06 +7.6439111111e-09j
+Hphi (H%x)       r= 2000.00 th=1.8325957146 ph=0.3926990817   -4.5692654243e-07 +1.1054483330e-06j
+Htheta (H%y)     r= 2000.00 th=1.9307704850 ph=0.0000000000   +3.4747063632e-06 -2.5902344387e-09j
+Etheta (E%y)     r= 1525.00 th=1.8325957146 ph=0.3926990817   -5.3715303688e-10 -2.2523187669e-10j
+Ephi (E%x)       r= 1525.00 th=1.9307704850 ph=0.0000000000   +7.3422534503e-12 -1.6919717486e-09j
 ```
 
-`./test_unit_sphere`, S2 block:
+`./test_unit_sphere`:
 ```
+ S1 (field1d.f90) output (real, imag) -- compare vs reference_unit_sphere.py section 1:
+  H%z(i=1,j=5,k=Rr=2) [Hr]     =    2.935804715788943E-01   1.282912668115673E-03
+  H%x(i=1,j=5,k=Rs=2) [Hphi]   =   -7.615349024114372E-02   1.842418565234570E-01
+  H%y(i=1,j=5,k=Rs=2) [Htheta] =    5.791179446223432E-01  -4.347309285245833E-04
+  E%y(i=1,j=5,k=Rr=2) [Etheta] =   -8.952418337538885E-05  -3.754129342278147E-05
+  E%x(i=1,j=5,k=Rr=2) [Ephi]   =    1.232284119260964E-06  -2.819946843171999E-04
+
  S2 (field1d_s2.f90) output (real, imag) -- compare vs
  reference_unit_sphere.py section 2 ("field1d_s2.f90 (S2)");
  expect EXACT match, ratio = 1+0i for all five components:
-  H%z(i=1,j=5,k=Rr=2) [Hr]     =    1.766772564157752E+03   7.720591661637887E+00
-  H%x(i=1,j=5,k=Rs=2) [Hphi]   =   -4.582930754781241E+02   1.108770810024113E+03
-  H%y(i=1,j=5,k=Rs=2) [Htheta] =    3.485142218339718E+03  -2.616218597913464E+00
-  E%y(i=1,j=5,k=Rr=2) [Etheta] =   -5.387581562728363E-01  -2.259241834997097E-01
-  E%x(i=1,j=5,k=Rr=2) [Ephi]   =    7.415908258769074E-03  -1.697049115420322E+00
+  H%z(i=1,j=5,k=Rr=2) [Hr]     =    1.761482829459403E-06   7.697476133112672E-09
+  H%x(i=1,j=5,k=Rs=2) [Hphi]   =   -4.569209414340766E-07   1.105451139147801E-06
+  H%y(i=1,j=5,k=Rs=2) [Htheta] =    3.474707667738790E-06  -2.608385613308313E-09
+  E%y(i=1,j=5,k=Rr=2) [Etheta] =   -5.371451089734440E-10  -2.252477642384539E-10
+  E%x(i=1,j=5,k=Rr=2) [Ephi]   =    7.393704955394321E-12  -1.691968133423683E-09
 ```
 
-**Pass criterion (S2 block only)**: ratio (Fortran / reference)
-≈ 1+0i for all 5 components, to ~5 significant figures (residual ~1e-5,
-from `field1d_s2.f90`'s deliberate `r0+1m` epsilon shift and the
-reference's finite-difference `ψ_l'` approximation — both harmless, see
-`CLAUDE.md`).
+**Pass criterion, S2 block**: ratio (Fortran / reference) ≈ 1+0i for all 5
+components, to ~5 significant figures (residual ~1e-5, from
+`field1d_s2.f90`'s deliberate `r0+1m` epsilon shift and the reference's
+finite-difference `ψ_l'` approximation — both harmless).
 
-The S1 block (Section 1 of the reference script, `./test_unit_sphere`'s
-first output block) is diagnostic only — see the note above; do not expect a
-passing ratio there.
+**Pass criterion, S1 block**: ratio (Fortran / reference Section 1) is a
+single real constant, no phase residual beyond a fraction of a degree —
+**≈+1.6667e5 for `Hr`/`Hphi`/`Htheta`, ≈−1.6667e5 for `Etheta`/`Ephi`**.
+Not `1+0i` (S1's normalization isn't calibrated to the closed form's
+amplitude) and not yet an automated pass/fail check in the driver — verify
+by eye, or compute the ratio directly from the two blocks above.
 
 ---
 
@@ -141,10 +156,9 @@ E%x [Ephi]       r= 6372250.000 th=1.9307704850 ph=0.0000000000   -2.2358130622e
 `reference_earth_l1mneg1.py` has `SHOW_NAIVE_COMPARISON` at the top — set it
 `True` to also print the WRONG reference values (naive
 `conj(pythonSolver(l,+m)/A)`, with none of the norm/m-flip/H-sign
-corrections from `CLAUDE.md`'s "Cross-convention comparison rule"). This is
-exactly the mistake that produced the original, long-unresolved "extra
-factor" mystery earlier in this project. Comparing the Fortran output above
-against that naive reference gives:
+corrections listed below). This is exactly the mistake that produced the
+original, long-unresolved "extra factor" mystery earlier in this project.
+Comparing the Fortran output above against that naive reference gives:
 
 | component | \|ratio\| | phase (deg) | after applying only the √(l(l+1)) norm fix |
 |---|---|---|---|
@@ -207,16 +221,35 @@ steps 1–2's closed-form/cross-solver checks instead).
 
 ---
 
+## 5. `earth%tau` (thin-sheet surface conductance) sensitivity
+
+```
+make -f Makefile.test1d test_tau_sweep
+./test_tau_sweep
+```
+
+Sweeps `earth%tau` from 1 S down to 0 and reports the magnitude error and phase shift of the
+S2-solver output relative to the `tau=0` case (which is itself exact, since S2 matches the
+closed-form solution exactly at `tau=0` — see §1). Also reports the same comparison at Earth's
+actual radius, at two production periods, both for a homogeneous sphere matched to the toy
+sphere's own electrical regime and for the actual layered conductivity model in
+`LWS/layered_GDE_rho.prm`. No pass/fail criterion — this is a sensitivity study, not a
+regression check; every number it prints is quoted directly in
+`docs/tau_sensitivity_analysis.md`/`.pdf`, which explains what they mean.
+
+---
+
 ## Summary of what's validated where
 
 | What | How | Where |
 |---|---|---|
 | `field1d_s2.f90` radial + angular + assembly, l=2,m=1 | closed form, exact | §1 |
-| `field1d.f90` radial + angular + assembly, l=2,m=1 | closed form, diagnostic only (no clean match expected) | §1 |
+| `field1d.f90` radial + angular + assembly, l=2,m=1 | closed form, clean real ratio (S1's own normalization, not calibrated to 1) | §1 |
 | `field1d_s2.f90` radial + angular + assembly, l=1,m=-1, Earth scale | pythonSolver cross-check, exact | §2 |
 | `field1d.f90`'s `sourcePotential` radial functions only | closed form, exact | §3 |
 | Any `.hfield`/`.efield` output's E/H differential consistency | Faraday's law, numerical | §4 |
-| `field1d.f90` vs `field1d_s2.f90` direct comparison, l=1,m=0 | side-by-side, investigates `conjg()`/absolute-sign issue | `test_s1_vs_s2_l1m0` (see `CLAUDE.md`) |
+| `earth%tau` thin-sheet sensitivity, toy sphere + Earth scale (matched-regime + realistic model) | magnitude/phase sweep, sensitivity study | §5 |
+| `field1d.f90` vs `field1d_s2.f90` direct comparison, l=1,m=0 | side-by-side, real single-constant ratio (S1's normalization, `H`/`E` opposite sign) | `test_s1_vs_s2_l1m0` |
 | `spherical_em_induction.py`'s own `solve_layered` | closed form, exact | `pythonSolver/test_pythonsolver_Rval_Rpval.py` |
 | `spherical_em_induction.py`'s own `fields_from_R_general` | Faraday's law, self-consistency | `pythonSolver/test_pythonsolver_faraday.py` |
 | `spherical_em_induction.py`'s general-`m` vs `solve_layered`/closed-form regression | internal regression | `pythonSolver/test_validate.py`, `test_general_lm.py` |

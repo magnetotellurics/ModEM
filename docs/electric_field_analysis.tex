@@ -1,0 +1,270 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\newcommand{\rhat}{\hat{\mathbf r}}
+\newcommand{\thetahat}{\hat{\boldsymbol\theta}}
+\newcommand{\phihat}{\hat{\boldsymbol\phi}}
+
+\title{Electric field computation in \texttt{sourceField1d}}
+\author{Anna Kelbert with Claude}
+\date{September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\texttt{sourceField1d} (\texttt{EARTH/FWD/field1d.f90}) computes both the magnetic field
+$\mathbf{H}$ (poloidal) and the electric field $\mathbf{E}$ (toroidal) of the 1D layered-sphere
+solution, from a single scalar toroidal potential $T_l(r)$. $\mathbf{H}$ and $\mathbf{E}$ are
+built from opposite vector spherical harmonic (VSH) patterns of the same potential, related by
+Faraday's law. This note derives that relation, gives the exact formulas and grid staggering
+\texttt{sourceField1d} implements, and records the one physical convention choice (radial
+direction) that distinguishes this solver from its companion, \texttt{field1d\_s2.f90}.
+\end{abstract}
+
+\section{Poloidal and toroidal decomposition}
+
+Any smooth vector field $\mathbf F$ on a spherical surface splits into three orthogonal parts:
+\begin{equation}
+\mathbf F = F_r\,\rhat \;+\; \nabla_a P \;+\; \rhat\times\nabla_a T .
+\end{equation}
+$\nabla_a P$ (the tangential gradient of a scalar $P$) is the \textbf{poloidal} part;
+$\rhat\times\nabla_a T$ (the curl of a radial vector) is the \textbf{toroidal} part. For a
+magnetotelluric source, $\mathbf H$ is poloidal ($H_r\ne0$) and $\mathbf E$ is toroidal ($E_r=0$,
+purely tangential) --- the standard TE-mode picture of deep-Earth induction.
+
+In vector spherical harmonics (degree $l$, order $m$), with \texttt{vsharm} computing
+$Y(l,m{+}1)=Y_l^m$, $Y_t(l,m{+}1)=\partial Y/\partial\theta$,
+$Y_p(l,m{+}1)=(\partial Y/\partial\phi)/\sin\theta$:
+\begin{align}
+\Psi_{lm} &= \nabla_a Y_{lm} \;\to\; (Y_t\,\thetahat + Y_p\,\phihat) &&\text{POLOIDAL pattern} \\
+\Phi_{lm} &= \rhat\times\nabla_a Y_{lm} \;\to\; (-Y_p\,\thetahat + Y_t\,\phihat) &&\text{TOROIDAL pattern}
+\end{align}
+$\mathbf H$ uses $\Psi_{lm}$ (theta component $Y_t$, phi component $+Y_p$); $\mathbf E$ uses
+$\Phi_{lm}$ (theta component $-Y_p$, phi component $+Y_t$) --- the same pair $(Y_t,Y_p)$, swapped
+and one sign flipped. This is the fundamental Maxwell duality for the TE mode:
+\begin{equation}
+\nabla\times\mathbf E = i\omega\mu_0\mathbf H \ \text{(Faraday)}, \qquad
+\nabla\times\mathbf H = \sigma\mathbf E \ \text{(Amp\`ere, quasi-static)} .
+\end{equation}
+Faraday's toroidal curl gives a poloidal field, and vice versa.
+
+\section{The potentials, and the $H$ field}
+\label{sec:H}
+
+\texttt{sourcePotential} returns, at every radius and degree:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llll}
+\toprule
+Array & Value & Radii & Drives \\
+\midrule
+\texttt{Tnr(k,l)}  & $T(r)$   & $R_r(1{:}N_r)$, cell centers & $H_r$, both $E$ components \\
+\texttt{Tnsp(k,l)} & $dT/dr$  & $R_s(1{:}N_r{+}1)$, cell faces & $H_\theta$, $H_\phi$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\texttt{Tnsp = d(Tnr)/dr} --- the physical radial derivative of \texttt{Tnr}.
+
+\texttt{sourceField1d} assembles, per component (Fortran coefficient ordering
+$m=0,{+}1,{-}1,{+}2,{-}2,\dots$):
+\begin{align}
+H_x(i,j,k)\;[\phi]     &= \sum_l Y_p(l,\cdot)\,\mathtt{coefl}\,\mathtt{Tnsp}(k,l)\,R_0^2/R_s(k)/l(l{+}1) \\
+H_y(i,j,k)\;[\theta]   &= \sum_l Y_t(l,\cdot)\,\mathtt{coefl}\,\mathtt{Tnsp}(k,l)\,R_0^2/R_s(k)/l(l{+}1) \\
+H_z(i,j,k)\;[r]        &= \sum_l Y(l,\cdot)\,\mathtt{coefl}\,\mathtt{Tnr}(k,l)\,R_0^2/R_r(k)^2
+\end{align}
+($H_r$ carries no $l(l{+}1)$ denominator --- consistent with how \texttt{Tnr}/\texttt{Tnsp} are
+normalized in \texttt{sourcePotential}.) Each $l$-sum is built directly from the $m=0$ term plus
+each $+m/-m$ pair (\S\ref{sec:pairing}) --- no post-hoc conjugation of any kind.
+
+\section{Electric field: derivation and formulas}
+\label{sec:E}
+
+Start from $\nabla\times\mathbf E = i\omega\mu_0\mathbf H$, $E_r=0$. The theta-component of
+Faraday's law gives
+\begin{equation}
+-\frac{1}{r}\frac{d(rE_\phi)}{dr} = i\omega\mu_0 H_\theta
+= i\omega\mu_0\,\mathtt{Tnsp}(r)\,\frac{R_0^2}{r\,l(l{+}1)}\,Y_t .
+\end{equation}
+Integrating ($\mathtt{Tnsp}=d\,\mathtt{Tnr}/dr$):
+\begin{equation}
+E_\phi = -i\omega\mu_0\,\mathtt{Tnr}(r)\,\frac{R_0^2}{r\,l(l{+}1)}\,Y_t .
+\end{equation}
+The phi-component gives, by the same steps,
+\begin{equation}
+E_\theta = +i\omega\mu_0\,\mathtt{Tnr}(r)\,\frac{R_0^2}{r\,l(l{+}1)}\,Y_p .
+\end{equation}
+$E_r=0$ throughout (TE mode). The radial component of Faraday's law is automatically satisfied
+--- not an independent constraint --- since $E_\theta$/$E_\phi$ were built from the SAME potential
+$T_l(r)$ whose value (\texttt{Tnr}) and derivative (\texttt{Tnsp}) already solve one consistent
+radial ODE; the poloidal/toroidal formalism guarantees the two are compatible by construction.
+
+\paragraph{Result:}
+\begin{align}
+E_\theta &= +i\omega\mu_0\,\mathtt{Tnr}(r)\,R_0^2/(r\,l(l{+}1))\;Y_p \\
+E_\phi   &= -i\omega\mu_0\,\mathtt{Tnr}(r)\,R_0^2/(r\,l(l{+}1))\;Y_t \\
+E_r      &= 0
+\end{align}
+$E$ uses the existing \texttt{Tnr} array directly --- no separate potential is needed.
+
+\subsection*{Angular patterns compared}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lllll}
+\toprule
+Component & $H$ pattern & $H$ potential & $E$ pattern & $E$ potential \\
+\midrule
+theta ($H_y$/$E_y$) & $+Y_t$ & \texttt{Tnsp} at $R_s$ & $+Y_p$ & $i\omega\mu_0\,\mathtt{Tnr}$ at $R_r$ \\
+phi ($H_x$/$E_x$)   & $+Y_p$ & \texttt{Tnsp} at $R_s$ & $-Y_t$ & $i\omega\mu_0\,\mathtt{Tnr}$ at $R_r$ \\
+radial ($H_z$/$E_z$) & $+Y$  & \texttt{Tnr} at $R_r$   & $0$    & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+$E_{\rm tang}$ pairs with $H_r$ (same potential $T(r)$, different angular pattern); $H_{\rm tang}$
+pairs with $dT/dr$ (\texttt{Tnsp}). This is the Faraday-Amp\`ere duality.
+
+\section{Coefficient assembly: the $\pm m$ pairing}
+\label{sec:pairing}
+
+Fortran coefficient ordering differs from MATLAB's:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+Physical $m$ & Fortran \texttt{coefl} index & MATLAB \texttt{amp} index \\
+\midrule
+$m=0$   & $1$     & $1$ \\
+$m=+m$  & $2m$    & $m{+}1$ \\
+$m=-m$  & $2m{+}1$ & $l{+}1{+}m$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Each degree-$l$ sum adds the $m=0$ term directly, then each $+m/-m$ pair via the Condon-Shortley
+identity $Y_l^{-m}=(-1)^m\overline{Y_l^m}$:
+\begin{equation}
+C = \frac{Y(l,m{+}1)\,\mathtt{coefl}(2m) + (-1)^m\overline{Y(l,m{+}1)}\,\mathtt{coefl}(2m{+}1)}{l(l{+}1)}
+\end{equation}
+for the $l(l{+}1)$-normalized components ($H_\theta$, $H_\phi$, $E_\theta$, $E_\phi$); $H_r$ uses
+the same pairing without the $l(l{+}1)$ divisor. $E_x$'s accumulated pair carries an overall
+leading minus sign, matching the $-Y_t$ pattern above. The $(-1)^m$ factor is required: omitting
+it reproduces the physical sum only for even $m$.
+
+No component is conjugated after assembly --- each $l$-sum, once the $\pm m$ pairing above is
+applied term-by-term, is already the correct physical field.
+
+\section{Radial (source-amplitude) normalization}
+\label{sec:radial}
+
+The formulas in \S\ref{sec:H}--\ref{sec:E} are written directly in terms of \texttt{coefl} ---
+the coefficient array as consumed natively by \texttt{sourceField1d} --- and
+\texttt{Tnr}/\texttt{Tnsp}, the radial potential/derivative solved once per degree $l$,
+independent of $m$ and of the coefficient values. Because \texttt{Tnr}/\texttt{Tnsp} never depend
+on \texttt{coeff}, every formula above ($H_r$, $H_\theta$, $H_\phi$, $E_\theta$, $E_\phi$) is
+exactly \textbf{linear in \texttt{coefl}} --- a coefficient's absolute scale enters every field
+component identically.
+
+\texttt{field1d.f90} natively expects $\mathtt{coeff}(l,m)=1$ to mean a \textbf{unit external
+surface radial field}: $H_r(R_0) = Y_l^m(\theta,\phi)$ --- the \texttt{RADIAL\_SURFACE} convention
+in \texttt{EARTH/FWD/output\_convention.f90}. Three other conventions are supported for source
+coefficients authored differently: an amplitude of the external potential term
+$T_l^{\rm ext}(r)=\alpha_l^T(r/R_0)^{l+1}$ (\texttt{RADIAL\_MULTIPOLE}, \texttt{field1d\_s2.f90}'s
+own native convention, unit $\alpha_l^T=1$); a literal $r^{l+1}$ coefficient
+(\texttt{RADIAL\_DIMENSIONAL}, Sun \& Egbert's own text convention, $r$ in metres); or the
+classical external geomagnetic potential's Gauss coefficient (\texttt{RADIAL\_POTENTIAL},
+$V=R_0\sum_l(r/R_0)^l\varepsilon_l^m Y_l^m$, used for ionospheric-current/Sq sources).
+
+To use coefficients authored in one of these other conventions with the formulas in
+\S\ref{sec:H}--\ref{sec:E}, rescale them \textbf{per degree $l$} (the same factor for every $m$
+of that degree, before substituting as \texttt{coefl}):
+\begin{equation}
+\mathtt{coefl\_for\_formula}(l,m) = \mathtt{coeff\_in\_other\_convention}(l,m)\cdot
+\frac{A(\mathtt{SURFACE},l)}{A(\mathtt{other\_convention},l)}
+\end{equation}
+with the per-degree amplitude $A(l)$, relative to the \texttt{MULTIPOLE} baseline (identical to
+\texttt{output\_convention.f90}'s \texttt{radial\_amplitude()}):
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\texttt{radial\_norm} & $A(l)$ \\
+\midrule
+\texttt{MULTIPOLE}   & $1$ \\
+\texttt{SURFACE}     & $R_0^2/(l(l{+}1))$ \\
+\texttt{DIMENSIONAL} & $R_0^{l+1}$ (overflows double precision for $l\gtrsim44$) \\
+\texttt{POTENTIAL}   & $R_0^2/(l{+}1)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Because this rescale is a single real scalar per degree $l$, applied identically wherever
+\texttt{coefl} appears in \S\ref{sec:H}--\ref{sec:E}, it multiplies $H_r$, $H_\theta$, $H_\phi$,
+$E_\theta$, $E_\phi$ all by the \textbf{same} factor for that degree --- an overall amplitude
+change only. It never touches the angular pattern ($Y$/$Y_t$/$Y_p$), the relative $H$/$E$
+component ratios, or the impedance $Z=E/H$ (amplitude-independent by construction). This
+linearity is exactly why rescaling the source coefficients before the solve
+(\texttt{rescale\_source\_radial}) and rescaling the finished $H$/$E$ output by the same factor
+afterward are equivalent operations.
+
+\section{Grid staggering}
+
+$H_r$/$E$'s \texttt{Tnr} live at cell-center radii $R_r$; $H_\theta$/$H_\phi$'s \texttt{Tnsp} at
+cell-face radii $R_s$ ($k$ loops over $N_{rr}=N_r$ vs.\ $N_{rs}=N_r{+}1$ respectively).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lllll}
+\toprule
+Component & theta eval & phi eval & radii & $j$ range \\
+\midrule
+$H_x$ (phi)    & node $\theta(j)$      & mid $\phi{+}d\phi/2$ & $R_s$ & $2..N_t$ \\
+$H_y$ (theta)  & mid $\theta{+}d\theta/2$ & node $\phi(i)$    & $R_s$ & $1..N_t$ \\
+$H_z$ (r)      & node $\theta(j)$      & node $\phi(i)$       & $R_r$ & $j_1..j_2$ (pole-aware) \\
+$E_y$ (theta)  & node $\theta(j)$      & mid $\phi{+}d\phi/2$ & $R_r$ & $j_1..j_2$ (pole-aware) \\
+$E_x$ (phi)    & mid $\theta{+}d\theta/2$ & node $\phi(i)$    & $R_r$ & $1..N_t$ \\
+$E_z$ (r)      & --- & --- & --- & zero \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Each $E$ component shares its angular stagger with the $H$ component using the \textbf{same VSH
+factor} --- $E_y$ ($Y_p$) with $H_x$ (also $Y_p$, node theta/mid phi), $E_x$ ($Y_t$) with $H_y$
+(also $Y_t$, mid theta/node phi) --- not with the $H$ component it pairs with physically via
+Faraday's law. $E_y$, not $E_x$, is therefore the pole-adjacent (node-theta) component and
+carries the pole-aware $j_1,j_2$ range: $j_1=1$ unless $\theta(1)$ is a true pole ($j_1=2$ then);
+$j_2=N_t{+}1$ unless $\theta(N_t{+}1)$ is a true pole ($j_2=N_t$ then). This range is only ever
+narrowed for a genuinely global grid reaching both poles --- a regional grid keeps its full node
+range. \texttt{node\_P\_lm} (shared with $H_z$) is reused for $E_y$; \texttt{edge\_P\_lm}
+(shared with $H_y$) is reused for $E_x$ --- no separate Legendre computation is needed for $E$.
+
+\section{Scope and the radial-direction convention}
+
+$E_r=0$ is exact for the TE (poloidal-$H$) source this solver targets; a source with TM-mode
+content would need separate treatment (not needed for standard Sq/ring-current MT sources).
+
+\texttt{field1d.f90}'s raw output above is natively $e^{-i\omega t}$, with $\rhat$ pointing away
+from Earth's center (increasing radius) --- identical, in every bookkeeping respect but one, to
+the companion solver \texttt{field1d\_s2.f90}. This was a deliberate choice, not the solver's
+original one: \texttt{field1d.f90} was written in 2011 as a faithful implementation of Kelbert
+(2006)'s own conventions (the Global3D Fortran code in ModEM), which use $\rhat$ pointing toward
+Earth's center and $e^{+i\omega t}$ output --- genuinely different, equally valid physical
+conventions. \texttt{field1d.f90} was later re-pointed to match \texttt{field1d\_s2.f90} so the
+two independently-derived solvers agree natively with no compensating sign in comparison code;
+Kelbert (2006)'s original convention remains available as the named \texttt{KELBERT2006} preset
+in \texttt{EARTH/FWD/output\_convention.f90}. See \texttt{docs/output\_conventions.pdf} for the
+full convention system and the derivation of exactly which field components that
+radial-direction choice affects.
+
+\end{document}

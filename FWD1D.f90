@@ -401,8 +401,9 @@ program fwd1d
     ! set tolerance on toroidal potential
     earth%tol = 1.e-9
 
-    ! set surface conductance (should be small since we're using 3D thinsheet)
-    earth%tau = 1.e-4
+    ! set surface conductance - set this to zero unless you know what you're doing!
+    ! (we are NOT using 3D thinsheet, so anything > 0 causes error buildup)
+    earth%tau = 0.0e0
 
     ! save model in 1D configuration structure: layers include the core
     allocate(earth%layer(nL+1),earth%sigma(nL+1), STAT=istat)

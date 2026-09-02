@@ -43,11 +43,31 @@ Sign convention:
 FWD1D uses exp(- i\omega\mu) convention. This is consistent with the default ISIGN = -1 in ModEM. This is also consistent with Jin's Matlab code.
 The 3D global code uses exp(+ i\omega\mu) convention. 
 The new pythonSolver code also uses exp(+ i\omega\mu). 
-There is a conjugate operator that is applied to all fields at the end of FWD1D computations, in the original Kelbert et al 2014 version of the code. I thought that was needed for compatibility with the global Fortran code. Turns out that it partially compensates for the coefficient ordering/scaling conventions in vsharm but in fact, it may be an erroneous way to do this. Will revisit in a future commit (soon! - this needs to be resolved). This code used to work correctly with the 3D global, but I no longer remember the details of how it worked.
-The new implementation in FWD1D that Claude derived directly from the Sun & Egbert 2012 publication does not suffer from this uncertainty, and is now validated.
-The conventions for the coefficients make all the difference and I need to understand which of the multiple conventions to use! See the comparison with the Python code in demo_general_lm.py.
+There was a conjugate operator that is applied to all fields at the end of FWD1D computations, in the original Kelbert et al 2014 version of the code. That was needed for compatibility with the global Fortran code. Turns out that this conjugation was tangled with the Condon-Shortley phase convention and resulted in weird artifacts when I tried to validate and/or use without Condon-Shortley phase. This code used to work correctly with the 3D global, but I no longer remember the details of how it worked - possibly there was an error that was never found because the same conventions were used throughout. At any rate, this is now fixed and all the different conventions are now explicit and customizable.
+The new implementation in FWD1D that Claude derived directly from the Sun & Egbert 2012 publication does not suffer from this uncertainty, and is now validated. This was also used to debug the original code.
+The conventions for the coefficients make all the difference and I had to understand which of the multiple conventions to use! See the comparison with the Python code in demo_general_lm.py.
+
+## Noted bug - historical (for the record); this has been fixed now!
 
 I compared the current implementation between FWD1D Fortran code (Kelbert et al 2014 version) and the Matlab code (with Jin's settings in TSModel). I run the comparison using MTsource.1000sec.Mode1.prm and MTsource.1000sec.Mode2.prm, where Mode1 is non-zonal and Mode2 is zonal. These two settings are intended to imitate regional MT code. For Mode1 (non-zonal) both E_theta and E_phi are identical between Fortran and Matlab, and look correct as far as I can tell. For Mode2 (zonal, P10) E_theta is zero as expected. The real component of E_phi is consistent (and correct). The imaginary component of E_phi is negative in Fortran and positive in Matlab. Both components should be positive for this 1D model (based on a comparison with an independent MT calculation using ModEM). The comparison with the Python code was showing consistent Hx,Hy and a (-1i) factor in Hz,Ex,Ey. All of this was so confusing that I had Claude write a new Fortran code from scratch; this code based on Sun & Egbert 2012 is now consistent with the Python code - after an array of convention adjustments!!! - and with analytic solutions. Next, we need to understand what is consistent with ModEM and with Gary's ionospheric source modeling in Matlab. The Matlab code has not been updated to reflect any of our new findings. We believe it to be correct but it's probably only correct due to a cancellation of multiple inconsistencies. It hasn't really been carefully tested in its current form.
+
+### Resolved: the conjg() and the Hz sign convention (2026-09)
+
+Both open questions in the paragraphs above are resolved, and neither was a mistake:
+
+- The `conjg()` applied to every field at the end of the original FWD1D computation converted its
+  native `exp(-iωt)` output into Kelbert (2006)'s `exp(+iωt)` convention — a deliberate, correct
+  choice for compatibility with the Global3D Fortran code. The actual bug was in *how* it was
+  implemented: baked directly into the `+m/-m` coefficient-pairing loop, where it interacted
+  incorrectly with an incomplete Condon-Shortley `(-1)^m` reconstruction for sources that only
+  supply one of a `+m/-m` pair. Fixed by removing it from the raw field assembly and moving the
+  same `exp(+iωt)` conversion to an explicit, correctly-scoped step in the `OUTPUT_CONVENTION`
+  machinery — request it via `OUTPUT_CONVENTION='KELBERT2006'`.
+- Separately, FWD1D's `Hz` (and `Etheta`, `Ephi`) sign is Kelbert (2006)'s own deliberate
+  convention: `r̂` points down (toward Earth's center), not up like Sun & Egbert (2012). FWD1D's
+  native output has since been re-pointed to the Sun & Egbert convention so the two solvers agree
+  directly with no compensating sign anywhere; the original Kelbert convention remains available
+  as `OUTPUT_CONVENTION='KELBERT2006'` (`r_convention=R_DOWN`).
 
 ### Fix MT polarization mode name mislabeling in solution/RHS I/O
 
@@ -377,3 +397,13 @@ Full write-up with derivations: **[`docs/source_normalization.md`](docs/source_n
   to 1.145 at 3981 s — confirming the framework and that the residual is genuine flat-vs-spherical
   physics, not an artifact of the experimental spherical BC. See
   [`testing/test_vs_modem_1D/cartesian_sanity_check.md`](testing/test_vs_modem_1D/cartesian_sanity_check.md).
+
+## Sensitivity to the thin-sheet surface conductance `earth%tau`
+
+Full write-up with derivations: **[`docs/tau_sensitivity_analysis.md`](docs/tau_sensitivity_analysis.md)**
+(and the compiled **`docs/tau_sensitivity_analysis.pdf`**). Summary: `earth%tau` (Siemens) is an
+optional thin conducting sheet at the model's outer surface, with no numerical advantage to a
+nonzero value — the solver is exact at `tau=0`. The dimensionless control parameter is
+`Q=ωμ₀τr0`; the error/phase perturbation scales linearly with `Q` up to `Q~40`, beyond which the
+response saturates rather than diverging. `FWD1D.f90`'s current default `tau=1e-4` is negligible
+at every production period tested and could be replaced by `0`.

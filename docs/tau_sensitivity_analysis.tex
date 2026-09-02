@@ -1,0 +1,424 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\newcommand{\rhat}{\hat{\mathbf r}}
+\newcommand{\that}{\hat{\boldsymbol\theta}}
+\newcommand{\tautt}{\texttt{earth\%tau}}
+
+\title{Sensitivity of \textsc{global1d} solutions to the thin-sheet\\
+surface conductance \tautt}
+\author{Anna Kelbert with Claude}
+\date{August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\textsc{global1d} (\texttt{field1d.f90}/\texttt{field1d\_s2.f90}) carries a single scalar parameter,
+\tautt\ (units Siemens), representing an optional thin conducting sheet superimposed at the model's
+outer surface $r=r_0$; we denote it $\tau$ below. This note derives how $\tau$ enters the governing
+equations, identifies the natural dimensionless control parameter, and reports a numerical sensitivity
+test against the closed-form analytic solution for a uniformly conducting sphere. We find (i) no
+numerical advantage to a nonzero $\tau$: the solver is exact and well-behaved at $\tau=0$, which is
+also the case the closed-form reference itself assumes; (ii) the error introduced by a nonzero $\tau$
+scales linearly with the dimensionless parameter $Q=\omega\mu_0\tau\,r_0$ over eight orders of
+magnitude, with the linear-regime coefficient implying the perturbation only reaches order unity near
+$Q\sim40$; and (iii) a dedicated Earth-scale test (matching the conductor's own electrical size to the
+toy sphere's, to isolate the effect of $Q$ alone) confirms this threshold and identifies the
+mechanism beyond it: once $Q$ dominates the conductor's own pre-jump value, the boundary condition
+is controlled by the artificial thin sheet rather than the layered conductor, so the response
+\emph{saturates} in magnitude and can \emph{overshoot and reverse sign} in phase, rather than growing
+without bound. (iv) A further check using the actual layered Earth conductivity model
+(\texttt{LWS/layered\_GDE\_rho.prm}) at the production period of 3600\,s shows that, at the same $Q$,
+the real Earth's much higher conductivity suppresses the perturbation well below what the
+matched-regime toy-sphere comparison of (iii) predicted --- the $Q\sim40$ threshold is specific to
+that toy conductor's own electrical regime, not a universal constant.
+\end{abstract}
+
+\section{How $\tau$ enters the equations}
+
+Both solvers solve for the toroidal potential $T_l(r)$ via a transfer-matrix recursion through the
+layered conductivity structure, matched to an insulating atmosphere above $r_0$. Ordinary continuity
+of the layered-earth solution requires both $T$ and $T'$ continuous across every interface. At the
+model's outer surface, \emph{both} solvers instead apply a modified matching condition
+(field1d\_s2.f90 eq.~17; field1d.f90, algebraically identical, independently written):
+\begin{equation}
+  T_l'(r_0^+) \;=\; T_l'(r_0^-) \;-\; i\,\omega\,\mu_0\,\tau\,T_l(r_0),
+  \qquad T_l(r_0^+) = T_l(r_0^-).
+  \label{eq:jump}
+\end{equation}
+$T$ itself remains continuous; only $T'$ jumps, by a term proportional to $\tau$.
+
+\paragraph{Physical interpretation.} This is the classical thin-sheet (Price 1949) approximation. A
+sheet of conductance $\tau=\int\sigma\,dz$ carries an induced surface current $K=\tau\,E_{\rm
+tangential}$ (Ohm's law integrated through the sheet's negligible thickness). Since $H_\theta,H_\phi
+\propto T'/r$ and $E_\theta,E_\phi\propto T$, Amp\`ere's law relates a surface current directly to a
+jump in tangential $H$ --- exactly \eqref{eq:jump}. Setting $\tau=0$ removes the sheet entirely and
+recovers ordinary continuity.
+
+\paragraph{Dimensionless control parameter.} Comparing the added term in \eqref{eq:jump} against the
+natural scale of $T'$ itself ($T'/T\sim O(l)/r_0$) gives the classical thin-sheet parameter
+\begin{equation}
+  Q \;=\; \omega\,\mu_0\,\tau\,r_0 ,
+  \label{eq:Q}
+\end{equation}
+which governs the size of the perturbation independent of the specific $(r_0,\omega)$ used in any
+particular test or production run.
+
+\section{Numerical test}
+
+We use the same single homogeneous-sphere configuration as the existing closed-form regression test
+(\texttt{test\_unit\_sphere.f90}: $r_0=1000$\,m, $\sigma=1$\,S/m, $\omega=1$\,rad/s, unit external
+$(l{=}2,m{=}{+}1)$ multipole source), for which S2 already matches the analytic solution
+\emph{exactly} at $\tau=0$ (ratio $=1+0i$ for all five field components). The $\tau=0$ output
+therefore serves directly as the analytic reference; no closed-form values need to be re-derived here.
+$H_r,H_\theta,H_\phi,E_\theta,E_\phi$ are extracted at one fixed grid point in the vacuum region
+immediately above the sphere for every $\tau$.
+
+\subsection{Magnitude error vs.\ $\tau$}
+
+Table~\ref{tab:magerr} sweeps $\tau$ from 1\,S down to 0, reporting $Q$ (eq.~\ref{eq:Q}) and the
+maximum relative error across all five field components against the $\tau=0$ reference.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rrr}
+\toprule
+$\tau$ [S] & $Q=\omega\mu_0\tau r_0$ & max relative error (5 components) \\
+\midrule
+$1\times 10^{0}$  & $1.257\times 10^{-3}$ & $3.058\times 10^{-5}$ \\
+$1\times 10^{-1}$ & $1.257\times 10^{-4}$ & $3.058\times 10^{-6}$ \\
+$1\times 10^{-2}$ & $1.257\times 10^{-5}$ & $3.058\times 10^{-7}$ \\
+$1\times 10^{-3}$ & $1.257\times 10^{-6}$ & $3.058\times 10^{-8}$ \\
+$1\times 10^{-4}$ & $1.257\times 10^{-7}$ & $3.058\times 10^{-9}$ \\
+$1\times 10^{-5}$ & $1.257\times 10^{-8}$ & $3.058\times 10^{-10}$ \\
+$1\times 10^{-6}$ & $1.257\times 10^{-9}$ & $3.058\times 10^{-11}$ \\
+$1\times 10^{-7}$ & $1.257\times 10^{-10}$ & $3.058\times 10^{-12}$ \\
+$1\times 10^{-8}$ & $1.257\times 10^{-11}$ & $3.058\times 10^{-13}$ (roundoff floor) \\
+$0$               & $0$                    & $0$ (exact, by construction) \\
+\bottomrule
+\end{tabular}
+\caption{Magnitude error vs.\ $\tau$, referenced to the $\tau=0$ analytic solution, for the toy
+sphere ($r_0=1000$\,m, $\sigma=1$\,S/m, $\omega=1$\,rad/s). Error scales linearly with $\tau$ (and
+hence with $Q$) across eight decades, until double-precision roundoff floors out below
+$\tau\sim10^{-6}$. The fit is $\text{error}\approx 0.024\,Q$.}
+\label{tab:magerr}
+\end{table}
+
+\subsection{Magnitude ratio and phase shift of $H$ at specific $\tau$ values}
+
+Tables~\ref{tab:phaseHr}--\ref{tab:phaseHph} report the magnitude ratio $|H(\tau)/H(0)|$ and phase
+shift $\arg H(\tau)-\arg H(0)$ (degrees) of each magnetic field component in turn, for
+$\tau=10^{-4},1,10^{2},2.5\times10^{3}$\,S.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rrrr}
+\toprule
+$\tau$ [S] & $Q$ & $|H_r/H_{r,0}|$ & $\Delta\phi_{H_r}$ [$^\circ$] \\
+\midrule
+$10^{-4}$         & $1.257\times10^{-7}$ & 1.000000 & $1.7\times10^{-7}$ \\
+$1$               & $1.257\times10^{-3}$ & 0.999998 & $1.75\times10^{-3}$ \\
+$10^{2}$          & $0.1257$             & 0.999722 & $0.1743$ \\
+$2.5\times10^{3}$ & $3.142$              & 0.964484 & $3.086$ \\
+\bottomrule
+\end{tabular}
+\caption{$H_r$ magnitude ratio and phase shift relative to $\tau=0$, for the toy sphere
+($r_0=1000$\,m, $\sigma=1$\,S/m, $\omega=1$\,rad/s).}
+\label{tab:phaseHr}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rrrr}
+\toprule
+$\tau$ [S] & $Q$ & $|H_\theta/H_{\theta,0}|$ & $\Delta\phi_{H_\theta}$ [$^\circ$] \\
+\midrule
+$10^{-4}$         & $1.257\times10^{-7}$ & 1.000000 & $-3\times10^{-8}$ \\
+$1$               & $1.257\times10^{-3}$ & 1.000000 & $-3.00\times10^{-4}$ \\
+$10^{2}$          & $0.1257$             & 1.000051 & $-0.02992$ \\
+$2.5\times10^{3}$ & $3.142$              & 1.006426 & $-0.5060$ \\
+\bottomrule
+\end{tabular}
+\caption{$H_\theta$ magnitude ratio and phase shift relative to $\tau=0$, for the toy sphere
+($r_0=1000$\,m, $\sigma=1$\,S/m, $\omega=1$\,rad/s).}
+\label{tab:phaseHth}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rrrr}
+\toprule
+$\tau$ [S] & $Q$ & $|H_\phi/H_{\phi,0}|$ & $\Delta\phi_{H_\phi}$ [$^\circ$] \\
+\midrule
+$10^{-4}$         & $1.257\times10^{-7}$ & 1.000000 & $-3\times10^{-8}$ \\
+$1$               & $1.257\times10^{-3}$ & 1.000000 & $-3.00\times10^{-4}$ \\
+$10^{2}$          & $0.1257$             & 1.000051 & $-0.02992$ \\
+$2.5\times10^{3}$ & $3.142$              & 1.006426 & $-0.5060$ \\
+\bottomrule
+\end{tabular}
+\caption{$H_\phi$ magnitude ratio and phase shift relative to $\tau=0$, for the toy sphere
+($r_0=1000$\,m, $\sigma=1$\,S/m, $\omega=1$\,rad/s).}
+\label{tab:phaseHph}
+\end{table}
+
+Tables~\ref{tab:phaseHth} and~\ref{tab:phaseHph} are numerically identical. This is not a coincidence:
+$H_\theta$ and $H_\phi$ both derive from the same radial factor $T'(r)$, whose complex ratio to the
+$\tau=0$ case does not depend on angular position, so the two components (evaluated at the same
+radius, different angles) necessarily agree. $H_r$ (Table~\ref{tab:phaseHr}), driven by $T(r)$ rather
+than $T'(r)$, follows an independent (smaller-magnitude, opposite-sign) trend.
+
+\section{Earth-scale test: is $Q$ alone sufficient, and why does the response become nonlinear?}
+\label{sec:earth}
+
+The toy sphere has $r_0=1000$\,m, $\sigma=1$\,S/m, $\omega=1$\,rad/s (as in \S2); the real Earth has
+$r_0\approx6.371\times10^6$\,m ($6371\times$ larger). Since $Q\propto r_0$ (eq.~\ref{eq:Q}), the
+\emph{same} $\tau$ produces a vastly larger $Q$ at Earth scale --- Table~\ref{tab:earthQ} evaluates
+this at the NA2026 project's own periods (162\,s, 3600\,s).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{r rr}
+\toprule
+$\tau$ [S] & $Q_{\rm Earth}$, 162\,s & $Q_{\rm Earth}$, 3600\,s \\
+\midrule
+$10^{-4}$ & $3.1\times10^{-5}$ & $1.4\times10^{-6}$ \\
+$1$       & $0.31$ & $0.014$ \\
+$10^{2}$  & $31$ & $1.4$ \\
+$2.5\times10^{3}$ & $776$ & $35$ \\
+\bottomrule
+\end{tabular}
+\caption{$Q$ at Earth scale for the same $\tau$ values as Tables~\ref{tab:phaseHr}--\ref{tab:phaseHph}.}
+\label{tab:earthQ}
+\end{table}
+
+\paragraph{Methodology: isolating $Q$ from the conductor's own regime.} Naively re-running the toy
+sphere with $r_0=6.371\times10^6$\,m but the same $\sigma=1$\,S/m, $\omega=1$\,rad/s would \emph{also}
+push the conductor's own electrical size $|k_l|r_0=\sqrt{\omega\mu_0\sigma}\,r_0$ from $\approx1.12$
+(order-1 induction, the toy sphere's regime) to $\approx1400$ (extreme skin effect) --- a second,
+unrelated regime change that would confound any observed nonlinearity: we would no longer know
+whether a deviation from linear-in-$Q$ behavior is caused by $\tau$ growing large, or by the
+conductor itself behaving completely differently. To isolate the $\tau$/$Q$ effect cleanly, $\sigma$
+at each Earth-scale period is instead chosen so that $|k_l|r_0$ \emph{equals} the toy sphere's own
+value ($1.121$), holding the conductor's regime fixed while only $r_0$ (and hence $Q$, for the same
+$\tau$) changes. This gives $\sigma=6.35\times10^{-7}$\,S/m at 162\,s and $\sigma=1.41\times10^{-5}$\,S/m
+at 3600\,s --- unrealistically resistive for an actual whole-Earth sphere, but that is expected and
+intentional: this is a controlled numerical experiment isolating one mechanism, not a production-accurate
+Earth model. $H_\theta=H_\phi$ again (same argument as \S2.2), so only one column pair is shown for them.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rr rr rr}
+\toprule
+$\tau$ [S] & $Q$ & $|H_r/H_{r,0}|$ & $\Delta\phi_{H_r}$ [$^\circ$]
+           & $|H_{\theta,\phi}/H_{\theta,\phi,0}|$ & $\Delta\phi_{H_{\theta,\phi}}$ [$^\circ$] \\
+\midrule
+$10^{-4}$         & $3.11\times10^{-5}$ & 1.000000 & $4.3\times10^{-5}$  & 1.000000 & $-7.4\times10^{-6}$ \\
+$1$               & $0.3105$            & 0.999065 & $0.4254$            & 1.000173 & $-0.07295$ \\
+$10^{2}$          & $31.05$             & 0.882199 & $0.9808$            & 1.020275 & $-0.13990$ \\
+$2.5\times10^{3}$ & $776.3$             & 0.878969 & $-0.1977$           & 1.020790 & $0.03518$ \\
+\bottomrule
+\end{tabular}
+\caption{$H$ magnitude ratio and phase shift relative to $\tau=0$, Earth radius, period 162\,s,
+$\sigma=6.35\times10^{-7}$\,S/m (matched $|k_l|r_0$).}
+\label{tab:earth162}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rr rr rr}
+\toprule
+$\tau$ [S] & $Q$ & $|H_r/H_{r,0}|$ & $\Delta\phi_{H_r}$ [$^\circ$]
+           & $|H_{\theta,\phi}/H_{\theta,\phi,0}|$ & $\Delta\phi_{H_{\theta,\phi}}$ [$^\circ$] \\
+\midrule
+$10^{-4}$         & $1.40\times10^{-6}$ & 1.000000 & $1.9\times10^{-6}$ & 1.000000 & $-3.3\times10^{-7}$ \\
+$1$               & $0.01397$           & 0.999976 & $0.01932$          & 1.000004 & $-0.00332$ \\
+$10^{2}$          & $1.397$             & 0.989809 & $1.7626$           & 1.001871 & $-0.29856$ \\
+$2.5\times10^{3}$ & $34.93$             & 0.881538 & $0.8515$           & 1.020380 & $-0.12055$ \\
+\bottomrule
+\end{tabular}
+\caption{$H$ magnitude ratio and phase shift relative to $\tau=0$, Earth radius, period 3600\,s,
+$\sigma=1.41\times10^{-5}$\,S/m (matched $|k_l|r_0$).}
+\label{tab:earth3600}
+\end{table}
+
+\paragraph{Refining the linear-regime threshold.} Table~\ref{tab:magerr}'s fit, $\text{error}\approx
+0.024\,Q$, implies the perturbation only reaches order unity once $Q\sim1/0.024\approx42$ --- not
+$Q\sim1$ as the crude order-of-magnitude argument in \S1 suggested. This is exactly consistent with
+Tables~\ref{tab:earth162}--\ref{tab:earth3600}: at $Q=0.31$--$1.4$ the response is still closely
+linear in $Q$ (e.g.\ $\Delta\phi_{H_r}$ at $Q=0.31$ (162\,s) and $Q=1.4$ (3600\,s) both fall
+close to the toy-sphere fit scaled to that $Q$), while by $Q=31$--$35$ (comparable to the refined
+$Q\sim42$ threshold) the magnitude ratio has already dropped by ${\sim}12\%$ --- clearly nonlinear.
+
+\paragraph{Why the response saturates rather than diverging.} From eq.~\eqref{eq:jump}, with
+$T_l(r_0)=1$ by construction, $T_l'(r_0^+)=t_{np}(l)-iQ$, where $t_{np}(l)$ is the conductor's own
+($\tau$-independent) pre-jump value. Once $Q\gg|t_{np}(l)|$, this sum is dominated by the $-iQ$ term
+regardless of the conductor's own properties: $T_l'(r_0^+)\to-iQ$, a fixed $-90^\circ$ phase relative
+to $T_l(r_0)$, independent of $\tau$ once $\tau$ is large enough. This is why the magnitude ratio
+\emph{saturates} (Tables~\ref{tab:earth162}--\ref{tab:earth3600}: essentially unchanged between
+$Q=31$ and $Q=776$, and between $Q=1.4$ and $Q=35$) rather than continuing to grow, and why the phase
+shift can \emph{overshoot and reverse sign} (162\,s: $+0.98^\circ$ at $Q=31$ to $-0.20^\circ$ at
+$Q=776$; 3600\,s: $+1.76^\circ$ at $Q=1.4$ down to $+0.85^\circ$ at $Q=35$) rather than growing
+monotonically: for very large $\tau$ the physics is no longer governed by the layered conductor at
+all, but entirely by the artificial thin sheet, and further increasing $\tau$ has diminishing effect
+on the already-$\tau$-dominated boundary condition. This is a genuine physical saturation, not a
+numerical artifact: the same qualitative behavior (rise, peak/plateau, mild reversal) appears at both
+Earth-scale periods, at $Q$ values that differ by a factor of ${\sim}20$, using two independently
+matched conductor regimes.
+
+\section{Realistic layered Earth conductivity model}
+\label{sec:gde}
+
+\S\ref{sec:earth}'s Earth-scale test used a homogeneous sphere with $\sigma$ chosen only to match
+the toy sphere's own $|k_l|r_0$ --- a controlled experiment isolating the $Q$ mechanism, not a
+realistic Earth. Here we repeat the same $\tau$ sweep at Earth radius and the NA2026 project's
+3600\,s period, but with the \emph{actual} layered conductivity profile used in production runs,
+\texttt{LWS/layered\_GDE\_rho.prm}, read the same way \texttt{FWD1D.f90} builds \texttt{earth\%layer}/
+\texttt{earth\%sigma} from a \texttt{layers}-format model file: 32 layers given as depth below the
+surface (km) and $\log_{10}\rho$ ($\rho$ in $\Omega\cdot$m), converted to $\sigma=10^{-\log_{10}\rho}$,
+plus a hardcoded $\sigma=10^5$\,S/m ``core'' layer beneath the deepest defined depth (3500\,km).
+Table~\ref{tab:gdemodel} quotes every depth/$\sigma$ pair used.
+
+\begin{table}[h]
+\centering
+\begin{minipage}{0.48\textwidth}
+\centering
+\begin{tabular}{rrr}
+\toprule
+depth [km] & $\log_{10}\rho$ & $\sigma$ [S/m] \\
+\midrule
+10   & 2.000000  & $1.000\times10^{-2}$ \\
+40   & 3.000000  & $1.000\times10^{-3}$ \\
+110  & 3.000000  & $1.000\times10^{-3}$ \\
+160  & 2.522879  & $3.000\times10^{-3}$ \\
+210  & 2.154902  & $7.000\times10^{-3}$ \\
+260  & 1.745627  & $1.796\times10^{-2}$ \\
+310  & 1.667885  & $2.148\times10^{-2}$ \\
+360  & 1.688480  & $2.049\times10^{-2}$ \\
+410  & 1.709952  & $1.950\times10^{-2}$ \\
+460  & 1.699400  & $1.998\times10^{-2}$ \\
+510  & 1.645104  & $2.264\times10^{-2}$ \\
+560  & 1.540801  & $2.879\times10^{-2}$ \\
+610  & 1.379495  & $4.174\times10^{-2}$ \\
+660  & 1.153394  & $7.024\times10^{-2}$ \\
+710  & 0.869989  & $1.349\times10^{-1}$ \\
+760  & 0.593626  & $2.549\times10^{-1}$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+\centering
+\begin{tabular}{rrr}
+\toprule
+depth [km] & $\log_{10}\rho$ & $\sigma$ [S/m] \\
+\midrule
+800  & 0.430060  & $3.715\times10^{-1}$ \\
+850  & 0.279000  & $5.260\times10^{-1}$ \\
+900  & 0.279000  & $5.260\times10^{-1}$ \\
+1000 & $-0.228100$ & $1.691$ \\
+1100 & $-0.228100$ & $1.691$ \\
+1200 & $-0.228100$ & $1.691$ \\
+1300 & $-0.228100$ & $1.691$ \\
+1400 & $-0.228100$ & $1.691$ \\
+1500 & $-0.228100$ & $1.691$ \\
+1620 & $-0.228100$ & $1.691$ \\
+1764 & $-0.228100$ & $1.691$ \\
+1936.8 & $-0.228100$ & $1.691$ \\
+2144.16 & $-0.228100$ & $1.691$ \\
+2400 & $-0.228100$ & $1.691$ \\
+2900 & $-1.000000$ & $10.00$ \\
+3500 & $-2.000000$ & $100.0$ \\
+(core, $r<r_0-3500$\,km) & --- & $1.000\times10^5$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\caption{Layer depths and conductivities of the layered Earth model, \texttt{LWS/layered\_GDE\_rho.prm}
+(32 layers, $\sigma=10^{-\log_{10}\rho}$, plus the hardcoded core layer), used for
+Table~\ref{tab:gderesults}.}
+\label{tab:gdemodel}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rr rr rr}
+\toprule
+$\tau$ [S] & $Q$ & $|H_r/H_{r,0}|$ & $\Delta\phi_{H_r}$ [$^\circ$]
+           & $|H_{\theta,\phi}/H_{\theta,\phi,0}|$ & $\Delta\phi_{H_{\theta,\phi}}$ [$^\circ$] \\
+\midrule
+$10^{-4}$         & $1.40\times10^{-6}$ & 1.000000 & $6\times10^{-8}$   & 1.000000 & $-1\times10^{-8}$ \\
+$1$               & $0.01397$           & 0.999987 & $6.37\times10^{-4}$ & 1.000002 & $-9.56\times10^{-5}$ \\
+$10^{2}$          & $1.397$             & 0.998695 & $0.05833$          & 1.000201 & $-0.00872$ \\
+$2.5\times10^{3}$ & $34.93$             & 0.979892 & $0.02557$          & 1.003066 & $-0.00138$ \\
+\bottomrule
+\end{tabular}
+\caption{$H$ magnitude ratio and phase shift relative to $\tau=0$, Earth radius, period 3600\,s,
+\emph{realistic} layered conductivity (Table~\ref{tab:gdemodel}) rather than the $|k_l|r_0$-matched
+homogeneous sphere of Table~\ref{tab:earth3600}. Same $\tau,Q$ values as every other table in this
+report.}
+\label{tab:gderesults}
+\end{table}
+
+\paragraph{The perturbation is markedly smaller than the matched-regime toy comparison predicted.}
+$Q$ depends only on $\omega$, $\tau$, $r_0$ (eq.~\ref{eq:Q}), not on conductivity, so
+Table~\ref{tab:gderesults} uses \emph{exactly} the same $Q$ values as Table~\ref{tab:earth3600}. Yet
+at $Q=34.9$ ($\tau=2500$\,S), the realistic model gives $|H_r/H_{r,0}|=0.980$ and
+$\Delta\phi_{H_r}=0.026^\circ$, versus $0.882$ and $0.85^\circ$ for the matched-regime homogeneous
+sphere --- roughly $6\times$ smaller in both magnitude deviation and phase shift at the identical
+$Q$. The mechanism from the previous paragraph explains why: saturation sets in once
+$Q\gg|t_{np}(l)|$, and $|t_{np}(l)|$ --- the conductor's own pre-jump value --- is set by the
+conductivity structure, not by $Q$. The real Earth model is far more conductive through most of its
+depth (up to $\sigma\approx1.7$\,S/m in the mantle, $\sigma=10^5$\,S/m in the core; see
+Table~\ref{tab:gdemodel}) than the thin, $|k_l|r_0$-matched homogeneous sphere used in
+\S\ref{sec:earth} to isolate the $Q$ effect, giving it a correspondingly larger $|t_{np}(l)|$ and
+therefore requiring a larger $Q$ before the $-iQ$ term in the jump condition dominates. The phase
+shift is still non-monotonic in $Q$ here too ($0.058^\circ$ at $Q=1.4$, falling to $0.026^\circ$ at
+$Q=34.9$) --- the same qualitative saturation/overshoot behavior identified in \S\ref{sec:earth}, just
+at a much smaller absolute scale and a lower onset $Q$ than that section's toy-conductor threshold.
+\textbf{Conclusion: the $Q\sim40$ threshold derived in \S2.1/\S\ref{sec:earth} is specific to that toy
+conductor's own electrical regime, not a universal property of $Q$ alone} --- a genuinely more
+conductive Earth model tolerates a larger $\tau$ (at fixed $r_0,\omega$) before departing from linear
+response. This makes the practical recommendation below (set $\tau=0$) even safer for production runs
+than \S\ref{sec:earth} alone would suggest: at the current default $\tau=10^{-4}$\,S, $Q\approx1.4\times
+10^{-6}$ at 3600\,s regardless of which conductivity model is used, many orders of magnitude below
+where any version of this nonlinearity begins.
+
+\section{Discussion}
+
+\paragraph{No numerical advantage to nonzero $\tau$.} $\tau$ appears in exactly one place in each
+solver: the additive term in \eqref{eq:jump}. It is never a divisor, matrix pivot, or regularizer, so
+$\tau=0$ introduces no degeneracy --- consistent with the exact match already obtained at
+$\tau=0$ in the existing regression test. There is no floating-point or conditioning reason to
+prefer a small nonzero value over exactly zero.
+
+\paragraph{Practical recommendation.} For runs that are not deliberately modeling a real conductive
+surface sheet, set $\tau=0$: it is the mathematically clean choice, matches the validated exact-match
+test case, and removes an otherwise-unexplained free parameter. \texttt{FWD1D.f90}'s current default
+$\tau=10^{-4}$ has no numerical justification we could identify and can be replaced by $0$ without
+any accuracy cost.
+
+\paragraph{Scale dependence.} Since $Q\propto r_0$ (eq.~\ref{eq:Q}), the toy sphere's $Q$ values
+($\tau=2500$\,S gives only $Q=3.14$) do \emph{not} directly represent Earth-scale behavior --- at
+Earth's radius the same $\tau$ values give $Q$ up to $776$ (Table~\ref{tab:earthQ}), well beyond
+where Table~\ref{tab:magerr}'s linear fit holds. \S\ref{sec:earth} evaluates this directly rather
+than extrapolating: at $\tau=10^{-4}$\,S, $Q_{\rm Earth}\sim10^{-5}$--$10^{-6}$, confirming the
+current default is negligible at Earth scale too and can safely be replaced by $0$. At
+$\tau=100$--$2500$\,S, $Q_{\rm Earth}$ reaches the regime where \S\ref{sec:earth}'s toy-conductor
+comparison first showed nonlinearity ($Q\gtrsim40$) --- but \S\ref{sec:gde} shows this specific
+threshold is conductor-dependent, not a property of $Q$ alone: repeating the same $\tau$ sweep with
+the actual production conductivity model (\texttt{LWS/layered\_GDE\_rho.prm}) at 3600\,s gives a
+perturbation roughly $6\times$ smaller, at the identical $Q$, than the matched-regime toy sphere
+predicted, because the real Earth's higher conductivity gives it a correspondingly larger
+$|t_{np}(l)|$. This is not merely a mechanism demonstration but a production-representative estimate
+already obtained (\S\ref{sec:gde}, Table~\ref{tab:gderesults}): if a nonzero $\tau$ representing a
+genuine conductive surface feature (e.g.\ the ocean) is intentionally used at Earth scale, its
+quantitative effect on this specific conductivity model is now known directly, not merely bounded by
+the toy-sphere mechanism study.
+
+\end{document}
