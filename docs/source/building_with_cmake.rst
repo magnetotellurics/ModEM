@@ -239,6 +239,8 @@ also explicitly specify your feature set:
     $ cmake .. -DCMAKE_Fortran_FLAGS="-msse4.2"
 
 
+.. _building_modem_spherical:
+
 
 Building ModEM Spherical Version
 ==================================

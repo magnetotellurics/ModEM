@@ -264,19 +264,34 @@ to in the ModEM code, perhaps inappropriately, as the “Mackie format”.) Thes
 two formats are similar, but not identical. At present switching between these
 model formats requires editing and recompiling the program.
 
-(For completeness here is a very brief summary of the modifications required:
-read routines are in ``f90/3D_MT/modelParam/modelParamIO/*.inc``.  All of these
-files are included in the compiled ModelSpace module (with compiler directives
-``#include``). The names of the read and write routines are
-``read_modelParam_WS(mackie)`` and similarly for write. The read/write routines
-in use are overloaded on ``read_modelParam`` (and similarly for the write
-routine; this is done in ``f90/3D_MT/modelParam/ModelSpace.f90``), and calls to
-these generic read/write subroutines are then used in the program to input or
-output model parameter objects. Both the "WS" and "Mackie" read/write routines
-(and others that one might want to implement) must have identical interfaces.
-Then, by changing the names of routine overloaded in the ``ModelSpace``
-interface, the expected file format used for model parameter I/O is changed.
-Yes, better approaches could be imagined!)
+ModEM can now switch between model file formats easily by using the optional
+ModEM Namelist. To do so, genearte the ModEM namelist by running a ModEM
+executable with -N:
+
+.. code-block:: bash
+
+   $ ./Mod3DMT -N
+
+Then, in the IO section of ModEM, change the ``model_input_format`` (or
+``model_output_format``) to your desired format:
+
+
+.. code-block:: text
+
+    &io
+         data_input_format = 'ASCII'
+         data_output_format = 'ASCII'
+         model_input_format = 'RM'
+         model_output_format = 'WS'
+         efield_input_format = 'binary'
+         efield_output_format = 'binary'
+     /
+
+The above namelist IO section will then set ModEM to read in a Randall Mackie
+('RM') format.
+
+Please see :ref:`modem-namelist` and :ref:`converting-file-formats` for more
+information.
 
 Both of the currently supported model file formats begin with a description of
 the tensor-product Cartesian grid: cell dimensions in ``x``, ``y``, and ``z``
@@ -859,3 +874,53 @@ topography and having problems, double check that you are defining vertical
 levels consistently in the model and data files.  Again, using tools for model
 and data file setup (such as Grid3D) can help ensure consistency–if these are
 used correctly!
+
+
+
+.. _converting-file-formats:
+
+Converting Between Data and Model File Formats
+------------------------------------------------
+
+It can be useful to convert between different file formats. This can be easily
+done with ModEM by using the optional ModEM namelist and using the
+``-R``/Read-write command line argument.
+
+For instance, we can use this method to convert between Weerachai
+Siripunvaraporn’s WSINV3DMT (WS) and Randall Mackie's format (RM):
+
+First, generate the ModEM namelist by running ModEM with -N:
+
+.. code-block:: bash
+
+    $ ./Mod3DMT_SP2 -N
+
+This will generate a ModEM namelist file named ``modem.namelist.nl``. We can
+edit the ``model_input_format`` and ``model_output_format`` in the ``io``
+section of the namelist to specify that we want ModEM to read in a WS model
+file and writeout a RM file:
+
+.. code-block:: text
+
+    &io
+         data_input_format = 'ASCII'
+         data_output_format = 'ASCII'
+         model_input_format = 'WS'
+         model_output_format = 'RW'
+         efield_input_format = 'binary'
+         efield_output_format = 'binary'
+     /
+
+
+Then, we can run ModEM with -R to convert our model file from WS to RM:
+
+.. code-block:: bash
+
+    $ ./Mod3DMT_SP2 -R model.ws de.dat model.rm de.out
+
+The output file ``model.rm`` will then be in the Randal Mackie (RM) format.
+
+Of course, this can also be used to convert data files in a similar manner.
+Furthermore, these options apply to any ModEM option. So, if desired, one could
+read in a WS file for an inversion, and then write all inversion model output
+as RM.
