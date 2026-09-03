@@ -65,6 +65,9 @@ module UserCtrl
     ! EM Solution Output Granularity
     character(80)       :: esoln_output !  "ALL" | "PER_PERIOD" | "PER_PERIOD_MODE"
 
+    ! External source file location
+    character(80)       :: external_source_file
+
 	! Specify covariance configuration
 	character(80)       :: rFile_Cov
 
@@ -95,7 +98,7 @@ module UserCtrl
 	! Specify the magnitude for random perturbations
 	real(8)             :: delta
 
-    ! Fake center lat, lon in degrees
+    ! Spherical MT settings
     real(8), dimension(2) :: fake_center_latlon
 
     ! Specify the Covariance Type used in 3D (reserved for future use)
@@ -119,7 +122,7 @@ module UserCtrl
   ! Increment these when adding a new field to userdef_control
   ! These are used in Sub_MPI.f90 to pack/send/recieve the userdef_control
   ! package.
-  integer, parameter :: USER_CTRL_N_STRINGS = 36
+  integer, parameter :: USER_CTRL_N_STRINGS = 37
   integer, parameter :: USER_CTRL_N_INTEGERS = 2
   integer, parameter :: USER_CTRL_N_FLOAT_DOUBLES =  5
   integer, parameter :: USER_CTRL_N_LOGICALS = 4
@@ -163,6 +166,8 @@ Contains
     ctrl%primary_field_file = 'n'
     ctrl%primary_model = 'n'
     ctrl%primary_model_file ='n'
+    ctrl%esoln_output = 'n'
+    ctrl%external_source_file = 'n'
 #ifdef HDF5
     ctrl%data_input_format ='HDF5'
     ctrl%data_output_format ='HDF5'
@@ -967,13 +972,8 @@ Contains
      call gen_nml_section_settings(nl_fid)
      call gen_nml_section_io(nl_fid)
 
-#ifdef BUILD_SPHERICAL
-     ! Currently, the forward namelist section only contains spherical related
-     ! settings. So only build it if we are building spherical ModEM.
-     ! 
-     ! If more options are ever added to the forward section, we should move the
-     ! ifdef into the below function for more granulaity.
      call gen_nml_section_forward(nl_fid)
+#ifdef BUILD_SPHERICAL
      call gen_nml_section_spherical_mt(nl_fid)
 #endif
 
@@ -1018,10 +1018,10 @@ Contains
      call process_nml_section_io(ctrl, nl_fid)
      rewind(nl_fid)
 
-#ifdef BUILD_SPHERICAL
      call process_nml_section_forward(ctrl, nl_fid)
      rewind(nl_fid) 
 
+#ifdef BUILD_SPHERICAL
      call process_nml_section_spherical_mt(ctrl, nl_fid)
      rewind(nl_fid) 
 #endif
@@ -1156,18 +1156,19 @@ Contains
      integer :: iostat
      character (len=256) :: iomsg
 
-     ! Namlist - &grid - section
+     ! Namelist - &forward - section
      logical :: SFF
      character(len=80) :: primary_model
      character(len=80) :: primary_model_file
      character(len=80) :: primary_field
      character(len=80) :: primary_field_file
      character(len=80) :: esoln_output
+     character(len=80) :: external_source_file
 
 
      namelist /forward/ SFF, primary_model, primary_model_file, &
                              primary_field, primary_field_file, &
-                             esoln_output
+                             esoln_output, external_source_file
 
      sff = ctrl % SFF
      primary_model = ctrl % primary_model
@@ -1175,6 +1176,7 @@ Contains
      primary_field = ctrl % primary_field
      primary_field_file = ctrl % primary_field_file
      esoln_output = ctrl % esoln_output
+     external_source_file = ctrl % external_source_file
 
      read(nl_fid, nml=forward, iostat=iostat, iomsg=iomsg) 
      if (iostat /= 0) then
@@ -1197,6 +1199,7 @@ Contains
      ctrl % primary_field = primary_field
      ctrl % primary_field_file = primary_field_file
      ctrl % esoln_output = esoln_output
+     ctrl % external_source_file = external_source_file
 
   end subroutine process_nml_section_forward
 
@@ -1213,6 +1216,7 @@ Contains
       write(nl_fid, *) '    primary_field = "file"'
       write(nl_fid, *) '    primary_field_file = "none"'
       write(nl_fid, *) '    esoln_output = "none"'
+      write(nl_fid, *) '    external_source_ = "none"'
       write(nl_fid, *) '/'
 
   end subroutine gen_nml_section_forward
@@ -1224,8 +1228,7 @@ Contains
       type (userdef_control), intent(inout) :: ctrl
       integer, intent(in) :: nl_fid
 
-     ! Namlist - &grid - section
-     logical :: SFF
+     ! Namelist - &io- section
      character(len=80) :: data_input_format, data_output_format
      character(len=80) :: model_input_format, model_output_format
      character(len=80) :: efield_input_format, efield_output_format
@@ -1298,7 +1301,7 @@ Contains
      integer :: iostat
      character (len=256) :: iomsg
 
-     ! Namlist - &grid - section
+     ! Namelist - &spherical_mt - section
      logical :: fake_grid
      real(kind=prec), dimension(2) :: fake_center_latlon
      logical :: fake_data_orientation

@@ -16,7 +16,7 @@ module utilities
   character(len=*), parameter :: WS_FILE_TYPE = "WS"
   character(len=*), parameter :: HDF5_FILE_TYPE = "HDF5"
   character(len=*), parameter :: FTRAN_BINARY_FILE_TYPE = "binary"
-  character(len=*), parameter :: MACKIE_FILE_TYPE = "MACKIE"
+  character(len=*), parameter :: MACKIE_FILE_TYPE = "RM"
 
   character(len=*), parameter :: DATA_FILE_TYPE_ASCII = "ASCII"
   character(len=*), parameter :: DATA_FILE_TYPE_HDF5 = "HDF5"

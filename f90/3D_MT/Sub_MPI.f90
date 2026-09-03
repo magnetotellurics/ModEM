@@ -174,6 +174,7 @@ end subroutine pack_userdef_control
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%primary_field,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%primary_field_file,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%esoln_output,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%external_source_file,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Cov,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%search,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
