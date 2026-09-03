@@ -11,6 +11,7 @@ option(BUILD_HDF5 "Build with HDF5" OFF)
 option(FG "Build the Fine-Grained ModEM Version - (Only compatiable with SP2)" OFF)
 option(USE_C_TIMERS "Use the C timers in ModEM_timers" OFF)
 option(BUILD_SPHERICAL "Specify whether to build Spherical Coordinate version of ModEM" OFF)
+option(MODEM_MEMORY "Compile the ModEM Memory utilitie and C memory routines" OFF)
 
 set(FORWARD_FORMULATION "SP2" CACHE STRING "Set the forward formulation: < MF | SP | SP2 >")
 set(MODEM_BUILD_DIMS "3D" CACHE STRING "Specify whether to build either the 2D or 3D versino of ModEM < 2D | 3D >")
@@ -32,6 +33,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 if (USE_C_TIMERS OR BUILD_HDF5)
         enable_language(C)
+endif()
+
+if (MODEM_MEMORY)
+        enable_language(C)
+        add_compile_definitions(MODEM_MEMORY)
 endif()
 
 if (NOT BUILD_GPU IN_LIST SUPPORTED_GPU_OPTS)
