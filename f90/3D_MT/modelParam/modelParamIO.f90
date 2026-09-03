@@ -92,7 +92,6 @@ contains
         character(len=*), intent(in) :: ftype_choice
         character(len=*), intent(in) :: input_or_output
 
-        ! TODO: Finish this error message
         write(0,*) "ERROR: Unsupported ftype choice: '", trim(ftype_choice), "' for ", trim(input_or_output)
         write(0,*) "ERROR: Supported choices are: "
         write(0,*) "ERROR:   - '", trim(WS_FILE_TYPE), "'"

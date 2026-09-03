@@ -54,9 +54,16 @@ module UserCtrl
 	character(80)       :: wFile_dModel
 	character(80)       :: wFile_EMsoln, wFile_EMrhs, wFile_Sens
 
+    ! Primary model information
+    character(80)       :: primary_model ! Method for primary field, 'avg', 'file'
+    character(80)       :: primary_model_file
+
     ! Primary Field information
-    character(80)       :: primary_field ! Method for primary field, 'gen', 'file'
+    character(80)       :: primary_field ! Method for primary field, 'compute', 'file'
     character(80)       :: primary_field_file
+
+    ! EM Solution Output Granularity
+    character(80)       :: esoln_output !  "ALL" | "PER_PERIOD" | "PER_PERIOD_MODE"
 
 	! Specify covariance configuration
 	character(80)       :: rFile_Cov
@@ -70,6 +77,15 @@ module UserCtrl
     ! Out-of-core file prefix for storing working E-field solutions (NCI)
     character(80)       :: prefix
 
+    ! Input and output format - file types
+    character(80)       :: data_input_format
+    character(80)       :: data_output_format
+    character(80)       :: model_input_format
+    character(80)       :: model_output_format
+    character(80)       :: efield_input_format
+    character(80)       :: efield_output_format
+    character(80)       :: jacobian_output_format
+
 	! Specify damping parameter for the inversion
 	real(8)             :: lambda
 
@@ -78,6 +94,9 @@ module UserCtrl
 
 	! Specify the magnitude for random perturbations
 	real(8)             :: delta
+
+    ! Fake center lat, lon in degrees
+    real(8), dimension(2) :: fake_center_latlon
 
     ! Specify the Covariance Type used in 3D (reserved for future use)
     integer             :: CovType
@@ -88,9 +107,22 @@ module UserCtrl
     ! Reduce master memory usage by storing E-fields in files (NCI)
     logical             :: storeSolnsInFile
 
+    ! Secondary field formulation on/off switch
+    ! only used when ModEM is built with spherical
     logical             :: SFF
 
+    ! Spherical MT settings 
+    logical             :: fake_grid
+    logical             :: fake_data_orientation
   end type userdef_control
+
+  ! Increment these when adding a new field to userdef_control
+  ! These are used in Sub_MPI.f90 to pack/send/recieve the userdef_control
+  ! package.
+  integer, parameter :: USER_CTRL_N_STRINGS = 36
+  integer, parameter :: USER_CTRL_N_INTEGERS = 2
+  integer, parameter :: USER_CTRL_N_FLOAT_DOUBLES =  5
+  integer, parameter :: USER_CTRL_N_LOGICALS = 4
 
 Contains
 
@@ -127,8 +159,24 @@ Contains
   	ctrl%rFile_Prior = 'n'
   	ctrl%wFile_Sens = 'n'
   	ctrl%rFile_Cov = 'n'
-    ctrl% primary_field = 'n'
-    ctrl% primary_field_file = 'n'
+    ctrl%primary_field = 'n'
+    ctrl%primary_field_file = 'n'
+    ctrl%primary_model = 'n'
+    ctrl%primary_model_file ='n'
+#ifdef HDF5
+    ctrl%data_input_format ='HDF5'
+    ctrl%data_output_format ='HDF5'
+    ctrl%model_input_format = 'HDF5'
+    ctrl%model_output_format = 'HDF5'
+#else
+    ctrl%data_input_format ='ASCII'
+    ctrl%data_output_format ='ASCII'
+    ctrl%model_input_format = 'WS'
+    ctrl%model_output_format = 'WS'
+#endif
+    ctrl%efield_input_format = 'ASCII'
+    ctrl%efield_output_format = 'ASCII'
+    ctrl%jacobian_output_format = 'ASCII'
   	ctrl%search = 'NLCG'
   	ctrl%option = 'J'
   	ctrl%lambda = 10.
@@ -140,6 +188,9 @@ Contains
 	ctrl%prefix = 'n'
 	ctrl%storeSolnsInFile = .false.
     ctrl%SFF = .false.
+    ctrl%fake_grid = .false.
+    ctrl%fake_center_latlon = (/0.0d0, 90.0d0/)
+    ctrl%fake_data_orientation = .true.
 
     ! Using process ID in MPI output file name has the advantage that
     ! the user may run several instances of the program in one directory
@@ -292,6 +343,9 @@ Contains
         write(*,*) ' -S  rFile_Model rFile_dModel rFile_Data wFile_Data [rFile_fwdCtrl]'
         write(*,*) '  Multiplies by the full Jacobian, row by row, to get d = J m.'
         write(*,*) '  Compare to the output of [MULT_BY_J] to test [COMPUTE_J]'
+        write(*,*) '[GEN_NAMELIST]'
+        write(*,*) ' -N'
+        write(*,*) '  Generate the optional namelist into the current directory (namelist.modem.nl).'
         write(*,*)
         write(*,*) 'Optional final argument -v [debug|full|regular|compact|result|none]'
         write(*,*) 'indicates the desired level of output to screen and to files.'
@@ -911,7 +965,17 @@ Contains
      end if
 
      call gen_nml_section_settings(nl_fid)
-     call gen_nml_section_grid(nl_fid)
+     call gen_nml_section_io(nl_fid)
+
+#ifdef BUILD_SPHERICAL
+     ! Currently, the forward namelist section only contains spherical related
+     ! settings. So only build it if we are building spherical ModEM.
+     ! 
+     ! If more options are ever added to the forward section, we should move the
+     ! ifdef into the below function for more granulaity.
+     call gen_nml_section_forward(nl_fid)
+     call gen_nml_section_spherical_mt(nl_fid)
+#endif
 
      close(nl_fid)
 
@@ -949,10 +1013,18 @@ Contains
      !
      ! So, we should rewind, so ftran can find the section we are asking for.
      call process_nml_section_settings(ctrl, nl_fid)
+     rewind(nl_fid) ! Be kind! Rewind!
+
+     call process_nml_section_io(ctrl, nl_fid)
      rewind(nl_fid)
 
-     call process_nml_section_grid(ctrl, nl_fid)
-     rewind(nl_fid) ! Technically not necessary, but just continuing the pattern
+#ifdef BUILD_SPHERICAL
+     call process_nml_section_forward(ctrl, nl_fid)
+     rewind(nl_fid) 
+
+     call process_nml_section_spherical_mt(ctrl, nl_fid)
+     rewind(nl_fid) 
+#endif
 
      close(nl_fid)
 
@@ -967,16 +1039,17 @@ Contains
 
      integer :: iostat
      integer :: output_level_int
+     integer :: CovType_int
 
      ! Namelist - &settings - section
      character (len=80) :: output_level
-     integer            :: CovType
+     character (len=80) :: covariance_type
      character (len=256) :: iomsg
 
-     namelist /settings/ output_level, CovType
+     namelist /settings/ output_level, covariance_type
 
      output_level = 'regular'
-     CovType = ctrl % CovType
+     CovType_int = ctrl % CovType
 
      read(nl_fid, nml=settings, iostat=iostat, iomsg=iomsg)
      if (iostat /= 0) then
@@ -993,11 +1066,6 @@ Contains
      end if
 
      write(0,*) "Optional namelist section '&settings' was read!"
-     ! NOTE: CovType namelist field is accepted but no longer processed.
-     ! CovType override sources (low->high priority): default(1) -> CLI 6th arg (-C) -> inv-ctrl 9th line (-I).
-     if (CovType /= ctrl % CovType) then
-        write(0,*) 'WARNING: CovType from optional namelist is ignored (use -C CLI or inv-ctrl instead).'
-     end if
 
      ! Process output_level
      select case (output_level) ! Determine output_level number for comparision in CL arg
@@ -1046,6 +1114,21 @@ Contains
         end select
     end if
 
+    ! NOTE: CovType namelist field is accepted but no longer processed.
+    ! CovType override sources (low->high priority): default(1) -> CLI 6th arg (-C) -> inv-ctrl 9th line (-I).
+    ! We aren't actually setting anything here...
+    select case (covariance_type)
+        case ('AR', 'ar')
+            CovType_int = 1
+        case ('H1', 'h1')
+            CovType_int = 2
+    end select
+
+
+    if (CovType_int /= ctrl % CovType) then
+       write(0,*) 'WARNING: CovType from optional namelist is ignored (use -C CLI or inv-ctrl instead).'
+    end if
+
   end subroutine process_nml_section_settings
 
   subroutine gen_nml_section_settings(nl_fid)
@@ -1057,13 +1140,14 @@ Contains
       write(nl_fid, *) "&settings"
       write(nl_fid, *) "    ! 'output_level' below overrides -V passed in on the command line"
       write(nl_fid, *) "    output_level = 'regular'"
-       write(nl_fid, *) "    ! CovType: 1 = AR (default), 2 = H2 (Bi-Helmholtz). (Note: namelist value is not currently applied; use -C CLI or inv-ctrl instead.)"
-      write(nl_fid, *) "    CovType = 1"
+       write(nl_fid, *) "   ! CovType: 'AR' (default),  'H2' (Bi-Helmholtz) "
+      write(nl_fid, *) "    covariance_type = 'AR'"
       write(nl_fid, *) "/"
 
   end subroutine gen_nml_section_settings
 
-  subroutine process_nml_section_grid(ctrl, nl_fid)
+  subroutine process_nml_section_forward(ctrl, nl_fid)
+
      implicit none
 
      type (userdef_control), intent(inout) :: ctrl
@@ -1073,51 +1157,193 @@ Contains
      character (len=256) :: iomsg
 
      ! Namlist - &grid - section
+     logical :: SFF
+     character(len=80) :: primary_model
+     character(len=80) :: primary_model_file
      character(len=80) :: primary_field
      character(len=80) :: primary_field_file
-     logical :: sff
+     character(len=80) :: esoln_output
 
-     namelist /grid/ sff, primary_field, primary_field_file
+
+     namelist /forward/ SFF, primary_model, primary_model_file, &
+                             primary_field, primary_field_file, &
+                             esoln_output
 
      sff = ctrl % SFF
+     primary_model = ctrl % primary_model
+     primary_model_file = ctrl % primary_model_file
      primary_field = ctrl % primary_field
      primary_field_file = ctrl % primary_field_file
+     esoln_output = ctrl % esoln_output
 
-     read(nl_fid, nml=grid, iostat=iostat, iomsg=iomsg)
+     read(nl_fid, nml=forward, iostat=iostat, iomsg=iomsg) 
      if (iostat /= 0) then
         ! Returns true if we have read to the EOF. Meaning that the section was not present (iostat == -1)
         if (IS_IOSTAT_END(iostat)) then 
-             write(0,*) "Optional namelist section '&grid' was not present in ", trim(MODEM_NAMELIST), " skipping..."
+             write(0,*) "Optional namelist section '&forward' was not present in ", trim(MODEM_NAMELIST), " skipping..."
              return
         end if
 
         ! Any other error means we have an error with the namelist
         ! that should be reported to the user
-        write(0,*) "ERROR: Processing namelist section '&grid': ", trim(iomsg)
+        write(0,*) "ERROR: Processing namelist section '&forward': ", trim(iomsg)
         call ModEM_abort()
      end if
 
-     write(0,*) "Optional namelist section '&grid' was read!"
-
+     write(0,*) "Optional namelist section '&forward' was read!"
      ctrl % SFF = sff
+     ctrl % primary_model = primary_model
+     ctrl % primary_model_file = primary_model_file
      ctrl % primary_field = primary_field
      ctrl % primary_field_file = primary_field_file
+     ctrl % esoln_output = esoln_output
 
-  end subroutine process_nml_section_grid
+  end subroutine process_nml_section_forward
 
-  subroutine gen_nml_section_grid(nl_fid)
+  subroutine gen_nml_section_forward(nl_fid)
 
       implicit none
 
       integer :: nl_fid
 
-      write(nl_fid, *) '&grid'
-      write(nl_fid, *) '    SFF = .false.  ! Currently unused'
-      write(nl_fid, *) '    primary_field = "file" ! Currently unused'
-      write(nl_fid, *) '    primary_field_file = "none" ! Currently unused'
+      write(nl_fid, *) '&forward'
+      write(nl_fid, *) '    SFF = .false.'
+      write(nl_fid, *) '    primary_model = "file"'
+      write(nl_fid, *) '    primary_model_file = "none"'
+      write(nl_fid, *) '    primary_field = "file"'
+      write(nl_fid, *) '    primary_field_file = "none"'
+      write(nl_fid, *) '    esoln_output = "none"'
       write(nl_fid, *) '/'
 
-  end subroutine gen_nml_section_grid 
+  end subroutine gen_nml_section_forward
+
+  subroutine process_nml_section_io(ctrl, nl_fid)
+
+      implicit none
+
+      type (userdef_control), intent(inout) :: ctrl
+      integer, intent(in) :: nl_fid
+
+     ! Namlist - &grid - section
+     logical :: SFF
+     character(len=80) :: data_input_format, data_output_format
+     character(len=80) :: model_input_format, model_output_format
+     character(len=80) :: efield_input_format, efield_output_format
+     character(len=80) :: jacobian_output_format
+
+     integer :: iostat
+     character (len=256) :: iomsg
+
+     namelist /io/ data_input_format, data_output_format, model_input_format, model_output_format, &
+                efield_input_format, efield_output_format, jacobian_output_format
+
+     data_input_format = ctrl % data_input_format
+     data_output_format = ctrl % data_output_format
+     model_input_format = ctrl % model_input_format
+     model_output_format = ctrl % model_output_format
+     efield_input_format = ctrl % efield_input_format
+     efield_output_format = ctrl % efield_output_format
+     jacobian_output_format = ctrl % jacobian_output_format
+
+     read(nl_fid, nml=io, iostat=iostat, iomsg=iomsg) 
+     if (iostat /= 0) then
+        ! Returns true if we have read to the EOF. Meaning that the section was not present (iostat == -1)
+        if (IS_IOSTAT_END(iostat)) then 
+             write(0,*) "Optional namelist section '&io' was not present in ", trim(MODEM_NAMELIST), " skipping..."
+             return
+        end if
+
+        ! Any other error means we have an error with the namelist
+        ! that should be reported to the user
+        write(0,*) "ERROR: Processing namelist section '&io': ", trim(iomsg)
+        call ModEM_abort()
+     end if
+
+     write(0,*) "Optional namelist section '&forward' was read!"
+     ctrl % data_input_format = data_input_format
+     ctrl % data_output_format = data_output_format
+     ctrl % model_input_format = model_input_format
+     ctrl % model_output_format = model_output_format
+     ctrl % efield_input_format = efield_input_format
+     ctrl % efield_output_format = efield_output_format
+     ctrl % jacobian_output_format = jacobian_output_format
+
+  end subroutine process_nml_section_io
+
+  subroutine gen_nml_section_io(nl_fid)
+
+      implicit none
+
+      integer, intent(in) :: nl_fid
+
+      write(nl_fid, *) "&io"
+      write(nl_fid, *) "    data_input_format = 'ASCII'"
+      write(nl_fid, *) "    data_output_format = 'ASCII'"
+      write(nl_fid, *) "    model_input_format = 'WS'"
+      write(nl_fid, *) "    model_output_format = 'WS'"
+      write(nl_fid, *) "    efield_input_format = 'binary' ! Not yet implemented"
+      write(nl_fid, *) "    efield_output_format = 'binary' ! Not yet implemented"
+      write(nl_fid, *) "    jacobian_output_format = 'binary' ! Not yet implemented"
+      write(nl_fid, *) "/"
+
+  end subroutine gen_nml_section_io
+
+  subroutine process_nml_section_spherical_mt(ctrl, nl_fid)
+
+     implicit none
+
+     type (userdef_control), intent(inout) :: ctrl
+     integer, intent(in) :: nl_fid
+
+     integer :: iostat
+     character (len=256) :: iomsg
+
+     ! Namlist - &grid - section
+     logical :: fake_grid
+     real(kind=prec), dimension(2) :: fake_center_latlon
+     logical :: fake_data_orientation
+
+     namelist /spherical_mt/ fake_grid, fake_center_latlon, fake_data_orientation
+
+     fake_grid = ctrl % fake_grid
+     fake_center_latlon = ctrl % fake_center_latlon
+     fake_data_orientation = ctrl % fake_data_orientation
+                             
+     read(nl_fid, nml=spherical_mt, iostat=iostat, iomsg=iomsg) 
+     if (iostat /= 0) then
+        ! Returns true if we have read to the EOF. Meaning that the section was not present (iostat == -1)
+        if (IS_IOSTAT_END(iostat)) then 
+             write(0,*) "Optional namelist section '&spherical_mt' was not present in ", trim(MODEM_NAMELIST), " skipping..."
+             return
+        end if
+
+        ! Any other error means we have an error with the namelist
+        ! that should be reported to the user
+        write(0,*) "ERROR: Processing namelist section '&spherical_mt': ", trim(iomsg)
+        call ModEM_abort()
+     end if
+
+     write(0,*) "Optional namelist section '&spherical_mt' was read!"
+     ctrl % fake_grid = fake_grid
+     ctrl % fake_center_latlon = fake_center_latlon
+     ctrl % fake_data_orientation = fake_data_orientation
+
+  end subroutine process_nml_section_spherical_mt
+
+  subroutine gen_nml_section_spherical_mt(nl_fid)
+
+      implicit none
+
+      integer :: nl_fid
+
+      write(nl_fid, *) '&spherical_mt'
+      write(nl_fid, *) '    fake_grid = .false.'
+      write(nl_fid, *) '    fake_center_latlon = 0.0d0, 90.0d0'
+      write(nl_fid, *) '    fake_data_orientation = .true.'
+      write(nl_fid, *) '/'
+
+  end subroutine gen_nml_section_spherical_mt
+
 
 ! *******************************************************************
 ! Reads CovType from an inversion control file (*.inv).

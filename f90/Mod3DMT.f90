@@ -65,13 +65,9 @@ program Mod3DMT
       write(6,*)'I am a SERIAL version'
 #endif
  
-#ifdef HDF5
-      call ModEM_setup_IO(DATA_FILE_TYPE_HDF5, DATA_FILE_TYPE_HDF5, & ! Data Type
-                          HDF5_FILE_TYPE, HDF5_FILE_TYPE) ! Model Type
-#else
-      call ModEM_setup_IO(DATA_FILE_TYPE_ASCII, DATA_FILE_TYPE_ASCII, & ! Data Type
-                          WS_FILE_TYPE, WS_FILE_TYPE) ! Model Type
-#endif
+      call ModEM_setup_IO(cUserDef % data_input_format, cUserDef % data_output_format, & ! Data Type
+                          cUserDef % model_input_format, cUserDef % model_output_format) ! Model Type
+
       call initGlobalData(cUserDef)
       ! set the grid for the numerical computations
 #ifdef MPI
