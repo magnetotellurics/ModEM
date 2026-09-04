@@ -38,6 +38,7 @@ options for inversion, etc.
 
    obtaining_modem
    getting_started
+   modem_namelist
    building_with_cmake
    file_formats
    forward_and_inversion
