@@ -10,6 +10,7 @@ use ForwardSolver
 
 use Declaration_MPI
 
+
 Contains
 
 !#########################  Start Nested_parameters ###########################
@@ -96,10 +97,10 @@ end subroutine count_number_of_messages_to_RECV
 	implicit none
 	integer Nbytes1,Nbytes2,Nbytes3,Nbytes4
 	!
-	CALL MPI_PACK_SIZE(80*26, MPI_CHARACTER,        MPI_COMM_WORLD, Nbytes1,  ierr)
-	CALL MPI_PACK_SIZE(3,     MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes2,  ierr)
-	CALL MPI_PACK_SIZE(2,     MPI_INTEGER,          MPI_COMM_WORLD, Nbytes3,  ierr)
-	CALL MPI_PACK_SIZE(2,     MPI_LOGICAL,          MPI_COMM_WORLD, Nbytes4,  ierr)
+	CALL MPI_PACK_SIZE(80*USER_CTRL_N_STRINGS, MPI_CHARACTER, MPI_COMM_WORLD, Nbytes1,  ierr)
+	CALL MPI_PACK_SIZE(USER_CTRL_N_FLOAT_DOUBLES, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, Nbytes2,  ierr)
+	CALL MPI_PACK_SIZE(USER_CTRL_N_INTEGERS, MPI_INTEGER, MPI_COMM_WORLD, Nbytes3,  ierr)
+	CALL MPI_PACK_SIZE(USER_CTRL_N_LOGICALS, MPI_LOGICAL, MPI_COMM_WORLD, Nbytes4,  ierr)
 	Nbytes=(Nbytes1+Nbytes2+Nbytes3+Nbytes4)+1
 	!
 	if(.not. associated(userdef_control_package)) then
@@ -116,12 +117,21 @@ end subroutine count_number_of_messages_to_RECV
      	type(userdef_control), intent(in)   :: ctrl
         integer index
         index=1
-        call MPI_Pack(ctrl%job,80*26, MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
-        call MPI_Pack(ctrl%lambda,3, MPI_DOUBLE_PRECISION, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        ! Characters
+        call MPI_Pack(ctrl%job,80*USER_CTRL_N_STRINGS, MPI_CHARACTER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+
+        ! Reals
+        call MPI_Pack(ctrl%lambda,USER_CTRL_N_FLOAT_DOUBLES, MPI_DOUBLE_PRECISION, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+
+        ! Integers
         call MPI_Pack(ctrl%CovType,1, MPI_INTEGER, userdef_control_package,  Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%output_level,1, MPI_INTEGER, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+
+        ! Logicals
         call MPI_Pack(ctrl%storeSolnsInFile,1,MPI_LOGICAL, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
         call MPI_Pack(ctrl%SFF,1,MPI_LOGICAL, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(ctrl%fake_grid,1,MPI_LOGICAL, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
+        call MPI_Pack(ctrl%fake_data_orientation,1,MPI_LOGICAL, userdef_control_package, Nbytes, index, MPI_COMM_WORLD, ierr)
 
 end subroutine pack_userdef_control
 
@@ -135,6 +145,7 @@ end subroutine pack_userdef_control
 
        index=1
 
+   ! Characters
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%job,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_invCtrl,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_fwdCtrl,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
@@ -157,23 +168,39 @@ end subroutine pack_userdef_control
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%wFile_EMrhs,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%wFile_Sens,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
-   ! Primary Field Info
+   ! Primary model and Primary Field Info
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%primary_model,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%primary_model_file,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%primary_field,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%primary_field_file,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%esoln_output,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%external_source_file,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%rFile_Cov,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%search,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%option,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%prefix,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
 
+   ! IO Options
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%data_input_format,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%data_output_format,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%model_input_format,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%model_output_format,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%efield_input_format,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%efield_output_format,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%jacobian_output_format,80, MPI_CHARACTER,MPI_COMM_WORLD, ierr)
+
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%lambda,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%eps,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%delta,1, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%fake_center_latlon,2, MPI_DOUBLE_PRECISION,MPI_COMM_WORLD, ierr)
 
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%CovType,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%output_level,1, MPI_INTEGER,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%storeSolnsInFile,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
    call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%SFF,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%fake_Grid,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
+   call MPI_Unpack(userdef_control_package, Nbytes, index, ctrl%fake_data_orientation,1, MPI_LOGICAL,MPI_COMM_WORLD, ierr)
 
 end subroutine unpack_userdef_control
 

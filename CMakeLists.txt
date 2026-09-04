@@ -85,6 +85,9 @@ if (BUILD_SPHERICAL AND NOT FORCE_SPHERICAL)
            "For more information please see 'Spherical Coordinates' section in the README.md.\n"
            "To bypass this error run cmake with: '-DBUILD_SPHERICAL -DFORCE_SPHERICAL' flags"
         )
+elseif (BUILD_SPHERICAL AND FORCE_SPHERICAL)
+    message(STATUS "Building Spherical version of ModEM")
+    add_compile_definitions(BUILD_SPHERICAL)
 endif()
 
 if (BUILD_MPI)
