@@ -571,6 +571,8 @@ Blocks are repeated as necessary — a single block is used in the simple exampl
 indicating that the regions extend over all 11 layers (top-to-bottom) of this
 very small grid.
 
+.. _h2-covariance-type:
+
 H2 (Bi-Helmholtz) Covariance (CovType=2)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

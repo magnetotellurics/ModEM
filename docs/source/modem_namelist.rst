@@ -29,7 +29,8 @@ Each namelist section is optional and can be omitted completely if desired.
     &settings
         ! 'output_level' below overrides -V passed in on the command line
         output_level = 'regular'
-        ! CovType: 'AR' (default),  'H2' (Bi-Helmholtz) 
+        ! Covariance Type: 'AR' (default),  'H2' (Bi-Helmholtz) 
+        ! Currently performs no actions - use Inv control file or command line arg
         covariance_type = 'AR'
     /
     &io
@@ -42,11 +43,11 @@ Each namelist section is optional and can be omitted completely if desired.
      /
      &forward
          SFF = .false.
-         primary_model = "file"
-         primary_model_file = "none"
-         primary_field = "file"
-         primary_field_file = "none"
-         esoln_output = "none"
+         primary_model = 'file'
+         primary_model_file = 'none'
+         primary_field = 'file'
+         primary_field_file = 'none'
+         esoln_output = 'none'
      /
      &spherical_mt
          ! This section is only generated and processed if
@@ -54,6 +55,8 @@ Each namelist section is optional and can be omitted completely if desired.
          fake_grid = .false.
          fake_center_latlon = 0.0d0, 90.0d0
          fake_data_orientation = .true.
+         external_source_file = 'none'
+
      /
 
 
@@ -80,8 +83,17 @@ settings Section
     |                 |                             |           | the command line.                           |
     +-----------------+-----------------------------+-----------+---------------------------------------------+
     | covariance_type | 'AR', 'H2'                  | 'AR'      | Covariance type for inversion.              |
-    |                 |                             |           |                                             |
+    |                 |                             |           | Currently has no effect, see note below.    |
     +-----------------+-----------------------------+-----------+---------------------------------------------+
+
+
+.. note::
+
+   The `covariance_type` Namelist option currently has no effect. To set it,
+   use the 'Covariance backend CovType' option in the inversion control file.
+   Additional reference on the covariance type can be found at:
+   :ref:`h2-covariance-type`.
+
 
 forward Section
 ~~~~~~~~~~~~~~~~
