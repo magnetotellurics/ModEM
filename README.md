@@ -8,13 +8,13 @@ Modular Electromagnetic Inversion Software (ModEM)
 
 [![DOI](https://zenodo.org/badge/1025134680.svg)](https://doi.org/10.5281/zenodo.17229555)
 
-[ModEM Documentation](https://magnetotellurics.github.io/ModEM/)
 
 
 # Contents
 
 * [Obtaining The Software](#obtaining-the-software)
     * [Branches](#branches)
+    * [ModEM Documentation](#modem-documentation)
 * [Building ModEM](#building-modem)
     * [Dependencies](#dependencies)
     * [Creating Makefiles From Configuration files](#creating-makefiles-from-configuration-files)
@@ -83,6 +83,11 @@ ModEM currently has two branches used for development:
 
 [main-branch]: https://github.com/magnetotellurics/ModEM/
 [develop-branch]: https://github.com/magnetotellurics/ModEM/tree/develop
+
+## ModEM Documentation
+
+The ModEM Documentation can now be found online at:
+https://magnetotellurics.github.io/ModEM/.
 
 # Building ModEM
 
