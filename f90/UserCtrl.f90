@@ -1216,7 +1216,7 @@ Contains
       write(nl_fid, *) '    primary_field = "file"'
       write(nl_fid, *) '    primary_field_file = "none"'
       write(nl_fid, *) '    esoln_output = "none"'
-      write(nl_fid, *) '    external_source_ = "none"'
+      write(nl_fid, *) '    external_source_file = "none"'
       write(nl_fid, *) '/'
 
   end subroutine gen_nml_section_forward
