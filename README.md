@@ -10,27 +10,11 @@ Modular Electromagnetic Inversion Software (ModEM)
 
 [ModEM Documentation](https://magnetotellurics.github.io/ModEM/)
 
-> **NOTE:** This repository has been converted from the ModEM's OSU CEOAS Subversion
-> (SVN) repository. SVN revisions have been preserved and converted into Git
-> commits. Some main branches have been renamed:
->
-> | SVN Branch Name | GitHub Branch Name |
-> | --------------- | -------------------|
-> | trunk           | [trunk][trunk-branch] |
-> | stable-         | [main][main-branch] |
-> | stable          | [classic][classic-branch] |
->
-> Furthermore, the `matlab` and `examples` directory have been moved into the
-> [ModEM-Tools][ModEM-Tools] and [ModEM-Examples][ModEM-Examples] repositories,
-> respectively.
-
-[trunk-branch]: https://github.com/magnetotellurics/ModEM/tree/trunk
-[main-branch]: https://github.com/magnetotellurics/ModEM/tree/main
-[classic-branch]: https://github.com/magnetotellurics/ModEM/tree/classic
 
 # Contents
 
 * [Obtaining The Software](#obtaining-the-software)
+    * [Branches](#branches)
 * [Building ModEM](#building-modem)
     * [Dependencies](#dependencies)
     * [Creating Makefiles From Configuration files](#creating-makefiles-from-configuration-files)
@@ -78,6 +62,24 @@ ModEM currently has two branches used for development:
   stable then develop.
 * [develop][develop-branch] - The branch that contains the newest code, that may be less stable
   than main and may contain bugs.
+ 
+
+> **NOTE:** This repository has been converted from the ModEM's OSU CEOAS Subversion
+> (SVN) repository. SVN revisions have been preserved and converted into Git
+> commits. Some main branches have been renamed:
+>
+> | SVN Branch Name | GitHub Branch Name |
+> | --------------- | -------------------|
+> | stable-         | [main][main-branch] |
+> | stable          | [classic][classic-branch] |
+>
+> Furthermore, the `matlab` and `examples` directory have been moved into the
+> [ModEM-Tools][ModEM-Tools] and [ModEM-Examples][ModEM-Examples] repositories,
+> respectively.
+
+[trunk-branch]: https://github.com/magnetotellurics/ModEM/tree/trunk
+[main-branch]: https://github.com/magnetotellurics/ModEM/tree/main
+[classic-branch]: https://github.com/magnetotellurics/ModEM/tree/classic
 
 [main-branch]: https://github.com/magnetotellurics/ModEM/
 [develop-branch]: https://github.com/magnetotellurics/ModEM/tree/develop
