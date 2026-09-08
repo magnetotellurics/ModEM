@@ -45,7 +45,7 @@ endif()
 if(BUILD_MPI)
     target_sources(${MODEM_EXE}
         PRIVATE Sub_MPI.f90
-        PRIVATE EsolnManager.f90
+        PRIVATE ESolnManager.f90
     )
 endif()
 
