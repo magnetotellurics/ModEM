@@ -22,7 +22,6 @@ add_subdirectory(modelParam)
 target_sources(${MODEM_EXE} 
     PRIVATE DataFunc.f90
     PRIVATE EMfieldInterp.f90
-    PRIVATE ESolnManager.f90
     PRIVATE ForwardSolver.f90
     PRIVATE GridDef.f90
     PRIVATE Main.f90
@@ -46,6 +45,7 @@ endif()
 if(BUILD_MPI)
     target_sources(${MODEM_EXE}
         PRIVATE Sub_MPI.f90
+        PRIVATE EsolnManager.f90
     )
 endif()
 

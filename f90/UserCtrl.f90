@@ -618,11 +618,13 @@ Contains
            write(0,*) ' -v [debug|full|regular|compact|result|none]'
            write(0,*) '   indicates the desired level of output to screen and to files'
            write(0,*)
+#ifdef MPI
            write(0,*) ' -P [file_prefix]'
            write(0,*) '   indicates that the partial solutions should be stored as '
            write(0,*) '   temporary files on disk rather in memory with file prefix'
            write(0,*) '   [file_prefix]'
            write(0,*)
+#endif
            call ModEM_abort()
         else
            ctrl%search = temp(1)
