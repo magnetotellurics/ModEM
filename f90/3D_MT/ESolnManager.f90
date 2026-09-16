@@ -2,17 +2,17 @@
 ! ====================
 !
 ! The EsolnManager module is a module that helps with transferring electric 
-! and adjoint fields to and from worker tasks. It does so in two ways:
+! fields to and from worker tasks. It does so in two ways:
 ! 
 ! 1. MPI Transferring - Original ModEM MPI Behavior
 !   
 !   If specified, main tasks and worker tasks will communicate their 
-!   electric fields/adjoint solutions to each other using MPI send and
+!   electric fields solutions to each other using MPI send and
 !   receives.
 !
 !   This will cause the main task to allocate space for eAll.
 !
-! 2. Saving Electric fields/Adjoin Solutions to File
+! 2. Saving Electric fields Solutions to File
 !
 !   If specified, the worker tasks will read and write out electric fields
 !   when they are told to access them by the main task rather than communicating
@@ -94,7 +94,7 @@ contains
     !       If .false. or not present, the electric fields will be passed from the main and
     !       worker task via MPI.
     !  * prefix - character - optional - Default: 'esoln'
-    !       A character string prefix which to label the electric field/adjoint solution 
+    !       A character string prefix which to label the electric fields solution 
     !       filenames if they are written out to disk.
     !       
     !       If save_in_file is .false. or not present, prefix has no effect.
