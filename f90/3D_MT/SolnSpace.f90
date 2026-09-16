@@ -45,7 +45,6 @@ interface dotProd
    MODULE PROCEDURE dotProd_sparseVsolnV
 end interface
 
-
   type :: solnVector_t
     !!   Generic solution type, same name must be used to allow
     !!   use of higher level inversion modules on different problems.
@@ -80,6 +79,8 @@ end interface
 
     !! avoid memory leaks: set this to true for function outputs only
     logical			:: temporary = .false.
+
+    logical :: place_holder = .false.
 
   end type solnVector_t
 
@@ -165,7 +166,7 @@ contains
 !           Basic solnVector methods
 !**********************************************************************
 
-     subroutine create_solnVector(grid,iTx,e)
+     subroutine create_solnVector(grid, iTx, e, place_holder)
 
      !  generic routine for creating the solnVector type for 3D problems:
      !  number of polarization obtained from the transmitter dictionary
@@ -174,9 +175,17 @@ contains
        type(grid_t), intent(in), target	    :: grid
        integer, intent(in)                  :: iTx
        type (solnVector_t), intent(inout)		:: e
+       logical, intent(in), optional :: place_holder
 
        ! local variables
        integer				:: k,istat,iPol
+       logical :: place_holder_lcl
+
+       if (present(place_holder)) then
+            place_holder_lcl = place_holder
+       else
+            place_holder_lcl = .false.
+       end if
 
        if (e%allocated) then
           if (associated(e%grid, target=grid) .and. (e%tx == iTx)) then
@@ -190,11 +199,11 @@ contains
        e%nPol = txDict(iTx)%nPol
 	   allocate(e%Pol_index(e%nPol), STAT=istat)
        allocate(e%Pol_name(e%nPol), STAT=istat)
-       
+
        do iPol=1,e%nPol
         e%Pol_index(iPol)=iPol
        end do
-       
+
        ! set up the mode names based on transmitter type;
        ! for now, only set up for MT. Used for I/O.
        ! FIX (2026-07-27): boundary_ws.f90/boundary_wsS.f90's BC_x0_WS computes
@@ -216,9 +225,12 @@ contains
        end if
 
        allocate(e%pol(e%nPol), STAT=istat)
+
        do k = 1,e%nPol
-          call create_cvector(grid,e%pol(k),EDGE)
+          call create_cvector(grid,e%pol(k),EDGE, place_holder=place_holder_lcl)
        enddo
+
+       e % place_holder = place_holder_lcl
        e%tx = iTx
        e%grid => grid
 
@@ -351,6 +363,175 @@ contains
        enddo
 
      end function dotProd_solnVector
+
+     !**********************************************************************
+     subroutine write_solnVector(e, prefix, pol_index, ftype)
+
+         implicit none
+
+         type (solnVector_t), intent(in) :: e
+         character(len=*), intent(in) :: prefix
+         integer, optional, intent(in) :: pol_index
+         character(len=*), optional, intent(in) :: ftype
+
+         character(len=512) :: fname, ftype_lcl, form
+         character(len=512) :: iomsg
+         integer :: iostat
+         integer :: fid
+         integer :: pol_index_lcl
+
+         if (.not. e % allocated) then
+             write(0,*) "ERROR: solnVector_t (argument e) must be allocated before calling write_solnVector"
+             write(0,*) "ERROR: Allocate it by calling `create_solnVector` first"
+             call ModEM_abort()
+         end if
+
+         if (present(pol_index)) then
+             pol_index_lcl = pol_index
+         else
+             pol_index_lcl = 1
+         end if
+
+         if (present(ftype)) then
+            ftype_lcl = ftype
+         else
+            ftype_lcl = 'binary'
+         end if
+
+         if (ftype_lcl == 'binary') then
+            form = 'unformatted'
+         else if (ftype_lcl == 'ascii') then
+            form = 'formatted'
+         else
+             ftype_lcl = 'binary'
+             form = 'unformatted'
+         end if
+
+         fname = construct_esoln_fname(prefix, e % tx, trim(e % pol_name(e % pol_index(pol_index_lcl))))
+         open(newunit=fid, file=trim(fname), action='write', form=form, status='replace', &
+                iostat=iostat, iomsg=iomsg)
+         if (iostat /= 0) then
+             write(0,'(A, A, A)') "ERROR: There was an issue when opening: '", trim(fname), "' for writing:"
+             write(0,'(A, A)') "ERROR: Reason: ", trim(iomsg)
+             call ModEM_abort()
+         end if
+
+         write(6, '(A, i4.4, A, A, A, A)') "Saving electric solution for Tx: ", e % tx, " pol: '", &
+             trim(e % pol_name(pol_index_lcl)), "' to file: ", trim(fname) 
+
+         call write_cvector(fid, e % pol(pol_index_lcl), ftype_lcl)
+         close(fid)
+
+     end subroutine write_solnVector
+
+     !**********************************************************************
+     subroutine read_solnVector(e, prefix, pol_index, ftype)
+
+         implicit none
+
+         type (solnVector_t), intent(inout) :: e
+         character(len=*), intent(in) :: prefix
+         integer, optional, intent(in) :: pol_index
+         character(len=*), optional, intent(in) :: ftype
+
+         character(len=512) :: fname, ftype_lcl, form
+         character(len=512) :: iomsg
+         integer :: fid
+         integer :: pol_index_lcl
+         integer :: iostat
+         logical :: file_exists
+
+         if (.not. e % allocated) then
+             write(0,*) "ERROR: solnVector_t (argument e) msut be allocated before calling read_solnVector"
+             write(0,*) "ERROR: Allocate it by calling `create_solnVector` first"
+             call ModEM_abort()
+         end if
+
+         if (present(pol_index)) then
+             pol_index_lcl = pol_index
+         else
+             pol_index_lcl = 1
+         end if
+
+         if (present(ftype)) then
+            ftype_lcl = ftype
+         else
+            ftype_lcl = 'binary'
+         end if
+
+         if (ftype_lcl == 'binary') then
+            form = 'unformatted'
+         else if (ftype_lcl == 'ascii') then
+            form = 'formatted'
+         else
+             ftype_lcl = 'binary'
+             form = 'unformatted'
+         end if
+
+         fname = construct_esoln_fname(prefix, e % tx, trim(e % pol_name(pol_index_lcl)))
+
+         if (.not. does_esoln_file_exist(e, prefix)) then
+             write(0,*) "ERROR: The file for this solnVector_t (argument e) does not exist"
+             write(0,*) "ERROR: Could not find: ", trim(fname)
+             call ModEM_abort()
+         end if
+
+         open(newunit=fid, file=trim(fname), action='read', form=form, status='old', &
+                iostat=iostat, iomsg=iomsg)
+         if (iostat /= 0) then
+             write(0,'(A, A, A)') "ERROR: There was an issue when opening: '", trim(fname), "' for reading:"
+             write(0,'(A, A)') "ERROR: Reason: ", trim(iomsg)
+             call ModEM_abort()
+         end if
+
+         call read_cvector(fid, e % pol(pol_index_lcl), ftype_lcl)
+         close(fid)
+
+     end subroutine read_solnVector
+
+     !**********************************************************************
+     function does_esoln_file_exist(e, prefix, pol_index) result(file_exists)
+
+         implicit none
+
+         type (solnVector_t), intent(in) :: e
+         character(len=*), intent(in) :: prefix
+         integer, optional, intent(in) :: pol_index
+         character(len=512) :: fname
+         logical :: file_exists
+
+         integer :: pol_index_lcl
+
+         if (present(pol_index)) then
+             pol_index_lcl = pol_index
+         else
+             pol_index_lcl = 1
+         end if
+
+         if (.not. e % allocated) then
+             write(0,*) "ERROR: solnVector_t (argument e) msut be allocated before calling does_esoln_file_eixst"
+             write(0,*) "ERROR: Allocate it by calling `create_solnVector` first"
+             call ModEM_abort()
+         end if
+
+         fname = construct_esoln_fname(prefix, e % tx, trim(e % pol_name(pol_index_lcl)))
+         inquire(file=trim(fname), exist=file_exists)
+
+     end function does_esoln_file_exist
+
+     !**********************************************************************
+     function construct_esoln_fname(prefix, iTx, pol_name) result(fname)
+
+       implicit none
+
+       character(len=*), intent(in) :: prefix
+       integer, intent(in) :: iTx
+       character(len=*), intent(in) :: pol_name
+       character(len=512)  :: fname
+
+       write(fname, '(A, A, I4.4, A, A, A)') trim(prefix), '.iTx.', iTx, '.', trim(pol_name), '.cvec'
+
+     end function construct_esoln_fname
 
 !**********************************************************************
 !           Basic solnVectorMTX methods
