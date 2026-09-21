@@ -1163,7 +1163,7 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm,label)
      ! nTX is number of transmitters;
      nTx = d%nTx
      if(.not. eAll_temp%allocated) then
-         call create_solnVectorMTX(d%nTx,eAll_temp)
+         call EsMgr_create_solnVectorMTX(eAll_temp, d % nTx, grid=grid)
      end if 
      if (.not. savedSolns )then
          d_temp=d
@@ -1340,8 +1340,7 @@ Subroutine Master_job_Jmult(mHat,m,d,eAll,comm)
      type(solnVectorMTX_t)                             :: eAll_out 
      type(solnVectorMTX_t)                             :: eAll_temp 
      character(80)                                     :: job_name
-  
-   
+
      savedSolns = present(eAll)
      ! over-ride the default communicator, if needed
      if (present(comm)) then ! given communicator
