@@ -127,22 +127,6 @@ contains
             save_in_file_lcl = .false.
         end if
 
-        if ( save_in_file_lcl .and. .not. present(prefix)) then
-            if (EsMgr_ctx % rank_world == 0) then
-                write(0,*) "Warning: Argument 'prefix' was passed, but 'save_in_file' was not present"
-                write(0,*) "Warning: 'prefix' will not have an effect. Set 'save_in_file' to true to save"
-                write(0,*) "Warning: esolns in files"
-            end if
-        end if
-
-        if (.not. save_in_file_lcl .and. present(ftype)) then
-            if (EsMgr_ctx % rank_world == 0) then
-                write(0,*) "Warning: Argument 'ftype' was passed, but 'save_in_file' was not present"
-                write(0,*) "Warning: 'ftype' will not have an effect. Set 'save_in_file' to true when calling"
-                write(0,*) "WARNING: EsMgr_init to save esolns in files"
-            end if
-        end if
-
         if (present(prefix)) then
             prefix_lcl = prefix
         else
