@@ -2489,9 +2489,9 @@ Subroutine Worker_job(sigma,d)
                  ! compute linearized data functional(s) : L
                  !call Lrows(e0,sigma,dt,stn_index,L)
                  ! 2022.10.06, Liu Zhongyin, Add Azimuth
-                 call Lrows(e0,sigma,dt,stn_index,orient,L)
+                 call Lrows(e0,sigma,dt,stn_index,d%d(per_index)%data(dt_index)%orient(stn_index),L)
                  ! compute linearized data functional(s) : Q
-                 call Qrows(e0,sigma,dt,stn_index,Qzero,Qreal,Qimag)
+                 call Qrows(e0,sigma,dt,d%d(per_index)%data(dt_index)%rx(stn_index),Qzero,Qreal,Qimag)
                  ! clean up the grid elements stored in GridCalc on the 
                  ! leader node
                  call deall_rvector(l_E)
