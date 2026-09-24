@@ -25,8 +25,6 @@ module ModEM_memory
 
     private
 
-    integer :: task_id
-
     public ModEM_memory_print_report
     public ModEM_memory_log_report
 #ifdef MPI
@@ -68,13 +66,13 @@ contains
         integer (int64) :: maxrss
         character (len=*), intent(in) :: message
         real (real64) :: maxrss_kb, maxrss_mb, maxrss_gb
-        character (len=*), parameter :: LOG_MSG_FMT = "(I4.4, A, A, A, F18.1, A, F18.1, A, F18.1, A)"
+        character (len=*), parameter :: LOG_MSG_FMT = "(A, A, F18.1, A, F18.1, A, F18.1, A)"
         character (len=512) :: log_message
 
         call ModEM_memory_get_maxrss(maxrss)
         call ModEM_memory_convert_maxrss(maxrss, maxrss_kb, maxrss_mb, maxrss_gb)
 
-        write(log_message, LOG_MSG_FMT) task_id, ' - ', trim(message), ", ", maxrss_kb, ' kb ', maxrss_mb, ' mb ', maxrss_gb, ' gb'
+        write(log_message, LOG_MSG_FMT) trim(message), ", ", maxrss_kb, ' kb ', maxrss_mb, ' mb ', maxrss_gb, ' gb'
         write(6,*) trim(log_message)
 
     end subroutine ModEM_memory_print_report
