@@ -15,6 +15,7 @@ module ModEM_memory
 
     use utilities
     use iso_c_binding, only : c_long
+    use iso_fortran_env, only : int64, real64
 #ifdef MPI
     use mpi
 #endif
@@ -38,7 +39,7 @@ contains
 
         implicit none
 
-        integer, intent(out) :: maxrss_bytes
+        integer (int64), intent(out) :: maxrss_bytes
         integer (c_long) :: maxrss_bytes_c
 
 #ifdef MODEM_MEMORY
@@ -50,7 +51,7 @@ contains
         end interface
 
         call get_maxrss(maxrss_bytes_c)
-        maxrss_bytes = maxrss_bytes_c
+        maxrss_bytes = int(maxrss_bytes_c, int64)
 #else
         write(0,*) "ERROR: ModEM was not built with the ModEM_getrusage.c file!"
         write(0,*) "ERROR: In order to use ModEM_memory routines you must"
@@ -64,9 +65,9 @@ contains
 
         implicit none
 
-        integer :: maxrss
+        integer (int64) :: maxrss
         character (len=*), intent(in) :: message
-        real :: maxrss_bytes, maxrss_kb, maxrss_mb, maxrss_gb
+        real (real64) :: maxrss_kb, maxrss_mb, maxrss_gb
         character (len=*), parameter :: LOG_MSG_FMT = "(I4.4, A, A, A, F18.1, A, F18.1, A, F18.1, A)"
         character (len=512) :: log_message
 
@@ -82,14 +83,14 @@ contains
 
         implicit none
 
-        integer :: maxrss_bytes
-        real, intent(out) :: maxrss_kb
-        real, intent(out) :: maxrss_mb
-        real, intent(out) :: maxrss_gb
+        integer (int64), intent(in) :: maxrss_bytes
+        real (real64), intent(out) :: maxrss_kb
+        real (real64), intent(out) :: maxrss_mb
+        real (real64), intent(out) :: maxrss_gb
 
-        maxrss_kb = maxrss_bytes / 1.0
-        maxrss_mb = maxrss_kb / 1000.0
-        maxrss_gb = maxrss_mb / 1000.1
+        maxrss_kb = real(maxrss_bytes, real64) / 1024.0_real64
+        maxrss_mb = maxrss_kb / 1024.0_real64
+        maxrss_gb = maxrss_mb / 1024.0_real64
 
     end subroutine ModEM_memory_convert_maxrss
 
@@ -99,8 +100,8 @@ contains
 
         character (len=*), intent(in) :: message
         character (len=*), parameter :: LOG_MSG_FMT = "(A, A, F18.1, A, F18.1, A, F18.1, A)"
-        integer :: maxrss
-        real :: maxrss_kb, maxrss_mb, maxrss_gb
+        integer (int64) :: maxrss
+        real (real64) :: maxrss_kb, maxrss_mb, maxrss_gb
         character (len=512) :: log_message
 
         call ModEM_memory_get_maxrss(maxrss)
@@ -120,12 +121,12 @@ contains
         character (len=*), parameter :: LOG_MSG_FMT = "(A, A, F18.1, A, F18.1, A, F18.1, A)"
         character (len=512) :: log_message
 
-        integer :: maxrss, global_maxrss
-        real :: maxrss_kb, maxrss_mb, maxrss_gb
+        integer (int64) :: maxrss, global_maxrss
+        real (real64) :: maxrss_kb, maxrss_mb, maxrss_gb
 
         call ModEM_memory_get_maxrss(maxrss)
 
-        call MPI_reduce(maxrss, global_maxrss, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+        call MPI_reduce(maxrss, global_maxrss, 1, MPI_INTEGER8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
 
         if (taskid == 0) then
             call ModEM_memory_convert_maxrss(global_maxrss, maxrss_kb, maxrss_mb, maxrss_gb)
