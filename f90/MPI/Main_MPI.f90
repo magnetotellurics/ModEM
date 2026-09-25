@@ -1159,12 +1159,12 @@ Subroutine Master_job_JmultT(sigma,d,dsigma,eAll,s_hat,comm,label)
      end if
 
      modem_ctx % comm_current = comm_current
-
      ! nTX is number of transmitters;
      nTx = d%nTx
      if(.not. eAll_temp%allocated) then
          call create_solnVectorMTX(d%nTx,eAll_temp)
      end if 
+
      if (.not. savedSolns )then
          d_temp=d
          call Master_job_fwdPred(sigma,d_temp,eAll_temp)
@@ -1373,15 +1373,18 @@ Subroutine Master_job_Jmult(mHat,m,d,eAll,comm)
              call deall (e0)  
          end do 
      end if     
+
      if (.not. eAll_temp%allocated) then
-         call create_solnVectorMTX(d%nTx,eAll_temp)
+         call EsMgr_create_solnVectorMTX(eAll_temp, d % nTx, grid=grid)
      end if
+
      if (.not. savedSolns )then
          d_temp=d
          call Master_job_fwdPred(m,d_temp,eAll_temp,comm_current)
      else
          eAll_temp=eAll 
      end if
+
    ! First distribute m, mHat and d
      call Master_job_Distribute_Model(m,mHat,comm_current)
      call Master_job_Distribute_Data(d,comm_current)
@@ -1391,12 +1394,10 @@ Subroutine Master_job_Jmult(mHat,m,d,eAll,comm)
     &    comm_current, eAll_temp)
 
      do iper=1,nTx
-         !e0=eAll%solns(iper)  
-         !e =eAll_out%solns(iper)
          d1 = d%d(iper)
          d2 = d%d(iper)
-         call Lmult(eAll%solns(iper)  ,m,eAll_out%solns(iper),d1)
-         call Qmult(eAll%solns(iper)  ,m,mHat,d2)
+         call Lmult(eAll_out%solns(iper)  ,m,eAll_out%solns(iper),d1)
+         call Qmult(eAll_out%solns(iper)  ,m,mHat,d2)
          call linComb_dataVector(ONE,d1,ONE,d2,d%d(iper))
      end do
 
