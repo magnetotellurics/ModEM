@@ -1,6 +1,10 @@
-name: "Build Sphinx Docs: Build and update"
+name: "Build and Deploy Sphinx Docs"
 
-on: push
+on:
+  push:
+    branches:
+      - main
+      - develop
 
 jobs:
   build:
@@ -18,9 +22,21 @@ jobs:
       with:
         name: html-docs
         path: docs/build/html/
+    # In order to deploy develop to our GitHub pages site, we can
+    # have actions-gh-pages deploy to destination_dir and then access
+    # the develop branch as a subdirectory of the website: i.e.:
+    # https://magnetotellurics.github.io/ModEM/develop/
+    - name: Determine Destination Directory
+      run: |
+        if [ "${{ github.ref_name }}" = "main" ]; then
+          echo "DEPLOY_DEST=" >> $GITHUB_ENV
+        else
+          echo "DEPLOY_DEST=${{ github.ref_name }}" >> $GITHUB_ENV
+        fi
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: docs/build/html
+        destination_dir: ${{ env.DEPLOY_DEST }}
+        keep_files: true
