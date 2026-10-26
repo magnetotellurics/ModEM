@@ -1,0 +1,141 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>CSEM Version of ModEM &#8212; ModEM develop documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">CSEM Version of ModEM</a></li>
+<li><a class="reference internal" href="#configuring-and-compiling-with-dipole1d">Configuring and Compiling with Dipole1D</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/csem_modem.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="csem-version-of-modem">
+<h1>CSEM Version of ModEM<a class="headerlink" href="#csem-version-of-modem" title="Permalink to this headline">¶</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The CSEM version of ModEM is not fully validated and has only been used in
+some instances. We cannot guarantee correct or accurate results with it.</p>
+</div>
+<p>Please see the warning above. The CSEM version is really not yet ready for
+production, but we are providing it here for future development and testing.</p>
+<p>The CSEM version of ModEM is available on the <code class="docutils literal notranslate"><span class="pre">CSEM</span></code> branch of ModEM:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git checkout CSEM
+</pre></div>
+</div>
+<p>The CSEM version requires one of two submodules that are not a part of ModEM:</p>
+<ul class="simple">
+<li><p>Dipole1D - A part of OCCAM1DCSEM - <a class="reference external" href="_dipole1d">provided by SCRIPPS</a>.</p></li>
+<li><p>EM1D - Provided by Rita Streich’s - But not yet available for public release.</p></li>
+</ul>
+<p>For more information on the CSEM version of ModEM see the README on the CSEM
+branch: <a class="reference external" href="https://github.com/magnetotellurics/ModEM/blob/CSEM/README.md">https://github.com/magnetotellurics/ModEM/blob/CSEM/README.md</a></p>
+</div>
+<div class="section" id="configuring-and-compiling-with-dipole1d">
+<h1>Configuring and Compiling with Dipole1D<a class="headerlink" href="#configuring-and-compiling-with-dipole1d" title="Permalink to this headline">¶</a></h1>
+<p>The license associated with Dipole1D disallows us from including it in our
+source code; however, the configure script (<code class="docutils literal notranslate"><span class="pre">/f90/CONFIG/configure</span></code>)
+contains code to automatically retrieve it for you. The configure script has
+the following options:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ModEM/f90/
+$ ./CONFIG/configure
+ Usage: ./CONFIG/Configure with the following options:
+ Compiler: Choose from supported compilers: <span class="o">[</span> gfortran <span class="p">|</span> ifort <span class="o">]</span>
+ Makefile: Provide a name <span class="k">for</span> your output Makefile name.
+ <span class="o">[</span>Debug or Release<span class="o">]</span>: Choose whether you want to compile the Debug or Release version.
+ <span class="o">[</span>MPI or Serial<span class="o">]</span>:  Choose whether you want to compile the parallel <span class="o">(</span>MPI<span class="o">)</span> or serial version.
+ <span class="o">[</span>MF or SP or SP2<span class="o">]</span>:  Choose between the Matrix Free <span class="o">(</span>MF<span class="o">)</span>, or the Modified System of Eqs <span class="m">1</span> <span class="o">(</span>SP<span class="o">)</span>, or the Modified System of Eqs <span class="m">2</span> <span class="o">(</span>SP2<span class="o">)</span> of the code.
+ <span class="o">[</span>MT or MT+CSEM<span class="o">]</span>:  Compile MT or MT+CSEM. In Case of MT+CSEM, choose in the following option whether Dipole1D or EM1D or both will be used to get <span class="k">for</span> the secondary field formulation.
+ <span class="o">[</span>Dipole1D or EM1D<span class="o">]</span>:  <span class="o">(</span>Optional<span class="o">)</span> - Choose whether you have Dipole1D, or EM1D in the <span class="nb">source</span> files folder <span class="s1">&#39;/3D_MT/CSEM_module&#39;</span>
+</pre></div>
+</div>
+<p>To configure with Dipole1D run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ModEM/f90
+$ ./CONFIG/configure ./CONFIG/Configure gfortran Makefile Release MPI MF MT+CSEM Dipole1D
+ Dipole1D is not currently in ./3D_MT/CSEM_module/Dipole1D
+ Would you like to have this script automatically download it now? <span class="o">[</span>Yes/No<span class="o">]</span>
+</pre></div>
+</div>
+<p>You will be presented with the above prompt, type ‘Yes’ to automatically
+download Dipole1D, then you’ll be able to type <code class="docutils literal notranslate"><span class="pre">make</span></code> to compile:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ make
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">ModEM develop documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, Gary Egbert, Anna Kelbert, Miles Curry, Naser Meqbel, Hao Dong &amp; Kush Tandon.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>
