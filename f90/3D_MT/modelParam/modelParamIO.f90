@@ -83,6 +83,27 @@ submodule (ModelSpace) ModelSpaceIO
 #endif
     end interface
 
+    ! Read/write ModelParam Vec for Sensitivity Matrix
+    interface
+        module subroutine readVec_modelParam_binary(grid,nSigma,m,header,cfile)
+            implicit none
+            type(grid_t), target, intent(inout)      :: grid
+            integer, intent(in)              :: nSigma
+            type(modelParam_t), intent(inout)   :: m(nSigma)
+            character(*), intent(in)          :: cfile
+            character(80), intent(out)        :: header
+        end subroutine readVec_modelParam_binary
+    end interface
+
+    interface
+        module subroutine writeVec_modelParam_binary(nSigma,m,header,cfile)
+            implicit none
+            integer, intent(in)               :: nSigma
+            character(*), intent(in)          :: cfile, header
+            type(modelParam_t), intent(in)      :: m(nSigma)
+        end subroutine writeVec_modelParam_binary
+    end interface
+
 contains
 
     subroutine unsupported_modelParamIO_error(ftype_choice, input_or_output)
@@ -209,15 +230,19 @@ contains
       character(*), intent(out)		:: header
       character(*), intent(in)		:: cfile
 
+      call readVec_modelParam_binary(grid, nSigma, sigma, header, Cfile)
+
     end subroutine readVec_modelParam
 
     module subroutine writeVec_modelParam(nSigma,sigma,header,cfile)
 
-        implicit none
+       implicit none
 
-        integer, intent(in)		:: nSigma
-        character(*), intent(in)		:: header, cfile
-        type(modelParam_t), intent(in)	:: sigma(nSigma)
+       integer, intent(in)		:: nSigma
+       character(*), intent(in)		:: header, cfile
+       type(modelParam_t), intent(in)	:: sigma(nSigma)
+
+       call writeVec_modelParam_binary(nSigma, sigma, header, cfile)
 
     end subroutine writeVec_modelParam
 
