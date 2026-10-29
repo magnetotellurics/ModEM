@@ -353,6 +353,7 @@ Contains
     type(modelParam_t) :: mHat, m_minus_m0
     type(modelParam_t) :: gradM, g, h, gPrev
     type(distortionParam_t) :: gradC, gC, hC, gPrevC, distC_work
+    type(distortionParam_t) :: distC_prev, distC_diff
     type(solnVectorMTX_t) :: eAll
     real(kind=prec) :: value, valuePrev, rms, rmsPrev
     real(kind=prec) :: alpha, beta, gnorm, mNorm, distNorm, Ndata, Nmodel
@@ -363,8 +364,13 @@ Contains
     real(kind=prec) :: mNorm_over_Nmodel ! lambda*||mHat||^2/Nmodel for phi_C_only
     real(kind=prec) :: grad_dot_h, g_dot_g, g_dot_gPrev, gPrev_dot_gPrev
     real(kind=prec) :: g_dot_h
-    integer :: iter, nCG, nLS, nLSC, nfuncSigma, nfuncC, ios, i, j, inner
-    logical :: hasCtrlFile, lockC, hasHistory
+    real(kind=prec) :: value_before_C, value_after_C, rms_before_C, rms_after_C
+    real(kind=prec) :: value_before_sigma, value_after_sigma, rms_before_sigma, rms_after_sigma
+    real(kind=prec) :: dF_C, dF_sigma, share_C
+    real(kind=prec) :: gradC_norm, gradM_norm
+    real(kind=prec) :: dC_norm, dC_max
+    integer :: iter, nCG, nLS, nLSC, nfuncSigma, nfuncC, ios, i, j, inner, iSite
+    logical :: hasCtrlFile, lockC, hasHistory, stopInversion
     character(3) :: iterChar
     character(100) :: mFile, mHatFile, gradFile, dataFile, resFile, logFile
     character(100) :: distFile
@@ -382,6 +388,7 @@ Contains
     lambda0 = max(lambda, R_TINY)
     lockC = .false.
     hasHistory = .false.
+    stopInversion = .false.
 
     logFile = trim(distControl%fname)//'_NLCG_DIST.log'
     open(unit=ioLog, file=logFile, status='unknown', position='append', iostat=ios)
@@ -397,6 +404,16 @@ Contains
        write(*,'(a40,es12.5)') 'C updates will be locked when lambda < ', distControl%lambdaClock
        write(ioLog,'(a40,es12.5)') 'C updates will be locked when lambda < ', distControl%lambdaClock
     end if
+    write(*,'(a46,i4)') ' Distortion sigma iterations per block: ', distControl%nSigmaIter
+    write(ioLog,'(a46,i4)') ' Distortion sigma iterations per block: ', distControl%nSigmaIter
+    write(*,'(a46,i4)') ' Distortion steps per block: ', distControl%nDistIter
+    write(ioLog,'(a46,i4)') ' Distortion steps per block: ', distControl%nDistIter
+    write(*,'(a46,es12.5)') ' Initial distortion step size: ', distControl%alpha_C
+    write(ioLog,'(a46,es12.5)') ' Initial distortion step size: ', distControl%alpha_C
+    write(*,'(a46,i4)') ' Minimum iterations before C lock: ', distControl%nClockMinIter
+    write(ioLog,'(a46,i4)') ' Minimum iterations before C lock: ', distControl%nClockMinIter
+    write(*,'(a46,a)') ' Distortion output file: ', trim(distControl%distFname)
+    write(ioLog,'(a46,a)') ' Distortion output file: ', trim(distControl%distFname)
 
     mHat = m
 
@@ -414,6 +431,8 @@ Contains
     call create_distortionParam(distC%nSites, hC)
     call create_distortionParam(distC%nSites, gPrevC)
     call create_distortionParam(distC%nSites, distC_work)
+    call create_distortionParam(distC%nSites, distC_prev)
+    call create_distortionParam(distC%nSites, distC_diff)
 
     ! First forward pass and function evaluation
     call func_dist(lambda, distControl%nu, d, m0, mHat, distC, value, mNorm, distNorm, dHat, eAll, rms)
@@ -447,6 +466,9 @@ Contains
     blockLoop: do
        if ((rms < distControl%rmsTol) .or. (iter >= distControl%maxIter)) exit blockLoop
 
+       value_before_C = value
+       rms_before_C = rms
+
        ! === Phase 1: C-update at current (mHat, eAll) state ===
        write(*,'(a40)') ' Block: Distortion Matrix update (Phase 1)'
        write(ioLog,'(a40)') ' Block: Distortion Matrix update (Phase 1)'
@@ -473,9 +495,14 @@ Contains
           Ndata = countData(d)
           mNorm_over_Nmodel = dotProd(mHat, mHat) / countModelParam(mHat)
 
+          call copy_distortionParam(distC, distC_prev)
+
           do i = 1, distControl%nDistIter
              call copy_distortionParam(distC, gPrevC)
              call compDistGrad(d, eAll, m, distC, distControl%nu, Ndata, gradC)
+             gradC_norm = sqrt(dotProd_distortionParam(gradC, gradC))
+             write(*,'(a30,es12.5)') '   DistDiag: ||gradC|| = ', gradC_norm
+             write(ioLog,'(a30,es12.5)') '   DistDiag: ||gradC|| = ', gradC_norm
 
              alpha_C_try = alpha_C
              if (distControl%useBBDistInit .and. hasHistory) then
@@ -527,10 +554,36 @@ Contains
 
           ! Recompute dHat and rms with new C (cheap, locked eAll)
           call reComputedHat_dist(d, eAll, m, distC, dHat, rms)
+
+          value_after_C = value
+          rms_after_C = rms
+          dF_C = value_before_C - value_after_C
+          call linComb_distortionParam(ONE, distC, MinusONE, distC_prev, distC_diff)
+          dC_norm = sqrt(dotProd_distortionParam(distC_diff, distC_diff))
+          dC_max = R_ZERO
+          do iSite = 1, distC%nSites
+             do j = 1, 2
+                dC_max = max(dC_max, abs(distC_diff%C(1,j,iSite)), abs(distC_diff%C(2,j,iSite)))
+             end do
+          end do
+          write(*,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
+               ' DistDiag: dF_C=', dF_C, ' rms_before=', rms_before_C, ' rms_after=', rms_after_C
+          write(ioLog,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
+               ' DistDiag: dF_C=', dF_C, ' rms_before=', rms_before_C, ' rms_after=', rms_after_C
+          write(*,'(a20,es12.5,a20,es12.5)') ' DistDiag: ||dC||=', dC_norm, ' max|dC|=', dC_max
+          write(ioLog,'(a20,es12.5,a20,es12.5)') ' DistDiag: ||dC||=', dC_norm, ' max|dC|=', dC_max
        else
           write(*,'(a40)') '   DistLS: C-update skipped (locked)    '
           write(ioLog,'(a40)') '   DistLS: C-update skipped (locked)    '
+          value_after_C = value_before_C
+          rms_after_C = rms_before_C
+          dF_C = R_ZERO
+          dC_norm = R_ZERO
+          dC_max = R_ZERO
        end if
+
+       value_before_sigma = value
+       rms_before_sigma = rms
 
        ! === Phase 2: nSigmaIter sigma-only NLCG iterations (C fixed) ===
        ! Recompute sigma gradient at NEW C (same mHat) — restart CG
@@ -540,6 +593,9 @@ Contains
        h = g
        nCG = 0
        gnorm = sqrt(dotProd(gradM, gradM))
+       gradM_norm = gnorm
+       write(*,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
+       write(ioLog,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
        ! On the first outer cycle report the post-C-update gradient (the one
        ! the first sigma line search actually uses) and initialise alpha.
        if (iter == 0) then
@@ -561,7 +617,7 @@ Contains
        write(ioLog,'(a36,i3,a16,i3)') 'Phase 2: Inner sigma loop (up to ', distControl%nSigmaIter, ' iterations)'
 
        sigmaLoop: do inner = 1, distControl%nSigmaIter
-          if ((rms < distControl%rmsTol) .or. (iter >= distControl%maxIter)) exit blockLoop
+          if ((rms < distControl%rmsTol) .or. (iter >= distControl%maxIter)) exit sigmaLoop
 
           iter = iter + 1
           call ModEM_timers_start("NLCG_DIST Iteration")
@@ -588,7 +644,8 @@ Contains
               if (lambda < distControl%lambdaTol) then
                  write(*,'(a55)') 'Unable to get out of a local minimum. Exiting...'
                  write(ioLog,'(a55)') 'Unable to get out of a local minimum. Exiting...'
-                 exit blockLoop
+                 stopInversion = .true.
+                 exit sigmaLoop
               end if
               gnorm = sqrt(dotProd(gradM, gradM))
               alpha = min(ONE, distControl%startdm) / gnorm
@@ -668,6 +725,23 @@ Contains
            call ModEM_timers_print("NLCG_DIST Iteration", ioLog)
 
         end do sigmaLoop
+
+        value_after_sigma = value
+        rms_after_sigma = rms
+        dF_sigma = value_before_sigma - value_after_sigma
+        if (abs(dF_C) + abs(dF_sigma) > R_TINY) then
+           share_C = dF_C / (abs(dF_C) + abs(dF_sigma))
+        else
+           share_C = R_ZERO
+        end if
+        write(*,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
+             ' DistDiag: dF_sigma=', dF_sigma, ' rms_before=', rms_before_sigma, ' rms_after=', rms_after_sigma
+        write(ioLog,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
+             ' DistDiag: dF_sigma=', dF_sigma, ' rms_before=', rms_before_sigma, ' rms_after=', rms_after_sigma
+        write(*,'(a20,es12.5)') ' DistDiag: share_C=', share_C
+        write(ioLog,'(a20,es12.5)') ' DistDiag: share_C=', share_C
+
+        if (stopInversion .or. (rms < distControl%rmsTol) .or. (iter >= distControl%maxIter)) exit blockLoop
     end do blockLoop
 
     ! Final output
@@ -699,6 +773,8 @@ Contains
     call deall_distortionParam(hC)
     call deall_distortionParam(gPrevC)
     call deall_distortionParam(distC_work)
+    call deall_distortionParam(distC_prev)
+    call deall_distortionParam(distC_diff)
     call ModEM_timers_destroy('NLCG_DIST Iteration')
 
   end subroutine NLCGsolver_dist
