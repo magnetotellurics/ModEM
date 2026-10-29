@@ -258,9 +258,10 @@ Contains
     real(kind=prec),         intent(out)   :: alpha_out
     integer,                 intent(out)   :: nLS
 
-    integer :: iSite
+    integer :: iSite, nBT
     real(kind=prec) :: alpha_1, alpha_q, g_0, phi_1, phi_q, a_quad
-    real(kind=prec) :: alpha_lo, alpha_hi
+    real(kind=prec) :: alpha_lo, alpha_hi, alpha_try, phi_try
+    real(kind=prec) :: c_armijo, alpha_min
     type(distortionParam_t) :: distC_trial
     character(100) :: logFile
 
@@ -275,67 +276,86 @@ Contains
        return
     end if
 
+    c_armijo = distControl%c
     alpha_1 = max(alpha_C_init, R_TINY)
+    alpha_min = max(distControl%alphaMinScale * alpha_1, R_TINY)
     call create_distortionParam(distC_in%nSites, distC_trial)
 
     write(*,'(a16,a7,es12.5)') '   DistLS: init ', ' phi0=', phi_0
     write(ioLog,'(a16,a7,es12.5)') '   DistLS: init ', ' phi0=', phi_0
 
-    do iSite = 1, distC_in%nSites
-       distC_trial%C(1,1,iSite) = distC_in%C(1,1,iSite) - alpha_1 * gradC%C(1,1,iSite)
-       distC_trial%C(1,2,iSite) = distC_in%C(1,2,iSite) - alpha_1 * gradC%C(1,2,iSite)
-       distC_trial%C(2,1,iSite) = distC_in%C(2,1,iSite) - alpha_1 * gradC%C(2,1,iSite)
-       distC_trial%C(2,2,iSite) = distC_in%C(2,2,iSite) - alpha_1 * gradC%C(2,2,iSite)
-    end do
-    distC_trial%siteIndex = distC_in%siteIndex
+    nLS = 0
 
+    ! Trial 1: initial step.
+    call linComb_distortionParam(ONE, distC_in, -alpha_1, gradC, distC_trial)
     phi_1 = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel)
-    nLS = 1
-    write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', 1, ' alpha=', alpha_1, ' phi=', phi_1
-    write(ioLog,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', 1, ' alpha=', alpha_1, ' phi=', phi_1
+    nLS = nLS + 1
+    write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_1, ' phi=', phi_1
+    write(ioLog,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_1, ' phi=', phi_1
 
+    ! Quadratic fit and minimizer.  Keep the better of the initial and
+    ! quadratic trials as the candidate, then enforce Armijo on that candidate.
     a_quad = (phi_1 - phi_0 - g_0 * alpha_1) / max(alpha_1**2, R_TINY)
-    if (a_quad <= R_TINY) then
-       call copy_distortionParam(distC_trial, distC_out)
-       phi_out = phi_1
-       alpha_out = alpha_1
-       write(*,'(a54)') '   DistLS: nonpositive curvature, using trial step'
-       write(ioLog,'(a54)') '   DistLS: nonpositive curvature, using trial step'
-       call deall_distortionParam(distC_trial)
-       return
+    alpha_try = alpha_1
+    phi_try = phi_1
+
+    if (a_quad > R_TINY) then
+       alpha_q = -g_0 / (TWO * a_quad)
+       alpha_lo = max(distControl%alphaMinScale * alpha_1, R_TINY)
+       alpha_hi = max(distControl%alphaMaxScale * alpha_1, alpha_lo)
+       alpha_q = min(alpha_hi, max(alpha_lo, alpha_q))
+
+       call linComb_distortionParam(ONE, distC_in, -alpha_q, gradC, distC_trial)
+       phi_q = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel)
+       nLS = nLS + 1
+       write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_q, ' phi=', phi_q
+       write(ioLog,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_q, ' phi=', phi_q
+
+       if (phi_q < phi_try) then
+          alpha_try = alpha_q
+          phi_try = phi_q
+       end if
     end if
 
-    alpha_q = -g_0 / (TWO * a_quad)
-    alpha_lo = max(distControl%alphaMinScale * alpha_1, R_TINY)
-    alpha_hi = max(distControl%alphaMaxScale * alpha_1, alpha_lo)
-    alpha_q = min(alpha_hi, max(alpha_lo, alpha_q))
+    ! Accept the best candidate only if it satisfies Armijo.
+    if (phi_try <= phi_0 + c_armijo * alpha_try * g_0) then
+       call linComb_distortionParam(ONE, distC_in, -alpha_try, gradC, distC_out)
+       phi_out = phi_try
+       alpha_out = alpha_try
+       write(*,'(a44)') '   DistLS: best trial satisfies Armijo'
+       write(ioLog,'(a44)') '   DistLS: best trial satisfies Armijo'
+       goto 100
+    end if
 
-    do iSite = 1, distC_in%nSites
-       distC_out%C(1,1,iSite) = distC_in%C(1,1,iSite) - alpha_q * gradC%C(1,1,iSite)
-       distC_out%C(1,2,iSite) = distC_in%C(1,2,iSite) - alpha_q * gradC%C(1,2,iSite)
-       distC_out%C(2,1,iSite) = distC_in%C(2,1,iSite) - alpha_q * gradC%C(2,1,iSite)
-       distC_out%C(2,2,iSite) = distC_in%C(2,2,iSite) - alpha_q * gradC%C(2,2,iSite)
+    ! Backtracking from the best candidate.
+    do nBT = 1, 10
+       alpha_try = alpha_try * 0.5_prec
+       if (alpha_try < alpha_min) exit
+
+       call linComb_distortionParam(ONE, distC_in, -alpha_try, gradC, distC_trial)
+       phi_try = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel)
+       nLS = nLS + 1
+       write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_try, ' phi=', phi_try
+       write(ioLog,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_try, ' phi=', phi_try
+
+       if (phi_try <= phi_0 + c_armijo * alpha_try * g_0) then
+          call linComb_distortionParam(ONE, distC_in, -alpha_try, gradC, distC_out)
+          phi_out = phi_try
+          alpha_out = alpha_try
+          write(*,'(a44)') '   DistLS: backtracked step satisfies Armijo'
+          write(ioLog,'(a44)') '   DistLS: backtracked step satisfies Armijo'
+          goto 100
+       end if
     end do
-    distC_out%siteIndex = distC_in%siteIndex
 
-    phi_q = phi_C_only(d, eAll, sigma, distC_out, nu, Ndata, lambda, mNorm_over_Nmodel)
-    nLS = 2
-    write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', 2, ' alpha=', alpha_q, ' phi=', phi_q
-    write(ioLog,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', 2, ' alpha=', alpha_q, ' phi=', phi_q
+    ! No acceptable step: keep the current C.
+    call copy_distortionParam(distC_in, distC_out)
+    phi_out = phi_0
+    alpha_out = alpha_C_init
+    write(*,'(a52)') '   DistLS: no Armijo step found, keeping current C'
+    write(ioLog,'(a52)') '   DistLS: no Armijo step found, keeping current C'
 
-    if (phi_1 < phi_q) then
-       call copy_distortionParam(distC_trial, distC_out)
-       phi_out = phi_1
-       alpha_out = alpha_1
-       write(*,'(a35)') '   DistLS: using initial trial step'
-       write(ioLog,'(a35)') '   DistLS: using initial trial step'
-    else
-       phi_out = phi_q
-       alpha_out = alpha_q
-       write(*,'(a36)') '   DistLS: using quadratic minimizer'
-       write(ioLog,'(a36)') '   DistLS: using quadratic minimizer'
-    end if
-
+100 continue
     call deall_distortionParam(distC_trial)
 
   end subroutine lineSearchDistQuad
