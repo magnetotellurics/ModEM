@@ -629,7 +629,18 @@ Contains
              write(ioLog,'(a39,es12.5)') 'The initial value of alpha updated to ', alpha
           end if
        else
-          alpha = distControl%startdm / max(gnorm, R_TINY)
+          ! Warm-start the sigma step from the previous estimate instead of
+          ! resetting to a full startdm/gnorm step after every C update.  A
+          ! C update changes the model gradient and the objective landscape;
+          ! forcing a full-length step here makes the first sigma trial
+          ! overshoot badly.  Keep the previous step if it is shorter, and
+          ! never exceed the configured initial step length.
+          alpha = min(alpha, distControl%startdm / max(gnorm, R_TINY))
+          alpha = max(alpha, R_TINY)
+          write(*,'(a40,es12.5,a20,es12.5)') &
+               ' DistDiag: sigma warm-start alpha=', alpha, ' step_norm=', alpha*gnorm
+          write(ioLog,'(a40,es12.5,a20,es12.5)') &
+               ' DistDiag: sigma warm-start alpha=', alpha, ' step_norm=', alpha*gnorm
        end if
        write(*,'(a39)') 'CG restarted after C-update (steepest descent)'
        write(ioLog,'(a39)') 'CG restarted after C-update (steepest descent)'
