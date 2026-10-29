@@ -4,6 +4,7 @@ module INVcore
 !use utilities
 use senscomp
 use dataio
+use dataFunc, only: dataResp, dataResp_dist
 use DistortionParam
 use DistortGradient
 use DataSens, only: set_dataSens_distortion_ptr
@@ -429,8 +430,10 @@ Contains
    ! Initialize predicted data to observed (will be overwritten)
    dHat = d
 
-   ! Iterate through data blocks and recompute predictions using frozen eAll
-   ! This follows the pattern of compDistGrad
+   ! Iterate through all data blocks and recompute predictions using frozen
+   ! eAll.  Distortion is applied only to Full_Impedance_Dist blocks; all
+   ! other data types are recomputed with the standard (undistorted) data
+   ! functional so that dHat remains consistent with the full objective.
    do j = 1, d%nTx
       iTx = d%d(j)%tx
       do i = 1, d%d(j)%nDt
@@ -438,31 +441,40 @@ Contains
          dHat%d(j)%data(i)%errorBar = .false.
 
          iDt = d%d(j)%data(i)%dataType
-         
-         ! Only process Full_Impedance_Dist data blocks
-         if (iDt == Full_Impedance_Dist) then
-            nSites = d%d(j)%data(i)%nSite
-            
-            do iSite = 1, nSites
-               iRx = d%d(j)%data(i)%rx(iSite)
-               
+         nSites = d%d(j)%data(i)%nSite
+
+         do iSite = 1, nSites
+            iRx = d%d(j)%data(i)%rx(iSite)
+
+            if (iDt == Full_Impedance_Dist) then
                ! Map receiver to distortion site
                iDistSite = find_dist_site(distC, iRx)
-               if (iDistSite < 1) cycle
-               
-               ! Extract 2x2 distortion matrix for this site
-               C_site(1,1) = distC%C(1,1,iDistSite)
-               C_site(1,2) = distC%C(1,2,iDistSite)
-               C_site(2,1) = distC%C(2,1,iDistSite)
-               C_site(2,2) = distC%C(2,2,iDistSite)
-               
-               ! Call dataResp_dist with frozen eAll and site-specific C matrix
-               ! This applies C*Z multiplication internally
-               call dataResp_dist(eAll%solns(j), sigma, C_site, iDt, iRx, &
-                                  dHat%d(j)%data(i)%value(:,iSite), &
-                                  d%d(j)%data(i)%orient(iSite))
-            end do
-         end if
+               if (iDistSite >= 1) then
+                  ! Extract 2x2 distortion matrix for this site
+                  C_site(1,1) = distC%C(1,1,iDistSite)
+                  C_site(1,2) = distC%C(1,2,iDistSite)
+                  C_site(2,1) = distC%C(2,1,iDistSite)
+                  C_site(2,2) = distC%C(2,2,iDistSite)
+
+                  ! Call dataResp_dist with frozen eAll and site-specific C matrix
+                  ! This applies C*Z multiplication internally
+                  call dataResp_dist(eAll%solns(j), sigma, C_site, iDt, iRx, &
+                                     dHat%d(j)%data(i)%value(:,iSite), &
+                                     d%d(j)%data(i)%orient(iSite))
+               else
+                  ! No distortion entry for this site: use the undistorted
+                  ! response rather than leaving dHat at the observed values.
+                  call dataResp(eAll%solns(j), sigma, iDt, iRx, &
+                                dHat%d(j)%data(i)%value(:,iSite), &
+                                d%d(j)%data(i)%orient(iSite))
+               end if
+            else
+               ! Standard data functional for all non-distortion data types.
+               call dataResp(eAll%solns(j), sigma, iDt, iRx, &
+                             dHat%d(j)%data(i)%value(:,iSite), &
+                             d%d(j)%data(i)%orient(iSite))
+            end if
+         end do
       end do
    end do
 

@@ -3,7 +3,7 @@ module DistortGradient
   use DistortionParam
   use DataSpace
   use dataTypes
-  use dataFunc, only: dataResp
+  use dataFunc, only: dataResp, dataResp_dist
   use SolnSpace, only: solnVector_t, solnVectorMTX_t
   use ModelSpace, only: modelParam_t
   use fields_orientation, only: orient_t
@@ -145,10 +145,12 @@ Contains
   ! eAll solutions from the sigma update step.
   !
   ! As eAll and sigma are already calculated and fixed (only C changed), no full 
-  ! forward calculation solve is required in this function
-  ! The data-misfit term is computed by re-evaluating the distorted predicted
-  ! data as D_hat_jn = C_j * Z_jn (where Z_jn comes from calling dataResp on
-  ! eAll) and forming the weighted sum-of-squares.
+  ! forward calculation solve is required in this function.
+  ! The data-misfit term is evaluated for every data type: Full_Impedance_Dist
+  ! blocks use the distorted response D_hat_jn = C_j * Z_jn (with Z_jn from
+  ! dataResp on eAll), while all other data types use the standard undistorted
+  ! data functional.  This keeps the C-only objective consistent with the full
+  ! objective F used as phi_0 in the C line search, including mixed datasets.
   ! The distortion regularisation term psi(C) = 0.5 * sum_j ||C_j - I||^2_F
   ! is also included.
 
@@ -161,78 +163,63 @@ Contains
                                   ! lambda*||mHat||^2/Nmodel term (scalar)
     real(kind=prec) :: phi ! F_C = SS/Ndata + lambda*mNorm + nu*psi(C)
 
-    integer :: j, i, iSite, iDt, nSites, nComp, nFunc, iFunc, iDistSite, iRx
-    integer :: iCompRe, iCompIm, iRow, iCol
-    real(kind=prec) :: SS, psiC, rRe, rIm, err2Re, err2Im
-    real(kind=prec) :: Resp_undist(8)
-    complex(kind=prec) :: Z_jn(2,2), A_jn(2,2)
-    logical :: existsRe, existsIm
+    integer :: j, i, iSite, iDt, nSites, nComp, iComp, iRx, iDistSite
+    real(kind=prec) :: SS, psiC, r, err2
+    real(kind=prec) :: Resp(8)
+    real(kind=prec) :: C_site(2,2)
 
     SS   = R_ZERO
     psiC = R_ZERO
 
-    ! data-misfit contribution
+    ! data-misfit contribution for all data types.  Distortion is applied only
+    ! to Full_Impedance_Dist blocks; all other data types use the standard
+    ! (undistorted) data functional.  This keeps phi_C_only consistent with the
+    ! full objective F used as phi_0 in the C line search for mixed datasets.
     do j = 1, d_obs%nTx
        do i = 1, d_obs%d(j)%nDt
           iDt = d_obs%d(j)%data(i)%dataType
-          if (iDt /= Full_Impedance_Dist) cycle
           nSites = d_obs%d(j)%data(i)%nSite
           nComp  = d_obs%d(j)%data(i)%nComp
-          nFunc  = nComp / 2
+          if (nComp > size(Resp)) then
+             call errStop('nComp too large in phi_C_only')
+          end if
           do iSite = 1, nSites
              iRx = d_obs%d(j)%data(i)%rx(iSite)
-             iDistSite = find_dist_site(distC, iRx)
-             if (iDistSite < 1) cycle
 
-             ! undistorted Z from locked eAll
-             call dataResp(eAll%solns(j), sigma, Full_Impedance, &
-                  iRx, Resp_undist, d_obs%d(j)%data(i)%orient(iSite))
-             Z_jn(1,1) = cmplx(Resp_undist(1), Resp_undist(2), prec)
-             Z_jn(1,2) = cmplx(Resp_undist(3), Resp_undist(4), prec)
-             Z_jn(2,1) = cmplx(Resp_undist(5), Resp_undist(6), prec)
-             Z_jn(2,2) = cmplx(Resp_undist(7), Resp_undist(8), prec)
-
-             ! Predicted distorted response A_jn = C_j * Z_jn
-             A_jn(1,1) = distC%C(1,1,iDistSite)*Z_jn(1,1) + distC%C(1,2,iDistSite)*Z_jn(2,1)
-             A_jn(1,2) = distC%C(1,1,iDistSite)*Z_jn(1,2) + distC%C(1,2,iDistSite)*Z_jn(2,2)
-             A_jn(2,1) = distC%C(2,1,iDistSite)*Z_jn(1,1) + distC%C(2,2,iDistSite)*Z_jn(2,1)
-             A_jn(2,2) = distC%C(2,1,iDistSite)*Z_jn(1,2) + distC%C(2,2,iDistSite)*Z_jn(2,2)
+             if (iDt == Full_Impedance_Dist) then
+                iDistSite = find_dist_site(distC, iRx)
+                if (iDistSite >= 1) then
+                   C_site(1,1) = distC%C(1,1,iDistSite)
+                   C_site(1,2) = distC%C(1,2,iDistSite)
+                   C_site(2,1) = distC%C(2,1,iDistSite)
+                   C_site(2,2) = distC%C(2,2,iDistSite)
+                   call dataResp_dist(eAll%solns(j), sigma, C_site, iDt, iRx, &
+                        Resp, d_obs%d(j)%data(i)%orient(iSite))
+                else
+                   ! No distortion entry for this site: use the undistorted
+                   ! response rather than dropping the data contribution.
+                   call dataResp(eAll%solns(j), sigma, iDt, iRx, Resp, &
+                        d_obs%d(j)%data(i)%orient(iSite))
+                end if
+             else
+                ! Standard data functional for all non-distortion data types.
+                call dataResp(eAll%solns(j), sigma, iDt, iRx, Resp, &
+                     d_obs%d(j)%data(i)%orient(iSite))
+             end if
 
              ! Component-wise residual and weighting, consistent with CdInvMult:
              !   SS = sum_k (res_k^2 / err_k^2), counting only existing components.
-             do iFunc = 1, nFunc
-                iRow = (iFunc + 1) / 2
-                iCol = mod(iFunc + 1, 2) + 1
-                iCompRe = 2*iFunc - 1
-                iCompIm = 2*iFunc
-
-                existsRe = d_obs%d(j)%data(i)%exist(iCompRe, iSite)
-                existsIm = d_obs%d(j)%data(i)%exist(iCompIm, iSite)
-
-                if (existsRe) then
-                   rRe = real(A_jn(iRow,iCol)) - d_obs%d(j)%data(i)%value(iCompRe, iSite)
-                   if (d_obs%d(j)%data(i)%errorBar) then
-                      err2Re = d_obs%d(j)%data(i)%error(iCompRe, iSite)**2
-                      if (err2Re <= R_TINY) then
-                          call errStop('data error too small in phi_C_only (Re)')
-                      endif
-                      SS = SS + (rRe*rRe) / err2Re
-                   else
-                      SS = SS + rRe*rRe
+             do iComp = 1, nComp
+                if (.not. d_obs%d(j)%data(i)%exist(iComp,iSite)) cycle
+                r = Resp(iComp) - d_obs%d(j)%data(i)%value(iComp,iSite)
+                if (d_obs%d(j)%data(i)%errorBar) then
+                   err2 = d_obs%d(j)%data(i)%error(iComp,iSite)**2
+                   if (err2 <= R_TINY) then
+                      call errStop('data error too small in phi_C_only')
                    end if
-                end if
-
-                if (existsIm) then
-                   rIm = aimag(A_jn(iRow,iCol)) - d_obs%d(j)%data(i)%value(iCompIm, iSite)
-                   if (d_obs%d(j)%data(i)%errorBar) then
-                      err2Im = d_obs%d(j)%data(i)%error(iCompIm, iSite)**2
-                      if (err2Im <= R_TINY) then
-                          call errStop('data error too small in phi_C_only (Im)')
-                      endif
-                      SS = SS + (rIm*rIm) / err2Im
-                   else
-                      SS = SS + rIm*rIm
-                   end if
+                   SS = SS + (r*r) / err2
+                else
+                   SS = SS + r*r
                 end if
              end do
           end do
