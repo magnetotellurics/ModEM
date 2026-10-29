@@ -93,6 +93,33 @@ with the forward modeling control file, there is a simpler form for this
 optional argument, which modifies only a single (the most commonly modified)
 parameter, i.e., lambda = the initial damping parameter for inversion.
 
+For the joint distortion inversion (``NLCG_DIST``), append the distortion
+damping factor to the same file:
+
+.. code-block:: text
+
+    Distortion damping factor nu       : 1.0
+
+This is the only required new parameter. The distortion output and restart
+file names are optional and default to ``distortion.dat`` and an identity
+starting model. They may be appended as:
+
+.. code-block:: text
+
+    Distortion output filename         : distortion.dat
+    Initial distortion filename        :
+
+Advanced controls have defaults and normally do not need to be set. Advanced
+users may append the following optional lines (defaults shown):
+
+.. code-block:: text
+
+    Number of sigma NLCG iterations    : 5
+    Number of distortion steps         : 1
+    Distortion gradient step size      : 0.1
+    Lock C when lambda is less than    : 10.
+    Minimum iterations before C lock   : 10
+
 * **FwdCtrl** : forward solver control file, described above under the ``-F``
     option.
 * **CovCtrl** :  The covariance file. This is used to define the model

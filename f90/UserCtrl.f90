@@ -519,6 +519,14 @@ Contains
            write(0,*) 'Exit when lambda is less than      : 1.0e-4'
             write(0,*) 'Maximum number of iterations       : 120'
             write(0,*)
+            write(0,*) 'For NLCG_DIST, append the distortion controls:'
+            write(0,*) 'Distortion damping factor nu       : 1.0'
+            write(0,*) 'Distortion output filename         : distortion.dat'
+            write(0,*) 'Initial distortion filename        :'
+            write(0,*) 'Advanced distortion controls are optional; defaults are'
+            write(0,*) '  nSigmaIter=5, nDistIter=1, alpha_C=0.1,'
+            write(0,*) '  lambdaClock=10, nClockMinIter=10'
+            write(0,*)
             write(0,*) 'NOTE: change the maximum number of iterations to '
            write(0,*) '    a value < 20 if DCG is the inverse algorithm'
            write(0,*)

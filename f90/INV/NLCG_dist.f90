@@ -140,31 +140,73 @@ Contains
     if (output_level > 2) write(*,'(a36,g15.7)') string, ctrl%lambdaTol
     read(ioInvCtrl, '(a36,i4)') string, ctrl%maxIter
     if (output_level > 2) write(*,'(a36,i4)') string, ctrl%maxIter
-    ! Distortion related parameters
+    ! Distortion related parameters.  The minimal user-facing set is
+    ! nu (distortion damping) followed by the optional output/restart
+    ! file names.  The remaining lines are advanced controls with
+    ! defaults; they may be omitted entirely.
     read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%nu
-    if (output_level > 2) write(*,'(a36,g15.7)') string, ctrl%nu
-    read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%nSigmaIter
-    if (output_level > 2) write(*,'(a36,i4)') string, ctrl%nSigmaIter
-    read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%nDistIter
-    if (output_level > 2) write(*,'(a36,i4)') string, ctrl%nDistIter
-    read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%alpha_C
-    if (output_level > 2) write(*,'(a36,g15.7)') string, ctrl%alpha_C
-    read(ioInvCtrl, '(a36,a80)', iostat=ios) string, ctrl%distFname
-    if (output_level > 2) write(*,'(a36,a80)') string, ctrl%distFname
-    ctrl%distFname = adjustl(ctrl%distFname)
-    read(ioInvCtrl, '(a36,a80)', iostat=ios) string, ctrl%init_distFname
-    if (output_level > 2) write(*,'(a36,a80)') string, ctrl%init_distFname
-    ctrl%init_distFname = adjustl(ctrl%init_distFname)
-    if (len_trim(ctrl%init_distFname) == 0) ctrl%init_distFname = ''
+    if (ios == 0) then
+       if (output_level > 2) write(*,'(a36,g15.7)') string, ctrl%nu
+    else
+       ctrl%nu = 3.0_prec
+    end if
 
-    ! Optional advanced controlling parameters
+    read(ioInvCtrl, '(a36,a80)', iostat=ios) string, ctrl%distFname
+    if (ios == 0) then
+       ctrl%distFname = adjustl(ctrl%distFname)
+       if (output_level > 2) write(*,'(a36,a80)') string, ctrl%distFname
+    else
+       ctrl%distFname = 'distortion.dat'
+    end if
+
+    read(ioInvCtrl, '(a36,a80)', iostat=ios) string, ctrl%init_distFname
+    if (ios == 0) then
+       ctrl%init_distFname = adjustl(ctrl%init_distFname)
+       if (len_trim(ctrl%init_distFname) == 0) ctrl%init_distFname = ''
+       if (output_level > 2) write(*,'(a36,a80)') string, ctrl%init_distFname
+    else
+       ctrl%init_distFname = ''
+    end if
+
+    ! Advanced controls (optional).  Defaults are set in
+    ! set_NLCGDistControl; these lines are only needed for tuning.
+    read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%nSigmaIter
+    if (ios == 0) then
+       if (output_level > 2) write(*,'(a36,i4)') string, ctrl%nSigmaIter
+    else
+       ctrl%nSigmaIter = 5
+    end if
+
+    read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%nDistIter
+    if (ios == 0) then
+       if (output_level > 2) write(*,'(a36,i4)') string, ctrl%nDistIter
+    else
+       ctrl%nDistIter = 1
+    end if
+
+    read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%alpha_C
+    if (ios == 0) then
+       if (output_level > 2) write(*,'(a36,g15.7)') string, ctrl%alpha_C
+    else
+       ctrl%alpha_C = 0.1_prec
+    end if
+
     ! C-update lock: stop updating the distortion matrix once lambda has
     ! dropped below lambdaClock (only considered after nClockMinIter model
-    ! iterations). EOF tolerated: old control files keep the defaults.
+    ! iterations).  A lambdaClock of 0 disables locking.
     read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%lambdaClock
-    if (output_level > 2 .and. ios == 0) write(*,'(a36,g15.7)') string, ctrl%lambdaClock
+    if (ios == 0) then
+       if (output_level > 2) write(*,'(a36,g15.7)') string, ctrl%lambdaClock
+    else
+       ctrl%lambdaClock = 10.0_prec
+    end if
+
     read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%nClockMinIter
-    if (output_level > 2 .and. ios == 0) write(*,'(a36,i4)') string, ctrl%nClockMinIter
+    if (ios == 0) then
+       if (output_level > 2) write(*,'(a36,i4)') string, ctrl%nClockMinIter
+    else
+       ctrl%nClockMinIter = 10
+    end if
 
     ! read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%alphaMinScale
     ! if (output_level > 2 .and. ios == 0) write(*,'(a36,g15.7)') string, ctrl%alphaMinScale
