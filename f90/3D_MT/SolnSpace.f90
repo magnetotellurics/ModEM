@@ -529,7 +529,6 @@ contains
          character (len=512) :: hdf5_version_str
 
          call ModEM_HDF5_get_version(hdf5_version_str)
-         call ModEM_HDF5_add_attr(file_id, '_NCProperties', "version=2,hdf5="// trim(hdf5_version_str))
          call ModEM_HDF5_add_attr(file_id, '_HDF5_version', trim(hdf5_version_str))
          call ModEM_HDF5_add_attr(file_id, '_nc3_strict', 1)
 
@@ -754,12 +753,12 @@ contains
 
      end subroutine write_solnVector_vars_hdf5
 
-     subroutine write_solnVector_MTX_HDF5(fname, eAll)
+     subroutine write_solnVectorMTX_HDF5(eAll, fname)
 
          implicit none
 
-         character (len=*), intent(in) :: fname
          type(solnVectorMTX_t), intent(inout)  :: eAll
+         character (len=*), intent(in) :: fname
 
          integer :: iTx, iPol
          integer (kind=HID_T) :: file_id
@@ -784,7 +783,7 @@ contains
 
          call ModEM_HDF5_close_file(file_id)
 
-     end subroutine write_solnVector_MTX_HDF5
+     end subroutine write_solnVectorMTX_HDF5
 
      function construct_esoln_group_name(iTx, pol_name) result(fname)
 

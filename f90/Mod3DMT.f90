@@ -14,6 +14,7 @@ program Mod3DMT
      use LBFGS
      use utilities
      use ModelSpace
+     use SolnSpace
      !use mtinvsetup
 
 #ifdef MPI
@@ -446,7 +447,19 @@ program Mod3DMT
      if (write_EMsoln) then
          ! write out EM solutions
          write(*,*) 'Saving the EM solution...'
-         call write_solnVectorMTX(eAll,cUserDef%wFile_EMsoln)
+         if (trim(cUserDef % efield_output_format) == 'binary') then
+            call write_solnVectorMTX(eAll, cUserDef%wFile_EMsoln)
+
+#ifdef HDF5
+         elseif (trim(cUserDef % efield_output_format) == 'HDF5') then
+             call write_solnVectorMTX_HDF5(eAll, cUserDef%wFile_EMsoln)
+#endif
+         else
+             write(0,*) 'ERROR: Unkown file type for electriec field specified in `efield_output_format`: '
+             write(0,*) "ERROR: '", trim(cUserDef % efield_output_format), "', options are: (HDF5, binary)."
+             call errStop('Unkown file type for electreicc fields specified in efield_output_format')
+
+         end if
      end if
 
      if (write_EMrhs) then

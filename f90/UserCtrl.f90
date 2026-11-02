@@ -178,8 +178,14 @@ Contains
     ctrl%model_input_format = 'WS'
     ctrl%model_output_format = 'WS'
 #endif
+
+#ifdef HDF5
+    ctrl%efield_input_format = 'HDF5'
+    ctrl%efield_output_format = 'HDF5'
+#else
     ctrl%efield_input_format = 'ASCII'
     ctrl%efield_output_format = 'ASCII'
+#endif
     ctrl%jacobian_output_format = 'ASCII'
   	ctrl%search = 'NLCG'
   	ctrl%option = 'J'
