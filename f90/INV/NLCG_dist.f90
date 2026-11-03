@@ -3,7 +3,8 @@ module NLCG_dist
 ! and distortion parameters
   use ModEM_timers
   use invcore
-  use DataSpace, only: countData
+  use DistortGradient, only: phi_C_only
+  use transmitters, only: txDict
   use utilities
 
   implicit none
@@ -37,6 +38,7 @@ module NLCG_dist
       integer            :: nClockMinIter  ! only lock after this many iters
       integer            :: nCUpdatesMax ! max number of C line-search updates (0 = no limit)
       integer            :: lambdaCooldown ! min iterations between lambda updates (0 = disabled)
+      integer            :: nCPeriods ! number of shortest periods used to update C (0 = all)
       character(80)      :: distFname
       character(80)      :: init_distFname
   end type NLCGDistControl_t
@@ -101,6 +103,7 @@ Contains
     ctrl%nClockMinIter  = 10    ! avoid locking too early
     ctrl%nCUpdatesMax = 0       ! 0 = no limit on the number of C updates
     ctrl%lambdaCooldown = 0     ! 0 = no cooldown between lambda updates
+    ctrl%nCPeriods = 0          ! 0 = use all periods for the C update
     ctrl%distFname = 'distortion.dat'
     ctrl%init_distFname = ''
   end subroutine set_NLCGDistControl
@@ -232,6 +235,17 @@ Contains
        ctrl%lambdaCooldown = 0
     end if
 
+    ! Optional restriction of the distortion update to the shortest periods.
+    ! C is frequency independent, but the near-surface galvanic distortion is
+    ! best constrained by the short-period responses.  A value of 0 uses all
+    ! periods (current behaviour); N > 0 uses only the N shortest periods.
+    read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%nCPeriods
+    if (ios == 0) then
+       if (output_level > 2) write(*,'(a36,i4)') string, ctrl%nCPeriods
+    else
+       ctrl%nCPeriods = 0
+    end if
+
     ! read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%alphaMinScale
     ! if (output_level > 2 .and. ios == 0) write(*,'(a36,g15.7)') string, ctrl%alphaMinScale
     ! read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%alphaMaxScale
@@ -241,6 +255,66 @@ Contains
 
     close(ioInvCtrl)
   end subroutine read_NLCGDistControl
+
+  ! ---------------------------------------------------------------------------
+  ! find_C_period_cutoff returns the nPer-th shortest transmitter period.  The
+  ! C update then uses only data blocks with period <= periodMax.  If nPer <= 0
+  ! or nPer covers all transmitters, periodMax is effectively infinite.
+  ! ---------------------------------------------------------------------------
+  subroutine find_C_period_cutoff(d, nPer, periodMax)
+    type(dataVectorMTX_t), intent(in) :: d
+    integer, intent(in) :: nPer
+    real(kind=prec), intent(out) :: periodMax
+
+    real(kind=prec), allocatable :: periods(:)
+    real(kind=prec) :: tmp
+    integer :: j, k, iMin, n
+
+    periodMax = huge(1.0_prec)
+    if (nPer <= 0) return
+
+    n = d%nTx
+    if (n <= 0) return
+    allocate(periods(n))
+    do j = 1, n
+       periods(j) = txDict(d%d(j)%tx)%period
+    end do
+
+    ! Selection sort (nTx is small: one entry per period for MT).
+    do j = 1, n - 1
+       iMin = j
+       do k = j + 1, n
+          if (periods(k) < periods(iMin)) iMin = k
+       end do
+       if (iMin /= j) then
+          tmp = periods(j)
+          periods(j) = periods(iMin)
+          periods(iMin) = tmp
+       end if
+    end do
+
+    if (nPer < n) periodMax = periods(nPer)
+    deallocate(periods)
+  end subroutine find_C_period_cutoff
+
+  ! ---------------------------------------------------------------------------
+  ! countData_period counts the existing data values in all blocks with
+  ! period <= periodMax.  This is the normalisation used by the C objective
+  ! and C gradient when the distortion update is restricted to short periods.
+  ! ---------------------------------------------------------------------------
+  function countData_period(d, periodMax) result(ndata)
+    type(dataVectorMTX_t), intent(in) :: d
+    real(kind=prec), intent(in) :: periodMax
+    integer :: ndata, j, i
+
+    ndata = 0
+    do j = 1, d%nTx
+       if (txDict(d%d(j)%tx)%period > periodMax) cycle
+       do i = 1, d%d(j)%nDt
+          ndata = ndata + count(d%d(j)%data(i)%exist)
+       end do
+    end do
+  end function countData_period
 
   ! ---------------------------------------------------------------------------
   ! lineSearchDistQuad 
@@ -262,9 +336,8 @@ Contains
   subroutine lineSearchDistQuad(d, eAll, sigma, mHat, distC_in, gradC, &
                                 lambda, nu, Ndata, mNorm_over_Nmodel,   &
                                 alpha_C_init, phi_0,                    &
-                                distC_out, phi_out, alpha_out, nLS)
-
-    use DistortGradient, only: phi_C_only
+                                distC_out, phi_out, alpha_out, nLS,     &
+                                periodMax)
 
     type(dataVectorMTX_t),   intent(in)    :: d
     type(solnVectorMTX_t),   intent(in)    :: eAll
@@ -281,6 +354,7 @@ Contains
     real(kind=prec),         intent(out)   :: phi_out
     real(kind=prec),         intent(out)   :: alpha_out
     integer,                 intent(out)   :: nLS
+    real(kind=prec),         intent(in), optional :: periodMax
 
     integer :: iSite, nBT
     real(kind=prec) :: alpha_1, alpha_q, g_0, phi_1, phi_q, a_quad
@@ -314,7 +388,7 @@ Contains
 
     ! Trial 1: initial step.
     call linComb_distortionParam(ONE, distC_in, -alpha_1, gradC, distC_trial)
-    phi_1 = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel)
+    phi_1 = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel, periodMax)
     nLS = nLS + 1
     if (output_level > 3) then
        write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_1, ' phi=', phi_1
@@ -334,7 +408,7 @@ Contains
        alpha_q = min(alpha_hi, max(alpha_lo, alpha_q))
 
        call linComb_distortionParam(ONE, distC_in, -alpha_q, gradC, distC_trial)
-       phi_q = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel)
+       phi_q = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel, periodMax)
        nLS = nLS + 1
        if (output_level > 3) then
           write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_q, ' phi=', phi_q
@@ -365,7 +439,7 @@ Contains
        if (alpha_try < alpha_min) exit
 
        call linComb_distortionParam(ONE, distC_in, -alpha_try, gradC, distC_trial)
-       phi_try = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel)
+       phi_try = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel, periodMax)
        nLS = nLS + 1
        if (output_level > 3) then
           write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_try, ' phi=', phi_try
@@ -416,7 +490,7 @@ Contains
     type(distortionParam_t) :: distC_prev, distC_diff
     type(solnVectorMTX_t) :: eAll
     real(kind=prec) :: value, valuePrev, rms, rmsPrev
-    real(kind=prec) :: alpha, beta, gnorm, mNorm, distNorm, Ndata, Nmodel
+    real(kind=prec) :: alpha, beta, gnorm, mNorm, distNorm, Ndata_C, Nmodel
     real(kind=prec) :: alpha_C          ! warm-started C line search step
     real(kind=prec) :: alpha_C_try      ! initial alpha passed to C line search (warm-start or BB)
     real(kind=prec) :: alpha_BB
@@ -426,7 +500,9 @@ Contains
     real(kind=prec) :: g_dot_h
     real(kind=prec) :: value_before_C, value_after_C, rms_before_C, rms_after_C
     real(kind=prec) :: value_before_sigma, value_after_sigma, rms_before_sigma, rms_after_sigma
-    real(kind=prec) :: dF_C, dF_sigma, share_C
+    real(kind=prec) :: dF_C, dF_sigma, share_C, dPhi_C
+    real(kind=prec) :: phi_C0, phi_C_out, phi_C_before, phi_C_after
+    real(kind=prec) :: periodMax
     real(kind=prec) :: gradC_norm, gradM_norm
     real(kind=prec) :: dC_norm, dC_max
     integer :: iter, nCG, nLS, nLSC, nfuncSigma, nfuncC, ios, i, j, inner, iSite
@@ -444,6 +520,15 @@ Contains
        if (hasCtrlFile) lambda = distControl%lambda
     else
        call set_NLCGDistControl(distControl)
+    end if
+
+    ! Optionally restrict the C update to the shortest periods.  periodMax is
+    ! effectively infinite when nCPeriods = 0, preserving the previous
+    ! all-period behaviour.
+    call find_C_period_cutoff(d, distControl%nCPeriods, periodMax)
+    Ndata_C = countData_period(d, periodMax)
+    if (distControl%nCPeriods > 0 .and. Ndata_C <= 0) then
+       call errStop('No data found in the selected C periods')
     end if
 
     lambda0 = max(lambda, R_TINY)
@@ -479,6 +564,12 @@ Contains
     write(ioLog,'(a46,i4)') ' Maximum number of C updates: ', distControl%nCUpdatesMax
     write(*,'(a46,i4)') ' Lambda update cooldown: ', distControl%lambdaCooldown
     write(ioLog,'(a46,i4)') ' Lambda update cooldown: ', distControl%lambdaCooldown
+    if (distControl%nCPeriods > 0) then
+       write(*,'(a46,i4)') ' Distortion periods used for C: ', distControl%nCPeriods
+       write(ioLog,'(a46,i4)') ' Distortion periods used for C: ', distControl%nCPeriods
+       write(*,'(a46,es12.5)') ' Distortion period cutoff (s): ', periodMax
+       write(ioLog,'(a46,es12.5)') ' Distortion period cutoff (s): ', periodMax
+    end if
     write(*,'(a46,a)') ' Distortion output file: ', trim(distControl%distFname)
     write(ioLog,'(a46,a)') ' Distortion output file: ', trim(distControl%distFname)
 
@@ -571,14 +662,21 @@ Contains
           call CmSqrtMult(mHat, m_minus_m0)
           call linComb(ONE, m_minus_m0, ONE, m0, m)
 
-          Ndata = countData(d)
           mNorm_over_Nmodel = dotProd(mHat, mHat) / countModelParam(mHat)
 
           call copy_distortionParam(distC, distC_prev)
 
+          ! Reference C objective before the update, used for the optional
+          ! short-period diagnostic when nCPeriods > 0.
+          phi_C_before = R_ZERO
+          if (distControl%nCPeriods > 0) then
+             phi_C_before = phi_C_only(d, eAll, m, distC, distControl%nu, &
+                                       Ndata_C, lambda, mNorm_over_Nmodel, periodMax)
+          end if
+
           do i = 1, distControl%nDistIter
              call copy_distortionParam(distC, gPrevC)
-             call compDistGrad(d, eAll, m, distC, distControl%nu, Ndata, gradC)
+             call compDistGrad(d, eAll, m, distC, distControl%nu, Ndata_C, gradC, periodMax)
              gradC_norm = sqrt(dotProd_distortionParam(gradC, gradC))
              if (output_level > 3) then
                 write(*,'(a30,es12.5)') '   DistDiag: ||gradC|| = ', gradC_norm
@@ -621,11 +719,17 @@ Contains
                 end if
              end if
 
+             ! The C line search minimises the C-only objective (short-period
+             ! data when nCPeriods > 0), not the full F.  phi_C_out is therefore
+             ! kept separate and the full F is recomputed after the update.
+             phi_C0 = phi_C_only(d, eAll, m, distC, distControl%nu, Ndata_C, &
+                                 lambda, mNorm_over_Nmodel, periodMax)
              call lineSearchDistQuad(d, eAll, m, mHat, distC, gradC,        &
-                                   lambda, distControl%nu, Ndata,           &
+                                   lambda, distControl%nu, Ndata_C,         &
                                    mNorm_over_Nmodel,                       &
-                                   alpha_C_try, value,                      &
-                                   distC_work, value, alpha_C, nLSC)
+                                   alpha_C_try, phi_C0,                     &
+                                   distC_work, phi_C_out, alpha_C, nLSC,    &
+                                   periodMax)
 
              call copy_distortionParam(gPrevC, hC)
              call copy_distortionParam(gradC, gC)
@@ -636,8 +740,21 @@ Contains
           end do
           nCUpdates = nCUpdates + distControl%nDistIter
 
-          ! Recompute dHat and rms with new C (cheap, locked eAll)
+          ! Recompute dHat and rms with new C (cheap, locked eAll).  The full
+          ! objective is rebuilt from the full RMS, model penalty, and C
+          ! regularisation; this stays correct even when the C line search
+          ! used only the short-period data.
           call reComputedHat_dist(d, eAll, m, distC, dHat, rms)
+          value = rms**2 + lambda * mNorm_over_Nmodel &
+                + distControl%nu * psi_C(distC)
+
+          if (distControl%nCPeriods > 0) then
+             phi_C_after = phi_C_only(d, eAll, m, distC, distControl%nu, &
+                                      Ndata_C, lambda, mNorm_over_Nmodel, periodMax)
+             dPhi_C = phi_C_before - phi_C_after
+          else
+             dPhi_C = R_ZERO
+          end if
 
           value_after_C = value
           rms_after_C = rms
@@ -666,6 +783,8 @@ Contains
           value_after_C = value_before_C
           rms_after_C = rms_before_C
           dF_C = R_ZERO
+          dPhi_C = R_ZERO
+          phi_C_after = R_ZERO
           dC_norm = R_ZERO
           dC_max = R_ZERO
        end if
@@ -869,13 +988,28 @@ Contains
                 ' DistDiag: dF_sigma=', dF_sigma, ' rms_before=', rms_before_sigma, ' rms_after=', rms_after_sigma
            write(ioLog,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
                 ' DistDiag: dF_sigma=', dF_sigma, ' rms_before=', rms_before_sigma, ' rms_after=', rms_after_sigma
+           if (distControl%nCPeriods > 0) then
+              write(*,'(a20,es12.5,a20,es12.5)') &
+                   ' DistDiag: dPhi_C=', dPhi_C, ' phi_C_after=', phi_C_after
+              write(ioLog,'(a20,es12.5,a20,es12.5)') &
+                   ' DistDiag: dPhi_C=', dPhi_C, ' phi_C_after=', phi_C_after
+           end if
         end if
-        write(*,'(a18,es11.4,a12,es11.4,a12,es11.4,a12,es11.4,a10,es11.4)') &
-             ' DistDiag: dF_C=', dF_C, ' dF_sigma=', dF_sigma, ' share_C=', share_C, &
-             ' ||dC||=', dC_norm, ' rms=', rms
-        write(ioLog,'(a18,es11.4,a12,es11.4,a12,es11.4,a12,es11.4,a10,es11.4)') &
-             ' DistDiag: dF_C=', dF_C, ' dF_sigma=', dF_sigma, ' share_C=', share_C, &
-             ' ||dC||=', dC_norm, ' rms=', rms
+        if (distControl%nCPeriods > 0) then
+           write(*,'(a18,es11.4,a12,es11.4,a12,es11.4,a12,es11.4,a10,es11.4)') &
+                ' DistDiag: dF_C=', dF_C, ' dF_sigma=', dF_sigma, ' dPhi_C=', dPhi_C, &
+                ' ||dC||=', dC_norm, ' rms=', rms
+           write(ioLog,'(a18,es11.4,a12,es11.4,a12,es11.4,a12,es11.4,a10,es11.4)') &
+                ' DistDiag: dF_C=', dF_C, ' dF_sigma=', dF_sigma, ' dPhi_C=', dPhi_C, &
+                ' ||dC||=', dC_norm, ' rms=', rms
+        else
+           write(*,'(a18,es11.4,a12,es11.4,a12,es11.4,a12,es11.4,a10,es11.4)') &
+                ' DistDiag: dF_C=', dF_C, ' dF_sigma=', dF_sigma, ' share_C=', share_C, &
+                ' ||dC||=', dC_norm, ' rms=', rms
+           write(ioLog,'(a18,es11.4,a12,es11.4,a12,es11.4,a12,es11.4,a10,es11.4)') &
+                ' DistDiag: dF_C=', dF_C, ' dF_sigma=', dF_sigma, ' share_C=', share_C, &
+                ' ||dC||=', dC_norm, ' rms=', rms
+        end if
 
         if (stopInversion .or. (rms < distControl%rmsTol) .or. (iter >= distControl%maxIter)) exit blockLoop
     end do blockLoop

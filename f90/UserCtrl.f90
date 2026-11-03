@@ -526,7 +526,7 @@ Contains
             write(0,*) 'Advanced distortion controls are optional; defaults are'
             write(0,*) '  nSigmaIter=5, nDistIter=1, alpha_C=0.1,'
             write(0,*) '  lambdaClock=10, nClockMinIter=10,'
-            write(0,*) '  nCUpdatesMax=0, lambdaCooldown=0'
+            write(0,*) '  nCUpdatesMax=0, lambdaCooldown=0, nCPeriods=0'
             write(0,*)
             write(0,*) 'NOTE: change the maximum number of iterations to '
            write(0,*) '    a value < 20 if DCG is the inverse algorithm'

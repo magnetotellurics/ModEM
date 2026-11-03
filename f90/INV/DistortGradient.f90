@@ -7,6 +7,7 @@ module DistortGradient
   use SolnSpace, only: solnVector_t, solnVectorMTX_t
   use ModelSpace, only: modelParam_t
   use fields_orientation, only: orient_t
+  use transmitters, only: txDict
   use math_constants
   use utilities
 
@@ -18,13 +19,17 @@ Contains
 
   ! compute the gradient of the data-misfit functional for each 
   ! distortion parameters C_j
-  subroutine compDistGrad(d_obs, eAll, sigma, distC, nu, Ndata, gradC)
+  subroutine compDistGrad(d_obs, eAll, sigma, distC, nu, Ndata, gradC, periodMax)
     type(dataVectorMTX_t), intent(in) :: d_obs
     type(solnVectorMTX_t), intent(in) :: eAll
     type(modelParam_t), intent(in) :: sigma
     type(distortionParam_t), intent(in) :: distC
     real(kind=prec), intent(in) :: nu, Ndata
     type(distortionParam_t), intent(inout) :: gradC
+    ! Optional upper period bound (s).  When present, only data blocks with
+    ! txDict(tx)%period <= periodMax contribute to the C gradient.  This lets
+    ! the distortion matrix be constrained by the shortest periods only.
+    real(kind=prec), intent(in), optional :: periodMax
 
     integer :: j, i, iSite, iTx, iDt, nSites, nComp, nFunc, iFunc, iDistSite, iRx
     integer :: iCompRe, iCompIm, iRow, iCol
@@ -38,6 +43,9 @@ Contains
     ! loop over transmitters, data types, and sites to accumulate the gradient
     do j = 1, d_obs%nTx
        iTx = d_obs%d(j)%tx
+       if (present(periodMax)) then
+          if (txDict(iTx)%period > periodMax) cycle
+       end if
        do i = 1, d_obs%d(j)%nDt
           iDt = d_obs%d(j)%data(i)%dataType
           if (iDt /= Full_Impedance_Dist) cycle
@@ -140,7 +148,7 @@ Contains
   end subroutine compDistGrad
 
   function phi_C_only(d_obs, eAll, sigma, distC, nu, Ndata, lambda, &
-                      mNorm_over_Nmodel) result(phi)
+                      mNorm_over_Nmodel, periodMax) result(phi)
   ! phi_C_only evaluates the total objective regarding C only, reusing locked 
   ! eAll solutions from the sigma update step.
   !
@@ -161,6 +169,9 @@ Contains
     real(kind=prec), intent(in) :: nu, Ndata, lambda ! regularisation weights
     real(kind=prec), intent(in) :: mNorm_over_Nmodel ! pre-computed 
                                   ! lambda*||mHat||^2/Nmodel term (scalar)
+    ! Optional upper period bound (s); when present, only data blocks with
+    ! txDict(tx)%period <= periodMax contribute to the C objective.
+    real(kind=prec), intent(in), optional :: periodMax
     real(kind=prec) :: phi ! F_C = SS/Ndata + lambda*mNorm + nu*psi(C)
 
     integer :: j, i, iSite, iDt, nSites, nComp, iComp, iRx, iDistSite
@@ -176,6 +187,9 @@ Contains
     ! (undistorted) data functional.  This keeps phi_C_only consistent with the
     ! full objective F used as phi_0 in the C line search for mixed datasets.
     do j = 1, d_obs%nTx
+       if (present(periodMax)) then
+          if (txDict(d_obs%d(j)%tx)%period > periodMax) cycle
+       end if
        do i = 1, d_obs%d(j)%nDt
           iDt = d_obs%d(j)%data(i)%dataType
           nSites = d_obs%d(j)%data(i)%nSite

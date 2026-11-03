@@ -121,6 +121,7 @@ users may append the following optional lines (defaults shown):
     Minimum iterations before C lock   : 10
     Maximum number of C updates        : 0
     Lambda update cooldown             : 0
+    Number of C periods                : 0
 
 The advanced lines are positional: if any of them are present, the optional
 ``Distortion output filename`` and ``Initial distortion filename`` lines must
@@ -130,6 +131,10 @@ distortion matrix after that many C line-search updates (0 disables the cap).
 between lambda reductions (0 disables the cooldown).  Once C is locked, the
 sigma CG direction is not reset at block boundaries; the solver continues the
 existing CG iteration instead of restarting from steepest descent.
+``Number of C periods`` restricts the C update and its line search to the
+shortest N periods (0 uses all periods).  This lets the frequency-independent
+distortion matrix be constrained by the near-surface, short-period responses
+while the conductivity model fits the longer periods.
 
 * **FwdCtrl** : forward solver control file, described above under the ``-F``
     option.
