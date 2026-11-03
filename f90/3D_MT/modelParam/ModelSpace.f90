@@ -279,9 +279,11 @@ end function get_CovType
     select case (CovType)
     case (1)
        call create_CmSqrt_AR(m, cfile)
+       if (output_level > 0) write(*,'(a)') ' Covariance backend: AR (CovType=1)'
 #ifdef SP_FORM
     case (2)
        call create_CmSqrt_BiHelm(m, cfile)
+       if (output_level > 0) write(*,'(a)') ' Covariance backend: H2 / Bi-Helmholtz (CovType=2)'
 #endif
     case default
        call errStop('Unknown CovType in create_CmSqrt')
