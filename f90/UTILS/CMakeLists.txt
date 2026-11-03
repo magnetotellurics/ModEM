@@ -25,3 +25,9 @@ if (MODEM_MEMORY)
         PRIVATE ModEM_getrusage.c
     )
 endif()
+
+if (BUILD_HDF5)
+    target_sources(${MODEM_EXE}
+        PRIVATE ModEM_HDF5_routines.f90
+    )
+endif()

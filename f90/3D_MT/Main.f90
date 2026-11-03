@@ -371,6 +371,10 @@ Contains
 
     integer :: hdferr
 
+#ifdef HDF5
+    call ModEM_HDF5_init()
+#endif
+
     call setup_dataIO(data_input_type, data_output_type)
     call setup_modelParamIO(model_input_type, model_output_type)
 

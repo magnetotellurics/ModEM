@@ -1225,5 +1225,4 @@ Contains
 
   end subroutine Edge2Cell
 
-
 end module GridCalc

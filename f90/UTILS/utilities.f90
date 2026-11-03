@@ -996,4 +996,20 @@ subroutine HDF5_not_built_error()
 
 end subroutine HDF5_not_built_error
 
+subroutine clean_null_term_string(str)
+    ! Convert a null-terminated string into a fortran string (i.e. a string with spaces).
+
+    implicit none
+
+    character (len=*), intent(inout) :: str
+
+    integer :: p
+
+    p = index(str, achar(0))
+    if (p > 0) then
+        str = str(1:p-1)
+    end if
+
+end subroutine clean_null_term_string
+
 end module utilities

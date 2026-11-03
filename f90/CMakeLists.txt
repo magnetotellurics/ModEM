@@ -180,6 +180,6 @@ elseif (BUILD_GPU STREQUAL "HIP")
 endif()
 
 if (BUILD_HDF5)
-    find_package(HDF5 REQUIRED COMPONENTS Fortran)
-    target_link_libraries(${MODEM_EXE} PRIVATE hdf5::hdf5_fortran)
+    find_package(HDF5 REQUIRED COMPONENTS Fortran HL)
+    target_link_libraries(${MODEM_EXE} PRIVATE hdf5::hdf5_hl_fortran hdf5::hdf5_fortran)
 endif()
