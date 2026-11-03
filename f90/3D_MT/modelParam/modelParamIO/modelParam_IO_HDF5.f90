@@ -73,7 +73,7 @@ module subroutine write_modelParam_hdf5(m,cfile,comment)
     ! Grid Dimension and refence
     call ModEM_HDF5_add_attr(file_id, 'grid_nx', m % grid % nx)
 
-    call write_geometry_hdf5(file_id, m)
+    call write_geometry_hdf5(file_id, m % grid)
 
     ! call write_gridSpacing_hdf5(file_id, m)
 
@@ -84,15 +84,13 @@ module subroutine write_modelParam_hdf5(m,cfile,comment)
 
 end subroutine write_modelParam_hdf5
 
-module subroutine write_geometry_hdf5(file_id, m)
+module subroutine write_geometry_hdf5(loc_id, grid)
 
-    integer(kind=HID_T), intent(in)      :: file_id
-    type(modelParam_t), intent(in)	     :: m
+    integer(kind=HID_T), intent(in)      :: loc_id
+    type(grid_t), intent(in)	     :: grid
 
-    type(grid_t)                         :: grid
     integer                              :: Nx, Ny, NzEarth
 
-    integer (kind=HID_T) :: root_group_id
     integer (kind=HID_T) :: nx_dspace_id, ny_dspace_id, nz_dspace_id
     integer (kind=HID_T) :: nx_dset_id, ny_dset_id, nz_dset_id
     integer (kind=HID_T) :: x_dspace_id, y_dspace_id, z_dspace_id
@@ -101,22 +99,17 @@ module subroutine write_geometry_hdf5(file_id, m)
 
     integer :: hdferr
 
-    grid = m % grid
-
     Nx=grid%nx !this defines the length of the data array
     Ny=grid%ny
     NzEarth=grid%nz - grid%nzAir
 
     ! Write grid geometry definitions
-    call ModEM_HDF5_open_group(file_id, "/", root_group_id)
-
     ! Create and write the X variable dimension
     call ModEM_HDF5_create_dataspace(rank(grid % xCenter), (/size(grid % xCenter, kind=HSIZE_T)/), x_dspace_id)
-    call ModEM_HDF5_create_dataset(root_group_id, 'x', H5T_NATIVE_DOUBLE, x_dspace_id, x_dset_id)
+    call ModEM_HDF5_create_dataset(loc_id, 'x', H5T_NATIVE_DOUBLE, x_dspace_id, x_dset_id)
     call ModEM_HDF5_write_dataset(x_dset_id, grid % xCenter)
     call ModEM_HDF5_make_dataset_dimension(x_dset_id, hdferr)
 
-    call ModEM_HDF5_add_attr(x_dset_id, '_Netcdf4Dimid', 0) 
     call ModEM_HDF5_add_attr(x_dset_id, 'long_name', 'Latitude; positive north')
     call ModEM_HDF5_add_attr(x_dset_id, 'standard_name', 'x')
     call ModEM_HDF5_add_attr(x_dset_id, 'units', METERS)
@@ -125,11 +118,10 @@ module subroutine write_geometry_hdf5(file_id, m)
 
     ! Create and write the Y variable dimensions  
     call ModEM_HDF5_create_dataspace(rank(grid % yCenter), (/size(grid % yCenter, kind=HSIZE_T)/), y_dspace_id)
-    call ModEM_HDF5_create_dataset(root_group_id, 'y', H5T_NATIVE_DOUBLE, y_dspace_id, y_dset_id)
+    call ModEM_HDF5_create_dataset(loc_id, 'y', H5T_NATIVE_DOUBLE, y_dspace_id, y_dset_id)
     call ModEM_HDF5_write_dataset(y_dset_id, grid % yCenter)
     call ModEM_HDF5_make_dataset_dimension(y_dset_id, hdferr)
 
-    call ModEM_HDF5_add_attr(y_dset_id, '_Netcdf4Dimid', 1) 
     call ModEM_HDF5_add_attr(y_dset_id, 'long_name', 'Longitude; positive east')
     call ModEM_HDF5_add_attr(y_dset_id, 'standard_name', 'y')
     call ModEM_HDF5_add_attr(y_dset_id, 'units', METERS)
@@ -138,19 +130,16 @@ module subroutine write_geometry_hdf5(file_id, m)
 
     ! Create and write the Z variable dimension
     call ModEM_HDF5_create_dataspace(rank(grid % zCenter), (/int(NzEarth, kind=HSIZE_T)/), z_dspace_id)
-    call ModEM_HDF5_create_dataset(root_group_id, 'z', H5T_NATIVE_DOUBLE, z_dspace_id, z_dset_id)
+    call ModEM_HDF5_create_dataset(loc_id, 'z', H5T_NATIVE_DOUBLE, z_dspace_id, z_dset_id)
     call ModEM_HDF5_write_dataset(z_dset_id, grid % zCenter(grid % NzAir+1:grid%nz))
     call ModEM_HDF5_make_dataset_dimension(z_dset_id, hdferr)
 
-    call ModEM_HDF5_add_attr(z_dset_id, '_Netcdf4Dimid', 2) 
     call ModEM_HDF5_add_attr(z_dset_id, 'long_name', 'depth below earth surface')
     call ModEM_HDF5_add_attr(z_dset_id, 'positive', 'down')
     call ModEM_HDF5_add_attr(z_dset_id, 'units', METERS)
     call ModEM_HDF5_add_attr(z_dset_id, 'standard_name', 'elevation')
     call ModEM_HDF5_close_dataset(z_dset_id)
     call ModEM_HDF5_close_dataspace(z_dspace_id)
-
-    call ModEM_HDF5_close_group(root_group_id)
 
 end subroutine write_geometry_hdf5
 
@@ -184,7 +173,7 @@ subroutine write_gridSpacing_hdf5(file_id, m)
     NzEarth=grid%nz - grid%nzAir
 
     ! Write grid geometry definitions
-    call ModEM_HDF5_open_group(file_id, "/", root_group_id)
+!    call ModEM_HDF5_open_group(file_id, "/", root_group_id)
 
     call ModEM_HDF5_create_group(file_id, "GridSpacing", grid_spacing_group_id)
     ! Dx
@@ -213,7 +202,7 @@ subroutine write_gridSpacing_hdf5(file_id, m)
     call ModEM_HDF5_close_dataspace(dz_dspace_id)
 
     call ModEM_HDF5_close_group(grid_spacing_group_id)
-    call ModEM_HDF5_close_group(root_group_id)
+!    call ModEM_HDF5_close_group(root_group_id)
 
 end subroutine write_gridSpacing_hdf5
 

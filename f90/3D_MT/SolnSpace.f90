@@ -12,6 +12,7 @@ use sg_vector
 use sg_boundary
 use sg_sparse_vector
 use transmitters
+use ModelSpace
 
 #ifdef HDF5
 use ModEM_HDF5
@@ -775,11 +776,17 @@ contains
          ! Use a single solns for the dimensions
          call write_solnVector_dimensions_hdf5(file_id, eAll % solns(1), 1)
 
+
+         ! Write the grid using the modelParam routine...
+         ! We need the grid if we read in E0 from a file.
+         call write_geometry_hdf5(file_id, eAll % solns(1) % grid)
+
          do iTx = 1, eAll % nTx
             do iPol = 1, eAll % solns(iTx) % nPol
                 call write_solnVector_vars_hdf5(file_id, eAll % solns(iTx), iPol)
             end do
          end do
+
 
          call ModEM_HDF5_close_file(file_id)
 
