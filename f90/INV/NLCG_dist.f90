@@ -305,8 +305,10 @@ Contains
     alpha_min = max(distControl%alphaMinScale * alpha_1, R_TINY)
     call create_distortionParam(distC_in%nSites, distC_trial)
 
-    write(*,'(a16,a7,es12.5)') '   DistLS: init ', ' phi0=', phi_0
-    write(ioLog,'(a16,a7,es12.5)') '   DistLS: init ', ' phi0=', phi_0
+    if (output_level > 3) then
+       write(*,'(a16,a7,es12.5)') '   DistLS: init ', ' phi0=', phi_0
+       write(ioLog,'(a16,a7,es12.5)') '   DistLS: init ', ' phi0=', phi_0
+    end if
 
     nLS = 0
 
@@ -314,8 +316,10 @@ Contains
     call linComb_distortionParam(ONE, distC_in, -alpha_1, gradC, distC_trial)
     phi_1 = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel)
     nLS = nLS + 1
-    write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_1, ' phi=', phi_1
-    write(ioLog,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_1, ' phi=', phi_1
+    if (output_level > 3) then
+       write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_1, ' phi=', phi_1
+       write(ioLog,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_1, ' phi=', phi_1
+    end if
 
     ! Quadratic fit and minimizer.  Keep the better of the initial and
     ! quadratic trials as the candidate, then enforce Armijo on that candidate.
@@ -332,8 +336,10 @@ Contains
        call linComb_distortionParam(ONE, distC_in, -alpha_q, gradC, distC_trial)
        phi_q = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel)
        nLS = nLS + 1
-       write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_q, ' phi=', phi_q
-       write(ioLog,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_q, ' phi=', phi_q
+       if (output_level > 3) then
+          write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_q, ' phi=', phi_q
+          write(ioLog,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_q, ' phi=', phi_q
+       end if
 
        if (phi_q < phi_try) then
           alpha_try = alpha_q
@@ -346,8 +352,10 @@ Contains
        call linComb_distortionParam(ONE, distC_in, -alpha_try, gradC, distC_out)
        phi_out = phi_try
        alpha_out = alpha_try
-       write(*,'(a44)') '   DistLS: best trial satisfies Armijo'
-       write(ioLog,'(a44)') '   DistLS: best trial satisfies Armijo'
+       if (output_level > 3) then
+          write(*,'(a44)') '   DistLS: best trial satisfies Armijo'
+          write(ioLog,'(a44)') '   DistLS: best trial satisfies Armijo'
+       end if
        goto 100
     end if
 
@@ -359,15 +367,19 @@ Contains
        call linComb_distortionParam(ONE, distC_in, -alpha_try, gradC, distC_trial)
        phi_try = phi_C_only(d, eAll, sigma, distC_trial, nu, Ndata, lambda, mNorm_over_Nmodel)
        nLS = nLS + 1
-       write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_try, ' phi=', phi_try
-       write(ioLog,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_try, ' phi=', phi_try
+       if (output_level > 3) then
+          write(*,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_try, ' phi=', phi_try
+          write(ioLog,'(a16,i3,a8,es12.5,a7,es12.5)') '   DistLS: trial', nLS, ' alpha=', alpha_try, ' phi=', phi_try
+       end if
 
        if (phi_try <= phi_0 + c_armijo * alpha_try * g_0) then
           call linComb_distortionParam(ONE, distC_in, -alpha_try, gradC, distC_out)
           phi_out = phi_try
           alpha_out = alpha_try
-          write(*,'(a44)') '   DistLS: backtracked step satisfies Armijo'
-          write(ioLog,'(a44)') '   DistLS: backtracked step satisfies Armijo'
+          if (output_level > 3) then
+             write(*,'(a44)') '   DistLS: backtracked step satisfies Armijo'
+             write(ioLog,'(a44)') '   DistLS: backtracked step satisfies Armijo'
+          end if
           goto 100
        end if
     end do
@@ -380,6 +392,10 @@ Contains
     write(ioLog,'(a52)') '   DistLS: no Armijo step found, keeping current C'
 
 100 continue
+    if (output_level <= 3) then
+       write(*,'(a26,es12.5,a10,es12.5)') '   DistLS: accepted alpha=', alpha_out, ' phi=', phi_out
+       write(ioLog,'(a26,es12.5,a10,es12.5)') '   DistLS: accepted alpha=', alpha_out, ' phi=', phi_out
+    end if
     call deall_distortionParam(distC_trial)
 
   end subroutine lineSearchDistQuad
@@ -529,9 +545,9 @@ Contains
        if (distControl%nCUpdatesMax > 0 .and. nCUpdates >= distControl%nCUpdatesMax) then
           if (.not. lockC) then
              lockC = .true.
-             write(*,'(a46,i4,a10,i4)') '   DistLS: locking C-updates after ', &
+             write(*,'(a46,i4,a15,i4,a1)') '   DistLS: locking C-updates after ', &
                   nCUpdates, ' updates (max ', distControl%nCUpdatesMax, ')'
-             write(ioLog,'(a46,i4,a10,i4)') '   DistLS: locking C-updates after ', &
+             write(ioLog,'(a46,i4,a15,i4,a1)') '   DistLS: locking C-updates after ', &
                   nCUpdates, ' updates (max ', distControl%nCUpdatesMax, ')'
           end if
        end if
@@ -564,8 +580,10 @@ Contains
              call copy_distortionParam(distC, gPrevC)
              call compDistGrad(d, eAll, m, distC, distControl%nu, Ndata, gradC)
              gradC_norm = sqrt(dotProd_distortionParam(gradC, gradC))
-             write(*,'(a30,es12.5)') '   DistDiag: ||gradC|| = ', gradC_norm
-             write(ioLog,'(a30,es12.5)') '   DistDiag: ||gradC|| = ', gradC_norm
+             if (output_level > 3) then
+                write(*,'(a30,es12.5)') '   DistDiag: ||gradC|| = ', gradC_norm
+                write(ioLog,'(a30,es12.5)') '   DistDiag: ||gradC|| = ', gradC_norm
+             end if
 
              alpha_C_try = alpha_C
              if (distControl%useBBDistInit .and. hasHistory) then
@@ -594,10 +612,12 @@ Contains
                    alpha_BB = max(distControl%alphaMinScale * distControl%alpha_C, alpha_BB)
                    alpha_BB = min(distControl%alphaMaxScale * distControl%alpha_C, alpha_BB)
                    alpha_C_try = alpha_BB
-                   write(*,'(a24,es12.5,a15,es12.5,a16,es12.5,a1)') &
-                       ' DistLS: BB init alpha=', alpha_C_try, ' (ss=', ss_bb, ', sy=', sy_bb, ')'
-                   write(ioLog,'(a24,es12.5,a15,es12.5,a16,es12.5,a1)') &
-                       '   DistLS: BB init alpha=', alpha_C_try, ' (ss=', ss_bb, ', sy=', sy_bb, ')'
+                   if (output_level > 3) then
+                      write(*,'(a24,es12.5,a15,es12.5,a16,es12.5,a1)') &
+                          ' DistLS: BB init alpha=', alpha_C_try, ' (ss=', ss_bb, ', sy=', sy_bb, ')'
+                      write(ioLog,'(a24,es12.5,a15,es12.5,a16,es12.5,a1)') &
+                          '   DistLS: BB init alpha=', alpha_C_try, ' (ss=', ss_bb, ', sy=', sy_bb, ')'
+                   end if
                 end if
              end if
 
@@ -630,15 +650,19 @@ Contains
                 dC_max = max(dC_max, abs(distC_diff%C(1,j,iSite)), abs(distC_diff%C(2,j,iSite)))
              end do
           end do
-          write(*,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
-               ' DistDiag: dF_C=', dF_C, ' rms_before=', rms_before_C, ' rms_after=', rms_after_C
-          write(ioLog,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
-               ' DistDiag: dF_C=', dF_C, ' rms_before=', rms_before_C, ' rms_after=', rms_after_C
-          write(*,'(a20,es12.5,a20,es12.5)') ' DistDiag: ||dC||=', dC_norm, ' max|dC|=', dC_max
-          write(ioLog,'(a20,es12.5,a20,es12.5)') ' DistDiag: ||dC||=', dC_norm, ' max|dC|=', dC_max
+          if (output_level > 3) then
+             write(*,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
+                  ' DistDiag: dF_C=', dF_C, ' rms_before=', rms_before_C, ' rms_after=', rms_after_C
+             write(ioLog,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
+                  ' DistDiag: dF_C=', dF_C, ' rms_before=', rms_before_C, ' rms_after=', rms_after_C
+             write(*,'(a20,es12.5,a20,es12.5)') ' DistDiag: ||dC||=', dC_norm, ' max|dC|=', dC_max
+             write(ioLog,'(a20,es12.5,a20,es12.5)') ' DistDiag: ||dC||=', dC_norm, ' max|dC|=', dC_max
+          end if
        else
-          write(*,'(a40)') '   DistLS: C-update skipped (locked)    '
-          write(ioLog,'(a40)') '   DistLS: C-update skipped (locked)    '
+          if (output_level > 3) then
+             write(*,'(a40)') '   DistLS: C-update skipped (locked)    '
+             write(ioLog,'(a40)') '   DistLS: C-update skipped (locked)    '
+          end if
           value_after_C = value_before_C
           rms_after_C = rms_before_C
           dF_C = R_ZERO
@@ -659,8 +683,10 @@ Contains
           nCG = 0
           gnorm = sqrt(dotProd(gradM, gradM))
           gradM_norm = gnorm
-          write(*,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
-          write(ioLog,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
+          if (output_level > 3) then
+             write(*,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
+             write(ioLog,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
+          end if
           ! On the first outer cycle report the post-C-update gradient (the one
           ! the first sigma line search actually uses) and initialise alpha.
           if (iter == 0) then
@@ -682,23 +708,29 @@ Contains
              ! never exceed the configured initial step length.
              alpha = min(alpha, distControl%startdm / max(gnorm, R_TINY))
              alpha = max(alpha, R_TINY)
-             write(*,'(a40,es12.5,a20,es12.5)') &
-                  ' DistDiag: sigma warm-start alpha=', alpha, ' step_norm=', alpha*gnorm
-             write(ioLog,'(a40,es12.5,a20,es12.5)') &
-                  ' DistDiag: sigma warm-start alpha=', alpha, ' step_norm=', alpha*gnorm
+             if (output_level > 3) then
+                write(*,'(a40,es12.5,a20,es12.5)') &
+                     ' DistDiag: sigma warm-start alpha=', alpha, ' step_norm=', alpha*gnorm
+                write(ioLog,'(a40,es12.5,a20,es12.5)') &
+                     ' DistDiag: sigma warm-start alpha=', alpha, ' step_norm=', alpha*gnorm
+             end if
           end if
-          write(*,'(a39)') 'CG restarted after C-update (steepest descent)'
-          write(ioLog,'(a39)') 'CG restarted after C-update (steepest descent)'
+          if (output_level > 3) then
+             write(*,'(a39)') 'CG restarted after C-update (steepest descent)'
+             write(ioLog,'(a39)') 'CG restarted after C-update (steepest descent)'
+          end if
        else
           ! C is locked: the model state, gradient, and CG direction are
           ! unchanged from the end of the previous sigma block.  Keep them
           ! instead of resetting to steepest descent.
           gnorm = sqrt(dotProd(gradM, gradM))
           gradM_norm = gnorm
-          write(*,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
-          write(ioLog,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
-          write(*,'(a52)') 'C locked: continuing CG without reset'
-          write(ioLog,'(a52)') 'C locked: continuing CG without reset'
+          if (output_level > 3) then
+             write(*,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
+             write(ioLog,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
+             write(*,'(a52)') 'C locked: continuing CG without reset'
+             write(ioLog,'(a52)') 'C locked: continuing CG without reset'
+          end if
        end if
        write(*,'(a36,i3,a16,i3)') 'Phase 2: Inner sigma loop (up to ', distControl%nSigmaIter, ' iterations)'
        write(ioLog,'(a36,i3,a16,i3)') 'Phase 2: Inner sigma loop (up to ', distControl%nSigmaIter, ' iterations)'
@@ -729,10 +761,12 @@ Contains
            if (abs(rmsPrev - rms) < distControl%fdiffTol) then
               if (distControl%lambdaCooldown > 0 .and. &
                   (iter - lastLambdaUpdateIter) < distControl%lambdaCooldown) then
-                 write(*,'(a48,i4,a16,i4)') '   Lambda update deferred: cooldown ', &
-                      distControl%lambdaCooldown, ' iter since last=', iter - lastLambdaUpdateIter
-                 write(ioLog,'(a48,i4,a16,i4)') '   Lambda update deferred: cooldown ', &
-                      distControl%lambdaCooldown, ' iter since last=', iter - lastLambdaUpdateIter
+                 if (output_level > 3) then
+                    write(*,'(a48,i4,a16,i4)') '   Lambda update deferred: cooldown ', &
+                         distControl%lambdaCooldown, ' iter since last=', iter - lastLambdaUpdateIter
+                    write(ioLog,'(a48,i4,a16,i4)') '   Lambda update deferred: cooldown ', &
+                         distControl%lambdaCooldown, ' iter since last=', iter - lastLambdaUpdateIter
+                 end if
               else
                  call update_damping_parameter_dist(lambda, mHat, distNorm, value, gradM)
                  lastLambdaUpdateIter = iter
@@ -830,12 +864,18 @@ Contains
         else
            share_C = R_ZERO
         end if
-        write(*,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
-             ' DistDiag: dF_sigma=', dF_sigma, ' rms_before=', rms_before_sigma, ' rms_after=', rms_after_sigma
-        write(ioLog,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
-             ' DistDiag: dF_sigma=', dF_sigma, ' rms_before=', rms_before_sigma, ' rms_after=', rms_after_sigma
-        write(*,'(a20,es12.5)') ' DistDiag: share_C=', share_C
-        write(ioLog,'(a20,es12.5)') ' DistDiag: share_C=', share_C
+        if (output_level > 3) then
+           write(*,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
+                ' DistDiag: dF_sigma=', dF_sigma, ' rms_before=', rms_before_sigma, ' rms_after=', rms_after_sigma
+           write(ioLog,'(a20,es12.5,a20,es12.5,a20,es12.5)') &
+                ' DistDiag: dF_sigma=', dF_sigma, ' rms_before=', rms_before_sigma, ' rms_after=', rms_after_sigma
+        end if
+        write(*,'(a18,es11.4,a12,es11.4,a12,es11.4,a12,es11.4,a10,es11.4)') &
+             ' DistDiag: dF_C=', dF_C, ' dF_sigma=', dF_sigma, ' share_C=', share_C, &
+             ' ||dC||=', dC_norm, ' rms=', rms
+        write(ioLog,'(a18,es11.4,a12,es11.4,a12,es11.4,a12,es11.4,a10,es11.4)') &
+             ' DistDiag: dF_C=', dF_C, ' dF_sigma=', dF_sigma, ' share_C=', share_C, &
+             ' ||dC||=', dC_norm, ' rms=', rms
 
         if (stopInversion .or. (rms < distControl%rmsTol) .or. (iter >= distControl%maxIter)) exit blockLoop
     end do blockLoop
