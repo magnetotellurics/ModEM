@@ -119,6 +119,17 @@ users may append the following optional lines (defaults shown):
     Distortion gradient step size      : 0.1
     Lock C when lambda is less than    : 10.
     Minimum iterations before C lock   : 10
+    Maximum number of C updates        : 0
+    Lambda update cooldown             : 0
+
+The advanced lines are positional: if any of them are present, the optional
+``Distortion output filename`` and ``Initial distortion filename`` lines must
+also be present before them. ``Maximum number of C updates`` locks the
+distortion matrix after that many C line-search updates (0 disables the cap).
+``Lambda update cooldown`` requires at least that many model iterations
+between lambda reductions (0 disables the cooldown).  Once C is locked, the
+sigma CG direction is not reset at block boundaries; the solver continues the
+existing CG iteration instead of restarting from steepest descent.
 
 * **FwdCtrl** : forward solver control file, described above under the ``-F``
     option.

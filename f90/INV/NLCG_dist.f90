@@ -35,6 +35,8 @@ module NLCG_dist
       logical            :: useBBDistInit ! Barzilai-Borwein initialization
       real(kind=prec)    :: lambdaClock ! lock C updates when lambda < this
       integer            :: nClockMinIter  ! only lock after this many iters
+      integer            :: nCUpdatesMax ! max number of C line-search updates (0 = no limit)
+      integer            :: lambdaCooldown ! min iterations between lambda updates (0 = disabled)
       character(80)      :: distFname
       character(80)      :: init_distFname
   end type NLCGDistControl_t
@@ -97,6 +99,8 @@ Contains
     ctrl%useBBDistInit = .true. ! defaulted to true
     ctrl%lambdaClock = 10.0     ! simple first-stage C-lock threshold
     ctrl%nClockMinIter  = 10    ! avoid locking too early
+    ctrl%nCUpdatesMax = 0       ! 0 = no limit on the number of C updates
+    ctrl%lambdaCooldown = 0     ! 0 = no cooldown between lambda updates
     ctrl%distFname = 'distortion.dat'
     ctrl%init_distFname = ''
   end subroutine set_NLCGDistControl
@@ -206,6 +210,26 @@ Contains
        if (output_level > 2) write(*,'(a36,i4)') string, ctrl%nClockMinIter
     else
        ctrl%nClockMinIter = 10
+    end if
+
+    ! Optional hard cap on the number of C updates.  Once the cap is
+    ! reached the distortion matrix is locked and the remaining iterations
+    ! are sigma-only.  0 disables the cap.
+    read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%nCUpdatesMax
+    if (ios == 0) then
+       if (output_level > 2) write(*,'(a36,i4)') string, ctrl%nCUpdatesMax
+    else
+       ctrl%nCUpdatesMax = 0
+    end if
+
+    ! Optional cooldown between lambda reductions.  A value of 0 disables
+    ! the cooldown; otherwise lambda is updated at most once per
+    ! lambdaCooldown model iterations.
+    read(ioInvCtrl, '(a36,i4)', iostat=ios) string, ctrl%lambdaCooldown
+    if (ios == 0) then
+       if (output_level > 2) write(*,'(a36,i4)') string, ctrl%lambdaCooldown
+    else
+       ctrl%lambdaCooldown = 0
     end if
 
     ! read(ioInvCtrl, '(a36,g15.7)', iostat=ios) string, ctrl%alphaMinScale
@@ -390,6 +414,7 @@ Contains
     real(kind=prec) :: gradC_norm, gradM_norm
     real(kind=prec) :: dC_norm, dC_max
     integer :: iter, nCG, nLS, nLSC, nfuncSigma, nfuncC, ios, i, j, inner, iSite
+    integer :: nCUpdates, lastLambdaUpdateIter
     logical :: hasCtrlFile, lockC, hasHistory, stopInversion
     character(3) :: iterChar
     character(100) :: mFile, mHatFile, gradFile, dataFile, resFile, logFile
@@ -409,6 +434,8 @@ Contains
     lockC = .false.
     hasHistory = .false.
     stopInversion = .false.
+    nCUpdates = 0
+    lastLambdaUpdateIter = -distControl%lambdaCooldown
 
     logFile = trim(distControl%fname)//'_NLCG_DIST.log'
     open(unit=ioLog, file=logFile, status='unknown', position='append', iostat=ios)
@@ -432,6 +459,10 @@ Contains
     write(ioLog,'(a46,es12.5)') ' Initial distortion step size: ', distControl%alpha_C
     write(*,'(a46,i4)') ' Minimum iterations before C lock: ', distControl%nClockMinIter
     write(ioLog,'(a46,i4)') ' Minimum iterations before C lock: ', distControl%nClockMinIter
+    write(*,'(a46,i4)') ' Maximum number of C updates: ', distControl%nCUpdatesMax
+    write(ioLog,'(a46,i4)') ' Maximum number of C updates: ', distControl%nCUpdatesMax
+    write(*,'(a46,i4)') ' Lambda update cooldown: ', distControl%lambdaCooldown
+    write(ioLog,'(a46,i4)') ' Lambda update cooldown: ', distControl%lambdaCooldown
     write(*,'(a46,a)') ' Distortion output file: ', trim(distControl%distFname)
     write(ioLog,'(a46,a)') ' Distortion output file: ', trim(distControl%distFname)
 
@@ -492,6 +523,18 @@ Contains
        ! === Phase 1: C-update at current (mHat, eAll) state ===
        write(*,'(a40)') ' Block: Distortion Matrix update (Phase 1)'
        write(ioLog,'(a40)') ' Block: Distortion Matrix update (Phase 1)'
+
+       ! Optional hard cap on the number of C updates.  Once the cap is
+       ! reached, lock C and leave the remaining iterations to sigma.
+       if (distControl%nCUpdatesMax > 0 .and. nCUpdates >= distControl%nCUpdatesMax) then
+          if (.not. lockC) then
+             lockC = .true.
+             write(*,'(a46,i4,a10,i4)') '   DistLS: locking C-updates after ', &
+                  nCUpdates, ' updates (max ', distControl%nCUpdatesMax, ')'
+             write(ioLog,'(a46,i4,a10,i4)') '   DistLS: locking C-updates after ', &
+                  nCUpdates, ' updates (max ', distControl%nCUpdatesMax, ')'
+          end if
+       end if
 
        lambdaRatio = lambda / lambda0
        if (.not. lockC) then
@@ -571,6 +614,7 @@ Contains
              nfuncC = nfuncC + nLSC
              alpha_C = min(distControl%alpha_C, alpha_C * 2.0_prec)
           end do
+          nCUpdates = nCUpdates + distControl%nDistIter
 
           ! Recompute dHat and rms with new C (cheap, locked eAll)
           call reComputedHat_dist(d, eAll, m, distC, dHat, rms)
@@ -606,44 +650,56 @@ Contains
        rms_before_sigma = rms
 
        ! === Phase 2: nSigmaIter sigma-only NLCG iterations (C fixed) ===
-       ! Recompute sigma gradient at NEW C (same mHat) — restart CG
-       ! (C is frozen in Phase 2, so the C-gradient is not needed here)
-       call gradient_dist(lambda, distControl%nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll, needGradC=.false.)
-       call linComb(MinusONE, gradM, R_ZERO, gradM, g)
-       h = g
-       nCG = 0
-       gnorm = sqrt(dotProd(gradM, gradM))
-       gradM_norm = gnorm
-       write(*,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
-       write(ioLog,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
-       ! On the first outer cycle report the post-C-update gradient (the one
-       ! the first sigma line search actually uses) and initialise alpha.
-       if (iter == 0) then
-          write(*,'(a44,es12.5)') '     GRAD: initial norm of model gradient is', gnorm
-          write(ioLog,'(a44,es12.5)') '     GRAD: initial norm of model gradient is', gnorm
-          if (gnorm < TOL6) then
-             call errStop('Problem with gradient computations: first gradient is zero')
+       if (.not. lockC) then
+          ! C was updated: recompute the sigma gradient at the new C and
+          ! restart CG from steepest descent.
+          call gradient_dist(lambda, distControl%nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll, needGradC=.false.)
+          call linComb(MinusONE, gradM, R_ZERO, gradM, g)
+          h = g
+          nCG = 0
+          gnorm = sqrt(dotProd(gradM, gradM))
+          gradM_norm = gnorm
+          write(*,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
+          write(ioLog,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
+          ! On the first outer cycle report the post-C-update gradient (the one
+          ! the first sigma line search actually uses) and initialise alpha.
+          if (iter == 0) then
+             write(*,'(a44,es12.5)') '     GRAD: initial norm of model gradient is', gnorm
+             write(ioLog,'(a44,es12.5)') '     GRAD: initial norm of model gradient is', gnorm
+             if (gnorm < TOL6) then
+                call errStop('Problem with gradient computations: first gradient is zero')
+             else
+                alpha = distControl%startdm / gnorm
+                write(*,'(a39,es12.5)') 'The initial value of alpha updated to ', alpha
+                write(ioLog,'(a39,es12.5)') 'The initial value of alpha updated to ', alpha
+             end if
           else
-             alpha = distControl%startdm / gnorm
-             write(*,'(a39,es12.5)') 'The initial value of alpha updated to ', alpha
-             write(ioLog,'(a39,es12.5)') 'The initial value of alpha updated to ', alpha
+             ! Warm-start the sigma step from the previous estimate instead of
+             ! resetting to a full startdm/gnorm step after every C update.  A
+             ! C update changes the model gradient and the objective landscape;
+             ! forcing a full-length step here makes the first sigma trial
+             ! overshoot badly.  Keep the previous step if it is shorter, and
+             ! never exceed the configured initial step length.
+             alpha = min(alpha, distControl%startdm / max(gnorm, R_TINY))
+             alpha = max(alpha, R_TINY)
+             write(*,'(a40,es12.5,a20,es12.5)') &
+                  ' DistDiag: sigma warm-start alpha=', alpha, ' step_norm=', alpha*gnorm
+             write(ioLog,'(a40,es12.5,a20,es12.5)') &
+                  ' DistDiag: sigma warm-start alpha=', alpha, ' step_norm=', alpha*gnorm
           end if
+          write(*,'(a39)') 'CG restarted after C-update (steepest descent)'
+          write(ioLog,'(a39)') 'CG restarted after C-update (steepest descent)'
        else
-          ! Warm-start the sigma step from the previous estimate instead of
-          ! resetting to a full startdm/gnorm step after every C update.  A
-          ! C update changes the model gradient and the objective landscape;
-          ! forcing a full-length step here makes the first sigma trial
-          ! overshoot badly.  Keep the previous step if it is shorter, and
-          ! never exceed the configured initial step length.
-          alpha = min(alpha, distControl%startdm / max(gnorm, R_TINY))
-          alpha = max(alpha, R_TINY)
-          write(*,'(a40,es12.5,a20,es12.5)') &
-               ' DistDiag: sigma warm-start alpha=', alpha, ' step_norm=', alpha*gnorm
-          write(ioLog,'(a40,es12.5,a20,es12.5)') &
-               ' DistDiag: sigma warm-start alpha=', alpha, ' step_norm=', alpha*gnorm
+          ! C is locked: the model state, gradient, and CG direction are
+          ! unchanged from the end of the previous sigma block.  Keep them
+          ! instead of resetting to steepest descent.
+          gnorm = sqrt(dotProd(gradM, gradM))
+          gradM_norm = gnorm
+          write(*,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
+          write(ioLog,'(a30,es12.5)') '   DistDiag: ||gradM|| = ', gradM_norm
+          write(*,'(a52)') 'C locked: continuing CG without reset'
+          write(ioLog,'(a52)') 'C locked: continuing CG without reset'
        end if
-       write(*,'(a39)') 'CG restarted after C-update (steepest descent)'
-       write(ioLog,'(a39)') 'CG restarted after C-update (steepest descent)'
        write(*,'(a36,i3,a16,i3)') 'Phase 2: Inner sigma loop (up to ', distControl%nSigmaIter, ' iterations)'
        write(ioLog,'(a36,i3,a16,i3)') 'Phase 2: Inner sigma loop (up to ', distControl%nSigmaIter, ' iterations)'
 
@@ -671,27 +727,36 @@ Contains
            ! Stall check (before CG beta, so lambda update resets CG correctly)
            distNorm = psi_C(distC)
            if (abs(rmsPrev - rms) < distControl%fdiffTol) then
-              call update_damping_parameter_dist(lambda, mHat, distNorm, value, gradM)
-              if (lambda < distControl%lambdaTol) then
-                 write(*,'(a55)') 'Unable to get out of a local minimum. Exiting...'
-                 write(ioLog,'(a55)') 'Unable to get out of a local minimum. Exiting...'
-                 stopInversion = .true.
-                 exit sigmaLoop
+              if (distControl%lambdaCooldown > 0 .and. &
+                  (iter - lastLambdaUpdateIter) < distControl%lambdaCooldown) then
+                 write(*,'(a48,i4,a16,i4)') '   Lambda update deferred: cooldown ', &
+                      distControl%lambdaCooldown, ' iter since last=', iter - lastLambdaUpdateIter
+                 write(ioLog,'(a48,i4,a16,i4)') '   Lambda update deferred: cooldown ', &
+                      distControl%lambdaCooldown, ' iter since last=', iter - lastLambdaUpdateIter
+              else
+                 call update_damping_parameter_dist(lambda, mHat, distNorm, value, gradM)
+                 lastLambdaUpdateIter = iter
+                 if (lambda < distControl%lambdaTol) then
+                    write(*,'(a55)') 'Unable to get out of a local minimum. Exiting...'
+                    write(ioLog,'(a55)') 'Unable to get out of a local minimum. Exiting...'
+                    stopInversion = .true.
+                    exit sigmaLoop
+                 end if
+                 gnorm = sqrt(dotProd(gradM, gradM))
+                 alpha = min(ONE, distControl%startdm) / gnorm
+                 call linComb(MinusONE, gradM, R_ZERO, gradM, g)
+                 write(*,'(a55)') 'Restarting NLCG with damping parameter updated'
+                 write(ioLog,'(a55)') 'Restarting NLCG with damping parameter updated'
+                 Nmodel = countModelParam(mHat)
+                 mNorm = dotProd(mHat, mHat) / Nmodel
+                 call printf('to', lambda, alpha, value, mNorm, rms)
+                 call printf('to', lambda, alpha, value, mNorm, rms, logFile)
+                 call ModEM_timers_stop("NLCG_DIST Iteration", .false.)
+                 call ModEM_timers_print("NLCG_DIST Iteration", ioLog)
+                 h = g
+                 nCG = 0
+                 cycle sigmaLoop
               end if
-              gnorm = sqrt(dotProd(gradM, gradM))
-              alpha = min(ONE, distControl%startdm) / gnorm
-              call linComb(MinusONE, gradM, R_ZERO, gradM, g)
-              write(*,'(a55)') 'Restarting NLCG with damping parameter updated'
-              write(ioLog,'(a55)') 'Restarting NLCG with damping parameter updated'
-              Nmodel = countModelParam(mHat)
-              mNorm = dotProd(mHat, mHat) / Nmodel
-              call printf('to', lambda, alpha, value, mNorm, rms)
-              call printf('to', lambda, alpha, value, mNorm, rms, logFile)
-              call ModEM_timers_stop("NLCG_DIST Iteration", .false.)
-              call ModEM_timers_print("NLCG_DIST Iteration", ioLog)
-              h = g
-              nCG = 0
-              cycle sigmaLoop
            end if
 
            ! Write intermediate output
