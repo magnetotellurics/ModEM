@@ -179,7 +179,56 @@ these are discussed in more detail below, under <a class="reference internal" hr
 with the forward modeling control file, there is a simpler form for this
 optional argument, which modifies only a single (the most commonly modified)
 parameter, i.e., lambda = the initial damping parameter for inversion.</p>
+<p>For the joint distortion inversion (<code class="docutils literal notranslate"><span class="pre">NLCG_DIST</span></code>), the data to be corrected
+for galvanic distortion are given with data type <code class="docutils literal notranslate"><span class="pre">Full_Impedance_Dist</span></code>. The
+standard control lines above may be followed by optional distortion lines
+(defaults shown):</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Distortion damping factor nu       : 0.1
+Distortion output filename         : distortion.dat
+Reference distortion filename      :
+Distortion type (full|diag)        : full
+</pre></div>
+</div>
+<p>Unlike the standard lines, these are identified by their label (the text
+before the colon) and may be given in any order; any of them may be omitted,
+with the above values as default.
+TODO: I should extend the similar label based syntax to the standard lines at
+some stage, in another commit.</p>
+<p>The distortion matrice C is one real 2x2 matrix per site, independent of
+frequency. The distortion matrice C = g * T * S * A, where g is a scalar
+gain, T is a twist matrix, S is a shear matrix, and A is an anisotropic
+matrix. When there is no distortion, C is the identity matrix. C is estmated
+jointly along with the conductivity model, and is regularised to be close to a
+reference distorion matrix C^0 (identity if not specified).</p>
+<p>After every forward solve, C is replaced by the exact minimiser of the
+penalty functional for the current EM fields. This is a trivial least-squares
+problem per site and needs no additional EM solves. NLCG therefore minimises
+the reduced functional <span class="math notranslate nohighlight">\(\min_C F(\tilde{\bf m}, C)\)</span> with the <em>same</em>
+line search and lambda strategy as the standard NLCG.</p>
 <ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">Distortion</span> <span class="pre">damping</span> <span class="pre">factor</span> <span class="pre">nu</span></code>: strength of the distortion penalty
+<span class="math notranslate nohighlight">\(\tfrac12 \sum_j w_j \|C_j - C^0_j\|_F^2\)</span>. The weights <span class="math notranslate nohighlight">\(w_j\)</span>
+are computed from the observed impedances and errors, so that nu is
+dimensionless: at each site the estimated distortion moves roughly a
+fraction <span class="math notranslate nohighlight">\(1/(1+\nu)\)</span> of the way from the reference towards the best
+fit allowed by the data. Small values (e.g. 0.1) let C absorb most of the
+site-specific distortion; large values (e.g. 100) hold C at the reference,
+which is somehow equivalent to ignoring distortion.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Distortion</span> <span class="pre">output</span> <span class="pre">filename</span></code>: the estimated distortion matrices are
+written to <code class="docutils literal notranslate"><span class="pre">root_&lt;filename&gt;</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Reference</span> <span class="pre">distortion</span> <span class="pre">filename</span></code>: optional reference distortion
+<span class="math notranslate nohighlight">\(C^0\)</span>, in the same format as the output file (sites are matched by
+their index). The identity is used if this is empty or the line is omitted.
+A reference from an independent analysis (e.g. tensor decomposition) can be
+given here; with a large nu the distortion is effectively fixed at it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Distortion</span> <span class="pre">type</span></code>: <code class="docutils literal notranslate"><span class="pre">full</span></code> estimates the general 2x2 matrix (4
+parameters per site). <code class="docutils literal notranslate"><span class="pre">diag</span></code> estimates one gain per horizontal electric
+field component, <span class="math notranslate nohighlight">\(C_j = \mathrm{diag}(g_x, g_y)\)</span> (2 parameters per
+site); this is the static-shift/splitting part of the distortion and
+reproduces the frequency-independent offset between the xy and yx
+apparent-resistivity curves, while leaving twist and shear to the
+conductivity model. For <code class="docutils literal notranslate"><span class="pre">diag</span></code> the reference distortion is projected
+onto its diagonal.</p></li>
 <li><dl>
 <dt><strong>FwdCtrl</strong><span class="classifier">forward solver control file, described above under the <code class="docutils literal notranslate"><span class="pre">-F</span></code></span></dt><dd><p>option.</p>
 </dd>

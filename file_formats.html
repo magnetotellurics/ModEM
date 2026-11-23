@@ -653,8 +653,10 @@ very small grid.</p>
 <p>ModEM now supports an alternative regularization method based on the
 H2 (Bi-Helmholtz) operator, which provides isotropic smoothing with a
 (Matérn) covariance structure.</p>
-<p>To use H2 smoothing, set <code class="docutils literal notranslate"><span class="pre">CovType=2</span></code> in the inversion control file
-or command line, and provide a covariance file in the new unified format.</p>
+<p>To use H2 smoothing, provide a covariance file in the new unified format.
+The covariance file itself selects the backend: line 17 of the 16-line
+header gives <code class="docutils literal notranslate"><span class="pre">Nx</span> <span class="pre">Ny</span> <span class="pre">NzEarth</span> <span class="pre">&lt;CovType&gt;</span></code>, so no inversion-control-file or
+command-line setting is needed.</p>
 <p>The unified covariance file format uses line 17 to specify both grid dimensions
 and the CovType:</p>
 <ul class="simple">
