@@ -1,5 +1,11 @@
 module DistortionParam
-
+  
+  ! defines derived type that holds distortion matrices for each site in a 
+  ! receiver dictionary, with basic operations on them (dot product, linear
+  ! combination, etc.) analogue to the model parameter type. 
+  ! the distortion matrice is a 2x2 tensor C for each site, where:
+  ! C = g * T * S * A, where g is the scalar gain, T is the twist matrix, 
+  ! S is the shear matrix, and A is the anisotropy matrix.
   use math_constants
   use utilities
 
@@ -120,20 +126,25 @@ Contains
   end subroutine copy_distortionParam
 
   subroutine read_distortionParam(fname, D)
+    ! Read distortion matrices into an existing D (D%siteIndex set by the
+    ! caller).  Entries are matched to D by receiver index (site_id), so the
+    ! file may list the sites in any order; sites of D missing from the file
+    ! keep their current value.
     character(*), intent(in) :: fname
     type(distortionParam_t), intent(inout) :: D
-    integer :: i, nSites, iostat, iSite, iRec, idxDummy
+    integer :: i, k, nSites, iostat, iSite, iRec, idxDummy, nMatched
     real(kind=prec) :: c11, c12, c21, c22
     character(256) :: line
     character(80) :: str
     open(unit=77, file=fname, status='old', iostat=iostat)
     if (iostat /= 0) call errStop('Cannot open distortion file: '//trim(fname))
-    read(77, *) str, nSites
-    if (nSites /= D%nSites) call errStop('Distortion file site count mismatch')
+    read(77, *, iostat=iostat) str, nSites
+    if (iostat /= 0) call errStop('Error reading distortion file header: '//trim(fname))
+    nMatched = 0
     do i = 1, nSites
        read(77, '(A)', iostat=iostat) line
        if (iostat /= 0) call errStop('Error reading distortion line: '//trim(fname))
-       ! New format: idx, site_id, Cxx, Cxy, Cyx, Cyy
+       ! Format: idx, site_id, Cxx, Cxy, Cyx, Cyy
        read(line, *, iostat=iRec) idxDummy, iSite, c11, c12, c21, c22
        if (iRec /= 0) then
           ! Backward-compatible format: site_id, Cxx, Cxy, Cyx, Cyy
@@ -142,13 +153,22 @@ Contains
              call errStop('Invalid distortion line format in: '//trim(fname))
           end if
        end if
-       D%C(1,1,i) = c11
-       D%C(1,2,i) = c12
-       D%C(2,1,i) = c21
-       D%C(2,2,i) = c22
-       D%siteIndex(i) = iSite
+       do k = 1, D%nSites
+          if (D%siteIndex(k) == iSite) then
+             D%C(1,1,k) = c11
+             D%C(1,2,k) = c12
+             D%C(2,1,k) = c21
+             D%C(2,2,k) = c22
+             nMatched = nMatched + 1
+             exit
+          end if
+       end do
     end do
     close(77)
+    if (nMatched < D%nSites) then
+       write(0,'(a,i6,a,i6,a)') ' Warning: distortion file matched ', nMatched, &
+            ' of ', D%nSites, ' sites; the others keep their current value'
+    end if
   end subroutine read_distortionParam
 
   subroutine write_distortionParam(fname, D)

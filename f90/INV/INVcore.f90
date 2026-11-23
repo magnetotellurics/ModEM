@@ -6,7 +6,7 @@ use senscomp
 use dataio
 use dataFunc, only: dataResp, dataResp_dist
 use DistortionParam
-use DistortGradient
+use DistortGradient, only: solveDistExact, psi_dist
 use DataSens, only: set_dataSens_distortion_ptr
 
 #ifdef MPI
@@ -21,7 +21,7 @@ implicit none
 
 public          :: printf, func, gradient
 public          :: CdInvMult, CmSqrtMult
-public          :: func_dist, gradient_dist, psi_C
+public          :: func_dist, gradient_dist
 public          :: reComputedHat_dist
 
 
@@ -270,39 +270,26 @@ Contains
    end subroutine CmSqrtMult
 
 !**********************************************************************
-   function psi_C(distC) result(psi)
-   type(distortionParam_t), intent(in) :: distC
-   real(kind=prec) :: psi
-   integer :: i
-   psi = R_ZERO
-   do i = 1, distC%nSites
-      psi = psi + (distC%C(1,1,i) - ONE)**2 &
-                + distC%C(1,2,i)**2 &
-                + distC%C(2,1,i)**2 &
-                + (distC%C(2,2,i) - ONE)**2
-   end do
-   psi = psi * 0.5_prec
-   end function psi_C
-
-!**********************************************************************
    subroutine func_dist(lambda, nu, d, m0, mHat, distC, F, mNorm, distNorm, dHat, eAll, RMS)
-   ! Compute the full penalty functional F, including distortion regularization
-   ! Also output the predicted data 
+   ! Reduced penalty functional of the joint conductivity/distortion
+   ! inversion, F(mHat) = min_C F(mHat, C), with
+   !   F(mHat, C) = SS/Ndata + lambda ||mHat||^2/Nmodel + nu psi(C).
+   ! After the forward solve, the distortion matrices are replaced by the
+   ! exact minimiser for the new EM fields (no extra EM solves), and the
+   ! predicted data are rebuilt with the new C.  distC is updated on output.
 
    real(kind=prec), intent(in)              :: lambda, nu
    type(dataVectorMTX_t), intent(in)        :: d
    type(modelParam_t), intent(in)           :: m0
    type(modelParam_t), intent(in)           :: mHat
-   type(distortionParam_t), intent(in)      :: distC
+   type(distortionParam_t), target, intent(inout) :: distC
    real(kind=prec), intent(out)             :: F, mNorm, distNorm
-   type(dataVectorMTX_t), optional, intent(inout) :: dHat
-   type(solnVectorMTX_t), optional, intent(inout) :: eAll
-   real(kind=prec), optional, intent(out)         :: RMS
+   type(dataVectorMTX_t), intent(inout)     :: dHat
+   type(solnVectorMTX_t), intent(inout)     :: eAll
+   real(kind=prec), intent(out)             :: RMS
 
-   type(dataVectorMTX_t)                    :: res,Nres
-   type(modelParam_t)                       :: m, JTd
-   real(kind=prec)                          :: SS
-   integer                                  :: Ndata, Nmodel
+   type(modelParam_t)                       :: m
+   real(kind=prec)                          :: Nmodel
 
    call CmSqrtMult(mHat,m)
    call linComb(ONE,m,ONE,m0,m)
@@ -310,91 +297,72 @@ Contains
    dHat = d
    call set_distortionParam_ptr(distC)
    call set_dataSens_distortion_ptr(distC)
-
 #ifdef MPI
    call Master_Job_fwdPred(m,dHat,eAll)
 #else
    call fwdPred(m,dHat,eAll)
 #endif
 
-   res = d
-   call linComb(ONE,d,MinusONE,dHat,res)
-   call CdInvMult(res,Nres)
-   SS = dotProd(res,Nres)
-   Ndata = countData(res)
+   call solveDistExact(d, eAll, m, distC, nu)
+   call reComputedHat_dist(d, eAll, m, distC, dHat, RMS)
 
    mNorm = dotProd(mHat,mHat)
    Nmodel = countModelParam(mHat)
-
-   distNorm = psi_C(distC)
-
-   F = SS/Ndata + lambda * mNorm/Nmodel + nu * distNorm
+   distNorm = psi_dist(distC)
+   F = RMS**2 + lambda * mNorm/Nmodel + nu * distNorm
    mNorm = mNorm/Nmodel
 
-   if (present(RMS)) RMS = sqrt(SS/Ndata)
-
-   call deall_dataVectorMTX(res)
-   call deall_dataVectorMTX(Nres)
    call deall_modelParam(m)
-   call deall_modelParam(JTd)
 
    end subroutine func_dist
 
 !**********************************************************************
-   subroutine gradient_dist(lambda, nu, d, m0, mHat, distC, gradM, gradC, dHat, eAll, needGradC)
-   ! calculate the gradient of the penalty functional with respect to both 
-   ! model parameters and distortion parameters
-   ! note that full eAll is required for the distortion gradient calculation, 
-   ! so this routine should be called after func_dist
+   subroutine gradient_dist(lambda, d, m0, mHat, distC, grad, dHat, eAll)
+   ! Gradient of the reduced functional with respect to mHat.  Since C is the
+   ! exact minimiser for the current fields (see func_dist), this is the
+   ! conductivity gradient evaluated at fixed C: the adjoint source uses the
+   ! distorted residuals mapped through C^T (see LmultT).  The distortion
+   ! penalty does not depend on mHat.  Must be called after func_dist (or
+   ! reComputedHat_dist) so that dHat and eAll match mHat and distC.
 
-   real(kind=prec), intent(in)             :: lambda, nu
+   real(kind=prec), intent(in)             :: lambda
    type(dataVectorMTX_t), intent(in)       :: d
    type(modelParam_t), intent(in)          :: m0
    type(modelParam_t), intent(in)          :: mHat
-   type(distortionParam_t), intent(in)     :: distC
-   type(modelParam_t), intent(inout)       :: gradM
-   type(distortionParam_t), intent(inout)  :: gradC
+   type(distortionParam_t), target, intent(in) :: distC
+   type(modelParam_t), intent(inout)       :: grad
    type(dataVectorMTX_t), intent(inout)    :: dHat
    type(solnVectorMTX_t), intent(inout)    :: eAll
-   logical, intent(in), optional           :: needGradC
 
    type(dataVectorMTX_t)                   :: res
    type(modelParam_t)                      :: m, JTd, CmJTd
    real(kind=prec)                         :: Ndata, Nmodel
-   logical                                 :: computeGradC
 
-     call CmSqrtMult(mHat,m)
-     call linComb(ONE,m,ONE,m0,m)
+   call CmSqrtMult(mHat,m)
+   call linComb(ONE,m,ONE,m0,m)
 
-     call set_distortionParam_ptr(distC)
-     call set_dataSens_distortion_ptr(distC)
+   call set_distortionParam_ptr(distC)
+   call set_dataSens_distortion_ptr(distC)
 
-     res = d
-     call linComb(ONE,d,MinusONE,dHat,res)
-     call CdInvMult(res)
+   res = d
+   call linComb(ONE,d,MinusONE,dHat,res)
+   call CdInvMult(res)
 #ifdef MPI
-     call Master_job_JmultT(m,res,JTd,eAll)
+   call Master_job_JmultT(m,res,JTd,eAll)
 #else
-     call JmultT(m,res,JTd,eAll)
+   call JmultT(m,res,JTd,eAll)
 #endif
-      call CmSqrtMult(JTd,CmJTd)
+   call CmSqrtMult(JTd,CmJTd)
 
-      gradM = m
-      Ndata = countData(res)
-      Nmodel = countModelParam(mHat)
-      call linComb(MinusTWO/Ndata,CmJTd,TWO*lambda/Nmodel,mHat,gradM)
+   grad = m
+   Ndata = countData(res)
+   Nmodel = countModelParam(mHat)
+   call linComb(MinusTWO/Ndata,CmJTd,TWO*lambda/Nmodel,mHat,grad)
 
-      ! The C-gradient is only needed when C is being updated (Phase 1); the
-      ! inner sigma loop keeps C frozen, so skip it there to avoid a redundant
-      ! per-iteration compDistGrad computation.
-      computeGradC = .true.
-      if (present(needGradC)) computeGradC = needGradC
-      if (computeGradC) call compDistGrad(d, eAll, m, distC, nu, Ndata, gradC)
-
-     call deall_dataVectorMTX(res)
-     call deall_modelParam(m)
-     call deall_modelParam(JTd)
-     call deall_modelParam(CmJTd)
+   call deall_dataVectorMTX(res)
+   call deall_modelParam(m)
+   call deall_modelParam(JTd)
+   call deall_modelParam(CmJTd)
 
    end subroutine gradient_dist
 
@@ -407,12 +375,13 @@ Contains
    ! sigma is fixed)
    ! currently used in NLCG_DIST inversion method only.
    ! put it here as a separate subroutine for future use in other 
-   ! inversion methods
+   ! inversion methods (not sure what the best place is, but this is a 
+   ! good start)
 
    type(dataVectorMTX_t), intent(in)  :: d      ! observed data
    type(solnVectorMTX_t), intent(in)  :: eAll   ! locked EM field solutions
    type(modelParam_t), intent(in)     :: sigma  ! conductivity model (smoothed)
-   type(distortionParam_t), intent(in):: distC  ! distortion matrices
+   type(distortionParam_t), target, intent(in):: distC  ! distortion matrices
    type(dataVectorMTX_t), intent(out) :: dHat   ! updated predicted data
    real(kind=prec), intent(out)       :: RMS    ! output misfit RMS
 
@@ -430,10 +399,10 @@ Contains
    ! Initialize predicted data to observed (will be overwritten)
    dHat = d
 
-   ! Iterate through all data blocks and recompute predictions using frozen
-   ! eAll.  Distortion is applied only to Full_Impedance_Dist blocks; all
-   ! other data types are recomputed with the standard (undistorted) data
-   ! functional so that dHat remains consistent with the full objective.
+   ! Iterate through all data blocks and recompute predictions using the 
+   ! frozen eAll.  Distortion is applied only to Full_Impedance_Dist blocks; 
+   ! all other data types are recomputed with the standard (undistorted) 
+   ! data functional so that dHat remains consistent with the full objective.
    do j = 1, d%nTx
       iTx = d%d(j)%tx
       do i = 1, d%d(j)%nDt
@@ -448,7 +417,7 @@ Contains
 
             if (iDt == Full_Impedance_Dist) then
                ! Map receiver to distortion site
-               iDistSite = find_dist_site(distC, iRx)
+               iDistSite = find_distortion_site_index(distC, iRx)
                if (iDistSite >= 1) then
                   ! Extract 2x2 distortion matrix for this site
                   C_site(1,1) = distC%C(1,1,iDistSite)
@@ -487,6 +456,7 @@ Contains
 
    RMS = sqrt(SS / Ndata)
 
+   ! some cleanup
    call deall_dataVectorMTX(res)
    call deall_dataVectorMTX(Nres)
 

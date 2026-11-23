@@ -266,8 +266,8 @@ program Mod3DMT
             write(*,*) 'Starting the NLCG_DIST search (joint distortion)...'
             sigma1 = dsigma
             call setup_distortion_for_inversion(allData, distC)
-            call NLCGsolver_dist(allData, cUserDef%lambda, cUserDef%nu_dist, &
-                 sigma0, sigma1, distC, cUserDef%rFile_invCtrl)
+            call NLCGsolver_dist(allData, cUserDef%lambda, sigma0, sigma1, &
+                 distC, cUserDef%rFile_invCtrl)
 
          elseif (trim(cUserDef%search) == 'DCG') then
              write(*,*) 'Starting the DCG search...'
