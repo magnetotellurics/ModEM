@@ -18,6 +18,7 @@ module SensComp
   use DataSens
   use SolverSens
   use ForwardSolver
+  use DistortionParam
 
   implicit none
 
@@ -26,6 +27,7 @@ module SensComp
   public	:: JmultT,  JmultT_TX
   public	:: fwdPred, fwdPred_TX
   public	:: setGrid, cleanUp
+  public    :: set_distortionParam_ptr, get_distortionParam_ptr
 
   ! local timer
   type (timer_t), save, private         :: timer
@@ -39,8 +41,36 @@ module SensComp
   type(solnVector_t), save, private		:: e,e0
   type(rhsVector_t) , save, private		:: b0,comb
 
+  type(distortionParam_t), save, private, target :: distortionParam_save
+  type(distortionParam_t), save, private, pointer :: distPtr => null()
+
 
 Contains
+
+  subroutine set_distortionParam_ptr(dist)
+    type(distortionParam_t), target, intent(in) :: dist
+    distPtr => dist
+  end subroutine set_distortionParam_ptr
+
+  function get_distortionParam_ptr() result(ptr)
+    type(distortionParam_t), pointer :: ptr
+    ptr => distPtr
+  end function get_distortionParam_ptr
+
+  function find_distortion_site_index(dist, rxIdx) result(idx)
+    type(distortionParam_t), intent(in) :: dist
+    integer, intent(in) :: rxIdx
+    integer :: idx
+    integer :: k
+    idx = 0
+    if (.not. allocated(dist%siteIndex)) return
+    do k = 1, dist%nSites
+       if (dist%siteIndex(k) == rxIdx) then
+          idx = k
+          return
+       end if
+    end do
+  end function find_distortion_site_index
 
   !**********************************************************************
    subroutine Jrows(iTx,iDt,iRx,orient,sigma0,emsoln,Jreal,Jimag)
@@ -541,11 +571,11 @@ Contains
    do j = 1,d%nTx
 
     if(savedSolns) then
-   	   ! compute sigmaTemp = JT x d for a single transmitter
-   	   call JmultT_TX(sigma0,d%d(j),sigmaTemp,eAll%solns(j))
+    	   ! compute sigmaTemp = JT x d for a single transmitter
+    	   call JmultT_TX(sigma0,d%d(j),sigmaTemp,eAll%solns(j))
     else
        ! do not pass the EM soln to JmultT - it will be computed
-   	   call JmultT_TX(sigma0,d%d(j),sigmaTemp)
+    	   call JmultT_TX(sigma0,d%d(j),sigmaTemp)
     endif
     
     if (returne_m_vectors) then
@@ -583,7 +613,7 @@ Contains
    type(solnVector_t), intent(inout)	:: emsoln
 
    ! local variables
-   integer				:: iTx,iDt,i,j
+   integer				:: iTx,iDt,i,j,iRXsite,iDistSite
 
       if(.not.d%allocated) then
          call errStop('data vector not allocated on input to fwdPred')
@@ -613,9 +643,17 @@ Contains
          ! apply data functionals - loop over sites
 		     do j = 1,d%data(i)%nSite
 
-		        ! output is a real vector: complex values come in pairs
-              call dataResp(emsoln,sigma,iDt,d%data(i)%rx(j),d%data(i)%value(:,j), &
-                           d%data(i)%orient(j))
+            if (iDt == Full_Impedance_Dist .and. associated(distPtr)) then
+               iRXsite = d%data(i)%rx(j)
+               iDistSite = find_distortion_site_index(distPtr, iRXsite)
+               if (iDistSite < 1) call errStop('Site not found in distortion parameter set')
+               call dataResp_dist(emsoln, sigma, distPtr%C(:,:,iDistSite), &
+                    iDt, iRXsite, d%data(i)%value(:,j), &
+                    d%data(i)%orient(j))
+            else
+               call dataResp(emsoln,sigma,iDt,d%data(i)%rx(j),d%data(i)%value(:,j), &
+                            d%data(i)%orient(j))
+            end if
 
 		     enddo
 

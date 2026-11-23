@@ -93,6 +93,61 @@ with the forward modeling control file, there is a simpler form for this
 optional argument, which modifies only a single (the most commonly modified)
 parameter, i.e., lambda = the initial damping parameter for inversion.
 
+For the joint distortion inversion (``NLCG_DIST``), the data to be corrected
+for galvanic distortion are given with data type ``Full_Impedance_Dist``. The
+standard control lines above may be followed by optional distortion lines
+(defaults shown):
+
+.. code-block:: text
+
+    Distortion damping factor nu       : 0.1
+    Distortion output filename         : distortion.dat
+    Reference distortion filename      :
+    Distortion type (full|diag)        : full
+
+Unlike the standard lines, these are identified by their label (the text
+before the colon) and may be given in any order; any of them may be omitted, 
+with the above values as default. 
+TODO: I should extend the similar label based syntax to the standard lines at 
+some stage, in another commit. 
+
+The distortion matrice C is one real 2x2 matrix per site, independent of
+frequency. The distortion matrice C = g * T * S * A, where g is a scalar 
+gain, T is a twist matrix, S is a shear matrix, and A is an anisotropic 
+matrix. When there is no distortion, C is the identity matrix. C is estmated 
+jointly along with the conductivity model, and is regularised to be close to a
+reference distorion matrix C^0 (identity if not specified). 
+
+After every forward solve, C is replaced by the exact minimiser of the 
+penalty functional for the current EM fields. This is a trivial least-squares 
+problem per site and needs no additional EM solves. NLCG therefore minimises 
+the reduced functional :math:`\min_C F(\tilde{\bf m}, C)` with the *same* 
+line search and lambda strategy as the standard NLCG.
+
+* ``Distortion damping factor nu``: strength of the distortion penalty
+  :math:`\tfrac12 \sum_j w_j \|C_j - C^0_j\|_F^2`. The weights :math:`w_j`
+  are computed from the observed impedances and errors, so that nu is
+  dimensionless: at each site the estimated distortion moves roughly a
+  fraction :math:`1/(1+\nu)` of the way from the reference towards the best
+  fit allowed by the data. Small values (e.g. 0.1) let C absorb most of the
+  site-specific distortion; large values (e.g. 100) hold C at the reference, 
+  which is somehow equivalent to ignoring distortion.
+* ``Distortion output filename``: the estimated distortion matrices are
+  written to ``root_<filename>``.
+* ``Reference distortion filename``: optional reference distortion
+  :math:`C^0`, in the same format as the output file (sites are matched by
+  their index). The identity is used if this is empty or the line is omitted.
+  A reference from an independent analysis (e.g. tensor decomposition) can be
+  given here; with a large nu the distortion is effectively fixed at it.
+* ``Distortion type``: ``full`` estimates the general 2x2 matrix (4
+  parameters per site). ``diag`` estimates one gain per horizontal electric
+  field component, :math:`C_j = \mathrm{diag}(g_x, g_y)` (2 parameters per
+  site); this is the static-shift/splitting part of the distortion and
+  reproduces the frequency-independent offset between the xy and yx
+  apparent-resistivity curves, while leaving twist and shear to the
+  conductivity model. For ``diag`` the reference distortion is projected
+  onto its diagonal.
+
 * **FwdCtrl** : forward solver control file, described above under the ``-F``
     option.
 * **CovCtrl** :  The covariance file. This is used to define the model

@@ -188,7 +188,10 @@ subroutine check_userdef_control_MPI (which_proc,ctrl)
     write(6,*)trim(which_proc),' : ctrl%eps ',(ctrl%eps)
     write(6,*)trim(which_proc),' : ctrl%rFile_Cov ',trim(ctrl%rFile_Cov)
     write(6,*)trim(which_proc),' : ctrl%search ',trim(ctrl%search)
-    write(6,*)trim(which_proc),' : ctrl%CovType ',ctrl%CovType
+    ! CovType is now selected from the covariance file header, instead of 
+    ! the control file here; create_CmSqrt (should) reports the active 
+    ! backend (AR or H2 now) explicitly.
+    ! write(6,*)trim(which_proc),' : ctrl%CovType ',ctrl%CovType
     write(6,*)trim(which_proc),' : ctrl%output_level ',ctrl%output_level
     write(6,*)trim(which_proc),' : ctrl%rFile_Model ',trim(ctrl%rFile_Model)
     write(6,*)trim(which_proc),' : ctrl%rFile_Data ',trim(ctrl%rFile_Data)

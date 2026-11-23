@@ -22,12 +22,21 @@ module DataSens
   use utilities
   use DataSpace
   use DataFunc
+  use DistortionParam
 
 implicit none
 
  public 		:: Lmult,  LmultT, Qmult, QmultT
+ public        :: set_dataSens_distortion_ptr
+
+ type(distortionParam_t), save, private, pointer :: dataSens_distPtr => null()
 
 Contains
+
+  subroutine set_dataSens_distortion_ptr(dist)
+    type(distortionParam_t), target, intent(in) :: dist
+    dataSens_distPtr => dist
+  end subroutine set_dataSens_distortion_ptr
 
   subroutine Lmult(e0,Sigma0,ef,d)
   ! given the background model parameter (Sigma0) and both
@@ -154,10 +163,12 @@ Contains
 
   !  local variables
   integer               		:: iSite, iTx, iDt, iRx, nComp, &
-					 nFunc, iComp, iFunc, j
+					 nFunc, iComp, iFunc, j, iRow, iCol, distIdx, k
   logical                   :: isComplex, exists
   type(orient_t)            :: orient
   complex(kind=prec)		    :: Z
+  complex(kind=prec)               :: A_bar(4), A_mat(2,2)
+  real(kind=prec)                  :: C_site2x2(2,2)
   type(sparseVector_t), pointer    	:: Lz(:)
 
   iTx = d%tx
@@ -197,23 +208,93 @@ Contains
 	     orient = d%data(j)%orient(iSite)
 	     ! 2022.10.05, Liu Zhongyin, Add azimuth
 	     call Lrows(e0,Sigma0,iDt,iRx,orient,Lz)
-	     iComp = 1
-	     do iFunc  = 1, nFunc
-	        exists = d%data(j)%exist(iComp,iSite)
-	        if(isComplex) then
-	           !  move real data from dataVector into complex conjugate of TF (impedance)
-	           !  multiply this by data kernel for complex impedance ...
-	           !      (take real part in parameter space)
-	           Z = cmplx(d%data(j)%value(iComp,iSite),-d%data(j)%value(iComp+1,iSite),8)
-	           iComp = iComp+2
-	        else
-	           Z = cmplx(d%data(j)%value(iComp,iSite),0.0,8)
-	           iComp = iComp+1
-	        endif
-	        if(exists) then
-	           call add_sparseVrhsV(Z,Lz(iFunc),comb)
-	        endif
-	     enddo ! iFunc
+
+             if (iDt == Full_Impedance_Dist .and. associated(dataSens_distPtr)) then
+                ! Find distortion index for this receiver
+                distIdx = -1
+                do k = 1, dataSens_distPtr%nSites
+                   if (dataSens_distPtr%siteIndex(k) == iRx) then
+                      distIdx = k
+                      exit
+                   end if
+                end do
+                if (distIdx < 1) then
+                   ! No distortion for this site — use standard LmultT (equivalent to C=I)
+                   iComp = 1
+                   do iFunc  = 1, nFunc
+                      exists = d%data(j)%exist(iComp,iSite)
+                      if(isComplex) then
+                         Z = cmplx(d%data(j)%value(iComp,iSite),-d%data(j)%value(iComp+1,iSite),8)
+                         iComp = iComp+2
+                      else
+                         Z = cmplx(d%data(j)%value(iComp,iSite),0.0,8)
+                         iComp = iComp+1
+                      endif
+                      if(exists) call add_sparseVrhsV(Z,Lz(iFunc),comb)
+                   enddo
+                   cycle
+                end if
+                 ! Normalized residual A_bar(iFunc) = conj(C·Z - D)_i / σ²_i
+                 ! The standard LmultT reads conj(data) = cmplx(real, -imag).
+                 ! Missing components (exist=.false.) must contribute zero: their
+                 ! raw (un-normalized) predicted values would otherwise leak
+                 ! spurious, C-weighted terms into the adjoint and inflate the
+                 ! model gradient.
+                 do iFunc = 1, nFunc
+                    if (d%data(j)%exist(2*iFunc-1,iSite)) then
+                       A_bar(iFunc) = cmplx(d%data(j)%value(2*iFunc-1,iSite), &
+                            -d%data(j)%value(2*iFunc,iSite), prec)
+                    else
+                       A_bar(iFunc) = cmplx(R_ZERO, R_ZERO, prec)
+                    end if
+                 end do
+                ! C_site2x2 = C^T (transpose of distortion matrix stored in column-major)
+                C_site2x2(1,1) = dataSens_distPtr%C(1,1,distIdx)
+                C_site2x2(1,2) = dataSens_distPtr%C(2,1,distIdx)
+                C_site2x2(2,1) = dataSens_distPtr%C(1,2,distIdx)
+                C_site2x2(2,2) = dataSens_distPtr%C(2,2,distIdx)
+                ! Standard impedance functionals Lz are indexed as:
+                ! Lz(1) ↔ Z_xx, Lz(2) ↔ Z_xy, Lz(3) ↔ Z_yx, Lz(4) ↔ Z_yy
+                ! Distorted functionals F:
+                ! F(1) ↔ C_11·Z_xx + C_12·Z_yx, F(2) ↔ C_11·Z_xy + C_12·Z_yy
+                ! F(3) ↔ C_21·Z_xx + C_22·Z_yx, F(4) ↔ C_21·Z_xy + C_22·Z_yy
+                ! Adjoint: W = Σ conj(r_i) · F_i = C^T · conj(r) applied to standard Lz
+                ! Lz(1) weight = C_11·conj(r1) + C_21·conj(r3) = C_site2x2(1,1)·A_bar(1) + C_site2x2(1,2)·A_bar(3)
+                ! Lz(2) weight = C_11·conj(r2) + C_21·conj(r4) = C_site2x2(1,1)·A_bar(2) + C_site2x2(1,2)·A_bar(4)
+                ! Lz(3) weight = C_12·conj(r1) + C_22·conj(r3) = C_site2x2(2,1)·A_bar(1) + C_site2x2(2,2)·A_bar(3)
+                 ! Lz(4) weight = C_12·conj(r2) + C_22·conj(r4) = C_site2x2(2,1)·A_bar(2) + C_site2x2(2,2)·A_bar(4)
+                 ! Each Lz(k) receives contributions from its own component's
+                 ! residual (diagonal C) and from the cross-coupled component
+                 ! (off-diagonal C); add Lz(k) when either source is observed.
+                 Z = C_site2x2(1,1)*A_bar(1) + C_site2x2(1,2)*A_bar(3)
+                 exists = (d%data(j)%exist(1,iSite) .or. d%data(j)%exist(5,iSite))
+                 if (exists) call add_sparseVrhsV(Z, Lz(1), comb)
+                 Z = C_site2x2(1,1)*A_bar(2) + C_site2x2(1,2)*A_bar(4)
+                 exists = (d%data(j)%exist(3,iSite) .or. d%data(j)%exist(7,iSite))
+                 if (exists) call add_sparseVrhsV(Z, Lz(2), comb)
+                 Z = C_site2x2(2,1)*A_bar(1) + C_site2x2(2,2)*A_bar(3)
+                 exists = (d%data(j)%exist(1,iSite) .or. d%data(j)%exist(5,iSite))
+                 if (exists) call add_sparseVrhsV(Z, Lz(3), comb)
+                 Z = C_site2x2(2,1)*A_bar(2) + C_site2x2(2,2)*A_bar(4)
+                 exists = (d%data(j)%exist(3,iSite) .or. d%data(j)%exist(7,iSite))
+                 if (exists) call add_sparseVrhsV(Z, Lz(4), comb)
+             else
+                iComp = 1
+                do iFunc  = 1, nFunc
+                   exists = d%data(j)%exist(iComp,iSite)
+                   if(isComplex) then
+                      !  move real data from dataVector into complex conjugate of TF (impedance)
+                      Z = cmplx(d%data(j)%value(iComp,iSite),-d%data(j)%value(iComp+1,iSite),8)
+                      iComp = iComp+2
+                   else
+                      Z = cmplx(d%data(j)%value(iComp,iSite),0.0,8)
+                      iComp = iComp+1
+                   endif
+                   if(exists) then
+                      call add_sparseVrhsV(Z,Lz(iFunc),comb)
+                   endif
+                enddo ! iFunc
+             end if
 	  enddo ! iSite
 	  !  deallocate local arrays
 	  do iFunc = 1,nFunc

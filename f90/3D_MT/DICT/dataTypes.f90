@@ -83,7 +83,8 @@ module dataTypes
   integer, parameter   :: Bz_Field = 11
   integer, parameter   :: Ez_Field = 12
   integer, parameter   :: Exy_Field = 13
-  integer, parameter   :: Exy_Ampli_Phase = 14
+   integer, parameter   :: Exy_Ampli_Phase = 14
+   integer, parameter   :: Full_Impedance_Dist = 15
 
 Contains
 
@@ -94,7 +95,7 @@ Contains
 
   	 integer     :: istat
 
-     allocate(typeDict(14),STAT=istat)
+     allocate(typeDict(15),STAT=istat)
 
      typeDict(Full_Impedance)%name = 'Full_Impedance'
      typeDict(Full_Impedance)%abbrev = 'Z'
@@ -236,8 +237,19 @@ Contains
      typeDict(Exy_Ampli_Phase)%nComp     = 2
      allocate(typeDict(Exy_Ampli_Phase)%id(2),STAT=istat)
      typeDict(Exy_Ampli_Phase)%id(1) = 'Exy_Ampli'
-     typeDict(Exy_Ampli_Phase)%id(2) = 'Exy_Phase'
-	 
+      typeDict(Exy_Ampli_Phase)%id(2) = 'Exy_Phase'
+
+     typeDict(Full_Impedance_Dist)%name = 'Full_Impedance_Dist'
+     typeDict(Full_Impedance_Dist)%abbrev = 'ZD'
+     typeDict(Full_Impedance_Dist)%isComplex = .true.
+     typeDict(Full_Impedance_Dist)%tfType    = Full_Impedance_Dist
+     typeDict(Full_Impedance_Dist)%units     = '[V/m]/[T]'
+     typeDict(Full_Impedance_Dist)%nComp     = 8
+     allocate(typeDict(Full_Impedance_Dist)%id(4),STAT=istat)
+     typeDict(Full_Impedance_Dist)%id(1)    = 'ZXX'
+     typeDict(Full_Impedance_Dist)%id(2)    = 'ZXY'
+     typeDict(Full_Impedance_Dist)%id(3)    = 'ZYX'
+     typeDict(Full_Impedance_Dist)%id(4)    = 'ZYY'
 	 
   end subroutine setup_typeDict
 
@@ -406,11 +418,14 @@ Contains
        case('Exy_Field','EXY')
           dataType = Exy_Field
 	  
-       case('Exy_Ampli_Phase','EXYAP')
-          dataType = Exy_Ampli_Phase
+        case('Exy_Ampli_Phase','EXYAP')
+           dataType = Exy_Ampli_Phase
+
+        case('Full_Impedance_Dist','ZD')
+           dataType = Full_Impedance_Dist
 	  		  
-       case default
-          call errStop('Unknown data type:'//trim(typeName))
+        case default
+           call errStop('Unknown data type:'//trim(typeName))
 
     end select
 
